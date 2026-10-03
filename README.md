@@ -12,13 +12,13 @@ follows it; where they disagree, the design document wins.
 
 | Document | What it covers |
 |---|---|
-| [`docs/motw-design.md`](docs/motw-design.md) | Master design document: pillars, content, every decision area, reference research, candidate analysis, and the prototype architecture (Appendix F) |
+| [`docs/motw-design.md`](docs/motw-design.md) | **The master design document**: pillars, content, every decision area, reference research, candidate analysis, and the prototype architecture and art (Appendix F) |
 | [`assets/README.md`](assets/README.md) | Art style and rendering for the prototype: the art rule, decisions so far, how sprites, tokens, and cubes render, and the open palette and asset-list decisions |
 | [`public/spec.json`](public/spec.json) | The data: seat limits, archetypes, factions, locations, slayer groups, cards, variants |
 
-`docs/motw-design.md` is a snapshot of the living design document (a Claude
-artifact, updated at the end of each design session). Refresh the snapshot
-when the design moves.
+`docs/motw-design.md` is the master design document. It is edited here and
+committed like code; the Claude artifact it started from is retired and no
+longer updated.
 
 ## Status: scaffold
 

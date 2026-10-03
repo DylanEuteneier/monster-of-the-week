@@ -2,13 +2,13 @@
 
 ## About this document
 
-The single living document for this project, updated at the end of each session.
+The single living document for this project, updated at the end of each session. It lives in the prototype repository at `docs/motw-design.md`, and every change is committed there.
 
 1. **Context:** working style and approach, plus truly ephemeral opinions, inspiration, and ideas that inform the game without direct details.
 2. **Game foundation:** the game's core tension, theme, setting, players, content, and genre.
 3. **Design decisions:** every core design decision, grouped by the game's architecture. Each decision area is one entry that matures in place, from ideas to decisions to details to rules.
 
-Appendices: A. Decision records and changelog, B. Glossary, C. Reference game research, D. Candidate codes, E. Candidate analysis, F. Prototype architecture.
+Appendices: A. Decision records and changelog, B. Glossary, C. Reference game research, D. Candidate codes, E. Candidate analysis, F. Prototype architecture and art.
 
 The current focus, below, lists the areas being worked on right now.
 
@@ -36,6 +36,8 @@ Every decision area now has at least one candidate. The open questions below are
 **Prototype**
 
 - **Architecture:** set, and described in Appendix F.
+- **Scaffold:** built and deployed. The infrastructure in Appendix F runs end to end with a placeholder phase in place of rules.
+- **Art direction:** set, and described in F.17. Drawing the full set waits on the palette and the asset list.
 - **Needed before building:** a complete ruleset, and an implementation spec that restates it as state, inputs, validation, and procedure.
 
 **Deferred to later stages**
@@ -59,7 +61,7 @@ Every decision area now has at least one candidate. The open questions below are
 - No wholesale generation. Claude doesn't produce large swaths of rules, content, or design in one go.
 - If the designer explicitly asks for options, Claude offers a small number, clearly labeled as suggestions.
 - Only what the designer agrees to is recorded as a decision.
-- Work happens across repeated sessions in a Claude Project, using this single document, continually updated.
+- Work happens across repeated sessions in Claude Code, in the prototype repository, using this single document (`docs/motw-design.md`), continually updated and committed.
 - Map design and card design are later stages. Details that belong to them are deferred until then.
 - Balancing numbers are also left until later, once cards are in place. They will be set by running the maths and by simulated playthroughs, in the web prototype with bots (Appendix F).
 
@@ -758,6 +760,12 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 #### D8. Prototype architecture
 
 - **Decided:** the web prototype is built on Cloudflare Workers, with the game state as one text document, an HTML and JavaScript UI, a JavaScript game engine written as a state machine, magic links for players, bots, a host page for starting a new game, and a single game at a time.
+- **Affects:** Appendix F.
+- **Date:** 2026-10-03
+
+#### D9. Prototype art direction
+
+- **Decided:** whatever would be printed art in a physical production is pixel art; whatever would be physical is UI; a select few physical pieces imitate real 3D objects. One 16-colour palette for the game and UI. Fonts: Tiny5 for headings and labels, Rubik for everything else. Every location shows its presence visually: faction presence as cardboard tokens with pixel art on the face, player influence as cubes in seat colours.
 - **Affects:** Appendix F.
 - **Date:** 2026-10-03
 
@@ -1812,6 +1820,7 @@ Browser, one per seat  ──websocket──▶  Worker  ──▶  Durable Obje
 | `POST /admin/new-game` | Deals a new game from the seat names, an optional seed, the options chosen, and the list of bot seats. Returns the magic links. |
 | `GET /admin/links` | Lists the magic links for the current game again. |
 | `GET /admin/status` | Reports the phase, the round, and each seat, including whether it is online and whether it is a bot. |
+| `GET /assets` | Serves the assets page, where art is reviewed (F.17). |
 | anything else | A static file from `public/`. |
 
 The Worker itself only routes. It passes the websocket and admin routes to the Durable Object and serves pages for the rest.
@@ -2061,6 +2070,9 @@ public/
   app.css         styles
   app.js          client: draws one player view, sends moves, previews with the engine
   host.html, host.js   host page: deal games, choose options and bots, copy links
+  assets.html, assets.js   assets page: every token, cube, and sprite, and the palette
+  pieces.js       presence tokens and influence cubes, drawn in CSS
+  assets/         built art: sprites, token outlines, and their data file
   bots.js         random legal-move bots, shared by the server and the simulation
   engine.js       the rules: createGame, validate, applyMove, resolve, playerView
   spec.json       all constants and content as data
@@ -2071,7 +2083,8 @@ scripts/
   simulate.js     bot harness for tuning figures
   smoke.js        plays a whole game against a running server
   admin.js        create a game, list the magic links
-docs/             rules, implementation spec, build plan
+assets/           art source: the palette and sprites as data, the build script, the art guide
+docs/             this document, then the rules and implementation spec
 wrangler.toml     Worker configuration
 ```
 
@@ -2113,3 +2126,33 @@ Each stage can be tested before the next is started.
 - *Open:* whether the prototype includes table talk. The architecture allows a chat channel over the same websocket, with a short saved history that clears on a new deal. It has no effect on the game.
 - *Open:* whether the prototype allows undo.
 - *Open:* how capable the bots need to be before their figures can be used for balancing.
+
+### F.17 Art and rendering
+
+How the prototype looks. The working detail, the asset list, and the art tools are in the repository's art guide, `assets/README.md`. This section does not add, change, or settle any rule of the game.
+
+#### The rule
+
+| Tier | What | Drawn as |
+|---|---|---|
+| Pixel art | Whatever would be printed art in a physical production: illustrations, icons, location tiles, the art on a token or card | Pixel sprites at whole-number scales, never smoothed |
+| UI | Whatever would be physical: boards, panels, cards, tracks, buttons | Clean, readable layout, not imitated |
+| Physical pieces | A select few pieces that sit on the board: presence tokens, influence cubes | Objects that look real but clean: depth, edges, soft shadows |
+
+#### Decided
+
+- **Style:** a small island town in a pixel-art RPG / animated-series style (1.5, 2.2).
+- **Palette:** one 16-colour palette for the game and the UI. Pixel art uses only the palette; the UI and the pieces take their colours from it and may shade them, but add no new hue.
+- **Fonts:** Tiny5, a pixel face, for headings and labels; Rubik for everything else.
+- **Presence on locations:** every location shows its presence visually, at a glance.
+- **Faction presence:** cardboard tokens cut to the outline of the faction's art, with the pixel art printed on the face and a visible card edge. In the rules, invaders are cubes at locations (3.4); the token is how the prototype draws them, and does not change the rule.
+- **Player influence:** cubes in the player's seat colour, seen from above: a square top face with the near and right sides showing.
+- **Review:** the assets page shows an example location, every token and cube, every sprite against the content it draws, and the palette.
+
+#### Open
+
+- *Open:* the 16 colours, including five seat colours, the UI colours, and whether the UI is dark or light.
+- *Open:* the asset list: which assets the prototype needs, at what sizes.
+- *Open:* whether a location shows one token or cube per unit, or one with a number.
+- *Open:* whether presence tokens are drawn per faction (15) or per archetype (5).
+- *Open:* how influence cubes are used on locations, which follows the influence rules (3.7, 3.13, 3.14).
