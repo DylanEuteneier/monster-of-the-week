@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monster of the Week — Host</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>MONSTER OF THE WEEK</h1>
+    <span class="phase-label">Host page</span>
+  </header>
+
+  <main class="host">
+    <section class="panel" id="key-panel">
+      <h2>Host key</h2>
+      <p class="small muted">This server is locked. The host key is its <span class="mono">ADMIN_SECRET</span>; it stays in this tab only.</p>
+      <form class="inline" id="key-form" autocomplete="off">
+        <input type="password" id="key-input" placeholder="host key" aria-label="Host key" class="grow">
+        <button class="btn btn-primary" type="submit">Unlock</button>
+      </form>
+    </section>
+
+    <section class="panel" id="status-panel" hidden>
+      <div class="row-between"><h2>Current table</h2><button class="btn" data-action="refresh">Refresh</button></div>
+      <div id="status"></div>
+    </section>
+
+    <section class="panel" id="deal-panel" hidden>
+      <h2>Deal a game</h2>
+      <p class="small muted">Three to five slayer groups. Seats with the same name keep their links; open tabs flip straight to round 1. Tick <b>bot</b> to have the server play that seat with random legal moves.</p>
+      <form class="stack" id="deal-form" autocomplete="off">
+        <div class="seats" id="seats"></div>
+        <div class="inline">
+          <button class="btn" type="button" data-action="add-seat">Add seat</button>
+          <label class="inline small muted">Seed <input type="number" id="seed-input" placeholder="random" aria-label="Seed"></label>
+        </div>
+        <div class="stack" id="options"></div>
+        <div class="inline">
+          <button class="btn btn-primary" type="submit" id="deal-button">Deal new game</button>
+          <span class="small muted" id="deal-note"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel" id="links-panel" hidden>
+      <div class="row-between"><h2>Seat links</h2><span class="inline"><a class="btn" href="/hotseat" target="_blank" rel="noopener">Open hotseat</a><button class="btn" data-action="copy-all">Copy all</button></span></div>
+      <p class="small muted">Each link is that player's identity. Send it to them privately. <b>Hotseat</b> plays every human seat from one tab.</p>
+      <div class="links" id="links"></div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script type="module" src="/host.js"></script>
+</body>
+</html>

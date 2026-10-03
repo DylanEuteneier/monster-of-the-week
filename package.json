@@ -1,0 +1,32 @@
+{
+  "name": "monster-of-the-week",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Monster of the Week — an area-control board game. Prototype server and table.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8788 --inspector-port 9230 --live-reload",
+    "dev:setup": "test -f .dev.vars || cp .dev.vars.example .dev.vars",
+    "new-game": "node scripts/admin.js new-game --force",
+    "links": "node scripts/admin.js links",
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:watch": "node --test --watch \"test/**/*.test.js\"",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.worker.json",
+    "check": "npm run typecheck && npm test && npm run build",
+    "simulate": "node scripts/simulate.js",
+    "smoke": "node scripts/smoke.js",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "deploy": "wrangler deploy",
+    "secret": "wrangler secret put ADMIN_SECRET",
+    "logs": "wrangler tail"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260917.1",
+    "@types/node": "^24.13.5",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.133.0"
+  }
+}

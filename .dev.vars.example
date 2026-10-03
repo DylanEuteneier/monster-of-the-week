@@ -1,0 +1,4 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+# Leave ADMIN_SECRET unset to keep the host page open (default).
+# Set it to lock /host, /hotseat, and /admin/* behind a bearer token.
+# ADMIN_SECRET=change-me

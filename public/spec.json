@@ -1,0 +1,63 @@
+{
+  "meta": {
+    "name": "Monster of the Week",
+    "version": "0.0.1-scaffold",
+    "players": { "min": 3, "max": 5, "tunedFor": 5 },
+    "notes": "Seat limits are decision D3 (3.16). Everything under 'scaffold' is placeholder plumbing for testing the prototype end to end; it is not a rule of the game and is replaced once a complete ruleset is chosen (Appendix F.16)."
+  },
+  "constants": {},
+  "scaffold": {
+    "rounds": 2,
+    "notes": "Placeholder round count for the ready-check phase. Not a balancing number."
+  },
+  "archetypes": [
+    { "id": "nocturnals", "name": "Nocturnals", "symbol": "◐" },
+    { "id": "scifi", "name": "80's Sci-Fi", "symbol": "ↂ" },
+    { "id": "sentients", "name": "Sentients", "symbol": "⏏" },
+    { "id": "undead", "name": "Undead", "symbol": "☾" },
+    { "id": "demons", "name": "Demons", "symbol": "⎈" }
+  ],
+  "factions": [
+    { "id": "vampires", "name": "Vampires", "archetype": "nocturnals" },
+    { "id": "werewolves", "name": "Werewolves", "archetype": "nocturnals" },
+    { "id": "occult", "name": "The Occult", "archetype": "nocturnals" },
+    { "id": "aliens", "name": "Aliens", "archetype": "scifi" },
+    { "id": "dark-government", "name": "Dark Government", "archetype": "scifi" },
+    { "id": "cryptids", "name": "Cryptids", "archetype": "scifi" },
+    { "id": "machines", "name": "Machines", "archetype": "sentients" },
+    { "id": "ai", "name": "Artificial Intelligence", "archetype": "sentients" },
+    { "id": "cyberpunks", "name": "Cyberpunks", "archetype": "sentients" },
+    { "id": "zombies", "name": "Zombies", "archetype": "undead" },
+    { "id": "skeletons", "name": "Skeletons", "archetype": "undead" },
+    { "id": "spirits", "name": "Spirits", "archetype": "undead" },
+    { "id": "demons", "name": "Demons", "archetype": "demons" },
+    { "id": "possessed", "name": "The Possessed", "archetype": "demons" },
+    { "id": "shadows", "name": "Shadows", "archetype": "demons" }
+  ],
+  "locations": [
+    { "id": "military-facility", "name": "Military Facility", "archetype": "scifi" },
+    { "id": "weather-station", "name": "Weather Station", "archetype": "scifi" },
+    { "id": "state-park", "name": "State Park", "archetype": "scifi" },
+    { "id": "sawmill", "name": "Sawmill", "archetype": "undead" },
+    { "id": "mine", "name": "Mine", "archetype": "undead" },
+    { "id": "graveyard", "name": "Graveyard", "archetype": "undead" },
+    { "id": "ski-resort", "name": "Ski Resort", "archetype": "nocturnals" },
+    { "id": "fallout-bunker", "name": "Fallout Bunker", "archetype": "nocturnals" },
+    { "id": "occult-camp", "name": "Occult Camp", "archetype": "nocturnals" },
+    { "id": "caves", "name": "Caves", "archetype": "demons" },
+    { "id": "lighthouse", "name": "Lighthouse", "archetype": "demons" },
+    { "id": "lake-house", "name": "The Lake House", "archetype": "demons" },
+    { "id": "shipping-docks", "name": "Shipping Docks", "archetype": "sentients" },
+    { "id": "junkyard", "name": "Junkyard", "archetype": "sentients" },
+    { "id": "beach-city", "name": "Beach City", "archetype": "sentients" }
+  ],
+  "slayerGroups": [
+    { "id": "slayerettes", "name": "Slayerettes", "archetype": "nocturnals", "trope": "High school vampire hunters" },
+    { "id": "kids-on-bikes", "name": "Kids on Bikes", "archetype": "scifi", "trope": "Kids on bikes with walkie-talkies" },
+    { "id": "av-club", "name": "AV Club", "archetype": "sentients", "trope": "Teen hackers and computer club nerds" },
+    { "id": "neighbourhood-watch", "name": "Neighbourhood Watch", "archetype": "undead", "trope": "Small-town survivalists" },
+    { "id": "father-and-the-flock", "name": "Father and the Flock", "archetype": "demons", "trope": "A parish exorcist and reluctant helpers" }
+  ],
+  "cards": [],
+  "variants": []
+}

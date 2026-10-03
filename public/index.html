@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monster of the Week</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="topbar" id="header"></header>
+  <nav class="seatbar" id="seatbar" hidden aria-label="Hotseat seats"></nav>
+
+  <main class="layout">
+    <aside class="column column-left">
+      <section class="panel" id="players" aria-label="Slayer groups"></section>
+      <section class="panel" id="phase" aria-label="Current phase"></section>
+    </aside>
+
+    <section class="column column-centre">
+      <section class="panel" id="board" aria-label="The island"></section>
+    </section>
+
+    <aside class="column column-right">
+      <section class="panel" id="log" aria-label="Log"></section>
+      <section class="panel chat" aria-label="Table talk">
+        <h2>Table talk</h2>
+        <div class="chat-lines" id="chat-lines"></div>
+        <form class="chat-form" id="chat-form" autocomplete="off">
+          <input class="chat-input" id="chat-input" maxlength="280" placeholder="Say something…" aria-label="Chat message">
+          <button class="btn" type="submit">Send</button>
+        </form>
+      </section>
+    </aside>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <noscript>This table needs JavaScript.</noscript>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

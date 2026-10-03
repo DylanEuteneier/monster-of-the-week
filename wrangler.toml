@@ -1,0 +1,25 @@
+name = "monster-of-the-week"
+main = "src/worker.ts"
+compatibility_date = "2026-10-01"
+
+# Static table UI. Requests that match a file in public/ are served directly;
+# everything else (/p/<token>, /ws/<token>, /host, /hotseat, /admin/*) reaches the Worker.
+[assets]
+directory = "public"
+binding = "ASSETS"
+
+[[durable_objects.bindings]]
+name = "GAME"
+class_name = "Game"
+
+# Registers the Durable Object class on first deploy.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Game"]
+
+[observability]
+enabled = true
+
+# ADMIN_SECRET is a secret, not a var:
+#   local:  put ADMIN_SECRET=... in .dev.vars (gitignored)
+#   prod:   npx wrangler secret put ADMIN_SECRET
