@@ -5,8 +5,8 @@ how assets are made and served, and what is still to decide.
 
 **Status (2026-10-03):** the art direction, fonts, and the look of tokens and
 cubes are decided, and a test batch is live on `/assets`. Drawing the full set
-waits on two decisions: the **16-colour palette** and the **asset list** (see
-[To decide](#to-decide)).
+waits on the **asset list**, and on which palette colours play which roles
+(see [To decide](#to-decide)).
 
 ## The goal
 
@@ -32,7 +32,8 @@ Whatever would be physical is UI. A select few physical pieces imitate real
 | Date | Decision |
 |---|---|
 | 2026-10-03 | The rule above |
-| 2026-10-03 | One 16-colour palette for the whole game and UI (colours still to choose) |
+| 2026-10-03 | One palette for the whole game and UI |
+| 2026-10-03 | The palette's colours: 32, supplied by the designer (see [The palette](#1-the-palette)) |
 | 2026-10-03 | Fonts: **Tiny5** (pixel) for headings and labels, **Rubik** for everything else |
 | 2026-10-03 | Every location shows its presence visually, at a glance |
 | 2026-10-03 | Faction presence is shown with **tokens**; player influence with **cubes** in seat colours |
@@ -152,7 +153,7 @@ places detail pixels, as `lighthouse()` does.
 
 ### Rules
 
-- **Palette only;** 16 colours, no exceptions.
+- **Palette only;** 32 colours, no exceptions.
 - **Native sizes:** 16×16 for icons (and so for token art), 32×32 for
   location tiles. Bigger only where the asset list says so.
 - **Whole-number scaling only.** Never fractional, never smoothed.
@@ -197,40 +198,59 @@ for pixel art: PixelLab and Retro Diffusion.
 
 ### 1. The palette
 
-Sixteen colours. The draft from the test batch (15 plus transparent):
+**The colours are chosen (2026-10-03):** 32, in the order the designer
+supplied them. Keys the test art already used kept their role; the rest are
+new. The roles column shows what the test art uses each for.
 
-| Key | Colour | Role in the test |
+| Key | Colour | Used for in the test art |
 |---|---|---|
-| `k` | `#1a1626` | outline, ink |
-| `n` | `#26244a` | night sky |
-| `N` | `#353268` | night sky, lighter band |
-| `b` | `#2f5d8f` | sea |
-| `c` | `#6fc3df` | glow cyan, wave crest; draft seat 2 |
-| `w` | `#f4efe2` | bone, cream |
-| `g` | `#9a9cb8` | metal grey |
-| `d` | `#55536f` | shadow |
-| `r` | `#c8364c` | red; draft seat 1 |
-| `R` | `#7e1f3a` | dark red |
-| `p` | `#f07ca0` | pink; draft seat 5 |
-| `y` | `#f7e07a` | lamp yellow |
-| `o` | `#f2a541` | orange; draft seat 4 |
-| `G` | `#7bd389` | ghoul green; draft seat 3 |
-| `m` | `#7a4ea3` | purple |
+| `q` | `#462d3c` |  |
+| `Q` | `#5e3643` |  |
+| `u` | `#7a444a` |  |
+| `U` | `#a05b54` |  |
+| `f` | `#c07959` |  |
+| `o` | `#efa260` | apricot; draft seat 4 |
+| `s` | `#f6cca1` |  |
+| `l` | `#b6d43c` |  |
+| `G` | `#71ab43` | ghoul green; draft seat 3 |
+| `e` | `#387c44` |  |
+| `h` | `#3c5957` |  |
+| `k` | `#302b2d` | outline, ink |
+| `x` | `#5a5454` |  |
+| `X` | `#7d7071` |  |
+| `g` | `#a0948f` | metal |
+| `z` | `#cfc6b8` |  |
+| `w` | `#e0f2f4` | highlights, bone |
+| `a` | `#97d8e3` |  |
+| `c` | `#3dc3d8` | glow, wave crest; draft seat 2 |
+| `b` | `#3879a9` | sea |
+| `N` | `#384779` | night sky, lighter band |
+| `n` | `#39314b` | night sky |
+| `v` | `#564164` |  |
+| `m` | `#8f488d` | purple |
+| `p` | `#ce5f93` | pink; draft seat 5 |
+| `P` | `#f7acb6` |  |
+| `y` | `#f4b41a` | lamplight |
+| `O` | `#f47e20` |  |
+| `r` | `#e7482d` | red; draft seat 1 |
+| `R` | `#a93c3b` | dark red |
+| `L` | `#837195` |  |
+| `d` | `#4f546b` | shadow; token edge |
 
-The final palette has to answer:
+Still to decide:
 
-- **Seat colours.** Five distinct colours for influence cubes, readable on
-  the location card and beside each other. Tokens are identified by their
-  art, so seat colours may share hues with faction art.
-- **UI colours.** Background, panel, text, muted text, border, accent,
-  danger, and ok, from the same 16. Is the UI dark (night island, like the
-  test art) or light (the current table)?
+- **Seat colours.** Which five palette colours mark the players' influence
+  cubes. They must read at a glance on the location card and beside each
+  other. Tokens are identified by their art, so seat colours may share hues
+  with faction art.
+- **UI colours.** Which palette colours serve as background, panel, text,
+  muted text, border, accent, danger, and ok. Is the UI dark (night island,
+  like the test art) or light (the current table)?
 - **Token cardboard.** Should the token face and edge use palette colours
-  (the face is close to `w`), or stay as their own neutral tones?
+  (`w` or `z` for the face, `g` or `X` for the edge), or keep their own
+  neutral tones?
 - **Day and night.** Does any location or phase need a daytime look, or is
   the whole game at night?
-- **Starting point.** Hand-picked (like the draft), or an established
-  16-colour pixel palette adapted to the theme?
 
 ### 2. The asset list
 
@@ -272,8 +292,9 @@ of cubes. Open:
 
 ## When resuming
 
-1. Settle the palette and write it into `assets/sprites.py` (and so
-   `sprites.json`); point the UI's CSS colour tokens and `SEAT_COLOURS` at it.
+1. Choose the palette roles (seat colours, UI colours, dark or light), then
+   point the UI's CSS colour tokens and `SEAT_COLOURS` at those palette keys.
+   The 32 colours themselves are already in `assets/sprites.py`.
 2. Settle the asset list and the location-card questions.
 3. Draw in batches: location tiles first (the board needs them), then faction
    or archetype token art, then emblems. One sheet render and one review per

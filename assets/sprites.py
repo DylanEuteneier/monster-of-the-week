@@ -14,22 +14,41 @@ import json, pathlib, struct, zlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 PALETTE = {
+    # The 32-colour palette (designer, 2026-10-03), in the order supplied.
+    # Keys used by the test art keep the role they had; the rest are new.
     ".": None,          # transparent
-    "k": "#1a1626",     # outline, ink purple-black
-    "n": "#26244a",     # night sky
-    "N": "#353268",     # night sky, lighter band
-    "b": "#2f5d8f",     # sea
-    "c": "#6fc3df",     # glow cyan / wave crest
-    "w": "#f4efe2",     # bone / cream
-    "g": "#9a9cb8",     # metal grey
-    "d": "#55536f",     # shadow grey-purple
-    "r": "#c8364c",     # red
-    "R": "#7e1f3a",     # dark red
-    "p": "#f07ca0",     # pink
-    "y": "#f7e07a",     # lamp yellow
-    "o": "#f2a541",     # orange
-    "G": "#7bd389",     # ghoul green
-    "m": "#7a4ea3",     # purple
+    "q": "#462d3c",     # deep plum
+    "Q": "#5e3643",     # plum
+    "u": "#7a444a",     # rosewood
+    "U": "#a05b54",     # clay
+    "f": "#c07959",     # terracotta
+    "o": "#efa260",     # apricot
+    "s": "#f6cca1",     # sand
+    "l": "#b6d43c",     # lime
+    "G": "#71ab43",     # leaf green
+    "e": "#387c44",     # forest green
+    "h": "#3c5957",     # deep teal
+    "k": "#302b2d",     # ink: outlines
+    "x": "#5a5454",     # charcoal
+    "X": "#7d7071",     # warm grey
+    "g": "#a0948f",     # stone grey
+    "z": "#cfc6b8",     # bone
+    "w": "#e0f2f4",     # near-white
+    "a": "#97d8e3",     # pale aqua
+    "c": "#3dc3d8",     # cyan
+    "b": "#3879a9",     # sea blue
+    "N": "#384779",     # navy: night sky, lighter band
+    "n": "#39314b",     # night sky
+    "v": "#564164",     # dusk violet
+    "m": "#8f488d",     # purple
+    "p": "#ce5f93",     # pink
+    "P": "#f7acb6",     # blush
+    "y": "#f4b41a",     # gold: lamplight
+    "O": "#f47e20",     # orange
+    "r": "#e7482d",     # red
+    "R": "#a93c3b",     # dark red
+    "L": "#837195",     # lavender
+    "d": "#4f546b",     # slate: shadow
 }
 
 SPRITES = {

@@ -33,7 +33,7 @@ test('every sprite file the manifest points to is published under public/', () =
 
 test('sprite rows match their size and only use palette keys', () => {
   const palette = new Set(Object.keys(art.palette));
-  assert.ok(palette.size <= 17, 'at most 16 colours plus transparent');
+  assert.equal(palette.size, 33, 'the 32-colour palette plus transparent');
   for (const [id, sprite] of Object.entries(sprites)) {
     assert.equal(sprite.rows.length, sprite.height, id);
     for (const row of sprite.rows) {

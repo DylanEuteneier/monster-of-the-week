@@ -765,13 +765,19 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 #### D9. Prototype art direction
 
-- **Decided:** whatever would be printed art in a physical production is pixel art; whatever would be physical is UI; a select few physical pieces imitate real 3D objects. One 16-colour palette for the game and UI. Fonts: Tiny5 for headings and labels, Rubik for everything else. Every location shows its presence visually: faction presence as cardboard tokens with pixel art on the face, player influence as cubes in seat colours.
+- **Decided:** whatever would be printed art in a physical production is pixel art; whatever would be physical is UI; a select few physical pieces imitate real 3D objects. One palette for the game and UI. Fonts: Tiny5 for headings and labels, Rubik for everything else. Every location shows its presence visually: faction presence as cardboard tokens with pixel art on the face, player influence as cubes in seat colours.
 - **Affects:** Appendix F.
 - **Date:** 2026-10-03
 
 #### D10. Table talk in the prototype
 
 - **Decided:** the prototype includes table talk: a chat channel at the table, with a short saved history that clears on a new deal. It has no effect on the game.
+- **Affects:** Appendix F.
+- **Date:** 2026-10-03
+
+#### D11. Prototype palette
+
+- **Decided:** the prototype's palette is a set of 32 colours supplied by the designer, listed in the art guide (`assets/README.md`).
 - **Affects:** Appendix F.
 - **Date:** 2026-10-03
 
@@ -2152,7 +2158,7 @@ How the prototype looks. The working detail, the asset list, and the art tools a
 #### Decided
 
 - **Style:** a small island town in a pixel-art RPG / animated-series style (1.5, 2.2).
-- **Palette:** one 16-colour palette for the game and the UI. Pixel art uses only the palette; the UI and the pieces take their colours from it and may shade them, but add no new hue.
+- **Palette:** one palette of 32 colours for the game and the UI, listed in the art guide. Pixel art uses only the palette; the UI and the pieces take their colours from it and may shade them, but add no new hue.
 - **Fonts:** Tiny5, a pixel face, for headings and labels; Rubik for everything else.
 - **Presence on locations:** every location shows its presence visually, at a glance.
 - **Faction presence:** cardboard tokens cut to the outline of the faction's art, with the pixel art printed on the face and a visible card edge. In the rules, invaders are cubes at locations (3.4); the token is how the prototype draws them, and does not change the rule.
@@ -2161,7 +2167,7 @@ How the prototype looks. The working detail, the asset list, and the art tools a
 
 #### Open
 
-- *Open:* the 16 colours, including five seat colours, the UI colours, and whether the UI is dark or light.
+- *Open:* which palette colours are the five seat colours and the UI colours, and whether the UI is dark or light.
 - *Open:* the asset list: which assets the prototype needs, at what sizes.
 - *Open:* whether a location shows one token or cube per unit, or one with a number.
 - *Open:* whether presence tokens are drawn per faction (15) or per archetype (5).
