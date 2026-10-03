@@ -175,237 +175,39 @@
  },
  "tokens": {
   "nocturnals": {
-   "width": 22,
-   "height": 19,
-   "src": "/assets/tokens/nocturnals.png",
-   "rows": [
-    "........kkkkkk........",
-    ".......kwwwwwwk.......",
-    "......kwwwwwwwwk......",
-    "..kkkkkwwkwwkwwkkkkk..",
-    "kkwwwwwwwkkkkwwwwwwwkk",
-    "wwwwwwwwkmmmmkwwwwwwww",
-    "wwwkkwwkmymmymkwwkkwww",
-    "wwwkmkwkmmmmmmkwkmkwww",
-    "wwwkmmkkmwmmwmkkmmkwww",
-    "wwwkmmmmmmmmmmmmmmkwww",
-    "wwwkmdmmmmmmmmmmdmkwww",
-    "wwwwkmdmmmmmmmmdmkwwww",
-    "kkwwkmmkkmmmmkkmmkwwkk",
-    "ddwwwkkwwkmmkwwkkwwwdd",
-    "kkkwwwwwwwwwwwwwwwwkkk",
-    ".kdkwwwwwwwwwwwwwwkdk.",
-    "..kdkkkkkkkkkkkkkkdk..",
-    "...kddddddddddddddk...",
-    "....kkkkkkkkkkkkkk...."
-   ]
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/nocturnals.svg",
+   "art": "/assets/sprites/nocturnals.png"
   },
   "scifi": {
-   "width": 22,
-   "height": 21,
-   "src": "/assets/tokens/scifi.png",
-   "rows": [
-    "........kkkkkk........",
-    ".......kwwwwwwk.......",
-    "......kwwwwwwwwk......",
-    ".....kwwwkkkkwwwk.....",
-    "....kwwwkccwckwwwk....",
-    "...kwwwkcGGGcckwwwk...",
-    "..kwwwwkcGkGcckwwwwk..",
-    "kkwwwkkkkkkkkkkkkwwwkk",
-    "wwwwkggggggggggggkwwww",
-    "wwwkgwgygwgygwgygwkwww",
-    "wwwwkddddddddddddkwwww",
-    "kkwwwkkkkkkkkkkkkwwwkk",
-    "ddkwwwwwwywwywwwwwwkdd",
-    "kkdkwwwwywyywywwwwkdkk",
-    "..kdwwwywywwywywwwdk..",
-    "...kwwywwywwywwywwk...",
-    "...kwwwwwwwwwwwwwwk...",
-    "...kkwwwwwwwwwwwwkk...",
-    "...kdkkkkkkkkkkkkdk...",
-    "....kddddddddddddk....",
-    ".....kkkkkkkkkkkk....."
-   ]
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/scifi.svg",
+   "art": "/assets/sprites/scifi.png"
   },
   "sentients": {
-   "width": 18,
-   "height": 22,
-   "src": "/assets/tokens/sentients.png",
-   "rows": [
-    "......kkkkkk......",
-    ".....kwwwwwwk.....",
-    "....kwwwwwwwwk....",
-    "...kkwwkyykwwkk...",
-    "..kwwwwwkkwwwwwk..",
-    ".kwwwwwwkkwwwwwwk.",
-    ".kwwkkkkkkkkkkwwk.",
-    "kwwwkggggggggkwwwk",
-    "kwwkkgccggccgkkwwk",
-    "kwwkkgccggccgkkwwk",
-    "kwwwkggggggggkwwwk",
-    "kkwwkgkkkkkkgkwwkk",
-    "kdwwkgkykykkgkwwdk",
-    ".kwwkggggggggkwwk.",
-    ".kwwkkkkkkkkkkwwk.",
-    ".kwwwwwkddkwwwwwk.",
-    ".kkwwkkkkkkkkwwkk.",
-    ".kdwwwwwwwwwwwwdk.",
-    "..kkwwwwwwwwwwkk..",
-    "..kdkkkkkkkkkkdk..",
-    "...kddddddddddk...",
-    "....kkkkkkkkkk...."
-   ]
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/sentients.svg",
+   "art": "/assets/sprites/sentients.png"
   },
   "undead": {
-   "width": 16,
-   "height": 18,
-   "src": "/assets/tokens/undead.png",
-   "rows": [
-    "....kkkkkkkk....",
-    "...kwwwwwwwwk...",
-    "..kwwwwwwwwwwk..",
-    ".kwwwkkkkkkwwwk.",
-    "kwwwkwwwwwwkwwwk",
-    "kwwkwwwwwwwgkwwk",
-    "kwwkwwwwwwwgkwwk",
-    "kwwkwkkwwkkgkwwk",
-    "kwwkwkGwwkGgkwwk",
-    "kwwkwwwkkwwgkwwk",
-    "kwwwkwwwwwgkwwwk",
-    "kkwwkwkwwkgkwwkk",
-    "kdwwwkkkkkkwwwdk",
-    ".kkwwwwwwwwwwkk.",
-    ".kdkwwwwwwwwkdk.",
-    "..kdkkkkkkkkdk..",
-    "...kddddddddk...",
-    "....kkkkkkkk...."
-   ]
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/undead.svg",
+   "art": "/assets/sprites/undead.png"
   },
   "demons": {
-   "width": 18,
-   "height": 21,
-   "src": "/assets/tokens/demons.png",
-   "rows": [
-    "..kkk........kkk..",
-    ".kwwwk......kwwwk.",
-    "kwwwwwk....kwwwwwk",
-    "kwwkwwwkkkkwwwkwwk",
-    "kwwkkwwwwwwwwkkwwk",
-    "kwwkwkwwwwwwkwkwwk",
-    "kwwwkwkkkkkkwkwwwk",
-    "kwwwkrrrrrrrrkwwwk",
-    "kwwkrrrrrrrrrrkwwk",
-    "kwwkrrkyrrykrrkwwk",
-    "kwwkrrrrrrrrrRkwwk",
-    "kwwkrrkkkkkkrRkwwk",
-    "kwwkrrkwkkwkrRkwwk",
-    "kwwwkrrrrrrRRkwwwk",
-    "kkwwwkRRRRRRkwwwkk",
-    "kdkwwwkkkkkkwwwkdk",
-    ".kdkwwwwwwwwwwkdk.",
-    "..kdkwwwwwwwwkdk..",
-    "...kdkkkkkkkkdk...",
-    "....kddddddddk....",
-    ".....kkkkkkkk....."
-   ]
-  }
- },
- "cubes": {
-  "seat-1": {
-   "width": 12,
-   "height": 12,
-   "src": "/assets/cubes/seat-1.png",
-   "rows": [
-    "....kkkkkkk.",
-    "...krwrwrwrk",
-    "..krwrwrwrdk",
-    ".krwrwrwrddk",
-    "krrrrrrrdddk",
-    "krrrrrrrdddk",
-    "krrrrrrrdddk",
-    "krrrrrrrdddk",
-    "krrrrrrrdddk",
-    "krrrrrrrddk.",
-    "krrrrrrrdk..",
-    ".kkkkkkkk..."
-   ]
-  },
-  "seat-2": {
-   "width": 12,
-   "height": 12,
-   "src": "/assets/cubes/seat-2.png",
-   "rows": [
-    "....kkkkkkk.",
-    "...kcwcwcwck",
-    "..kcwcwcwcdk",
-    ".kcwcwcwcddk",
-    "kcccccccdddk",
-    "kcccccccdddk",
-    "kcccccccdddk",
-    "kcccccccdddk",
-    "kcccccccdddk",
-    "kcccccccddk.",
-    "kcccccccdk..",
-    ".kkkkkkkk..."
-   ]
-  },
-  "seat-3": {
-   "width": 12,
-   "height": 12,
-   "src": "/assets/cubes/seat-3.png",
-   "rows": [
-    "....kkkkkkk.",
-    "...kGwGwGwGk",
-    "..kGwGwGwGdk",
-    ".kGwGwGwGddk",
-    "kGGGGGGGdddk",
-    "kGGGGGGGdddk",
-    "kGGGGGGGdddk",
-    "kGGGGGGGdddk",
-    "kGGGGGGGdddk",
-    "kGGGGGGGddk.",
-    "kGGGGGGGdk..",
-    ".kkkkkkkk..."
-   ]
-  },
-  "seat-4": {
-   "width": 12,
-   "height": 12,
-   "src": "/assets/cubes/seat-4.png",
-   "rows": [
-    "....kkkkkkk.",
-    "...kowowowok",
-    "..kowowowodk",
-    ".kowowowoddk",
-    "kooooooodddk",
-    "kooooooodddk",
-    "kooooooodddk",
-    "kooooooodddk",
-    "kooooooodddk",
-    "koooooooddk.",
-    "kooooooodk..",
-    ".kkkkkkkk..."
-   ]
-  },
-  "seat-5": {
-   "width": 12,
-   "height": 12,
-   "src": "/assets/cubes/seat-5.png",
-   "rows": [
-    "....kkkkkkk.",
-    "...kpwpwpwpk",
-    "..kpwpwpwpdk",
-    ".kpwpwpwpddk",
-    "kpppppppdddk",
-    "kpppppppdddk",
-    "kpppppppdddk",
-    "kpppppppdddk",
-    "kpppppppdddk",
-    "kpppppppddk.",
-    "kpppppppdk..",
-    ".kkkkkkkk..."
-   ]
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/demons.svg",
+   "art": "/assets/sprites/demons.png"
   }
  }
 }

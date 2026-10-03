@@ -12,6 +12,18 @@ The art direction comes from the design document (`docs/motw-design.md`, 1.5
 and 2.2): a small island town in a pixel-art RPG / animated-series style, in
 the vein of EarthBound and Steven Universe.
 
+## Art direction
+
+The rule (designer, 2026-10-03): **whatever would be printed art in a
+physical production is pixel art; whatever would be physical is UI.**
+
+- **Pixel art:** illustrations, icons, location tiles, the art printed on a
+  token or card.
+- **Plain UI layout:** boards, panels, cards, tracks: the physical parts of a
+  production, drawn as clean, readable layout rather than imitated.
+- **A select few physical pieces imitate real 3D objects:** presence tokens
+  and influence cubes (and later, any other piece that sits on the board).
+
 ## Layout
 
 ```
@@ -23,10 +35,10 @@ assets/                          source and review (not served)
     island-sprite-test.html      source of the sprite test page (artifact below)
     island-type-specimen.html    source of the font specimen page (artifact below)
 public/assets/                   built output, served by Cloudflare as static files
-  sprites.json                   palette + every sprite, token, and cube: size, src, pixel rows (generated)
+  sprites.json                   palette, sprites, tokens, and pixel pieces (generated)
   sprites/<id>.png               each sprite at 1x (generated)
-  tokens/<id>.png                cardboard presence tokens, from the sprites (generated)
-  cubes/seat-<n>.png             influence cubes, one per seat colour (generated)
+  tokens/<id>.svg                die-cut outline for each CSS token (generated)
+public/pieces.js                 tokens and cubes as HTML, for the table and /assets
 public/assets.html, assets.js    the /assets page
 ```
 
@@ -216,16 +228,17 @@ its presence visually, at a glance.
 - **Shape separates the two:** sprites are factions, plain cubes are
   players. Seat colours can share hues with faction sprites without
   confusion.
-- **Presence sprites look like cardboard tokens** (decided 2026-10-03): the
-  pixel art printed on a cream die-cut face whose edge roughly follows the
-  art, with the card's thickness showing as a dark edge below.
-  `token()` in `sprites.py` generates one from any sprite; the test batch has
-  one per archetype icon (`public/assets/tokens/`).
-- **Influence cubes look a little 3D** (decided 2026-10-03): solid front in
-  the seat colour, a lit top (seat colour dithered with cream), and the side
-  in shadow grey, so every seat colour needs only one palette entry.
-  `cube()` generates them; the seat colours are a draft
-  (`SEAT_COLOURS`, `public/assets/cubes/`).
+- **Tokens and cubes are CSS pieces** (decided 2026-10-03):
+  - **Token:** a clean, realistic CSS card cut to a smooth outline of the
+    art (outline generated as SVG by `token_svg()`), with a cardboard edge
+    and soft shadow. Only the art on its face is pixel art.
+  - **Cube:** seen from above, never rotated: a square top face with the
+    near side as a band below and the right side as a narrower band, all
+    shaded from the one seat colour, so seat colours aren't limited by the
+    pixel palette's shades.
+  - Code: `public/pieces.js` and "Pieces on the board" in `public/app.css`.
+    An all-pixel version was tried and retired; it is in git history
+    (commit 2f41a8d) if needed.
 
 Open questions for the layout:
 

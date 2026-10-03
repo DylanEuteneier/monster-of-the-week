@@ -197,96 +197,35 @@ SPRITES["lighthouse"] = lighthouse()
 
 
 # ---------------------------------------------------------------------------
-# Derived pieces: cardboard tokens (faction presence) and cubes (influence)
+# Presence tokens: a smooth die-cut outline per sprite, as SVG
 # ---------------------------------------------------------------------------
+# The token itself is drawn by CSS (.token in public/app.css): a cream card
+# cut to this outline, with thickness and a soft shadow. The pixel art sits
+# on its face. Only the outline is generated here.
 
-TOKEN_FACE = "w"      # the token's printed border, cream card
-TOKEN_EDGE = "d"      # the cardboard's cut edge, seen below the face
-TOKEN_THICKNESS = 2   # pixels of edge showing below the face
-SEAT_COLOURS = ["r", "c", "G", "o", "p"]   # draft; final picks wait on the palette
-
-
-def _dilate(mask, w, h, diagonal=True):
-    out = set(mask)
-    for x, y in mask:
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                if (dx or dy) and (diagonal or not (dx and dy)) and 0 <= x + dx < w and 0 <= y + dy < h:
-                    out.add((x + dx, y + dy))
-    return out
+TOKEN_PAD = 4          # sprite pixels of card around the art; room for wide art
+TOKEN_SPREAD = 1.9     # radius of the blob drawn around each art pixel
+TOKEN_SMOOTH = 1.1     # blur before thresholding; higher = rounder, rougher cut
 
 
-def _erode(mask, w, h):
-    return {(x, y) for x, y in mask if all((x + dx, y + dy) in mask for dx in (-1, 0, 1) for dy in (-1, 0, 1) if 0 <= x + dx < w and 0 <= y + dy < h)}
+def token_svg(rows):
+    w, h = len(rows[0]) + 2 * TOKEN_PAD, len(rows) + 2 * TOKEN_PAD
+    dots = "".join(
+        f'<circle cx="{x + TOKEN_PAD + 0.5}" cy="{y + TOKEN_PAD + 0.5}" r="{TOKEN_SPREAD}"/>'
+        for y, row in enumerate(rows) for x, ch in enumerate(row) if PALETTE[ch]
+    )
+    # Blur the blobs together, then snap the alpha back to a hard edge: a
+    # smooth outline that follows the art without tracing every pixel.
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">'
+        f'<filter id="cut" x="-10%" y="-10%" width="120%" height="120%">'
+        f'<feGaussianBlur stdDeviation="{TOKEN_SMOOTH}"/>'
+        f'<feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 24 -11"/>'
+        f'</filter><g filter="url(#cut)" fill="#fff">{dots}</g></svg>\n'
+    )
 
 
-def token(rows):
-    """A die-cut cardboard token: the art on a cream face whose edge roughly
-    follows the art's outline, with the card's thickness showing below."""
-    pad = 3
-    w, h = len(rows[0]) + 2 * pad, len(rows) + 2 * pad + TOKEN_THICKNESS
-    art = {(x + pad, y + pad): ch for y, row in enumerate(rows) for x, ch in enumerate(row) if PALETTE[ch]}
-    # Die-cut: grow the art by two, then close small notches so the cut is a
-    # rough, smooth outline rather than a tracing of every pixel.
-    cut = _dilate(_dilate(set(art), w, h), w, h, diagonal=False)
-    cut = _erode(_dilate(cut, w, h), w, h)
-    face = {(x, y) for x, y in cut if (x, y + 1) in cut or True}
-    grid = [["."] * w for _ in range(h)]
-    # Edge: the face shifted down, visible where the face isn't.
-    edge = {(x, y + t) for x, y in face for t in range(1, TOKEN_THICKNESS + 1) if y + t < h} - face
-    for x, y in edge:
-        grid[y][x] = TOKEN_EDGE
-    for x, y in face:
-        grid[y][x] = TOKEN_FACE
-    for (x, y), ch in art.items():
-        grid[y][x] = ch
-    # Ink outline around the whole piece, and a line where face meets edge.
-    solid = face | edge
-    for x, y in _dilate(solid, w, h, diagonal=False) - solid:
-        grid[y][x] = "k"
-    for x, y in edge:
-        if (x, y - 1) in face:
-            grid[y][x] = "k"
-    return trim(["".join(r) for r in grid])
-
-
-def trim(rows):
-    """Drop fully transparent rows and columns around a sprite."""
-    rows = [r for r in rows]
-    while rows and set(rows[0]) == {"."}:
-        rows.pop(0)
-    while rows and set(rows[-1]) == {"."}:
-        rows.pop()
-    left = min(len(r) - len(r.lstrip(".")) for r in rows)
-    right = min(len(r) - len(r.rstrip(".")) for r in rows)
-    return [r[left:len(r) - right] for r in rows]
-
-
-def cube(colour, size=7, depth=3):
-    """A small oblique 3D cube: solid front in the seat colour, a lit top
-    (seat colour dithered with cream), and the side in shadow grey."""
-    w, h = size + depth + 2, size + depth + 2
-    grid = [["."] * w for _ in range(h)]
-    filled = {}
-    for r in range(depth):                      # top face, leaning right
-        for x in range(depth - r, depth - r + size):
-            filled[(x + 1, r + 1)] = "w" if (x + r) % 2 == 0 else colour
-    for y in range(depth, depth + size):         # front face
-        for x in range(size):
-            filled[(x + 1, y + 1)] = colour
-    for c in range(depth):                      # right side face
-        for y in range(depth - c, depth - c + size):
-            if (size + c + 1, y + 1) not in filled:
-                filled[(size + c + 1, y + 1)] = "d"
-    for (x, y), ch in filled.items():
-        grid[y][x] = ch
-    for x, y in _dilate(set(filled), w, h, diagonal=False) - set(filled):
-        grid[y][x] = "k"
-    return ["".join(r) for r in grid]
-
-
-TOKENS = {name: token(SPRITES[name]) for name in ("nocturnals", "scifi", "sentients", "undead", "demons")}
-CUBES = {f"seat-{i + 1}": cube(colour) for i, colour in enumerate(SEAT_COLOURS)}
+TOKEN_SOURCES = ("nocturnals", "scifi", "sentients", "undead", "demons")
 
 
 def hex_rgb(h):
@@ -305,7 +244,7 @@ def write_png(path, pixels, width, height):
 
 
 def check():
-    for name, rows in {**SPRITES, **TOKENS, **CUBES}.items():
+    for name, rows in SPRITES.items():
         widths = {len(r) for r in rows}
         assert len(widths) == 1, (name, widths)
         for r in rows:
@@ -314,7 +253,7 @@ def check():
 
 
 def sheet(path, scale=8, gap=2):
-    every = {**SPRITES, **{f"token:{k}": v for k, v in TOKENS.items()}, **CUBES}
+    every = SPRITES
     names = list(every)
     bg = (60, 58, 80, 255)
     cell = 32
@@ -347,13 +286,19 @@ def build():
             stale.unlink()
     for name, rows in SPRITES.items():
         sprite_png(public / "sprites" / f"{name}.png", rows)
-    for folder, group in (("tokens", TOKENS), ("cubes", CUBES)):
-        (public / folder).mkdir(parents=True, exist_ok=True)
-        for stale in (public / folder).glob("*.png"):
-            if stale.stem not in group:
+    tokens = public / "tokens"
+    tokens.mkdir(parents=True, exist_ok=True)
+    for stale in tokens.iterdir():
+        if stale.stem not in TOKEN_SOURCES or stale.suffix != ".svg":
+            stale.unlink()
+    for name in TOKEN_SOURCES:
+        (tokens / f"{name}.svg").write_text(token_svg(SPRITES[name]))
+    for folder in ("pixel-tokens", "pixel-cubes"):  # option B, retired 2026-10-03
+        old = public / folder
+        if old.exists():
+            for stale in old.iterdir():
                 stale.unlink()
-        for name, rows in group.items():
-            sprite_png(public / folder / f"{name}.png", rows)
+            old.rmdir()
 
     def entries(group, folder):
         return {name: {"width": len(rows[0]), "height": len(rows), "src": f"/assets/{folder}/{name}.png", "rows": rows} for name, rows in group.items()}
@@ -361,12 +306,14 @@ def build():
     manifest = {
         "palette": PALETTE,
         "sprites": entries(SPRITES, "sprites"),
-        "tokens": entries(TOKENS, "tokens"),
-        "cubes": entries(CUBES, "cubes"),
+        "tokens": {
+            name: {"pad": TOKEN_PAD, "width": len(SPRITES[name][0]) + 2 * TOKEN_PAD, "height": len(SPRITES[name]) + 2 * TOKEN_PAD, "src": f"/assets/tokens/{name}.svg", "art": f"/assets/sprites/{name}.png"}
+            for name in TOKEN_SOURCES
+        },
     }
     (public / "sprites.json").write_text(json.dumps(manifest, indent=1) + "\n")
     sheet(ROOT / "assets" / "sheet.png")
-    print(f"ok: {len(SPRITES)} sprites, {len(TOKENS)} tokens, {len(CUBES)} cubes -> public/assets/")
+    print(f"ok: {len(SPRITES)} sprites, {len(TOKEN_SOURCES)} token outlines -> public/assets/")
 
 
 if __name__ == "__main__":

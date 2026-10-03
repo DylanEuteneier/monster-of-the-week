@@ -249,3 +249,72 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); gap: var(--space-2); }
 .swatch-row { display: flex; align-items: center; gap: var(--space-2); }
 .swatch-row i { width: 24px; height: 24px; border: var(--border); border-radius: 3px; flex: none; }
+
+/* ---------------------------------------------------------------------------
+   Pieces on the board: presence tokens and influence cubes
+   Clean, physical CSS objects; only the art printed on a token is pixel art.
+--------------------------------------------------------------------------- */
+.token {
+  --token-face: #fbf6ea;
+  --token-face-shade: #ece2cc;
+  --token-edge: #d2c3a3;
+  --token-edge-dark: #a8956f;
+  --t: 1.5px; /* one layer of cardboard edge; scaled per token */
+  position: relative;
+  display: inline-block;
+  flex: none;
+  filter:
+    drop-shadow(0 var(--t) 0 var(--token-edge))
+    drop-shadow(0 var(--t) 0 var(--token-edge))
+    drop-shadow(0 var(--t) 0 var(--token-edge-dark))
+    drop-shadow(0 calc(var(--t) * 2.5) calc(var(--t) * 2.5) rgb(20 16 38 / 0.35));
+}
+.token-face {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(165deg, var(--token-face) 35%, var(--token-face-shade));
+  -webkit-mask: var(--cut) center / 100% 100% no-repeat;
+  mask: var(--cut) center / 100% 100% no-repeat;
+}
+.token-art { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; }
+
+.cube {
+  --c: #c8364c;
+  --size: 14px;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  /* Seen from above, never rotated: a square top face, with the near side as
+     a band below it and the right side as a narrower band beside it, the way
+     the tokens show their cardboard edge. The box is the top face plus those
+     bands (18% of the size to the right, 32% below). */
+  width: calc(var(--size) * 1.18);
+  height: calc(var(--size) * 1.32);
+  filter: drop-shadow(0 calc(var(--size) * 0.08) calc(var(--size) * 0.12) rgb(20 16 38 / 0.35));
+}
+.cube-face { position: absolute; inset: 0; }
+.cube-top {
+  right: 15.25%;
+  bottom: 24.24%;
+  border-radius: 1.5px;
+  background: linear-gradient(160deg, color-mix(in oklab, var(--c), white 24%), color-mix(in oklab, var(--c), white 4%));
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.2);
+}
+.cube-front {
+  clip-path: polygon(0 75.76%, 84.75% 75.76%, 100% 100%, 15.25% 100%);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--c), black 16%), color-mix(in oklab, var(--c), black 30%));
+}
+.cube-side {
+  clip-path: polygon(84.75% 0, 100% 24.24%, 100% 100%, 84.75% 75.76%);
+  background: linear-gradient(90deg, color-mix(in oklab, var(--c), black 32%), color-mix(in oklab, var(--c), black 44%));
+}
+
+/* A location with its pieces (layout under review on /assets) */
+.place { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: start; padding: var(--space-3); border: var(--border); border-radius: var(--radius); background: var(--color-cell); }
+.place-pieces { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.stack-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.token-stack { display: flex; align-items: flex-end; }
+/* Each piece carries its width as --w; later pieces overlap the one before. */
+.token-stack > * + * { margin-left: calc(var(--w) * -0.55); }
+.cube-row { display: flex; align-items: flex-end; gap: 2px; }
+.count { font-family: var(--font-display); font-size: 16px; }
