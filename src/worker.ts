@@ -6,6 +6,8 @@
  *   GET  /ws/<token>         websocket upgrade, handled by the Durable Object
  *   GET  /host               the host page (host.html): deal games, copy links
  *   GET  /hotseat            the table UI, playing every human seat from one tab
+ *   GET  /assets             the assets page (assets.html): every sprite and the palette
+ *   GET  /assets/…           sprite files and sprites.json, served straight from public/assets/
  *   POST /admin/new-game     { players?, seed?, force?, options?: Record<string,string>, bots?: string[] }  → magic links
  *   GET  /admin/links        re-list the magic links for the current game
  *   GET  /admin/status       phase, round, options, and seats of the current game
@@ -411,6 +413,9 @@ export default {
     }
     if (url.pathname === '/host') {
       return env.ASSETS.fetch(new Request(new URL('/host.html', url), request));
+    }
+    if (url.pathname === '/assets' || url.pathname === '/assets/') {
+      return env.ASSETS.fetch(new Request(new URL('/assets.html', url), request));
     }
     return env.ASSETS.fetch(request);
   },

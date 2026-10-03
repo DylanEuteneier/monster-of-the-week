@@ -1,0 +1,145 @@
+<title>Island Sprite Test</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono&display=swap">
+<style>
+/* Layout: one column of specimen panels on a night ground; the art sits at true pixel scale. Single dark look on purpose. */
+:root {
+  color-scheme: dark;
+  --ground: #1d1b33;
+  --panel: #26244a;
+  --rule: #3c3a66;
+  --ink: #f4efe2;
+  --muted: #a9a8c8;
+  --lamp: #f7e07a;
+  --display: "Silkscreen", "Courier New", monospace;
+  --text: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+body { background: var(--ground); color: var(--ink); font-family: var(--text); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 60rem; margin: 0 auto; padding-inline: 16px; padding-block: 2rem 4rem; display: flex; flex-direction: column; gap: 2rem; }
+h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; letter-spacing: 0.04em; text-wrap: balance; }
+h1 { font-size: clamp(1.6rem, 5vw, 2.4rem); color: var(--lamp); }
+h2 { font-size: 1.05rem; }
+p { margin: 0; max-width: 65ch; color: var(--muted); }
+section { background: var(--panel); border: 2px solid var(--rule); padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+.specimens { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1rem; }
+.specimen { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.9rem; background: var(--ground); border: 2px solid var(--rule); min-width: 0; }
+.scales { display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+.scale { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.label { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 13px; }
+.label b { font-weight: 600; }
+.label span { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr)); gap: 0.5rem; }
+.swatch { display: flex; align-items: center; gap: 0.5rem; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.swatch i { width: 1.5rem; height: 1.5rem; border: 2px solid var(--rule); flex: none; }
+.mock { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.6rem; }
+.faction { display: flex; align-items: center; gap: 0.7rem; padding: 0.6rem; background: var(--ground); border: 2px solid var(--rule); }
+.faction small { display: block; color: var(--muted); font-size: 12px; }
+.tile-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:.6rem">
+    <h1>Island sprite test</h1>
+    <p>A first pass at pixel art for Monster of the Week, drawn pixel by pixel as data in one 16-colour palette: a 16×16 icon per archetype and one 32×32 location tile. Each is shown at 1×, 3× and 6×.</p>
+  </header>
+
+  <section>
+    <h2>Archetype icons · 16×16</h2>
+    <div class="specimens" id="icons"></div>
+  </section>
+
+  <section>
+    <h2>Location tile · 32×32</h2>
+    <div class="tile-row" id="tile"></div>
+    <p>The Lighthouse, one of the three locations aligned with the Demons.</p>
+  </section>
+
+  <section>
+    <h2>In the table</h2>
+    <p>How the icons would sit in the factions-in-play panel, at 2×.</p>
+    <div class="mock" id="mock"></div>
+  </section>
+
+  <section>
+    <h2>Palette · 16 colours</h2>
+    <div class="palette" id="palette"></div>
+  </section>
+</div>
+
+<script>
+const DATA = {"palette": {".": null, "k": "#1a1626", "n": "#26244a", "N": "#353268", "b": "#2f5d8f", "c": "#6fc3df", "w": "#f4efe2", "g": "#9a9cb8", "d": "#55536f", "r": "#c8364c", "R": "#7e1f3a", "p": "#f07ca0", "y": "#f7e07a", "o": "#f2a541", "G": "#7bd389", "m": "#7a4ea3"}, "sprites": {"nocturnals": ["................", "................", "................", "......k..k......", "......kkkk......", ".....kmmmmk.....", "kk..kmymmymk..kk", "kmk.kmmmmmmk.kmk", "kmmkkmwmmwmkkmmk", "kmmmmmmmmmmmmmmk", "kmdmmmmmmmmmmdmk", ".kmdmmmmmmmmdmk.", ".kmmkkmmmmkkmmk.", "..kk..kmmk..kk..", "................", "................"], "scifi": ["................", "................", "......kkkk......", ".....kccwck.....", "....kcGGGcck....", "....kcGkGcck....", "..kkkkkkkkkkkk..", ".kggggggggggggk.", "kgwgygwgygwgygwk", ".kddddddddddddk.", "..kkkkkkkkkkkk..", "......y..y......", ".....y.yy.y.....", "....y.y..y.y....", "...y..y..y..y...", "................"], "sentients": ["................", "......kyyk......", ".......kk.......", ".......kk.......", "...kkkkkkkkkk...", "...kggggggggk...", "..kkgccggccgkk..", "..kkgccggccgkk..", "...kggggggggk...", "...kgkkkkkkgk...", "...kgkykykkgk...", "...kggggggggk...", "...kkkkkkkkkk...", "......kddk......", "....kkkkkkkk....", "................"], "undead": ["................", "................", ".....kkkkkk.....", "....kwwwwwwk....", "...kwwwwwwwgk...", "...kwwwwwwwgk...", "...kwkkwwkkgk...", "...kwkGwwkGgk...", "...kwwwkkwwgk...", "....kwwwwwgk....", "....kwkwwkgk....", ".....kkkkkk.....", "................", "................", "................", "................"], "demons": ["................", "..k..........k..", "..kk........kk..", "..kwk......kwk..", "...kwkkkkkkwk...", "...krrrrrrrrk...", "..krrrrrrrrrrk..", "..krrkyrrykrrk..", "..krrrrrrrrrRk..", "..krrkkkkkkrRk..", "..krrkwkkwkrRk..", "...krrrrrrRRk...", "....kRRRRRRk....", ".....kkkkkk.....", "................", "................"], "lighthouse": ["nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn", "nnnnnnnnnnnnnnnynnnnnnnnnnnnnnnn", "ynnynnnnnnnnnnnnnnnnnknnnnnnnnnn", "nynynynnnnnnnnnnnnnRRRRRnnnwnnnn", "ynynynynynnnnnnnnnkkkkkkknnnnnnn", "nynynynynynynynnnkyyyyyyyknnnnnn", "ynynynynynynynynykyyywyyyknnnnnn", "nynynynynynynynnnkyyyyyyyknnnnnn", "ynynynynynnnnnnnkkkkkkkkkkknnnnn", "nynynynnnnnnnnnnnkrrrrrRknnnnnnn", "ynnnnnynnnnnnnnnnkrrrrrRknnnnnnn", "nnnnnnnnnnnnnnnnnkrrrrrRknnnnnnn", "NnNnNnNnNnNnNnNnNkwwwwwgknNnNyNn", "nNnNnNnNnNnNnNnNnkwwwwwgkNnNnNnN", "NnNnNnNnNnNnNnNnkwwwwwwwgkNnNnNn", "NNNNNNNNNNNNNNNNkrrrrrrrRkNNNNNN", "NNNNNNNNNNNNNNNNkrrrrrrrRkNNNNNN", "NNNNNNNNNNNNNNNNkrrrkkrrRkNNNNNN", "NNNNNNNNNNNNNNNNkwwwkkwwgkNNNNNN", "NNNNNNNNNNNNNNNkkwwwwwwwgkkNNNNN", "NNNNNNNNNNNNNNNkddddddddddkNNNNN", "bbbbbbbbbbbbbkddddddddddddddkbbb", "bcccccbbbbbbkddddddddddddddddkbb", "bbbbbbbbbbbbkdddddddddddddddddkb", "bbbbbbbbbcccckddddddddddddddddkb", "bbbbbbbbbbbbbbbkdddddddddddddkbb", "bbbbbbbbbbbbbbbbbbkddddddddkcccb", "bbbcccccbbbbbbbbbbbbbbbbbbbbbbbb", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "bbbbbbbbbbbbbbcccccbbbbbbbbbbbbb", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]}};
+const ARCHETYPES = [
+  { id: 'nocturnals', name: 'Nocturnals', symbol: '◐', faction: 'Vampires' },
+  { id: 'scifi', name: "80's Sci-Fi", symbol: 'ↂ', faction: 'Aliens' },
+  { id: 'sentients', name: 'Sentients', symbol: '⏏', faction: 'Machines' },
+  { id: 'undead', name: 'Undead', symbol: '☾', faction: 'Skeletons' },
+  { id: 'demons', name: 'Demons', symbol: '⎈', faction: 'Demons' },
+];
+
+function sprite(rows, scale) {
+  const canvas = document.createElement('canvas');
+  const size = rows.length;
+  canvas.width = size;
+  canvas.height = size;
+  canvas.style.width = canvas.style.height = size * scale + 'px';
+  const ctx = canvas.getContext('2d');
+  rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    const colour = DATA.palette[ch];
+    if (!colour) return;
+    ctx.fillStyle = colour;
+    ctx.fillRect(x, y, 1, 1);
+  }));
+  return canvas;
+}
+
+function scales(rows, list) {
+  const box = document.createElement('div');
+  box.className = 'scales';
+  for (const s of list) {
+    const cell = document.createElement('div');
+    cell.className = 'scale';
+    cell.append(sprite(rows, s), Object.assign(document.createElement('span'), { textContent: s + '×' }));
+    box.append(cell);
+  }
+  return box;
+}
+
+const icons = document.getElementById('icons');
+for (const a of ARCHETYPES) {
+  const card = document.createElement('div');
+  card.className = 'specimen';
+  const label = document.createElement('div');
+  label.className = 'label';
+  label.innerHTML = '<b></b><span></span>';
+  label.querySelector('b').textContent = a.symbol + ' ' + a.name;
+  label.querySelector('span').textContent = a.id;
+  card.append(label, scales(DATA.sprites[a.id], [1, 3, 6]));
+  icons.append(card);
+}
+
+document.getElementById('tile').append(scales(DATA.sprites.lighthouse, [1, 3, 6]));
+
+const mock = document.getElementById('mock');
+for (const a of ARCHETYPES) {
+  const row = document.createElement('div');
+  row.className = 'faction';
+  const text = document.createElement('div');
+  text.innerHTML = '<b></b><small></small>';
+  text.querySelector('b').textContent = a.faction;
+  text.querySelector('small').textContent = a.symbol + ' ' + a.name;
+  row.append(sprite(DATA.sprites[a.id], 2), text);
+  mock.append(row);
+}
+
+const palette = document.getElementById('palette');
+for (const [key, colour] of Object.entries(DATA.palette)) {
+  if (!colour) continue;
+  const sw = document.createElement('div');
+  sw.className = 'swatch';
+  sw.innerHTML = '<i></i><span></span>';
+  sw.querySelector('i').style.background = colour;
+  sw.querySelector('span').textContent = key + ' ' + colour;
+  palette.append(sw);
+}
+</script>

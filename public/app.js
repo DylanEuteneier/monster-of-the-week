@@ -10,12 +10,14 @@
  * ruleset is chosen (Appendix F.6).
  */
 import { spec, factionById, waitingOn } from './engine.js';
+import art from './assets/sprites.json' with { type: 'json' };
 
 /** @typedef {import('./engine.js').PlayerView} PlayerView */
 /** @typedef {import('./engine.js').Move} Move */
 /** @typedef {{ from: string, text: string, at: number }} ChatLine */
 
 const PALETTE = ['#c0392b', '#2874a6', '#1e8449', '#b9770e', '#7d3c98'];
+const SPRITES = /** @type {Record<string, { width: number, height: number, src: string }>} */ (art.sprites);
 const TOAST_MS = 4000;
 const RECONNECT_MS = 2000;
 const HOST_KEY_STORAGE = 'motw-host-key';
@@ -66,6 +68,17 @@ function $(id) {
   const element = document.getElementById(id);
   if (!element) throw new Error(`missing element #${id}`);
   return element;
+}
+
+/**
+ * A sprite from public/assets/ at a whole-number scale, or '' if it isn't drawn yet.
+ * @param {string} id
+ * @param {number} scale
+ */
+function spriteImg(id, scale) {
+  const sprite = SPRITES[id];
+  if (!sprite) return '';
+  return `<img class="sprite" src="${esc(sprite.src)}" width="${sprite.width * scale}" height="${sprite.height * scale}" alt="">`;
 }
 
 /** @param {string} playerId */
@@ -215,11 +228,12 @@ function renderBoard() {
   const factions = view.factions.map((id) => {
     const faction = factionById(id);
     const archetype = archetypes.get(faction.archetype);
-    return `<div class="faction"><span class="symbol">${esc(archetype?.symbol ?? '')}</span> <b>${esc(faction.name)}</b><div class="small muted">${esc(archetype?.name ?? '')}</div></div>`;
+    const icon = spriteImg(faction.id, 2) || spriteImg(faction.archetype, 2) || `<span class="symbol">${esc(archetype?.symbol ?? '')}</span>`;
+    return `<div class="faction">${icon}<div><b>${esc(faction.name)}</b><div class="small muted">${esc(archetype?.symbol ?? '')} ${esc(archetype?.name ?? '')}</div></div></div>`;
   });
   const locations = spec.locations.map((location) => {
     const archetype = archetypes.get(location.archetype);
-    return `<div class="location"><span class="symbol">${esc(archetype?.symbol ?? '')}</span> ${esc(location.name)}</div>`;
+    return `<div class="location">${spriteImg(location.id, 2)}<span><span class="symbol">${esc(archetype?.symbol ?? '')}</span> ${esc(location.name)}</span></div>`;
   });
   $('board').innerHTML = `
     <h2>Factions in play</h2>

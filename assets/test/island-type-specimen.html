@@ -1,0 +1,157 @@
+<title>Island Type Specimen</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&family=Silkscreen:wght@400;700&family=Jersey+10&family=Press+Start+2P&family=Tiny5&family=Rubik:wght@400;500;600&family=Atkinson+Hyperlegible+Next:wght@400;600&family=Chakra+Petch:wght@400;600&family=Lexend:wght@400;600&display=swap">
+<style>
+/* Layout: one column of specimen panels on a night ground, then a live mock panel with heading/body pickers. Single dark look on purpose (matches the sprite test). */
+:root {
+  color-scheme: dark;
+  --ground: #1d1b33;
+  --panel: #26244a;
+  --cell: #1d1b33;
+  --rule: #3c3a66;
+  --ink: #f4efe2;
+  --muted: #a9a8c8;
+  --lamp: #f7e07a;
+  --rose: #f07ca0;
+  --label: "Silkscreen", "Courier New", monospace;
+  --text: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --mock-head: "Pixelify Sans", monospace;
+  --mock-body: "Rubik", system-ui, sans-serif;
+}
+body { background: var(--ground); color: var(--ink); font-family: var(--text); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 64rem; margin: 0 auto; padding-inline: 16px; padding-block: 2rem 4rem; display: flex; flex-direction: column; gap: 2rem; }
+h1 { font-family: "Pixelify Sans", monospace; font-weight: 700; font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.1; margin: 0; color: var(--lamp); text-wrap: balance; }
+h2 { font-family: var(--label); font-weight: 400; font-size: 16px; letter-spacing: 0.04em; margin: 0; }
+p { margin: 0; max-width: 65ch; color: var(--muted); }
+section { background: var(--panel); border: 2px solid var(--rule); padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.rec { display: inline-block; font-family: var(--label); font-size: 8px; line-height: 1; padding: 4px 6px; background: var(--lamp); color: var(--ground); vertical-align: middle; letter-spacing: 0.04em; }
+.specimen { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: 1rem; padding: 1rem; background: var(--cell); border: 2px solid var(--rule); }
+.specimen .meta { display: flex; flex-direction: column; gap: 0.35rem; font-size: 13px; color: var(--muted); }
+.specimen .meta b { color: var(--ink); font-size: 15px; }
+.specimen .sample { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; overflow-wrap: anywhere; }
+.list { display: flex; flex-direction: column; gap: 0.75rem; }
+@media (max-width: 40rem) { .specimen { grid-template-columns: 1fr; } }
+.sprite { image-rendering: pixelated; image-rendering: crisp-edges; flex: none; display: block; }
+.pickers { display: flex; flex-wrap: wrap; gap: 1rem; }
+.pickers label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 13px; color: var(--muted); }
+select { font: inherit; color: var(--ink); background: var(--cell); border: 2px solid var(--rule); padding: 0.35rem 0.5rem; }
+select:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
+.mock { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 1rem; font-family: var(--mock-body); }
+.mock-panel { background: var(--cell); border: 2px solid var(--rule); padding: 0.9rem; display: flex; flex-direction: column; gap: 0.7rem; min-width: 0; }
+.mock h3 { font-family: var(--mock-head); font-weight: 700; font-size: 20px; line-height: 1.1; margin: 0; color: var(--lamp); }
+.mock .bar { font-family: var(--mock-head); font-size: 16px; }
+.faction { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem; border: 2px solid var(--rule); }
+.faction b { font-weight: 600; font-size: 14px; display: block; }
+.faction small { font-size: 12px; color: var(--muted); }
+.tile { display: flex; gap: 0.75rem; align-items: center; }
+.btn { font-family: var(--mock-head); font-size: 16px; background: var(--lamp); color: var(--ground); border: 0; padding: 0.45rem 0.9rem; box-shadow: 0 3px 0 #b39a3a; cursor: pointer; align-self: flex-start; }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.mock p { font-size: 14px; color: var(--muted); }
+.mock .tiny { font-size: 12px; }
+.notice { font-size: 13px; padding: 0.5rem 0.6rem; background: #353268; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:.6rem">
+    <h1>Island type specimen</h1>
+    <p>Two fonts for the Monster of the Week table: a pixel face for headings, and a readable face for everything else that sits comfortably beside pixel art. All are free Google Fonts. Pick a pair at the bottom to see them together.</p>
+  </header>
+
+  <section>
+    <h2>Headings · pixel faces</h2>
+    <p>Pixel fonts look crisp only at the sizes their grid was drawn for, so each note gives the safe sizes.</p>
+    <div class="list" id="heads"></div>
+  </section>
+
+  <section>
+    <h2>Body · readable faces</h2>
+    <p>Shown at 16, 14 and 12px, the sizes the table uses for body text, seat status, and small print.</p>
+    <div class="list" id="bodies"></div>
+  </section>
+
+  <section>
+    <h2>Try a pair</h2>
+    <div class="pickers">
+      <label for="pick-head">Heading font<select id="pick-head"></select></label>
+      <label for="pick-body">Body font<select id="pick-body"></select></label>
+    </div>
+    <div class="mock" id="mock">
+      <div class="mock-panel">
+        <h3>Factions in play</h3>
+        <div class="faction"><img class="sprite" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAbklEQVR42mNgGL5ASkztPzY2SQYgY5I1V/ktRsE4DUG3Aab5+4MquGYYG10dmA/TAJPEZju6K1D0IGuAmQpif3n/CC4OYyPLYzWAVIxiQGhwPtEaYWrhYUKKIRia0QMO3Z+4xDGiFVd04oy+QQMAP9L6GWfwoBQAAAAASUVORK5CYII=" width="32" height="32" alt=""><div><b>Vampires</b><small>◐ Nocturnals</small></div></div>
+        <div class="faction"><img class="sprite" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAcElEQVR42mNgGLRASkztPzImWXP+4ftg/OX9IzBNtCEwzdWXO+EYZhhRhiAbAGITbQC6nwlhDM2z5uwgCcMNgWkGBRaI/v6gimg+iiGhwfkkYazeIDsMsAGQU7GxiQIwDSAamU2yZnxiJDmbIu8QAgDZ6fwfUDWHDQAAAABJRU5ErkJggg==" width="32" height="32" alt=""><div><b>Aliens</b><small>ↂ 80's Sci-Fi</small></div></div>
+        <div class="faction"><img class="sprite" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAUElEQVR42mNgGJRASkztPzZMtOYv7x9hxQQNwacZhGfN2YHfEKoZAPMzstNBmCQDqi93ohgA4pPsBXSXEDQAXzgQpRndG8guIdoAihPSCAQAhp/fotCDgqQAAAAASUVORK5CYII=" width="32" height="32" alt=""><div><b>Skeletons</b><small>☾ Undead</small></div></div>
+        <div class="faction"><img class="sprite" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAbElEQVR42mNgoBaQElP7T5FakCAxhuBUBxL88v4RXkMIqkFWgA0TsgBswAkzH7wYr+2ENOM1BNkAEPv7gyo4H8RGlyfbBXXyVsS5ABsmyQDk2ICx8RpAyBsgjXg1IxsCU4yOiU7uuMKAYVACAEKB3YSVnKyuAAAAAElFTkSuQmCC" width="32" height="32" alt=""><div><b>The Possessed</b><small>⎈ Demons</small></div></div>
+      </div>
+      <div class="mock-panel">
+        <div class="bar">Round 2 of 6 · Play phase</div>
+        <div class="tile"><img class="sprite" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABJElEQVR42mNQU/H6P5CYgRLN3x9UUe4AZEOoYSAIS4mpkRYCMIvRaVJxnbwVBkaW//L+Ee4QIEQT42tcmOwQINZRIEtAYrgwPkcwkGs5Mo3uAFBQE+2AIRMC5MQ9MWmBKrkAZPgJMx8MDMoFBBMhLstIcQRFDqBWwUO2A0yNMsAMSmiQJaCUj45nzdkBdwCyelDowvgMlFoOCwF8DsCnn4FWlhPrCLADKMG44h89HeDSP/wcACt06OoA5DiHOQBbGqC6A9Atw5cIcTmCYgeEBucThXE6QD+2/z+pmBSLsTkE2SywA/IP38fAtLAcmyMY6Ol7bI4gygHooUPNUCArDVAaGhRFASWOAalBT2cM+IIaX2KkFmagtQU0cwC1QmvohgC1MAC2xgTJLkasigAAAABJRU5ErkJggg==" width="64" height="64" alt=""><div><h3>The Lighthouse</h3><p class="tiny">⎈ Demons · 4 Possessed, 2 Aliens</p></div></div>
+        <p>Lure the Aliens into the Possessed at the Lighthouse. If the fight ends in a tie, the location is scorched for the rest of the game.</p>
+        <div class="notice">Waiting for <b>Bob</b> and <b>Cat</b>.</div>
+        <button class="btn" type="button">Play card</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const HEADS = [
+  { family: 'Pixelify Sans', weight: 700, rec: true, note: 'Upper and lower case, four weights. Friendly RPG feel; reads well from 16px up. The most versatile heading face here.' },
+  { family: 'Silkscreen', weight: 400, note: 'Crisp all-caps feel at 8, 16, 24 or 32px. Great for small labels and tags; shouty for long headings.' },
+  { family: 'Jersey 10', weight: 400, note: 'Tall and condensed, like a sports scoreboard. Fits long names in narrow spaces; best at 20px and up.' },
+  { family: 'Press Start 2P', weight: 400, note: 'The classic arcade face. Very wide and tiring to read; use only for one big title, at 8px multiples.' },
+  { family: 'Tiny5', weight: 400, note: 'A small, clean pixel face that stays readable at 10–20px. A pixel option for labels if Silkscreen feels too loud.' },
+];
+const BODIES = [
+  { family: 'Rubik', weight: 400, rec: true, note: 'Slightly rounded corners echo the cartoon style. Warm, sturdy, and clear at 12px.' },
+  { family: 'Atkinson Hyperlegible Next', weight: 400, note: 'Designed for maximum legibility; letters are hard to confuse. Plainer in tone.' },
+  { family: 'Chakra Petch', weight: 400, note: 'Squared, technical letterforms that echo the pixel grid. Slightly harder to read at 12px.' },
+  { family: 'Lexend', weight: 400, note: 'Wide, open, and very easy to read. Neutral; leans corporate.' },
+];
+const HEAD_LINES = ['MONSTER OF THE WEEK', 'Factions in play', 'Round 2 of 6 · Play phase'];
+const BODY_TEXT = 'Players launch gambits, hatch plans, set traps, and conduct séances that cause the invaders to react. Vampires 3 · Aliens 2 · 0 trophies.';
+
+function el(tag, props = {}, children = []) {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children);
+  return node;
+}
+
+function meta(font) {
+  return el('div', { className: 'meta' }, [
+    el('b', { textContent: font.family }),
+    ...(font.rec ? [el('span', {}, [el('span', { className: 'rec', textContent: 'Recommended' })])] : []),
+    el('span', { textContent: font.note }),
+  ]);
+}
+
+const heads = document.getElementById('heads');
+for (const font of HEADS) {
+  const sample = el('div', { className: 'sample' }, HEAD_LINES.map((text, i) => el('div', {
+    textContent: text,
+    style: `font-family:"${font.family}",monospace;font-weight:${font.weight};font-size:${[32, 24, 16][i]}px;line-height:1.15`,
+  })));
+  heads.append(el('div', { className: 'specimen' }, [meta(font), sample]));
+}
+
+const bodies = document.getElementById('bodies');
+for (const font of BODIES) {
+  const sample = el('div', { className: 'sample' }, [16, 14, 12].map((size) => el('div', {
+    textContent: `${size}px — ${BODY_TEXT}`,
+    style: `font-family:"${font.family}",system-ui,sans-serif;font-weight:${font.weight};font-size:${size}px;line-height:1.45`,
+  })));
+  bodies.append(el('div', { className: 'specimen' }, [meta(font), sample]));
+}
+
+const pickHead = document.getElementById('pick-head');
+const pickBody = document.getElementById('pick-body');
+for (const font of HEADS) pickHead.append(el('option', { value: font.family, textContent: font.family + (font.rec ? ' (recommended)' : '') }));
+for (const font of BODIES) pickBody.append(el('option', { value: font.family, textContent: font.family + (font.rec ? ' (recommended)' : '') }));
+function apply() {
+  const root = document.documentElement.style;
+  root.setProperty('--mock-head', `"${pickHead.value}", monospace`);
+  root.setProperty('--mock-body', `"${pickBody.value}", system-ui, sans-serif`);
+}
+pickHead.addEventListener('change', apply);
+pickBody.addEventListener('change', apply);
+apply();
+</script>

@@ -13,6 +13,7 @@ follows it; where they disagree, the design document wins.
 | Document | What it covers |
 |---|---|
 | [`docs/motw-design.md`](docs/motw-design.md) | Master design document: pillars, content, every decision area, reference research, candidate analysis, and the prototype architecture (Appendix F) |
+| [`assets/README.md`](assets/README.md) | How the pixel art is made and reviewed, the test batch, and the open palette and asset-list decisions |
 | [`public/spec.json`](public/spec.json) | The data: seat limits, archetypes, factions, locations, slayer groups, cards, variants |
 
 `docs/motw-design.md` is a snapshot of the living design document (a Claude
@@ -44,6 +45,8 @@ public/
   app.css         styles (design tokens at the top)
   app.js          client: renders one playerView, sends moves, previews with the engine
   host.html/js    host page: deal games, choose options and bots, copy links
+  assets.html/js  assets page: every sprite against the content it draws, and the palette
+  assets/         built sprites (sprites.json + one PNG per sprite), served as static files
   bots.js         random legal-move bots, shared by the server and the harness
   engine.js       pure game logic — createGame, validate, applyMove, resolve, playerView
   spec.json       all constants and content as data
@@ -59,6 +62,10 @@ scripts/
   admin.js        create a game / list magic links
 docs/
   motw-design.md  the design document
+assets/
+  README.md       asset creation guide and plan
+  sprites.py      palette and sprite data; `npm run assets` builds public/assets/
+  test/           preview pages for the sprite test and the font specimen
 ```
 
 The engine is plain JavaScript with JSDoc types, checked under TypeScript
@@ -86,6 +93,7 @@ npm run links                               # prints them again later
 ```
 
 Or open **http://localhost:8788/host**, name the seats, tick bots, and deal.
+**http://localhost:8788/assets** shows every sprite and the palette.
 Seats keep their links across games, so redealing flips every open tab to
 round 1 without new links.
 
@@ -113,6 +121,7 @@ round 1 without new links.
 | `npm run deploy` | `wrangler deploy` |
 | `npm run secret` | Optionally lock the host page by setting `ADMIN_SECRET` on the deployed worker |
 | `npm run logs` | Tail production logs |
+| `npm run assets` | Check every sprite and rebuild `public/assets/` (needs Python 3) |
 
 `BASE=https://your-worker.example npm run links` points the admin scripts at a
 deployed instance; if the server is locked, `ADMIN_SECRET` is read from the
