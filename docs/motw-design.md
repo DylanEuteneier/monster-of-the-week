@@ -769,6 +769,12 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** Appendix F.
 - **Date:** 2026-10-03
 
+#### D10. Table talk in the prototype
+
+- **Decided:** the prototype includes table talk: a chat channel at the table, with a short saved history that clears on a new deal. It has no effect on the game.
+- **Affects:** Appendix F.
+- **Date:** 2026-10-03
+
 ### A.2 Changelog
 
 Actual changes to mechanisms and game structure.
@@ -1952,6 +1958,11 @@ The page a player sees. It is one script with no framework and no build step.
 - **Waiting notices** name the seats the game is waiting on.
 - **Turn order** is shown as a row of seats, with past turns, the current turn, and turns to come marked differently.
 
+#### Table talk
+
+- **A chat panel** at the table, sent over the same websocket. Lines are short, and a saved history of recent lines clears when a new game is dealt.
+- **No effect on the game.** Chat is table talk only; the engine never reads it.
+
 #### Replaying a round
 
 - **Step by step.** When a round resolves, the page walks through the newest entry in the public log one step at a time, with controls for the next step, showing everything, and closing.
@@ -2123,7 +2134,6 @@ Each stage can be tested before the next is started.
 - **A complete ruleset.** The engine can only implement rules with no open questions. The sample rulesets in Appendix E are the starting point, and they don't yet include the candidates added since.
 - **An implementation spec.** A document that restates the rules as state, inputs, validation, and procedure, with a visibility table saying what each seat may see.
 - **Seat count.** The prototype seats 3 to 5 players, with the card pool changing by player count (3.16).
-- *Open:* whether the prototype includes table talk. The architecture allows a chat channel over the same websocket, with a short saved history that clears on a new deal. It has no effect on the game.
 - *Open:* whether the prototype allows undo.
 - *Open:* how capable the bots need to be before their figures can be used for balancing.
 
