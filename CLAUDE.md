@@ -5,3 +5,4 @@
 - The engine (`public/engine.js`) is pure and is the only place rules live. Content and numbers live in `public/spec.json`.
 - Anything marked *scaffold* is placeholder plumbing, not a rule; replace it when the real phases land.
 - Run `npm run check` before committing. `npm run smoke` needs `npm run dev` running (port 8788).
+- Art follows `assets/README.md`: printed art is pixel art (palette only, whole-number scaling), physical things are UI, and tokens and cubes are CSS pieces (`public/pieces.js`). After editing `assets/sprites.py`, run `npm run assets` and commit the generated files in `public/assets/`.

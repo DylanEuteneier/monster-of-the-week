@@ -7,7 +7,7 @@
  *   GET  /host               the host page (host.html): deal games, copy links
  *   GET  /hotseat            the table UI, playing every human seat from one tab
  *   GET  /assets             the assets page (assets.html): every sprite and the palette
- *   GET  /assets/…           sprite files and sprites.json, served straight from public/assets/
+ *   GET  /assets/…           sprite PNGs, token outlines (SVG), and sprites.json, served straight from public/assets/
  *   POST /admin/new-game     { players?, seed?, force?, options?: Record<string,string>, bots?: string[] }  → magic links
  *   GET  /admin/links        re-list the magic links for the current game
  *   GET  /admin/status       phase, round, options, and seats of the current game

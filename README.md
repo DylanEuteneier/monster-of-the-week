@@ -13,7 +13,7 @@ follows it; where they disagree, the design document wins.
 | Document | What it covers |
 |---|---|
 | [`docs/motw-design.md`](docs/motw-design.md) | Master design document: pillars, content, every decision area, reference research, candidate analysis, and the prototype architecture (Appendix F) |
-| [`assets/README.md`](assets/README.md) | How the pixel art is made and reviewed, the test batch, and the open palette and asset-list decisions |
+| [`assets/README.md`](assets/README.md) | Art style and rendering for the prototype: the art rule, decisions so far, how sprites, tokens, and cubes render, and the open palette and asset-list decisions |
 | [`public/spec.json`](public/spec.json) | The data: seat limits, archetypes, factions, locations, slayer groups, cards, variants |
 
 `docs/motw-design.md` is a snapshot of the living design document (a Claude
@@ -45,8 +45,9 @@ public/
   app.css         styles (design tokens at the top)
   app.js          client: renders one playerView, sends moves, previews with the engine
   host.html/js    host page: deal games, choose options and bots, copy links
-  assets.html/js  assets page: every sprite against the content it draws, and the palette
-  assets/         built sprites (sprites.json + one PNG per sprite), served as static files
+  assets.html/js  assets page: example location card, tokens, cubes, every sprite, the palette
+  pieces.js       presence tokens and influence cubes as HTML (CSS pieces)
+  assets/         built art: sprites.json, sprite PNGs, token outlines (SVG); static files
   bots.js         random legal-move bots, shared by the server and the harness
   engine.js       pure game logic — createGame, validate, applyMove, resolve, playerView
   spec.json       all constants and content as data
@@ -64,7 +65,7 @@ docs/
   motw-design.md  the design document
 assets/
   README.md       asset creation guide and plan
-  sprites.py      palette and sprite data; `npm run assets` builds public/assets/
+  sprites.py      palette, sprite data, token outlines; `npm run assets` builds public/assets/
   test/           preview pages for the sprite test and the font specimen
 ```
 
@@ -93,7 +94,7 @@ npm run links                               # prints them again later
 ```
 
 Or open **http://localhost:8788/host**, name the seats, tick bots, and deal.
-**http://localhost:8788/assets** shows every sprite and the palette.
+**http://localhost:8788/assets** is where art is reviewed: an example location card, every token and cube, every sprite, and the palette.
 Seats keep their links across games, so redealing flips every open tab to
 round 1 without new links.
 
@@ -137,6 +138,10 @@ environment, falling back to `.dev.vars` locally.
 - **Magic links** `/p/<token>` map to seats. The link is the identity.
 - **Host routes** (`/host`, `/hotseat`, `/admin/*`) are open by default. Set
   `ADMIN_SECRET` and they require `Authorization: Bearer <secret>`.
+- **Art.** Whatever would be printed art in a physical production is pixel
+  art; whatever would be physical is UI; a few pieces (presence tokens,
+  influence cubes) imitate real 3D objects in CSS. Fonts are Tiny5 for
+  headings and Rubik for text. Details in `assets/README.md`.
 - **Variants.** Candidate rules the host can switch between go in
   `spec.variants`; the host page builds its option pickers from that list and
   the engine validates the choices.
