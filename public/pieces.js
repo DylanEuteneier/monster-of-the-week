@@ -7,8 +7,8 @@
  */
 import art from './assets/sprites.json' with { type: 'json' };
 
-/** Draft seat colours, by palette key; final picks wait on the palette (assets/README.md). */
-const SEAT_KEYS = ['r', 'c', 'G', 'o', 'p'];
+/** Seat colours, by palette key: the palette's most vivid, clearly distinct hues (red, gold, cyan, lime, pink). */
+const SEAT_KEYS = ['r', 'y', 'c', 'l', 'p'];
 const palette = /** @type {Record<string, string | null>} */ (art.palette);
 export const SEAT_COLOURS = SEAT_KEYS.map((key) => palette[key] ?? '#888888');
 

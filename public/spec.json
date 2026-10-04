@@ -15,7 +15,7 @@
     { "id": "scifi", "name": "80's Sci-Fi", "symbol": "ↂ" },
     { "id": "sentients", "name": "Sentients", "symbol": "⏏" },
     { "id": "undead", "name": "Undead", "symbol": "☾" },
-    { "id": "demons", "name": "Demons", "symbol": "⎈" }
+    { "id": "demonic", "name": "Demons", "symbol": "⎈" }
   ],
   "factions": [
     { "id": "vampires", "name": "Vampires", "archetype": "nocturnals" },
@@ -30,9 +30,9 @@
     { "id": "zombies", "name": "Zombies", "archetype": "undead" },
     { "id": "skeletons", "name": "Skeletons", "archetype": "undead" },
     { "id": "spirits", "name": "Spirits", "archetype": "undead" },
-    { "id": "demons", "name": "Demons", "archetype": "demons" },
-    { "id": "possessed", "name": "The Possessed", "archetype": "demons" },
-    { "id": "shadows", "name": "Shadows", "archetype": "demons" }
+    { "id": "demons", "name": "Demons", "archetype": "demonic" },
+    { "id": "possessed", "name": "The Possessed", "archetype": "demonic" },
+    { "id": "shadows", "name": "Shadows", "archetype": "demonic" }
   ],
   "locations": [
     { "id": "military-facility", "name": "Military Facility", "archetype": "scifi" },
@@ -44,9 +44,9 @@
     { "id": "ski-resort", "name": "Ski Resort", "archetype": "nocturnals" },
     { "id": "fallout-bunker", "name": "Fallout Bunker", "archetype": "nocturnals" },
     { "id": "occult-camp", "name": "Occult Camp", "archetype": "nocturnals" },
-    { "id": "caves", "name": "Caves", "archetype": "demons" },
-    { "id": "lighthouse", "name": "Lighthouse", "archetype": "demons" },
-    { "id": "lake-house", "name": "The Lake House", "archetype": "demons" },
+    { "id": "caves", "name": "Caves", "archetype": "demonic" },
+    { "id": "lighthouse", "name": "Lighthouse", "archetype": "demonic" },
+    { "id": "lake-house", "name": "The Lake House", "archetype": "demonic" },
     { "id": "shipping-docks", "name": "Shipping Docks", "archetype": "sentients" },
     { "id": "junkyard", "name": "Junkyard", "archetype": "sentients" },
     { "id": "beach-city", "name": "Beach City", "archetype": "sentients" }
@@ -56,7 +56,7 @@
     { "id": "kids-on-bikes", "name": "Kids on Bikes", "archetype": "scifi", "trope": "Kids on bikes with walkie-talkies" },
     { "id": "av-club", "name": "AV Club", "archetype": "sentients", "trope": "Teen hackers and computer club nerds" },
     { "id": "neighbourhood-watch", "name": "Neighbourhood Watch", "archetype": "undead", "trope": "Small-town survivalists" },
-    { "id": "father-and-the-flock", "name": "Father and the Flock", "archetype": "demons", "trope": "A parish exorcist and reluctant helpers" }
+    { "id": "father-and-the-flock", "name": "Father and the Flock", "archetype": "demonic", "trope": "A parish exorcist and reluctant helpers" }
   ],
   "cards": [],
   "variants": []

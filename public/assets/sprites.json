@@ -35,95 +35,279 @@
   "d": "#4f546b"
  },
  "sprites": {
-  "nocturnals": {
+  "vampires": {
    "width": 16,
    "height": 16,
-   "src": "/assets/sprites/nocturnals.png",
+   "src": "/assets/sprites/vampires.png",
    "rows": [
     "................",
+    ".....kkkkkk.....",
+    "....kxxxxxxk....",
+    "...kxxxkkxxxk...",
+    "...kxxkzzkxxk...",
+    "...kxkzzzzkxk...",
+    "...kkzzzzzzkk...",
+    "...kzrzzzzrzk...",
+    "...kzzzzzzzgk...",
+    "...kzzkkkkzgk...",
+    "...kzzwkkwzgk...",
+    "..kRkzzzzzzkRk..",
+    ".kRRRkzzzzkRRRk.",
+    ".kRrRRkkkkRRrRk.",
+    ".kRrRRRRRRRRrRk.",
+    "..kkkkkkkkkkkk.."
+   ]
+  },
+  "werewolves": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/werewolves.png",
+   "rows": [
     "................",
+    "..k..........k..",
+    "..kk........kk..",
+    "..kXk......kXk..",
+    "..kXXkkkkkkXXk..",
+    "..kXgXXXXXXXxk..",
+    ".kXgXXXXXXXXXxk.",
+    ".kXXykXXXXkyXxk.",
+    ".kXXXXXXXXXXXxk.",
+    "..kXXXzzzzXXxk..",
+    "..kXXzzkkzzXxk..",
+    "...kXzzzzzzxk...",
+    "...kXzwkkwzxk...",
+    "....kXzzzzxk....",
+    ".....kkkkkk.....",
+    "................"
+   ]
+  },
+  "occult": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/occult.png",
+   "rows": [
     "................",
-    "......k..k......",
     "......kkkk......",
     ".....kmmmmk.....",
-    "kk..kmymmymk..kk",
-    "kmk.kmmmmmmk.kmk",
-    "kmmkkmwmmwmkkmmk",
-    "kmmmmmmmmmmmmmmk",
-    "kmdmmmmmmmmmmdmk",
-    ".kmdmmmmmmmmdmk.",
-    ".kmmkkmmmmkkmmk.",
-    "..kk..kmmk..kk..",
-    "................",
+    "....kmLmmmvk....",
+    "...kmLmkkmmvk...",
+    "...kmmkkkkmvk...",
+    "...kmkykkykvk...",
+    "...kmkkkkkkvk...",
+    "..kmmmkkkkmmvk..",
+    "..kmLmmmmmmmvk..",
+    ".kmLmmmyymmmmvk.",
+    ".kmmmmyyyymmmvk.",
+    ".kmmmmmyymmmmvk.",
+    ".kmmmmmmmmmmmvk.",
+    ".kkkkkkkkkkkkkk.",
     "................"
    ]
   },
-  "scifi": {
+  "aliens": {
    "width": 16,
    "height": 16,
-   "src": "/assets/sprites/scifi.png",
+   "src": "/assets/sprites/aliens.png",
    "rows": [
     "................",
-    "................",
+    ".....kkkkkk.....",
+    "...kkGGGGGGkk...",
+    "..kGlGGGGGGGek..",
+    ".kGlGGGGGGGGGek.",
+    ".kGGGGGGGGGGGek.",
+    ".kGkkkGGGGkkkek.",
+    ".kkwkkkGGkkkwkk.",
+    ".kGkkkkGGkkkkek.",
+    "..kGkkkGGkkkek..",
+    "..kGGGGGGGGGek..",
+    "...kGGGGGGGek...",
+    "....kGGkkGek....",
+    ".....kGGGek.....",
     "......kkkk......",
-    ".....kccwck.....",
-    "....kcGGGcck....",
-    "....kcGkGcck....",
-    "..kkkkkkkkkkkk..",
-    ".kggggggggggggk.",
-    "kgwgygwgygwgygwk",
-    ".kddddddddddddk.",
-    "..kkkkkkkkkkkk..",
-    "......y..y......",
-    ".....y.yy.y.....",
-    "....y.y..y.y....",
-    "...y..y..y..y...",
     "................"
    ]
   },
-  "sentients": {
+  "dark-government": {
    "width": 16,
    "height": 16,
-   "src": "/assets/sprites/sentients.png",
+   "src": "/assets/sprites/dark-government.png",
    "rows": [
     "................",
-    "......kyyk......",
-    ".......kk.......",
-    ".......kk.......",
-    "...kkkkkkkkkk...",
-    "...kggggggggk...",
-    "..kkgccggccgkk..",
-    "..kkgccggccgkk..",
-    "...kggggggggk...",
-    "...kgkkkkkkgk...",
-    "...kgkykykkgk...",
-    "...kggggggggk...",
-    "...kkkkkkkkkk...",
-    "......kddk......",
+    ".....kkkkkk.....",
+    "....kxxxxxxk....",
+    "....kxdxxxxk....",
+    "..kkkkkkkkkkkk..",
+    "....ksssssUk....",
     "....kkkkkkkk....",
+    "....kkakkakk....",
+    "....ksssssUk....",
+    "....kskkssUk....",
+    ".....ksssUk.....",
+    "..kkkxkwwkxkkk..",
+    ".kxxxxkwkwkxxxk.",
+    ".kxdxxxwkwxxxxk.",
+    ".kxdxxxwkwxxxxk.",
+    ".kkkkkkkkkkkkkk."
+   ]
+  },
+  "cryptids": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/cryptids.png",
+   "rows": [
+    "................",
+    ".....kkkkkk.....",
+    "...kkUfUUUUkk...",
+    "..kUfUUUUUUUuk..",
+    ".kUfUUUUUUUUUuk.",
+    ".kUUkkkkkkkkUuk.",
+    ".kUkffffffffkuk.",
+    ".kUfkyffffykfuk.",
+    ".kUffffkkffffuk.",
+    ".kUfffffffffUuk.",
+    "..kUfkkkkkkfuk..",
+    "..kUUfffffffuk..",
+    "...kUUUUUUUuk...",
+    "....kkUUUUukk...",
+    "......kkkkk.....",
     "................"
    ]
   },
-  "undead": {
+  "machines": {
    "width": 16,
    "height": 16,
-   "src": "/assets/sprites/undead.png",
+   "src": "/assets/sprites/machines.png",
    "rows": [
     "................",
     "................",
     ".....kkkkkk.....",
-    "....kwwwwwwk....",
-    "...kwwwwwwwgk...",
-    "...kwwwwwwwgk...",
-    "...kwkkwwkkgk...",
-    "...kwkGwwkGgk...",
-    "...kwwwkkwwgk...",
-    "....kwwwwwgk....",
-    "....kwkwwkgk....",
+    "...kkwggggXkk...",
+    "..kwgggggggXXk..",
+    "..kggggggggXXk..",
+    "..kgkkkggkkkXk..",
+    "..kgkrkggkrkXk..",
+    "..kgkkkggkkkXk..",
+    "..kggggkkggggk..",
+    "...kgggggggXk...",
+    "...kxkxkxkxkk...",
+    "...kgkgkgkgXk...",
+    "....kxxxxxxk....",
     ".....kkkkkk.....",
+    "................"
+   ]
+  },
+  "ai": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/ai.png",
+   "rows": [
     "................",
+    ".....kkkkkk.....",
+    "...kkxxxxxxkk...",
+    "..kxxdddddxxxk..",
+    ".kxddkkkkkkdxxk.",
+    ".kxdkkRRRRkkdxk.",
+    ".kxdkRrrrrRkdxk.",
+    ".kxdkRryOrRkdxk.",
+    ".kxdkRrOOrRkdxk.",
+    ".kxdkRrrrrRkdxk.",
+    ".kxdkkRRRRkkdxk.",
+    ".kxxdkkkkkkddxk.",
+    "..kxxxdddddxxk..",
+    "...kkxxxxxxkk...",
+    ".....kkkkkk.....",
+    "................"
+   ]
+  },
+  "cyberpunks": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/cyberpunks.png",
+   "rows": [
+    "......kppk......",
+    "......kPpk......",
+    ".....kkppkk.....",
+    "....kxxppxxk....",
+    "...kxsssssUxk...",
+    "...ksssssssUk...",
+    "...kkkkkkkkkk...",
+    "...kcacccccck...",
+    "...kkkkkkkkkk...",
+    "...ksssssssUk...",
+    "...kssskkssUk...",
+    "....kssssUUk....",
+    ".....kkkkkk.....",
+    "....kmmkkmmk....",
+    "...kmmmLLmmmk...",
+    "...kkkkkkkkkk..."
+   ]
+  },
+  "zombies": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/zombies.png",
+   "rows": [
     "................",
+    ".....kkkkkk.....",
+    "...kkpPpGGGkk...",
+    "..kpPppkGGGGek..",
+    "..kppkGGGGGGek..",
+    "..kGGGGGGGGGek..",
+    "..kGkkkGGkkkek..",
+    "..kGkwkGGkykek..",
+    "..kGGGGGGGGGek..",
+    "..kGGGGkkGGGek..",
+    "..kGkkkkkkkGek..",
+    "..kGkzkzkzkGek..",
+    "...kGGGGGGGek...",
+    "....kkGGGGkk....",
+    "......kkkk......",
+    "................"
+   ]
+  },
+  "skeletons": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/skeletons.png",
+   "rows": [
+    ".....kkkkkk.....",
+    "....kwwwwwzk....",
+    "...kwwwwwwwzk...",
+    "...kwkkwwkkzk...",
+    "...kwkkwwkkzk...",
+    "...kwwwkkwwzk...",
+    "....kwwwwwzk....",
+    "....kwkwkwkk....",
+    ".....kkwzkk.....",
+    "...kkkkwzkkkk...",
+    "..kwwwwkkwwwzk..",
+    "..kkkkwwzkkkkk..",
+    "...kwwwkkwwzk...",
+    "...kkkkwzkkkk...",
+    "....kwwkkwzk....",
+    "....kkk..kkk...."
+   ]
+  },
+  "spirits": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/spirits.png",
+   "rows": [
     "................",
+    ".....kkkkkk.....",
+    "....kwwwwwak....",
+    "...kwwwwwwwak...",
+    "...kwwwwwwwak...",
+    "...kwkkwwkkak...",
+    "...kwkkwwkkak...",
+    "...kwwwwwwwak...",
+    "...kwwwkkwwak...",
+    "...kwwwkkwwak...",
+    "...kwwwwwwwak...",
+    "...kwwwwwwwak...",
+    "...kwwwwwwwak...",
+    "...kwakwakwak...",
+    "...k..k..k..k...",
     "................"
    ]
   },
@@ -133,91 +317,269 @@
    "src": "/assets/sprites/demons.png",
    "rows": [
     "................",
-    "..k..........k..",
-    "..kk........kk..",
-    "..kwk......kwk..",
-    "...kwkkkkkkwk...",
-    "...krrrrrrrrk...",
-    "..krrrrrrrrrrk..",
-    "..krrkyrrykrrk..",
+    ".k............k.",
+    ".kzk........kzk.",
+    "..kzk......kzk..",
+    "...kzkkkkkkzk...",
+    "...krrrrrrrRk...",
     "..krrrrrrrrrRk..",
-    "..krrkkkkkkrRk..",
-    "..krrkwkkwkrRk..",
-    "...krrrrrrRRk...",
-    "....kRRRRRRk....",
+    "..krkykrrkykRk..",
+    "..krrrrrrrrrRk..",
+    "..krrkrrrrkrRk..",
+    "..krrrkkkkrrRk..",
+    "...krrrrrrrRk...",
+    "....kkrrrrRkk...",
+    "......krRk......",
+    ".......kk.......",
+    "................"
+   ]
+  },
+  "possessed": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/possessed.png",
+   "rows": [
+    "................",
     ".....kkkkkk.....",
+    "...kkxxxxxxkk...",
+    "..kxxxxxxxxxxk..",
+    "..kxxkkkkkkxxk..",
+    "..kxkzzzzzzkxk..",
+    "..kxkddzzddkxk..",
+    "..kxkdyzzydkxk..",
+    "..kxkzzzzzzkxk..",
+    "..kxkzzkkzzkxk..",
+    "..kxkzzkkzzkxk..",
+    "..kxxkzzzzkxxk..",
+    "..kxxxkkkkxxxk..",
+    "..kxxk....kxxk..",
+    "..kkk......kkk..",
+    "................"
+   ]
+  },
+  "shadows": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/shadows.png",
+   "rows": [
+    "................",
+    "......kkkk......",
+    "....kknnnnkk....",
+    "...kvnnnnnnnk...",
+    "..kvnnnnnnnnnk..",
+    "..kvnynnnnynnk..",
+    "..kvnnnnnnnnnk..",
+    "..knnnnnnnnnnk..",
+    "...knnnnnnnnk...",
+    "..kvnnnnnnnnnk..",
+    ".kvnnnnnnnnnnnk.",
+    ".knnknnnnnnknnk.",
+    "knnk.knnnnk.knnk",
+    "knk..knnnnk..knk",
+    ".k....knnk....k.",
+    ".......kk......."
+   ]
+  },
+  "slayerettes": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/slayerettes.png",
+   "rows": [
+    ".............kzz",
+    "............kuUz",
+    "....kkk..kkkuUUk",
+    "...krrrkkrrRUUk.",
+    "..krrPrrrrrRRk..",
+    ".krrPrrrrrrrrrk.",
+    ".krrrrrrrrrrrrk.",
+    ".krrrrrrrrrrrrk.",
+    "..krrrrrrrrrrk..",
+    "...kRRrrrrrrk...",
+    "...kuRRrrrrk....",
+    "..kuUURrrrk.....",
+    ".kuUUkkrrk......",
+    "kuUUk..kk.......",
+    "kUUk............",
+    ".kk............."
+   ]
+  },
+  "kids-on-bikes": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/kids-on-bikes.png",
+   "rows": [
+    ".........k......",
+    "........kxk.....",
+    "........kxk.....",
+    "........kxk.....",
+    "....kkkkkxk.....",
+    "...kdxxxxxxk....",
+    "...kdxxxxxxk....",
+    "...kdkkkkkxk....",
+    "...kdxxxxxxk....",
+    "...kdkkkkkxk....",
+    "...kdxxxxxxk....",
+    "...kdkkkkkxk....",
+    "...kdxxxxxxk....",
+    "...kdrxlxxxk....",
+    "...kdxxxxxxk....",
+    "....kkkkkkk....."
+   ]
+  },
+  "av-club": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/av-club.png",
+   "rows": [
+    "................",
+    ".kkkkkkkkkkkkkk.",
+    "kzzzzzzzzzzzzzgk",
+    "kzzzzzzzzzzzzzgk",
+    "kzzkkkkkkkkkkzgk",
+    "kzzklllllkkkkzgk",
+    "kzzkkkkkkkkkkzgk",
+    "kzzklllllllkkzgk",
+    "kzzkkkkkkkkkkzgk",
+    "kzzkllkkkkkkkzgk",
+    "kzzzzzzzzzzzzzgk",
+    "kzzzzzzzzzzzrzgk",
+    ".kkkkggggggkkkk.",
+    "....kggggggk....",
+    ".....kkkkkk.....",
+    "................"
+   ]
+  },
+  "neighbourhood-watch": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/neighbourhood-watch.png",
+   "rows": [
+    "................",
+    "................",
+    "..kkkk..........",
+    ".kxxxxk.........",
+    "kxkkkkxk........",
+    "kxkkkkxk........",
+    "kOrrrrrRkkkkkkk.",
+    "kOrrrrrRggggggXk",
+    "kOryrrrRgggggggg",
+    "xOrrrrrRggggggXk",
+    "xOrrkrrRkkkkkkk.",
+    "xOrrrrrRk.......",
+    "kkkkkkkk........",
+    "................",
     "................",
     "................"
    ]
   },
-  "lighthouse": {
-   "width": 32,
-   "height": 32,
-   "src": "/assets/sprites/lighthouse.png",
+  "father-and-the-flock": {
+   "width": 16,
+   "height": 16,
+   "src": "/assets/sprites/father-and-the-flock.png",
    "rows": [
-    "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
-    "nnnnnnnnnnnnnnnynnnnnnnnnnnnnnnn",
-    "ynnynnnnnnnnnnnnnnnnnknnnnnnnnnn",
-    "nynynynnnnnnnnnnnnnRRRRRnnnwnnnn",
-    "ynynynynynnnnnnnnnkkkkkkknnnnnnn",
-    "nynynynynynynynnnkyyyyyyyknnnnnn",
-    "ynynynynynynynynykyyywyyyknnnnnn",
-    "nynynynynynynynnnkyyyyyyyknnnnnn",
-    "ynynynynynnnnnnnkkkkkkkkkkknnnnn",
-    "nynynynnnnnnnnnnnkrrrrrRknnnnnnn",
-    "ynnnnnynnnnnnnnnnkrrrrrRknnnnnnn",
-    "nnnnnnnnnnnnnnnnnkrrrrrRknnnnnnn",
-    "NnNnNnNnNnNnNnNnNkwwwwwgknNnNyNn",
-    "nNnNnNnNnNnNnNnNnkwwwwwgkNnNnNnN",
-    "NnNnNnNnNnNnNnNnkwwwwwwwgkNnNnNn",
-    "NNNNNNNNNNNNNNNNkrrrrrrrRkNNNNNN",
-    "NNNNNNNNNNNNNNNNkrrrrrrrRkNNNNNN",
-    "NNNNNNNNNNNNNNNNkrrrkkrrRkNNNNNN",
-    "NNNNNNNNNNNNNNNNkwwwkkwwgkNNNNNN",
-    "NNNNNNNNNNNNNNNkkwwwwwwwgkkNNNNN",
-    "NNNNNNNNNNNNNNNkddddddddddkNNNNN",
-    "bbbbbbbbbbbbbkddddddddddddddkbbb",
-    "bcccccbbbbbbkddddddddddddddddkbb",
-    "bbbbbbbbbbbbkdddddddddddddddddkb",
-    "bbbbbbbbbcccckddddddddddddddddkb",
-    "bbbbbbbbbbbbbbbkdddddddddddddkbb",
-    "bbbbbbbbbbbbbbbbbbkddddddddkcccb",
-    "bbbcccccbbbbbbbbbbbbbbbbbbbbbbbb",
-    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-    "bbbbbbbbbbbbbbcccccbbbbbbbbbbbbb",
-    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    "......kkkk......",
+    ".....kyyyyk.....",
+    ".....kywyOk.....",
+    "..kkkkywyOkkkk..",
+    ".kyyyyywyOyyyyk.",
+    ".kywwwwwwOwwwyk.",
+    ".kyyyyywyOyyyyk.",
+    ".kyOOOOOOOOOOyk.",
+    "..kkkkywyOkkkk..",
+    ".....kywyOk.....",
+    ".....kywyOk.....",
+    ".....kywyOk.....",
+    ".....kywyOk.....",
+    ".....kywyOk.....",
+    ".....kyyyyk.....",
+    "......kkkk......"
    ]
   }
  },
  "tokens": {
-  "nocturnals": {
+  "vampires": {
    "pad": 4,
    "width": 24,
    "height": 24,
-   "src": "/assets/tokens/nocturnals.svg",
-   "art": "/assets/sprites/nocturnals.png"
+   "src": "/assets/tokens/vampires.svg",
+   "art": "/assets/sprites/vampires.png"
   },
-  "scifi": {
+  "werewolves": {
    "pad": 4,
    "width": 24,
    "height": 24,
-   "src": "/assets/tokens/scifi.svg",
-   "art": "/assets/sprites/scifi.png"
+   "src": "/assets/tokens/werewolves.svg",
+   "art": "/assets/sprites/werewolves.png"
   },
-  "sentients": {
+  "occult": {
    "pad": 4,
    "width": 24,
    "height": 24,
-   "src": "/assets/tokens/sentients.svg",
-   "art": "/assets/sprites/sentients.png"
+   "src": "/assets/tokens/occult.svg",
+   "art": "/assets/sprites/occult.png"
   },
-  "undead": {
+  "aliens": {
    "pad": 4,
    "width": 24,
    "height": 24,
-   "src": "/assets/tokens/undead.svg",
-   "art": "/assets/sprites/undead.png"
+   "src": "/assets/tokens/aliens.svg",
+   "art": "/assets/sprites/aliens.png"
+  },
+  "dark-government": {
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/dark-government.svg",
+   "art": "/assets/sprites/dark-government.png"
+  },
+  "cryptids": {
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/cryptids.svg",
+   "art": "/assets/sprites/cryptids.png"
+  },
+  "machines": {
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/machines.svg",
+   "art": "/assets/sprites/machines.png"
+  },
+  "ai": {
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/ai.svg",
+   "art": "/assets/sprites/ai.png"
+  },
+  "cyberpunks": {
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/cyberpunks.svg",
+   "art": "/assets/sprites/cyberpunks.png"
+  },
+  "zombies": {
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/zombies.svg",
+   "art": "/assets/sprites/zombies.png"
+  },
+  "skeletons": {
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/skeletons.svg",
+   "art": "/assets/sprites/skeletons.png"
+  },
+  "spirits": {
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/spirits.svg",
+   "art": "/assets/sprites/spirits.png"
   },
   "demons": {
    "pad": 4,
@@ -225,6 +587,365 @@
    "height": 24,
    "src": "/assets/tokens/demons.svg",
    "art": "/assets/sprites/demons.png"
+  },
+  "possessed": {
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/possessed.svg",
+   "art": "/assets/sprites/possessed.png"
+  },
+  "shadows": {
+   "pad": 4,
+   "width": 24,
+   "height": 24,
+   "src": "/assets/tokens/shadows.svg",
+   "art": "/assets/sprites/shadows.png"
+  }
+ },
+ "hexes": {
+  "lighthouse": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/lighthouse.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "caves": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/caves.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "lake-house": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/lake-house.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "military-facility": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/military-facility.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "weather-station": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/weather-station.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "state-park": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/state-park.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "sawmill": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/sawmill.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "mine": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/mine.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "graveyard": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/graveyard.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "ski-resort": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/ski-resort.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "fallout-bunker": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/fallout-bunker.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "occult-camp": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/occult-camp.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "shipping-docks": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/shipping-docks.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "junkyard": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/junkyard.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  },
+  "beach-city": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/beach-city.png",
+   "pieces": {
+    "x": 4,
+    "y": 22,
+    "w": 46,
+    "h": 24
+   }
+  }
+ },
+ "symbols": {
+  "nocturnals": {
+   "width": 9,
+   "height": 9,
+   "src": "/assets/symbols/nocturnals.png"
+  },
+  "scifi": {
+   "width": 9,
+   "height": 9,
+   "src": "/assets/symbols/scifi.png"
+  },
+  "sentients": {
+   "width": 9,
+   "height": 9,
+   "src": "/assets/symbols/sentients.png"
+  },
+  "undead": {
+   "width": 9,
+   "height": 9,
+   "src": "/assets/symbols/undead.png"
+  },
+  "demonic": {
+   "width": 9,
+   "height": 9,
+   "src": "/assets/symbols/demonic.png"
+  }
+ },
+ "board": {
+  "width": 358,
+  "height": 338,
+  "src": "/assets/board/d.png",
+  "tiles": [
+   {
+    "loc": "military-facility",
+    "region": "Badlands",
+    "x": 206,
+    "y": 45
+   },
+   {
+    "loc": "junkyard",
+    "region": "Badlands",
+    "x": 180,
+    "y": 91
+   },
+   {
+    "loc": "caves",
+    "region": "Badlands",
+    "x": 233,
+    "y": 91
+   },
+   {
+    "loc": "graveyard",
+    "region": "Old Town",
+    "x": 125,
+    "y": 186
+   },
+   {
+    "loc": "beach-city",
+    "region": "Old Town",
+    "x": 178,
+    "y": 186
+   },
+   {
+    "loc": "occult-camp",
+    "region": "Old Town",
+    "x": 152,
+    "y": 232
+   },
+   {
+    "loc": "fallout-bunker",
+    "region": "Coast",
+    "x": 207,
+    "y": 139
+   },
+   {
+    "loc": "shipping-docks",
+    "region": "Coast",
+    "x": 260,
+    "y": 139
+   },
+   {
+    "loc": "lighthouse",
+    "region": "Coast",
+    "x": 233,
+    "y": 185
+   },
+   {
+    "loc": "state-park",
+    "region": "Woods",
+    "x": 71,
+    "y": 92
+   },
+   {
+    "loc": "sawmill",
+    "region": "Woods",
+    "x": 44,
+    "y": 138
+   },
+   {
+    "loc": "lake-house",
+    "region": "Woods",
+    "x": 97,
+    "y": 138
+   },
+   {
+    "loc": "weather-station",
+    "region": "Mountains",
+    "x": 98,
+    "y": 44
+   },
+   {
+    "loc": "ski-resort",
+    "region": "Mountains",
+    "x": 151,
+    "y": 44
+   },
+   {
+    "loc": "mine",
+    "region": "Mountains",
+    "x": 125,
+    "y": 90
+   }
+  ]
+ },
+ "headers": {
+  "slayerettes": {
+   "width": 160,
+   "height": 64,
+   "src": "/assets/headers/slayerettes.png"
+  },
+  "kids-on-bikes": {
+   "width": 160,
+   "height": 64,
+   "src": "/assets/headers/kids-on-bikes.png"
+  },
+  "av-club": {
+   "width": 160,
+   "height": 64,
+   "src": "/assets/headers/av-club.png"
+  },
+  "neighbourhood-watch": {
+   "width": 160,
+   "height": 64,
+   "src": "/assets/headers/neighbourhood-watch.png"
+  },
+  "father-and-the-flock": {
+   "width": 160,
+   "height": 64,
+   "src": "/assets/headers/father-and-the-flock.png"
+  }
+ },
+ "hexSchemes": {
+  "nocturnals": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/scheme-nocturnals.png"
+  },
+  "scifi": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/scheme-scifi.png"
+  },
+  "sentients": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/scheme-sentients.png"
+  },
+  "undead": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/scheme-undead.png"
+  },
+  "demonic": {
+   "width": 54,
+   "height": 62,
+   "src": "/assets/hexes/scheme-demonic.png"
   }
  }
 }

@@ -95,7 +95,7 @@ test('the ready phase renders the board, the seats, and the ready button', () =>
   assert.match(html('header'), /MONSTER OF THE WEEK/);
   for (const id of state.factions) assert.ok(html('board').includes(factionById(id).name.replace("'", '&#39;')), id);
   assert.match(html('board'), /Lighthouse/);
-  assert.match(html('board'), /src="\/assets\/sprites\/lighthouse.png"/);
+  assert.match(html('board'), /src="\/assets\/hexes\/lighthouse.png"/);
   for (const id of PLAYERS) assert.ok(html('players').includes(id));
   assert.match(html('phase'), /data-action="ready"/);
 });

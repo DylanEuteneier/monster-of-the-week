@@ -22,3 +22,4 @@ The document has three sections: 1. Context (working style and approach, plus tr
 - Anything marked *scaffold* is placeholder plumbing, not a rule; replace it when the real phases land.
 - Art follows `assets/README.md` and Appendix F.17: printed art is pixel art (palette only, whole-number scaling), physical things are UI, and tokens and cubes are CSS pieces (`public/pieces.js`). After editing `assets/sprites.py`, run `npm run assets` and commit the generated files in `public/assets/`.
 - Run `npm run check` before committing. `npm run smoke` needs `npm run dev` running (port 8788).
+- Prototype choices (art, board layout, region grouping, palette, table talk) are for testing only. Never apply them to the rules or treat them as settled design; the rules come only from decisions in the design document's section 3.

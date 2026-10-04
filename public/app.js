@@ -11,13 +11,15 @@
  */
 import { spec, factionById, waitingOn } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
+import { SEAT_COLOURS } from './pieces.js';
 
 /** @typedef {import('./engine.js').PlayerView} PlayerView */
 /** @typedef {import('./engine.js').Move} Move */
 /** @typedef {{ from: string, text: string, at: number }} ChatLine */
 
-const PALETTE = ['#c0392b', '#2874a6', '#1e8449', '#b9770e', '#7d3c98'];
+const PALETTE = SEAT_COLOURS;   // seat colours match the influence cubes
 const SPRITES = /** @type {Record<string, { width: number, height: number, src: string }>} */ (art.sprites);
+const HEXES = /** @type {Record<string, { width: number, height: number, src: string }>} */ (art.hexes ?? {});
 const TOAST_MS = 4000;
 const RECONNECT_MS = 2000;
 const HOST_KEY_STORAGE = 'motw-host-key';
@@ -233,7 +235,9 @@ function renderBoard() {
   });
   const locations = spec.locations.map((location) => {
     const archetype = archetypes.get(location.archetype);
-    return `<div class="location">${spriteImg(location.id, 2)}<span><span class="symbol">${esc(archetype?.symbol ?? '')}</span> ${esc(location.name)}</span></div>`;
+    const hex = HEXES[location.id];
+    const art = hex ? `<img class="sprite" src="${esc(hex.src)}" width="${hex.width}" height="${hex.height}" alt="">` : '';
+    return `<div class="location">${art}<span><span class="symbol">${esc(archetype?.symbol ?? '')}</span> ${esc(location.name)}</span></div>`;
   });
   $('board').innerHTML = `
     <h2>Factions in play</h2>

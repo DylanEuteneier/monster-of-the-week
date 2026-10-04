@@ -766,18 +766,21 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 #### D9. Prototype art direction
 
 - **Decided:** whatever would be printed art in a physical production is pixel art; whatever would be physical is UI; a select few physical pieces imitate real 3D objects. One palette for the game and UI. Fonts: Tiny5 for headings and labels, Rubik for everything else. Every location shows its presence visually: faction presence as cardboard tokens with pixel art on the face, player influence as cubes in seat colours.
+- **Scope:** prototype only; not a rule of the game.
 - **Affects:** Appendix F.
 - **Date:** 2026-10-03
 
 #### D10. Table talk in the prototype
 
 - **Decided:** the prototype includes table talk: a chat channel at the table, with a short saved history that clears on a new deal. It has no effect on the game.
+- **Scope:** prototype only; not a rule of the game.
 - **Affects:** Appendix F.
 - **Date:** 2026-10-03
 
 #### D11. Prototype palette
 
 - **Decided:** the prototype's palette is a set of 32 colours supplied by the designer, listed in the art guide (`assets/README.md`).
+- **Scope:** prototype only; not a rule of the game.
 - **Affects:** Appendix F.
 - **Date:** 2026-10-03
 
@@ -2145,7 +2148,7 @@ Each stage can be tested before the next is started.
 
 ### F.17 Art and rendering
 
-How the prototype looks. The working detail, the asset list, and the art tools are in the repository's art guide, `assets/README.md`. This section does not add, change, or settle any rule of the game.
+How the prototype looks. The working detail, the asset list, and the art tools are in the repository's art guide, `assets/README.md`. This section does not add, change, or settle any rule of the game. Everything in it is a choice for the prototype, open to change, and none of it is to be applied to the rules.
 
 #### The rule
 
@@ -2155,20 +2158,24 @@ How the prototype looks. The working detail, the asset list, and the art tools a
 | UI | Whatever would be physical: boards, panels, cards, tracks, buttons | Clean, readable layout, not imitated |
 | Physical pieces | A select few pieces that sit on the board: presence tokens, influence cubes | Objects that look real but clean: depth, edges, soft shadows |
 
-#### Decided
+#### Decided for the prototype
 
 - **Style:** a small island town in a pixel-art RPG / animated-series style (1.5, 2.2).
 - **Palette:** one palette of 32 colours for the game and the UI, listed in the art guide. Pixel art uses only the palette; the UI and the pieces take their colours from it and may shade them, but add no new hue.
 - **Fonts:** Tiny5, a pixel face, for headings and labels; Rubik for everything else.
 - **Presence on locations:** every location shows its presence visually, at a glance.
-- **Faction presence:** cardboard tokens cut to the outline of the faction's art, with the pixel art printed on the face and a visible card edge. In the rules, invaders are cubes at locations (3.4); the token is how the prototype draws them, and does not change the rule.
+- **Faction presence:** one token per faction: cardboard cut to the outline of the faction's art, with the pixel art printed on the face and a visible card edge. In the rules, invaders are cubes at locations (3.4); the token is how the prototype draws them, and does not change the rule.
 - **Player influence:** cubes in the player's seat colour, seen from above: a square top face with the near and right sides showing.
-- **Review:** the assets page shows an example location, every token and cube, every sprite against the content it draws, and the palette.
+- **Archetype symbols:** drawn as pixel art: a moon and star for the Nocturnals, an alien head for 80's Sci-Fi, a power symbol for the Sentients, a skull for the Undead, and horns for the Demons. The characters ◐ ↂ ⏏ ☾ ⎈ remain as text shorthand in this document.
+- **Board hexes:** each location is a flat hex tile with a border in its archetype's colours, its building at the top, its archetype's symbol at the bottom over the border, and the space between kept clear for presence tokens and influence cubes.
+- **Prototype board, for testing only:** five regions of three locations, each region mixing three archetypes: Mountains (Weather Station, Ski Resort, Mine), Coast (Lighthouse, Shipping Docks, Fallout Bunker), Woods (State Park, Sawmill, The Lake House), Old Town (Beach City, Graveyard, Occult Camp), Badlands (Military Facility, Junkyard, Caves). The regions form a ring round a central lake, each touching exactly two others. This arrangement exists so the prototype has a board to play on; it does not settle board topology (3.1) or any rule.
+- **Slayer group art:** each group has a 16x16 emblem and a 160x64 banner for its player card. Banners are mood scenes with no people.
+- **Prototype board art, for testing only:** the board is drawn as one island round the hexes, inside a framed rectangle of sea, and shown at night so the pieces stand out, with moonlight from the west. Details in `assets/README.md`.
+- **Review:** the assets page shows the prototype board, every hex, token and cube, every sprite against the content it draws, the player cards, and the palette.
 
 #### Open
 
 - *Open:* which palette colours are the five seat colours and the UI colours, and whether the UI is dark or light.
 - *Open:* the asset list: which assets the prototype needs, at what sizes.
 - *Open:* whether a location shows one token or cube per unit, or one with a number.
-- *Open:* whether presence tokens are drawn per faction (15) or per archetype (5).
 - *Open:* how influence cubes are used on locations, which follows the influence rules (3.7, 3.13, 3.14).

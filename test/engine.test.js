@@ -28,10 +28,9 @@ test('spec holds five archetypes with three factions and three locations each (2
   }
 });
 
-test('content ids are unique within each list', () => {
-  for (const list of [spec.archetypes, spec.factions, spec.locations, spec.slayerGroups]) {
-    assert.equal(new Set(list.map((entry) => entry.id)).size, list.length);
-  }
+test('content ids are unique across every list, so a sprite id names one thing', () => {
+  const ids = [spec.archetypes, spec.factions, spec.locations, spec.slayerGroups].flat().map((entry) => entry.id);
+  assert.equal(new Set(ids).size, ids.length);
 });
 
 // ---------------------------------------------------------------------------

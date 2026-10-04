@@ -297,16 +297,16 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   right: 15.25%;
   bottom: 24.24%;
   border-radius: 1.5px;
-  background: linear-gradient(160deg, color-mix(in oklab, var(--c), white 24%), color-mix(in oklab, var(--c), white 4%));
+  background: linear-gradient(160deg, color-mix(in oklab, var(--c), white 14%), var(--c));
   box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.2);
 }
 .cube-front {
   clip-path: polygon(0 75.76%, 84.75% 75.76%, 100% 100%, 15.25% 100%);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--c), black 16%), color-mix(in oklab, var(--c), black 30%));
+  background: linear-gradient(180deg, color-mix(in oklab, var(--c), black 12%), color-mix(in oklab, var(--c), black 22%));
 }
 .cube-side {
   clip-path: polygon(84.75% 0, 100% 24.24%, 100% 100%, 84.75% 75.76%);
-  background: linear-gradient(90deg, color-mix(in oklab, var(--c), black 32%), color-mix(in oklab, var(--c), black 44%));
+  background: linear-gradient(90deg, color-mix(in oklab, var(--c), black 26%), color-mix(in oklab, var(--c), black 36%));
 }
 
 /* A location with its pieces (layout under review on /assets) */
@@ -318,3 +318,20 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .token-stack > * + * { margin-left: calc(var(--w) * -0.55); }
 .cube-row { display: flex; align-items: flex-end; gap: 2px; }
 .count { font-family: var(--font-display); font-size: 16px; }
+
+/* Board hexes: the hex art with its pieces laid over the clear lower part */
+.hex { position: relative; flex: none; }
+.hex > .sprite { position: absolute; inset: 0; }
+.hex-pieces { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.hex-pieces .stack-row { flex-wrap: nowrap; gap: 4px; justify-content: center; }
+.hex-pieces .token-stack > * + * { margin-left: calc(var(--w) * -0.66); }
+.hex-grid { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-start; }
+
+/* Suggested board layouts on /assets */
+.board { position: relative; flex: none; max-width: 100%; }
+
+/* Player cards on /assets */
+.player-cards { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.player-card { display: flex; flex-direction: column; width: min-content; min-width: 160px; border: var(--border); border-radius: var(--radius); background: var(--color-panel); overflow: hidden; }
+.player-card > .sprite { border-bottom: 2px solid var(--color-text); }
+.player-card-body { display: flex; gap: var(--space-2); align-items: center; padding: var(--space-2); }

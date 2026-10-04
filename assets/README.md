@@ -39,7 +39,14 @@ Whatever would be physical is UI. A select few physical pieces imitate real
 | 2026-10-03 | Faction presence is shown with **tokens**; player influence with **cubes** in seat colours |
 | 2026-10-03 | Tokens are CSS cardboard cut to the art's outline, with pixel art on the face |
 | 2026-10-03 | Cubes are seen from above, never rotated: top face, near side, and right side |
+| 2026-10-03 | Presence tokens are per faction: 15, one for each faction's icon |
+| 2026-10-03 | Archetype symbols are pixel art: moon and star (Nocturnals), alien head (80's Sci-Fi), power (Sentients), skull (Undead), horns (Demons). The font characters ◐ ↂ ⏏ ☾ ⎈ stay only as text shorthand |
+| 2026-10-03 | Board hexes: flat, no cliffs; a bevelled border in the archetype's colours; the building top middle, the archetype symbol bottom middle over the border, and the space between kept clear for 1× tokens and cubes |
+| 2026-10-03 | Prototype board (testing only, not a design decision): layout D, five regions of three in a ring round a central lake; data in `public/layout-suggestions.js` |
+| 2026-10-03 | Slayer group art: 16×16 emblems and 160×64 mood banners with no people (stake through a heart, walkie-talkie, CRT, chainsaw, cross) |
 | 2026-10-03 | An all-pixel version of tokens and cubes was tried and retired (git: commit 2f41a8d) |
+| 2026-10-04 | Prototype board art (testing only): one island drawn round the hexes (`assets/board.py`), boxed in a framed rectangle of sea; a mountain range in the north, forest and fields, a lake in the ring's gap; water is one colour with a faint wave motif |
+| 2026-10-04 | The prototype board is at night (`NIGHT_MODE` in `assets/sprites.py`) so the pieces stand out: landscape darkened most, buildings one step, archetype borders and symbols unchanged; every location has a light (bright core, no glow); moonlight from the west lights west-facing shores, sprites' west edges, and casts shadows east, each shadow about a fifth darker than its ground |
 
 ## How it renders in the prototype
 
@@ -66,8 +73,8 @@ A die-cut cardboard token with the faction's art printed on it.
 - **Stacks:** several tokens overlap like a real pile (`.token-stack`).
 - Code: `tokenHtml(id, scale)` in `public/pieces.js`; styles under "Pieces
   on the board" in `public/app.css`.
-- Today one token exists per archetype icon; whether presence uses 15
-  faction tokens or 5 archetype tokens is still open.
+- One token per faction (15), generated from each faction's icon. Every
+  faction in `spec.json` that has a sprite gets a token automatically.
 
 ### Influence cubes
 
@@ -75,8 +82,9 @@ A die-cut cardboard token with the faction's art printed on it.
   below it, the right side as a narrower band.
 - Every face is shaded from one seat colour with `color-mix()`, so each seat
   needs only one palette colour.
-- Code: `cubeHtml(colour, size)` in `public/pieces.js`. Seat colours are a
-  draft (`SEAT_COLOURS`) until the palette is set.
+- Code: `cubeHtml(colour, size)` in `public/pieces.js`. Seat colours
+  (`SEAT_COLOURS`) are the palette's most vivid hues: red, gold, cyan, lime,
+  pink. The table's seat colours use the same five.
 
 ### Type
 
@@ -164,7 +172,7 @@ places detail pixels, as `lighthouse()` does.
 ### Making a batch
 
 1. Add or edit sprite data in `assets/sprites.py`, keyed by the content id.
-   Add the id to `TOKEN_SOURCES` if it should have a token.
+   Faction sprites get a token automatically.
 2. Run `npm run assets`.
 3. Review once: `assets/sheet.png`, or `/assets` on the dev server. Fix
    anything that reads badly at 1×.
@@ -209,10 +217,10 @@ new. The roles column shows what the test art uses each for.
 | `u` | `#7a444a` |  |
 | `U` | `#a05b54` |  |
 | `f` | `#c07959` |  |
-| `o` | `#efa260` | apricot; draft seat 4 |
+| `o` | `#efa260` | apricot |
 | `s` | `#f6cca1` |  |
-| `l` | `#b6d43c` |  |
-| `G` | `#71ab43` | ghoul green; draft seat 3 |
+| `l` | `#b6d43c` | seat 4 |
+| `G` | `#71ab43` | ghoul green |
 | `e` | `#387c44` |  |
 | `h` | `#3c5957` |  |
 | `k` | `#302b2d` | outline, ink |
@@ -222,35 +230,31 @@ new. The roles column shows what the test art uses each for.
 | `z` | `#cfc6b8` |  |
 | `w` | `#e0f2f4` | highlights, bone |
 | `a` | `#97d8e3` |  |
-| `c` | `#3dc3d8` | glow, wave crest; draft seat 2 |
+| `c` | `#3dc3d8` | glow, wave crest; seat 3 |
 | `b` | `#3879a9` | sea |
 | `N` | `#384779` | night sky, lighter band |
 | `n` | `#39314b` | night sky |
 | `v` | `#564164` |  |
 | `m` | `#8f488d` | purple |
-| `p` | `#ce5f93` | pink; draft seat 5 |
+| `p` | `#ce5f93` | pink; seat 5 |
 | `P` | `#f7acb6` |  |
-| `y` | `#f4b41a` | lamplight |
+| `y` | `#f4b41a` | lamplight; seat 2 |
 | `O` | `#f47e20` |  |
-| `r` | `#e7482d` | red; draft seat 1 |
+| `r` | `#e7482d` | red; seat 1 |
 | `R` | `#a93c3b` | dark red |
 | `L` | `#837195` |  |
 | `d` | `#4f546b` | shadow; token edge |
 
 Still to decide:
 
-- **Seat colours.** Which five palette colours mark the players' influence
-  cubes. They must read at a glance on the location card and beside each
-  other. Tokens are identified by their art, so seat colours may share hues
-  with faction art.
 - **UI colours.** Which palette colours serve as background, panel, text,
   muted text, border, accent, danger, and ok. Is the UI dark (night island,
   like the test art) or light (the current table)?
 - **Token cardboard.** Should the token face and edge use palette colours
   (`w` or `z` for the face, `g` or `X` for the edge), or keep their own
   neutral tones?
-- **Day and night.** Does any location or phase need a daytime look, or is
-  the whole game at night?
+- **Day and night.** The prototype board is at night for now (see
+  decisions). Does any location or phase need a daytime look?
 
 ### 2. The asset list
 
@@ -259,11 +263,12 @@ Mark each row keep, cut, or later. **Required** rows are confirmed.
 | Asset | Count | Size | Notes |
 |---|---|---|---|
 | **Location tiles** (Required) | 15 | 32×32 | Lighthouse drafted; three per archetype |
-| **Presence tokens** (Required) | 15 or 5 | from 16×16 art | Generated from faction or archetype icons; see open question below |
+| **Presence tokens** (Required) | 15 | from 16×16 art | **Built**, one per faction, generated from the faction icons |
 | **Influence cubes** (Required) | 5 | CSS | Built; need final seat colours |
 | **Location card layout** (Required) | 1 | UI | Tile, presence, and influence at a glance; example on `/assets` |
-| Archetype icons | 5 | 16×16 | Drafts exist |
-| Faction icons | 15 | 16×16 | One per faction; variations on the archetype icon |
+| **Archetype symbols** (Required) | 5 | 9×9 plaque | **Done**: moon and star, alien head, power, skull, horns |
+| **Board hexes** (Required) | 15 | 54×62 | Format set; the Lighthouse is drawn as the sample |
+| **Faction icons** (Required) | 15 | 16×16 | **Drawn** (first pass, 2026-10-03) |
 | Slayer group emblems | 5 | 16×16 | Simple emblems |
 | Slayer group portraits | 5 | 32×32+ | Artist, or generated plus cleanup |
 | Island map | 1 | large | Artist, or generated plus cleanup; waits on map design |
@@ -281,9 +286,6 @@ of cubes. Open:
   with a number beside it? Piles read as "on the board" (1.4) but get
   crowded; a location may hold up to two factions (LL1, a candidate) and
   growth pushes counts up.
-- **Tokens per faction or per archetype?** Fifteen (Vampires look unlike
-  Werewolves), or five, since only one faction per archetype is in play
-  each game (3.4)? Five is enough to tell them apart; fifteen adds flavour.
 - **Influence at locations is a candidate rule** (CU4, 3.7; influence ties at
   a location, 3.13). The cubes are ready; how they're used follows whichever
   rule is settled.
@@ -292,12 +294,12 @@ of cubes. Open:
 
 ## When resuming
 
-1. Choose the palette roles (seat colours, UI colours, dark or light), then
-   point the UI's CSS colour tokens and `SEAT_COLOURS` at those palette keys.
+1. Choose the UI palette roles (background, panel, text, accent; dark or
+   light) and point the UI's CSS colour tokens at those palette keys.
    The 32 colours themselves are already in `assets/sprites.py`.
 2. Settle the asset list and the location-card questions.
-3. Draw in batches: location tiles first (the board needs them), then faction
-   or archetype token art, then emblems. One sheet render and one review per
+3. Draw in batches: location tiles next (the board needs them), then
+   emblems. Faction icons and their tokens are done. One sheet render and one review per
    batch.
 4. Render tokens, cubes, and tiles in the table once the engine tracks
    presence and influence.
