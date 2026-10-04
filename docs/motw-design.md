@@ -10,13 +10,25 @@ The single living document for this project, updated at the end of each session.
 
 Appendices: A. Decision records and changelog, B. Glossary, C. Reference game research, D. Candidate codes, E. Candidate analysis, F. Prototype architecture and art.
 
-The current focus, below, lists the areas being worked on right now.
+The current focus, below, lists what is being worked on right now; the backlog holds everything else.
 
 ---
 
 ## Current focus
 
-Every decision area now has at least one candidate. The open questions below are the ones still to work through with the designer.
+**Goal:** a first draft of the rules, complete enough to build a playable web app prototype on.
+
+1. **First draft of the rules** *(in progress).* In each decision area, start from the designer's favourite candidate. Where an idea has a close second, record it as that area's first variant. The draft is one ruleset, not a set of samples.
+2. **First draft of the cards.** Define the cards the draft ruleset needs.
+3. **Build the web app prototype.** Restate the rules and cards as an implementation spec (F.16), then build them on the existing scaffold.
+
+Favourites marked so far ("preferred" in section 3): `DR3`, `DR4`, `MC3`, `FR1`, `PT2`, `ST3`, `ET3`. Every other area still needs the designer's pick.
+
+Everything else is in the backlog below; finished work is in the changelog (A.2).
+
+## Backlog
+
+Not the current focus. Items come back into focus when the draft needs them.
 
 **Open questions on candidates**
 
@@ -26,25 +38,22 @@ Every decision area now has at least one candidate. The open questions below are
 - **3.5 Invader population:** whether each faction grows at a location still holding two; whether growth can make a location boil over.
 - **3.15 Victory:** what happens if factions tied in presence also control the same number of locations.
 
-**Analysis in progress**
+**Analysis**
 
-- **Fits and clashes:** done for the combat cluster, affinity, ties between players, location control, alignment, volatility, information, and the draft. Card uses and influence, growth, the map, and the end game are still to do (Appendix E).
+- **Fits and clashes:** card uses and influence, growth, the map, and the end game are still to do (Appendix E).
 - **Trade-offs:** a first pass covers the whole game; more are wanted.
-- **Sample rulesets:** four first drafts, whose choices outside combat are first guesses.
-- **New candidates:** affinity, standing ties, control, alignment, volatility, hidden tokens, secret trophies and the draft (AB1, AB2, PT2, ST1, ST2, ST3, AS1, LC2, AL2, AL3, FT2, IN1, IN2, HT1, HT2, DR3, DR4, DR5, DR6, ET1, ET2, ET3, FX1, BT1, MC1, MC2, MC3, UT1) have fits, clashes, trade-offs and groups, but are not yet placed in the sample rulesets.
+- **Sample rulesets:** four first drafts exist (E.4); the first draft of the rules supersedes them as the working ruleset.
+- **New candidates not yet in the sample rulesets:** AB1, AB2, PT2, ST1, ST2, ST3, AS1, LC2, AL2, AL3, FT2, IN1, IN2, HT1, HT2, DR3, DR4, DR5, DR6, ET1, ET2, ET3, FX1, BT1, MC1, MC2, MC3, UT1.
 
-**Prototype**
-
-- **Architecture:** set, and described in Appendix F.
-- **Scaffold:** built and deployed. The infrastructure in Appendix F runs end to end with a placeholder phase in place of rules.
-- **Art direction:** set, and described in F.17. Drawing the full set waits on the palette and the asset list.
-- **Needed before building:** a complete ruleset, and an implementation spec that restates it as state, inputs, validation, and procedure.
-
-**Deferred to later stages**
+**Later stages**
 
 - **Map design:** which regions border which.
-- **Card design:** the movement types; what the marked cards do; which cards belong to the 3+, 4+ and 5+ tiers.
+- **Card design beyond the first draft:** the movement types; what the marked cards do; which cards belong to the 3+, 4+ and 5+ tiers.
 - **Balancing:** starting presence, total cubes per faction, the presence threshold, the volatility threshold, the growth threshold, the number of rounds, hand size, and how many real and bluff tokens a hidden action places.
+
+**Prototype art (open, low priority)**
+
+- UI colours, token cardboard colours, and whether anything needs a daytime look (`assets/README.md`).
 
 ---
 
@@ -798,6 +807,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-03 | Hands are hidden (D6). Candidate ideas added for hidden tokens, secret trophies, and the draft: pick and pass, with the same pool drafted every round |  |
 | 2026-10-03 | Card pool scales with player count (D7). Candidate ideas added: one card left out of the deal each round, and the drafted pool as the whole action set. Marked cards reduced to A and B | Ruled out: a third marked card, C |
 | 2026-10-03 | Candidate ideas added or refined for standing ties, end-game ties, faction ties, growth at round end, bluff tokens, marker cubes, and unresolved hidden tokens | Ruled out: removing an unresolved hidden token at round end, whether revealed or not |
+| 2026-10-04 | Current focus set: first draft of the rules, then the cards, then the web app prototype. Other open work moved to the backlog | Done before this: fits and clashes for the combat cluster, affinity, ties between players, location control, alignment, volatility, information and the draft; a first pass of trade-offs; four sample rulesets. Prototype architecture (D8), scaffold (built and deployed), art direction (D9), palette (D11) and the prototype art set (F.17) |
 
 ---
 
