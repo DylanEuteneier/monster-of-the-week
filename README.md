@@ -7,6 +7,9 @@ Cloudflare Worker with one Durable Object as the authority, and a
 no-build-step browser table, playable remotely by 3–5 people on their own
 devices.
 
+Live: https://monster-of-the-week.dylaneuteneier.workers.dev (art review at
+[`/assets`](https://monster-of-the-week.dylaneuteneier.workers.dev/assets)).
+
 The design document is the source of truth for what the game is. The code
 follows it; where they disagree, the design document wins.
 
@@ -157,6 +160,9 @@ Server replies with `state` (your `playerView`, who is online, which seats are
 bots), `error` (reason for a rejected move), `chat`, and `presence`.
 
 ## Deploy
+
+The Worker is live at https://monster-of-the-week.dylaneuteneier.workers.dev and
+redeploys on every push to `main`.
 
 The Worker is named `monster-of-the-week` (`wrangler.toml`). To deploy on
 every push, connect the GitHub repo in the Cloudflare dashboard
