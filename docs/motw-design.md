@@ -553,6 +553,8 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - `FP1` **First player by marked cards (first draft):** two cards in the draft are marked A and B. The player holding A is first player, and play goes clockwise from them. If A is the card left out that round (DR5, 3.6), the player holding B is first player.
   - A and B are both in the 3+ core set, so they are in the pool at every player count (3.16).
   - `FP2` *Four marked cards with the fixed pool (first draft):* with the location-card catalogue (LK1, PS1), four cards are marked A, B, C and D. The player holding the earliest letter dealt is first player and opens the round with that card. At most three cards are left out, so at least one marked card is always dealt. The earlier ruling against a third marked card (changelog, 2026-10-03) still applies to the tiered pool.
+    - First draft: A to D are four of the six cards that aren't location cards, leaving two unmarked extra cards.
+    - First draft: the marked cards step down in power, A > B > C > D. A stays the one clear standout (CB1); the letter shows roughly how strong each is.
   - The first player must open the round with their marked card.
   - The marked cards are powerful, and A is the stronger. A is the one clear standout; otherwise cards are close in power (CB1, 3.7).
   - What the marked cards do, and how one is played when it didn't make its holder first player, are left to card design.
@@ -2285,7 +2287,7 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
   - Each location is aligned with one archetype (2.5).
 - **Factions:** five in play, one drawn at random from each archetype (3.4). Each has cubes in its own colour and its own supply. Factions play identically; there are no powers.
 - **Players:** 3 to 5, each a slayer group linked to one archetype (3.10). Each player has cubes in their own colour (influence) and their own supply.
-- **The card pool:** 21 unique, single-purpose cards (CU3), all used at every player count (PS1): one card for each of the 15 locations (LK1) and 6 others. Four cards are marked A, B, C and D (FP2). **To come with the cards:** the cards themselves.
+- **The card pool:** 21 unique, single-purpose cards (CU3), all used at every player count (PS1): one card for each of the 15 locations (LK1) and 6 others. Four of the 6 others are marked A, B, C and D (FP2); two are unmarked. **To come with the cards:** the cards themselves.
 - **Hidden tokens and bluff tokens:** **to come with the cards** (IN1).
 
 ### G.2 General rules
