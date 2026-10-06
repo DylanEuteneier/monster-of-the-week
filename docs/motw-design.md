@@ -555,6 +555,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     10. Presence actions have no cube limits, whatever kind they are (concentrate and scatter are only examples, not the only kinds). They are defined by geography instead: for example, move any faction's cubes from locations adjacent to a location of this suit into it, or move any amount of the affinity faction from neighbouring regions into a single region.
     11. Cards are written from the slayer group's point of view, never the monster's. Each is something a slayer group would plausibly do that has the card's effect on the monsters: perform a séance, leave out fresh meat, hack a computer.
     12. *(Set aside with IL1.)* Whether a card needs the lead of the faction it moves is decided card by card. In the first draft no card needs a lead.
+    13. As many presence effects as possible should be a unique move, like Track Them in the Snow (H.1): a distinct way of moving that opens gambits only its holder has. Plain "move cubes from here to there" effects are the fallback, not the norm.
   - First draft, suit structure (from a suggestion, 2026-10-05). Each suit has three cards:
     - *Strike:* a move that creates a contest at or from a suit location. Printed influence 2.
     - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3. One card in each suit carries a response.
@@ -2432,7 +2433,8 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 - **Any faction:** a presence action can move any faction, with no cube limit (3.7, principles 10 and 12; IL1 is out of the first draft).
 - **Influence:** a presence action places 1 influence at each destination, spent from the player's standing with the faction moved. A player with no standing with it places none.
 - **Infl.:** the influence a suit card gives with its suit's affinity faction when spent for influence instead (principle 7).
-- **Kind:** concentrate (gather into one location; feeds growth), scatter (break into single cubes; stops growth), merge (force a fight), split (prevent a fight), pin (nothing enters or leaves), swap (two groups trade places), far push, relocate, fight math, timing, standing effect (lasts the round), block, influence, information, catch-up, rule-bend.
+- **Kind:** concentrate (gather into one location; feeds growth), scatter (break into single cubes; stops growth), merge (force a fight), split (prevent a fight), pin (nothing enters or leaves), swap (two groups trade places), far push, relocate, fight math, timing, standing effect (lasts the round), block, influence, information, catch-up, rule-bend, sow (mancala), lure (the largest group comes), teleport, halve, conveyor, network jump, shove, mirror, leap.
+- **Group:** all of one faction's cubes at one location.
 - **(response)** entries are response ideas not yet attached to a card.
 - **Round:** the revision round the idea came from.
 - **Adjacent** (or "next to"): two locations are adjacent when their hexes share a border. On the prototype map that is always within a region or across the border of a neighbouring region (see G.1).
@@ -2455,6 +2457,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Join the Coven | – | Influence | Gain 2 influence with the faction controlling a ◐ location, plus 1 for each other ◐ location it controls. | – | – | 4a |
 | Follow the Pack | – | Influence | Gain influence with the Nocturnal faction equal to the number of contested locations it is in (at least 1). | – | – | 4a |
 | (response) Howl at the Moon | – | Timing | – | When any player passes, move any number of Nocturnal cubes from one location to an adjacent one. | – | 4c |
+| Leave Out Fresh Meat (v2) | – | Lure | Choose a ◐ location or one adjacent to it. The largest group in any adjacent location moves in, all of it. The hungriest comes first. | – | – | 6 |
 
 ### H.2 ↂ 80's Sci-Fi: Military Facility, Weather Station, State Park
 
@@ -2469,6 +2472,8 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Call in the Men in Black | – | Standing effect | For the rest of the round, cubes moved into an ↂ location by any player go to an adjacent location of your choice instead. | – | – | 3 |
 | (response) Tinfoil Hats | – | Block | – | When another player's card would move cubes out of a location where you have influence, those cubes stay. | – | 3 |
 | Call in the National Guard | – | Fight math, sink | Mark a contested location in an ↂ location's region. At this round's fight there, the winner loses as many cubes as the loser. | – | – | 4b |
+| Beam Them Up | – | Teleport | Take one group from anywhere on the island and set it down at a location adjacent to an ↂ location. | – | – | 6 |
+| Leak the Documents (v2) | – | Halve | Choose a group at an ↂ location. Half of it, rounded down, leaves for an adjacent location of your choice. | – | – | 6 |
 
 ### H.3 ⏏ Sentients: Shipping Docks, Junkyard, Beach City
 
@@ -2483,6 +2488,8 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Trigger an EMP | – | Pin | Choose a region with a ⏏ location. No cubes move into, out of or within it this round. | – | – | 3 |
 | (response) Firewall | – | Influence | – | When another player places influence at a location where you have influence, place 1 from your supply there too. | – | 3 |
 | Overload the Generator | – | Fight math, sink | Mark a ⏏ location. At this round's fight there, each group loses 2 more cubes as casualties. | – | – | 4b |
+| Reprogram the Traffic Lights | – | Conveyor | Choose a region with a ⏏ location and one of the six hex directions. Every group in that region moves one hex that way, where it can. | – | – | 6 |
+| Back Up to the Cloud | – | Network jump | Move a group from one ⏏ location to another ⏏ location, however far apart. | – | – | 6 |
 
 ### H.4 ☾ Undead: Sawmill, Mine, Graveyard
 
@@ -2496,6 +2503,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Salt and Burn the Bones | – | Fight math | Mark a ☾ location. At this round's fight there, both groups lose all their cubes; trophies are handed out as normal and the location is not scorched. | – | – | 3 |
 | Chainsaw Through the Horde | – | Merge | Move every cube of any faction from locations adjacent to a ☾ location into it, if it holds exactly one faction. | – | – | 3 |
 | (response) Ouija Board | – | Information | – | When a player spends a card for influence, look at one player's trophies. | – | 3 |
+| Lead the Horde | – | Shove | Move a whole group into an adjacent location. If that would make three factions there, the smaller group already there is shoved on to an adjacent location of your choice. | – | – | 6 |
 
 ### H.5 ⎈ Demons: Caves, Lighthouse, The Lake House
 
@@ -2510,6 +2518,8 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Burn the Book | – | Rule-bend | Choose a contested ⎈ location. Its fight doesn't happen this round; both factions stay. | – | – | 3 |
 | (response) Speak Its True Name | – | Influence | – | When a card's action targets a location where you have influence, move that influence to your standing with the faction there. | – | 3 |
 | Set the House on Fire | – | Fight math, sink | Mark a ⎈ location. Any fight there this round counts as a true tie: both groups are wiped out and the location is scorched. | – | – | 4b |
+| Smash the Mirror (v2) | – | Mirror | Move a group at a ⎈ location to its reflection across the lake, or bring one from the reflection. On layout D: Lighthouse and State Park, The Lake House and Fallout Bunker; Caves has none. | – | – | 6 |
+| Read from the Book (v2) | – | Leap | Move a group at a ⎈ location over an adjacent location into the one beyond it, in a straight line. | – | – | 6 |
 
 ### H.6 Unsuited extras
 
@@ -2524,6 +2534,8 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 - Round 4b, presence sinks: Call in the National Guard (one-for-one losses), Overload the Generator (+2 losses each side), Set the House on Fire (forces a true tie, so it scorches). With Silver Bullets and Salt and Burn the Bones, every suit now has a sink idea. Sinks are the island's main tool, since cards never remove cubes.
 - Round 4c, responses: the response ideas now cover distinct jobs. Protect cubes (Tinfoil Hats); redirect a move (Cut the Phone Lines); tax influence (Pull the Plug); information (Hold a Séance, Ouija Board); piggyback influence (Firewall); pull influence to safety (Stay Indoors, Speak Its True Name); feed an affinity faction (Sign in Blood); act on a pass (Howl at the Moon). Follow the Tracks duplicates Firewall and could be dropped.
 - Round 4d, a candidate full set: see H.8.
+
+- Round 6, unique moves (principle 13): each presence effect gets its own way of moving, so whoever holds it has a gambit nobody else does. Sow (Track Them in the Snow), lure (Fresh Meat v2), teleport (Beam Them Up), halve (Leak the Documents v2), conveyor (Reprogram the Traffic Lights), network jump (Back Up to the Cloud), shove (Lead the Horde), mirror (Smash the Mirror v2), leap (Read from the Book v2). Mirror and leap depend on the map's geometry, so they are prototype-map specific.
 
 ### H.8 Candidate sets
 
