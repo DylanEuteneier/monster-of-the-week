@@ -43,6 +43,8 @@ Favourites marked so far ("preferred" in section 3): `DR3`, `DR4`, `MC3`, `FR1`,
 | 3.11 Information | The decision (hidden hands); `IN2` secret trophies. `UT1` unresolved hidden tokens stay face down into the next round. `IN1` hidden actions, with `HT1`/`HT2`, `BT1` and `MC1`–`MC3`, deferred to step 2 with the cards | — |
 | 3.12 Round structure and game length | `GL1` a fixed number of rounds; `RS1` draft, play, resolve; `RE3` round ends when all pass; the resolve phase runs fights, then growth | None |
 | 3.13 Conflict resolution | `RQ1`–`RQ5` what a fight must do; `FS1` two-sided fights; `FR5` half, rounded down, minimum 1. `TF1` tied fights: both wiped out and the location scorched (`TM1`), unless one faction is aligned with the location, which then wins as normal under `FR5`. `TD1` trophies by influence at the location: bigger pile to the leader, smaller to the runner-up. Ties between players: affinity first (`AB1`), otherwise `PT2` standing tie, and under `ST1` nobody tied collects: a tie uses up every place the tied players were in line for (tied leaders return both piles to the supply). `UP1`: a lone player at the location collects both piles; with no players there, both piles return to the supply. Piles cannot be declined. After a fight (`AF3`, adjusted): half the leader's influence there, rounded down, moves to the winning faction and the rest returns to the leader's supply; all other influence stays. `AT1`: after a tied fight on neutral ground (location scorched), all influence there returns to each player's supply. `AS1`: tied leaders' influence returns to their own supplies, with nothing gained; players tied for runner-up keep theirs at the location. Influence where no fight occurs stays into the next round. No spillover (`RO1` out): fights are independent, so their order doesn't matter. No dice (`FR4` out). Fight trigger: `FT1` only, every contested location fights in the round-end resolve phase. No boil-over (`FT2`), card-triggered fights (`FT3`) or dynamic round end (`RE2`) in the first draft | None |
+| 3.14 Influence | `IF1` influence with factions is public; `IF2` each player holds influence with each faction; `IM1` influence placed on locations is spent from a faction (`CA2`) or, for some actions such as traps, comes from the player's own supply (`CA3`). How influence is gained (`CA1`) is worked out with the cards. A player's cubes are always in their supply, in standing with a faction, or on a location. `IB1`–`IB4` as guiding principles. No costly displacement (`IB5` out). `IL1`: only a faction's influence leader can affect its presence; affinity breaks a tie for the lead, otherwise all tied players are influence leaders. Each slayer group starts with some influence with its linked faction; 0 counts, so unlinked factions start with every player as influence leader | (rest of 3.14 to come) |
+| 3.15 Victory | `WC1` the island or one faction wins; `TH1` end-game presence threshold (provisionally more than 15); `FX1` factions tied on presence: most locations controlled | (rest of 3.15 to come) |
 | 3.1 Map (regions and borders) | The prototype board, layout D: five regions of three in a ring round a central lake. Mountains (Weather Station, Ski Resort, Mine), Badlands (Military Facility, Junkyard, Caves), Coast (Fallout Bunker, Shipping Docks, Lighthouse), Old Town (Graveyard, Beach City, Occult Camp), Woods (State Park, Sawmill, The Lake House). Borders: Mountains–Badlands, Badlands–Coast, Coast–Old Town, Old Town–Woods, Woods–Mountains | None |
 
 Everything else is in the backlog below; finished work is in the changelog (A.2).
@@ -70,7 +72,7 @@ Not the current focus. Items come back into focus when the draft needs them.
 
 - **Map design:** which regions border which.
 - **Card design beyond the first draft:** the movement types; what the marked cards do; which cards belong to the 3+, 4+ and 5+ tiers.
-- **Balancing:** starting presence, total cubes per faction, the presence threshold, the volatility threshold, the growth threshold, the number of rounds, hand size, and how many real and bluff tokens a hidden action places.
+- **Balancing:** each player's starting cubes, each slayer group's starting influence with its linked faction, starting presence, total cubes per faction, the presence threshold, the volatility threshold, the growth threshold, the number of rounds, hand size, and how many real and bluff tokens a hidden action places.
 
 **Open questions from the first draft**
 
@@ -532,6 +534,10 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - `CB1` **Balance:** cards differ in what they do but are close in power. The card marked A (3.8) is the exception.
 - The movement types themselves are left to card design.
 - *Open:* how players influence the board with monster-of-the-week trope actions (baiting, trapping, and similar).
+- **Common card actions (designer's seed, 2026-10-05; to be worked through in step 2):**
+  - `CA1` *Gain influence:* a simple, straightforward action. The player gains some influence (stake) with a faction.
+  - `CA2` *Affect a faction's presence:* an action changes a faction's presence on the board, and places influence spent from that faction (IM1, 3.14). Example: move a faction's cubes from one location to adjacent locations; at each location moved to, the player takes 1 influence from that faction and places it there, along with at least 1 of the faction's cubes.
+  - `CA3` *Place without moving presence:* some actions, such as a trap, place tokens and 1 influence from the player's own supply on a location, without affecting any faction's presence (IN1, 3.11).
 
 #### 3.8 Timing and passing · *Ideas*
 
@@ -694,16 +700,21 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- `IF1` Players can gain influence with a faction, and influence is public.
-- `IF2` Players hold influence with each faction, which breaks end-game ties, and decides how battle trophies are distributed (TD2, 3.13).
-- `IM1` **Influence on locations:** influence can be spent from a faction and placed on a location (CU4, 3.7). After a fight, the leader's influence at the location can move to the faction that won (AF3, 3.13), so influence spent from one faction can end up with another.
+- `IF1` *(First draft.)* Players can gain influence with a faction, and influence is public.
+- `IF2` *(First draft.)* Players hold influence with each faction, which breaks end-game ties, and decides how battle trophies are distributed (TD2, 3.13).
+- `IM1` **Influence on locations (first draft):** influence can be spent from a faction and placed on a location (CU4, 3.7). After a fight, the leader's influence at the location can move to the faction that won (AF3, 3.13), so influence spent from one faction can end up with another.
 - Lower influence with a faction wins ties for that faction's trophies (PT1, 3.13).
 - If a faction wins the game, a player's trophies of that faction count against their influence with it (EG3, 3.15).
-- `IB1` **Influence as bidding:** the influence track is an area-control / bidding game in disguise. Players outbid each other for dominance in influence with a faction that appears poised to win the end-game board state check.
+- **Where a player's cubes are (first draft):** each player's cubes are always in one of three places.
+  - *Supply:* unused cubes. Cubes return here after a fight (the leader's remainder, AF3), from a standing tie (AS1), and from a tied fight (AT1).
+  - *Standing with a faction:* public influence. Cubes arrive from the supply (CA1) or from a location when a fight's leader converts half (AF3).
+  - *On a location:* a bid for that location's trophies. Cubes arrive from standing with a faction (CA2) or from the supply (CA3).
+  - The supply limits how much influence a player can ever build. How many cubes each player starts with is left to balancing.
+- `IB1` **Influence as bidding (first draft):** the influence track is an area-control / bidding game in disguise. Players outbid each other for dominance in influence with a faction that appears poised to win the end-game board state check.
   - Bids are sequential, player by player, never simultaneous.
-- `IB2` **Shifting desirability:** what keeps influence targets moving is board presence itself. Depending on the board state, influence with a faction can become highly contested or very niche.
-- `IB3` Players don't bid with money or any other resource. A bid is an action spent increasing influence, at the cost of not taking an action that affects board presence.
-- `IB4` Influence bids and trophies are separate systems.
+- `IB2` **Shifting desirability (first draft):** what keeps influence targets moving is board presence itself. Depending on the board state, influence with a faction can become highly contested or very niche.
+- `IB3` *(First draft.)* Players don't bid with money or any other resource. A bid is an action spent increasing influence, at the cost of not taking an action that affects board presence.
+- `IB4` *(First draft.)* Influence bids and trophies are separate systems.
 - *Open:* how influence is gained and tracked.
 - Ties between players in influence with a faction go to the slayer group with affinity for that faction. When no tied player has that affinity, the tie stands (AB1, 3.10).
   - `ET1` **End-game ties look to the next faction:** at game end, players still tied on standing with the winning faction compare their standing with the faction that has the next highest presence, and so on down.
@@ -711,7 +722,12 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - Where the end-game score isn't plain influence (EG3, 3.15). Candidates:
     - `ET3` *Affinity breaks any tie on standing (preferred):* however standing is measured, the slayer group with affinity for the winning faction wins a tie on it. If no tied player has that affinity, the next faction decides (ET1).
     - `ET2` *Raw influence first:* players tied on score with the winning faction compare their raw influence with it. If that is level, affinity decides, and after that the next faction (ET1).
-- `IB5` **Costly displacement:** outbidding another player's influence with a faction costs more than an uncontested bid, and the player knocked down receives a compensation.
+- `IL1` **Only the influence leader moves a faction (first draft):** only a faction's influence leader, the player with the most influence with that faction, can take an action that affects that faction's presence on the board (CA2, 3.7). Players are never called a faction's leader. Designer's seed, 2026-10-05.
+  - First draft: each slayer group starts the game with some influence with its linked archetype's faction, so it begins as that faction's influence leader. The amount is left to balancing.
+  - First draft: 0 influence counts. With a faction no slayer group is linked to (at 3 or 4 players), every player starts tied at 0, so every player is its influence leader until someone leads outright.
+  - Ties: affinity breaks a tie for the most influence (AB1, 3.10), so a tied player whose slayer group has affinity for the faction is its sole influence leader. When no tied player has that affinity, the tie stands and doesn't freeze the faction: all the tied players are influence leaders and can take actions that affect its presence, until one of them leads outright.
+- `IB5` **Costly displacement (out of the first draft):** outbidding another player's influence with a faction costs more than an uncontested bid, and the player knocked down receives a compensation.
+  - Out of the first draft: it needs playtest evidence, or a clear reason, for overtaking to have an effect.
   - *Open:* what the extra cost is, given bids aren't paid with a resource.
   - *Open:* what the compensation is.
 
@@ -719,11 +735,11 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- `WC1` **Two win conditions:** the island wins, or one faction wins.
-- `TH1` **End-game presence threshold:** at the end of the game, total invader presence is checked against a threshold. Below it, the invaders lose and the island wins. At or above it, the invaders win, and the faction with the highest presence is the winning faction.
+- `WC1` **Two win conditions (first draft):** the island wins, or one faction wins.
+- `TH1` **End-game presence threshold (first draft):** at the end of the game, total invader presence is checked against a threshold. Below it, the invaders lose and the island wins. At or above it, the invaders win, and the faction with the highest presence is the winning faction.
   - Presence is a plain cube count. Total invader presence is the number of invader cubes on the board, and a faction's presence is the number of its own cubes on the board.
   - The threshold is a simple fixed number. Provisional: more than 15. The number, and whether the line is "more than" or "at or above", are left to balancing.
-  - `FX1` **Faction ties go to most locations:** when factions are tied in presence, the one that controls more locations (LC2, 3.2) ranks higher.
+  - `FX1` **Faction ties go to most locations (first draft):** when factions are tied in presence, the one that controls more locations (LC2, 3.2) ranks higher.
     - *Open:* what happens if the tied factions also control the same number of locations.
 - `EG1` **End game based on elimination points and influence:**
   - *Invaders win:* the winning player is the one with the most influence with the winning faction.
@@ -872,6 +888,7 @@ Actual changes to mechanisms and game structure.
 | **Humanoid faction** | *(Idea.)* A faction whose battles can give rise to Undead. Which factions are humanoid is not yet defined. |
 | **Influence** | *(Idea.)* A player's standing with a faction. Public. Held with several factions at once. It can be spent from a faction and placed on a location, where it counts toward collecting trophies. |
 | **Influence cube** | *(Idea.)* A cube representing a player's influence with a faction; may be spent to take board actions. |
+| **Influence leader** | *(Idea.)* The player with the most influence with a faction. Affinity breaks a tie for the most (AB1); otherwise players tied for the most are all influence leaders. A player is never called a faction's leader. |
 | **Invaders** | *(For now.)* All the factions on the board, taken together. |
 | **Leader** | *(Idea.)* The player with the most influence at a location. |
 | **Location** | One of the 15 places on the island board, each aligned with an archetype through its symbol. |
@@ -1534,6 +1551,10 @@ The **Pick** column says how candidates in a slot relate:
 |  |  | `IC2` | Indirect cards are free and small; direct cards cost influence and are bigger |  |
 | Movement (MV) | Any | `MV1` | Distinct movement actions | 3.7 |
 |  |  | `MV2` | Rule-breaking moves |  |
+| Card actions (CA) | Any | `CA1` | Gain influence with a faction | 3.7 |
+|  |  | `CA2` | Affect a faction's presence, placing influence spent from it |  |
+|  |  | `CA3` | Place tokens and 1 influence from the player's supply, without affecting presence |  |
+| Influence leader (IL) | One | `IL1` | Only a faction's influence leader can affect its presence | 3.14 |
 | Card balance (CB) | One | `CB1` | Cards close in power, with A the exception | 3.7 |
 | Turn options (TU) | One | `TU1` | Play a card or pass; a pass isn't final | 3.8 |
 | First player (FP) | One | `FP1` | Marked cards A and B | 3.8 |
