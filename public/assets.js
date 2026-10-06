@@ -36,9 +36,6 @@ const panel = (title, note, body) => `<section class="panel"><div class="row-bet
 /** @param {{ width: number, height: number, src: string } | undefined} sprite @param {number} scale */
 const img = (sprite, scale) => (sprite ? `<img class="sprite" src="${esc(sprite.src)}" width="${sprite.width * scale}" height="${sprite.height * scale}" alt="">` : '');
 
-/** @type {[import('./pieces.js').TargetState, string][]} */
-const STATES = [['', 'normal'], ['candidate', 'candidate'], ['hovered', 'hovered']];
-
 function render() {
   const headers = /** @type {SpriteMap} */ (art.headers ?? {});
   const hexes = /** @type {SpriteMap} */ (art.hexes ?? {});
@@ -62,7 +59,7 @@ function render() {
     fig(hexHtml(loc.id, 1), '1×') + fig(hexHtml(loc.id, 2), '2×') + fig(hexHtml(loc.id, 2, '', 'candidate'), '2× candidate (hover it)')));
   const factionCards = spec.factions.map((f) => card(`${esc(symbols.get(f.archetype) ?? '')} ${esc(f.name)}`,
     fig(img(sprites[f.id], 3), 'icon 3×') + [1, 2, 4].map((scale) => fig(tokenHtml(f.id, scale), `${scale}×`)).join('')
-    + STATES.slice(1).map(([state, label]) => fig(tokenHtml(f.id, 2, state), `2× ${label}`)).join('')));
+    + fig(tokenHtml(f.id, 2, 'candidate'), '2× candidate (hover it)')));
   const cubeCards = SEAT_COLOURS.map((colour, i) => card(`Seat ${i + 1} <span class="mono muted">${esc(colour)}</span>`,
     [12, 16, 22].map((size) => fig(cubeHtml(colour, size), `${size}px`)).join('')));
   const neighbours = Object.values(LAYOUT_SUGGESTIONS)[0]?.neighbours ?? {};
@@ -83,7 +80,7 @@ function render() {
       <p class="small muted">Each hex's border takes its archetype's colours, and the archetype's symbol sits bottom middle, over the border.</p>
       <div class="inline">${spec.archetypes.map((arch) => fig(img(schemes[arch.id], 2), `${esc(arch.symbol)} ${esc(arch.name)}`)).join('')}</div>`),
     panel('Factions', 'icon 16×16; CSS token', `
-      <p class="small muted">Each faction's icon, and its presence token: a cardboard token cut to the icon's outline (outline from <span class="mono">assets/sprites.py</span>; card, edge and shadow in CSS). A candidate token's edge turns gold and its face glows gold, pulsing gently; hovered, it brightens and lifts. The candidate tokens here are live.</p>
+      <p class="small muted">Each faction's icon, and its presence token: a cardboard token cut to the icon's outline (outline from <span class="mono">assets/sprites.py</span>; card, edge and shadow in CSS). A candidate token's edge turns gold and its face glows gold, pulsing gently; hovered, it brightens and lifts. Each candidate token here is live: hover it to see the hovered state.</p>
       <div class="asset-grid">${factionCards.join('')}</div>`),
     panel('Influence cubes', 'seat colours: red, gold, cyan, lime, pink', `<p class="small muted">A cube seen from above, shaded from one seat colour.</p><div class="asset-grid">${cubeCards.join('')}</div>`),
     panel('Archetype symbols', '9×9', `<div class="asset-grid">${spec.archetypes.map((a) => card(`${esc(a.symbol)} ${esc(a.name)}`, [1, 3, 6].map((s) => fig(img(symbols9[a.id], s), `${s}×`)).join(''))).join('')}</div>`),
