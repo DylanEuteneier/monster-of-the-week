@@ -573,6 +573,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
        - Responses are interrupts: played the moment their trigger happens, on anyone's turn, and they don't use a turn. First draft: each response says when it resolves, before or after its trigger, depending on what it does. A cancel response (like Inis's Geis) resolves before, and there is only ever one cancel response in the pool.
        - First draft: a response can't be answered by another response. If the response makes the triggering action impossible, that action resolves as far as it can, and its card is still spent.
        - Responses should be few. Most ways to undo or alter another player's move are presence actions taken on a normal turn, so responses are kept for what a turn can't do.
+       - Responses are always thematic. Apart from the one cancel, a response never just undoes or alters where cubes are; that is the job of turn actions.
     6. *(Set aside with IL1.)* A card that lets one faction act on another needs you to lead the acting faction; if not, gain influence with it instead. In the first draft no lead is needed, and the influence use comes from principle 7.
     7. First draft: every suit card can be spent for influence with its suit's affinity faction, instead of its presence action or its response. The amount is printed on each card, more than 1, like Twilight Struggle's operations points (CU1, one-of, for every suit card).
     8. First draft: the six unsuited extra cards (A to D and two unmarked) don't offer influence. Instead they allow wild, powerful or flexible actions.
@@ -2562,6 +2563,8 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 - Round 4d, a candidate full set: see H.8.
 
 - Round 6, unique moves (principle 13): each presence effect gets its own way of moving, so whoever holds it has a gambit nobody else does. Sow (Track Them in the Snow), lure (Fresh Meat v2), teleport (Beam Them Up), halve (Leak the Documents v2), conveyor (Reprogram the Traffic Lights), network jump (Back Up to the Cloud), shove (Lead the Horde), mirror (Smash the Mirror v2), leap (Read from the Book v2). Mirror and leap depend on the map's geometry, so they are prototype-map specific.
+
+- Responses after the 2026-10-06 principles (few; thematic; apart from the one cancel, never just undoing or altering cube locations): Cut the Phone Lines and Howl at the Moon move cubes, so they don't fit as written. Tinfoil Hats (cubes stay put) is a block rather than a move, and is borderline. The influence, information and tax responses (Firewall, Stay Indoors, Speak Its True Name, Hold a Séance, Ouija Board, Pull the Plug, Sign in Blood) still fit.
 
 ### H.8 Candidate sets
 
