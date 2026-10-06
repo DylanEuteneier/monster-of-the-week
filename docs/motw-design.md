@@ -213,7 +213,7 @@ The works each slayer group (2.5) is based on.
 
 #### Trope inspiration for actions
 
-Common monster-of-the-week, campy horror, and invasion-movie tropes, as inspiration for actions. Thematic only; no mechanisms attached.
+Common monster-of-the-week, campy horror, and invasion-movie tropes, as inspiration for actions. Thematic only; no mechanisms attached. This is a living list: add to it, or run revision cycles on it, whenever new ideas are needed.
 
 **Gambits that make the invaders react**
 
@@ -553,6 +553,12 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     7. First draft: every suit card can be spent for influence with its suit's affinity faction, instead of its presence action or its response. The amount is printed on each card, more than 1, like Twilight Struggle's operations points (CU1, one-of, for every suit card).
     8. First draft: the six unsuited extra cards (A to D and two unmarked) don't offer influence. Instead they allow wild, powerful or flexible actions.
     9. Action themes are not limited to the inspiration and ideas recorded so far. A strong thematic action can lead to a new mechanism, and a strong mechanism can find a new theme.
+  - First draft, suit structure (from a suggestion, 2026-10-05). Each suit has three cards:
+    - *Strike:* a move that creates a contest at or from a suit location. Printed influence 2.
+    - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3. One card in each suit carries a response.
+    - *Signature:* the archetype's rule-bend, needing the acting faction's lead. Printed influence 2 to 4, by strength.
+    - Across a suit's cards, one concentrates and one scatters. Concentrating cubes feeds growth (GR1 needs 2 or more cubes); scattering them into single cubes stops growth, so both sides of the win condition have a tool in every suit.
+  - The unsuited extras come later. They are spice, balance and swing for the suited cards, and take inspiration from Inis's unique effect cards.
 - **The staleness tension (designer's observation, 2026-10-05):** if each card always does the same unique action at the same place, the game gets stale quickly. If each card allows similar, more flexible actions, each action loses its impact, immediacy and vibe. The card design has to sit between the two.
 - **Common card actions (designer's seed, 2026-10-05; to be worked through in step 2):**
   - `CA1` *Gain influence:* a simple, straightforward action. The player gains some influence (stake) with a faction.
