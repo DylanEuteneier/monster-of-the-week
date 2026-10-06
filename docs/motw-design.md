@@ -36,7 +36,7 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 | 3.4 Invader forces | The decisions only (one random faction per archetype, as cubes). No archetype or faction powers: every faction plays the same; powers (`AP1`–`AP6`) stay ideas for later | None |
 | 3.5 Invader population | `SD1` seeding (provisional 5 + 1 + 1, home location random of the three); growth by `GR1` at resolution, which is the game's own growth system (`GR3`); growth always comes after fights, so each growing location holds one faction | None |
 | 3.6 Action acquisition | All of `DR1`–`DR6`: a draft at the start of each round; unplayed cards lost back to the pool; pick and pass with the put-back rule; the same pool every round; the undealt cards left out unseen; the pool is the whole action set. Hand size 6/5/4 at 3/4/5 players (`PS1`) | None |
-| 3.7 Player actions | `CU3` single-purpose cards: each card does one thing (`AC1`, distinct and precious actions). `SU1` five archetype suits of three cards (15), plus 6 others (A to D and two unmarked); `LK1` location cards set aside. `CU2` out. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out. The rest is being designed with the cards | `CU1` one-of (every card gains an influence fallback) |
+| 3.7 Player actions | Cards are played once: some offer one action, some offer a choice of actions (a mix of `CU3` and `CU1`), all held to `AC1` (distinct and precious) and to theme above all. `SU1` five archetype suits of three cards (15), plus 6 others (A to D and two unmarked); `LK1` location cards set aside. `CU2` out. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out. The rest is being designed with the cards | `CU1` one-of (every card gains an influence fallback) |
 | 3.8 Timing and passing | `TU1` play or pass, passing is not final; `FP1` first player by marked cards, with four marked cards A to D under the fixed pool (`FP2`); the round ends when everyone passes in a row (`RE3`, 3.12) | None |
 | 3.9 Persistent progression | The decision: no persistent upgrade mechanism | None |
 | 3.10 Player characters | The decisions (five slayer groups, one per archetype); affinity as `AB1` tiebreaker | None (`AB2` is not yet a close second) |
@@ -540,11 +540,11 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - Hand size becomes 5 cards each, so the 15 location cards are all dealt at 3 players.
 - `SU1` **Archetype suits (first draft; designer's seed, 2026-10-05):** cards come in five suits, one per archetype. Each card is a thematic action for its archetype: for example, gain influence with that archetype's faction, or a presence effect targeting a location on the board and a faction at that location.
   - First draft: suits replace the location cards (LK1 set aside). Fifteen suit cards, three per archetype, each a thematic action whose target is chosen on the board. With the six extras (A to D and two unmarked) the pool stays at 21 (PS1).
-  - Designer's principles for the suited set (2026-10-05):
+  - Designer's principles for the suited set (2026-10-05). Above all, every card must be incredibly thematic, feel very unique, and fit its suit's theme; the rest serve that.
     1. A presence effect always offers the option of affecting one of its suit's three locations.
     2. An influence action gains influence either with the suit's affinity faction (its archetype's faction) or with a faction controlling one of the suit's locations.
     3. Every action feels strongly thematic to both its suit and the action itself.
-    4. Some cards can be multi-use; some single-use.
+    4. Some cards can be multi-use; some single-use. Multi-use means a card offers more than one action, of which the player takes one; every card is played once.
     5. Like Inis, some cards could have an "on your turn" action and an "in response" action, so the card can be spent either way.
 - **The staleness tension (designer's observation, 2026-10-05):** if each card always does the same unique action at the same place, the game gets stale quickly. If each card allows similar, more flexible actions, each action loses its impact, immediacy and vibe. The card design has to sit between the two.
 - **Common card actions (designer's seed, 2026-10-05; to be worked through in step 2):**
