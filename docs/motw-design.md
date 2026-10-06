@@ -37,7 +37,7 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 | 3.5 Invader population | `SD1` seeding (provisional 5 + 1 + 1, home location random of the three); growth by `GR1` at resolution, which is the game's own growth system (`GR3`); growth always comes after fights, so each growing location holds one faction | None |
 | 3.6 Action acquisition | All of `DR1`–`DR6`: a draft at the start of each round; unplayed cards lost back to the pool; pick and pass with the put-back rule; the same pool every round; the undealt cards left out unseen; the pool is the whole action set. Hand size 6/5/4 at 3/4/5 players (`PS1`) | None |
 | 3.7 Player actions | `CU3` single-purpose cards: each card does one thing (`AC1`, distinct and precious actions). `LK1` one card per location (15), plus 6 others. `CU2` out. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out. The rest is being designed with the cards | `CU1` one-of (every card gains an influence fallback) |
-| 3.8 Timing and passing | `TU1` play or pass, passing is not final; `FP1` first player by marked cards A and B; the round ends when everyone passes in a row (`RE3`, 3.12) | None |
+| 3.8 Timing and passing | `TU1` play or pass, passing is not final; `FP1` first player by marked cards, with four marked cards A to D under the fixed pool (`FP2`); the round ends when everyone passes in a row (`RE3`, 3.12) | None |
 | 3.9 Persistent progression | The decision: no persistent upgrade mechanism | None |
 | 3.10 Player characters | The decisions (five slayer groups, one per archetype); affinity as `AB1` tiebreaker | None (`AB2` is not yet a close second) |
 | 3.11 Information | The decision (hidden hands); `IN2` secret trophies. `UT1` unresolved hidden tokens stay face down into the next round. `IN1` hidden actions, with `HT1`/`HT2`, `BT1` and `MC1`–`MC3`, deferred to step 2 with the cards | — |
@@ -552,7 +552,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - Cards still in hand when the round ends are lost (DR2, 3.6).
 - `FP1` **First player by marked cards (first draft):** two cards in the draft are marked A and B. The player holding A is first player, and play goes clockwise from them. If A is the card left out that round (DR5, 3.6), the player holding B is first player.
   - A and B are both in the 3+ core set, so they are in the pool at every player count (3.16).
-  - First draft, with the fixed pool (PS1, 3.16): at 3 players three cards are left out, so A and B can both be left out. *Open:* who is first player then.
+  - `FP2` *Four marked cards with the fixed pool (first draft):* with the location-card catalogue (LK1, PS1), four cards are marked A, B, C and D. The player holding the earliest letter dealt is first player and opens the round with that card. At most three cards are left out, so at least one marked card is always dealt. The earlier ruling against a third marked card (changelog, 2026-10-03) still applies to the tiered pool.
   - The first player must open the round with their marked card.
   - The marked cards are powerful, and A is the stronger. A is the one clear standout; otherwise cards are close in power (CB1, 3.7).
   - What the marked cards do, and how one is played when it didn't make its holder first player, are left to card design.
@@ -1580,6 +1580,7 @@ The **Pick** column says how candidates in a slot relate:
 | Card balance (CB) | One | `CB1` | Cards close in power, with A the exception | 3.7 |
 | Turn options (TU) | One | `TU1` | Play a card or pass; a pass isn't final | 3.8 |
 | First player (FP) | One | `FP1` | Marked cards A and B | 3.8 |
+|  |  | `FP2` | Four marked cards, A to D, with the fixed pool (first draft) |  |
 | Affinity (AB) | Any | `AB1` | Tiebreaker: location for battle, faction for influence | 3.10 |
 |  |  | `AB2` | Permanent plus-one |  |
 | Information (IN) | Any | `IN1` | Hidden actions: tokens that flip at resolution | 3.11 |
@@ -2284,7 +2285,7 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
   - Each location is aligned with one archetype (2.5).
 - **Factions:** five in play, one drawn at random from each archetype (3.4). Each has cubes in its own colour and its own supply. Factions play identically; there are no powers.
 - **Players:** 3 to 5, each a slayer group linked to one archetype (3.10). Each player has cubes in their own colour (influence) and their own supply.
-- **The card pool:** 21 unique, single-purpose cards (CU3), all used at every player count (PS1): one card for each of the 15 locations (LK1) and 6 others. Two cards are marked A and B. **To come with the cards:** the cards themselves.
+- **The card pool:** 21 unique, single-purpose cards (CU3), all used at every player count (PS1): one card for each of the 15 locations (LK1) and 6 others. Four cards are marked A, B, C and D (FP2). **To come with the cards:** the cards themselves.
 - **Hidden tokens and bluff tokens:** **to come with the cards** (IN1).
 
 ### G.2 General rules
@@ -2318,7 +2319,7 @@ The game lasts a fixed number of rounds [to balance] (GL1). Each round has three
 
 #### 2. Play (TU1, FP1)
 
-- **First player:** whoever holds card A, or card B if A was left out. They must open the round with that marked card. Play goes clockwise.
+- **First player:** whoever holds the earliest marked card dealt (A, then B, C, D; FP2). They must open the round with that card. Play goes clockwise.
 - On their turn a player plays a card or passes. Passing is not final: a player who passed can play when the turn comes back to them.
 - The round ends when every player passes in a row (RE3). Cards still in hand are lost back to the pool (DR2).
 - **To come with the cards:** what the cards do (3.7). The seeds:
@@ -2326,7 +2327,7 @@ The game lasts a fixed number of rounds [to balance] (GL1). Each round has three
   - *Affect a faction's presence (CA2):* only as its influence leader. Example: move a faction's cubes from one location to adjacent locations, and at each location moved to, place 1 influence spent from that faction, along with at least 1 of its cubes.
   - *Place without moving presence (CA3):* for example a trap; place tokens and 1 influence from your supply on a location.
   - Movement follows the regions (CN3): free within a region, and allowed into a neighbouring region. A region whose three locations are all scorched is impassable: nothing moves into or through it.
-  - What the marked cards A and B do.
+  - What the marked cards A to D do.
 
 #### 3. Resolve
 
@@ -2366,5 +2367,5 @@ Avoiding fights is a bet that a faction wins (few trophies keep influence whole)
 
 ### G.6 Gaps to close
 
-- **To come with the cards:** every card and what it does; how card uses combine; movement types; card A and B; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).
+- **To come with the cards:** every card and what it does; how card uses combine; movement types; cards A to D; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).
 - **Balancing:** rounds, the presence threshold, the growth threshold, seeding numbers, each player's starting cubes, and starting influence with the linked faction.
