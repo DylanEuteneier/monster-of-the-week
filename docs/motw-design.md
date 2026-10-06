@@ -30,7 +30,7 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 |---|---|---|
 | General: supply | One supply per colour. Player-coloured cubes return to that player for later actions; faction cubes return to that faction to be placed later | None |
 | General: no pieces leave the game | No piece is ever removed from the game entirely; anything that leaves the board returns to its supply | None |
-| 3.1 Board topology | `CN3` Regions; `BD1` one board; `LL1` two-faction limit (no action may bring in a third faction); `TM1` scorched earth (everything on a scorched location returns to its supply) | None |
+| 3.1 Board topology | `CN3` Regions; `BD1` one board; `LL1` two-faction limit (no action may bring in a third faction); `TM1` scorched earth (a true tie burns everything: no trophies, no influence to factions, all pieces back to their supplies) | None |
 | 3.2 Location control | `LC1` factions control, players never do; `LC2` control by cube count | None |
 | 3.3 Location-archetype alignment | `AL2` tied fights on aligned ground; `AL3` boosted growth. (`AL1`, spread archetypes, holds through the layout D map) | None |
 | 3.4 Invader forces | The decisions only (one random faction per archetype, as cubes). No archetype or faction powers: every faction plays the same; powers (`AP1`–`AP6`) stay ideas for later | None |
@@ -406,7 +406,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - No region borders all the others.
     - Which regions border which is left to map design.
 - `TM1` **Scorched earth (first draft):** a location where a fight ends in a tie is scorched, and is no longer a location for the rest of the game.
-  - First draft: scorching clears everything on the location. Cubes, influence, hidden tokens and any other pieces return to their supplies.
+  - First draft: scorching only comes from a true tie, and a true tie never rewards anyone. It burns everything: no trophies are collected and no influence goes to any faction. Cubes, influence, hidden tokens and any other pieces on the location return to their supplies.
 - *Open:* whether locations limit the number of cubes they hold, or have special properties.
 
 #### 3.2 Location control · *Ideas*
@@ -644,7 +644,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - `TF1` **Tied fights (first draft):** when the two groups are the same size, both are wiped out and the location is left empty.
   - At a location aligned with one of the two factions, that faction wins the fight instead (AL2, 3.3).
     - First draft: the aligned faction wins and loses half the loser's cubes, rounded down, minimum 1, as in any other win (FR5). In a 3 v 3 tie at its aligned location, the winner loses 1 and keeps 2.
-    - A tie on ground aligned with neither faction wipes out both groups, and the location is scorched (TM1, 3.1).
+    - A tie on ground aligned with neither faction (a true tie) wipes out both groups, and the location is scorched (TM1, 3.1). No trophies are collected: the wiped cubes return to their factions' supplies.
 - `TD1` **Trophy distribution by influence at the location (first draft):** players place influence on locations (IM1, 3.14), and the players with the most influence at a location collect the trophies from a fight there.
   - The casualties form two piles, one per faction.
   - Piles are handed out by size: the bigger pile goes to the leader, the player with the most influence at the location, and the smaller pile to the runner-up.
@@ -2321,7 +2321,7 @@ For each fight:
 1. **Outcome (FR5).** The larger group wins. The loser loses all its cubes there. The winner loses half the loser's number, rounded down, minimum 1.
 2. **Tied fight (TF1, AL2).** If the groups are equal:
    - At a location aligned with one of the two factions, that faction wins, and the outcome is as above.
-   - Otherwise both groups are wiped out and the location is **scorched (TM1)**: it is no longer a location for the rest of the game. Everything on it is cleared: all influence returns to each player's supply (AT1), and hidden tokens and any other pieces return to their owners' supplies.
+   - Otherwise it is a true tie: both groups are wiped out and the location is **scorched (TM1)**. It is no longer a location for the rest of the game, and the fight ends here: no trophies and no influence to any faction. Everything on it returns to its supply: both factions' cubes to their factions, all influence to each player (AT1), hidden tokens and any other pieces to their owners.
 3. **Trophies (TD1).** The casualties form two piles, one per faction: the loser's cubes and the winner's losses.
    - The player with the most influence at the location (the leader) takes the bigger pile; the runner-up takes the smaller. If the piles are equal, the leader picks first.
    - Ties between players: a tied player with affinity for the location wins the tie. Otherwise the tie stands (PT2), and tied players collect nothing (ST1): a tie uses up every place the tied players were in line for. Tied leaders use up both places, so both piles return to their factions' supplies. Players tied for runner-up use up second place, so the smaller pile returns.
