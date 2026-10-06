@@ -2752,7 +2752,7 @@ Most actions are dice placements. A shared display of tactic cards (each usable 
 
 **Worth stealing:** a shared display of once-per-game tactics that closes when someone finishes placing; sea movement as a second kind of adjacency; replacing an enemy piece rather than removing it.
 
-### I.6 The COIN series, e.g. Cuba Libre (system; from GMT's Cuba Libre playbook)
+### I.5 The COIN series, e.g. Cuba Libre (system; from GMT's Cuba Libre playbook)
 
 Four asymmetric factions share one deck of event cards. Cuba Libre's factions: the Government, the 26 July Movement, the Directorio and the Syndicate.
 
@@ -2773,7 +2773,7 @@ Four asymmetric factions share one deck of event cards. Cuba Libre's factions: t
 - **Dual-use events with two halves for two sides.** For example, each suit card's two uses could favour the invaders and the island.
 - **Scoring rounds seeded through the deck.** Compare our fixed round count.
 
-### I.7 Twilight Struggle (system; from GMT's 2nd edition rules)
+### I.6 Twilight Struggle (system; from GMT's 2nd edition rules)
 
 Two players, the USSR and the US, across ten turns of six or seven card plays each.
 
@@ -2798,7 +2798,7 @@ Two players, the USSR and the US, across ten turns of six or seven card plays ea
 - **A shared doom track that both sides push and nobody wants to finish** (DEFCON). Compare our presence threshold.
 - **A safe way to dump a card you can't afford to play** (the space race).
 
-### I.5 More games to mine (from memory; check before relying on details)
+### I.7 More games to mine (from memory; check before relying on details)
 
 | Game | What to look at |
 |---|---|
@@ -2822,7 +2822,7 @@ Two players, the USSR and the US, across ten turns of six or seven card plays ea
 | Spirit Island (C.13) | Invaders explore, build and ravage in a visible order; fear cards; slow and fast powers. |
 | Tammany Hall | Ward bosses, influence placed and lost in elections; city offices with powers. |
 
-### I.6 Sources
+### I.8 Sources
 
 - The King is Dead, 2nd edition rulebook (Osprey Games, 2020), via bghub.org.
 - Blood Rage and Rumble Nation game help, Board Game Arena (en.doc.boardgamearena.com).
