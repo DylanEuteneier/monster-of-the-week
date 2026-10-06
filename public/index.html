@@ -13,28 +13,29 @@
   <header class="topbar" id="header"></header>
   <nav class="seatbar" id="seatbar" hidden aria-label="Hotseat seats"></nav>
 
-  <main class="layout">
-    <aside class="column column-left">
-      <section class="panel" id="players" aria-label="Slayer groups"></section>
-      <section class="panel" id="phase" aria-label="Current phase"></section>
-    </aside>
-
-    <section class="column column-centre">
-      <section class="panel" id="board" aria-label="The island"></section>
-    </section>
-
-    <aside class="column column-right">
-      <section class="panel" id="log" aria-label="Log"></section>
-      <section class="panel chat" aria-label="Table talk">
-        <h2>Table talk</h2>
-        <div class="chat-lines" id="chat-lines"></div>
-        <form class="chat-form" id="chat-form" autocomplete="off">
-          <input class="chat-input" id="chat-input" maxlength="280" placeholder="Say something…" aria-label="Chat message">
-          <button class="btn" type="submit">Send</button>
-        </form>
-      </section>
-    </aside>
+  <main class="table">
+    <section class="panel players-strip" id="players" aria-label="Slayer groups"></section>
+    <section class="panel" id="board" aria-label="The island"></section>
+    <section class="panel" id="phase" aria-label="Current phase"></section>
   </main>
+
+  <div class="overlay-buttons">
+    <button class="btn" data-action="toggle-overlay" data-target="log-overlay">Log</button>
+    <button class="btn" data-action="toggle-overlay" data-target="chat-overlay">Table talk <span class="tag" id="chat-unread" hidden></span></button>
+  </div>
+  <aside class="overlay panel" id="log-overlay" hidden aria-label="Log">
+    <button class="btn overlay-close" data-action="toggle-overlay" data-target="log-overlay" aria-label="Close the log">×</button>
+    <div id="log"></div>
+  </aside>
+  <aside class="overlay panel chat" id="chat-overlay" hidden aria-label="Table talk">
+    <button class="btn overlay-close" data-action="toggle-overlay" data-target="chat-overlay" aria-label="Close table talk">×</button>
+    <h2>Table talk</h2>
+    <div class="chat-lines" id="chat-lines"></div>
+    <form class="chat-form" id="chat-form" autocomplete="off">
+      <input class="chat-input" id="chat-input" maxlength="280" placeholder="Say something…" aria-label="Chat message">
+      <button class="btn" type="submit">Send</button>
+    </form>
+  </aside>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 

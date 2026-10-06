@@ -63,6 +63,8 @@ const ui = {
   choosing: null,
   /** @type {import('./engine.js').Target} */
   target: {},
+  /** table talk lines arrived while the overlay was closed */
+  unread: 0,
 };
 
 // ---------------------------------------------------------------------------
@@ -172,7 +174,18 @@ function resetDrafts(phaseKey) {
 /** @param {ChatLine[]} lines @param {boolean} reset */
 function receiveChat(lines, reset) {
   ui.chat = [...(reset ? [] : ui.chat), ...lines].slice(-100);
+  const open = !document.getElementById('chat-overlay')?.hidden;
+  if (!reset && !open) ui.unread += lines.length;
   renderChat();
+  renderUnread();
+}
+
+/** The unread count on the table talk button. */
+function renderUnread() {
+  const badge = document.getElementById('chat-unread');
+  if (!badge) return;
+  badge.hidden = ui.unread === 0;
+  badge.textContent = String(ui.unread);
 }
 
 /** @param {Move} move */
@@ -248,20 +261,25 @@ function currentChoice() {
   return nextChoice(/** @type {any} */ (view), view.you, ui.choosing, ui.target);
 }
 
-/** @param {string} loc @param {ReturnType<typeof currentChoice>} choice */
+/**
+ * The pieces on one hex, as repeated pieces in rows: each faction's tokens in
+ * its own row (a location holds at most two factions, LL1), then the
+ * players' influence cubes. A candidate group's row is lit and clickable.
+ * @param {string} loc @param {ReturnType<typeof currentChoice>} choice
+ */
 function piecesAt(loc, choice) {
   const view = /** @type {PlayerView} */ (ui.view);
   const place = view.board[loc];
   const groupPick = choice && choice.kind === 'group' ? choice.options : [];
-  const tokens = Object.entries(place.cubes).map(([f, n]) => {
+  const rows = Object.entries(place.cubes).filter(([, n]) => n > 0).map(([f, n]) => {
     const lit = groupPick.some((g) => g.location === loc && g.faction === f);
-    const html = tokenHtml(f, 1, lit ? 'candidate' : '');
-    return `<span class="piece"${lit ? ` data-action="pick-group" data-location="${esc(loc)}" data-faction="${esc(f)}"` : ''}>${html}<b>${n}</b></span>`;
-  }).join('');
+    const tokens = Array.from({ length: n }, () => tokenHtml(f, 1, lit ? 'candidate' : '')).join('');
+    return `<span class="token-stack piece-row"${lit ? ` data-action="pick-group" data-location="${esc(loc)}" data-faction="${esc(f)}"` : ''} title="${n} ${esc(fname(f))}">${tokens}</span>`;
+  });
   const cubes = Object.entries(place.influence).filter(([, n]) => n > 0)
-    .map(([pid, n]) => `<span class="piece">${cubeHtml(colourOf(pid), 8)}<b>${n}</b></span>`).join('');
-  const token = place.token ? `<span class="tag" style="border-color:${colourOf(place.token.owner)}">token</span>` : '';
-  return `<div class="stack-row">${tokens}</div><div class="cube-row">${cubes}${token}</div>`;
+    .flatMap(([pid, n]) => Array.from({ length: n }, () => cubeHtml(colourOf(pid), 8))).join('');
+  const token = place.token ? `<span class="hidden-token" style="--owner:${colourOf(place.token.owner)}" title="a face-down token"></span>` : '';
+  return `${rows.join('')}<span class="cube-row piece-row">${cubes}${token}</span>`;
 }
 
 function renderBoard() {
@@ -295,12 +313,13 @@ function renderBoard() {
 /** @param {string} id @param {string} [actions] @param {boolean} [ticked] */
 function cardHtml(id, actions = '', ticked = false) {
   const c = cardById(id);
-  const head = c.suit ? `${esc(SUIT.get(c.suit) ?? '')} ${esc(c.slot)} · influence ${c.influence}` : `${c.marked ? `marked ${esc(c.marked)}` : 'unsuited'}`;
-  return `<div class="card ${ticked ? 'card-ticked' : ''}" data-card="${esc(id)}">
-    <div class="small muted">${head}</div>
-    <b>${esc(c.name)}</b>
+  const suit = spec.archetypes.find((a) => a.id === c.suit);
+  const band = c.suit ? `<span>${esc(suit?.symbol ?? '')} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)} · +${c.influence}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
+  return `<div class="card card-suit-${esc(c.suit ?? 'none')} ${ticked ? 'card-ticked' : ''}" data-card="${esc(id)}">
+    <div class="card-band">${band}</div>
+    <span class="card-name">${esc(c.name)}</span>
     <p class="small">${esc(c.text)}</p>
-    ${c.response ? `<p class="small"><b>Response (${esc(c.response.timing)}): ${esc(c.response.name)}.</b> ${esc(c.response.text)}</p>` : ''}
+    ${c.response ? `<p class="small card-response"><b>Response, ${esc(c.response.timing)}: ${esc(c.response.name)}.</b> ${esc(c.response.text)}</p>` : ''}
     ${actions}
   </div>`;
 }
@@ -594,6 +613,21 @@ function onClick(event) {
   if (action === 'back') {
     ui.choosing = null;
     return renderPhase();
+  }
+  if (action === 'toggle-overlay') {
+    const panel = document.getElementById(target.dataset.target ?? '');
+    if (!panel) return;
+    const opening = panel.hidden;
+    for (const id of ['log-overlay', 'chat-overlay']) {
+      const other = document.getElementById(id);
+      if (other) other.hidden = true;
+    }
+    panel.hidden = !opening;
+    if (opening && target.dataset.target === 'chat-overlay') {
+      ui.unread = 0;
+      renderUnread();
+    }
+    return;
   }
   if (action === 'switch-seat') {
     ui.hotseat.follow = false;
