@@ -2,18 +2,20 @@
 /**
  * Random-bot harness: plays whole games with bots and prints summary figures.
  *
- *   node scripts/simulate.js [games=1000] [seed=1] [players=5]
+ *   node scripts/simulate.js [games=1000] [seed=1] [players=5] [option=value ...]
+ *
+ * e.g. node scripts/simulate.js 2000 1 4 threshold=25 rounds=6
  *
  * Random bots are good for checking that the rules run start to finish and
  * that every phase is exercised. Their figures are a rough guide, not a
- * prediction (Appendix F.9). Add figures here as the real rules land.
+ * prediction (Appendix F.9).
  */
-import { createGame, applyMove, nextRandom, spec } from '../public/engine.js';
+import { createGame, applyMove, nextRandom, spec, totalPresence, presenceOf } from '../public/engine.js';
 import { botMove } from '../public/bots.js';
 
 /** @typedef {import('../public/engine.js').GameState} GameState */
 
-const MAX_MOVES_PER_GAME = 10_000;
+const MAX_MOVES_PER_GAME = 20_000;
 
 /** A seeded () => number for the bots, so runs repeat. @param {number} seed */
 function seededRng(seed) {
@@ -25,39 +27,80 @@ function seededRng(seed) {
   };
 }
 
-/** @param {GameState} state @param {() => number} rng */
-function playOut(state, rng) {
+/**
+ * Play to the end. Each step offers every seat, in seat order, the chance to
+ * move; the first that has a move makes it.
+ * @param {GameState} state @param {() => number} rng
+ * @param {(game: GameState) => void} [onRound]
+ */
+export function playOut(state, rng, onRound) {
   let game = state;
+  let round = game.round;
   for (let moves = 0; moves < MAX_MOVES_PER_GAME; moves++) {
     if (game.phase === 'ended') return game;
-    const mover = game.seating.find((playerId) => botMove(game, { playerId, rng }) !== null);
-    if (!mover) throw new Error(`no seat can act in phase ${game.phase}, round ${game.round}`);
-    const move = botMove(game, { playerId: mover, rng });
-    if (move) game = applyMove(game, { playerId: mover, move });
+    let moved = false;
+    for (const playerId of game.seating) {
+      const move = botMove(game, { playerId, rng });
+      if (!move) continue;
+      game = applyMove(game, { playerId, move });
+      moved = true;
+      break;
+    }
+    if (!moved) throw new Error(`no seat can act in phase ${game.phase}, round ${game.round}`);
+    if (game.round !== round) {
+      onRound?.(game);
+      round = game.round;
+    }
   }
   throw new Error(`game did not end within ${MAX_MOVES_PER_GAME} moves`);
 }
 
 function main() {
-  const games = Number(process.argv[2] ?? 1000);
-  const seed = Number(process.argv[3] ?? 1);
-  const playerCount = Number(process.argv[4] ?? spec.meta.players.tunedFor);
+  const [games = 1000, seed = 1, playerCount = spec.meta.players.tunedFor] = process.argv.slice(2, 5).map(Number);
+  const options = Object.fromEntries(process.argv.slice(5).map((arg) => arg.split('=')));
   const players = Array.from({ length: playerCount }, (_, i) => `P${i + 1}`);
   const rng = seededRng(seed);
-  /** @type {Map<number, number>} */
-  const endRounds = new Map();
-  /** @type {Map<string, number>} */
-  const factionCounts = new Map();
+  const sides = { island: 0, invaders: 0 };
+  /** @type {number[]} */ const finals = [];
+  /** @type {number[][]} */ const byRound = [];
+  /** @type {number[]} */ const scorched = [];
+  /** @type {number[]} */ const sharedWins = [];
+  /** @type {Map<string, number>} */ const seatWins = new Map();
+  /** @type {Map<string, number>} */ const groupWins = new Map();
+  /** @type {number[]} */ const trophies = [];
+  let fights = 0;
   for (let i = 0; i < games; i++) {
-    const end = playOut(createGame({ seed: seed + i, players }), rng);
-    endRounds.set(end.round, (endRounds.get(end.round) ?? 0) + 1);
-    for (const faction of end.factions) factionCounts.set(faction, (factionCounts.get(faction) ?? 0) + 1);
+    const start = createGame({ seed: seed + i, players, options });
+    const end = playOut(start, rng, (g) => {
+      const r = g.round - 2;
+      (byRound[r] ??= []).push(totalPresence(g));
+    });
+    const result = /** @type {NonNullable<GameState['result']>} */ (end.result);
+    sides[result.side] += 1;
+    finals.push(totalPresence(end));
+    scorched.push(Object.values(end.board).filter((p) => p.scorched).length);
+    sharedWins.push(result.players.length);
+    for (const pid of result.players) {
+      seatWins.set(pid, (seatWins.get(pid) ?? 0) + 1 / result.players.length);
+      const group = end.players[pid].group;
+      groupWins.set(group, (groupWins.get(group) ?? 0) + 1 / result.players.length);
+    }
+    for (const pid of end.seating) trophies.push(Object.values(end.players[pid].trophies).reduce((a, b) => a + b, 0));
+    fights += end.log.flatMap((e) => e.events).filter((line) => /beat|true tie/.test(line)).length;
   }
-  console.log(`${games} games · ${playerCount} players · seed ${seed}\n`);
-  console.log('End round');
-  for (const [round, count] of [...endRounds].sort((a, b) => a[0] - b[0])) console.log(`  ${String(round).padStart(2)}  ${((count / games) * 100).toFixed(1)}%`);
-  console.log('\nFaction in play (expect ~33.3% each within an archetype)');
-  for (const faction of spec.factions) console.log(`  ${faction.name.padEnd(24)} ${(((factionCounts.get(faction.id) ?? 0) / games) * 100).toFixed(1)}%`);
+  const mean = (/** @type {number[]} */ xs) => (xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length)).toFixed(1);
+  const pct = (/** @type {number} */ n) => `${((n / games) * 100).toFixed(1)}%`;
+  const rounds = Number(createGame({ seed: 1, players, options }).options.rounds);
+  console.log(`${games} games · ${playerCount} players · seed ${seed}${Object.keys(options).length ? ' · ' + process.argv.slice(5).join(' ') : ''}\n`);
+  console.log(`Island wins ${pct(sides.island)} · invaders win ${pct(sides.invaders)}`);
+  console.log(`Total presence: start 35 · ${byRound.map((xs, r) => `after round ${r + 1} ${mean(xs)}`).join(' · ')} · final ${mean(finals)}`);
+  console.log(`Fights per round ${(fights / games / rounds).toFixed(1)} · locations scorched per game ${mean(scorched)} · trophies per player ${mean(trophies)}`);
+  console.log(`Shared victories ${pct(sharedWins.filter((n) => n > 1).length)}`);
+  console.log('\nWins by seat');
+  for (const pid of players) console.log(`  ${pid.padEnd(4)} ${pct(seatWins.get(pid) ?? 0)}`);
+  console.log('\nWins by slayer group');
+  for (const g of spec.slayerGroups) console.log(`  ${g.name.padEnd(22)} ${pct(groupWins.get(g.id) ?? 0)}`);
+  void presenceOf;
 }
 
-main();
+if (import.meta.url === `file://${process.argv[1]}`) main();

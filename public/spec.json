@@ -1,63 +1,953 @@
 {
   "meta": {
     "name": "Monster of the Week",
-    "version": "0.0.1-scaffold",
-    "players": { "min": 3, "max": 5, "tunedFor": 5 },
-    "notes": "Seat limits are decision D3 (3.16). Everything under 'scaffold' is placeholder plumbing for testing the prototype end to end; it is not a rule of the game and is replaced once a complete ruleset is chosen (Appendix F.16)."
+    "version": "0.1.0-first-draft",
+    "players": {
+      "min": 3,
+      "max": 5,
+      "tunedFor": 5
+    },
+    "notes": "Seat limits are decision D3 (3.16). Rules: the first draft (Appendix G). Cards: Set v2 (H.8) plus scaffold placeholders for the six extras (H.6). Numbers: first-draft guesses (G.7), each a variant. Map: the prototype board, layout D (testing only)."
   },
-  "constants": {},
-  "scaffold": {
-    "rounds": 2,
-    "notes": "Placeholder round count for the ready-check phase. Not a balancing number."
+  "constants": {
+    "handSize": {
+      "3": 6,
+      "4": 5,
+      "5": 4
+    },
+    "seeding": {
+      "home": 5,
+      "other": 1
+    },
+    "notes": "Hand sizes: PS1 (3.16). Seeding: SD1 (3.5)."
   },
   "archetypes": [
-    { "id": "nocturnals", "name": "Nocturnals", "symbol": "◐" },
-    { "id": "scifi", "name": "80's Sci-Fi", "symbol": "ↂ" },
-    { "id": "sentients", "name": "Sentients", "symbol": "⏏" },
-    { "id": "undead", "name": "Undead", "symbol": "☾" },
-    { "id": "demonic", "name": "Demons", "symbol": "⎈" }
+    {
+      "id": "nocturnals",
+      "name": "Nocturnals",
+      "symbol": "◐"
+    },
+    {
+      "id": "scifi",
+      "name": "80's Sci-Fi",
+      "symbol": "ↂ"
+    },
+    {
+      "id": "sentients",
+      "name": "Sentients",
+      "symbol": "⏏"
+    },
+    {
+      "id": "undead",
+      "name": "Undead",
+      "symbol": "☾"
+    },
+    {
+      "id": "demonic",
+      "name": "Demons",
+      "symbol": "⎈"
+    }
   ],
   "factions": [
-    { "id": "vampires", "name": "Vampires", "archetype": "nocturnals" },
-    { "id": "werewolves", "name": "Werewolves", "archetype": "nocturnals" },
-    { "id": "occult", "name": "The Occult", "archetype": "nocturnals" },
-    { "id": "aliens", "name": "Aliens", "archetype": "scifi" },
-    { "id": "dark-government", "name": "Dark Government", "archetype": "scifi" },
-    { "id": "cryptids", "name": "Cryptids", "archetype": "scifi" },
-    { "id": "machines", "name": "Machines", "archetype": "sentients" },
-    { "id": "ai", "name": "Artificial Intelligence", "archetype": "sentients" },
-    { "id": "cyberpunks", "name": "Cyberpunks", "archetype": "sentients" },
-    { "id": "zombies", "name": "Zombies", "archetype": "undead" },
-    { "id": "skeletons", "name": "Skeletons", "archetype": "undead" },
-    { "id": "spirits", "name": "Spirits", "archetype": "undead" },
-    { "id": "demons", "name": "Demons", "archetype": "demonic" },
-    { "id": "possessed", "name": "The Possessed", "archetype": "demonic" },
-    { "id": "shadows", "name": "Shadows", "archetype": "demonic" }
+    {
+      "id": "vampires",
+      "name": "Vampires",
+      "archetype": "nocturnals"
+    },
+    {
+      "id": "werewolves",
+      "name": "Werewolves",
+      "archetype": "nocturnals"
+    },
+    {
+      "id": "occult",
+      "name": "The Occult",
+      "archetype": "nocturnals"
+    },
+    {
+      "id": "aliens",
+      "name": "Aliens",
+      "archetype": "scifi"
+    },
+    {
+      "id": "dark-government",
+      "name": "Dark Government",
+      "archetype": "scifi"
+    },
+    {
+      "id": "cryptids",
+      "name": "Cryptids",
+      "archetype": "scifi"
+    },
+    {
+      "id": "machines",
+      "name": "Machines",
+      "archetype": "sentients"
+    },
+    {
+      "id": "ai",
+      "name": "Artificial Intelligence",
+      "archetype": "sentients"
+    },
+    {
+      "id": "cyberpunks",
+      "name": "Cyberpunks",
+      "archetype": "sentients"
+    },
+    {
+      "id": "zombies",
+      "name": "Zombies",
+      "archetype": "undead"
+    },
+    {
+      "id": "skeletons",
+      "name": "Skeletons",
+      "archetype": "undead"
+    },
+    {
+      "id": "spirits",
+      "name": "Spirits",
+      "archetype": "undead"
+    },
+    {
+      "id": "demons",
+      "name": "Demons",
+      "archetype": "demonic"
+    },
+    {
+      "id": "possessed",
+      "name": "The Possessed",
+      "archetype": "demonic"
+    },
+    {
+      "id": "shadows",
+      "name": "Shadows",
+      "archetype": "demonic"
+    }
   ],
   "locations": [
-    { "id": "military-facility", "name": "Military Facility", "archetype": "scifi" },
-    { "id": "weather-station", "name": "Weather Station", "archetype": "scifi" },
-    { "id": "state-park", "name": "State Park", "archetype": "scifi" },
-    { "id": "sawmill", "name": "Sawmill", "archetype": "undead" },
-    { "id": "mine", "name": "Mine", "archetype": "undead" },
-    { "id": "graveyard", "name": "Graveyard", "archetype": "undead" },
-    { "id": "ski-resort", "name": "Ski Resort", "archetype": "nocturnals" },
-    { "id": "fallout-bunker", "name": "Fallout Bunker", "archetype": "nocturnals" },
-    { "id": "occult-camp", "name": "Occult Camp", "archetype": "nocturnals" },
-    { "id": "caves", "name": "Caves", "archetype": "demonic" },
-    { "id": "lighthouse", "name": "Lighthouse", "archetype": "demonic" },
-    { "id": "lake-house", "name": "The Lake House", "archetype": "demonic" },
-    { "id": "shipping-docks", "name": "Shipping Docks", "archetype": "sentients" },
-    { "id": "junkyard", "name": "Junkyard", "archetype": "sentients" },
-    { "id": "beach-city", "name": "Beach City", "archetype": "sentients" }
+    {
+      "id": "military-facility",
+      "name": "Military Facility",
+      "archetype": "scifi"
+    },
+    {
+      "id": "weather-station",
+      "name": "Weather Station",
+      "archetype": "scifi"
+    },
+    {
+      "id": "state-park",
+      "name": "State Park",
+      "archetype": "scifi"
+    },
+    {
+      "id": "sawmill",
+      "name": "Sawmill",
+      "archetype": "undead"
+    },
+    {
+      "id": "mine",
+      "name": "Mine",
+      "archetype": "undead"
+    },
+    {
+      "id": "graveyard",
+      "name": "Graveyard",
+      "archetype": "undead"
+    },
+    {
+      "id": "ski-resort",
+      "name": "Ski Resort",
+      "archetype": "nocturnals"
+    },
+    {
+      "id": "fallout-bunker",
+      "name": "Fallout Bunker",
+      "archetype": "nocturnals"
+    },
+    {
+      "id": "occult-camp",
+      "name": "Occult Camp",
+      "archetype": "nocturnals"
+    },
+    {
+      "id": "caves",
+      "name": "Caves",
+      "archetype": "demonic"
+    },
+    {
+      "id": "lighthouse",
+      "name": "Lighthouse",
+      "archetype": "demonic"
+    },
+    {
+      "id": "lake-house",
+      "name": "The Lake House",
+      "archetype": "demonic"
+    },
+    {
+      "id": "shipping-docks",
+      "name": "Shipping Docks",
+      "archetype": "sentients"
+    },
+    {
+      "id": "junkyard",
+      "name": "Junkyard",
+      "archetype": "sentients"
+    },
+    {
+      "id": "beach-city",
+      "name": "Beach City",
+      "archetype": "sentients"
+    }
   ],
   "slayerGroups": [
-    { "id": "slayerettes", "name": "Slayerettes", "archetype": "nocturnals", "trope": "High school vampire hunters" },
-    { "id": "kids-on-bikes", "name": "Kids on Bikes", "archetype": "scifi", "trope": "Kids on bikes with walkie-talkies" },
-    { "id": "av-club", "name": "AV Club", "archetype": "sentients", "trope": "Teen hackers and computer club nerds" },
-    { "id": "neighbourhood-watch", "name": "Neighbourhood Watch", "archetype": "undead", "trope": "Small-town survivalists" },
-    { "id": "father-and-the-flock", "name": "Father and the Flock", "archetype": "demonic", "trope": "A parish exorcist and reluctant helpers" }
+    {
+      "id": "slayerettes",
+      "name": "Slayerettes",
+      "archetype": "nocturnals",
+      "trope": "High school vampire hunters"
+    },
+    {
+      "id": "kids-on-bikes",
+      "name": "Kids on Bikes",
+      "archetype": "scifi",
+      "trope": "Kids on bikes with walkie-talkies"
+    },
+    {
+      "id": "av-club",
+      "name": "AV Club",
+      "archetype": "sentients",
+      "trope": "Teen hackers and computer club nerds"
+    },
+    {
+      "id": "neighbourhood-watch",
+      "name": "Neighbourhood Watch",
+      "archetype": "undead",
+      "trope": "Small-town survivalists"
+    },
+    {
+      "id": "father-and-the-flock",
+      "name": "Father and the Flock",
+      "archetype": "demonic",
+      "trope": "A parish exorcist and reluctant helpers"
+    }
   ],
-  "cards": [],
-  "variants": []
+  "cards": [
+    {
+      "id": "fresh-meat",
+      "name": "Leave Out Fresh Meat",
+      "suit": "nocturnals",
+      "slot": "strike",
+      "influence": 2,
+      "action": "lure",
+      "text": "The largest group adjacent to the target moves into it, all of it. Target: the bait location."
+    },
+    {
+      "id": "track-snow",
+      "name": "Track Them in the Snow",
+      "suit": "nocturnals",
+      "slot": "shift",
+      "influence": 3,
+      "action": "sow",
+      "text": "Drive the target group hex by bordering hex, leaving 1 cube and 1 of your influence in each location entered, while your influence with that faction lasts. A location it can't enter ends the chase; leftover cubes stay together at the last location."
+    },
+    {
+      "id": "silver-bullets",
+      "name": "Silver Bullets",
+      "suit": "nocturnals",
+      "slot": "signature",
+      "influence": 4,
+      "action": "token",
+      "text": "Hidden: at its fight, each group loses 2 more cubes as casualties.",
+      "response": {
+        "id": "never-invite",
+        "name": "Never Invite Them In",
+        "timing": "before",
+        "trigger": "move-into-your-location",
+        "text": "When a player is about to move cubes into a location where you have influence, block it; the cubes stay where they are."
+      }
+    },
+    {
+      "id": "broadcast",
+      "name": "Broadcast a Signal",
+      "suit": "scifi",
+      "slot": "strike",
+      "influence": 2,
+      "action": "broadcast",
+      "text": "Call the groups of one faction from up to two locations anywhere into the target. Target: where they answer."
+    },
+    {
+      "id": "leak",
+      "name": "Leak the Documents",
+      "suit": "scifi",
+      "slot": "shift",
+      "influence": 3,
+      "action": "halve",
+      "text": "Half the target group, rounded down, leaves for an adjacent location of your choice."
+    },
+    {
+      "id": "beam",
+      "name": "Beam Them Up",
+      "suit": "scifi",
+      "slot": "signature",
+      "influence": 4,
+      "action": "teleport",
+      "text": "Lift the target group and set it down at any location on the island.",
+      "response": {
+        "id": "classified",
+        "name": "Classified",
+        "timing": "after",
+        "trigger": "token-placed",
+        "text": "When a hidden token is placed, look at its face."
+      }
+    },
+    {
+      "id": "virus",
+      "name": "Spread a Virus",
+      "suit": "sentients",
+      "slot": "strike",
+      "influence": 2,
+      "action": "spread",
+      "text": "The target group puts 1 cube into every adjacent location it can enter, as far as its cubes go."
+    },
+    {
+      "id": "reroute",
+      "name": "Reroute the Power Grid",
+      "suit": "sentients",
+      "slot": "shift",
+      "influence": 3,
+      "action": "gather-region",
+      "text": "Move one faction's cubes from every location in the target's region into the target. Target: the destination."
+    },
+    {
+      "id": "traffic",
+      "name": "Reprogram the Traffic Lights",
+      "suit": "sentients",
+      "slot": "signature",
+      "influence": 4,
+      "action": "conveyor",
+      "text": "Choose one of the six hex directions; every group of the target moves one hex that way, where it can. Loc: every group in a ⏏ location's region. Fac: every Sentient group.",
+      "response": {
+        "id": "pull-plug",
+        "name": "Pull the Plug",
+        "timing": "after",
+        "trigger": "influence-spent",
+        "text": "When a player spends a card for influence, they gain 1 less, and you gain 1 with the same faction."
+      }
+    },
+    {
+      "id": "bell",
+      "name": "Ring the Church Bell",
+      "suit": "undead",
+      "slot": "strike",
+      "influence": 2,
+      "action": "draw-adjacent",
+      "text": "Every cube in adjacent locations is drawn into the target. Target: where the bell rings."
+    },
+    {
+      "id": "board-up",
+      "name": "Board Up the Windows",
+      "suit": "undead",
+      "slot": "shift",
+      "influence": 3,
+      "action": "split",
+      "text": "The target group is turned away, split across at least two adjacent locations."
+    },
+    {
+      "id": "salt-burn",
+      "name": "Salt and Burn the Bones",
+      "suit": "undead",
+      "slot": "signature",
+      "influence": 4,
+      "action": "token",
+      "text": "Hidden: at its fight, both groups lose all their cubes; trophies are handed out as normal and the location is not scorched.",
+      "response": {
+        "id": "seance",
+        "name": "Hold a Séance",
+        "timing": "after",
+        "trigger": "pass",
+        "text": "When any player passes, look at the cards left out this round."
+      }
+    },
+    {
+      "id": "summoning",
+      "name": "Draw a Summoning Circle",
+      "suit": "demonic",
+      "slot": "strike",
+      "influence": 2,
+      "action": "gather-neighbours",
+      "text": "Every group of one faction in neighbouring regions moves into the target. Target: the circle."
+    },
+    {
+      "id": "lamps",
+      "name": "Light Every Lamp",
+      "suit": "demonic",
+      "slot": "shift",
+      "influence": 3,
+      "action": "drive-out",
+      "text": "At a contested location, the target faction is driven to an adjacent location of your choice, so the fight there doesn't happen. Loc: the smaller faction at a contested ⎈ location. Fac: the Demons, wherever they are contested."
+    },
+    {
+      "id": "house-fire",
+      "name": "Set the House on Fire",
+      "suit": "demonic",
+      "slot": "signature",
+      "influence": 4,
+      "action": "token",
+      "text": "Hidden: any fight here counts as a true tie: both groups are wiped out and the location is scorched.",
+      "response": {
+        "id": "sign-blood",
+        "name": "Sign in Blood",
+        "timing": "after",
+        "trigger": "influence-placed",
+        "text": "When a player spends influence from a faction, gain 1 influence with the Demon faction."
+      }
+    },
+    {
+      "id": "extra-a",
+      "name": "A (scaffold)",
+      "suit": null,
+      "slot": "extra",
+      "influence": 0,
+      "action": "move-two",
+      "text": "Scaffold: move up to two groups, each to an adjacent location.",
+      "marked": "A"
+    },
+    {
+      "id": "extra-b",
+      "name": "B (scaffold)",
+      "suit": null,
+      "slot": "extra",
+      "influence": 0,
+      "action": "move-far",
+      "text": "Scaffold: move one group up to two hexes away, through locations it can enter.",
+      "marked": "B"
+    },
+    {
+      "id": "extra-c",
+      "name": "C (scaffold)",
+      "suit": null,
+      "slot": "extra",
+      "influence": 0,
+      "action": "move-one",
+      "text": "Scaffold: move one group to an adjacent location.",
+      "marked": "C"
+    },
+    {
+      "id": "extra-d",
+      "name": "D (scaffold)",
+      "suit": null,
+      "slot": "extra",
+      "influence": 0,
+      "action": "move-half",
+      "text": "Scaffold: move half of one group, rounded down, to an adjacent location.",
+      "marked": "D"
+    },
+    {
+      "id": "cancel",
+      "name": "Cancel",
+      "suit": null,
+      "slot": "extra",
+      "influence": 0,
+      "action": null,
+      "text": "Response only.",
+      "response": {
+        "id": "cancel",
+        "name": "Cancel",
+        "timing": "before",
+        "trigger": "card-played",
+        "text": "When a player is about to play a card's turn action or response, cancel it; the card is spent."
+      }
+    },
+    {
+      "id": "extra-e",
+      "name": "Unmarked (scaffold)",
+      "suit": null,
+      "slot": "extra",
+      "influence": 0,
+      "action": "move-one",
+      "text": "Scaffold: move one group to an adjacent location."
+    }
+  ],
+  "variants": [
+    {
+      "id": "rounds",
+      "label": "Rounds",
+      "description": "Fixed game length (GL1). First-draft guess 5 (G.7).",
+      "default": "5",
+      "choices": [
+        {
+          "id": "3",
+          "label": "3",
+          "description": ""
+        },
+        {
+          "id": "4",
+          "label": "4",
+          "description": ""
+        },
+        {
+          "id": "5",
+          "label": "5",
+          "description": ""
+        },
+        {
+          "id": "6",
+          "label": "6",
+          "description": ""
+        },
+        {
+          "id": "7",
+          "label": "7",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "id": "threshold",
+      "label": "Presence threshold",
+      "description": "The invaders win if total presence is more than this (TH1). First-draft guess 20 (G.7).",
+      "default": "20",
+      "choices": [
+        {
+          "id": "10",
+          "label": "10",
+          "description": ""
+        },
+        {
+          "id": "15",
+          "label": "15",
+          "description": ""
+        },
+        {
+          "id": "20",
+          "label": "20",
+          "description": ""
+        },
+        {
+          "id": "25",
+          "label": "25",
+          "description": ""
+        },
+        {
+          "id": "30",
+          "label": "30",
+          "description": ""
+        },
+        {
+          "id": "35",
+          "label": "35",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "id": "growth",
+      "label": "Growth threshold",
+      "description": "A lone faction with at least this many cubes at a location grows (GR1).",
+      "default": "2",
+      "choices": [
+        {
+          "id": "2",
+          "label": "2",
+          "description": ""
+        },
+        {
+          "id": "3",
+          "label": "3",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "id": "factionCubes",
+      "label": "Cubes per faction",
+      "description": "Each faction's cubes, board and supply together (G.7).",
+      "default": "20",
+      "choices": [
+        {
+          "id": "15",
+          "label": "15",
+          "description": ""
+        },
+        {
+          "id": "20",
+          "label": "20",
+          "description": ""
+        },
+        {
+          "id": "25",
+          "label": "25",
+          "description": ""
+        },
+        {
+          "id": "30",
+          "label": "30",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "id": "playerCubes",
+      "label": "Cubes per player",
+      "description": "Each player's influence cubes (G.7).",
+      "default": "20",
+      "choices": [
+        {
+          "id": "15",
+          "label": "15",
+          "description": ""
+        },
+        {
+          "id": "20",
+          "label": "20",
+          "description": ""
+        },
+        {
+          "id": "25",
+          "label": "25",
+          "description": ""
+        },
+        {
+          "id": "30",
+          "label": "30",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "id": "startInfluence",
+      "label": "Starting influence",
+      "description": "Influence each slayer group starts with, with its linked faction (G.7).",
+      "default": "3",
+      "choices": [
+        {
+          "id": "0",
+          "label": "0",
+          "description": ""
+        },
+        {
+          "id": "1",
+          "label": "1",
+          "description": ""
+        },
+        {
+          "id": "2",
+          "label": "2",
+          "description": ""
+        },
+        {
+          "id": "3",
+          "label": "3",
+          "description": ""
+        },
+        {
+          "id": "4",
+          "label": "4",
+          "description": ""
+        },
+        {
+          "id": "5",
+          "label": "5",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "id": "bluffs",
+      "label": "Bluff tokens",
+      "description": "Bluff tokens per player (BT1, G.7).",
+      "default": "3",
+      "choices": [
+        {
+          "id": "0",
+          "label": "0",
+          "description": ""
+        },
+        {
+          "id": "1",
+          "label": "1",
+          "description": ""
+        },
+        {
+          "id": "2",
+          "label": "2",
+          "description": ""
+        },
+        {
+          "id": "3",
+          "label": "3",
+          "description": ""
+        },
+        {
+          "id": "4",
+          "label": "4",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "id": "groups",
+      "label": "Slayer groups",
+      "description": "How slayer groups are given out (G.7).",
+      "default": "random",
+      "choices": [
+        {
+          "id": "random",
+          "label": "Random",
+          "description": "Each seat draws a slayer group at random."
+        },
+        {
+          "id": "seat",
+          "label": "Seat order",
+          "description": "Seats take slayer groups in spec order."
+        }
+      ]
+    }
+  ],
+  "map": {
+    "notes": "Prototype board, layout D (the first draft's map; not a decision). Axial hex coordinates; directions E, NE, NW, W, SW, SE. Adjacent means hexes sharing a border. Mirror is the reflection across the lake.",
+    "directions": [
+      {
+        "id": "E",
+        "dq": 1,
+        "dr": 0
+      },
+      {
+        "id": "NE",
+        "dq": 1,
+        "dr": -1
+      },
+      {
+        "id": "NW",
+        "dq": 0,
+        "dr": -1
+      },
+      {
+        "id": "W",
+        "dq": -1,
+        "dr": 0
+      },
+      {
+        "id": "SW",
+        "dq": -1,
+        "dr": 1
+      },
+      {
+        "id": "SE",
+        "dq": 0,
+        "dr": 1
+      }
+    ],
+    "regions": {
+      "Badlands": {
+        "neighbours": [
+          "Coast",
+          "Mountains"
+        ]
+      },
+      "Coast": {
+        "neighbours": [
+          "Badlands",
+          "Old Town"
+        ]
+      },
+      "Mountains": {
+        "neighbours": [
+          "Badlands",
+          "Woods"
+        ]
+      },
+      "Old Town": {
+        "neighbours": [
+          "Coast",
+          "Woods"
+        ]
+      },
+      "Woods": {
+        "neighbours": [
+          "Mountains",
+          "Old Town"
+        ]
+      }
+    },
+    "locations": {
+      "military-facility": {
+        "q": 4,
+        "r": 0,
+        "region": "Badlands",
+        "adjacent": [
+          "ski-resort",
+          "junkyard",
+          "caves"
+        ],
+        "mirror": null
+      },
+      "junkyard": {
+        "q": 3,
+        "r": 1,
+        "region": "Badlands",
+        "adjacent": [
+          "caves",
+          "military-facility",
+          "ski-resort",
+          "mine",
+          "fallout-bunker"
+        ],
+        "mirror": "graveyard"
+      },
+      "caves": {
+        "q": 4,
+        "r": 1,
+        "region": "Badlands",
+        "adjacent": [
+          "military-facility",
+          "junkyard",
+          "fallout-bunker",
+          "shipping-docks"
+        ],
+        "mirror": null
+      },
+      "graveyard": {
+        "q": 1,
+        "r": 3,
+        "region": "Old Town",
+        "adjacent": [
+          "beach-city",
+          "lake-house",
+          "occult-camp"
+        ],
+        "mirror": "junkyard"
+      },
+      "beach-city": {
+        "q": 2,
+        "r": 3,
+        "region": "Old Town",
+        "adjacent": [
+          "lighthouse",
+          "fallout-bunker",
+          "graveyard",
+          "occult-camp"
+        ],
+        "mirror": "mine"
+      },
+      "occult-camp": {
+        "q": 1,
+        "r": 4,
+        "region": "Old Town",
+        "adjacent": [
+          "beach-city",
+          "graveyard"
+        ],
+        "mirror": "ski-resort"
+      },
+      "fallout-bunker": {
+        "q": 3,
+        "r": 2,
+        "region": "Coast",
+        "adjacent": [
+          "shipping-docks",
+          "caves",
+          "junkyard",
+          "beach-city",
+          "lighthouse"
+        ],
+        "mirror": "lake-house"
+      },
+      "shipping-docks": {
+        "q": 4,
+        "r": 2,
+        "region": "Coast",
+        "adjacent": [
+          "caves",
+          "fallout-bunker",
+          "lighthouse"
+        ],
+        "mirror": "sawmill"
+      },
+      "lighthouse": {
+        "q": 3,
+        "r": 3,
+        "region": "Coast",
+        "adjacent": [
+          "shipping-docks",
+          "fallout-bunker",
+          "beach-city"
+        ],
+        "mirror": "state-park"
+      },
+      "state-park": {
+        "q": 1,
+        "r": 1,
+        "region": "Woods",
+        "adjacent": [
+          "mine",
+          "weather-station",
+          "sawmill",
+          "lake-house"
+        ],
+        "mirror": "lighthouse"
+      },
+      "sawmill": {
+        "q": 0,
+        "r": 2,
+        "region": "Woods",
+        "adjacent": [
+          "lake-house",
+          "state-park"
+        ],
+        "mirror": "shipping-docks"
+      },
+      "lake-house": {
+        "q": 1,
+        "r": 2,
+        "region": "Woods",
+        "adjacent": [
+          "mine",
+          "state-park",
+          "sawmill",
+          "graveyard"
+        ],
+        "mirror": "fallout-bunker"
+      },
+      "weather-station": {
+        "q": 2,
+        "r": 0,
+        "region": "Mountains",
+        "adjacent": [
+          "ski-resort",
+          "state-park",
+          "mine"
+        ],
+        "mirror": null
+      },
+      "ski-resort": {
+        "q": 3,
+        "r": 0,
+        "region": "Mountains",
+        "adjacent": [
+          "military-facility",
+          "weather-station",
+          "mine",
+          "junkyard"
+        ],
+        "mirror": "occult-camp"
+      },
+      "mine": {
+        "q": 2,
+        "r": 1,
+        "region": "Mountains",
+        "adjacent": [
+          "junkyard",
+          "ski-resort",
+          "weather-station",
+          "state-park",
+          "lake-house"
+        ],
+        "mirror": "beach-city"
+      }
+    }
+  }
 }

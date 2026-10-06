@@ -16,24 +16,26 @@ function rng(seed) {
   };
 }
 
-test('bots only ever propose legal moves and play a game to the end', () => {
-  const random = rng(11);
-  let state = createGame({ seed: 11, players: PLAYERS });
-  let moves = 0;
-  while (state.phase !== 'ended' && moves < 2000) {
-    const playerId = PLAYERS.find((id) => botMove(state, { playerId: id, rng: random }) !== null);
-    if (!playerId) throw new Error(`no bot can act in ${state.phase}`);
-    const move = botMove(state, { playerId, rng: random });
-    if (!move) throw new Error('unreachable');
-    assert.deepEqual(validate(state, { playerId, move }), { ok: true });
-    state = applyMove(state, { playerId, move });
-    moves += 1;
+test('bots only ever propose legal moves and play games to the end', () => {
+  for (let g = 0; g < 10; g++) {
+    const random = rng(100 + g);
+    let state = createGame({ seed: 100 + g, players: PLAYERS });
+    for (let moves = 0; state.phase !== 'ended' && moves < 20000; moves++) {
+      let moved = false;
+      for (const playerId of state.seating) {
+        const move = botMove(state, { playerId, rng: random });
+        if (!move) continue;
+        assert.deepEqual(validate(state, { playerId, move }), { ok: true }, JSON.stringify(move));
+        state = applyMove(state, { playerId, move });
+        moved = true;
+        break;
+      }
+      assert.ok(moved, `stuck in ${state.phase}`);
+    }
+    assert.equal(state.phase, 'ended');
   }
-  assert.equal(state.phase, 'ended');
 });
 
-test('a bot that has already committed proposes nothing', () => {
-  const state = applyMove(createGame({ seed: 1, players: PLAYERS }), { playerId: 'ann', move: { type: 'ready' } });
-  assert.equal(botMove(state, { playerId: 'ann', rng: Math.random }), null);
-  assert.equal(botMove(state, { playerId: 'zed', rng: Math.random }), null);
+test('a seat that is not at the table gets no move', () => {
+  assert.equal(botMove(createGame({ seed: 1, players: PLAYERS }), { playerId: 'zed', rng: Math.random }), null);
 });

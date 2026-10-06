@@ -2479,6 +2479,27 @@ Educated first guesses, made at the designer's request so bots can run simulatio
 | Marker cubes | MC3 | The designer's stated preference (from the player's supply, and back). |
 | Slayer group per player | random (host may choose) | A default for bots. |
 
+### G.8 Readings used in the prototype engine (2026-10-06)
+
+Where a rule or card left a detail open, the engine (`public/engine.js`) uses the reading below. These are implementation choices for the prototype, listed so the designer can review them; none is a decision.
+
+- **Placing influence with a move:** at each destination, 1 influence is placed per faction moved there, spent from the mover's standing with that faction, whenever they have any (it is not optional).
+- **Draft:** each pass, a player keeps one more card than before from their kept cards plus the batch in front of them, and passes the rest to the next seat (DR3 with the put-back rule, as one choice).
+- **First player with no marked card dealt:** cannot happen at 4–5 players; at 3 players, if none is dealt, the first player rotates by round.
+- **Partial actions:** a card with no legal target can still be played as an action for no effect.
+- **Responses in the web prototype:** a played action is *pending* until its player confirms; "before" responses (the cancel, Never Invite Them In) can be played while it is pending; "after" responses answer what the last action did, until the next card is played or a player passes. Each event is answered once. The cancel can't cancel a response, since responses resolve at once.
+- **Leave Out Fresh Meat:** the largest group adjacent to the bait location that can enter moves in; ties go to the player's choice.
+- **Track Them in the Snow:** the whole group sets off; each location entered gets 1 cube and 1 influence; leftover cubes stay together where the chase stops, or at the start if it never moved.
+- **Board Up the Windows:** the player divides the group across two or more adjacent locations as they like.
+- **Spread a Virus:** cubes go to adjacent locations in map order, one each, as far as the group lasts.
+- **Ring the Church Bell, Draw a Summoning Circle, Reroute the Power Grid:** groups move in, largest first, until the two-faction limit stops a group.
+- **Reprogram the Traffic Lights:** groups move one at a time in map order; a group that can't enter stays.
+- **Silver Bullets:** the loser already loses everything, so the winner loses 2 more.
+- **Salt and Burn the Bones:** the winner loses everything too; both piles are handed out as trophies.
+- **Hidden tokens:** the marker cube comes from the player's supply and counts as their influence at the location; it returns with the rest of that location's influence after the fight (MC3).
+- **Short-supply growth:** the faction's influence leaders take turns placing one cube each at a location still due growth, starting with the first leader in seat order.
+- **End of the game, faction win:** a player's score is standing (influence held with the faction), minus trophies of that faction; influence still on locations doesn't count.
+
 ### G.6 Gaps to close
 
 - **To come with the cards** (ideas so far in Appendix H): every card and what it does; how card uses combine; movement types; cards A to D; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).

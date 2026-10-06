@@ -49,7 +49,7 @@ html, body {
 }
 
 /* Tiny5 has one weight; never fake-bold it. */
-h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; letter-spacing: 0.02em; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; letter-spacing: 0.04em; text-transform: uppercase; }
 h2 { font-size: 16px; }
 h3 { font-size: 14px; }
 p { margin: 0; }
@@ -95,7 +95,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   background: var(--color-panel);
 }
 .topbar h1 { font-size: 20px; letter-spacing: 0.04em; }
-.topbar .phase-label { font-family: var(--font-display); font-size: 16px; }
+.topbar .phase-label { font-family: var(--font-display); font-size: 16px; text-transform: uppercase; }
 
 .layout {
   display: grid;
@@ -372,3 +372,14 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .player-card { display: flex; flex-direction: column; width: min-content; min-width: 160px; border: var(--border); border-radius: var(--radius); background: var(--color-panel); overflow: hidden; }
 .player-card > .sprite { border-bottom: 2px solid var(--color-text); }
 .player-card-body { display: flex; gap: var(--space-2); align-items: center; padding: var(--space-2); }
+
+/* The table (first draft): cards, pieces on hexes, faction chips. Plain CSS in
+   the palette with clean solid borders; no pixel assets for UI (2026-10-06). */
+.cards { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.card { width: 200px; padding: var(--space-2); border: 2px solid var(--color-border, #302b2d); border-radius: 4px; background: var(--color-cell, #fff); cursor: default; display: flex; flex-direction: column; gap: 4px; }
+.card p { margin: 0; }
+.card-ticked { border-color: var(--state-candidate); box-shadow: inset 0 0 0 2px var(--state-candidate); }
+.phase .card, #phase .card { cursor: pointer; }
+.piece { display: inline-flex; align-items: center; gap: 1px; font-size: 10px; font-weight: 600; color: #fff; text-shadow: 0 1px 0 #000; }
+.faction-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border: 2px solid var(--color-border, #302b2d); border-radius: 4px; }
+.board-tile.is-scorched { filter: grayscale(1) brightness(0.6); }

@@ -5,13 +5,14 @@
  * The client never decides anything: every move round-trips to the Durable
  * Object. The engine is imported only for previews and derived values.
  *
- * SCAFFOLD: the board panel lists the decided content (the factions in play
- * and the locations). Panels for real phases are designed once a complete
- * ruleset is chosen (Appendix F.6).
+ * The first draft (Appendix G): the island with its pieces, each player's
+ * standing, and one panel per phase (draft, play, growth, the end). Targets
+ * are chosen from a list of legal options for now; choosing them on the board
+ * (with the candidate states) comes next.
  */
-import { spec, factionById, waitingOn } from './engine.js';
+import { spec, factionById, locationById, cardById, waitingOn, sampleTarget, describeTarget } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
-import { SEAT_COLOURS } from './pieces.js';
+import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml } from './pieces.js';
 
 /** @typedef {import('./engine.js').PlayerView} PlayerView */
 /** @typedef {import('./engine.js').Move} Move */
@@ -54,6 +55,14 @@ const ui = {
   phaseKey: '',
   /** @type {{ text: string, kind: 'error' | 'info' } | null} */
   toast: null,
+  /** draft: cards ticked to keep */
+  /** @type {string[]} */
+  keep: [],
+  /** play: the card whose targets are on show */
+  /** @type {string | null} */
+  choosing: null,
+  /** @type {import('./engine.js').Target[]} */
+  options: [],
 };
 
 // ---------------------------------------------------------------------------
@@ -155,6 +164,9 @@ function receiveState(view, online) {
 /** Clear the player's unsent choices; add fields here as real phases land. @param {string} phaseKey */
 function resetDrafts(phaseKey) {
   ui.phaseKey = phaseKey;
+  ui.keep = [];
+  ui.choosing = null;
+  ui.options = [];
 }
 
 /** @param {ChatLine[]} lines @param {boolean} reset */
@@ -180,10 +192,11 @@ function sendChat(text) {
 // ---------------------------------------------------------------------------
 
 /** @type {Record<PlayerView['phase'], string>} */
-const PHASE_LABELS = {
-  ready: 'Ready check (scaffold)',
-  ended: 'Game over',
-};
+const PHASE_LABELS = { draft: 'Draft', play: 'Play', growth: 'Growth', ended: 'Game over' };
+
+const SUIT = new Map(spec.archetypes.map((a) => [a.id, a.symbol]));
+/** @param {string} f */
+const fname = (f) => factionById(f).name;
 
 function renderHeader() {
   const view = ui.view;
@@ -200,19 +213,24 @@ function renderHeader() {
 function playerStatus(playerId) {
   const view = ui.view;
   if (!view) return '';
-  if (view.phase === 'ready') return view.players[playerId].committed ? 'ready' : 'deciding…';
-  return '';
+  if (view.phase === 'draft') return view.players[playerId].picked ? 'picked' : 'picking…';
+  if (view.phase === 'ended') return view.result?.players.includes(playerId) ? 'wins' : '';
+  return waitingOn(view).includes(playerId) ? 'to act' : `${view.players[playerId].handSize} cards`;
 }
 
 function renderPlayers() {
   const view = ui.view;
   if (!view) return;
   const rows = view.seating.map((id) => {
-    const classes = ['player', id === view.you ? 'player-you' : ''];
+    const p = view.players[id];
+    const group = spec.slayerGroups.find((g) => g.id === p.group);
+    const standing = view.factions.filter((f) => p.standing[f]).map((f) => `${esc(SUIT.get(factionById(f).archetype) ?? '')} ${p.standing[f]}`).join(' · ');
     return `
-      <div class="${classes.join(' ')}">
+      <div class="player ${id === view.you ? 'player-you' : ''}">
         <span class="swatch" style="background:${colourOf(id)}"></span>
-        <span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${id === view.you ? ' <span class="muted small">(you)</span>' : ''}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}</span>
+        <span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${id === view.you ? ' <span class="muted small">(you)</span>' : ''}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}
+          <span class="small muted">${esc(SUIT.get(group?.archetype ?? '') ?? '')} ${esc(group?.name ?? '')}</span>
+          <span class="small">standing ${standing || '—'} · supply ${p.supply} · trophies ${p.trophyCount}</span></span>
         <span class="player-status">${esc(playerStatus(id))}</span>
       </div>`;
   });
@@ -220,35 +238,55 @@ function renderPlayers() {
 }
 
 // ---------------------------------------------------------------------------
-// Rendering — the board
+// Rendering — the island
 // ---------------------------------------------------------------------------
+
+/** @param {string} loc */
+function piecesAt(loc) {
+  const view = /** @type {PlayerView} */ (ui.view);
+  const place = view.board[loc];
+  const tokens = Object.entries(place.cubes).map(([f, n]) => `<span class="piece">${tokenHtml(f, 1)}<b>${n}</b></span>`).join('');
+  const cubes = Object.entries(place.influence).filter(([, n]) => n > 0)
+    .map(([pid, n]) => `<span class="piece">${cubeHtml(colourOf(pid), 8)}<b>${n}</b></span>`).join('');
+  const token = place.token ? `<span class="tag" style="border-color:${colourOf(place.token.owner)}">token</span>` : '';
+  return `<div class="stack-row">${tokens}</div><div class="cube-row">${cubes}${token}</div>`;
+}
 
 function renderBoard() {
   const view = ui.view;
   if (!view) return;
-  const archetypes = new Map(spec.archetypes.map((archetype) => [archetype.id, archetype]));
-  const factions = view.factions.map((id) => {
-    const faction = factionById(id);
-    const archetype = archetypes.get(faction.archetype);
-    const icon = spriteImg(faction.id, 2) || spriteImg(faction.archetype, 2) || `<span class="symbol">${esc(archetype?.symbol ?? '')}</span>`;
-    return `<div class="faction">${icon}<div><b>${esc(faction.name)}</b><div class="small muted">${esc(archetype?.symbol ?? '')} ${esc(archetype?.name ?? '')}</div></div></div>`;
+  const board = /** @type {{ width: number, height: number, src: string, tiles: { loc: string, region: string, x: number, y: number }[] } | undefined} */ (art.board);
+  const S = 2;
+  const tiles = (board?.tiles ?? []).map((t) => {
+    const place = view.board[t.loc];
+    return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}" title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? '<b>scorched</b>' : piecesAt(t.loc))}</div>`;
   });
-  const locations = spec.locations.map((location) => {
-    const archetype = archetypes.get(location.archetype);
-    const hex = HEXES[location.id];
-    const art = hex ? `<img class="sprite" src="${esc(hex.src)}" width="${hex.width}" height="${hex.height}" alt="">` : '';
-    return `<div class="location">${art}<span><span class="symbol">${esc(archetype?.symbol ?? '')}</span> ${esc(location.name)}</span></div>`;
-  });
+  const presence = view.factions.map((f) => Object.values(view.board).reduce((n, pl) => n + (pl.cubes[f] ?? 0), 0));
+  const total = presence.reduce((a, b) => a + b, 0);
+  const factions = view.factions.map((f, i) => `<span class="faction-chip">${tokenHtml(f, 1)} ${esc(fname(f))} <b>${presence[i]}</b> <span class="muted small">supply ${view.supply[f]}</span></span>`).join('');
   $('board').innerHTML = `
-    <h2>Factions in play</h2>
-    <div class="factions">${factions.join('')}</div>
     <h2>The island</h2>
-    <div class="locations">${locations.join('')}</div>`;
+    <p class="small">Total presence <b>${total}</b> · the invaders win if it is more than <b>${esc(view.options.threshold)}</b> at the end.</p>
+    <div class="inline">${factions}</div>
+    ${board ? `<div class="board" style="width:${board.width * S}px;height:${board.height * S}px"><img class="sprite" src="${esc(board.src)}" width="${board.width * S}" height="${board.height * S}" alt="The island" style="position:absolute;left:0;top:0">${tiles.join('')}</div>` : ''}`;
 }
 
 // ---------------------------------------------------------------------------
-// Rendering — phase panel
+// Rendering — cards and the phase panel
 // ---------------------------------------------------------------------------
+
+/** @param {string} id @param {string} [actions] @param {boolean} [ticked] */
+function cardHtml(id, actions = '', ticked = false) {
+  const c = cardById(id);
+  const head = c.suit ? `${esc(SUIT.get(c.suit) ?? '')} ${esc(c.slot)} · influence ${c.influence}` : `${c.marked ? `marked ${esc(c.marked)}` : 'unsuited'}`;
+  return `<div class="card ${ticked ? 'card-ticked' : ''}" data-card="${esc(id)}">
+    <div class="small muted">${head}</div>
+    <b>${esc(c.name)}</b>
+    <p class="small">${esc(c.text)}</p>
+    ${c.response ? `<p class="small"><b>Response (${esc(c.response.timing)}): ${esc(c.response.name)}.</b> ${esc(c.response.text)}</p>` : ''}
+    ${actions}
+  </div>`;
+}
 
 function renderPhase() {
   const view = ui.view;
@@ -257,7 +295,7 @@ function renderPhase() {
     $('phase').innerHTML = ui.token ? `<h2>Table</h2><p class="muted">${esc(ui.connectionNote)}</p>` : '<h2>No seat</h2><p>Open the player link you were given (it looks like <span class="mono">/p/…</span>).</p>';
     return;
   }
-  const renderers = { ready: renderReadyPhase, ended: renderEnded };
+  const renderers = { draft: renderDraft, play: renderPlay, growth: renderGrowth, ended: renderEnded };
   $('phase').innerHTML = renderers[view.phase]();
 }
 
@@ -269,17 +307,67 @@ function waitingFor(label) {
   return `<div class="notice">${label} Waiting for ${pending.map((id) => `<b>${esc(id)}</b>`).join(', ') || 'nobody'}.</div>`;
 }
 
-function renderReadyPhase() {
-  const view = ui.view;
-  if (!view) return '';
-  if (view.me.committed) return `<h2>Ready check</h2>${waitingFor('You are ready.')}`;
-  return `<h2>Ready check</h2>
-    <p class="small muted">Placeholder phase that exercises commits, rounds, and bots until the real rules land.</p>
-    <button class="btn btn-primary" data-action="ready">Ready</button>`;
+function renderDraft() {
+  const view = /** @type {PlayerView} */ (ui.view);
+  const me = view.me;
+  if (me.picked) return `<h2>Draft</h2>${waitingFor('You have picked.')}<div class="cards">${me.kept.map((c) => cardHtml(c)).join('')}</div>`;
+  const need = me.kept.length + 1;
+  const pool = [...me.kept, ...me.batch];
+  ui.keep = ui.keep.filter((c) => pool.includes(c));
+  return `<h2>Draft</h2>
+    <p class="small">Keep <b>${need}</b> of these: your kept cards rejoin the batch each pass (DR3). ${ui.keep.length}/${need} chosen.</p>
+    <div class="cards">${pool.map((c) => cardHtml(c, '', ui.keep.includes(c))).join('')}</div>
+    <button class="btn btn-primary" data-action="pick" ${ui.keep.length === need ? '' : 'disabled'}>Keep these</button>`;
+}
+
+function renderPlay() {
+  const view = /** @type {PlayerView} */ (ui.view);
+  const me = view.me;
+  const pending = view.pending;
+  const responses = me.hand.filter((c) => cardById(c).response);
+  const respondBar = responses.length ? `<div class="stack"><b class="small">Responses (play at any time)</b>${responses.map((c) => {
+    const r = /** @type {NonNullable<ReturnType<typeof cardById>['response']>} */ (cardById(c).response);
+    const where = r.trigger === 'move-into-your-location' && pending?.target ? Object.keys(view.board).filter((l) => (view.board[l].influence[view.you] ?? 0) > 0) : [];
+    return where.length
+      ? where.map((l) => `<button class="btn" data-action="respond" data-card="${esc(c)}" data-location="${esc(l)}">${esc(r.name)}: ${esc(locationById(l).name)}</button>`).join('')
+      : `<button class="btn" data-action="respond" data-card="${esc(c)}">${esc(r.name)}</button>`;
+  }).join('')}</div>` : '';
+  if (pending) {
+    const line = `<p><b>${esc(pending.player)}</b> plays <b>${esc(cardById(pending.card).name)}</b>: ${esc(describeTarget(pending.card, pending.target))}${pending.cancelled ? ' (cancelled)' : ''}${pending.blocked.length ? ` · blocked: ${pending.blocked.map((l) => esc(locationById(l).name)).join(', ')}` : ''}</p>`;
+    return `<h2>Play</h2>${line}${pending.player === view.you ? '<button class="btn btn-primary" data-action="confirm">Confirm</button>' : waitingFor('Answer with a response now, or let it resolve.')}${respondBar}`;
+  }
+  if (view.toAct !== view.you) return `<h2>Play</h2>${waitingFor('')}<div class="cards">${me.hand.map((c) => cardHtml(c)).join('')}</div>${respondBar}`;
+  if (ui.choosing) {
+    const opts = ui.options.map((t, i) => `<button class="btn" data-action="target" data-index="${i}">${esc(describeTarget(/** @type {string} */ (ui.choosing), t))}</button>`).join('');
+    return `<h2>Play</h2><p>Choose a target for <b>${esc(cardById(ui.choosing).name)}</b>:</p><div class="stack">${opts || '<span class="muted small">No legal target found.</span>'}
+      <button class="btn" data-action="target-none">Play it for no effect</button><button class="btn" data-action="more-targets">Show other targets</button><button class="btn" data-action="back">Back</button></div>`;
+  }
+  const mustOpen = view.first === view.you && !view.opened && me.hand.some((c) => cardById(c).marked);
+  const buttons = (/** @type {string} */ c) => {
+    const card = cardById(c);
+    return `<div class="inline">${card.action ? `<button class="btn btn-primary" data-action="act" data-card="${esc(c)}">Action</button>` : ''}${card.suit && !mustOpen ? `<button class="btn" data-action="influence" data-card="${esc(c)}">Influence +${card.influence}</button>` : ''}</div>`;
+  };
+  return `<h2>Your turn</h2>${mustOpen ? '<p class="small">You go first: open with your marked card.</p>' : ''}
+    <div class="cards">${me.hand.map((c) => cardHtml(c, buttons(c))).join('')}</div>
+    <button class="btn" data-action="pass">Pass</button>${respondBar}`;
+}
+
+function renderGrowth() {
+  const view = /** @type {PlayerView} */ (ui.view);
+  const g = view.growing;
+  if (!g) return '<h2>Growth</h2>';
+  const mine = g.leaders[g.next % g.leaders.length] === view.you;
+  const spots = Object.keys(g.due).map((l) => `<button class="btn" data-action="grow" data-location="${esc(l)}">${esc(locationById(l).name)}</button>`).join('');
+  return `<h2>Growth</h2><p>${esc(fname(g.faction))} is short of cubes and grows as far as its supply allows; its influence leaders choose where.</p>${mine ? `<div class="inline">${spots}</div>` : waitingFor('')}`;
 }
 
 function renderEnded() {
-  return '<h2>Game over</h2><p class="muted">Scoring is defined once the victory rules (3.15) are settled.</p>';
+  const view = /** @type {PlayerView} */ (ui.view);
+  const r = view.result;
+  if (!r) return '<h2>Game over</h2>';
+  const side = r.side === 'island' ? 'The island wins.' : `The invaders win: ${r.factions.map(fname).join(' and ')}.`;
+  const scores = view.seating.map((id) => `<li>${esc(id)}: ${r.scores[id]}${r.players.includes(id) ? ' <b>(winner)</b>' : ''}</li>`).join('');
+  return `<h2>Game over</h2><p>${esc(side)}</p><ul>${scores}</ul>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -416,7 +504,34 @@ function onClick(event) {
   const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target.closest('[data-action]') : null);
   if (!target) return;
   const action = target.dataset.action;
-  if (action === 'ready') return sendMove({ type: 'ready' });
+  const view = ui.view;
+  const card = target.dataset.card ?? '';
+  if (action === 'pick') return sendMove({ type: 'pick', keep: ui.keep.slice() });
+  if (action === 'pass') return sendMove({ type: 'pass' });
+  if (action === 'confirm') return sendMove({ type: 'confirm' });
+  if (action === 'influence') return sendMove({ type: 'play', card, use: 'influence' });
+  if (action === 'respond') return sendMove({ type: 'respond', card, location: target.dataset.location });
+  if (action === 'grow') return sendMove({ type: 'grow', location: target.dataset.location ?? '' });
+  if ((action === 'act' || action === 'more-targets') && view) {
+    ui.choosing = action === 'act' ? card : ui.choosing;
+    ui.options = targetOptions(view, /** @type {string} */ (ui.choosing));
+    return renderPhase();
+  }
+  if (action === 'target' && ui.choosing) {
+    const chosen = ui.options[Number(target.dataset.index)];
+    const id = ui.choosing;
+    ui.choosing = null;
+    return sendMove({ type: 'play', card: id, use: 'action', target: chosen });
+  }
+  if (action === 'target-none' && ui.choosing) {
+    const id = ui.choosing;
+    ui.choosing = null;
+    return sendMove({ type: 'play', card: id, use: 'action', target: null });
+  }
+  if (action === 'back') {
+    ui.choosing = null;
+    return renderPhase();
+  }
   if (action === 'switch-seat') {
     ui.hotseat.follow = false;
     switchSeat(target.dataset.player ?? '');
@@ -426,6 +541,26 @@ function onClick(event) {
     ui.hotseat.follow = target instanceof HTMLInputElement ? target.checked : !ui.hotseat.follow;
     if (ui.view) followTheAction(ui.view);
   }
+}
+
+/** A handful of distinct legal targets, sampled from the view (the server checks the move). @param {PlayerView} view @param {string} cardId */
+function targetOptions(view, cardId) {
+  /** @type {Map<string, import('./engine.js').Target>} */
+  const seen = new Map();
+  for (let i = 0; i < 60 && seen.size < 8; i++) {
+    const t = sampleTarget(/** @type {any} */ ({ ...view, players: { ...view.players, [view.you]: { ...view.players[view.you] } } }), view.you, cardId, Math.random);
+    if (t) seen.set(JSON.stringify(t), t);
+  }
+  return [...seen.values()];
+}
+
+/** Draft: tick or untick a card to keep. @param {MouseEvent} event */
+function onCardClick(event) {
+  const el = event.target instanceof HTMLElement ? event.target.closest('[data-card]') : null;
+  if (!el || !ui.view || ui.view.phase !== 'draft' || ui.view.me.picked || (event.target instanceof HTMLElement && event.target.closest('[data-action]'))) return;
+  const id = /** @type {HTMLElement} */ (el).dataset.card ?? '';
+  ui.keep = ui.keep.includes(id) ? ui.keep.filter((c) => c !== id) : [...ui.keep, id];
+  renderPhase();
 }
 
 /** @param {SubmitEvent} event */
@@ -440,6 +575,7 @@ function onChatSubmit(event) {
 
 function main() {
   document.addEventListener('click', onClick);
+  document.addEventListener('click', onCardClick);
   $('chat-form').addEventListener('submit', onChatSubmit);
   render();
   if (ui.hotseat.enabled) return void loadHotseat();

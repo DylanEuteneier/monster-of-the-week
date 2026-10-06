@@ -8,7 +8,6 @@
  *   npm run smoke            (reads ADMIN_SECRET from the env or .dev.vars)
  */
 import { readFileSync } from 'node:fs';
-import { botMove } from '../public/bots.js';
 
 /** @typedef {import('../public/engine.js').PlayerView} PlayerView */
 
@@ -93,19 +92,33 @@ async function main() {
   await Promise.all(seats.map((seat) => seat.ready));
   await Promise.all(seats.map((seat) => seat.until(() => true)));
 
-  for (let step = 0; step < 1000; step++) {
+  // Every seat is human here; a simple policy drives them from their views:
+  // keep the first cards in the draft, open with a marked card when first,
+  // confirm your own action, grow at the first spot, and otherwise pass.
+  /** @param {PlayerView} v @returns {any} */
+  const policy = (v) => {
+    if (v.phase === 'draft') return v.me.picked ? null : { type: 'pick', keep: [...v.me.kept, ...v.me.batch].slice(0, v.me.kept.length + 1) };
+    if (v.phase === 'growth') return v.growing && v.growing.leaders[v.growing.next % v.growing.leaders.length] === v.you ? { type: 'grow', location: Object.keys(v.growing.due)[0] } : null;
+    if (v.phase !== 'play') return null;
+    if (v.pending) return v.pending.player === v.you ? { type: 'confirm' } : null;
+    if (v.toAct !== v.you) return null;
+    const marked = v.first === v.you && !v.opened ? v.me.hand.find((c) => /^extra-[a-d]$/.test(c)) : null;
+    return marked ? { type: 'play', card: marked, use: 'action', target: null } : { type: 'pass' };
+  };
+  for (let step = 0; step < 2000; step++) {
     const view = seats[0].view;
     if (!view) fail('no view');
     if (view.phase === 'ended') break;
-    // Bots read the full state; the scaffold view carries everything they need.
-    const actor = seats.find((seat) => seat.view && botMove(/** @type {any} */ (seat.view), { playerId: seat.name, rng: Math.random }));
-    if (!actor?.view) fail(`nobody can act in ${view.phase}, round ${view.round}`);
-    const move = botMove(/** @type {any} */ (actor.view), { playerId: actor.name, rng: Math.random });
-    const before = `${actor.view.round}:${actor.view.phase}:${actor.view.me.committed}`;
-    actor.socket.send(JSON.stringify({ type: 'move', move }));
-    const after = /** @type {PlayerView} */ (await actor.until((next) => `${next.round}:${next.phase}:${next.me.committed}` !== before));
-    // Let every seat catch up to the same round and phase before choosing the next actor.
-    await Promise.all(seats.map((seat) => seat.until((next) => next.round === after.round && next.phase === after.phase)));
+    const actor = seats.find((seat) => seat.view && policy(seat.view));
+    if (!actor?.view) fail(`nobody can act in ${view.phase}, round ${view.round}: ${JSON.stringify({ toAct: view.toAct, first: view.first, opened: view.opened, pending: view.pending, seats: seats.map((s) => [s.name, s.view?.you, s.view?.toAct, !!s.view?.pending, JSON.stringify(s.view ? policy(s.view) : null)]) })}`);
+    const key = (/** @type {PlayerView} */ v) => JSON.stringify([v.round, v.phase, v.pending, v.toAct, v.log.at(-1)?.events.length, v.seating.map((id) => v.players[id].picked)]);
+    const before = key(actor.view);
+    const sent = policy(actor.view);
+    await new Promise((resolve) => setTimeout(resolve, 260)); // stay under the per-seat rate limit (4 a second)
+    actor.socket.send(JSON.stringify({ type: 'move', move: sent }));
+    const after = key(/** @type {PlayerView} */ (await actor.until((next) => key(next) !== before).catch(() => fail(`${actor.name}'s move ${JSON.stringify(sent)} changed nothing; errors: ${actor.errors.join('; ')}`))));
+    // Let every seat catch up to the same state before choosing the next actor.
+    await Promise.all(seats.map((seat) => seat.until((next) => key(next) === after)));
   }
 
   await Promise.all(seats.map((seat) => seat.until((view) => view.phase === 'ended')));

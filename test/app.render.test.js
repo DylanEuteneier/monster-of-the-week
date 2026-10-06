@@ -7,6 +7,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, applyMove, playerView, factionById } from '../public/engine.js';
+import { botMove } from '../public/bots.js';
 
 /** @typedef {import('../public/engine.js').GameState} GameState */
 
@@ -82,36 +83,45 @@ function push(state) {
 /** @param {string} id */
 const html = (id) => elements.get(id)?.innerHTML ?? '';
 
-/** @param {GameState} state */
-const everyoneReady = (state) => PLAYERS.reduce((next, playerId) => applyMove(next, { playerId, move: { type: 'ready' } }), state);
+/** Bots play from this state until `stop` holds. @param {GameState} state @param {(s: GameState) => boolean} stop */
+function playUntil(state, stop) {
+  let s = state;
+  for (let i = 0; i < 20000 && !stop(s); i++) {
+    const pid = s.seating.find((id) => botMove(s, { playerId: id, rng: Math.random }));
+    if (!pid) break;
+    const move = botMove(s, { playerId: pid, rng: Math.random });
+    if (move) s = applyMove(s, { playerId: pid, move });
+  }
+  return s;
+}
 
 // ---------------------------------------------------------------------------
 // Every phase
 // ---------------------------------------------------------------------------
 
-test('the ready phase renders the board, the seats, and the ready button', () => {
+test('the draft renders the island, the seats and the cards to keep', () => {
   const state = createGame({ seed: 3, players: PLAYERS });
   push(state);
   assert.match(html('header'), /MONSTER OF THE WEEK/);
   for (const id of state.factions) assert.ok(html('board').includes(factionById(id).name.replace("'", '&#39;')), id);
-  assert.match(html('board'), /Lighthouse/);
   assert.match(html('board'), /src="\/assets\/hexes\/lighthouse.png"/);
+  assert.match(html('board'), /Total presence <b>35<\/b>/);
   for (const id of PLAYERS) assert.ok(html('players').includes(id));
-  assert.match(html('phase'), /data-action="ready"/);
+  assert.match(html('phase'), /data-action="pick"/);
+  for (const c of state.players[ME].batch) assert.ok(html('phase').includes(`data-card="${c}"`));
 });
 
-test('after committing, the phase panel names the seats still deciding', () => {
-  const state = applyMove(createGame({ seed: 3, players: PLAYERS }), { playerId: ME, move: { type: 'ready' } });
+test('the play phase renders a hand, or who is to act', () => {
+  const state = playUntil(createGame({ seed: 5, players: PLAYERS }), (s) => s.phase === 'play');
   push(state);
-  assert.doesNotMatch(html('phase'), /data-action="ready"/);
-  assert.match(html('phase'), /Waiting for/);
-  assert.match(html('phase'), /<b>Bob<\/b>/);
+  assert.match(html('phase'), /Your turn|Waiting for/);
 });
 
 test('the log and the ended phase render', () => {
-  let state = createGame({ seed: 3, players: PLAYERS });
-  while (state.phase !== 'ended') state = everyoneReady(state);
+  const state = playUntil(createGame({ seed: 3, players: PLAYERS }), (s) => s.phase === 'ended');
   push(state);
   assert.match(html('phase'), /Game over/);
-  assert.match(html('log'), /Round 1/);
+  assert.match(html('phase'), /win/);
+  assert.match(html('phase'), /(winner)/);
+  assert.match(html('log'), /cards dealt/);
 });
