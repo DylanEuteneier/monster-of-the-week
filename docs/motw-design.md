@@ -570,7 +570,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     4. Some cards can be multi-use; some single-use. Multi-use means a card offers more than one action, of which the player takes one; every card is played once.
     5. Like Inis, some cards could have an "on your turn" action and an "in response" action, so the card can be spent either way.
        - "In response" actions can be unique actions informed purely by the theme. Unlike the card's turn action, they don't have to apply to the suit's locations or factions (principles 1 and 2 govern turn actions only).
-       - Responses are interrupts: played the moment their trigger happens, on anyone's turn, and they don't use a turn. First draft: each response says when it resolves, before or after its trigger, depending on what it does. A cancel response (like Inis's Geis) resolves before, and there is only ever one cancel response in the pool. It is on one of the unsuited marked cards, A to D.
+       - Responses are interrupts: played the moment their trigger happens, on anyone's turn, and they don't use a turn. First draft: each response says when it resolves, before or after its trigger, depending on what it does. A cancel response (like Inis's Geis) resolves before, and there is only ever one cancel response in the pool. It is on one of the two unmarked unsuited cards, not on A to D.
        - First draft: a response can't be answered by another response. If the response makes the triggering action impossible, that action resolves as far as it can, and its card is still spent.
        - Responses should be few. Most ways to undo or alter another player's move are presence actions taken on a normal turn, so responses are kept for what a turn can't do.
        - Responses are always thematic. Apart from the one cancel, a response never just undoes or alters where cubes are; that is the job of turn actions. Blocking is acceptable: a response may stop a move from happening (for example, cubes stay put).
@@ -592,7 +592,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - First draft, suit structure (from a suggestion, 2026-10-05). Each suit has three cards:
     - *Strike:* a move that creates a contest at or from a suit location. Printed influence 2.
     - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3.
-    - *Signature:* the suit's primary card. The archetype's rule-bend, plus the suit's response (one per suit, so five in the pool; the one cancel response is separate, on one of the unsuited marked cards A to D), and the suit's highest printed influence, provisionally 4 (2026-10-06).
+    - *Signature:* the suit's primary card. The archetype's rule-bend, plus the suit's response (one per suit, so five in the pool; the one cancel response is separate, on one of the two unmarked unsuited cards), and the suit's highest printed influence, provisionally 4 (2026-10-06).
     - Across a suit's cards, one concentrates and one scatters. Concentrating cubes feeds growth (GR1 needs 2 or more cubes); scattering them into single cubes stops growth, so both sides of the win condition have a tool in every suit.
 - **Card ideas** are catalogued in Appendix H, all in one format. Every entry there is an idea, not a decision.
   - The unsuited extras come later. They are spice, balance and swing for the suited cards, and take inspiration from Inis's unique effect cards.
