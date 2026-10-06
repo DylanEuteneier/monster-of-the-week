@@ -2694,28 +2694,48 @@ Cards are drafted each age; each is a battle card, an upgrade, a monster or a qu
 
 **Worth stealing:** losing pays (Loki's cards, Glorious Death, dragons); revealing after everyone else (Heimdall); cancelling text (Thor's Primacy); a whole battle that wipes everyone down to one (Odin's Tide); secret goals tied to map colours.
 
-### I.3 Inis (partial; card names from search results, effects only where a source quoted them)
+### I.3 Inis (action cards complete; from the Inis fan wiki)
 
-Seventeen action cards are drafted each season; advantage cards go to territory chieftains; epic tale cards are drawn and kept.
+Action cards are drafted each season. A *season* effect is played on your turn; a *triskel* effect is played at the trigger it names, even out of turn. The standard set is used at every player count; the others join at 4 or 5 players.
 
-| Card | Effect (where verified) |
-|---|---|
-| Sanctuary | Place a sanctuary where you are present and draw an epic tale card; then you may move clans from one territory to one adjacent territory. |
-| Bard | Draw an epic tale card, *or* (triskel) after one of your manoeuvres removes opposing clans, gain a deed. |
-| Druid | Look at the discarded action cards and take one into your hand (can't be your last card). |
-| Exploration | Add a new territory to the map, adjacent to two others, and place a clan in it. |
-| Conquest | Choose a territory; move any number of your clans from adjacent territories into it, which may start a clash. |
-| Craftsmen & Peasants | In each territory where you are present, place a clan per citadel there. |
-| Warlord | Start a clash where you are present, *or* (triskel) during a clash you're in, place an exposed clan there and choose who manoeuvres next. |
-| Master Craftsman (4+) | Discard a card and draw an epic tale card, *or* (triskel) after you play an epic tale, give it to another player and gain a deed. |
-| New Clans | Place two new clans in territories you already occupy. |
-| Migration | Move clans, possibly starting several clashes. |
-| Festival | Place the festival marker (no clashes there this season; its chieftain gains). |
-| Citadel, Clans Harmony, Coalition, Emissaries, Fili, Geis, New Alliance | Named as action cards in search results; effects not verified. |
+| Card | Players | Type | Effect |
+|---|---|---|---|
+| Bard | All | Season or triskel | Draw an epic tale card. *Or:* after one of your manoeuvres removes opposing clans, gain a deed. |
+| Citadel | All | Season | Place a citadel where you are present. If that territory's advantage card hasn't been played, take it. |
+| Conquest | All | Season | Choose a territory; you may move any number of clans from adjacent territories into it. |
+| Craftsmen & Peasants | All | Season | In each territory where you are present, place a clan for each citadel there. |
+| Druid | All | Season | Look at the discarded action cards and take one into your hand. Can't be played as your last action card. |
+| Emissaries | All | Season | Move one of your clans to an adjacent territory without starting a clash. |
+| Exploration | All | Season | A new territory is added to the map, adjacent to two others; place a clan in it. |
+| Festival | All | Season | Where you are present and there is a sanctuary, place a clan and the festival token. Anyone who starts a clash there removes one of their clans. Removed at season's end. |
+| Geis | All | Triskel | When an opponent plays an action card: ignore its effect and discard it. |
+| Migration | All | Season | Choose a territory; move clans from it into one or more adjacent territories. |
+| New Alliance | All | Season | Where you are present: place a clan, *or* replace one clan of an opponent with two or more there with one of yours. |
+| New Clans | All | Season | Place two clans in territories where you are present. |
+| Raid | All | Triskel | During a clash, after your attack: take a random action card from the attacked player's hand; if they have none, remove one of their exposed clans. |
+| Sanctuary | All | Season | Place a sanctuary where you are present and draw an epic tale card. (Another source adds: then you may move clans from one territory to one adjacent territory.) |
+| Warlord | All | Season or triskel | Start a clash where you are present, as instigator. *Or:* during a clash you're in, after a manoeuvre, place an exposed clan there and choose who manoeuvres next. |
+| Master Craftsman | 4+ | Season or triskel | Discard a card if able, then draw an epic tale card. *Or:* after you play an epic tale card, give it to another player instead of discarding it, and gain a deed. |
+| Scouts & Spies | 4+ | Season | Look at one opponent's action cards; then you may move clans from one territory into one adjacent territory. |
+| Clans Harmony | 5 | Season | Place a clan in each shared territory where you are present, *or* place one clan in any territory where you are present. |
+| Coalition | 5 | Season | Choose a shared territory; move any number of your clans to one adjacent territory, and name an opponent there who may move clans to the same territory. You instigate the clash, and you two can't attack each other or use citadels in it. |
+| Fili | 5 | Season | Place the Fili token in a shared territory: nothing can start a clash there this season. |
+| The King and the Land | 5 | Season | Discard an advantage card to draw an epic tale card, *or* give one of your advantage cards to another player present in its territory: you gain a deed and they may place a clan there. |
 
-Epic tale cards (named, effects not verified): Lug's Spear, Dagda's Cauldron, The Stone of Fal, Ogma's Eloquence (ends a battle at once), among about thirty.
+**Advantage cards** (only four are on the wiki): Aber (move a clan between two territories adjacent to the Aber), Cove (after a season card, swap a card with the one set aside in the draft), Forest (after an epic tale card, draw another), Gates of Tir na Nog (draw an extra epic tale card when resolving that territory, keep one).
 
-**Worth stealing:** the triskel, a second effect played at a specific trigger instead of on your turn (our principle 5); one card that starts many clashes (Migration); a peaceful zone (Festival); taking back a discarded card (Druid); giving a played card away to score (Master Craftsman).
+**Epic tale cards** (about thirty; names only, effects not found): Lug's Spear, Dagda's Cauldron, The Stone of Fal, Ogma's Eloquence (ends a clash at once), and others.
+
+**Worth stealing:**
+- **Triskel effects:** a second effect played at a named trigger instead of on your turn. This is our principle 5.
+- **Cancelling a card as it's played (Geis):** the hardest response there is.
+- **A peaceful zone (Fili):** a fight is postponed. Compare Burn the Book.
+- **An escort into a fight (Coalition):** you invite a rival in and agree not to attack each other.
+- **Taking a card back from the discard (Druid).**
+- **Replacing an enemy piece rather than removing it (New Alliance).**
+- **Stealing a card from a hand (Raid).**
+- **Peeking at a hand, then moving (Scouts & Spies).**
+- **A fight tax (Festival):** starting a fight there costs you.
 
 ### I.4 Rumble Nation (partial; from Board Game Arena's game help)
 
@@ -2760,4 +2780,4 @@ Most actions are dice placements. A shared display of tactic cards (each usable 
 
 - The King is Dead, 2nd edition rulebook (Osprey Games, 2020), via bghub.org.
 - Blood Rage and Rumble Nation game help, Board Game Arena (en.doc.boardgamearena.com).
-- Inis: web search results quoting card texts, and Order of Gamers' rules summary (orderofgamers.com).
+- Inis: the Inis fan wiki (inis-game.fandom.com, through its page API), web search results quoting card texts, and Order of Gamers' rules summary (orderofgamers.com).
