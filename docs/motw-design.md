@@ -8,7 +8,7 @@ The single living document for this project, updated at the end of each session.
 2. **Game foundation:** the game's core tension, theme, setting, players, content, and genre.
 3. **Design decisions:** every core design decision, grouped by the game's architecture. Each decision area is one entry that matures in place, from ideas to decisions to details to rules.
 
-Appendices: A. Decision records and changelog, B. Glossary, C. Reference game research, D. Candidate codes, E. Candidate analysis, F. Prototype architecture and art, G. First draft ruleset.
+Appendices: A. Decision records and changelog, B. Glossary, C. Reference game research, D. Candidate codes, E. Candidate analysis, F. Prototype architecture and art, G. First draft ruleset, H. Card catalogue.
 
 The current focus, below, lists what is being worked on right now; the backlog holds everything else.
 
@@ -560,28 +560,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3. One card in each suit carries a response.
     - *Signature:* the archetype's rule-bend, needing the acting faction's lead. Printed influence 2 to 4, by strength.
     - Across a suit's cards, one concentrates and one scatters. Concentrating cubes feeds growth (GR1 needs 2 or more cubes); scattering them into single cubes stops growth, so both sides of the win condition have a tool in every suit.
-- **Card ideas, round 1 (suggestions, 2026-10-05; ideas, not decisions).** Written to principles 1–12 without IL1. Every presence action can move any faction and has no cube limit; influence it places is spent from the player's standing with the faction moved, 1 at each destination.
-  - **◐ Nocturnals** (Ski Resort, Fallout Bunker, Occult Camp)
-    - *Strike, Leave Out Fresh Meat (2):* choose a ◐ location; move any number of cubes of any faction from adjacent locations into it. Concentrates.
-    - *Shift, Hang Garlic and Wolfsbane (3):* choose a ◐ location; a faction there is driven out, split across at least two other locations. Scatters. Response, *Follow the Tracks:* when another player moves cubes, place 1 influence from your supply where they arrived.
-    - *Signature, Wait for Sunrise (3):* play only after you have passed this round. All Nocturnal cubes at one ◐ location flee to any locations in that region and the next.
-  - **ↂ 80's Sci-Fi** (Military Facility, Weather Station, State Park)
-    - *Strike, Broadcast a Signal (2):* move any number of cubes of one faction, from up to two locations anywhere on the island, into an ↂ location. Regions don't matter.
-    - *Shift, Leak the Documents (3):* choose an ↂ location; a faction there scatters to at least two locations in that region or the next. Response, *Cut the Phone Lines:* when another player moves cubes into a location, send back as many of them as the influence you spend from your standing with that faction.
-    - *Signature, Lead Them to the Landing Site (2):* move cubes of any faction from locations next to an ↂ location into it. Concentrates.
-  - **⏏ Sentients** (Shipping Docks, Junkyard, Beach City)
-    - *Strike, Spread a Virus (2):* choose a ⏏ location; a faction there spreads into every other location in that region, at least 1 cube each. Several fights at once. Scatters.
-    - *Shift, Reroute the Power Grid (3):* move any number of cubes of one faction from one region into a ⏏ location in that region or the next. Concentrates. Response, *Pull the Plug:* when another player spends a card for influence, they gain 1 less, and you gain 1 with the same faction.
-    - *Signature, Hack the Mainframe (3):* mark a ⏏ location; at this round's fight there, the Sentient faction counts all its cubes in that region.
-  - **☾ Undead** (Sawmill, Mine, Graveyard)
-    - *Strike, Ring the Church Bell (2):* choose a ☾ location; move any number of cubes of any faction from adjacent locations into it. Concentrates.
-    - *Shift, Board Up the Windows (3):* choose a ☾ location; a faction there is turned away, split across at least two other locations. Scatters. Response, *Hold a Séance:* when a hidden token is placed, look at it, or look at the cards left out this round.
-    - *Signature, Consecrate the Ground (3):* mark a location in a ☾ location's region; this round a true tie there doesn't scorch it. Both groups are still wiped out.
-  - **⎈ Demons** (Caves, Lighthouse, The Lake House)
-    - *Strike, Read from the Book (2):* move whatever faction is at a ⎈ location, all of it, to locations in that region or the next.
-    - *Shift, Perform an Exorcism (3):* choose a ⎈ location; a faction there is driven out, split across at least two other locations. Scatters. Response, *Sign in Blood:* when another player spends influence from a faction, gain 1 influence with the Demon faction.
-    - *Signature, Draw a Summoning Circle (3):* move any number of Demon cubes from neighbouring regions into one ⎈ location. Concentrates.
-  - Open in this round: the three Shift cards that scatter are near twins (Garlic, Board Up, Exorcism); "adjacent" needs a definition under regions (CN3).
+- **Card ideas** are catalogued in Appendix H, all in one format. Every entry there is an idea, not a decision.
   - The unsuited extras come later. They are spice, balance and swing for the suited cards, and take inspiration from Inis's unique effect cards.
 - **The staleness tension (designer's observation, 2026-10-05):** if each card always does the same unique action at the same place, the game gets stale quickly. If each card allows similar, more flexible actions, each action loses its impact, immediacy and vibe. The card design has to sit between the two.
 - **Common card actions (designer's seed, 2026-10-05; to be worked through in step 2):**
@@ -2419,5 +2398,81 @@ Avoiding fights is a bet that a faction wins (few trophies keep influence whole)
 
 ### G.6 Gaps to close
 
-- **To come with the cards:** every card and what it does; how card uses combine; movement types; cards A to D; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).
+- **To come with the cards** (ideas so far in Appendix H): every card and what it does; how card uses combine; movement types; cards A to D; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).
 - **Balancing:** rounds, the presence threshold, the growth threshold, seeding numbers, each player's starting cubes, and starting influence with the linked faction.
+
+---
+
+## Appendix H: Card catalogue
+
+Every card idea, in one format. Entries are ideas for the first draft, not decisions, until the designer picks them. Cards follow the suit principles in 3.7.
+
+**Shared wording**
+
+- **Any faction:** a presence action can move any faction, with no cube limit (3.7, principles 10 and 12; IL1 is out of the first draft).
+- **Influence:** a presence action places 1 influence at each destination, spent from the player's standing with the faction moved. A player with no standing with it places none.
+- **Infl.:** the influence a suit card gives with its suit's affinity faction when spent for influence instead (principle 7).
+- **Kind:** concentrate (gather into one location; feeds growth), scatter (break into single cubes; stops growth), merge (force a fight), split (prevent a fight), pin (nothing enters or leaves), swap (two groups trade places), far push, relocate, fight math, timing.
+- **Round:** the revision round the idea came from.
+- *Open:* what "adjacent" or "next to" means under regions (CN3): the same region, or the same or a neighbouring region.
+
+**Columns:** Card · Slot (Strike, Shift, Signature, or – if unplaced) · Kind · Turn action · Response · Infl. · Round
+
+### H.1 ◐ Nocturnals: Ski Resort, Fallout Bunker, Occult Camp
+
+| Card | Slot | Kind | Turn action | Response | Infl. | Round |
+|---|---|---|---|---|---|---|
+| Leave Out Fresh Meat | Strike | Concentrate | Choose a ◐ location. Move any number of cubes of any faction from adjacent locations into it. | – | 2 | 1 |
+| Hang Garlic and Wolfsbane | Shift | Scatter | Choose a ◐ location. A faction there is driven out, split across at least two other locations. | *Follow the Tracks:* when another player moves cubes, place 1 influence from your supply where they arrived. | 3 | 1 |
+| Wait for Sunrise | Signature | Timing, scatter | Play only after you have passed this round. All Nocturnal cubes at one ◐ location flee to any locations in that region and the next. | – | 3 | 1 |
+| Never Invite Them In | – | Pin | Choose a ◐ location. No faction can be moved into it this round. | – | – | 2 |
+| Play the Howl Recording | – | Merge | Move a whole faction into a location in the next region that holds exactly one other faction. | – | – | 2 |
+
+### H.2 ↂ 80's Sci-Fi: Military Facility, Weather Station, State Park
+
+| Card | Slot | Kind | Turn action | Response | Infl. | Round |
+|---|---|---|---|---|---|---|
+| Broadcast a Signal | Strike | Concentrate | Move any number of cubes of one faction, from up to two locations anywhere on the island, into an ↂ location. Regions don't matter. | – | 2 | 1 |
+| Leak the Documents | Shift | Scatter | Choose an ↂ location. A faction there scatters to at least two locations in that region or the next. | *Cut the Phone Lines:* when another player moves cubes into a location, send back as many of them as the influence you spend from your standing with that faction. | 3 | 1 |
+| Lead Them to the Landing Site | Signature | Concentrate | Move cubes of any faction from locations next to an ↂ location into it. | – | 2 | 1 |
+| Jam the Frequencies | – | Split | Choose a contested location in an ↂ location's region. Move one of its factions out to a neighbouring location, cancelling the fight. | – | – | 2 |
+| Swap the Case Files | – | Swap | Two locations in an ↂ location's region trade their groups. | – | – | 2 |
+
+### H.3 ⏏ Sentients: Shipping Docks, Junkyard, Beach City
+
+| Card | Slot | Kind | Turn action | Response | Infl. | Round |
+|---|---|---|---|---|---|---|
+| Spread a Virus | Strike | Scatter | Choose a ⏏ location. A faction there spreads into every other location in that region, at least 1 cube each. | – | 2 | 1 |
+| Reroute the Power Grid | Shift | Concentrate | Move any number of cubes of one faction from one region into a ⏏ location in that region or the next. | *Pull the Plug:* when another player spends a card for influence, they gain 1 less, and you gain 1 with the same faction. | 3 | 1 |
+| Hack the Mainframe | Signature | Fight math | Mark a ⏏ location. At this round's fight there, the Sentient faction counts all its cubes in that region. | – | 3 | 1 |
+| Reboot the System | – | Swap | Choose a ⏏ location. Its group trades places with the group at a location next to it. | – | – | 2 |
+| Turn Them on Each Other | – | Merge | Move every cube at a ⏏ location into a neighbouring location that holds exactly one other faction. | – | – | 2 |
+
+### H.4 ☾ Undead: Sawmill, Mine, Graveyard
+
+| Card | Slot | Kind | Turn action | Response | Infl. | Round |
+|---|---|---|---|---|---|---|
+| Ring the Church Bell | Strike | Concentrate | Choose a ☾ location. Move any number of cubes of any faction from adjacent locations into it. | – | 2 | 1 |
+| Board Up the Windows | Shift | Scatter | Choose a ☾ location. A faction there is turned away, split across at least two other locations. | *Hold a Séance:* when a hidden token is placed, look at it, or look at the cards left out this round. | 3 | 1 |
+| Consecrate the Ground | Signature | Fight math | Mark a location in a ☾ location's region. This round a true tie there doesn't scorch it; both groups are still wiped out. | – | 3 | 1 |
+| Lead Them Over the Cliff | – | Far push | Move a whole faction from a ☾ location through the next region and into the one beyond. | – | – | 2 |
+| Draw the Salt Line | – | Pin | Choose a ☾ location. Nothing moves in or out this round. | – | – | 2 |
+
+### H.5 ⎈ Demons: Caves, Lighthouse, The Lake House
+
+| Card | Slot | Kind | Turn action | Response | Infl. | Round |
+|---|---|---|---|---|---|---|
+| Read from the Book | Strike | Relocate | Move whatever faction is at a ⎈ location, all of it, to locations in that region or the next. | – | 2 | 1 |
+| Perform an Exorcism | Shift | Scatter | Choose a ⎈ location. A faction there is driven out, split across at least two other locations. | *Sign in Blood:* when another player spends influence from a faction, gain 1 influence with the Demon faction. | 3 | 1 |
+| Draw a Summoning Circle | Signature | Concentrate | Move any number of Demon cubes from neighbouring regions into one ⎈ location. | – | 3 | 1 |
+| Smash the Mirror | – | Swap | The groups at two ⎈ locations trade places. | – | – | 2 |
+| Light Every Lamp | – | Split | Choose a contested location in a ⎈ location's region. The faction with fewer cubes is driven to a neighbouring location. | – | – | 2 |
+
+### H.6 Unsuited extras
+
+To come later: spice, balance and swing for the suited cards, inspired by Inis's unique effect cards (3.7). Four are marked A to D (FP2).
+
+### H.7 Notes from the revision rounds
+
+- Round 1: the three scattering Shift cards (Hang Garlic, Board Up the Windows, Perform an Exorcism) are near twins.
+- Round 2 added pins, merges, splits, swaps and a far push, so each suit can hold different kinds of action. A suggested swap-in: Never Invite Them In for Hang Garlic; Draw the Salt Line or Board Up the Windows, not both; Smash the Mirror or Light Every Lamp for Perform an Exorcism; Turn Them on Each Other for Spread a Virus.
