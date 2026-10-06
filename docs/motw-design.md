@@ -654,10 +654,11 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 **Ideas**
 
 - `IN1` **Hidden actions:** a select few actions, such as "set a trap", place a token with a blind side on a location. When the location resolves, the token flips and becomes part of the resolution. These actions inherently allow for bluffing or misdirection.
+  - First draft (2026-10-06): fight modifiers are only ever hidden actions. A card that changes a fight places a face-down token on its target during play; the token flips and applies when that fight resolves (HT1). Under UT1, a token whose location doesn't fight stays face down into the next round.
   - Public: that a token is at the location, and which player placed it. Hidden: the token's face.
   - The owner is marked by one of their cubes on the token. That cube counts as the player's influence at the location.
   - What a flipped token affects. Candidates:
-    - `HT1` *The fight:* the token changes the contest between the two factions.
+    - `HT1` *The fight (first draft, for fight modifiers):* the token changes the contest between the two factions.
     - `HT2` *The collection:* the token changes which players collect the trophies.
   - What each token does is left to card design.
   - Hidden actions are rare: only a few cards in the pool place a real hidden token. Which cards they are is left to card design.
@@ -2473,6 +2474,8 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 - **(response)** entries are response ideas not yet attached to a card.
 - **Round:** the revision round the idea came from.
 - **Adjacent** (or "next to"): two locations are adjacent when their hexes share a border. On the prototype map that is always within a region or across the border of a neighbouring region (see G.1).
+
+- **Fight math:** every fight-modifier card is a hidden action: it places a face-down token on its target, which flips when that fight resolves (IN1, HT1).
 
 **Columns:** Card · Slot (Strike, Shift, Signature, or – if unplaced) · Kind · Turn action · Response · Infl. · Round
 
