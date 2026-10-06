@@ -2629,6 +2629,36 @@ A candidate set picks three cards per suit and attaches the responses, so the wh
 - Left out but worth testing as swaps: Silver Bullets or Hold a Midnight Vigil (◐), Make a Deal at the Crossroads (⎈), Turn Them on Each Other (⏏), Tinfoil Hats as a response.
 - Round 5: Track Them in the Snow became a mancala move (designer's idea): the pack leaves 1 cube in each location it enters until none are left. It scatters into single cubes (no growth) and can start a fight at every occupied location it touches. A location it can't enter ends the path. Influence goes down at every location entered, and the path continues only while the player has influence with that faction to place. Cubes still left when the path ends stay together at the last location entered, so a short chase ends in a real attack.
 
+**Set v2 (2026-10-06)**
+
+Built to principles 1–14, the Strike/Shift/Signature slots (Signature carrying the response and the highest influence), fight modifiers as hidden tokens, and responses that never just move cubes. *Loc* is the location reading (a suit location, any faction); *Fac* is the faction reading (the suit's faction, anywhere).
+
+| Suit | Slot (Infl.) | Card | Kind | Effect and target | Response |
+|---|---|---|---|---|---|
+| ◐ | Strike (2) | Leave Out Fresh Meat | Lure, concentrate | The largest group adjacent to the target moves into it, all of it. Target: the bait location. *Loc:* a ◐ location, any faction comes. *Fac:* anywhere, only the Nocturnals come. | – |
+| ◐ | Shift (3) | Track Them in the Snow | Sow, scatter | Drive the target group hex by bordering hex, leaving 1 cube and 1 of your influence in each location entered, while your influence with that faction lasts; a blocked location ends it; leftover cubes stay together. Target: the group chased. *Loc:* any group at a ◐ location. *Fac:* a Nocturnal group anywhere. | – |
+| ◐ | Signature (4) | Silver Bullets | Hidden, sink | Place a face-down token (and a bluff) on the target. At its fight, each group loses 2 more cubes as casualties. Target: *Loc:* a ◐ location. *Fac:* a location holding the Nocturnals. | *Never Invite Them In* (before): when a player is about to move cubes into a location where you have influence, block it; the cubes stay where they are. |
+| ↂ | Strike (2) | Broadcast a Signal | Concentrate | Call the groups of one faction from up to two locations anywhere into the target. Target: where they answer. *Loc:* any faction, into an ↂ location. *Fac:* the Sci-Fi faction, into any location. | – |
+| ↂ | Shift (3) | Leak the Documents | Halve, scatter | Half the target group, rounded down, leaves for an adjacent location of your choice. Target: the group split. *Loc:* any group at an ↂ location. *Fac:* a Sci-Fi group anywhere. | – |
+| ↂ | Signature (4) | Beam Them Up | Teleport | Lift the target group and set it down at any location on the island. Target: the group taken. *Loc:* any group at an ↂ location. *Fac:* a Sci-Fi group anywhere. | *Classified* (after): when a hidden token is placed, look at its face. |
+| ⏏ | Strike (2) | Spread a Virus | Scatter | The target group puts 1 cube into every adjacent location it can enter, as far as its cubes go. Target: the infected group. *Loc:* any group at a ⏏ location. *Fac:* a Sentient group anywhere. | – |
+| ⏏ | Shift (3) | Reroute the Power Grid | Concentrate | Move one faction's cubes from every location in the target's region into the target. Target: the destination. *Loc:* any faction, into a ⏏ location. *Fac:* the Sentients, into any location. | – |
+| ⏏ | Signature (4) | Reprogram the Traffic Lights | Conveyor | Choose one of the six hex directions; every group of the target moves one hex that way, where it can. Target: *Loc:* every group in a ⏏ location's region. *Fac:* every Sentient group on the island. | *Pull the Plug* (after): when a player spends a card for influence, they gain 1 less, and you gain 1 with the same faction. |
+| ☾ | Strike (2) | Ring the Church Bell | Concentrate | Every cube in adjacent locations is drawn into the target. Target: where the bell rings. *Loc:* a ☾ location, any faction comes. *Fac:* anywhere, only Undead cubes come. | – |
+| ☾ | Shift (3) | Board Up the Windows | Scatter | The target group is turned away, split across at least two adjacent locations. Target: the group. *Loc:* any group at a ☾ location. *Fac:* an Undead group anywhere. | – |
+| ☾ | Signature (4) | Salt and Burn the Bones | Hidden, sink | Place a face-down token (and a bluff) on the target. At its fight, both groups lose all their cubes; trophies are handed out as normal and the location is not scorched. Target: *Loc:* a ☾ location. *Fac:* a location holding the Undead. | *Hold a Séance* (after): when any player passes, look at the cards left out this round. |
+| ⎈ | Strike (2) | Draw a Summoning Circle | Concentrate | Every group of one faction in neighbouring regions moves into the target. Target: the circle. *Loc:* any faction, into a ⎈ location. *Fac:* the Demons, into any location. | – |
+| ⎈ | Shift (3) | Light Every Lamp | Split | At a contested location, the target faction is driven to an adjacent location of your choice, so the fight there doesn't happen. Target: the faction driven out. *Loc:* the smaller faction at a contested ⎈ location. *Fac:* the Demons, wherever they are contested. | – |
+| ⎈ | Signature (4) | Set the House on Fire | Hidden, sink | Place a face-down token (and a bluff) on the target. Any fight there counts as a true tie: both groups are wiped out and the location is scorched. Target: *Loc:* a ⎈ location. *Fac:* a location holding the Demons. | *Sign in Blood* (after): when a player spends influence from a faction, gain 1 influence with the Demon faction. |
+
+- Every suit concentrates (Fresh Meat, Broadcast, Reroute, the Bell, the Summoning Circle) and scatters or splits (Track, Leak, the Virus, Board Up, the Lamps).
+- Three presence sinks, all hidden (Silver Bullets, Salt and Burn, the House on Fire): the island's main tool now that cards never remove cubes. Hidden actions stay rare: three of fifteen.
+- Two strong rule-bends that aren't hidden (Beam Them Up, Reprogram the Traffic Lights).
+- Five responses, one per Signature: a block (Never Invite Them In), two information (Classified, Hold a Séance), a tax (Pull the Plug), feeding a faction (Sign in Blood). None moves cubes. The cancel is on an unsuited card.
+- Printed influence: 45 in total (five each of 2, 3 and 4).
+- Watch in testing: the faction readings of Reprogram the Traffic Lights and Draw a Summoning Circle can sweep the whole island; Set the House on Fire scorches on demand; the two information responses are close.
+- Swaps worth testing: Read from the Book or Smash the Mirror (⎈), Back Up to the Cloud (⏏), Draw the Salt Line (☾), Call in the Men in Black (ↂ), Hold a Midnight Vigil (◐).
+
 ### H.9 Action types
 
 A map of the kinds of action that fit the game's structure (draft, play, fights at round end, growth, influence, secret trophies, hidden tokens, scorching, adjacency), to draw from when designing cards. Suggestions from a design pass on 2026-10-05; not decisions. Presence actions are in the Kind list at the top of this appendix; the rest are new.
