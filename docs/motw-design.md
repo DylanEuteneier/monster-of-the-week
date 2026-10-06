@@ -591,8 +591,8 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
         - **Why:** it gives cards flexibility while keeping strong ties to their theme, and it lets strategies evolve and change during the round, as a puzzle that still feels like the suit.
   - First draft, suit structure (from a suggestion, 2026-10-05). Each suit has three cards:
     - *Strike:* a move that creates a contest at or from a suit location. Printed influence 2.
-    - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3. One card in each suit carries a response.
-    - *Signature:* the archetype's rule-bend, needing the acting faction's lead. Printed influence 2 to 4, by strength.
+    - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3.
+    - *Signature:* the suit's primary card. The archetype's rule-bend, plus the suit's response (one per suit, so five in the pool, plus the one cancel), and the suit's highest printed influence, provisionally 4 (2026-10-06).
     - Across a suit's cards, one concentrates and one scatters. Concentrating cubes feeds growth (GR1 needs 2 or more cubes); scattering them into single cubes stops growth, so both sides of the win condition have a tool in every suit.
 - **Card ideas** are catalogued in Appendix H, all in one format. Every entry there is an idea, not a decision.
   - The unsuited extras come later. They are spice, balance and swing for the suited cards, and take inspiration from Inis's unique effect cards.
