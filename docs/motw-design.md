@@ -658,6 +658,8 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - Fight modifiers take every hidden-action rule: the token's presence and its owner are public and its face is hidden (IN1); the owner's marker cube on it counts as their influence at the location (IN1; where the cube comes from is MC1–MC3, with MC3 preferred); each play places one real token and one bluff (BT1); and an unresolved token stays face down (UT1).
     - Tokens always go on a location. Under the two targets (principle 14, 3.7), that is either one of the suit's locations (any faction) or a location holding the suit's faction (anywhere), chosen when the card is played.
     - The suit constraint is checked only when the token is placed. If presence changes afterwards (the suit's faction leaves, say), the token stays where it is and still applies to that location's fight.
+    - The bluff follows the same placement rules as the real token.
+    - A hidden effect must always be able to apply to whatever fight happens at its location. It is never conditional on a particular faction being in the fight.
   - Public: that a token is at the location, and which player placed it. Hidden: the token's face.
   - The owner is marked by one of their cubes on the token. That cube counts as the player's influence at the location.
   - What a flipped token affects. Candidates:
@@ -2601,6 +2603,8 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 - Responses after the 2026-10-06 principles (few; thematic; apart from the one cancel, never just undoing or altering cube locations): Cut the Phone Lines and Howl at the Moon move cubes, so they don't fit as written. Tinfoil Hats (cubes stay put) is a block, which fits. The influence, information and tax responses (Firewall, Stay Indoors, Speak Its True Name, Hold a Séance, Ouija Board, Pull the Plug, Sign in Blood) still fit.
 
 - Round 7, two-target rewrites (principle 14): the strongest ideas rewritten so each names its target and reads two ways. The location reading fights over the suit's ground with any faction; the faction reading pushes the suit's monster anywhere. Some effects change character between readings: Reprogram the Traffic Lights moves one region or the whole Sentient network; Back Up to the Cloud jumps between ⏏ locations or between Sentient groups; Never Invite Them In shuts a door or bars the Nocturnals from new ground. Twenty cards across the five suits have round 7 versions; a Set v2 can be picked from them.
+
+- Hidden effects must apply to whatever fight happens at their location, never only if a particular faction is in it (3.11). Round 7 entries that need rewording: Hack the Mainframe ("the target faction counts its cubes in the region") and the faction readings of Salt and Burn the Bones and Set the House on Fire ("any fight the Undead/Demons are in"). Under the placement rule their faction reading becomes "a location holding the suit's faction", and the effect must work on whichever two factions end up fighting there.
 
 ### H.8 Candidate sets
 
