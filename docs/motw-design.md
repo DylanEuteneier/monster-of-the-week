@@ -36,7 +36,7 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 | 3.4 Invader forces | The decisions only (one random faction per archetype, as cubes). No archetype or faction powers: every faction plays the same; powers (`AP1`–`AP6`) stay ideas for later | None |
 | 3.5 Invader population | `SD1` seeding (provisional 5 + 1 + 1, home location random of the three); growth by `GR1` at resolution, which is the game's own growth system (`GR3`); growth always comes after fights, so each growing location holds one faction | None |
 | 3.6 Action acquisition | All of `DR1`–`DR6`: a draft at the start of each round; unplayed cards lost back to the pool; pick and pass with the put-back rule; the same pool every round; the undealt cards left out unseen; the pool is the whole action set. Hand size 6/5/4 at 3/4/5 players (`PS1`) | None |
-| 3.7 Player actions | `CU3` single-purpose cards: each card does one thing (`AC1`, distinct and precious actions). `LK1` one card per location (15), plus 6 others. `CU2` out. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out. The rest is being designed with the cards | `CU1` one-of (every card gains an influence fallback) |
+| 3.7 Player actions | `CU3` single-purpose cards: each card does one thing (`AC1`, distinct and precious actions). `SU1` five archetype suits of three cards (15), plus 6 others (A to D and two unmarked); `LK1` location cards set aside. `CU2` out. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out. The rest is being designed with the cards | `CU1` one-of (every card gains an influence fallback) |
 | 3.8 Timing and passing | `TU1` play or pass, passing is not final; `FP1` first player by marked cards, with four marked cards A to D under the fixed pool (`FP2`); the round ends when everyone passes in a row (`RE3`, 3.12) | None |
 | 3.9 Persistent progression | The decision: no persistent upgrade mechanism | None |
 | 3.10 Player characters | The decisions (five slayer groups, one per archetype); affinity as `AB1` tiebreaker | None (`AB2` is not yet a close second) |
@@ -536,8 +536,17 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - The movement types themselves are left to card design.
 - *Open:* how players influence the board with monster-of-the-week trope actions (baiting, trapping, and similar).
 - `AC1` **Distinct, precious actions (designer's aim):** actions should feel distinct and precious. Dual-use cards risk feeling too flexible, and so boring, unless there are enough distinct actions; which way uses combine depends on what feels best.
-- `LK1` **Location cards (first draft):** each card is tied to one location, one card per location, so every location's card is in the pool at every player count. Designer's pick, 2026-10-05, from a suggested structure (S2, geography cards).
+- `LK1` **Location cards (set aside for the suits, SU1):** each card is tied to one location, one card per location, so every location's card is in the pool at every player count. Designer's pick, 2026-10-05, from a suggested structure (S2, geography cards).
   - Hand size becomes 5 cards each, so the 15 location cards are all dealt at 3 players.
+- `SU1` **Archetype suits (first draft; designer's seed, 2026-10-05):** cards come in five suits, one per archetype. Each card is a thematic action for its archetype: for example, gain influence with that archetype's faction, or a presence effect targeting a location on the board and a faction at that location.
+  - First draft: suits replace the location cards (LK1 set aside). Fifteen suit cards, three per archetype, each a thematic action whose target is chosen on the board. With the six extras (A to D and two unmarked) the pool stays at 21 (PS1).
+  - Designer's principles for the suited set (2026-10-05):
+    1. A presence effect always offers the option of affecting one of its suit's three locations.
+    2. An influence action gains influence either with the suit's affinity faction (its archetype's faction) or with a faction controlling one of the suit's locations.
+    3. Every action feels strongly thematic to both its suit and the action itself.
+    4. Some cards can be multi-use; some single-use.
+    5. Like Inis, some cards could have an "on your turn" action and an "in response" action, so the card can be spent either way.
+- **The staleness tension (designer's observation, 2026-10-05):** if each card always does the same unique action at the same place, the game gets stale quickly. If each card allows similar, more flexible actions, each action loses its impact, immediacy and vibe. The card design has to sit between the two.
 - **Common card actions (designer's seed, 2026-10-05; to be worked through in step 2):**
   - `CA1` *Gain influence:* a simple, straightforward action. The player gains some influence (stake) with a faction.
   - `CA2` *Affect a faction's presence:* an action changes a faction's presence on the board, and places influence spent from that faction (IM1, 3.14). Example: move a faction's cubes from one location to adjacent locations; at each location moved to, the player takes 1 influence from that faction and places it there, along with at least 1 of the faction's cubes.
@@ -781,7 +790,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 **Ideas**
 
 - `PS1` **Fixed pool (first draft, in place of the tiered pool above):** every card is always in the pool, at every player count. Player count changes only the hand size and how many cards are left out of the deal, unseen.
-  - First draft: a pool of 21 unique cards (15 location cards, LK1, and 6 others). Hands of 6 at 3 players, 5 at 4 and 4 at 5, so 18, 20 and 20 cards are dealt and 3, 1 and 1 are left out.
+  - First draft: a pool of 21 unique cards (15 suit cards, SU1, and 6 others). Hands of 6 at 3 players, 5 at 4 and 4 at 5, so 18, 20 and 20 cards are dealt and 3, 1 and 1 are left out.
   - The board sees about the same number of plays each round at every player count.
   - This departs from the decision above (D7, cards marked 3+, 4+, 5+). D7 stays recorded; the first draft tests PS1 instead.
 
@@ -1573,6 +1582,7 @@ The **Pick** column says how candidates in a slot relate:
 |  |  | `MV2` | Rule-breaking moves |  |
 | Action aim (AC) | Any | `AC1` | Actions feel distinct and precious | 3.7 |
 | Location cards (LK) | One | `LK1` | One card per location, in the pool at every player count | 3.7 |
+| Suits (SU) | One | `SU1` | Five archetype suits of thematic actions | 3.7 |
 | Pool size (PS) | One | `PS1` | Fixed pool; player count sets hand size and how many are left out | 3.16 |
 | Card actions (CA) | Any | `CA1` | Gain influence with a faction | 3.7 |
 |  |  | `CA2` | Affect a faction's presence, placing influence spent from it |  |
@@ -2287,7 +2297,7 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
   - Each location is aligned with one archetype (2.5).
 - **Factions:** five in play, one drawn at random from each archetype (3.4). Each has cubes in its own colour and its own supply. Factions play identically; there are no powers.
 - **Players:** 3 to 5, each a slayer group linked to one archetype (3.10). Each player has cubes in their own colour (influence) and their own supply.
-- **The card pool:** 21 unique, single-purpose cards (CU3), all used at every player count (PS1): one card for each of the 15 locations (LK1) and 6 others. Four of the 6 others are marked A, B, C and D (FP2); two are unmarked. **To come with the cards:** the cards themselves.
+- **The card pool:** 21 unique, single-purpose cards (CU3), all used at every player count (PS1): five archetype suits of three cards each (SU1) and 6 others. Four of the 6 others are marked A, B, C and D (FP2); two are unmarked. **To come with the cards:** the cards themselves.
 - **Hidden tokens and bluff tokens:** **to come with the cards** (IN1).
 
 ### G.2 General rules
