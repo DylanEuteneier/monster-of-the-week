@@ -564,7 +564,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - `SU1` **Archetype suits (first draft; designer's seed, 2026-10-05):** cards come in five suits, one per archetype. Each card is a thematic action for its archetype: for example, gain influence with that archetype's faction, or a presence effect targeting a location on the board and a faction at that location.
   - First draft: suits replace the location cards (LK1 set aside). Fifteen suit cards, three per archetype, each a thematic action whose target is chosen on the board. With the six extras (A to D and two unmarked) the pool stays at 21 (PS1).
   - Designer's principles for the suited set (2026-10-05). Above all, every card must be incredibly thematic, feel very unique, and fit its suit's theme; the rest serve that.
-    1. A presence effect always offers the option of affecting one of its suit's three locations.
+    1. *(Widened by principle 14.)* A presence effect always offers the option of affecting one of its suit's three locations.
     2. An influence action gains influence either with the suit's affinity faction (its archetype's faction) or with a faction controlling one of the suit's locations.
     3. Every action feels strongly thematic to both its suit and the action itself.
     4. Some cards can be multi-use; some single-use. Multi-use means a card offers more than one action, of which the player takes one; every card is played once.
@@ -582,6 +582,10 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     11. Cards are written from the slayer group's point of view, never the monster's. Each is something a slayer group would plausibly do that has the card's effect on the monsters: perform a séance, leave out fresh meat, hack a computer.
     12. *(Set aside with IL1.)* Whether a card needs the lead of the faction it moves is decided card by card. In the first draft no card needs a lead.
     13. As many presence effects as possible should be a unique move, like Track Them in the Snow (H.1): a distinct way of moving that opens gambits only its holder has. Plain "move cubes from here to there" effects are the fallback, not the norm.
+    14. Every suit card works two ways (2026-10-06). Its text describes the effect; the player then picks its target, either:
+        - **a location:** any faction, at one of the suit's locations; or
+        - **a faction:** the suit's own (affinity) faction, at any location.
+        This mirrors principle 2 for influence (the affinity faction, or a faction controlling a suit location).
   - First draft, suit structure (from a suggestion, 2026-10-05). Each suit has three cards:
     - *Strike:* a move that creates a contest at or from a suit location. Printed influence 2.
     - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3. One card in each suit carries a response.
