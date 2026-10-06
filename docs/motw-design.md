@@ -30,11 +30,11 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 |---|---|---|
 | General: supply | One supply per colour. Player-coloured cubes return to that player for later actions; faction cubes return to that faction to be placed later | None |
 | General: no pieces leave the game | No piece is ever removed from the game entirely; anything that leaves the board returns to its supply | None |
-| 3.1 Board topology | `CN3` Regions; `BD1` one board; `LL1` two-faction limit (no action may bring in a third faction); `TM1` scorched earth | None |
+| 3.1 Board topology | `CN3` Regions; `BD1` one board; `LL1` two-faction limit (no action may bring in a third faction); `TM1` scorched earth (everything on a scorched location returns to its supply) | None |
 | 3.2 Location control | `LC1` factions control, players never do; `LC2` control by cube count | None |
 | 3.3 Location-archetype alignment | `AL2` tied fights on aligned ground; `AL3` boosted growth. (`AL1`, spread archetypes, holds through the layout D map) | None |
 | 3.4 Invader forces | The decisions only (one random faction per archetype, as cubes). No archetype or faction powers: every faction plays the same; powers (`AP1`–`AP6`) stay ideas for later | None |
-| 3.5 Invader population | `SD1` seeding (provisional 5 + 1 + 1); growth by `GR1` at resolution, which is the game's own growth system (`GR3`); growth always comes after fights, so each growing location holds one faction | None |
+| 3.5 Invader population | `SD1` seeding (provisional 5 + 1 + 1, home location random of the three); growth by `GR1` at resolution, which is the game's own growth system (`GR3`); growth always comes after fights, so each growing location holds one faction | None |
 | 3.6 Action acquisition | All of `DR1`–`DR6`: a draft at the start of each round; unplayed cards lost back to the pool; pick and pass with the put-back rule; the same pool every round; one card left out unseen; the pool is the whole action set. Hand size provisionally about four | None |
 | 3.7 Player actions | Deferred to step 2: designed together with the cards. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out of the first draft | — |
 | 3.8 Timing and passing | `TU1` play or pass, passing is not final; `FP1` first player by marked cards A and B; the round ends when everyone passes in a row (`RE3`, 3.12) | None |
@@ -406,6 +406,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - No region borders all the others.
     - Which regions border which is left to map design.
 - `TM1` **Scorched earth (first draft):** a location where a fight ends in a tie is scorched, and is no longer a location for the rest of the game.
+  - First draft: scorching clears everything on the location. Cubes, influence, hidden tokens and any other pieces return to their supplies.
 - *Open:* whether locations limit the number of cubes they hold, or have special properties.
 
 #### 3.2 Location control · *Ideas*
@@ -467,6 +468,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 **Ideas**
 
 - `SD1` **Seeding (first draft):** each faction starts on its home territory. Every faction has a home location of its own, one of its archetype's three locations.
+  - First draft: the home location is drawn at random from the three.
   - Provisional numbers: 5 cubes on the home location, and 1 cube on each of the faction's other two aligned locations.
   - Starting presence and the total number of cubes per faction, including the supply, are left to balancing.
 - **Growth.** Candidates. These are separate ideas, need not be used together, and could be mutually exclusive:
@@ -2283,7 +2285,7 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
 ### G.3 Setup
 
 1. Draw one faction from each archetype.
-2. **Seed the board (SD1):** each faction places [5] cubes on its home location, one of its archetype's three locations, and [1] cube on each of the other two. Every location starts with exactly one faction. **Gap:** how each faction's home location is chosen.
+2. **Seed the board (SD1):** each faction places [5] cubes on its home location, one of its archetype's three locations, and [1] cube on each of the other two. Each faction's home location is drawn at random from its archetype's three. Every location starts with exactly one faction.
 3. Each player takes a slayer group and their cubes [number to balance].
 4. Each player starts with [some] influence with their linked archetype's faction, which makes them its influence leader. Factions with no linked player in the game start with every player at 0, so every player is their influence leader.
 5. Build the card pool for the player count.
@@ -2319,7 +2321,7 @@ For each fight:
 1. **Outcome (FR5).** The larger group wins. The loser loses all its cubes there. The winner loses half the loser's number, rounded down, minimum 1.
 2. **Tied fight (TF1, AL2).** If the groups are equal:
    - At a location aligned with one of the two factions, that faction wins, and the outcome is as above.
-   - Otherwise both groups are wiped out and the location is **scorched (TM1)**: it is no longer a location for the rest of the game. All influence there returns to each player's supply (AT1). **Gap:** what happens to hidden tokens on a scorched location.
+   - Otherwise both groups are wiped out and the location is **scorched (TM1)**: it is no longer a location for the rest of the game. Everything on it is cleared: all influence returns to each player's supply (AT1), and hidden tokens and any other pieces return to their owners' supplies.
 3. **Trophies (TD1).** The casualties form two piles, one per faction: the loser's cubes and the winner's losses.
    - The player with the most influence at the location (the leader) takes the bigger pile; the runner-up takes the smaller. If the piles are equal, the leader picks first.
    - Ties between players: a tied player with affinity for the location wins the tie. Otherwise the tie stands (PT2), and tied players collect nothing (ST1): a tie uses up every place the tied players were in line for. Tied leaders use up both places, so both piles return to their factions' supplies. Players tied for runner-up use up second place, so the smaller pile returns.
@@ -2349,8 +2351,6 @@ Avoiding fights is a bet that a faction wins (few trophies keep influence whole)
 ### G.6 Gaps to close
 
 - **To come with the cards:** every card and what it does; how card uses combine; movement types; card A and B; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).
-- **Gap:** how each faction's home location is chosen (SD1).
-- **Gap:** hidden tokens on a location that is scorched.
 - **Gap:** a faction whose supply is empty when it should grow (and the total cubes per faction).
 - **Gap:** if every location in a region is scorched, whether pieces can still move through it.
 - **Balancing:** rounds, hand size, the presence threshold, the growth threshold, seeding numbers, each player's starting cubes, and starting influence with the linked faction.
