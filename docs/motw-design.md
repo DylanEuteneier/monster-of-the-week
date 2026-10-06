@@ -2451,6 +2451,10 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Silver Bullets | – | Fight math | Mark a ◐ location. At this round's fight there, the Nocturnal faction loses 2 more cubes as casualties. | – | – | 3 |
 | Track Them in the Snow | – | Far push | Choose a ◐ location. Move one faction there along a chain of adjacent locations, as far as you like. | – | – | 3 |
 | (response) Stay Indoors | – | Influence | – | When another player moves cubes into a location where you have influence, move your influence there to an adjacent location. | – | 3 |
+| Hold a Midnight Vigil | – | Influence, timing | Gain 2 influence with the Nocturnal faction, or 4 if you have already passed this round. | – | – | 4a |
+| Join the Coven | – | Influence | Gain 2 influence with the faction controlling a ◐ location, plus 1 for each other ◐ location it controls. | – | – | 4a |
+| Follow the Pack | – | Influence | Gain influence with the Nocturnal faction equal to the number of contested locations it is in (at least 1). | – | – | 4a |
+| (response) Howl at the Moon | – | Timing | – | When any player passes, move any number of Nocturnal cubes from one location to an adjacent one. | – | 4c |
 
 ### H.2 ↂ 80's Sci-Fi: Military Facility, Weather Station, State Park
 
@@ -2464,6 +2468,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | File a Records Request | – | Influence, information | Gain 2 influence with the Sci-Fi faction, and look at the cards left out this round. | – | – | 3 |
 | Call in the Men in Black | – | Standing effect | For the rest of the round, cubes moved into an ↂ location by any player go to an adjacent location of your choice instead. | – | – | 3 |
 | (response) Tinfoil Hats | – | Block | – | When another player's card would move cubes out of a location where you have influence, those cubes stay. | – | 3 |
+| Call in the National Guard | – | Fight math, sink | Mark a contested location in an ↂ location's region. At this round's fight there, the winner loses as many cubes as the loser. | – | – | 4b |
 
 ### H.3 ⏏ Sentients: Shipping Docks, Junkyard, Beach City
 
@@ -2477,6 +2482,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Phishing Email | – | Influence, catch-up | Gain influence with the Sentient faction equal to the number of players with more influence with it than you (at least 1). | – | – | 3 |
 | Trigger an EMP | – | Pin | Choose a region with a ⏏ location. No cubes move into, out of or within it this round. | – | – | 3 |
 | (response) Firewall | – | Influence | – | When another player places influence at a location where you have influence, place 1 from your supply there too. | – | 3 |
+| Overload the Generator | – | Fight math, sink | Mark a ⏏ location. At this round's fight there, each group loses 2 more cubes as casualties. | – | – | 4b |
 
 ### H.4 ☾ Undead: Sawmill, Mine, Graveyard
 
@@ -2503,6 +2509,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Make a Deal at the Crossroads | – | Influence, catch | Gain 4 influence with the Demon faction; the player with the least influence with it gains 1. | – | – | 3 |
 | Burn the Book | – | Rule-bend | Choose a contested ⎈ location. Its fight doesn't happen this round; both factions stay. | – | – | 3 |
 | (response) Speak Its True Name | – | Influence | – | When a card's action targets a location where you have influence, move that influence to your standing with the faction there. | – | 3 |
+| Set the House on Fire | – | Fight math, sink | Mark a ⎈ location. Any fight there this round counts as a true tie: both groups are wiped out and the location is scorched. | – | – | 4b |
 
 ### H.6 Unsuited extras
 
@@ -2513,3 +2520,27 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 - Round 1: the three scattering Shift cards (Hang Garlic, Board Up the Windows, Perform an Exorcism) are near twins.
 - Round 2 added pins, merges, splits, swaps and a far push, so each suit can hold different kinds of action. A suggested swap-in: Never Invite Them In for Hang Garlic; Draw the Salt Line or Board Up the Windows, not both; Smash the Mirror or Light Every Lamp for Perform an Exorcism; Turn Them on Each Other for Spread a Virus.
 - Round 3 filled gaps: responses (only five so far), slayer actions that gain influence (principle 2), and bigger rule-bends. New kinds: standing effects that last the round, blocks, moving influence, catch-up influence, information, and a presence sink (Salt and Burn the Bones), which matters because presence only falls through fights. Burn the Book postpones a fight, which bends FT1.
+- Round 4a, Nocturnal influence: Hold a Midnight Vigil (rewards passing, so it pairs with Wait for Sunrise), Join the Coven, Follow the Pack.
+- Round 4b, presence sinks: Call in the National Guard (one-for-one losses), Overload the Generator (+2 losses each side), Set the House on Fire (forces a true tie, so it scorches). With Silver Bullets and Salt and Burn the Bones, every suit now has a sink idea. Sinks are the island's main tool, since cards never remove cubes.
+- Round 4c, responses: the response ideas now cover distinct jobs. Protect cubes (Tinfoil Hats); redirect a move (Cut the Phone Lines); tax influence (Pull the Plug); information (Hold a Séance, Ouija Board); piggyback influence (Firewall); pull influence to safety (Stay Indoors, Speak Its True Name); feed an affinity faction (Sign in Blood); act on a pass (Howl at the Moon). Follow the Tracks duplicates Firewall and could be dropped.
+- Round 4d, a candidate full set: see H.8.
+
+### H.8 Candidate sets
+
+A candidate set picks three cards per suit and attaches the responses, so the whole pool can be read as cards. Each is a suggestion to test, not a decision.
+
+**Set v1 (round 4d)**
+
+| Suit | Strike (2) | Shift (3) + response | Signature (3) |
+|---|---|---|---|
+| ◐ | Leave Out Fresh Meat (concentrate) | Never Invite Them In (pin) + *Howl at the Moon* | Wait for Sunrise (timing, scatter) |
+| ↂ | Broadcast a Signal (concentrate) | Leak the Documents (scatter) + *Cut the Phone Lines* | Call in the Men in Black (standing effect) |
+| ⏏ | Spread a Virus (scatter) | Reroute the Power Grid (concentrate) + *Pull the Plug* | Hack the Mainframe (fight math) |
+| ☾ | Ring the Church Bell (concentrate) | Board Up the Windows (scatter) + *Hold a Séance* | Salt and Burn the Bones (fight math, sink) |
+| ⎈ | Read from the Book (relocate) | Light Every Lamp (split) + *Sign in Blood* | Draw a Summoning Circle (concentrate) |
+
+- Every suit has a card that concentrates and one that scatters or splits.
+- Kinds: concentrate 5, scatter 4, split 1, pin 1, relocate 1, standing effect 1, fight math 2 (one a sink). No merges, so fights come only from moves into occupied locations.
+- Five responses, each a different job: act on a pass, redirect a move, tax influence, information, feed an affinity faction.
+- Printed influence: 40 in total (2 on Strikes, 3 on Shifts and Signatures).
+- Left out but worth testing as swaps: Silver Bullets or Hold a Midnight Vigil (◐), Make a Deal at the Crossroads (⎈), Turn Them on Each Other (⏏), Tinfoil Hats as a response.
