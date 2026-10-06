@@ -553,6 +553,8 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     7. First draft: every suit card can be spent for influence with its suit's affinity faction, instead of its presence action or its response. The amount is printed on each card, more than 1, like Twilight Struggle's operations points (CU1, one-of, for every suit card).
     8. First draft: the six unsuited extra cards (A to D and two unmarked) don't offer influence. Instead they allow wild, powerful or flexible actions.
     9. Action themes are not limited to the inspiration and ideas recorded so far. A strong thematic action can lead to a new mechanism, and a strong mechanism can find a new theme.
+    10. Movement effects such as concentrate and scatter have no cube limits. They are defined by geography instead: for example, move any faction's cubes from locations adjacent to a location of this suit into it, or move any amount of the affinity faction from neighbouring regions into a single region.
+    11. Cards are written from the slayer group's point of view, never the monster's. Each is something a slayer group would plausibly do that has the card's effect on the monsters: perform a séance, leave out fresh meat, hack a computer.
   - First draft, suit structure (from a suggestion, 2026-10-05). Each suit has three cards:
     - *Strike:* a move that creates a contest at or from a suit location. Printed influence 2.
     - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3. One card in each suit carries a response.
