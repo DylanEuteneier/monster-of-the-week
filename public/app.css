@@ -442,3 +442,10 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .hex-pieces .cube-row > .cube + .cube { margin-left: -2px; }
 .hidden-token { width: 10px; height: 10px; margin-left: 3px; background: var(--color-panel-2); border: 2px solid var(--owner); box-shadow: 1px 1px 0 var(--ink); }
 .overlay[hidden], [hidden] { display: none !important; }
+
+/* Supplies as pieces: a faction's tokens, a player's cubes, overlapping. */
+.faction-chip { flex-direction: column; align-items: flex-start; gap: 4px; }
+.faction-name { font-size: 12px; }
+.supply-row { display: flex; flex-wrap: wrap; align-items: flex-end; max-width: 220px; row-gap: 2px; }
+.supply-row > .token + .token { margin-left: -14px; }
+.supply-row.cubes { gap: 1px; }
