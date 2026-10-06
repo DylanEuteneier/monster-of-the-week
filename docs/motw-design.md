@@ -2752,6 +2752,52 @@ Most actions are dice placements. A shared display of tactic cards (each usable 
 
 **Worth stealing:** a shared display of once-per-game tactics that closes when someone finishes placing; sea movement as a second kind of adjacency; replacing an enemy piece rather than removing it.
 
+### I.6 The COIN series, e.g. Cuba Libre (system; from GMT's Cuba Libre playbook)
+
+Four asymmetric factions share one deck of event cards. Cuba Libre's factions: the Government, the 26 July Movement, the Directorio and the Syndicate.
+
+- **The card sets the turn order.** Each event card shows the four faction symbols in an order. The leftmost faction that is *eligible* acts first, then the next eligible faction to its right.
+- **What the 1st eligible faction can do:** the card's event; or one operation without a special activity; or one operation with a special activity; or pass.
+- **What the 2nd eligible faction can do depends on the first.** If the first faction took Ops plus a special activity, the second may only take the event or a *limited operation* (an operation in one space, with no special activity). Each choice closes some options for the next faction.
+- **Acting costs the next card.** A faction that does anything but pass is ineligible on the next card, so most factions act on every other card. A faction that passes stays eligible (and gains a small resource).
+- **The next card is visible.** The played card and the card "on deck" are both face up, so players plan around what is coming.
+- **Dual-use events.** Most events have an unshaded half and a shaded half that usually favour opposite sides: often something to help you or hurt a rival.
+- **Operations and special activities** are each faction's own menu (Government: Train, Sweep, Assault, with Air Strike and Transport; 26 July: Rally, March, Attack, Terror, with Kidnap; Directorio: Assassinate; Syndicate: money, buying protection).
+- **Propaganda cards** are seeded through the deck, one in each third. When one comes up, there is a scoring and upkeep round, and every faction becomes eligible again.
+
+**Worth stealing:**
+- **Turn order from the card,** not the seat. Each of our cards could show the archetype order for the round's turn order, or for a resolution order.
+- **The cost of acting is sitting out the next card.** A tempo rule that makes passing a real choice.
+- **What the first player does limits what the second may do.** This is a direct model for responses and follow-on plays.
+- **Seeing the next card coming.** It could be applied to the draft or to which location fights first.
+- **Dual-use events with two halves for two sides.** For example, each suit card's two uses could favour the invaders and the island.
+- **Scoring rounds seeded through the deck.** Compare our fixed round count.
+
+### I.7 Twilight Struggle (system; from GMT's 2nd edition rules)
+
+Two players, the USSR and the US, across ten turns of six or seven card plays each.
+
+- **Every card is an event or operations points (1 to 4).** Points are spent on one thing per card: placing influence, realignment rolls (removing enemy influence), coups, or the space race.
+- **Your opponent's event fires anyway.** If you play a card for points and its event belongs to your opponent, their event still happens. You choose whether it happens before or after your operations. Much of the game is deciding which of the opponent's cards you can afford to play.
+- **Influence must spread from where you already are.** It is placed in or adjacent to countries where you had influence at the start of the round, and costs double in an enemy-controlled country.
+- **Control needs a margin.** A country is controlled by having at least its stability number of influence there *and* that much more than the opponent.
+- **Headline phase:** each turn opens with both players secretly choosing a card, revealed together; the higher operations value resolves first.
+- **Scoring cards** are in the deck, and must be played in the turn they are drawn. Each scores one region.
+- **Cards removed after use (asterisk), and lasting events (underlined)** that stay face up until cancelled.
+- **The China Card:** an extra card that, once played, passes face down to the opponent, who can't use it until next turn.
+- **DEFCON:** a shared nuclear-tension track. Coups and some events lower it, and the player who brings it to 1 loses at once.
+- **Space race:** a way to discard an unwanted card (one of your opponent's events) for a small reward.
+
+**Worth stealing:**
+- **Playing a card for its points can still trigger its event for someone else.** Our version: spending a suit card for influence could let that suit's archetype act anyway.
+- **Influence that has to grow outward** from where it already is.
+- **Control by margin, not just most.**
+- **A secret simultaneous opening play** each round (the headline). A natural fit for our draft-then-play rhythm.
+- **Scoring cards in the deck** that force a region to score.
+- **One card that changes hands every time it is played** (the China Card), like a cursed object passed around the town.
+- **A shared doom track that both sides push and nobody wants to finish** (DEFCON). Compare our presence threshold.
+- **A safe way to dump a card you can't afford to play** (the space race).
+
 ### I.5 More games to mine (from memory; check before relying on details)
 
 | Game | What to look at |
@@ -2780,4 +2826,5 @@ Most actions are dice placements. A shared display of tactic cards (each usable 
 
 - The King is Dead, 2nd edition rulebook (Osprey Games, 2020), via bghub.org.
 - Blood Rage and Rumble Nation game help, Board Game Arena (en.doc.boardgamearena.com).
+- Cuba Libre playbook (GMT Games, 2018) and Twilight Struggle 2nd edition rules (GMT Games).
 - Inis: the Inis fan wiki (inis-game.fandom.com, through its page API), web search results quoting card texts, and Order of Gamers' rules summary (orderofgamers.com).
