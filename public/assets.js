@@ -171,7 +171,7 @@ function render() {
     </section>
     <section class="panel">
       <div class="row-between"><h2>Choosing a target</h2><span class="small muted">interactive</span></div>
-      <p class="small muted">The board as a card would use it. Pick which locations are candidates (all of them, or one suit's three locations, as a card's location target would allow), then hover and click one to choose it.</p>
+      <p class="small muted">The board as a card would use it. Mark one or more suits as candidates: their three locations light up, as a card's location target would allow. Hover a candidate, then click to choose it.</p>
       <div class="inline" id="target-controls"></div>
       <p class="small" id="target-status"></p>
       <div id="target-board"></div>
@@ -210,13 +210,9 @@ function targeting() {
   const S = 2;
   const name = new Map(spec.locations.map((loc) => [loc.id, loc.name]));
   const archetypeOf = new Map(spec.locations.map((loc) => [loc.id, loc.archetype]));
-  /** @type {[string, (loc: string) => boolean][]} */
-  const sets = [
-    ['All locations', () => true],
-    ...spec.archetypes.map((arch) => /** @type {[string, (loc: string) => boolean]} */ ([`${arch.symbol} ${arch.name}`, (loc) => archetypeOf.get(loc) === arch.id])),
-    ['None', () => false],
-  ];
-  let filter = sets[0][1];
+  /** Suits marked as candidates: their three locations can be chosen. */
+  const marked = new Set();
+  const filter = (/** @type {string} */ loc) => marked.has(archetypeOf.get(loc));
   /** @type {string | null} */
   let chosen = null;
   const draw = () => {
@@ -229,15 +225,22 @@ function targeting() {
     const count = board.tiles.filter((t) => filter(t.loc)).length;
     $('target-status').innerHTML = chosen
       ? `Target: <b>${esc(name.get(chosen) ?? chosen)}</b> · <button class="btn" id="target-reset">Choose again</button>`
-      : `${count} candidate${count === 1 ? '' : 's'}: hover one, then click to choose it.`;
+      : count ? `${count} candidate${count === 1 ? '' : 's'}: hover one, then click to choose it.` : 'Mark a suit as candidates to light up its three locations.';
     document.getElementById('target-reset')?.addEventListener('click', () => { chosen = null; draw(); });
   };
-  $('target-controls').innerHTML = sets.map(([label], i) => `<button class="btn" data-set="${i}">${esc(label)}</button>`).join('');
+  const controls = () => {
+    $('target-controls').innerHTML = spec.archetypes.map((arch) => `<button class="btn${marked.has(arch.id) ? ' btn-primary' : ''}" data-suit="${esc(arch.id)}" aria-pressed="${marked.has(arch.id)}">${esc(arch.symbol)} ${esc(arch.name)}</button>`).join('')
+      + '<button class="btn" data-suit="">Clear</button>';
+  };
   $('target-controls').addEventListener('click', (event) => {
-    const button = /** @type {HTMLElement} */ (event.target).closest('[data-set]');
+    const button = /** @type {HTMLElement} */ (event.target).closest('[data-suit]');
     if (!button) return;
-    filter = sets[Number(button.getAttribute('data-set'))][1];
+    const suit = button.getAttribute('data-suit') ?? '';
+    if (!suit) marked.clear();
+    else if (marked.has(suit)) marked.delete(suit);
+    else marked.add(suit);
     chosen = null;
+    controls();
     draw();
   });
   $('target-board').addEventListener('click', (event) => {
@@ -247,6 +250,7 @@ function targeting() {
     chosen = loc;
     draw();
   });
+  controls();
   draw();
 }
 
