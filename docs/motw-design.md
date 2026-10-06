@@ -2461,6 +2461,23 @@ After the last round's resolve phase:
 
 Avoiding fights is a bet that a faction wins (few trophies keep influence whole); fighting widely is a bet that the island wins (TS1).
 
+### G.7 First-draft numbers for the prototype (2026-10-06)
+
+Educated first guesses, made at the designer's request so bots can run simulations and refine them. Not decisions; each becomes a host-selectable variant in `spec.json`.
+
+| Number | First guess | Reasoning |
+|---|---|---|
+| Rounds (GL1) | 5 | Enough for presence to swing from the start to the threshold band. |
+| Presence threshold (TH1) | more than 20 | With about 10 presence moves a round, an earlier simulation put total presence at about 15–25 by round 3 and 10–17 by round 5; 20 sits in that band so the last round decides it. |
+| Seeding (SD1) | 5 + 1 + 1 | As recorded; 35 cubes in all. |
+| Growth threshold (GR1) | 2 | As recorded. |
+| Cubes per faction | 20 | 7 on the board at setup, 13 in supply; trophies draining a supply still matters. |
+| Each player's starting cubes | 20 | Moves place about 1–3 influence a turn and half comes back after a fight. |
+| Starting influence with the linked faction | 3 | Two or three moves in round 1 before more must be gained. |
+| Bluff tokens per player | 3 | One per hidden play; three hidden cards in the pool. |
+| Marker cubes | MC3 | The designer's stated preference (from the player's supply, and back). |
+| Slayer group per player | random (host may choose) | A default for bots. |
+
 ### G.6 Gaps to close
 
 - **To come with the cards** (ideas so far in Appendix H): every card and what it does; how card uses combine; movement types; cards A to D; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).
