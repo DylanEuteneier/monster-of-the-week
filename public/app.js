@@ -7,10 +7,10 @@
  *
  * The first draft (Appendix G): the island with its pieces, each player's
  * standing, and one panel per phase (draft, play, growth, the end). Targets
- * are chosen from a list of legal options for now; choosing them on the board
- * (with the candidate states) comes next.
+ * are chosen on the board one step at a time: each step's candidates are
+ * spotlit (hexes) or lit gold (tokens), and the server checks the result.
  */
-import { spec, factionById, locationById, cardById, waitingOn, sampleTarget, describeTarget } from './engine.js';
+import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml } from './pieces.js';
 
@@ -58,11 +58,11 @@ const ui = {
   /** draft: cards ticked to keep */
   /** @type {string[]} */
   keep: [],
-  /** play: the card whose targets are on show */
+  /** play: the card whose target is being built on the board */
   /** @type {string | null} */
   choosing: null,
-  /** @type {import('./engine.js').Target[]} */
-  options: [],
+  /** @type {import('./engine.js').Target} */
+  target: {},
 };
 
 // ---------------------------------------------------------------------------
@@ -166,7 +166,7 @@ function resetDrafts(phaseKey) {
   ui.phaseKey = phaseKey;
   ui.keep = [];
   ui.choosing = null;
-  ui.options = [];
+  ui.target = {};
 }
 
 /** @param {ChatLine[]} lines @param {boolean} reset */
@@ -241,11 +241,23 @@ function renderPlayers() {
 // Rendering — the island
 // ---------------------------------------------------------------------------
 
-/** @param {string} loc */
-function piecesAt(loc) {
+/** The step being chosen on the board, if a target is being built. */
+function currentChoice() {
+  const view = ui.view;
+  if (!view || !ui.choosing) return null;
+  return nextChoice(/** @type {any} */ (view), view.you, ui.choosing, ui.target);
+}
+
+/** @param {string} loc @param {ReturnType<typeof currentChoice>} choice */
+function piecesAt(loc, choice) {
   const view = /** @type {PlayerView} */ (ui.view);
   const place = view.board[loc];
-  const tokens = Object.entries(place.cubes).map(([f, n]) => `<span class="piece">${tokenHtml(f, 1)}<b>${n}</b></span>`).join('');
+  const groupPick = choice && choice.kind === 'group' ? choice.options : [];
+  const tokens = Object.entries(place.cubes).map(([f, n]) => {
+    const lit = groupPick.some((g) => g.location === loc && g.faction === f);
+    const html = tokenHtml(f, 1, lit ? 'candidate' : '');
+    return `<span class="piece"${lit ? ` data-action="pick-group" data-location="${esc(loc)}" data-faction="${esc(f)}"` : ''}>${html}<b>${n}</b></span>`;
+  }).join('');
   const cubes = Object.entries(place.influence).filter(([, n]) => n > 0)
     .map(([pid, n]) => `<span class="piece">${cubeHtml(colourOf(pid), 8)}<b>${n}</b></span>`).join('');
   const token = place.token ? `<span class="tag" style="border-color:${colourOf(place.token.owner)}">token</span>` : '';
@@ -257,9 +269,14 @@ function renderBoard() {
   if (!view) return;
   const board = /** @type {{ width: number, height: number, src: string, tiles: { loc: string, region: string, x: number, y: number }[] } | undefined} */ (art.board);
   const S = 2;
+  const choice = currentChoice();
+  const spots = choice && (choice.kind === 'location' || choice.kind === 'split') ? choice.options : [];
+  const chosen = new Set([ui.target.location, ui.target.to, ui.target.bluff, ...(ui.target.path ?? []), ...(ui.target.from ?? []), ...Object.keys(ui.target.split ?? {})].filter(Boolean));
   const tiles = (board?.tiles ?? []).map((t) => {
     const place = view.board[t.loc];
-    return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}" title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? '<b>scorched</b>' : piecesAt(t.loc))}</div>`;
+    const lit = spots.includes(t.loc);
+    const state = lit ? 'candidate' : chosen.has(t.loc) ? 'hovered' : '';
+    return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}"${lit ? ` data-action="pick-location" data-location="${esc(t.loc)}"` : ''} title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? '<b>scorched</b>' : piecesAt(t.loc, choice), /** @type {import('./pieces.js').TargetState} */ (state))}</div>`;
   });
   const presence = view.factions.map((f) => Object.values(view.board).reduce((n, pl) => n + (pl.cubes[f] ?? 0), 0));
   const total = presence.reduce((a, b) => a + b, 0);
@@ -337,11 +354,7 @@ function renderPlay() {
     return `<h2>Play</h2>${line}${pending.player === view.you ? '<button class="btn btn-primary" data-action="confirm">Confirm</button>' : waitingFor('Answer with a response now, or let it resolve.')}${respondBar}`;
   }
   if (view.toAct !== view.you) return `<h2>Play</h2>${waitingFor('')}<div class="cards">${me.hand.map((c) => cardHtml(c)).join('')}</div>${respondBar}`;
-  if (ui.choosing) {
-    const opts = ui.options.map((t, i) => `<button class="btn" data-action="target" data-index="${i}">${esc(describeTarget(/** @type {string} */ (ui.choosing), t))}</button>`).join('');
-    return `<h2>Play</h2><p>Choose a target for <b>${esc(cardById(ui.choosing).name)}</b>:</p><div class="stack">${opts || '<span class="muted small">No legal target found.</span>'}
-      <button class="btn" data-action="target-none">Play it for no effect</button><button class="btn" data-action="more-targets">Show other targets</button><button class="btn" data-action="back">Back</button></div>`;
-  }
+  if (ui.choosing) return renderTargeting(ui.choosing);
   const mustOpen = view.first === view.you && !view.opened && me.hand.some((c) => cardById(c).marked);
   const buttons = (/** @type {string} */ c) => {
     const card = cardById(c);
@@ -350,6 +363,34 @@ function renderPlay() {
   return `<h2>Your turn</h2>${mustOpen ? '<p class="small">You go first: open with your marked card.</p>' : ''}
     <div class="cards">${me.hand.map((c) => cardHtml(c, buttons(c))).join('')}</div>
     <button class="btn" data-action="pass">Pass</button>${respondBar}`;
+}
+
+/** The panel beside the board while a target is built on it. @param {string} cardId */
+function renderTargeting(cardId) {
+  const choice = /** @type {NonNullable<ReturnType<typeof currentChoice>>} */ (currentChoice());
+  const card = cardById(cardId);
+  const PROMPTS = {
+    location: 'Choose the target location on the board.', to: 'Choose where they go.', bluff: 'Choose where the bluff goes, or skip it.',
+    path: 'Choose the next location on the trail, or stop here.', from: 'Choose a location they come from.',
+  };
+  let body = '';
+  if (choice.kind === 'mode') {
+    body = `<p>Choose the target:</p><div class="inline"><button class="btn btn-primary" data-action="mode" data-mode="location">${esc(SUIT.get(card.suit ?? '') ?? '')} location (any faction)</button><button class="btn btn-primary" data-action="mode" data-mode="faction">${esc(SUIT.get(card.suit ?? '') ?? '')} faction (anywhere)</button></div>`;
+  } else if (choice.kind === 'location') {
+    body = `<p>${esc(PROMPTS[choice.key])}</p>${choice.options.length ? '' : '<p class="small muted">Nowhere is possible.</p>'}${choice.optional ? '<button class="btn" data-action="skip">Done</button>' : ''}`;
+  } else if (choice.kind === 'group') {
+    body = `<p>Choose a group: click its gold token on the board.</p>${choice.options.length ? '' : '<p class="small muted">No group can be chosen.</p>'}${choice.optional ? '<button class="btn" data-action="skip">Done</button>' : ''}`;
+  } else if (choice.kind === 'faction') {
+    body = `<p>Choose the faction:</p><div class="inline">${choice.options.map((f) => `<button class="btn" data-action="pick-faction" data-faction="${esc(f)}">${tokenHtml(f, 1)} ${esc(fname(f))}</button>`).join('')}</div>`;
+  } else if (choice.kind === 'direction') {
+    body = `<p>Choose a direction:</p><div class="inline">${choice.options.map((d) => `<button class="btn" data-action="pick-direction" data-direction="${esc(d)}">${esc(d)}</button>`).join('')}</div>`;
+  } else if (choice.kind === 'split') {
+    body = `<p>Click adjacent locations to send cubes there, one per click. ${choice.left} left to place, across at least two locations.</p>`;
+  } else {
+    body = `<p>Ready: ${esc(describeTarget(cardId, ui.target))}.</p><button class="btn btn-primary" data-action="play-target">Play it</button>`;
+  }
+  return `<h2>${esc(card.name)}</h2><p class="small">${esc(card.text)}</p>${body}
+    <div class="inline"><button class="btn" data-action="target-none">Play it for no effect</button><button class="btn" data-action="back">Back</button></div>`;
 }
 
 function renderGrowth() {
@@ -512,16 +553,38 @@ function onClick(event) {
   if (action === 'influence') return sendMove({ type: 'play', card, use: 'influence' });
   if (action === 'respond') return sendMove({ type: 'respond', card, location: target.dataset.location });
   if (action === 'grow') return sendMove({ type: 'grow', location: target.dataset.location ?? '' });
-  if ((action === 'act' || action === 'more-targets') && view) {
-    ui.choosing = action === 'act' ? card : ui.choosing;
-    ui.options = targetOptions(view, /** @type {string} */ (ui.choosing));
-    return renderPhase();
+  if (action === 'act') {
+    ui.choosing = card;
+    ui.target = {};
+    return render();
   }
-  if (action === 'target' && ui.choosing) {
-    const chosen = ui.options[Number(target.dataset.index)];
-    const id = ui.choosing;
-    ui.choosing = null;
-    return sendMove({ type: 'play', card: id, use: 'action', target: chosen });
+  if (ui.choosing && action) {
+    const t = ui.target;
+    const choice = currentChoice();
+    const loc = target.dataset.location ?? '';
+    if (action === 'mode') t.mode = /** @type {'location' | 'faction'} */ (target.dataset.mode);
+    else if (action === 'pick-faction') t.faction = target.dataset.faction;
+    else if (action === 'pick-direction') t.direction = target.dataset.direction;
+    else if (action === 'pick-group' && choice?.kind === 'group') {
+      if (choice.key === 'move') t.moves = [...(t.moves ?? []), { location: loc, faction: target.dataset.faction ?? '', to: '' }];
+      else Object.assign(t, { location: loc, faction: target.dataset.faction });
+    } else if (action === 'pick-location' && choice?.kind === 'location') {
+      if (choice.key === 'path') t.path = [...(t.path ?? []), loc];
+      else if (choice.key === 'from') t.from = [...(t.from ?? []), loc];
+      else if (choice.key === 'to' && t.moves?.length) t.moves[t.moves.length - 1].to = loc;
+      else t[choice.key] = loc;
+    } else if (action === 'pick-location' && choice?.kind === 'split') t.split = { ...(t.split ?? {}), [loc]: (t.split?.[loc] ?? 0) + 1 };
+    else if (action === 'skip' && choice?.kind === 'location') {
+      if (choice.key === 'bluff') t.bluff = '';
+      else if (choice.key === 'path') t.path = [...(t.path ?? []), '__stop'];
+      else if (choice.key === 'from') t.from = [...(t.from ?? []), '__stop'];
+    } else if (action === 'skip' && choice?.kind === 'group') t.moves = [...(t.moves ?? []), { location: '__stop', faction: '', to: '__stop' }];
+    else if (action === 'play-target') {
+      const id = ui.choosing;
+      ui.choosing = null;
+      return sendMove({ type: 'play', card: id, use: 'action', target: finish(t) });
+    }
+    if (['mode', 'pick-faction', 'pick-direction', 'pick-group', 'pick-location', 'skip'].includes(action)) return render();
   }
   if (action === 'target-none' && ui.choosing) {
     const id = ui.choosing;
@@ -543,15 +606,14 @@ function onClick(event) {
   }
 }
 
-/** A handful of distinct legal targets, sampled from the view (the server checks the move). @param {PlayerView} view @param {string} cardId */
-function targetOptions(view, cardId) {
-  /** @type {Map<string, import('./engine.js').Target>} */
-  const seen = new Map();
-  for (let i = 0; i < 60 && seen.size < 8; i++) {
-    const t = sampleTarget(/** @type {any} */ ({ ...view, players: { ...view.players, [view.you]: { ...view.players[view.you] } } }), view.you, cardId, Math.random);
-    if (t) seen.set(JSON.stringify(t), t);
-  }
-  return [...seen.values()];
+/** Strip the "stop" markers the step-by-step builder uses. @param {import('./engine.js').Target} t */
+function finish(t) {
+  const out = structuredClone(t);
+  if (out.path) out.path = out.path.filter((l) => l !== '__stop');
+  if (out.from) out.from = out.from.filter((l) => l !== '__stop');
+  if (out.moves) out.moves = out.moves.filter((m) => m.location !== '__stop');
+  if (out.bluff === '') delete out.bluff;
+  return out;
 }
 
 /** Draft: tick or untick a card to keep. @param {MouseEvent} event */
