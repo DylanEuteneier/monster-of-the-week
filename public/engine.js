@@ -914,6 +914,14 @@ function passBatches(state) {
     p.picked = false;
   });
   state.pass += 1;
+  // The last card of each batch has no choice to it: everyone keeps it at once.
+  if (state.seating.every((id) => state.players[id].batch.length === 1)) {
+    for (const id of state.seating) {
+      const p = state.players[id];
+      p.kept = [...p.kept, ...p.batch];
+      p.batch = [];
+    }
+  }
   if (state.seating.every((id) => state.players[id].batch.length === 0)) startPlay(state);
 }
 
