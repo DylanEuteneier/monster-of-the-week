@@ -2592,6 +2592,17 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 
 To come later: spice, balance and swing for the suited cards, inspired by Inis's unique effect cards (3.7). Four are marked A to D (FP2).
 
+**Scaffold placeholders for the first build (2026-10-06).** Stand-ins so the pool is 21 and A to D can set the first player. *Scaffold:* not designs and not rules; replaced when the extras are designed. Like all extras they have no influence use.
+
+| Card | Placeholder effect |
+|---|---|
+| A (scaffold) | Move up to two groups, each to an adjacent location. |
+| B (scaffold) | Move one group up to two hexes away, through locations it can enter. |
+| C (scaffold) | Move one group to an adjacent location. |
+| D (scaffold) | Move half of one group, rounded down, to an adjacent location. |
+| Cancel (real) | *Response, before:* when a player is about to play a card's turn action or response, cancel it; the card is spent. The only cancel in the pool (3.7, principle 5). |
+| Unmarked (scaffold) | Move one group to an adjacent location. |
+
 ### H.7 Notes from the revision rounds
 
 - Round 1: the three scattering Shift cards (Hang Garlic, Board Up the Windows, Perform an Exorcism) are near twins.
