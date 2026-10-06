@@ -35,8 +35,8 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 | 3.3 Location-archetype alignment | `AL2` tied fights on aligned ground; `AL3` boosted growth. (`AL1`, spread archetypes, holds through the layout D map) | None |
 | 3.4 Invader forces | The decisions only (one random faction per archetype, as cubes). No archetype or faction powers: every faction plays the same; powers (`AP1`–`AP6`) stay ideas for later | None |
 | 3.5 Invader population | `SD1` seeding (provisional 5 + 1 + 1, home location random of the three); growth by `GR1` at resolution, which is the game's own growth system (`GR3`); growth always comes after fights, so each growing location holds one faction | None |
-| 3.6 Action acquisition | All of `DR1`–`DR6`: a draft at the start of each round; unplayed cards lost back to the pool; pick and pass with the put-back rule; the same pool every round; one card left out unseen; the pool is the whole action set. Hand size provisionally about four | None |
-| 3.7 Player actions | Deferred to step 2: designed together with the cards. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out of the first draft | — |
+| 3.6 Action acquisition | All of `DR1`–`DR6`: a draft at the start of each round; unplayed cards lost back to the pool; pick and pass with the put-back rule; the same pool every round; the undealt cards left out unseen; the pool is the whole action set. Hand size 6/5/4 at 3/4/5 players (`PS1`) | None |
+| 3.7 Player actions | `CU3` single-purpose cards: each card does one thing (`AC1`, distinct and precious actions). `LK1` one card per location (15), plus 6 others. `CU2` out. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out. The rest is being designed with the cards | `CU1` one-of (every card gains an influence fallback) |
 | 3.8 Timing and passing | `TU1` play or pass, passing is not final; `FP1` first player by marked cards A and B; the round ends when everyone passes in a row (`RE3`, 3.12) | None |
 | 3.9 Persistent progression | The decision: no persistent upgrade mechanism | None |
 | 3.10 Player characters | The decisions (five slayer groups, one per archetype); affinity as `AB1` tiebreaker | None (`AB2` is not yet a close second) |
@@ -45,7 +45,7 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 | 3.13 Conflict resolution | `RQ1`–`RQ5` what a fight must do; `FS1` two-sided fights; `FR5` half, rounded down, minimum 1. `TF1` tied fights: both wiped out and the location scorched (`TM1`), unless one faction is aligned with the location, which then wins as normal under `FR5`. `TD1` trophies by influence at the location: bigger pile to the leader, smaller to the runner-up. Ties between players: affinity first (`AB1`), otherwise `PT2` standing tie, and under `ST1` nobody tied collects: a tie uses up every place the tied players were in line for (tied leaders return both piles to the supply). `UP1`: a lone player at the location collects both piles; with no players there, both piles return to the supply. Piles cannot be declined. After a fight (`AF3`, adjusted): half the leader's influence there, rounded down, moves to the winning faction and the rest returns to the leader's supply; all other influence stays. `AT1`: after a tied fight on neutral ground (location scorched), all influence there returns to each player's supply. `AS1`: tied leaders' influence returns to their own supplies, with nothing gained; players tied for runner-up keep theirs at the location. Influence where no fight occurs stays into the next round. No spillover (`RO1` out): fights are independent, so their order doesn't matter. No dice (`FR4` out). Fight trigger: `FT1` only, every contested location fights in the round-end resolve phase. No boil-over (`FT2`), card-triggered fights (`FT3`) or dynamic round end (`RE2`) in the first draft | None |
 | 3.14 Influence | `IF1` influence with factions is public; `IF2` each player holds influence with each faction; `IM1` influence placed on locations is spent from a faction (`CA2`) or, for some actions such as traps, comes from the player's own supply (`CA3`). How influence is gained (`CA1`) is worked out with the cards. A player's cubes are always in their supply, in standing with a faction, or on a location. `IB1`–`IB4` as guiding principles. No costly displacement (`IB5` out). `IL1`: only a faction's influence leader can affect its presence; affinity breaks a tie for the lead, otherwise all tied players are influence leaders. Each slayer group starts with some influence with its linked faction; 0 counts, so unlinked factions start with every player as influence leader | None |
 | 3.15 Victory | `WC1` the island or one faction wins; `TH1` end-game presence threshold (provisionally more than 15); `FX1` factions tied on presence: most locations controlled, and if still tied they win together (`FX2`), scoring each player's influence minus trophies with each, added up; `EG3` player score: a faction wins, influence with it minus its trophies; the island wins, `TS2` weakest colour: the count of the colour a player holds fewest of, ties to the next weakest colour (`WT1`). Ties when a faction wins (`ET4`): fewest trophies of that faction, then affinity, then the next faction (`ET1`). Players tied after every tiebreaker share the victory. Avoiding fights is a bet on a faction win | None |
-| 3.16 Player-count scaling | The decisions: 3 to 5 players; the card pool scales by cards marked 3+, 4+ and 5+ | None |
+| 3.16 Player-count scaling | 3 to 5 players (decision). `PS1` fixed pool of 21 unique cards in place of the tiered pool (D7): hands of 6/5/4 at 3/4/5 players, with 3/1/1 cards left out unseen | None |
 | 3.1 Map (regions and borders) | The prototype board, layout D: five regions of three in a ring round a central lake. Mountains (Weather Station, Ski Resort, Mine), Badlands (Military Facility, Junkyard, Caves), Coast (Fallout Bunker, Shipping Docks, Lighthouse), Old Town (Graveyard, Beach City, Occult Camp), Woods (State Park, Sawmill, The Lake House). Borders: Mountains–Badlands, Badlands–Coast, Coast–Old Town, Old Town–Woods, Woods–Mountains | None |
 
 Everything else is in the backlog below; finished work is in the changelog (A.2).
@@ -498,9 +498,11 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - `DR3` **Pick and pass (preferred; first draft, with the put-back rule):** players keep one card and pass the rest. Each time a new batch arrives, the cards kept so far rejoin the hand, so a player ends each pass keeping one more card than before.
   - A player can put any number of earlier picks back into the hand they pass on, taking that many extra from the batch they received.
 - `DR4` **Same pool every round (preferred; first draft):** the whole card pool is drafted again every round.
+  - First draft: every card in the pool is unique, with no duplicates (21 cards, PS1, 3.16).
   - The pool stays small and known. A large deck would be unwieldy, and wouldn't give players enough reliability to plan ahead.
   - The pool scales with player count (3.16).
 - `DR5` **One card left out (first draft):** one card is left out of the deal each round, unseen.
+  - First draft, with the fixed pool (PS1, 3.16): every card not dealt is left out, unseen: 3 at 3 players, 1 at 4 and 1 at 5.
   - With about four cards each, the pool would be 13 cards at 3 players, 17 at 4 and 21 at 5. These numbers move with hand size.
   - The left-out card is never revealed. By the end of the round it no longer matters.
 - `DR6` **The pool is the whole action set (first draft):** the drafted pool is the limited set of actions. There is no separate set of actions outside it.
@@ -517,9 +519,9 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - let a player adjust their influence with a faction in some way;
   - if round end is dynamic, determine the "time" movement toward a resolution phase.
 - *Open:* how a card's uses combine. Options under consideration:
-  - `CU1` *One-of:* a player chooses either the board action or the influence adjustment.
-  - `CU2` *Applied together:* every play does both.
-  - `CU3` *Intertwined:* cards are single use and do one thing (increase influence, alter or modify board presence, and so on), but board actions require spending an influence cube.
+  - `CU1` *One-of (first variant):* a player chooses either the board action or the influence adjustment.
+  - `CU2` *Applied together (ruled out of the first draft):* every play does both.
+  - `CU3` *Intertwined (first draft, as single-purpose cards):* cards are single use and do one thing (increase influence, alter or modify board presence, and so on), but board actions require spending an influence cube.
 - *Intertwined option, ideas:*
   - `IC1` A board action costs influence with the faction being moved.
   - `IC2` The cost depends on the card. Indirect cards (such as a "bait" card) cost no influence but have a smaller effect: fewer cubes or locations. Direct cards cost influence but make a bigger move; thematically, the player is cashing in some of their sway with the faction's leader.
@@ -533,6 +535,9 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - `CB1` **Balance:** cards differ in what they do but are close in power. The card marked A (3.8) is the exception.
 - The movement types themselves are left to card design.
 - *Open:* how players influence the board with monster-of-the-week trope actions (baiting, trapping, and similar).
+- `AC1` **Distinct, precious actions (designer's aim):** actions should feel distinct and precious. Dual-use cards risk feeling too flexible, and so boring, unless there are enough distinct actions; which way uses combine depends on what feels best.
+- `LK1` **Location cards (first draft):** each card is tied to one location, one card per location, so every location's card is in the pool at every player count. Designer's pick, 2026-10-05, from a suggested structure (S2, geography cards).
+  - Hand size becomes 5 cards each, so the 15 location cards are all dealt at 3 players.
 - **Common card actions (designer's seed, 2026-10-05; to be worked through in step 2):**
   - `CA1` *Gain influence:* a simple, straightforward action. The player gains some influence (stake) with a faction.
   - `CA2` *Affect a faction's presence:* an action changes a faction's presence on the board, and places influence spent from that faction (IM1, 3.14). Example: move a faction's cubes from one location to adjacent locations; at each location moved to, the player takes 1 influence from that faction and places it there, along with at least 1 of the faction's cubes.
@@ -547,6 +552,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - Cards still in hand when the round ends are lost (DR2, 3.6).
 - `FP1` **First player by marked cards (first draft):** two cards in the draft are marked A and B. The player holding A is first player, and play goes clockwise from them. If A is the card left out that round (DR5, 3.6), the player holding B is first player.
   - A and B are both in the 3+ core set, so they are in the pool at every player count (3.16).
+  - First draft, with the fixed pool (PS1, 3.16): at 3 players three cards are left out, so A and B can both be left out. *Open:* who is first player then.
   - The first player must open the round with their marked card.
   - The marked cards are powerful, and A is the stronger. A is the one clear standout; otherwise cards are close in power (CB1, 3.7).
   - What the marked cards do, and how one is played when it didn't make its holder first player, are left to card design.
@@ -769,6 +775,13 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 - 3 to 5 players.
 - The card pool scales with player count. Cards are marked 3+, 4+ or 5+, and a card is in the pool when the game has at least that many players.
+
+**Ideas**
+
+- `PS1` **Fixed pool (first draft, in place of the tiered pool above):** every card is always in the pool, at every player count. Player count changes only the hand size and how many cards are left out of the deal, unseen.
+  - First draft: a pool of 21 unique cards (15 location cards, LK1, and 6 others). Hands of 6 at 3 players, 5 at 4 and 4 at 5, so 18, 20 and 20 cards are dealt and 3, 1 and 1 are left out.
+  - The board sees about the same number of plays each round at every player count.
+  - This departs from the decision above (D7, cards marked 3+, 4+, 5+). D7 stays recorded; the first draft tests PS1 instead.
 
 ---
 
@@ -1556,6 +1569,9 @@ The **Pick** column says how candidates in a slot relate:
 |  |  | `IC2` | Indirect cards are free and small; direct cards cost influence and are bigger |  |
 | Movement (MV) | Any | `MV1` | Distinct movement actions | 3.7 |
 |  |  | `MV2` | Rule-breaking moves |  |
+| Action aim (AC) | Any | `AC1` | Actions feel distinct and precious | 3.7 |
+| Location cards (LK) | One | `LK1` | One card per location, in the pool at every player count | 3.7 |
+| Pool size (PS) | One | `PS1` | Fixed pool; player count sets hand size and how many are left out | 3.16 |
 | Card actions (CA) | Any | `CA1` | Gain influence with a faction | 3.7 |
 |  |  | `CA2` | Affect a faction's presence, placing influence spent from it |  |
 |  |  | `CA3` | Place tokens and 1 influence from the player's supply, without affecting presence |  |
@@ -2268,7 +2284,7 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
   - Each location is aligned with one archetype (2.5).
 - **Factions:** five in play, one drawn at random from each archetype (3.4). Each has cubes in its own colour and its own supply. Factions play identically; there are no powers.
 - **Players:** 3 to 5, each a slayer group linked to one archetype (3.10). Each player has cubes in their own colour (influence) and their own supply.
-- **The card pool:** cards marked 3+, 4+ and 5+; a card is in the pool when the game has at least that many players (3.16). Two cards are marked A and B. **To come with the cards:** the cards themselves.
+- **The card pool:** 21 unique, single-purpose cards (CU3), all used at every player count (PS1): one card for each of the 15 locations (LK1) and 6 others. Two cards are marked A and B. **To come with the cards:** the cards themselves.
 - **Hidden tokens and bluff tokens:** **to come with the cards** (IN1).
 
 ### G.2 General rules
@@ -2288,7 +2304,7 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
 2. **Seed the board (SD1):** each faction places [5] cubes on its home location, one of its archetype's three locations, and [1] cube on each of the other two. Each faction's home location is drawn at random from its archetype's three. Every location starts with exactly one faction.
 3. Each player takes a slayer group and their cubes [number to balance].
 4. Each player starts with [some] influence with their linked archetype's faction, which makes them its influence leader. Factions with no linked player in the game start with every player at 0, so every player is their influence leader.
-5. Build the card pool for the player count.
+5. Shuffle the card pool (all 21 cards).
 
 ### G.4 The round
 
@@ -2297,8 +2313,8 @@ The game lasts a fixed number of rounds [to balance] (GL1). Each round has three
 #### 1. Draft (DR1–DR6)
 
 - The whole card pool is drafted again every round (DR4). It is the whole set of actions; there are none outside it (DR6).
-- One card is left out of the deal, unseen, and never revealed (DR5).
-- Deal hands of [about 4] cards. **Pick and pass (DR3):** each player keeps one card and passes the rest on. When a new batch arrives, the cards kept so far rejoin the hand, so a player ends each pass keeping one more card than before. A player may put any number of earlier picks back into the hand they pass on, taking that many extra from the batch they received.
+- Deal hands of 6 cards at 3 players, 5 at 4 and 4 at 5 (PS1). The cards not dealt (3, 1 or 1) are left out, unseen and never revealed (DR5).
+- **Pick and pass (DR3):** each player keeps one card and passes the rest on. When a new batch arrives, the cards kept so far rejoin the hand, so a player ends each pass keeping one more card than before. A player may put any number of earlier picks back into the hand they pass on, taking that many extra from the batch they received.
 
 #### 2. Play (TU1, FP1)
 
@@ -2351,4 +2367,4 @@ Avoiding fights is a bet that a faction wins (few trophies keep influence whole)
 ### G.6 Gaps to close
 
 - **To come with the cards:** every card and what it does; how card uses combine; movement types; card A and B; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).
-- **Balancing:** rounds, hand size, the presence threshold, the growth threshold, seeding numbers, each player's starting cubes, and starting influence with the linked faction.
+- **Balancing:** rounds, the presence threshold, the growth threshold, seeding numbers, each player's starting cubes, and starting influence with the linked faction.
