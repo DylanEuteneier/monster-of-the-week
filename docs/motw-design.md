@@ -19,10 +19,31 @@ The current focus, below, lists what is being worked on right now; the backlog h
 **Goal:** a first draft of the rules, complete enough to build a playable web app prototype on.
 
 1. **First draft of the rules** *(in progress).* In each decision area, start from the designer's favourite candidate. Where an idea has a close second, record it as that area's first variant. The draft is one ruleset, not a set of samples.
-2. **First draft of the cards.** Define the cards the draft ruleset needs.
+2. **First draft of the cards.** Define the cards the draft ruleset needs, and design player actions (3.7) and hidden actions (`IN1`, 3.11) together with them.
 3. **Build the web app prototype.** Restate the rules and cards as an implementation spec (F.16), then build them on the existing scaffold.
 
 Favourites marked so far ("preferred" in section 3): `DR3`, `DR4`, `MC3`, `FR1`, `PT2`, `ST3`, `ET3`. Every other area still needs the designer's pick.
+
+**First draft so far** (draft picks for prototyping, not decision records):
+
+| Area | Draft pick | First variant |
+|---|---|---|
+| General: supply | One supply per colour. Player-coloured cubes return to that player for later actions; faction cubes return to that faction to be placed later | None |
+| General: no pieces leave the game | No piece is ever removed from the game entirely; anything that leaves the board returns to its supply | None |
+| 3.1 Board topology | `CN3` Regions; `BD1` one board; `LL1` two-faction limit (no action may bring in a third faction); `TM1` scorched earth | None |
+| 3.2 Location control | `LC1` factions control, players never do; `LC2` control by cube count | None |
+| 3.3 Location-archetype alignment | `AL2` tied fights on aligned ground; `AL3` boosted growth. (`AL1`, spread archetypes, holds through the layout D map) | None |
+| 3.4 Invader forces | The decisions only (one random faction per archetype, as cubes). No archetype or faction powers: every faction plays the same; powers (`AP1`–`AP6`) stay ideas for later | None |
+| 3.5 Invader population | `SD1` seeding (provisional 5 + 1 + 1); growth by `GR1` at resolution, which is the game's own growth system (`GR3`); growth always comes after fights, so each growing location holds one faction | None |
+| 3.6 Action acquisition | All of `DR1`–`DR6`: a draft at the start of each round; unplayed cards lost back to the pool; pick and pass with the put-back rule; the same pool every round; one card left out unseen; the pool is the whole action set. Hand size provisionally about four | None |
+| 3.7 Player actions | Deferred to step 2: designed together with the cards. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out of the first draft | — |
+| 3.8 Timing and passing | `TU1` play or pass, passing is not final; `FP1` first player by marked cards A and B; the round ends when everyone passes in a row (`RE3`, 3.12) | None |
+| 3.9 Persistent progression | The decision: no persistent upgrade mechanism | None |
+| 3.10 Player characters | The decisions (five slayer groups, one per archetype); affinity as `AB1` tiebreaker | None (`AB2` is not yet a close second) |
+| 3.11 Information | The decision (hidden hands); `IN2` secret trophies. `UT1` unresolved hidden tokens stay face down into the next round. `IN1` hidden actions, with `HT1`/`HT2`, `BT1` and `MC1`–`MC3`, deferred to step 2 with the cards | — |
+| 3.12 Round structure and game length | `GL1` a fixed number of rounds; `RS1` draft, play, resolve; `RE3` round ends when all pass; the resolve phase runs fights, then growth | None |
+| 3.13 Conflict resolution | `RQ1`–`RQ5` what a fight must do; `FS1` two-sided fights; `FR5` half, rounded down, minimum 1. `TF1` tied fights: both wiped out and the location scorched (`TM1`), unless one faction is aligned with the location, which then wins as normal under `FR5`. `TD1` trophies by influence at the location: bigger pile to the leader, smaller to the runner-up. Ties between players: affinity first (`AB1`), otherwise `PT2` standing tie, and under `ST1` nobody tied collects: a tie uses up every place the tied players were in line for (tied leaders return both piles to the supply). `UP1`: a lone player at the location collects both piles; with no players there, both piles return to the supply. Piles cannot be declined. After a fight (`AF3`, adjusted): half the leader's influence there, rounded down, moves to the winning faction and the rest returns to the leader's supply; all other influence stays. `AT1`: after a tied fight on neutral ground (location scorched), all influence there returns to each player's supply. `AS1`: tied leaders' influence returns to their own supplies, with nothing gained; players tied for runner-up keep theirs at the location. Influence where no fight occurs stays into the next round. No spillover (`RO1` out): fights are independent, so their order doesn't matter. No dice (`FR4` out). Fight trigger: `FT1` only, every contested location fights in the round-end resolve phase. No boil-over (`FT2`), card-triggered fights (`FT3`) or dynamic round end (`RE2`) in the first draft | None |
+| 3.1 Map (regions and borders) | The prototype board, layout D: five regions of three in a ring round a central lake. Mountains (Weather Station, Ski Resort, Mine), Badlands (Military Facility, Junkyard, Caves), Coast (Fallout Bunker, Shipping Docks, Lighthouse), Old Town (Graveyard, Beach City, Occult Camp), Woods (State Park, Sawmill, The Lake House). Borders: Mountains–Badlands, Badlands–Coast, Coast–Old Town, Old Town–Woods, Woods–Mountains | None |
 
 Everything else is in the backlog below; finished work is in the changelog (A.2).
 
@@ -35,7 +56,7 @@ Not the current focus. Items come back into focus when the draft needs them.
 - **3.10 Player characters:** the permanent plus-one's open points: where an extra trophy comes from, and where extra influence goes.
 - **3.13 Conflict resolution:** under drop-down ties, whether tied influence still clears, and which pile is shared when the piles are equal.
 - **3.14 Influence:** what happens if players are tied on every faction at game end.
-- **3.5 Invader population:** whether each faction grows at a location still holding two; whether growth can make a location boil over.
+- **3.5 Invader population:** whether growth can make a location boil over. (Neither question arises in the first draft: fights happen only at round end and growth comes after them, so there is no boil-over and only one faction is left to grow.)
 - **3.15 Victory:** what happens if factions tied in presence also control the same number of locations.
 
 **Analysis**
@@ -50,6 +71,10 @@ Not the current focus. Items come back into focus when the draft needs them.
 - **Map design:** which regions border which.
 - **Card design beyond the first draft:** the movement types; what the marked cards do; which cards belong to the 3+, 4+ and 5+ tiers.
 - **Balancing:** starting presence, total cubes per faction, the presence threshold, the volatility threshold, the growth threshold, the number of rounds, hand size, and how many real and bluff tokens a hidden action places.
+
+**Open questions from the first draft**
+
+- **3.1 Scorched regions:** if every location in a region is scorched (TM1), can pieces still move through it between its neighbours?
 
 **Prototype art (open, low priority)**
 
@@ -365,8 +390,9 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- `BD1` One board: an illustration of the island showing the 15 locations.
-- `LL1` **Two-faction limit:** a location can hold at most two factions.
+- `BD1` One board (first draft): an illustration of the island showing the 15 locations.
+- `LL1` **Two-faction limit (first draft):** a location can hold at most two factions.
+  - First draft: no action can bring a third faction into a location. A move that would do so is not allowed.
 - **How locations connect.** Candidates:
   - `CN1` *Fixed connections:* each location has a fixed set of adjacent locations.
   - `CN2` *Connections built by players:* connections are dynamic and must be built by players as actions.
@@ -374,19 +400,19 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - *Open:* what is connected at the start of the game.
     - *Open:* whether a built connection can be used by everyone or only by its builder.
     - *Open:* which connections burn in a tie.
-  - `CN3` *Regions:* the island is divided into regions. Movement is free within a region and allowed between neighbouring regions.
+  - `CN3` *Regions (first draft):* the island is divided into regions. Movement is free within a region and allowed between neighbouring regions.
     - Five regions of three locations, for now. More regions are preferred, so that movement is harder.
     - No region borders all the others.
     - Which regions border which is left to map design.
-- `TM1` **Scorched earth:** a location where a fight ends in a tie is scorched, and is no longer a location for the rest of the game.
+- `TM1` **Scorched earth (first draft):** a location where a fight ends in a tie is scorched, and is no longer a location for the rest of the game.
 - *Open:* whether locations limit the number of cubes they hold, or have special properties.
 
 #### 3.2 Location control · *Ideas*
 
 **Ideas**
 
-- `LC1` **Factions control locations; players never do.** Players control their influence with factions and collect trophies. Their actions shift the board state, but they are never in control of a location.
-- `LC2` **Control by cube count:** a faction controls a location when it has the most cubes there.
+- `LC1` **Factions control locations; players never do (first draft).** Players control their influence with factions and collect trophies. Their actions shift the board state, but they are never in control of a location.
+- `LC2` **Control by cube count (first draft):** a faction controls a location when it has the most cubes there.
   - If two factions are tied, the one with affinity for the location controls it.
   - Otherwise no one controls it.
 - Control gives a faction two things: boosted growth on its aligned locations (AL3, 3.3), and the edge when factions are tied in presence at game end (FX1, 3.15).
@@ -399,8 +425,8 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - `AL1` Each archetype's three locations are spread across the island, not grouped together.
 - Cards can use alignment to break the normal movement rules (MV2, 3.7).
 - A slayer group wins ties between players at the locations aligned with its archetype (AB1, 3.10).
-- `AL2` **Tied fights on aligned ground:** in a tied fight at a location aligned with one of the two factions, that faction wins the fight (3.13).
-- `AL3` **Boosted growth:** a faction that controls a location aligned with its archetype (LC2, 3.2) gains one extra cube there, on top of normal growth (3.5).
+- `AL2` **Tied fights on aligned ground (first draft):** in a tied fight at a location aligned with one of the two factions, that faction wins the fight (3.13).
+- `AL3` **Boosted growth (first draft):** a faction that controls a location aligned with its archetype (LC2, 3.2) gains one extra cube there, on top of normal growth (3.5).
   - For now, the extra cube applies only where the location already grows. A faction under the growth threshold gains nothing.
 
 #### 3.4 Invader forces · *Decisions*
@@ -439,20 +465,21 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- `SD1` **Seeding:** each faction starts on its home territory. Every faction has a home location of its own, one of its archetype's three locations.
+- `SD1` **Seeding (first draft):** each faction starts on its home territory. Every faction has a home location of its own, one of its archetype's three locations.
   - Provisional numbers: 5 cubes on the home location, and 1 cube on each of the faction's other two aligned locations.
   - Starting presence and the total number of cubes per faction, including the supply, are left to balancing.
 - **Growth.** Candidates. These are separate ideas, need not be used together, and could be mutually exclusive:
-  - `GR1` *At resolution:* at round end, after conflict resolution, every location where a faction has reached the growth threshold gains one cube of that faction.
+  - `GR1` *At resolution (first draft):* at round end, after conflict resolution, every location where a faction has reached the growth threshold gains one cube of that faction.
     - The growth threshold is provisionally 2 cubes. The number is left to balancing.
     - It applies at every location that meets the threshold, whether or not a fight happened there.
     - Growth never follows a mid-round fight straight away.
     - A faction that controls one of its aligned locations gains one extra cube there (AL3, 3.3).
-    - *Open:* at a location still holding two factions, whether each faction that meets the threshold grows.
+    - First draft: growth never happens before a fight, so when growth runs each location holds only one faction. The question of two factions growing at one location does not arise.
     - *Open:* whether a location that growth pushes to the volatility threshold boils over at once, or waits for the next round.
-  - `GR2` *Through cards:* one use of a card grows a faction and gains the player influence with it (CU4, 3.7). Cards can trigger growth alongside growth at resolution.
+  - `GR2` *Through cards (out of the first draft):* one use of a card grows a faction and gains the player influence with it (CU4, 3.7). Cards can trigger growth alongside growth at resolution.
     - *Open:* where the new cube goes.
-  - `GR3` *Run by the game:* the game itself has a system that grows presence over time, which players have to work to keep in check.
+  - `GR3` *Run by the game (first draft):* the game itself has a system that grows presence over time, which players have to work to keep in check.
+    - In the first draft, `GR1` is this system: growth at resolution is how the game grows presence.
   - `GR4` *As spillover:* the spillover from a resolved fight is how invaders grow, so population growth and combat form one cascade rather than two systems (linked to cascading resolution in 3.13).
     - *Open:* whether spillover is the only source of growth.
 
@@ -464,18 +491,18 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- `DR1` Cards or actions are drafted at the start of each round.
-- `DR2` Cards still in hand when a round ends are lost, and go back into the draft pool.
+- `DR1` *(First draft.)* Cards or actions are drafted at the start of each round.
+- `DR2` *(First draft.)* Cards still in hand when a round ends are lost, and go back into the draft pool.
 - Two cards in the draft are marked A and B, and decide who goes first (FP1, 3.8).
-- `DR3` **Pick and pass (preferred):** players keep one card and pass the rest. Each time a new batch arrives, the cards kept so far rejoin the hand, so a player ends each pass keeping one more card than before.
+- `DR3` **Pick and pass (preferred; first draft, with the put-back rule):** players keep one card and pass the rest. Each time a new batch arrives, the cards kept so far rejoin the hand, so a player ends each pass keeping one more card than before.
   - A player can put any number of earlier picks back into the hand they pass on, taking that many extra from the batch they received.
-- `DR4` **Same pool every round (preferred):** the whole card pool is drafted again every round.
+- `DR4` **Same pool every round (preferred; first draft):** the whole card pool is drafted again every round.
   - The pool stays small and known. A large deck would be unwieldy, and wouldn't give players enough reliability to plan ahead.
   - The pool scales with player count (3.16).
-- `DR5` **One card left out:** one card is left out of the deal each round, unseen.
+- `DR5` **One card left out (first draft):** one card is left out of the deal each round, unseen.
   - With about four cards each, the pool would be 13 cards at 3 players, 17 at 4 and 21 at 5. These numbers move with hand size.
   - The left-out card is never revealed. By the end of the round it no longer matters.
-- `DR6` **The pool is the whole action set:** the drafted pool is the limited set of actions. There is no separate set of actions outside it.
+- `DR6` **The pool is the whole action set (first draft):** the drafted pool is the limited set of actions. There is no separate set of actions outside it.
 - Hand size is left to balancing, and depends on how many actions the game needs. Provisional target: about four cards per player per round.
   - With exactly four cards, at most one earlier pick can go back at each pass.
 
@@ -498,7 +525,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - *Open:* what a board action affecting more than one faction costs.
   - *Open:* whether players start with any influence, since costly cards are unusable without it.
 - `CU4` **Dual-use cards:** a card has two uses.
-  - *Grow:* grow a faction and gain influence with that faction.
+  - *Grow:* grow a faction and gain influence with that faction. (Out of the first draft: card-driven growth is ruled out for now.)
   - *Move:* spend influence with a faction, move that influence onto a location, and take a presence or movement action.
 - `MV1` **Distinct movement actions:** each card allows a particular type of movement, and every movement action is different from the others. How many cubes a move takes is set by the card.
 - `MV2` **Rule-breaking moves:** cards can break the normal movement rules, through alignment or through special movement actions.
@@ -510,10 +537,10 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- `TU1` On their turn in the play phase, a player plays a card or passes. A player who has passed can still play a card if the turn comes back to them.
+- `TU1` *(First draft.)* On their turn in the play phase, a player plays a card or passes. A player who has passed can still play a card if the turn comes back to them.
 - The round ends when all players pass in a row (RE3, 3.12).
 - Cards still in hand when the round ends are lost (DR2, 3.6).
-- `FP1` **First player by marked cards:** two cards in the draft are marked A and B. The player holding A is first player, and play goes clockwise from them. If A is the card left out that round (DR5, 3.6), the player holding B is first player.
+- `FP1` **First player by marked cards (first draft):** two cards in the draft are marked A and B. The player holding A is first player, and play goes clockwise from them. If A is the card left out that round (DR5, 3.6), the player holding B is first player.
   - A and B are both in the 3+ core set, so they are in the pool at every player count (3.16).
   - The first player must open the round with their marked card.
   - The marked cards are powerful, and A is the stronger. A is the one clear standout; otherwise cards are close in power (CB1, 3.7).
@@ -536,7 +563,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 - Slayer groups play identically, apart from affinity.
 - **Affinity:** a slayer group has a small edge with its linked archetype's faction and at that archetype's locations. Candidates:
-  - `AB1` *Tiebreaker (for now):* affinity breaks ties between players.
+  - `AB1` *Tiebreaker (for now; first draft):* affinity breaks ties between players.
     - Battle: in a tie in influence at a location, the group with affinity for that location wins (3.13).
     - Influence: in a tie in influence with a faction, the group with affinity for that faction wins (3.14).
     - The two never cross. Affinity for a faction has no effect in battle, and affinity for a location has no effect on influence with a faction.
@@ -568,8 +595,8 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - `MC1` *Spent from a faction:* each marker cube is influence spent from a faction, as other influence on locations is (IM1, 3.14).
     - `MC2` *From the player's supply:* the marker cubes are free, and cost no standing with any faction.
     - `MC3` *From the player's supply, and back to it (preferred, pending playtesting):* the marker cubes come from the player's own supply, count as influence while the token is on the board, and return to that supply afterwards. They never go anywhere else.
-  - `UT1` **Unresolved tokens persist:** a token on a location that doesn't resolve that round stays there face down, with its marker cube, and carries into the next round. It stays until the location resolves.
-- `IN2` **Secret trophies:** a player's collected trophies are kept secret. Everyone sees which pile a player takes at the moment of a fight; the running total is hidden.
+  - `UT1` **Unresolved tokens persist (first draft):** a token on a location that doesn't resolve that round stays there face down, with its marker cube, and carries into the next round. It stays until the location resolves.
+- `IN2` **Secret trophies (first draft):** a player's collected trophies are kept secret. Everyone sees which pile a player takes at the moment of a fight; the running total is hidden.
 
 ---
 
@@ -579,12 +606,12 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- `GL1` The game lasts a set number of rounds.
-- `RS1` Each round runs in phases: draft cards or actions, play cards or actions, resolve the board state, repeat.
+- `GL1` *(First draft.)* The game lasts a set number of rounds.
+- `RS1` *(First draft.)* Each round runs in phases: draft cards or actions, play cards or actions, resolve the board state, repeat.
 - How a round ends. Candidates:
   - `RE1` *Fixed:* the round ends once all players have played all their cards.
-  - `RE2` *Dynamic:* cards carry an extra resource, such as a time value, that advances a moon track. When the moon reaches full, the round resolves and players lose any unplayed cards.
-  - `RE3` *All pass:* the round ends when all players pass in a row (3.8).
+  - `RE2` *Dynamic (out of the first draft):* cards carry an extra resource, such as a time value, that advances a moon track. When the moon reaches full, the round resolves and players lose any unplayed cards.
+  - `RE3` *All pass (first draft):* the round ends when all players pass in a row (3.8).
 - The number of rounds, and how it relates to the number of cards drafted per round, are left to balancing.
 - The resolve phase runs conflict resolution first, then growth (GR1, 3.5).
 - *Open:* what else the resolve phase includes, such as cleanup.
@@ -594,31 +621,34 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- **What combat has to do:**
+- **What combat has to do (first draft, all five):**
   - `RQ1` The winner takes casualties too. Otherwise invader presence can't be whittled down.
   - `RQ2` Trophies are the cubes removed from combat as casualties.
   - `RQ3` The game revolves around who receives which trophies. First place receives the larger share and second place receives some.
   - `RQ4` Which colour of trophy a player gets depends on where they stand at the location and on which way the fight goes.
   - `RQ5` Resolution is deterministic, quick and easy. Nothing is added to a fight once it has begun. A hidden token already at the location can flip up and take part (IN1, 3.11).
-- `FS1` **Two-sided fights:** a fight is always between two factions, which follows from the two-faction limit (LL1, 3.1).
+- `FS1` **Two-sided fights (first draft):** a fight is always between two factions, which follows from the two-faction limit (LL1, 3.1).
 - **How a fight resolves.** Candidates:
   - `FR1` *Half, rounded up (preferred):* the larger group wins. The losing faction loses all its cubes at the location, and the winning faction loses half that number, rounded up.
   - `FR2` *One-for-one cancellation:* cubes cancel one for one, and the larger group survives with the difference. Both factions lose the same number, so first place receives no more than second.
   - `FR3` *Flat one:* a weaker candidate. The larger group wins. The losing faction loses all its cubes at the location, and the winning faction always loses exactly one cube.
-  - `FR4` *Dice:* a weaker candidate, since deterministic combat is preferred.
-- `TF1` **Tied fights:** when the two groups are the same size, both are wiped out and the location is left empty.
+  - `FR4` *Dice (out of the first draft):* a weaker candidate, since deterministic combat is preferred.
+  - `FR5` *Half, rounded down (first draft):* the larger group wins. The losing faction loses all its cubes at the location, and the winning faction loses half that number, rounded down, with a minimum of 1. The winner always takes a loss (RQ1), so the runner-up always has a pile (RQ3).
+- `TF1` **Tied fights (first draft):** when the two groups are the same size, both are wiped out and the location is left empty.
   - At a location aligned with one of the two factions, that faction wins the fight instead (AL2, 3.3).
-- `TD1` **Trophy distribution by influence at the location:** players place influence on locations (IM1, 3.14), and the players with the most influence at a location collect the trophies from a fight there.
+    - First draft: the aligned faction wins and loses half the loser's cubes, rounded down, minimum 1, as in any other win (FR5). In a 3 v 3 tie at its aligned location, the winner loses 1 and keeps 2.
+    - A tie on ground aligned with neither faction wipes out both groups, and the location is scorched (TM1, 3.1).
+- `TD1` **Trophy distribution by influence at the location (first draft):** players place influence on locations (IM1, 3.14), and the players with the most influence at a location collect the trophies from a fight there.
   - The casualties form two piles, one per faction.
   - Piles are handed out by size: the bigger pile goes to the leader, the player with the most influence at the location, and the smaller pile to the runner-up.
   - If the piles are the same size, players pick in order of influence.
   - Players tied in influence at the location. A slayer group with affinity for the location wins the tie (AB1, 3.10). When no tied player has that affinity, candidates:
     - `PT1` *Lower influence:* the tie goes to the player with lower influence with the faction whose pile is being handed out. This is decided pile by pile.
       - *Open:* what breaks the tie when their influence with that faction is also equal.
-    - `PT2` *Standing tie (preferred):* the tie is not broken.
+    - `PT2` *Standing tie (preferred; first draft):* the tie is not broken.
   - What a standing tie does to the piles. Candidates:
-    - `ST1` *Nobody collects:* the piles the tied players were in line for return to the supply.
-      - *Open:* which places a tie uses up: whether a tie for first returns both piles and leaves a third player with nothing, and whether a tie for second returns only the smaller pile.
+    - `ST1` *Nobody collects (first draft):* the piles the tied players were in line for return to the supply.
+      - First draft: a tie uses up every place the tied players were in line for. Tied leaders use up first and second, so both piles return to the supply and players below them collect nothing. Players tied for runner-up use up second, so the smaller pile returns to the supply.
     - `ST2` *Disregard the tied players:* tied players are ignored, and everyone below them moves up. With two leaders tied, the third player collects the bigger pile and the fourth the smaller.
       - A pile with no player left in line is unclaimed (UP1, UP2).
     - `ST3` *Drop down a place (preferred):* tied players all take the next place down. Tied leaders both count as runner-up: the bigger pile returns to the supply, and they share the smaller pile equally, with any odd cube returned to the supply.
@@ -627,29 +657,32 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
       - *Open:* whether the tied players' influence still clears (AS1), or is treated as a runner-up's.
       - *Open:* which pile the tied leaders share when the two piles are the same size.
   - A pile with no player in line to collect it. Candidates:
-    - `UP1` it goes to the only player with influence at the location.
+    - `UP1` *(First draft.)* it goes to the only player with influence at the location, who then collects both piles.
+    - First draft: when no player has influence at the location, both piles return to the supply.
     - `UP2` it returns to the supply.
-  - *Open:* whether a player can decline a pile.
+  - First draft: a player cannot decline a pile. Every pile a player is owed is collected.
 - `TD2` **Trophy distribution by faction influence:** casualties are distributed to players based on their influence with a faction.
   - If faction influence is used, the player with the lowest influence with the faction makes more thematic sense than the highest.
   - *Open:* whose influence decides: influence with the faction that lost the cubes, or with the faction that won the fight.
 - **Influence at a location after a fight.** Candidates:
   - `AF1` *Always clear:* all influence at the location clears after a fight.
   - `AF2` *One left behind:* the leader or the runner-up leaves one influence behind, which carries into the next fight there.
-  - `AF3` *Leader moves, others stay:* the leader's influence moves to the faction that won the fight, whichever faction it was spent from. The runner-up's influence stays at the location, and so does that of players in third place or lower.
-  - `AT1` In a tied fight, the influence at the location clears.
-  - `AS1` In a standing tie between players, the tied players' influence clears off the board and does not return to a faction.
-  - *Open:* where cleared influence goes.
-  - *Open:* what happens to influence at a location where no fight occurs.
+  - `AF3` *Leader moves, others stay (first draft, adjusted):* the leader's influence moves to the faction that won the fight, whichever faction it was spent from. The runner-up's influence stays at the location, and so does that of players in third place or lower.
+    - First draft: only the leader's influence leaves the location. Half of it, rounded down, becomes the leader's influence with the faction that won the fight; the rest returns to the leader's own supply. Everyone else's influence stays at the location.
+  - `AT1` *(First draft.)* In a tied fight, the influence at the location clears, back to each player's own supply.
+  - `AS1` *(First draft.)* In a standing tie between players, the tied players' influence clears off the board, back to each tied player's own supply, and does not go to a faction.
+    - First draft: this applies only to tied leaders. Players tied for runner-up keep their influence at the location, like any other non-leader.
+  - First draft: cleared influence returns to its player's own supply (see Supply, Appendix B).
+  - First draft: influence at a location where no fight occurs stays there into the next round.
 - **When fights happen.** Candidates:
-  - `FT1` *End of round:* every contested location fights at the end of every round. Each fight leaves one faction or none, so every round starts with no location contested.
-  - `FT2` *Volatility threshold:* a location's volatility is the number of cubes present there. When it reaches a threshold, the location boils over and the fight resolves mid-round.
+  - `FT1` *End of round (first draft):* every contested location fights at the end of every round. Each fight leaves one faction or none, so every round starts with no location contested.
+  - `FT2` *Volatility threshold (out of the first draft):* a location's volatility is the number of cubes present there. When it reaches a threshold, the location boils over and the fight resolves mid-round.
     - A location that boils over resolves whether or not the two groups are equal. An equal split resolves as a tied fight, which makes it more consequential to bring a location close to boiling over.
     - Used alone: fights happen only when a location boils over. This keeps presence on the board for players allied with a faction.
     - Used with end-of-round fights (FT1): whatever is still contested fights at round end. This is a way to pick up low-contest trophies.
     - The threshold is the same at every location. The number itself is left to balancing.
-  - `FT3` *Card trigger:* a card resolves a fight during the play phase. Timing matters: a player gains influence at a location and then triggers the battle.
-- `RO1` **Cascading resolution:** locations resolve one at a time in a fixed, visible order, and the outcome at one location spills over into locations that haven't resolved yet.
+  - `FT3` *Card trigger (out of the first draft):* a card resolves a fight during the play phase. Timing matters: a player gains influence at a location and then triggers the battle.
+- `RO1` **Cascading resolution (out of the first draft):** locations resolve one at a time in a fixed, visible order, and the outcome at one location spills over into locations that haven't resolved yet.
   - *Open:* what sets the resolution order.
   - *Open:* what spills over, and where it goes.
 
@@ -858,6 +891,7 @@ Actual changes to mechanisms and game structure.
 | **Seat** | One player's place in a prototype game, reached through its magic link. |
 | **Slayer group** | What a player plays: one of five groups of characters modelled on a monster-of-the-week trope, each linked to one archetype. |
 | **Slot** | A question the game has to answer, such as how a fight resolves. Candidates in the same slot share a two-letter prefix. |
+| **Supply** | *(First draft.)* Where a cube waits off the board. Each colour has one supply: a player's cubes return to that player, to be placed again with later actions; a faction's cubes return to that faction, to be placed again later. No piece is ever removed from the game entirely. |
 | **Standing tie** | *(Idea.)* A tie between players that is not broken. |
 | **Tied fight** | *(Idea.)* A fight between two groups of the same size. Both are wiped out, unless one of the factions has affinity for the location, in which case it wins. |
 | **Trophy** | *(Idea.)* A cube removed in a fight as a casualty and kept by a player. |
@@ -1534,6 +1568,7 @@ The **Pick** column says how candidates in a slot relate:
 |  |  | `FR2` | One-for-one cancellation |  |
 |  |  | `FR3` | Flat one (weaker) |  |
 |  |  | `FR4` | Dice (weaker) |  |
+|  |  | `FR5` | Half, rounded down, minimum 1 (first draft) |  |
 | Tied fight (TF) | One | `TF1` | Both factions wiped out, location left empty | 3.13 |
 | Trophy distribution (TD) | One | `TD1` | By influence at the location, piles handed out by size | 3.13 |
 |  |  | `TD2` | By faction influence |  |
@@ -2178,7 +2213,7 @@ How the prototype looks. The working detail, the asset list, and the art tools a
 - **Player influence:** cubes in the player's seat colour, seen from above: a square top face with the near and right sides showing.
 - **Archetype symbols:** drawn as pixel art: a moon and star for the Nocturnals, an alien head for 80's Sci-Fi, a power symbol for the Sentients, a skull for the Undead, and horns for the Demons. The characters ◐ ↂ ⏏ ☾ ⎈ remain as text shorthand in this document.
 - **Board hexes:** each location is a flat hex tile with a border in its archetype's colours, its building at the top, its archetype's symbol at the bottom over the border, and the space between kept clear for presence tokens and influence cubes.
-- **Prototype board, for testing only:** five regions of three locations, each region mixing three archetypes: Mountains (Weather Station, Ski Resort, Mine), Coast (Lighthouse, Shipping Docks, Fallout Bunker), Woods (State Park, Sawmill, The Lake House), Old Town (Beach City, Graveyard, Occult Camp), Badlands (Military Facility, Junkyard, Caves). The regions form a ring round a central lake, each touching exactly two others. This arrangement exists so the prototype has a board to play on; it does not settle board topology (3.1) or any rule.
+- **Prototype board, for testing only:** five regions of three locations, each region mixing three archetypes: Mountains (Weather Station, Ski Resort, Mine), Coast (Lighthouse, Shipping Docks, Fallout Bunker), Woods (State Park, Sawmill, The Lake House), Old Town (Beach City, Graveyard, Occult Camp), Badlands (Military Facility, Junkyard, Caves). The regions form a ring round a central lake, each touching exactly two others. This arrangement exists so the prototype has a board to play on. The designer accepted it as the first draft's map (2026-10-04); it is still not a decision and does not settle map design.
 - **Slayer group art:** each group has a 16x16 emblem and a 160x64 banner for its player card. Banners are mood scenes with no people.
 - **Prototype board art, for testing only:** the board is drawn as one island round the hexes, inside a framed rectangle of sea, and shown at night so the pieces stand out, with moonlight from the west. Details in `assets/README.md`.
 - **Review:** the assets page shows the prototype board, every hex, token and cube, every sprite against the content it draws, the player cards, and the palette.
