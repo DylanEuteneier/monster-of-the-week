@@ -30,6 +30,7 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 |---|---|---|
 | General: supply | One supply per colour. Player-coloured cubes return to that player for later actions; faction cubes return to that faction to be placed later | None |
 | General: no pieces leave the game | No piece is ever removed from the game entirely; anything that leaves the board returns to its supply | None |
+| General: cards only shift cubes | Card actions never remove faction cubes from the board outright; they only shift them to other locations. Cubes leave the board only as fight casualties (and through scorching) | None |
 | 3.1 Board topology | `CN3` Regions; `BD1` one board; `LL1` two-faction limit (no action may bring in a third faction); `TM1` scorched earth (a true tie burns everything: no trophies, no influence to factions, all pieces back to their supplies) | None |
 | 3.2 Location control | `LC1` factions control, players never do; `LC2` control by cube count | None |
 | 3.3 Location-archetype alignment | `AL2` tied fights on aligned ground; `AL3` boosted growth. (`AL1`, spread archetypes, holds through the layout D map) | None |
@@ -2305,6 +2306,7 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
 
 - **Supply:** every colour has one supply. A player's cubes that leave the board return to that player, to be used again; a faction's cubes return to that faction, to be placed again.
 - **No piece ever leaves the game.**
+- **Cards only shift cubes:** a card never removes a faction's cubes from the board outright; it only moves them to other locations. Cubes leave the board only as fight casualties, or when a location is scorched.
 - **A player's cubes** are always in one of three places: their supply, their standing with a faction (public influence), or on a location (influence there).
 - **Two-faction limit (LL1):** a location holds at most two factions. No action may bring a third faction into a location.
 - **Control (LC1, LC2):** factions control locations; players never do. A faction controls a location when it has the most cubes there. If two factions are tied there, the one aligned with the location controls it; otherwise no one does.
