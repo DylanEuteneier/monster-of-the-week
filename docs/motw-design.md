@@ -2432,7 +2432,8 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 - **Any faction:** a presence action can move any faction, with no cube limit (3.7, principles 10 and 12; IL1 is out of the first draft).
 - **Influence:** a presence action places 1 influence at each destination, spent from the player's standing with the faction moved. A player with no standing with it places none.
 - **Infl.:** the influence a suit card gives with its suit's affinity faction when spent for influence instead (principle 7).
-- **Kind:** concentrate (gather into one location; feeds growth), scatter (break into single cubes; stops growth), merge (force a fight), split (prevent a fight), pin (nothing enters or leaves), swap (two groups trade places), far push, relocate, fight math, timing.
+- **Kind:** concentrate (gather into one location; feeds growth), scatter (break into single cubes; stops growth), merge (force a fight), split (prevent a fight), pin (nothing enters or leaves), swap (two groups trade places), far push, relocate, fight math, timing, standing effect (lasts the round), block, influence, information, catch-up, rule-bend.
+- **(response)** entries are response ideas not yet attached to a card.
 - **Round:** the revision round the idea came from.
 - **Adjacent** (or "next to"): two locations are adjacent when their hexes share a border. On the prototype map that is always within a region or across the border of a neighbouring region (see G.1).
 
@@ -2447,6 +2448,9 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Wait for Sunrise | Signature | Timing, scatter | Play only after you have passed this round. All Nocturnal cubes at one ◐ location flee to any locations in that region and the next. | – | 3 | 1 |
 | Never Invite Them In | – | Pin | Choose a ◐ location. No faction can be moved into it this round. | – | – | 2 |
 | Play the Howl Recording | – | Merge | Move a whole faction into a location in the next region that holds exactly one other faction. | – | – | 2 |
+| Silver Bullets | – | Fight math | Mark a ◐ location. At this round's fight there, the Nocturnal faction loses 2 more cubes as casualties. | – | – | 3 |
+| Track Them in the Snow | – | Far push | Choose a ◐ location. Move one faction there along a chain of adjacent locations, as far as you like. | – | – | 3 |
+| (response) Stay Indoors | – | Influence | – | When another player moves cubes into a location where you have influence, move your influence there to an adjacent location. | – | 3 |
 
 ### H.2 ↂ 80's Sci-Fi: Military Facility, Weather Station, State Park
 
@@ -2457,6 +2461,9 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Lead Them to the Landing Site | Signature | Concentrate | Move cubes of any faction from locations next to an ↂ location into it. | – | 2 | 1 |
 | Jam the Frequencies | – | Split | Choose a contested location in an ↂ location's region. Move one of its factions out to a neighbouring location, cancelling the fight. | – | – | 2 |
 | Swap the Case Files | – | Swap | Two locations in an ↂ location's region trade their groups. | – | – | 2 |
+| File a Records Request | – | Influence, information | Gain 2 influence with the Sci-Fi faction, and look at the cards left out this round. | – | – | 3 |
+| Call in the Men in Black | – | Standing effect | For the rest of the round, cubes moved into an ↂ location by any player go to an adjacent location of your choice instead. | – | – | 3 |
+| (response) Tinfoil Hats | – | Block | – | When another player's card would move cubes out of a location where you have influence, those cubes stay. | – | 3 |
 
 ### H.3 ⏏ Sentients: Shipping Docks, Junkyard, Beach City
 
@@ -2467,6 +2474,9 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Hack the Mainframe | Signature | Fight math | Mark a ⏏ location. At this round's fight there, the Sentient faction counts all its cubes in that region. | – | 3 | 1 |
 | Reboot the System | – | Swap | Choose a ⏏ location. Its group trades places with the group at a location next to it. | – | – | 2 |
 | Turn Them on Each Other | – | Merge | Move every cube at a ⏏ location into a neighbouring location that holds exactly one other faction. | – | – | 2 |
+| Phishing Email | – | Influence, catch-up | Gain influence with the Sentient faction equal to the number of players with more influence with it than you (at least 1). | – | – | 3 |
+| Trigger an EMP | – | Pin | Choose a region with a ⏏ location. No cubes move into, out of or within it this round. | – | – | 3 |
+| (response) Firewall | – | Influence | – | When another player places influence at a location where you have influence, place 1 from your supply there too. | – | 3 |
 
 ### H.4 ☾ Undead: Sawmill, Mine, Graveyard
 
@@ -2477,6 +2487,9 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Consecrate the Ground | Signature | Fight math | Mark a location in a ☾ location's region. This round a true tie there doesn't scorch it; both groups are still wiped out. | – | 3 | 1 |
 | Lead Them Over the Cliff | – | Far push | Move a whole faction from a ☾ location through the next region and into the one beyond. | – | – | 2 |
 | Draw the Salt Line | – | Pin | Choose a ☾ location. Nothing moves in or out this round. | – | – | 2 |
+| Salt and Burn the Bones | – | Fight math | Mark a ☾ location. At this round's fight there, both groups lose all their cubes; trophies are handed out as normal and the location is not scorched. | – | – | 3 |
+| Chainsaw Through the Horde | – | Merge | Move every cube of any faction from locations adjacent to a ☾ location into it, if it holds exactly one faction. | – | – | 3 |
+| (response) Ouija Board | – | Information | – | When a player spends a card for influence, look at one player's trophies. | – | 3 |
 
 ### H.5 ⎈ Demons: Caves, Lighthouse, The Lake House
 
@@ -2487,6 +2500,9 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Draw a Summoning Circle | Signature | Concentrate | Move any number of Demon cubes from neighbouring regions into one ⎈ location. | – | 3 | 1 |
 | Smash the Mirror | – | Swap | The groups at two ⎈ locations trade places. | – | – | 2 |
 | Light Every Lamp | – | Split | Choose a contested location in a ⎈ location's region. The faction with fewer cubes is driven to a neighbouring location. | – | – | 2 |
+| Make a Deal at the Crossroads | – | Influence, catch | Gain 4 influence with the Demon faction; the player with the least influence with it gains 1. | – | – | 3 |
+| Burn the Book | – | Rule-bend | Choose a contested ⎈ location. Its fight doesn't happen this round; both factions stay. | – | – | 3 |
+| (response) Speak Its True Name | – | Influence | – | When a card's action targets a location where you have influence, move that influence to your standing with the faction there. | – | 3 |
 
 ### H.6 Unsuited extras
 
@@ -2496,3 +2512,4 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 
 - Round 1: the three scattering Shift cards (Hang Garlic, Board Up the Windows, Perform an Exorcism) are near twins.
 - Round 2 added pins, merges, splits, swaps and a far push, so each suit can hold different kinds of action. A suggested swap-in: Never Invite Them In for Hang Garlic; Draw the Salt Line or Board Up the Windows, not both; Smash the Mirror or Light Every Lamp for Perform an Exorcism; Turn Them on Each Other for Spread a Virus.
+- Round 3 filled gaps: responses (only five so far), slayer actions that gain influence (principle 2), and bigger rule-bends. New kinds: standing effects that last the round, blocks, moving influence, catch-up influence, information, and a presence sink (Salt and Burn the Bones), which matters because presence only falls through fights. Burn the Book postpones a fight, which bends FT1.
