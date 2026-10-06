@@ -170,8 +170,15 @@ function render() {
       <div class="asset-grid">${tokenCards.join('')}</div>
     </section>
     <section class="panel">
+      <div class="row-between"><h2>Choosing a target</h2><span class="small muted">interactive</span></div>
+      <p class="small muted">The board as a card would use it. Pick which locations are candidates (all of them, or one suit's three locations, as a card's location target would allow), then hover and click one to choose it.</p>
+      <div class="inline" id="target-controls"></div>
+      <p class="small" id="target-status"></p>
+      <div id="target-board"></div>
+    </section>
+    <section class="panel">
       <div class="row-between"><h2>Target states</h2><span class="small muted">normal · candidate · hovered</span></div>
-      <p class="small muted">How a location or a token shows when a card can target it. A candidate gets a gold ring; the candidate under the pointer gets a white-and-gold ring and lifts. Hex states are pixel art from <span class="mono">assets/sprites.py</span>; token states are CSS.</p>
+      <p class="small muted">How a location or a token shows when a card can target it. Only light changes, never the border: a candidate location is caught in a spotlight, and under the pointer it is in full daylight and lifts. A candidate token's own cardboard edge turns gold and its face glows gold, pulsing gently; hovered, it brightens and lifts. Hex states are pixel art from <span class="mono">assets/sprites.py</span>; token states are CSS.</p>
       <h3>Try it</h3>
       <p class="small muted">These are live candidates: hover them.</p>
       <div class="hex-grid">${['graveyard', 'lighthouse', 'mine'].map((id) => hexHtml(id, 2, '', 'candidate')).join('')}
@@ -195,3 +202,52 @@ function render() {
 }
 
 render();
+
+/** The interactive board on /assets: candidates are spotlit, hovered ones are in daylight, and a click picks the target. */
+function targeting() {
+  const board = /** @type {{ width: number, height: number, src: string, tiles: { loc: string, region: string, x: number, y: number }[] } | undefined} */ (art.board);
+  if (!board) return;
+  const S = 2;
+  const name = new Map(spec.locations.map((loc) => [loc.id, loc.name]));
+  const archetypeOf = new Map(spec.locations.map((loc) => [loc.id, loc.archetype]));
+  /** @type {[string, (loc: string) => boolean][]} */
+  const sets = [
+    ['All locations', () => true],
+    ...spec.archetypes.map((arch) => /** @type {[string, (loc: string) => boolean]} */ ([`${arch.symbol} ${arch.name}`, (loc) => archetypeOf.get(loc) === arch.id])),
+    ['None', () => false],
+  ];
+  let filter = sets[0][1];
+  /** @type {string | null} */
+  let chosen = null;
+  const draw = () => {
+    const tiles = board.tiles.map((t) => {
+      const state = chosen === t.loc ? 'hovered' : (!chosen && filter(t.loc) ? 'candidate' : '');
+      return `<div class="board-tile" data-loc="${esc(t.loc)}" title="${esc(name.get(t.loc) ?? t.loc)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, '', /** @type {import('./pieces.js').TargetState} */ (state))}</div>`;
+    });
+    $('target-board').innerHTML = `<div class="board" style="width:${board.width * S}px;height:${board.height * S}px">
+      <img class="sprite" src="${esc(board.src)}" width="${board.width * S}" height="${board.height * S}" alt="The island" style="position:absolute;left:0;top:0">${tiles.join('')}</div>`;
+    const count = board.tiles.filter((t) => filter(t.loc)).length;
+    $('target-status').innerHTML = chosen
+      ? `Target: <b>${esc(name.get(chosen) ?? chosen)}</b> · <button class="btn" id="target-reset">Choose again</button>`
+      : `${count} candidate${count === 1 ? '' : 's'}: hover one, then click to choose it.`;
+    document.getElementById('target-reset')?.addEventListener('click', () => { chosen = null; draw(); });
+  };
+  $('target-controls').innerHTML = sets.map(([label], i) => `<button class="btn" data-set="${i}">${esc(label)}</button>`).join('');
+  $('target-controls').addEventListener('click', (event) => {
+    const button = /** @type {HTMLElement} */ (event.target).closest('[data-set]');
+    if (!button) return;
+    filter = sets[Number(button.getAttribute('data-set'))][1];
+    chosen = null;
+    draw();
+  });
+  $('target-board').addEventListener('click', (event) => {
+    const tile = /** @type {HTMLElement} */ (event.target).closest('.board-tile');
+    const loc = tile?.getAttribute('data-loc');
+    if (!loc || chosen || !filter(loc)) return;
+    chosen = loc;
+    draw();
+  });
+  draw();
+}
+
+targeting();

@@ -276,19 +276,26 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   transition: transform 80ms ease-out;
 }
 /* Target states (2026-10-06). Nothing is drawn outside the token: a candidate
-   token's cream face takes a gold tint; hovered, the tint deepens and the
-   token lifts. The gold is palette y. */
+   token's own cardboard edge turns gold and its face takes a strong gold
+   tint, pulsing gently; hovered, the face brightens further and the token
+   lifts. The gold is palette y. */
 .token.is-candidate {
-  --token-face: color-mix(in oklab, #fbf6ea, var(--state-candidate) 30%);
-  --token-face-shade: color-mix(in oklab, #ece2cc, var(--state-candidate) 30%);
+  --token-face: color-mix(in oklab, #fbf6ea, var(--state-candidate) 45%);
+  --token-face-shade: color-mix(in oklab, #ece2cc, var(--state-candidate) 55%);
+  --token-edge: var(--state-candidate);
+  --token-edge-dark: color-mix(in oklab, var(--state-candidate), black 35%);
   cursor: pointer;
+  animation: candidate-pulse 1.4s ease-in-out infinite;
 }
 .token.is-candidate:hover, .token.is-candidate.is-hovered {
-  --token-face: color-mix(in oklab, #fbf6ea, var(--state-candidate) 60%);
-  --token-face-shade: color-mix(in oklab, #ece2cc, var(--state-candidate) 60%);
+  --token-face: color-mix(in oklab, #fbf6ea, var(--state-hover) 70%);
+  --token-face-shade: color-mix(in oklab, #ece2cc, var(--state-candidate) 35%);
   --token-shadow: drop-shadow(0 calc(var(--t) * 4) calc(var(--t) * 3) rgb(20 16 38 / 0.45));
   transform: translateY(calc(var(--t) * -2));
+  animation: none;
 }
+@keyframes candidate-pulse { 50% { --token-face: color-mix(in oklab, #fbf6ea, var(--state-candidate) 70%); filter: var(--token-edges) var(--token-shadow) brightness(1.12); } }
+@media (prefers-reduced-motion: reduce) { .token.is-candidate { animation: none; } }
 .token-face {
   position: absolute;
   inset: 0;
@@ -350,7 +357,8 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .hex.is-candidate:hover > .hex-state-candidate, .hex.is-candidate.is-hovered > .hex-state-candidate { display: none; }
 .hex.is-candidate:hover > .hex-state-hover, .hex.is-candidate.is-hovered > .hex-state-hover { display: block; }
 .hex { transition: transform 80ms ease-out; }
-.hex.is-candidate:hover, .hex.is-candidate.is-hovered { transform: translateY(-2px); z-index: 1; }
+.hex.is-candidate:hover, .hex.is-candidate.is-hovered { transform: translateY(-2px); }
+.board-tile:has(.hex.is-candidate:hover), .board-tile:has(.is-hovered) { z-index: 1; }
 .hex-pieces { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .hex-pieces .stack-row { flex-wrap: nowrap; gap: 4px; justify-content: center; }
 .hex-pieces .token-stack > * + * { margin-left: calc(var(--w) * -0.66); }
