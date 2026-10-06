@@ -547,7 +547,7 @@ PATH = ["ss", "ss", "zs"]
 SYMBOL_AT = ((HEX_W + 2 - 9) // 2, 49)   # bottom middle, over the lower border
 
 
-def hex_tile(building, at, archetype, ground=None, decor=(), landscape=(), bright_night=False):
+def hex_tile(building, at, archetype, ground=None, decor=(), landscape=(), bright_night=False, light="night"):
     """Place a building sprite on a hex, with a soft shadow to the lower right.
     The border takes the archetype's colours and its symbol sits on the ground.
     `landscape` painters run on the ground first, then `decor` sprites
@@ -609,6 +609,17 @@ def hex_tile(building, at, archetype, ground=None, decor=(), landscape=(), brigh
     if NIGHT_MODE:                                         # each light burns bright: a near-white core
         for x, y in lights:
             g[y][x] = "w"
+    if light == "spotlight":                               # a torch on the tile: a crisp pool of true colour
+        cx, cy, rx, ry = W / 2, H * 0.44, W * 0.36, H * 0.30
+        for x, y in top_face:
+            if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1:
+                g[y][x] = day[y][x]
+    if light == "day":                                     # full daylight: the whole tile in its true colours
+        for x, y in top_face:
+            g[y][x] = day[y][x]
+        for x, y in shaded:
+            if (x, y) not in shape:
+                g[y][x] = SHADOW.get(g[y][x], g[y][x])
     sx, sy = SYMBOL_AT
     for y, row in enumerate(ARCHETYPE_SYMBOLS[archetype]):
         for x, ch in enumerate(row):
@@ -699,6 +710,31 @@ HEXES = {
     for building, top, landscape, decor in [spec[:4]]
 }
 
+# Target states for board hexes (2026-10-06): a hex that can be chosen as a
+# card's target is a *candidate*; the candidate under the pointer is
+# *hovered*. Nothing is drawn outside the hex and the border never changes:
+# the states are light. A candidate is caught in a spotlight (a crisp pool of
+# the tile's true colours, the rest still night); hovered, the whole tile is
+# in full daylight. The hovered tile also lifts, in CSS.
+STATE_PAD = 0
+HEX_STATES = {"candidate": "spotlight", "hover": "day"}
+HEX_STATE_TILES = {
+    state: {
+        loc: hex_tile(building, at=(spec[4] if len(spec) > 4 else _place(building)), archetype=LOCATION_ARCHETYPE[loc],
+                      ground={"top": top}, decor=decor, landscape=landscape, bright_night=loc in BRIGHT_NIGHT, light=light)
+        for loc, spec in LOCATION_ART.items()
+        for building, top, landscape, decor in [spec[:4]]
+    }
+    for state, light in HEX_STATES.items()
+}
+
+
+def hex_state(rows, state):
+    """The state art for the hex whose normal art is `rows`."""
+    loc = next(l for l, r in HEXES.items() if r == rows)
+    return HEX_STATE_TILES[state][loc]
+
+
 # Bare hexes in each archetype's scheme, for choosing the schemes.
 HEX_SCHEMES = {arch: hex_tile(["."], at=(0, 0), archetype=arch) for arch in ARCHETYPE_BORDERS}
 
@@ -708,39 +744,6 @@ HEX_PIECES = {"x": 4, "y": 22, "w": HEX_W + 2 - 8, "h": 24}
 
 def hex_rgb(h):
     return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
-
-
-# Target states for board hexes (2026-10-06): a hex that can be chosen as a
-# card's target is a *candidate*; the candidate under the pointer is
-# *hovered*. The tile art is unchanged (its archetype border still shows);
-# each state adds a ring drawn outside the hex, on a canvas STATE_PAD pixels
-# larger on every side, so the state image sits at -STATE_PAD.
-STATE_PAD = 4
-HEX_STATES = {
-    # rings from the hex outward; the hovered tile is also lifted one pixel
-    "candidate": {"rings": ["y", "y", "k"], "lift": 0},
-    "hover": {"rings": ["w", "w", "y", "k"], "lift": 1},
-}
-
-
-def hex_state(rows, state):
-    spec = HEX_STATES[state]
-    P = STATE_PAD
-    W, H = len(rows[0]) + 2 * P, len(rows) + 2 * P
-    g = [["." for _ in range(W)] for _ in range(H)]
-    inside = {(x + P, y + P - spec["lift"]) for y, r in enumerate(rows) for x, ch in enumerate(r) if ch != "."}
-    ring, seen = set(inside), set(inside)
-    for colour in spec["rings"]:                       # grow one ring at a time
-        ring = {(x + dx, y + dy) for x, y in ring for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
-                if 0 <= x + dx < W and 0 <= y + dy < H} - seen
-        for x, y in ring:
-            g[y][x] = colour
-        seen |= ring
-    for y, r in enumerate(rows):
-        for x, ch in enumerate(r):
-            if ch != ".":
-                g[y + P - spec["lift"]][x + P] = ch
-    return ["".join(r) for r in g]
 
 
 def write_png(path, pixels, width, height):
