@@ -661,6 +661,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - The bluff follows the same placement rules as the real token.
     - A hidden effect must always be able to apply to whatever fight happens at its location. It is never conditional on a particular faction being in the fight.
     - One token per location, real or bluff. A location holding a token can't take another, so tokens never mix and the rule is checkable in public. Planting first claims a location, and a bluff can block one.
+    - If only one valid location is free, the player chooses whether to place the real token or the bluff there.
   - Public: that a token is at the location, and which player placed it. Hidden: the token's face.
   - The owner is marked by one of their cubes on the token. That cube counts as the player's influence at the location.
   - What a flipped token affects. Candidates:
