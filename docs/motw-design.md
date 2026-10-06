@@ -655,6 +655,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 - `IN1` **Hidden actions:** a select few actions, such as "set a trap", place a token with a blind side on a location. When the location resolves, the token flips and becomes part of the resolution. These actions inherently allow for bluffing or misdirection.
   - First draft (2026-10-06): fight modifiers are only ever hidden actions. A card that changes a fight places a face-down token on its target during play; the token flips and applies when that fight resolves (HT1). Under UT1, a token whose location doesn't fight stays face down into the next round.
+    - Fight modifiers take every hidden-action rule: the token's presence and its owner are public and its face is hidden (IN1); the owner's marker cube on it counts as their influence at the location (IN1; where the cube comes from is MC1–MC3, with MC3 preferred); each play places one real token and one bluff (BT1); and an unresolved token stays face down (UT1).
   - Public: that a token is at the location, and which player placed it. Hidden: the token's face.
   - The owner is marked by one of their cubes on the token. That cube counts as the player's influence at the location.
   - What a flipped token affects. Candidates:
