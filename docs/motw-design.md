@@ -8,7 +8,7 @@ The single living document for this project, updated at the end of each session.
 2. **Game foundation:** the game's core tension, theme, setting, players, content, and genre.
 3. **Design decisions:** every core design decision, grouped by the game's architecture. Each decision area is one entry that matures in place, from ideas to decisions to details to rules.
 
-Appendices: A. Decision records and changelog, B. Glossary, C. Reference game research, D. Candidate codes, E. Candidate analysis, F. Prototype architecture and art.
+Appendices: A. Decision records and changelog, B. Glossary, C. Reference game research, D. Candidate codes, E. Candidate analysis, F. Prototype architecture and art, G. First draft ruleset.
 
 The current focus, below, lists what is being worked on right now; the backlog holds everything else.
 
@@ -24,7 +24,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 
 Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `DR4`, `MC3`, `FR1`, `PT2`, `ST3`, `ET3`. The draft kept `DR3`, `DR4` and `PT2`, chose `FR5`, `ST1` and `ET4` instead of `FR1`, `ST3` and `ET3`, and left `MC3` to the cards.
 
-**First draft so far** (draft picks for prototyping, not decision records):
+**First draft so far** (draft picks for prototyping, not decision records). Written up as one ruleset in Appendix G:
 
 | Area | Draft pick | First variant |
 |---|---|---|
@@ -2251,3 +2251,106 @@ How the prototype looks. The working detail, the asset list, and the art tools a
 - *Open:* the asset list: which assets the prototype needs, at what sizes.
 - *Open:* whether a location shows one token or cube per unit, or one with a number.
 - *Open:* how influence cubes are used on locations, which follows the influence rules (3.7, 3.13, 3.14).
+
+---
+
+## Appendix G: First draft ruleset
+
+The first draft's picks (Current focus) restated as one ruleset, for prototyping only. It adds nothing that is not in the picks. Gaps are marked **To come with the cards** (step 2) or **Gap** (a question the picks leave open). Numbers in brackets are provisional and left to balancing.
+
+### G.1 Components
+
+- **The board:** one island (BD1) of 15 locations in five regions of three, ring-shaped round a central lake (layout D, the prototype map).
+  - Mountains: Weather Station, Ski Resort, Mine. Badlands: Military Facility, Junkyard, Caves. Coast: Fallout Bunker, Shipping Docks, Lighthouse. Old Town: Graveyard, Beach City, Occult Camp. Woods: State Park, Sawmill, The Lake House.
+  - Borders: Mountains–Badlands, Badlands–Coast, Coast–Old Town, Old Town–Woods, Woods–Mountains.
+  - Each location is aligned with one archetype (2.5).
+- **Factions:** five in play, one drawn at random from each archetype (3.4). Each has cubes in its own colour and its own supply. Factions play identically; there are no powers.
+- **Players:** 3 to 5, each a slayer group linked to one archetype (3.10). Each player has cubes in their own colour (influence) and their own supply.
+- **The card pool:** cards marked 3+, 4+ and 5+; a card is in the pool when the game has at least that many players (3.16). Two cards are marked A and B. **To come with the cards:** the cards themselves.
+- **Hidden tokens and bluff tokens:** **to come with the cards** (IN1).
+
+### G.2 General rules
+
+- **Supply:** every colour has one supply. A player's cubes that leave the board return to that player, to be used again; a faction's cubes return to that faction, to be placed again.
+- **No piece ever leaves the game.**
+- **A player's cubes** are always in one of three places: their supply, their standing with a faction (public influence), or on a location (influence there).
+- **Two-faction limit (LL1):** a location holds at most two factions. No action may bring a third faction into a location.
+- **Control (LC1, LC2):** factions control locations; players never do. A faction controls a location when it has the most cubes there. If two factions are tied there, the one aligned with the location controls it; otherwise no one does.
+- **Influence leader (IL1):** a faction's influence leader is the player with the most influence with it. Affinity breaks a tie for the most (AB1). Otherwise all tied players are influence leaders. 0 counts. **Only a faction's influence leader can take an action that affects that faction's presence on the board.**
+- **Affinity (AB1):** a slayer group has affinity for its archetype's faction and for that archetype's three locations. Affinity only breaks ties between players: affinity for a location in fights there, affinity for a faction in influence with it.
+- **Hidden information:** hands are hidden. Influence with factions is public. Collected trophies are secret: everyone sees which pile a player takes, but not their running total (IN2).
+
+### G.3 Setup
+
+1. Draw one faction from each archetype.
+2. **Seed the board (SD1):** each faction places [5] cubes on its home location, one of its archetype's three locations, and [1] cube on each of the other two. Every location starts with exactly one faction. **Gap:** how each faction's home location is chosen.
+3. Each player takes a slayer group and their cubes [number to balance].
+4. Each player starts with [some] influence with their linked archetype's faction, which makes them its influence leader. Factions with no linked player in the game start with every player at 0, so every player is their influence leader.
+5. Build the card pool for the player count.
+
+### G.4 The round
+
+The game lasts a fixed number of rounds [to balance] (GL1). Each round has three phases (RS1).
+
+#### 1. Draft (DR1–DR6)
+
+- The whole card pool is drafted again every round (DR4). It is the whole set of actions; there are none outside it (DR6).
+- One card is left out of the deal, unseen, and never revealed (DR5).
+- Deal hands of [about 4] cards. **Pick and pass (DR3):** each player keeps one card and passes the rest on. When a new batch arrives, the cards kept so far rejoin the hand, so a player ends each pass keeping one more card than before. A player may put any number of earlier picks back into the hand they pass on, taking that many extra from the batch they received.
+
+#### 2. Play (TU1, FP1)
+
+- **First player:** whoever holds card A, or card B if A was left out. They must open the round with that marked card. Play goes clockwise.
+- On their turn a player plays a card or passes. Passing is not final: a player who passed can play when the turn comes back to them.
+- The round ends when every player passes in a row (RE3). Cards still in hand are lost back to the pool (DR2).
+- **To come with the cards:** what the cards do (3.7). The seeds:
+  - *Gain influence (CA1):* move cubes from your supply into standing with a faction.
+  - *Affect a faction's presence (CA2):* only as its influence leader. Example: move a faction's cubes from one location to adjacent locations, and at each location moved to, place 1 influence spent from that faction, along with at least 1 of its cubes.
+  - *Place without moving presence (CA3):* for example a trap; place tokens and 1 influence from your supply on a location.
+  - Movement follows the regions (CN3): free within a region, and allowed into a neighbouring region.
+  - What the marked cards A and B do.
+
+#### 3. Resolve
+
+**Fights (FT1):** every contested location (one holding two factions) fights. Fights are independent, so their order doesn't matter (no spillover). Hidden tokens at a fighting location flip and take part (RQ5); **to come with the cards:** what they do.
+
+For each fight:
+
+1. **Outcome (FR5).** The larger group wins. The loser loses all its cubes there. The winner loses half the loser's number, rounded down, minimum 1.
+2. **Tied fight (TF1, AL2).** If the groups are equal:
+   - At a location aligned with one of the two factions, that faction wins, and the outcome is as above.
+   - Otherwise both groups are wiped out and the location is **scorched (TM1)**: it is no longer a location for the rest of the game. All influence there returns to each player's supply (AT1). **Gap:** what happens to hidden tokens on a scorched location.
+3. **Trophies (TD1).** The casualties form two piles, one per faction: the loser's cubes and the winner's losses.
+   - The player with the most influence at the location (the leader) takes the bigger pile; the runner-up takes the smaller. If the piles are equal, the leader picks first.
+   - Ties between players: a tied player with affinity for the location wins the tie. Otherwise the tie stands (PT2), and tied players collect nothing (ST1): a tie uses up every place the tied players were in line for. Tied leaders use up both places, so both piles return to their factions' supplies. Players tied for runner-up use up second place, so the smaller pile returns.
+   - If only one player has influence at the location, they collect both piles (UP1). If no player has influence there, both piles return to their factions' supplies.
+   - Players cannot decline a pile. Collected trophies are kept secret.
+4. **Influence after the fight (AF3, adjusted).** Only the leader's influence leaves the location: half of it, rounded down, becomes their influence with the faction that won; the rest returns to their supply. Everyone else's influence stays. Tied leaders' influence returns to their supplies, with nothing gained (AS1); players tied for runner-up keep theirs at the location.
+
+**Locations that don't fight:** influence there stays into the next round. Hidden tokens there stay face down (UT1).
+
+**Growth (GR1, AL3):** after all fights, every location where a faction has at least [2] cubes gains 1 cube of that faction from its supply. Each such location holds only one faction, since every contested location has just fought. A faction that controls a location aligned with its archetype gains 1 extra cube there, but only where the location already grows. **Gap:** what happens when a faction's supply runs out.
+
+### G.5 The end of the game
+
+After the last round's resolve phase:
+
+1. **Which side wins (TH1).** Count every invader cube on the board. If the total is [more than 15], the invaders win; otherwise the island wins.
+2. **The winning faction (FX1, FX2).** If the invaders win, the faction with the most cubes on the board wins. Tied factions: the one controlling more locations. Still tied: they all win together.
+3. **The winning player (EG3).**
+   - *A faction wins:* each player scores their influence with it minus their trophies of its colour. With factions winning together, players add up their scores with each. Highest score wins.
+     - Ties (ET4, ET1): fewest trophies of the winning faction, then affinity for it, then compare scores with the faction next highest in presence, and so on down.
+   - *The island wins (TS2):* each player scores the number of trophies they hold of the colour they have fewest of. Highest score wins.
+     - Ties (WT1): compare the second-fewest colour, then the third, and so on.
+   - Players still tied after every tiebreaker share the victory.
+
+Avoiding fights is a bet that a faction wins (few trophies keep influence whole); fighting widely is a bet that the island wins (TS1).
+
+### G.6 Gaps to close
+
+- **To come with the cards:** every card and what it does; how card uses combine; movement types; card A and B; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).
+- **Gap:** how each faction's home location is chosen (SD1).
+- **Gap:** hidden tokens on a location that is scorched.
+- **Gap:** a faction whose supply is empty when it should grow (and the total cubes per faction).
+- **Gap:** if every location in a region is scorched, whether pieces can still move through it.
+- **Balancing:** rounds, hand size, the presence threshold, the growth threshold, seeding numbers, each player's starting cubes, and starting influence with the linked faction.
