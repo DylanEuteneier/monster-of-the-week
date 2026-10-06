@@ -49,13 +49,15 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 | 3.16 Player-count scaling | 3 to 5 players (decision). `PS1` fixed pool of 21 unique cards in place of the tiered pool (D7): hands of 6/5/4 at 3/4/5 players, with 3/1/1 cards left out unseen | None |
 | 3.1 Map (regions and borders) | The prototype board, layout D: five regions of three in a ring round a central lake. Mountains (Weather Station, Ski Resort, Mine), Badlands (Military Facility, Junkyard, Caves), Coast (Fallout Bunker, Shipping Docks, Lighthouse), Old Town (Graveyard, Beach City, Occult Camp), Woods (State Park, Sawmill, The Lake House). Borders: Mountains–Badlands, Badlands–Coast, Coast–Old Town, Old Town–Woods, Woods–Mountains | None |
 
-**Where the cards stand (end of session, 2026-10-05):**
+**Where the cards stand (2026-10-06):**
 
-- Structure: five archetype suits of three cards (Strike, Shift, Signature) plus six unsuited extras, A to D and two unmarked; a fixed pool of 21 (PS1); hands of 6, 5 and 4.
-- Thirteen card principles in 3.7. Above all, every card is strongly thematic, unique, and something a slayer group would do. Presence actions have no cube limits, move any faction (IL1 is out of the first draft), and spend influence from the faction moved; as many as possible are unique moves (principle 13).
-- Appendix H holds six rounds of ideas and one candidate set (H.8, Set v1). Track Them in the Snow (a mancala move) is the model for a unique move.
-- Next: a Set v2 built from the round 6 unique moves; fix Set v1's weaknesses (only one presence sink, no merges, Call in the Men in Black too strong); then the unsuited extras, inspired by Inis.
-- Balancing note: a simulation of the board suggests about six moves a round hold total presence near 30 to 35 cubes, so the presence threshold (now more than 15) should move near that.
+- Structure: five archetype suits of three, Strike (influence 2), Shift (3) and Signature (4, the suit's primary card: the archetype's rule-bend plus the suit's response); six unsuited extras, A to D and two unmarked, one of which holds the only cancel response. Fixed pool of 21 (PS1); hands of 6, 5 and 4.
+- Card principles 1–14 in 3.7. Every suit card targets either a suit location (any faction) or the suit's faction (anywhere) (principle 14). Presence actions have no cube limits, move any faction, and spend influence from the faction moved; as many as possible are unique moves.
+- Responses are interrupts, few, thematic, and never just move cubes (blocking is fine); each says whether it resolves before or after its trigger; no responses to responses.
+- Fight modifiers are only hidden actions, with all of 3.11's hidden-token rules: one token per location, bluffs placed under the same rules, effects that apply to any fight there.
+- Appendix H holds seven rounds of ideas and two candidate sets; **Set v2 (H.8) is waiting for the designer's review.** Appendix I catalogues reference games (The King is Dead, Blood Rage, Inis, Rumble Nation, COIN, Twilight Struggle and more).
+- Next: review Set v2; then design the six unsuited extras; then settle marker cubes (MC3 is preferred) and the open reference-game questions (a cost for cashing in a card, card-driven turn order, tempo costs, cards removed after use).
+- Balancing note: a simulation suggests about six moves a round hold total presence near 30 to 35 cubes, so the presence threshold (now more than 15) should move near that.
 
 Everything else is in the backlog below; finished work is in the changelog (A.2).
 
