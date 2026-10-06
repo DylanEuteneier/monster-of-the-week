@@ -18,8 +18,8 @@ The current focus, below, lists what is being worked on right now; the backlog h
 
 **Goal:** a first draft of the rules, complete enough to build a playable web app prototype on.
 
-1. **First draft of the rules** *(in progress).* In each decision area, start from the designer's favourite candidate. Where an idea has a close second, record it as that area's first variant. The draft is one ruleset, not a set of samples.
-2. **First draft of the cards.** Define the cards the draft ruleset needs, and design player actions (3.7) and hidden actions (`IN1`, 3.11) together with them.
+1. **First draft of the rules** *(drafted; Appendix G. What's left comes with the cards or with balancing).* In each decision area, start from the designer's favourite candidate. Where an idea has a close second, record it as that area's first variant. The draft is one ruleset, not a set of samples.
+2. **First draft of the cards** *(next).* Define the cards the draft ruleset needs, and design player actions (3.7) and hidden actions (`IN1`, 3.11) together with them.
 3. **Build the web app prototype.** Restate the rules and cards as an implementation spec (F.16), then build them on the existing scaffold.
 
 Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `DR4`, `MC3`, `FR1`, `PT2`, `ST3`, `ET3`. The draft kept `DR3`, `DR4` and `PT2`, chose `FR5`, `ST1` and `ET4` instead of `FR1`, `ST3` and `ET3`, and left `MC3` to the cards.
@@ -72,10 +72,6 @@ Not the current focus. Items come back into focus when the draft needs them.
 - **Map design:** which regions border which.
 - **Card design beyond the first draft:** the movement types; what the marked cards do; which cards belong to the 3+, 4+ and 5+ tiers.
 - **Balancing:** each player's starting cubes, each slayer group's starting influence with its linked faction, starting presence, total cubes per faction, the presence threshold, the volatility threshold, the growth threshold, the number of rounds, hand size, and how many real and bluff tokens a hidden action places.
-
-**Open questions from the first draft**
-
-- **3.1 Scorched regions:** if every location in a region is scorched (TM1), can pieces still move through it between its neighbours?
 
 **Prototype art (open, low priority)**
 
@@ -407,6 +403,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - Which regions border which is left to map design.
 - `TM1` **Scorched earth (first draft):** a location where a fight ends in a tie is scorched, and is no longer a location for the rest of the game.
   - First draft: scorching only comes from a true tie, and a true tie never rewards anyone. It burns everything: no trophies are collected and no influence goes to any faction. Cubes, influence, hidden tokens and any other pieces on the location return to their supplies.
+  - First draft: a region whose locations are all scorched is impassable. Nothing moves into or through it, so the ring of regions can break.
 - *Open:* whether locations limit the number of cubes they hold, or have special properties.
 
 #### 3.2 Location control · *Ideas*
@@ -863,6 +860,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-03 | Card pool scales with player count (D7). Candidate ideas added: one card left out of the deal each round, and the drafted pool as the whole action set. Marked cards reduced to A and B | Ruled out: a third marked card, C |
 | 2026-10-03 | Candidate ideas added or refined for standing ties, end-game ties, faction ties, growth at round end, bluff tokens, marker cubes, and unresolved hidden tokens | Ruled out: removing an unresolved hidden token at round end, whether revealed or not |
 | 2026-10-04 | Current focus set: first draft of the rules, then the cards, then the web app prototype. Other open work moved to the backlog | Done before this: fits and clashes for the combat cluster, affinity, ties between players, location control, alignment, volatility, information and the draft; a first pass of trade-offs; four sample rulesets. Prototype architecture (D8), scaffold (built and deployed), art direction (D9), palette (D11) and the prototype art set (F.17) |
+| 2026-10-05 | First draft of the rules written up (Appendix G), from the designer's picks in each area. New candidates: CA1–CA3 (card action seeds), IL1 (only the influence leader moves a faction), FR5 (half rounded down, minimum 1), ET4 (fewest trophies first), WT1 (next weakest colour), FX2 (tied factions win together). General rules: one supply per colour; no piece leaves the game. No decisions recorded | Out of the first draft: archetype powers, card-driven growth, boil-over, card-triggered fights, dynamic round end, spillover, costly displacement, dice |
 
 ---
 
@@ -2310,7 +2308,7 @@ The game lasts a fixed number of rounds [to balance] (GL1). Each round has three
   - *Gain influence (CA1):* move cubes from your supply into standing with a faction.
   - *Affect a faction's presence (CA2):* only as its influence leader. Example: move a faction's cubes from one location to adjacent locations, and at each location moved to, place 1 influence spent from that faction, along with at least 1 of its cubes.
   - *Place without moving presence (CA3):* for example a trap; place tokens and 1 influence from your supply on a location.
-  - Movement follows the regions (CN3): free within a region, and allowed into a neighbouring region.
+  - Movement follows the regions (CN3): free within a region, and allowed into a neighbouring region. A region whose three locations are all scorched is impassable: nothing moves into or through it.
   - What the marked cards A and B do.
 
 #### 3. Resolve
@@ -2352,5 +2350,4 @@ Avoiding fights is a bet that a faction wins (few trophies keep influence whole)
 ### G.6 Gaps to close
 
 - **To come with the cards:** every card and what it does; how card uses combine; movement types; card A and B; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).
-- **Gap:** if every location in a region is scorched, whether pieces can still move through it.
 - **Balancing:** rounds, hand size, the presence threshold, the growth threshold, seeding numbers, each player's starting cubes, and starting influence with the linked faction.
