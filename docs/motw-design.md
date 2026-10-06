@@ -2484,7 +2484,7 @@ Educated first guesses, made at the designer's request so bots can run simulatio
 Where a rule or card left a detail open, the engine (`public/engine.js`) uses the reading below. These are implementation choices for the prototype, listed so the designer can review them; none is a decision.
 
 - **Placing influence with a move:** at each destination, 1 influence is placed per faction moved there, spent from the mover's standing with that faction, whenever they have any (it is not optional).
-- **Draft:** each pass, a player keeps one more card than before from their kept cards plus the batch in front of them, and passes the rest to the next seat (DR3 with the put-back rule, as one choice).
+- **Draft:** each pass, a player keeps one more card than before from their kept cards plus the batch in front of them, and passes the rest to the next seat (DR3 with the put-back rule, as one choice). The last card of each batch is kept automatically, since there is no choice to make.
 - **First player with no marked card dealt:** cannot happen at 4–5 players; at 3 players, if none is dealt, the first player rotates by round.
 - **Partial actions:** a card with no legal target can still be played as an action for no effect.
 - **Responses in the web prototype:** a played action is *pending* until its player confirms; "before" responses (the cancel, Never Invite Them In) can be played while it is pending; "after" responses answer what the last action did, until the next card is played or a player passes. Each event is answered once. The cancel can't cancel a response, since responses resolve at once.
