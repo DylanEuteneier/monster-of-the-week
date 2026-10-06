@@ -588,6 +588,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
         This mirrors principle 2 for influence (the affinity faction, or a faction controlling a suit location).
         - Each card says which location counts as the target when its effect involves two (where cubes come from, or where they go), and which faction counts as the target when it involves two.
         - It applies to every suit card where possible. For an influence action it reads: gain influence with the suit's faction, or with a faction controlling one of the suit's locations.
+        - **Why:** it gives cards flexibility while keeping strong ties to their theme, and it lets strategies evolve and change during the round, as a puzzle that still feels like the suit.
   - First draft, suit structure (from a suggestion, 2026-10-05). Each suit has three cards:
     - *Strike:* a move that creates a contest at or from a suit location. Printed influence 2.
     - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3. One card in each suit carries a response.
@@ -2468,6 +2469,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 - **Infl.:** the influence a suit card gives with its suit's affinity faction when spent for influence instead (principle 7).
 - **Kind:** concentrate (gather into one location; feeds growth), scatter (break into single cubes; stops growth), merge (force a fight), split (prevent a fight), pin (nothing enters or leaves), swap (two groups trade places), far push, relocate, fight math, timing, standing effect (lasts the round), block, influence, information, catch-up, rule-bend, sow (mancala), lure (the largest group comes), teleport, halve, conveyor, network jump, shove, mirror, leap.
 - **Group:** all of one faction's cubes at one location.
+- **Target (round 7 on):** every suit card's effect names its target. The player picks a *location target* (one of the suit's locations, any faction) or a *faction target* (the suit's faction, any location) (3.7, principle 14). Entries from round 7 give both readings.
 - **(response)** entries are response ideas not yet attached to a card.
 - **Round:** the revision round the idea came from.
 - **Adjacent** (or "next to"): two locations are adjacent when their hexes share a border. On the prototype map that is always within a region or across the border of a neighbouring region (see G.1).
@@ -2491,6 +2493,10 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Follow the Pack | – | Influence | Gain influence with the Nocturnal faction equal to the number of contested locations it is in (at least 1). | – | – | 4a |
 | (response) Howl at the Moon | – | Timing | – | When any player passes, move any number of Nocturnal cubes from one location to an adjacent one. | – | 4c |
 | Leave Out Fresh Meat (v2) | – | Lure | Choose a ◐ location or one adjacent to it. The largest group in any adjacent location moves in, all of it. The hungriest comes first. | – | – | 6 |
+| Leave Out Fresh Meat (v3) | Strike | Lure | The largest group adjacent to the target moves into it, all of it. **Target:** the bait location. *Location:* bait a ◐ location; whoever is hungriest comes. *Faction:* bait anywhere; only the Nocturnals' largest adjacent group comes. | – | 2 | 7 |
+| Track Them in the Snow (v2) | Signature | Sow | Drive the target group hex by bordering hex, leaving 1 cube and 1 of your influence in each location entered; the chase lasts while you have influence with that faction; a blocked location ends it; leftover cubes stay together at the last location. **Target:** the group chased. *Location:* any faction's group at a ◐ location. *Faction:* a Nocturnal group anywhere. | – | 3 | 7 |
+| Never Invite Them In (v2) | Shift | Block | Nothing can be moved into the target this round. **Target:** the threshold. *Location:* a ◐ location; no faction can enter. *Faction:* the Nocturnals; they can't be moved into any location they aren't already in. | – | 3 | 7 |
+| Hold a Midnight Vigil (v2) | – | Influence, timing | Gain 2 influence with the target faction, or 4 if you have already passed this round. **Target:** the Nocturnal faction, or a faction controlling a ◐ location. | – | – | 7 |
 
 ### H.2 ↂ 80's Sci-Fi: Military Facility, Weather Station, State Park
 
@@ -2507,6 +2513,10 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Call in the National Guard | – | Fight math, sink | Mark a contested location in an ↂ location's region. At this round's fight there, the winner loses as many cubes as the loser. | – | – | 4b |
 | Beam Them Up | – | Teleport | Take one group from anywhere on the island and set it down at a location adjacent to an ↂ location. | – | – | 6 |
 | Leak the Documents (v2) | – | Halve | Choose a group at an ↂ location. Half of it, rounded down, leaves for an adjacent location of your choice. | – | – | 6 |
+| Broadcast a Signal (v2) | Strike | Concentrate | Call the groups of one faction from up to two locations anywhere into the target. **Target:** where they answer the call. *Location:* any faction, into an ↂ location. *Faction:* the Sci-Fi faction, into any location. | – | 2 | 7 |
+| Beam Them Up (v2) | Signature | Teleport | Lift the target group and set it down at any location on the island. **Target:** the group taken. *Location:* any faction's group at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | 3 | 7 |
+| Leak the Documents (v3) | Shift | Halve | Half the target group, rounded down, leaves for an adjacent location of your choice. **Target:** the group split. *Location:* any faction at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | 3 | 7 |
+| Call in the Men in Black (v2) | – | Standing effect | For the rest of the round, cubes about to be moved into the target go to an adjacent location of your choice instead. **Target:** the cordon. *Location:* an ↂ location, against any faction. *Faction:* the Sci-Fi faction, wherever it is moved. | – | – | 7 |
 
 ### H.3 ⏏ Sentients: Shipping Docks, Junkyard, Beach City
 
@@ -2523,6 +2533,10 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Overload the Generator | – | Fight math, sink | Mark a ⏏ location. At this round's fight there, each group loses 2 more cubes as casualties. | – | – | 4b |
 | Reprogram the Traffic Lights | – | Conveyor | Choose a region with a ⏏ location and one of the six hex directions. Every group in that region moves one hex that way, where it can. | – | – | 6 |
 | Back Up to the Cloud | – | Network jump | Move a group from one ⏏ location to another ⏏ location, however far apart. | – | – | 6 |
+| Spread a Virus (v2) | Strike | Scatter | The target group puts 1 cube into every adjacent location it can enter, as far as its cubes go. **Target:** the infected group. *Location:* any faction at a ⏏ location. *Faction:* a Sentient group anywhere. | – | 2 | 7 |
+| Reprogram the Traffic Lights (v2) | Shift | Conveyor | Choose one of the six hex directions; every group of the target moves one hex that way, where it can. **Target:** *Location:* every group in a ⏏ location's region. *Faction:* every Sentient group on the island. | – | 3 | 7 |
+| Back Up to the Cloud (v2) | – | Network jump | Move the target group across the network, however far. **Target:** the group moved. *Location:* any faction's group, from one ⏏ location to another. *Faction:* a Sentient group, to any location holding another Sentient group. | – | – | 7 |
+| Hack the Mainframe (v2) | Signature | Fight math | At this round's fight at the target, the target faction also counts its cubes in the rest of that region. **Target:** *Location:* a ⏏ location; you choose which faction there benefits. *Faction:* the Sentients, at any fight they're in. | – | 3 | 7 |
 
 ### H.4 ☾ Undead: Sawmill, Mine, Graveyard
 
@@ -2537,6 +2551,10 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Chainsaw Through the Horde | – | Merge | Move every cube of any faction from locations adjacent to a ☾ location into it, if it holds exactly one faction. | – | – | 3 |
 | (response) Ouija Board | – | Information | – | When a player spends a card for influence, look at one player's trophies. | – | 3 |
 | Lead the Horde | – | Shove | Move a whole group into an adjacent location. If that would make three factions there, the smaller group already there is shoved on to an adjacent location of your choice. | – | – | 6 |
+| Ring the Church Bell (v2) | Strike | Concentrate | Every cube in adjacent locations is drawn into the target. **Target:** where the bell rings. *Location:* a ☾ location; any faction comes. *Faction:* anywhere; only Undead cubes come. | – | 2 | 7 |
+| Lead the Horde (v2) | Shift | Shove | Move the target group into an adjacent location; if that would make three factions there, the smaller group already there is shoved on to an adjacent location of your choice. **Target:** the horde. *Location:* any faction's group at a ☾ location. *Faction:* an Undead group anywhere. | – | 3 | 7 |
+| Salt and Burn the Bones (v2) | Signature | Fight math, sink | At this round's fight at the target, both groups lose all their cubes; trophies are handed out as normal and the location is not scorched. **Target:** *Location:* a ☾ location. *Faction:* any fight the Undead are in. | – | 3 | 7 |
+| Draw the Salt Line (v2) | – | Pin | Nothing moves into or out of the target this round. **Target:** *Location:* a ☾ location. *Faction:* the Undead; none of their cubes can move. | – | – | 7 |
 
 ### H.5 ⎈ Demons: Caves, Lighthouse, The Lake House
 
@@ -2553,6 +2571,10 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Set the House on Fire | – | Fight math, sink | Mark a ⎈ location. Any fight there this round counts as a true tie: both groups are wiped out and the location is scorched. | – | – | 4b |
 | Smash the Mirror (v2) | – | Mirror | Move a group at a ⎈ location to its reflection across the lake, or bring one from the reflection. On layout D: Lighthouse and State Park, The Lake House and Fallout Bunker; Caves has none. | – | – | 6 |
 | Read from the Book (v2) | – | Leap | Move a group at a ⎈ location over an adjacent location into the one beyond it, in a straight line. | – | – | 6 |
+| Read from the Book (v3) | Strike | Leap | The target group leaps over an adjacent location into the one beyond it, in a straight line. **Target:** the possessed group. *Location:* any faction's group at a ⎈ location. *Faction:* a Demon group anywhere. | – | 2 | 7 |
+| Smash the Mirror (v3) | Signature | Mirror | The target group passes to its reflection across the lake (G.1; locations with no reflection can't be used). **Target:** the group reflected. *Location:* any faction's group at a ⎈ location. *Faction:* a Demon group anywhere. | – | 3 | 7 |
+| Light Every Lamp (v2) | Shift | Split | At a contested location, the target faction is driven to an adjacent location of your choice, so the fight there doesn't happen. **Target:** the faction driven out. *Location:* the smaller faction at a contested ⎈ location. *Faction:* the Demons, wherever they are contested. | – | 3 | 7 |
+| Set the House on Fire (v2) | – | Fight math, sink | Any fight at the target this round counts as a true tie: both groups are wiped out and the location is scorched. **Target:** *Location:* a ⎈ location. *Faction:* any fight the Demons are in. | – | – | 7 |
 
 ### H.6 Unsuited extras
 
@@ -2571,6 +2593,8 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 - Round 6, unique moves (principle 13): each presence effect gets its own way of moving, so whoever holds it has a gambit nobody else does. Sow (Track Them in the Snow), lure (Fresh Meat v2), teleport (Beam Them Up), halve (Leak the Documents v2), conveyor (Reprogram the Traffic Lights), network jump (Back Up to the Cloud), shove (Lead the Horde), mirror (Smash the Mirror v2), leap (Read from the Book v2). Mirror and leap depend on the map's geometry, so they are prototype-map specific.
 
 - Responses after the 2026-10-06 principles (few; thematic; apart from the one cancel, never just undoing or altering cube locations): Cut the Phone Lines and Howl at the Moon move cubes, so they don't fit as written. Tinfoil Hats (cubes stay put) is a block, which fits. The influence, information and tax responses (Firewall, Stay Indoors, Speak Its True Name, Hold a Séance, Ouija Board, Pull the Plug, Sign in Blood) still fit.
+
+- Round 7, two-target rewrites (principle 14): the strongest ideas rewritten so each names its target and reads two ways. The location reading fights over the suit's ground with any faction; the faction reading pushes the suit's monster anywhere. Some effects change character between readings: Reprogram the Traffic Lights moves one region or the whole Sentient network; Back Up to the Cloud jumps between ⏏ locations or between Sentient groups; Never Invite Them In shuts a door or bars the Nocturnals from new ground. Twenty cards across the five suits have round 7 versions; a Set v2 can be picked from them.
 
 ### H.8 Candidate sets
 
