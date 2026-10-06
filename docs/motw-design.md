@@ -909,6 +909,7 @@ Actual changes to mechanisms and game structure.
 
 | Term | Meaning |
 |---|---|
+| **Adjacent** | *(First draft.)* Two locations whose hexes share a border. |
 | **Affinity** | *(Idea.)* The edge that comes from sharing an archetype. A slayer group has affinity for its linked archetype's faction and for that archetype's three locations. A faction has affinity for its archetype's three locations. |
 | **Archetype** | One of five groups of three related factions: Nocturnals ◐, 80's Sci-Fi ↂ, Sentients ⏏, Undead ☾, Demons ⎈. Each has a symbol and three aligned locations. |
 | **Bluff token** | *(Idea.)* A token each player has that looks like a real hidden token from its blind side. Its marker cube can count as influence, but it does nothing else when it flips. |
@@ -2312,6 +2313,25 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
   - Mountains: Weather Station, Ski Resort, Mine. Badlands: Military Facility, Junkyard, Caves. Coast: Fallout Bunker, Shipping Docks, Lighthouse. Old Town: Graveyard, Beach City, Occult Camp. Woods: State Park, Sawmill, The Lake House.
   - Borders: Mountains–Badlands, Badlands–Coast, Coast–Old Town, Old Town–Woods, Woods–Mountains.
   - Each location is aligned with one archetype (2.5).
+  - **Adjacent locations:** hexes that share a border. On layout D:
+
+    | Location | Adjacent to |
+    |---|---|
+    | Weather Station | Mine, Ski Resort, State Park |
+    | Ski Resort | Junkyard, Military Facility, Mine, Weather Station |
+    | Mine | Junkyard, Ski Resort, State Park, The Lake House, Weather Station |
+    | Military Facility | Caves, Junkyard, Ski Resort |
+    | Junkyard | Caves, Fallout Bunker, Military Facility, Mine, Ski Resort |
+    | Caves | Fallout Bunker, Junkyard, Military Facility, Shipping Docks |
+    | Fallout Bunker | Beach City, Caves, Junkyard, Lighthouse, Shipping Docks |
+    | Shipping Docks | Caves, Fallout Bunker, Lighthouse |
+    | Lighthouse | Beach City, Fallout Bunker, Shipping Docks |
+    | Graveyard | Beach City, Occult Camp, The Lake House |
+    | Beach City | Fallout Bunker, Graveyard, Lighthouse, Occult Camp |
+    | Occult Camp | Beach City, Graveyard |
+    | State Park | Mine, Sawmill, The Lake House, Weather Station |
+    | Sawmill | State Park, The Lake House |
+    | The Lake House | Graveyard, Mine, Sawmill, State Park |
 - **Factions:** five in play, one drawn at random from each archetype (3.4). Each has cubes in its own colour and its own supply. Factions play identically; there are no powers.
 - **Players:** 3 to 5, each a slayer group linked to one archetype (3.10). Each player has cubes in their own colour (influence) and their own supply.
 - **The card pool:** 21 unique, single-purpose cards (CU3), all used at every player count (PS1): five archetype suits of three cards each (SU1) and 6 others. Four of the 6 others are marked A, B, C and D (FP2); two are unmarked. **To come with the cards:** the cards themselves.
@@ -2414,7 +2434,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 - **Infl.:** the influence a suit card gives with its suit's affinity faction when spent for influence instead (principle 7).
 - **Kind:** concentrate (gather into one location; feeds growth), scatter (break into single cubes; stops growth), merge (force a fight), split (prevent a fight), pin (nothing enters or leaves), swap (two groups trade places), far push, relocate, fight math, timing.
 - **Round:** the revision round the idea came from.
-- *Open:* what "adjacent" or "next to" means under regions (CN3): the same region, or the same or a neighbouring region.
+- **Adjacent** (or "next to"): two locations are adjacent when their hexes share a border. On the prototype map that is always within a region or across the border of a neighbouring region (see G.1).
 
 **Columns:** Card · Slot (Strike, Shift, Signature, or – if unplaced) · Kind · Turn action · Response · Infl. · Round
 
