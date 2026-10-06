@@ -2,16 +2,17 @@
 /**
  * Random-bot harness: plays whole games with bots and prints summary figures.
  *
- *   node scripts/simulate.js [games=1000] [seed=1] [players=5] [option=value ...]
+ *   node scripts/simulate.js [games=1000] [seed=1] [players=5] [option=value ...] [bots=smart,random,...]
  *
- * e.g. node scripts/simulate.js 2000 1 4 threshold=25 rounds=6
+ * e.g. node scripts/simulate.js 500 1 4 threshold=25 rounds=6 bots=smart,smart,island,invader
+ * Bot profiles are listed in public/bots.js; one profile repeats for every seat.
  *
  * Random bots are good for checking that the rules run start to finish and
  * that every phase is exercised. Their figures are a rough guide, not a
  * prediction (Appendix F.9).
  */
 import { createGame, applyMove, nextRandom, spec, totalPresence, presenceOf } from '../public/engine.js';
-import { botMove } from '../public/bots.js';
+import { botMove, PROFILES } from '../public/bots.js';
 
 /** @typedef {import('../public/engine.js').GameState} GameState */
 
@@ -32,15 +33,16 @@ function seededRng(seed) {
  * move; the first that has a move makes it.
  * @param {GameState} state @param {() => number} rng
  * @param {(game: GameState) => void} [onRound]
+ * @param {Record<string, import('../public/bots.js').Profile>} [profiles]  seat → bot profile (default random)
  */
-export function playOut(state, rng, onRound) {
+export function playOut(state, rng, onRound, profiles = {}) {
   let game = state;
   let round = game.round;
   for (let moves = 0; moves < MAX_MOVES_PER_GAME; moves++) {
     if (game.phase === 'ended') return game;
     let moved = false;
     for (const playerId of game.seating) {
-      const move = botMove(game, { playerId, rng });
+      const move = botMove(game, { playerId, rng, profile: profiles[playerId] ?? 'random' });
       if (!move) continue;
       game = applyMove(game, { playerId, move });
       moved = true;
@@ -57,8 +59,13 @@ export function playOut(state, rng, onRound) {
 
 function main() {
   const [games = 1000, seed = 1, playerCount = spec.meta.players.tunedFor] = process.argv.slice(2, 5).map(Number);
-  const options = Object.fromEntries(process.argv.slice(5).map((arg) => arg.split('=')));
+  const pairs = process.argv.slice(5).map((arg) => arg.split('='));
+  const botArg = pairs.find(([k]) => k === 'bots')?.[1] ?? 'random';
+  const options = Object.fromEntries(pairs.filter(([k]) => k !== 'bots'));
   const players = Array.from({ length: playerCount }, (_, i) => `P${i + 1}`);
+  const list = /** @type {import('../public/bots.js').Profile[]} */ (botArg.split(','));
+  for (const p of list) if (!PROFILES.includes(p)) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')}`);
+  const profiles = Object.fromEntries(players.map((pid, i) => [pid, list[i % list.length]]));
   const rng = seededRng(seed);
   const sides = { island: 0, invaders: 0 };
   /** @type {number[]} */ const finals = [];
@@ -74,7 +81,7 @@ function main() {
     const end = playOut(start, rng, (g) => {
       const r = g.round - 2;
       (byRound[r] ??= []).push(totalPresence(g));
-    });
+    }, profiles);
     const result = /** @type {NonNullable<GameState['result']>} */ (end.result);
     sides[result.side] += 1;
     finals.push(totalPresence(end));
@@ -91,13 +98,13 @@ function main() {
   const mean = (/** @type {number[]} */ xs) => (xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length)).toFixed(1);
   const pct = (/** @type {number} */ n) => `${((n / games) * 100).toFixed(1)}%`;
   const rounds = Number(createGame({ seed: 1, players, options }).options.rounds);
-  console.log(`${games} games · ${playerCount} players · seed ${seed}${Object.keys(options).length ? ' · ' + process.argv.slice(5).join(' ') : ''}\n`);
+  console.log(`${games} games · ${playerCount} players · seed ${seed} · bots ${list.join(',')}${Object.keys(options).length ? ' · ' + Object.entries(options).map(([k, v]) => `${k}=${v}`).join(' ') : ''}\n`);
   console.log(`Island wins ${pct(sides.island)} · invaders win ${pct(sides.invaders)}`);
   console.log(`Total presence: start 35 · ${byRound.map((xs, r) => `after round ${r + 1} ${mean(xs)}`).join(' · ')} · final ${mean(finals)}`);
   console.log(`Fights per round ${(fights / games / rounds).toFixed(1)} · locations scorched per game ${mean(scorched)} · trophies per player ${mean(trophies)}`);
   console.log(`Shared victories ${pct(sharedWins.filter((n) => n > 1).length)}`);
   console.log('\nWins by seat');
-  for (const pid of players) console.log(`  ${pid.padEnd(4)} ${pct(seatWins.get(pid) ?? 0)}`);
+  for (const pid of players) console.log(`  ${pid.padEnd(4)} ${profiles[pid].padEnd(8)} ${pct(seatWins.get(pid) ?? 0)}`);
   console.log('\nWins by slayer group');
   for (const g of spec.slayerGroups) console.log(`  ${g.name.padEnd(22)} ${pct(groupWins.get(g.id) ?? 0)}`);
   void presenceOf;
