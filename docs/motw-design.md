@@ -2773,6 +2773,20 @@ Four asymmetric factions share one deck of event cards. Cuba Libre's factions: t
 - **Dual-use events with two halves for two sides.** For example, each suit card's two uses could favour the invaders and the island.
 - **Scoring rounds seeded through the deck.** Compare our fixed round count.
 
+**Other COIN games** (from reviews and memory; check before relying on details):
+
+| Game | What it adds |
+|---|---|
+| Andean Abyss (Colombia) | The first COIN game: three insurgent factions and one government. |
+| Fire in the Lake (Vietnam) | Four factions in two loose teams that also compete. *Pivotal events:* each faction holds one powerful event it can play to pre-empt the card order. *Capabilities* last the game; *momentum* lasts until the next scoring round. |
+| A Distant Plain (Afghanistan) | Two government factions that must cooperate but are scored apart. A shared pool of resources. |
+| Falling Sky (Gaul) | Romans and Gallic tribes; more open battle than the earlier games. Winter cards for scoring and upkeep; Caesar as a leader piece. |
+| Liberty or Death (American Revolution) | Two pairs of allied factions; winter quarters. |
+| Pendragon (post-Roman Britain) | A track that tips the game's eras; raiders against standing warbands; roads that decay and isolate regions; barbarians recruited as allies. |
+| Root (Leder Games, COIN-inspired) | Asymmetric factions sharing a deck of suited cards: each card's suit matches a type of clearing, and ambush cards answer a battle. |
+
+**Worth stealing from the wider series:** one powerful card each player keeps back to break the order once (pivotal events); effects that last until the next scoring round (momentum); two players who must cooperate but are scored apart; a map whose connections wear down over the game (Pendragon's roads, like our scorched regions); suits that match location types (Root, like our archetype suits).
+
 ### I.6 Twilight Struggle (system; from GMT's 2nd edition rules)
 
 Two players, the USSR and the US, across ten turns of six or seven card plays each.
@@ -2797,6 +2811,142 @@ Two players, the USSR and the US, across ten turns of six or seven card plays ea
 - **One card that changes hands every time it is played** (the China Card), like a cursed object passed around the town.
 - **A shared doom track that both sides push and nobody wants to finish** (DEFCON). Compare our presence threshold.
 - **A safe way to dump a card you can't afford to play** (the space race).
+
+**The full card list** (110 cards, including the optional cards 104–110). Ops is the operations value; Side is whose event it is; Removed means the card leaves the game when played as an event. Effects are described by pattern below, in our own words.
+
+| # | Card | Ops | Side | Removed | Pattern |
+|---|---|---|---|---|---|
+| 1 | Asia Scoring | 0 | Scoring |  | Scoring |
+| 2 | Europe Scoring | 0 | Scoring |  | Scoring |
+| 3 | Middle East Scoring | 0 | Scoring |  | Scoring |
+| 4 | Duck and Cover | 3 | US |  | The doom track (DEFCON) |
+| 5 | Five Year Plan | 3 | US |  | Hands and information |
+| 6 | The China Card | 4 | Either |  | The China Card |
+| 7 | Socialist Governments | 3 | USSR |  | Strip influence |
+| 8 | Fidel | 2 | USSR | Yes | Flip a country |
+| 9 | Vietnam Revolts | 2 | USSR | Yes | Spread influence, Ops and tempo |
+| 10 | Blockade | 1 | USSR | Yes | Ultimatums and doubling |
+| 11 | Korean War | 2 | USSR | Yes | War roll |
+| 12 | Romanian Abdication | 1 | USSR | Yes | Flip a country |
+| 13 | Arab-Israeli War | 2 | USSR |  | War roll |
+| 14 | Comecon | 3 | USSR | Yes | Spread influence |
+| 15 | Nasser | 1 | USSR | Yes | Flip a country |
+| 16 | Warsaw Pact Formed | 3 | USSR | Yes | Strip influence |
+| 17 | De Gaulle Leads France | 3 | USSR | Yes | Flip a country |
+| 18 | Captured Nazi Scientist | 1 | Both | Yes | Space race |
+| 19 | Truman Doctrine | 1 | US | Yes | Strip influence |
+| 20 | Olympic Games | 2 | Both |  | The doom track (DEFCON) |
+| 21 | NATO | 4 | US | Yes | Protection and prerequisites |
+| 22 | Independent Reds | 2 | US | Yes | Spread influence |
+| 23 | Marshall Plan | 4 | US | Yes | Spread influence |
+| 24 | Indo-Pakistani War | 2 | Both |  | War roll |
+| 25 | Containment | 3 | US | Yes | Ops and tempo |
+| 26 | CIA Created | 1 | US | Yes | Hands and information |
+| 27 | US/Japan Mutual Defense Pact | 4 | US | Yes | Protection and prerequisites |
+| 28 | Suez Crisis | 3 | USSR | Yes | Strip influence |
+| 29 | East European Unrest | 3 | US |  | Strip influence |
+| 30 | Decolonization | 2 | USSR |  | Spread influence |
+| 31 | Red Scare/Purge | 4 | Both |  | Ops and tempo |
+| 32 | UN Intervention | 1 | Both |  | Cancel or answer |
+| 33 | De-Stalinization | 3 | USSR | Yes | Relocate influence |
+| 34 | Nuclear Test Ban | 4 | Both |  | The doom track (DEFCON) |
+| 35 | Formosan Resolution | 2 | US | Yes | Protection and prerequisites |
+| 36 | Brush War | 3 | Both |  | War roll |
+| 37 | Central America Scoring | 0 | Scoring |  | Scoring |
+| 38 | Southeast Asia Scoring | 0 | Scoring | Yes | Scoring |
+| 39 | Arms Race | 3 | Both |  | Conditional VP and bets |
+| 40 | Cuban Missile Crisis | 3 | Both | Yes | The doom track (DEFCON) |
+| 41 | Nuclear Subs | 2 | US | Yes | The doom track (DEFCON) |
+| 42 | Quagmire | 3 | USSR | Yes | Ops and tempo |
+| 43 | SALT Negotiations | 3 | Both | Yes | The discard pile, The doom track (DEFCON) |
+| 44 | Bear Trap | 3 | US | Yes | Ops and tempo |
+| 45 | Summit | 1 | Both |  | The doom track (DEFCON) |
+| 46 | How I Learned to Stop Worrying | 2 | Both | Yes | The doom track (DEFCON) |
+| 47 | Junta | 2 | Both |  | Coup tools |
+| 48 | Kitchen Debates | 1 | US | Yes | Conditional VP and bets |
+| 49 | Missile Envy | 2 | Both |  | Hands and information |
+| 50 | “We Will Bury You” | 4 | USSR | Yes | The doom track (DEFCON), Conditional VP and bets |
+| 51 | Brezhnev Doctrine | 3 | USSR | Yes | Ops and tempo |
+| 52 | Portuguese Empire Crumbles | 2 | USSR | Yes | Spread influence |
+| 53 | South African Unrest | 2 | USSR |  | Spread influence |
+| 54 | Allende | 1 | USSR | Yes | Spread influence |
+| 55 | Willy Brandt | 2 | USSR | Yes | Protection and prerequisites |
+| 56 | Muslim Revolution | 4 | USSR |  | Strip influence |
+| 57 | ABM Treaty | 4 | Both |  | The doom track (DEFCON) |
+| 58 | Cultural Revolution | 3 | USSR | Yes | The China Card |
+| 59 | Flower Power | 4 | USSR | Yes | Conditional VP and bets |
+| 60 | U2 Incident | 3 | USSR | Yes | Conditional VP and bets |
+| 61 | OPEC | 3 | USSR |  | Conditional VP and bets |
+| 62 | “Lone Gunman” | 1 | USSR | Yes | Hands and information |
+| 63 | Colonial Rear Guards | 2 | US |  | Spread influence |
+| 64 | Panama Canal Returned | 1 | US | Yes | Spread influence |
+| 65 | Camp David Accords | 2 | US | Yes | Spread influence, Protection and prerequisites |
+| 66 | Puppet Governments | 2 | US | Yes | Spread influence |
+| 67 | Grain Sales to Soviets | 2 | US |  | Hands and information |
+| 68 | John Paul II Elected Pope | 2 | US | Yes | Flip a country |
+| 69 | Latin American Death Squads | 2 | Both |  | Coup tools |
+| 70 | OAS Founded | 1 | US | Yes | Spread influence |
+| 71 | Nixon Plays the China Card | 2 | US | Yes | The China Card |
+| 72 | Sadat Expels Soviets | 1 | US | Yes | Flip a country |
+| 73 | Shuttle Diplomacy | 3 | US |  | Protection and prerequisites |
+| 74 | The Voice of America | 2 | US |  | Strip influence |
+| 75 | Liberation Theology | 2 | USSR |  | Spread influence |
+| 76 | Ussuri River Skirmish | 3 | US | Yes | The China Card |
+| 77 | “Ask Not What Your Country…” | 3 | US | Yes | Hands and information |
+| 78 | Alliance for Progress | 3 | US | Yes | Conditional VP and bets |
+| 79 | Africa Scoring | 0 | Scoring |  | Scoring |
+| 80 | “One Small Step…” | 2 | Both |  | Space race |
+| 81 | South America Scoring | 0 | Scoring |  | Scoring |
+| 82 | Iranian Hostage Crisis | 3 | USSR | Yes | Flip a country |
+| 83 | The Iron Lady | 3 | US | Yes | Flip a country, Protection and prerequisites |
+| 84 | Reagan Bombs Libya | 2 | US | Yes | Conditional VP and bets |
+| 85 | Star Wars | 2 | US | Yes | The discard pile |
+| 86 | North Sea Oil | 3 | US | Yes | Ops and tempo |
+| 87 | The Reformer | 3 | USSR | Yes | Spread influence |
+| 88 | Marine Barracks Bombing | 2 | USSR | Yes | Strip influence |
+| 89 | Soviets Shoot Down KAL-007 | 4 | US | Yes | Coup tools, The doom track (DEFCON) |
+| 90 | Glasnost | 4 | USSR | Yes | Coup tools, The doom track (DEFCON) |
+| 91 | Ortega Elected in Nicaragua | 2 | USSR | Yes | Strip influence, Coup tools |
+| 92 | Terrorism | 2 | Both |  | Hands and information |
+| 93 | Iran-Contra Scandal | 2 | USSR | Yes | Coup tools |
+| 94 | Chernobyl | 3 | US | Yes | Ops and tempo |
+| 95 | Latin American Debt Crisis | 2 | USSR |  | Ultimatums and doubling |
+| 96 | Tear Down this Wall | 3 | US | Yes | Spread influence, Coup tools |
+| 97 | “An Evil Empire” | 3 | US | Yes | Conditional VP and bets |
+| 98 | Aldrich Ames Remix | 3 | USSR | Yes | Hands and information |
+| 99 | Pershing II Deployed | 3 | USSR | Yes | Strip influence |
+| 100 | Wargames | 4 | Both | Yes | The doom track (DEFCON) |
+| 101 | Solidarity | 2 | US | Yes | Spread influence |
+| 102 | Iran-Iraq War | 2 | Both | Yes | War roll |
+| 103 | Defectors | 2 | US |  | Cancel or answer |
+| 104 | The Cambridge Five | 2 | USSR |  | Hands and information |
+| 105 | Special Relationship | 2 | US |  | Spread influence |
+| 106 | NORAD | 3 | US | Yes | Lasting effects |
+| 107 | Che | 3 | USSR |  | Coup tools |
+| 108 | Our Man in Tehran | 2 | US | Yes | Hands and information |
+| 109 | Yuri and Samantha | 2 | USSR | Yes | Conditional VP and bets |
+| 110 | AWACS Sale to Saudis | 3 | US | Yes | Spread influence, Protection and prerequisites |
+
+**The patterns, and what each could become here:**
+
+- **Scoring** (Asia, Europe, Middle East, Central America, Southeast Asia, Africa, South America): a card that scores one region the moment it is played, and can't be held past the turn. *For us:* a card that makes one region's fights happen early, or pays trophies twice there.
+- **Flip a country** (Fidel, Romanian Abdication, Nasser, De Gaulle, Sadat Expels Soviets, Iranian Hostage Crisis, John Paul II, The Iron Lady): wipe the rival's influence in one named place and take control. *For us:* one location changes hands outright, as a signature move.
+- **Spread influence** (Comecon, Marshall Plan, Decolonization, Colonial Rear Guards, OAS Founded, Puppet Governments, Liberation Theology, Independent Reds, and others): add a little influence across many places, often capped per country. *For us:* scatter influence instead of cubes.
+- **Strip influence** (Socialist Governments, Suez Crisis, Voice of America, Truman Doctrine, Pershing II, Marine Barracks Bombing, Muslim Revolution, East European Unrest): remove the rival's influence from a set of places. *For us:* pull rival influence off locations back to their supply.
+- **Relocate influence** (De-Stalinization): move your own influence from where it is to new places.
+- **War roll** (Korean War, Arab-Israeli War, Indo-Pakistani War, Iran-Iraq War, Brush War): a one-off battle whose odds fall for each adjacent place the defender controls. *For us:* the defender's neighbours matter in a fight.
+- **Coup tools** (Junta, Che, Ortega, Tear Down this Wall, Latin American Death Squads, Iran-Contra): free or chained coups, and rolls that favour one side for the turn. Che's second coup happens only if the first one worked.
+- **Protection and prerequisites** (NATO, US/Japan Pact, Camp David, AWACS, Formosan Resolution, Willy Brandt, Shuttle Diplomacy): some events lock places against the rival or switch a rival's card off for good; some only work after another card has been played (Marshall Plan or Warsaw Pact before NATO, John Paul II before Solidarity, The Reformer before Glasnost). *For us:* a ward that shuts a suit card off, or a card that only works after another.
+- **Ops and tempo** (Containment, Brezhnev Doctrine, Red Scare/Purge, Vietnam Revolts, North Sea Oil, Quagmire, Bear Trap, Chernobyl): raise your card values or lower the rival's for the turn; take an extra action; trap the rival so they must discard to escape; shut one region to them.
+- **Hands and information** (CIA Created, Lone Gunman, Aldrich Ames, Five Year Plan, Grain Sales, Missile Envy, Terrorism, Ask Not, Our Man in Tehran, The Cambridge Five): reveal a hand, take or swap a card from it, force a random discard, redraw, or look at the top of the deck. Missile Envy trades for the rival's best card.
+- **The discard pile** (SALT Negotiations, Star Wars): take back, or play, a card already used.
+- **The doom track** (Duck and Cover, Nuclear Test Ban, Cuban Missile Crisis, How I Learned to Stop Worrying, ABM Treaty, Summit, Wargames, Nuclear Subs, "We Will Bury You", Olympic Games): push DEFCON down for points or up for safety. Cuban Missile Crisis makes the rival's next coup end the game; Wargames lets you end the game at DEFCON 2 by paying the rival. *For us:* cards that move the presence threshold, or that make crossing it on a certain move lose.
+- **Cancel or answer** (UN Intervention, Defectors): cancel the rival's event and keep its points; cancel the rival's opening card.
+- **Conditional points and bets** (Flower Power, Yuri and Samantha, Arms Race, Kitchen Debates, Alliance for Progress, OPEC, Reagan Bombs Libya, U2 Incident, "An Evil Empire"): score for something the rival does later, or for a board state. *For us:* a bet that pays if a named faction ends up winning, or if a fight happens somewhere.
+- **The China Card** (The China Card, Cultural Revolution, Nixon, Ussuri River Skirmish): one card that changes hands every time it is played; other cards steal it. *For us:* a cursed object passed around the town.
+- **The space race** (Captured Nazi Scientist, One Small Step): a side track, also used to dump a card you can't afford to play.
+- **Ultimatums and doubling** (Blockade, Latin American Debt Crisis): the rival must discard a strong card, or suffer the effect.
+- **Lasting effects** (NORAD): a card that keeps paying out each round while a condition holds.
 
 ### I.7 More games to mine (from memory; check before relying on details)
 
@@ -2827,4 +2977,6 @@ Two players, the USSR and the US, across ten turns of six or seven card plays ea
 - The King is Dead, 2nd edition rulebook (Osprey Games, 2020), via bghub.org.
 - Blood Rage and Rumble Nation game help, Board Game Arena (en.doc.boardgamearena.com).
 - Cuba Libre playbook (GMT Games, 2018) and Twilight Struggle 2nd edition rules (GMT Games).
+- Twilight Struggle card list: twilightstrategy.com/card-list; sides and removal from the open-source vrazix/twilight-struggle card data (github.com).
+- Other COIN games: reviews at theplayersaid.com and therewillbe.games, and BoardGameGeek threads.
 - Inis: the Inis fan wiki (inis-game.fandom.com, through its page API), web search results quoting card texts, and Order of Gamers' rules summary (orderofgamers.com).
