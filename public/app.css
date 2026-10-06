@@ -475,3 +475,4 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .card-influence:hover { background: var(--color-accent-strong); }
 .card-influence.is-off { background: #e0f2f4; color: #7d7071; cursor: default; box-shadow: none; }
 @media (prefers-reduced-motion: reduce) { .card-respond { animation: none; } }
+#phase > .btn, #phase .stack > .btn { align-self: flex-start; }

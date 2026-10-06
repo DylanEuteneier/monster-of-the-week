@@ -338,7 +338,7 @@ function factionTable(lit) {
     const on = lit.factions.includes(f);
     return `<div class="faction-row${on ? ' is-candidate' : ''}"${on ? ` data-action="pick-faction" data-faction="${esc(f)}"` : ''}>
       <span class="faction-id">${tokenHtml(f, 2, on ? 'candidate' : '')}<span><b>${esc(faction.name)}</b><span class="small muted">${esc(arch?.symbol ?? '')} ${esc(arch?.name ?? '')}</span></span></span>
-      <span class="faction-count"><b>${onIsland}</b><span class="small muted">on the island</span></span>
+      <span class="faction-count" title="${onIsland} on the island"><b>${onIsland}</b></span>
       <span class="supply-row" title="${view.supply[f]} in supply">${Array.from({ length: view.supply[f] }, () => tokenHtml(f, 1)).join('')}</span>
       <span class="standing-row">${influence || '<span class="small muted">—</span>'}</span>
     </div>`;
