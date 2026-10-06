@@ -586,6 +586,8 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
         - **a location:** any faction, at one of the suit's locations; or
         - **a faction:** the suit's own (affinity) faction, at any location.
         This mirrors principle 2 for influence (the affinity faction, or a faction controlling a suit location).
+        - Each card says which location counts as the target when its effect involves two (where cubes come from, or where they go), and which faction counts as the target when it involves two.
+        - It applies to every suit card where possible. For an influence action it reads: gain influence with the suit's faction, or with a faction controlling one of the suit's locations.
   - First draft, suit structure (from a suggestion, 2026-10-05). Each suit has three cards:
     - *Strike:* a move that creates a contest at or from a suit location. Printed influence 2.
     - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3. One card in each suit carries a response.
