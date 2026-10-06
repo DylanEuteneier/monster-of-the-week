@@ -174,7 +174,8 @@ export class Game extends DurableObject<Env> {
       this.ctx.storage.get<ChatLine[]>(STORAGE_CHAT),
       this.ctx.storage.get<string[]>(STORAGE_BOTS),
     ]);
-    this.game = game ?? null;
+    // A game saved by an older engine can't be read by this one; set it aside so the host deals a new game.
+    this.game = game && game.version === spec.meta.version ? game : null;
     this.tokens = tokens ?? {};
     this.chat = chat ?? [];
     this.bots = bots ?? [];
