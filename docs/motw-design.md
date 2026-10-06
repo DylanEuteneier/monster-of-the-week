@@ -8,7 +8,7 @@ The single living document for this project, updated at the end of each session.
 2. **Game foundation:** the game's core tension, theme, setting, players, content, and genre.
 3. **Design decisions:** every core design decision, grouped by the game's architecture. Each decision area is one entry that matures in place, from ideas to decisions to details to rules.
 
-Appendices: A. Decision records and changelog, B. Glossary, C. Reference game research, D. Candidate codes, E. Candidate analysis, F. Prototype architecture and art, G. First draft ruleset, H. Card catalogue.
+Appendices: A. Decision records and changelog, B. Glossary, C. Reference game research, D. Candidate codes, E. Candidate analysis, F. Prototype architecture and art, G. First draft ruleset, H. Card catalogue, I. Reference card catalogue.
 
 The current focus, below, lists what is being worked on right now; the backlog holds everything else.
 
@@ -259,6 +259,20 @@ Common monster-of-the-week, campy horror, and invasion-movie tropes, as inspirat
 - **Join the cult:** paint everything blue, wear the robes, chant along.
 
 Some tropes, such as spreading a rumour or handing over evidence, sit across both groups.
+
+**More tropes (farmed 2026-10-05).** Drawn from Buffy, Supernatural, The X-Files, Scooby-Doo, Stranger Things, Gravity Falls, Goosebumps, Ghostbusters, Fright Night, The Monster Squad, The Lost Boys, Tremors, Gremlins, Evil Dead, Night of the Living Dead, Shaun of the Dead, Twin Peaks, Men in Black, Independence Day and Mars Attacks!.
+
+- **Research and preparation:** the library all-nighter; the old-timer who knows the legend; the microfiche of the 1950s newspaper; the grimoire with the missing page; learning "the rules" (don't get them wet, never feed them after midnight); mapping the ley lines; interviewing the lone survivor; decoding the transmission.
+- **Weapons and wards:** holy water, silver, salt lines, iron, rock salt in a shotgun, a flamethrower, a chainsaw, a wooden stake, garlic, a crucifix, consecrated ground, UV light, mirrors, fire, the head shot.
+- **Lures and distractions:** a blood trail; a decoy in your jacket; loud music; a car alarm; fireworks; acting like one of them to walk through the crowd; a noise from the other side of the house.
+- **Exploiting a weakness:** they must be invited in; they can't cross running water; they must count spilled rice; they hunt by vibration, so stay off the ground; water makes them multiply; one song makes their heads explode; a common cold kills them; say its true name.
+- **Teen life:** sneaking out after curfew; the school dance; parents out of town; riding bikes after dark; walkie-talkies and a CB radio; the house party; the arcade; locking yourselves in the mall overnight; the dare to enter the abandoned house; "let's split up, gang."
+- **Authority and cover-ups:** the sheriff won't listen; the men in black arrive; a quarantine; a curfew; a news blackout; an evacuation; calling in the National Guard; burning the evidence.
+- **Rituals:** the séance; the Ouija board; a summoning, a banishing, a binding; sigils on the floor; chanting in a circle; the cursed artifact; waiting for the eclipse or the blood moon.
+- **Traps and tactics:** the net trap; the pit; fortifying the farmhouse; barricading the doors; luring them into the light; setting the building alight; collapsing the mine; blowing up the gas station; driving them into the sea; cutting the bridge.
+- **Tech:** hacking in; an EMP; jamming the signal; reversing the polarity; uploading a virus to the mothership; the radio telescope; night vision; the motion tracker; the ham radio.
+- **Drama and sacrifice:** the last stand; someone stays behind; holding the door; the bitten friend hiding the wound; the unmasking ("it was the janitor"); the monster was human all along; the redemption.
+- **Episode structure:** the cold-open victim; the town legend; the cursed object; the warning ignored; the creepy kid who knows; the twist ending; the sequel stinger ("it's back").
 
 ### 1.6 Reference games
 
@@ -2566,3 +2580,184 @@ A candidate set picks three cards per suit and attaches the responses, so the wh
 - Printed influence: 40 in total (2 on Strikes, 3 on Shifts and Signatures).
 - Left out but worth testing as swaps: Silver Bullets or Hold a Midnight Vigil (◐), Make a Deal at the Crossroads (⎈), Turn Them on Each Other (⏏), Tinfoil Hats as a response.
 - Round 5: Track Them in the Snow became a mancala move (designer's idea): the pack leaves 1 cube in each location it enters until none are left. It scatters into single cubes (no growth) and can start a fight at every occupied location it touches. A location it can't enter ends the path. Influence goes down at every location entered, and the path continues only while the player has influence with that faction to place. Cubes still left when the path ends stay together at the last location entered, so a short chase ends in a real attack.
+
+### H.9 Action types
+
+A map of the kinds of action that fit the game's structure (draft, play, fights at round end, growth, influence, secret trophies, hidden tokens, scorching, adjacency), to draw from when designing cards. Suggestions from a design pass on 2026-10-05; not decisions. Presence actions are in the Kind list at the top of this appendix; the rest are new.
+
+1. **Presence:** sow, lure, teleport, halve, conveyor, network jump, shove, mirror, leap, swap, pin, merge, split, concentrate, scatter. Still open: *chain reaction* (a group moves, and the group it lands on is pushed onward in turn), *follow the leader* (a group moves and an adjacent group of another faction follows it).
+2. **Fight modifiers,** set during play and applied at round end: sinks (more casualties), protection (fewer), trophy redirection (the smaller pile goes to the leader, or the bigger pile to the runner-up), double trophies, influence weight (influence of one player counts double at a location).
+3. **Growth modifiers,** without card-driven growth: stop growth at a location this round; divert a location's growth to an adjacent location; lower or raise the growth threshold at one location.
+4. **Alignment and control:** desecrate a location so it counts as aligned with no archetype this round (no AL2 tie win, no AL3 boost, no affinity there); consecrate it to an archetype instead.
+5. **Influence economy:** move a player's influence between factions (corruption); move your influence between locations; cash out influence at a location into standing before the fight; tax other players' placements; protect your influence from being moved.
+6. **Trophies:** look at a player's secret trophies; bury the evidence (return one of your trophies to its faction's supply face down, so its colour stays secret, lowering what counts against you); trade a trophy for influence. Trophies are the score, so these are powerful and should be rare.
+7. **Information and bluff:** hidden tokens and bluffs; look at a hand; look at the left-out cards; reveal a token early.
+8. **Tempo and turn order:** play after passing; take a second turn; force a player to pass; play out of turn; end the round early (the next pass ends it).
+9. **The draft:** take back a pick; swap a card with a left-out card; look at a player's hand while drafting.
+10. **Terrain:** barricade the border between two hexes (they stop being adjacent this round); open a temporary path across the lake (a boat); quarantine a region; burn an empty location deliberately (a controlled scorch).
+11. **Lasting location states:** tokens that stay until the location resolves, like UT1's hidden tokens: haunted, quarantined, warded.
+12. **Suit synergy:** a card that is stronger if you played a card of the same suit, or of a different suit, earlier this round. It gives the five suits a reason to be collected or spread in the draft.
+13. **Player deals:** a card that makes a table-talk pact binding for the round (D10 keeps table talk non-binding otherwise).
+14. **The end game:** move the presence threshold by one for this game; a last-round-only card.
+
+Fits best with the rules as they stand: fight modifiers, growth modifiers, alignment, trophies, terrain and suit synergy. Each touches a system the draft already has, and each gives a gambit only its holder has (principle 13).
+
+---
+
+## Appendix I: Reference card catalogue
+
+Cards and card-driven mechanisms from other games, as raw material for our own (Appendix H). Each section says how complete and how verified it is. These describe other designers' games; nothing here is a mechanism of ours.
+
+### I.1 The King is Dead, 2nd edition (complete; from the rulebook)
+
+Every player has the same eight cards and summons a follower to court after every action. A region's power struggle happens when all players pass in a row.
+
+| Card | Effect |
+|---|---|
+| Scottish Support | Place two Scottish followers into one region bordering a Scottish-controlled region (or bordering Moray if it is unresolved). |
+| Welsh Support | The same for the Welsh (Gwynedd). |
+| English Support | The same for the English (Essex). |
+| Assemble (×2) | Place one Scottish, one Welsh and one English follower from the supply into any region or regions. |
+| Negotiate | Swap the positions of two face-up region cards (changing the order of power struggles); lock one with your negotiation disc. |
+| Manoeuvre | Swap a follower in any region with a follower in any other region. Can't undo another player's Manoeuvre straight away. |
+| Outmanoeuvre | Swap a follower in a region with two followers in a bordering region. |
+
+**Cunning actions** (advanced game; each player gets three of twelve at random):
+
+| Card | Effect |
+|---|---|
+| Spy | Copy the action on top of another player's discard pile. |
+| Ambush | Place two Scottish followers into a region, then return any follower there to the supply. |
+| March | Move two followers from one region to one bordering region. |
+| Plot | Can't be played. At game end it counts as a follower of a faction of your choice, and wins a specific tie. |
+| Aid | Place two followers of whichever faction has the most followers in the supply. |
+| Influence | Swap one English follower in a region with two non-English followers in another. |
+| Dispute | Swap a Welsh follower in a region with a non-Welsh follower in another. |
+| Edict | Swap two Scottish followers with two non-Scottish followers in a bordering region. |
+| Resist | Place two non-Scottish followers into a region bordering Scottish control. |
+| Quell | Return a Welsh follower near Welsh control, then place two followers of any factions there. |
+| Suppress | Return an English follower near English control and another follower, then place one follower. |
+| Muster | Return a Scottish follower near Scottish control, then place two followers of any factions there. |
+
+**Worth stealing:** one fixed hand for everyone, so everyone knows what everyone can still do; swaps rather than moves; reordering the resolution (Negotiate); copying a rival's last action (Spy); a card that is never played but scores (Plot).
+
+### I.2 Blood Rage (near complete; from Board Game Arena's game help)
+
+Cards are drafted each age; each is a battle card, an upgrade, a monster or a quest.
+
+**Battle cards** (played secretly into a battle):
+
+| Age | Card | Effect |
+|---|---|---|
+| 1 | Frigga's Grace (+2) | If you pillage successfully, raise another clan stat. |
+| 1 | Heimdall's Sight (+X) | Worth the same as the highest revealed enemy card. |
+| 1 | Loki's Trickery (+0) | If you lose, steal 1 rage from the winner. |
+| 1 | Odin's Smite (+1) | Destroy one warrior of each opponent here before comparing strength. |
+| 1 | Thor's Hammer (+1) | Gain 3 glory if you win. |
+| 1–3 | Tyr's Bash, Smash, Crush, Smite, Rage, Judgement (+2 to +8) | Plain strength. |
+| 2 | Heimdall's Eye (+2) | Play it after all cards are revealed. |
+| 2 | Heimdall's Watch (+0) | Discard all revealed cards, gain glory equal to their strength, then everyone plays again. |
+| 2 | Loki's Backstab (+0) | If you lose, steal 2 glory from the winner. |
+| 2 | Odin's Tide (+1) | Before comparing, every player destroys all but one of their figures here. |
+| 2 | Thor's Oath (+1) | If you win, raise a clan stat. |
+| 3 | Heimdall's Gaze (+3) | Play it after all cards are revealed. |
+| 3 | Loki's Poison (+0) | If you lose, take the winner's revealed cards into your hand. |
+| 3 | Odin's Judgement (+2) | Gain 2 glory per figure destroyed in this battle, yours included. |
+| 3 | Thor's Ascension (+1) | If you win, gain 3 rage and 3 glory. |
+| 3 | Thor's Primacy (+3) | Cancel the text of every opponent's revealed card. |
+
+**Clan upgrades:**
+
+| Age | Card | Effect |
+|---|---|---|
+| 1 | Frigga's Succor | When you invade, invade with an extra warrior there for free. |
+| 1 | Loki's Blessing | If you lose a battle, invade that province with a warrior for free. |
+| 1 | Loki's Domain | Gain 1 glory per figure you release from Valhalla. |
+| 1 | Thor's Glory | Gain 2 glory whenever 2 or more enemy figures die in a battle you're in. |
+| 2 | Frigga's Protection | Pay 1 rage to stop one of your figures being destroyed. |
+| 2 | Loki's Eminence | Gain 2 glory per figure released from Valhalla. |
+| 2 | Thor's Domain | After invading, pay 2 rage to pillage at once. |
+| 2 | Tyr's Challenge | Pay 2 rage to re-pillage a pillaged province. |
+| 2 | Tyr's Prowess | If you win, keep revealed cards for 1 rage each. |
+| 3 | Frigga's Domain | Pay 1 rage to invade with any figure from Valhalla. |
+| 3 | Frigga's Sacrifice | Destroy 2 figures to raise a clan stat. |
+| 3 | Loki's Wrath | Gain 3 glory per figure released from Valhalla. |
+| 3 | Odin's Throne | Double quest glory. |
+| 3 | Thor's Conquest | 3 glory per figure on the board at game end. |
+| 3 | Tyr's Domain / Tyr's Smite | A quest card revealed in battle counts as +3 / +5. |
+
+**Monsters:** Sea Serpent (counts as a ship), Dwarf Chieftain (free to upgrade or invade), Troll (destroys all warriors when invading), Fire Giant (destroys all non-monsters when invading), Dark Elf (can invade Yggdrasil), Valkyrie (2 glory per enemy figure destroyed), Frost Giant (pillage rewards twice), Soldier of Hel (free), Volur Witch (escapes to Yggdrasil instead of dying).
+
+**Leader, warrior and ship upgrades:** Lord of Hammers, Axes, Spears (bonuses when the leader pillages); Brothers, Experts, Masters in Arms (pairs of warriors are stronger); Loki's, Fire and Eternal Dragons (glory when your ship dies).
+
+**Quests** (secret goals for the age): Alfheim, Jotunheim, Manheim (most strength in a province of that colour), Yggdrasil, Widespread (most strength in two provinces), Glorious Death (four figures in Valhalla).
+
+**Worth stealing:** losing pays (Loki's cards, Glorious Death, dragons); revealing after everyone else (Heimdall); cancelling text (Thor's Primacy); a whole battle that wipes everyone down to one (Odin's Tide); secret goals tied to map colours.
+
+### I.3 Inis (partial; card names from search results, effects only where a source quoted them)
+
+Seventeen action cards are drafted each season; advantage cards go to territory chieftains; epic tale cards are drawn and kept.
+
+| Card | Effect (where verified) |
+|---|---|
+| Sanctuary | Place a sanctuary where you are present and draw an epic tale card; then you may move clans from one territory to one adjacent territory. |
+| Bard | Draw an epic tale card, *or* (triskel) after one of your manoeuvres removes opposing clans, gain a deed. |
+| Druid | Look at the discarded action cards and take one into your hand (can't be your last card). |
+| Exploration | Add a new territory to the map, adjacent to two others, and place a clan in it. |
+| Conquest | Choose a territory; move any number of your clans from adjacent territories into it, which may start a clash. |
+| Craftsmen & Peasants | In each territory where you are present, place a clan per citadel there. |
+| Warlord | Start a clash where you are present, *or* (triskel) during a clash you're in, place an exposed clan there and choose who manoeuvres next. |
+| Master Craftsman (4+) | Discard a card and draw an epic tale card, *or* (triskel) after you play an epic tale, give it to another player and gain a deed. |
+| New Clans | Place two new clans in territories you already occupy. |
+| Migration | Move clans, possibly starting several clashes. |
+| Festival | Place the festival marker (no clashes there this season; its chieftain gains). |
+| Citadel, Clans Harmony, Coalition, Emissaries, Fili, Geis, New Alliance | Named as action cards in search results; effects not verified. |
+
+Epic tale cards (named, effects not verified): Lug's Spear, Dagda's Cauldron, The Stone of Fal, Ogma's Eloquence (ends a battle at once), among about thirty.
+
+**Worth stealing:** the triskel, a second effect played at a specific trigger instead of on your turn (our principle 5); one card that starts many clashes (Migration); a peaceful zone (Festival); taking back a discarded card (Druid); giving a played card away to score (Master Craftsman).
+
+### I.4 Rumble Nation (partial; from Board Game Arena's game help)
+
+Most actions are dice placements. A shared display of tactic cards (each usable once per game) moves soldiers and bumps enemies out; their individual texts weren't found. The deluxe daimyo cards each move or place soldiers around a leader figure:
+
+| Daimyo | Effect |
+|---|---|
+| Uesugi Kenshin | Move up to 3 of your soldiers from the daimyo's area to adjacent land areas. |
+| Oda Nobunaga | Move the daimyo to an adjacent area, optionally taking a soldier. |
+| Takeda Shingen | Move up to 3 soldiers of one opponent from the daimyo's area to adjacent areas. |
+| Mōri Motonari | Place up to 3 soldiers from stock into areas adjacent to the daimyo. |
+| Chōsokabe Motochika | Move up to 3 units from the daimyo's area to areas adjacent by sea. |
+| Ōtomo Sōrin | Replace an opponent's soldier in up to two areas adjacent to the daimyo with your own. |
+
+**Worth stealing:** a shared display of once-per-game tactics that closes when someone finishes placing; sea movement as a second kind of adjacency; replacing an enemy piece rather than removing it.
+
+### I.5 More games to mine (from memory; check before relying on details)
+
+| Game | What to look at |
+|---|---|
+| Smash Up | Minions played onto shared "bases"; a base scores when its total power passes its breakpoint, ranking players 1st, 2nd, 3rd. Very close to our locations, fights and trophy places. |
+| El Grande (C.15) | Action cards with a strength value and a special power; scoring regions; the Castillo as a hidden area. |
+| A War of Whispers (C.11) | Players move any empire; loyalties are secret. The closest relative of our influence. |
+| Twilight Struggle | Each card is either an event or operations points, and an opponent's event fires if you play it for points. |
+| Root | Shared deck of suited cards (by clearing type); crafting; ambush cards played in response. |
+| Cosmic Encounter | Every alien power breaks one rule; allies invited into a fight share the reward. |
+| Dune (2019) | Secret traitors among the leaders; battle plans dialled in secret; alliances with shared win conditions. |
+| Chaos in the Old World | Cards placed on regions to change how that region scores; each god's threat dial. |
+| Cthulhu Wars | Every faction's spellbooks unlock rule-breaking powers. |
+| Rising Sun | Seasons of political actions chosen by the leader; others follow with weaker versions; tea-ceremony alliances. |
+| Kemet | Power tiles that permanently change how you fight, move or recruit. |
+| Cyclades | Bidding on gods each round; the winning god decides your action. |
+| Horrified | Classic movie monsters move by card; villagers must be escorted; each monster has its own defeat puzzle. |
+| Last Night on Earth | Heroes and zombies; event cards full of horror-movie tropes. |
+| Fury of Dracula / Letters from Whitechapel | Hidden movement: the monster's trail, deduced from clues. |
+| Mysterium | A ghost communicates through visions; a natural source for séance and information cards. |
+| Arkham Horror (3rd) | Mythos cards that spread doom across neighbourhoods; monster surges. |
+| Spirit Island (C.13) | Invaders explore, build and ravage in a visible order; fear cards; slow and fast powers. |
+| Tammany Hall | Ward bosses, influence placed and lost in elections; city offices with powers. |
+
+### I.6 Sources
+
+- The King is Dead, 2nd edition rulebook (Osprey Games, 2020), via bghub.org.
+- Blood Rage and Rumble Nation game help, Board Game Arena (en.doc.boardgamearena.com).
+- Inis: web search results quoting card texts, and Order of Gamers' rules summary (orderofgamers.com).
