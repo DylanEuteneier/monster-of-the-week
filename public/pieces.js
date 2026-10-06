@@ -19,18 +19,29 @@ const tokens = /** @type {Record<string, Token>} */ (art.tokens);
 export const hasToken = (id) => id in tokens;
 
 /**
+ * Target states (2026-10-06): '' for the normal game state; 'candidate' when
+ * the piece can be chosen as a card's target; 'hovered' forces the hovered
+ * look (a candidate also shows it under the pointer).
+ * @typedef {'' | 'candidate' | 'hovered'} TargetState
+ */
+
+/** @param {TargetState} state */
+const stateClass = (state) => (state === 'candidate' ? ' is-candidate' : state === 'hovered' ? ' is-candidate is-hovered' : '');
+
+/**
  * A presence token at a whole-number pixel scale, or '' if none exists.
  * @param {string} id  the sprite id (an archetype id for now)
  * @param {number} scale
+ * @param {TargetState} [state]
  */
-export function tokenHtml(id, scale) {
+export function tokenHtml(id, scale, state = '') {
   const token = tokens[id];
   if (!token) return '';
   const w = token.width * scale;
   const h = token.height * scale;
   const pad = token.pad * scale;
   const art = (token.width - 2 * token.pad) * scale;
-  return `<span class="token" style="width:${w}px;height:${h}px;--w:${w}px;--t:${Math.max(1, scale / 2)}px" aria-hidden="true">`
+  return `<span class="token${stateClass(state)}" style="width:${w}px;height:${h}px;--w:${w}px;--t:${Math.max(1, scale / 2)}px" aria-hidden="true">`
     + `<span class="token-face" style="--cut:url('${token.src}')"></span>`
     + `<img class="token-art" src="${token.art}" alt="" style="left:${pad}px;top:${pad}px;width:${art}px;height:${art}px">`
     + '</span>';
@@ -47,3 +58,29 @@ export function cubeHtml(colour, size = 14) {
     + '</span>';
 }
 
+
+/** @typedef {{ width: number, height: number, src: string, pieces: { x: number, y: number, w: number, h: number }, states?: Record<string, { src: string, pad: number }> }} Hex */
+const hexes = /** @type {Record<string, Hex>} */ (art.hexes ?? {});
+
+/**
+ * A board hex at a whole-number pixel scale, with optional pieces laid over
+ * its clear middle, in a target state. '' if no art exists.
+ * @param {string} id  a location id
+ * @param {number} scale
+ * @param {string} [inner]  pieces HTML
+ * @param {TargetState} [state]
+ */
+export function hexHtml(id, scale, inner = '', state = '') {
+  const hex = hexes[id];
+  if (!hex) return '';
+  const esc = (/** @type {string} */ v) => v.replace(/[&<>"]/g, (ch) => `&#${ch.charCodeAt(0)};`);
+  const w = hex.width * scale, h = hex.height * scale, p = hex.pieces;
+  const states = Object.entries(hex.states ?? {}).map(([name, st]) => {
+    const pad = st.pad * scale;
+    return `<img class="hex-state hex-state-${name}" src="${esc(st.src)}" width="${w + 2 * pad}" height="${h + 2 * pad}" alt="" style="left:${-pad}px;top:${-pad}px">`;
+  }).join('');
+  return `<div class="hex${stateClass(state)}" style="width:${w}px;height:${h}px">`
+    + `<img class="sprite" src="${esc(hex.src)}" width="${w}" height="${h}" alt="">${states}`
+    + `<div class="hex-pieces" style="left:${p.x * scale}px;top:${p.y * scale}px;width:${p.w * scale}px;height:${p.h * scale}px">${inner}</div>`
+    + '</div>';
+}

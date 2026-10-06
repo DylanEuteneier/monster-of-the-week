@@ -17,6 +17,10 @@
   --color-muted: #5b6075;
   --color-border: #d0d4df;
   --color-accent: #a61e61;
+  /* Target states, from the palette: y gold, w white, k ink */
+  --state-candidate: #f4b41a;
+  --state-hover: #e0f2f4;
+  --state-ink: #302b2d;
   --color-accent-strong: #84184d;
   --color-accent-soft: #f6e3ec;
   --color-lake: #1f6f78;
@@ -263,11 +267,37 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   position: relative;
   display: inline-block;
   flex: none;
-  filter:
+  --token-edges:
     drop-shadow(0 var(--t) 0 var(--token-edge))
     drop-shadow(0 var(--t) 0 var(--token-edge))
-    drop-shadow(0 var(--t) 0 var(--token-edge-dark))
-    drop-shadow(0 calc(var(--t) * 2.5) calc(var(--t) * 2.5) rgb(20 16 38 / 0.35));
+    drop-shadow(0 var(--t) 0 var(--token-edge-dark));
+  --token-shadow: drop-shadow(0 calc(var(--t) * 2.5) calc(var(--t) * 2.5) rgb(20 16 38 / 0.35));
+  filter: var(--token-edges) var(--token-shadow);
+  transition: transform 80ms ease-out;
+}
+/* Target states (2026-10-06). A candidate token can be chosen as a card's
+   target: a gold ring round its cut edge. Hovered, the ring turns white and
+   gold and the token lifts. Colours are palette y (gold), w (white), k (ink). */
+.token.is-candidate {
+  --ring: var(--state-candidate);
+  cursor: pointer;
+  filter: var(--token-edges)
+    drop-shadow(var(--t) 0 0 var(--ring)) drop-shadow(calc(var(--t) * -1) 0 0 var(--ring))
+    drop-shadow(0 var(--t) 0 var(--ring)) drop-shadow(0 calc(var(--t) * -1) 0 var(--ring))
+    drop-shadow(var(--t) 0 0 var(--state-ink)) drop-shadow(calc(var(--t) * -1) 0 0 var(--state-ink))
+    drop-shadow(0 var(--t) 0 var(--state-ink)) drop-shadow(0 calc(var(--t) * -1) 0 var(--state-ink))
+    var(--token-shadow);
+}
+.token.is-candidate:hover, .token.is-candidate.is-hovered {
+  transform: translateY(calc(var(--t) * -2));
+  filter: var(--token-edges)
+    drop-shadow(var(--t) 0 0 var(--state-hover)) drop-shadow(calc(var(--t) * -1) 0 0 var(--state-hover))
+    drop-shadow(0 var(--t) 0 var(--state-hover)) drop-shadow(0 calc(var(--t) * -1) 0 var(--state-hover))
+    drop-shadow(var(--t) 0 0 var(--state-candidate)) drop-shadow(calc(var(--t) * -1) 0 0 var(--state-candidate))
+    drop-shadow(0 var(--t) 0 var(--state-candidate)) drop-shadow(0 calc(var(--t) * -1) 0 var(--state-candidate))
+    drop-shadow(var(--t) 0 0 var(--state-ink)) drop-shadow(calc(var(--t) * -1) 0 0 var(--state-ink))
+    drop-shadow(0 var(--t) 0 var(--state-ink)) drop-shadow(0 calc(var(--t) * -1) 0 var(--state-ink))
+    drop-shadow(0 calc(var(--t) * 4) calc(var(--t) * 3) rgb(20 16 38 / 0.45));
 }
 .token-face {
   position: absolute;
@@ -322,6 +352,13 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 /* Board hexes: the hex art with its pieces laid over the clear lower part */
 .hex { position: relative; flex: none; }
 .hex > .sprite { position: absolute; inset: 0; }
+/* Target states: the candidate and hovered art (a ring outside the hex, on a
+   larger canvas) sit over the tile at -pad; CSS picks which one shows. */
+.hex > .hex-state { position: absolute; display: none; image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: none; }
+.hex.is-candidate { cursor: pointer; }
+.hex.is-candidate > .hex-state-candidate { display: block; }
+.hex.is-candidate:hover > .hex-state-candidate, .hex.is-candidate.is-hovered > .hex-state-candidate { display: none; }
+.hex.is-candidate:hover > .hex-state-hover, .hex.is-candidate.is-hovered > .hex-state-hover { display: block; }
 .hex-pieces { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .hex-pieces .stack-row { flex-wrap: nowrap; gap: 4px; justify-content: center; }
 .hex-pieces .token-stack > * + * { margin-left: calc(var(--w) * -0.66); }

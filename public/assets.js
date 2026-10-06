@@ -6,7 +6,7 @@
  */
 import { spec } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
-import { tokenHtml, cubeHtml, SEAT_COLOURS } from './pieces.js';
+import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { LAYOUT_SUGGESTIONS } from './layout-suggestions.js';
 
 const SCALES = [1, 3, 6];
@@ -72,18 +72,10 @@ function render() {
     [1, 2, 3, 4].map((scale) => fig(tokenHtml(entry.id, scale), `${scale}×`)).join('')));
   const cubeCards = SEAT_COLOURS.map((colour, i) => card(`Seat ${i + 1} <span class="mono muted">${esc(colour)}</span>`,
     [12, 16, 22].map((size) => fig(cubeHtml(colour, size), `${size}px`)).join('')));
-  /** @typedef {{ width: number, height: number, src: string, pieces: { x: number, y: number, w: number, h: number } }} Hex */
-  const hexes = /** @type {Record<string, Hex>} */ (art.hexes ?? {});
-  /** @param {string} id @param {number} scale @param {string} inner */
-  const hexHtml = (id, scale, inner) => {
-    const hex = hexes[id];
-    if (!hex) return '';
-    const p = hex.pieces;
-    return `<div class="hex" style="width:${hex.width * scale}px;height:${hex.height * scale}px">
-      <img class="sprite" src="${esc(hex.src)}" width="${hex.width * scale}" height="${hex.height * scale}" alt="">
-      <div class="hex-pieces" style="left:${p.x * scale}px;top:${p.y * scale}px;width:${p.w * scale}px;height:${p.h * scale}px">${inner}</div>
-    </div>`;
-  };
+  /** @typedef {{ width: number, height: number, src: string }} HexArt */
+  const hexes = /** @type {Record<string, HexArt>} */ (art.hexes ?? {});
+  /** @type {[import('./pieces.js').TargetState, string][]} */
+  const STATES = [['', 'normal'], ['candidate', 'candidate'], ['hovered', 'hovered']];
   const smallStack = (/** @type {string} */ id, /** @type {number} */ n) => `<span class="token-stack">${Array.from({ length: n }, () => tokenHtml(id, 1)).join('')}</span>`;
   const hexPieces = `<div class="stack-row">${smallStack('possessed', 4)}${smallStack('aliens', 2)}</div><div class="cube-row">${Array.from({ length: 3 }, () => cubeHtml(SEAT_COLOURS[0], 9)).join('')}${cubeHtml(SEAT_COLOURS[2], 9)}</div>`;
   /** One suggested board: hex tiles at their axial positions. Each region is
@@ -176,6 +168,20 @@ function render() {
       <div class="row-between"><h2>Presence tokens</h2><span class="small muted">CSS card, pixel-art face</span></div>
       <p class="small muted">A cardboard token cut to the art's outline. The outline comes from <span class="mono">assets/sprites.py</span>; the card, edge and shadow are CSS.</p>
       <div class="asset-grid">${tokenCards.join('')}</div>
+    </section>
+    <section class="panel">
+      <div class="row-between"><h2>Target states</h2><span class="small muted">normal · candidate · hovered</span></div>
+      <p class="small muted">How a location or a token shows when a card can target it. A candidate gets a gold ring; the candidate under the pointer gets a white-and-gold ring and lifts. Hex states are pixel art from <span class="mono">assets/sprites.py</span>; token states are CSS.</p>
+      <h3>Try it</h3>
+      <p class="small muted">These are live candidates: hover them.</p>
+      <div class="hex-grid">${['graveyard', 'lighthouse', 'mine'].map((id) => hexHtml(id, 2, '', 'candidate')).join('')}
+        <div class="stack-row">${['zombies', 'aliens', 'vampires'].map((id) => tokenHtml(id, 3, 'candidate')).join('')}</div></div>
+      <h3>Locations</h3>
+      <div class="asset-grid">${spec.locations.map((loc) => card(`${esc(symbols.get(loc.archetype) ?? '')} ${esc(loc.name)}`,
+        STATES.map(([state, label]) => fig(hexHtml(loc.id, 2, '', state), label)).join(''))).join('')}</div>
+      <h3>Presence tokens</h3>
+      <div class="asset-grid">${spec.factions.map((entry) => card(`${esc(symbols.get(entry.archetype) ?? '')} ${esc(entry.name)}`,
+        STATES.map(([state, label]) => fig(tokenHtml(entry.id, 2, state), label)).join(''))).join('')}</div>
     </section>
     <section class="panel">
       <div class="row-between"><h2>Influence cubes</h2><span class="small muted">seat colours: red, gold, cyan, lime, pink</span></div>

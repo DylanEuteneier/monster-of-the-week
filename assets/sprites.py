@@ -710,6 +710,39 @@ def hex_rgb(h):
     return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
 
 
+# Target states for board hexes (2026-10-06): a hex that can be chosen as a
+# card's target is a *candidate*; the candidate under the pointer is
+# *hovered*. The tile art is unchanged (its archetype border still shows);
+# each state adds a ring drawn outside the hex, on a canvas STATE_PAD pixels
+# larger on every side, so the state image sits at -STATE_PAD.
+STATE_PAD = 4
+HEX_STATES = {
+    # rings from the hex outward; the hovered tile is also lifted one pixel
+    "candidate": {"rings": ["y", "y", "k"], "lift": 0},
+    "hover": {"rings": ["w", "w", "y", "k"], "lift": 1},
+}
+
+
+def hex_state(rows, state):
+    spec = HEX_STATES[state]
+    P = STATE_PAD
+    W, H = len(rows[0]) + 2 * P, len(rows) + 2 * P
+    g = [["." for _ in range(W)] for _ in range(H)]
+    inside = {(x + P, y + P - spec["lift"]) for y, r in enumerate(rows) for x, ch in enumerate(r) if ch != "."}
+    ring, seen = set(inside), set(inside)
+    for colour in spec["rings"]:                       # grow one ring at a time
+        ring = {(x + dx, y + dy) for x, y in ring for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                if 0 <= x + dx < W and 0 <= y + dy < H} - seen
+        for x, y in ring:
+            g[y][x] = colour
+        seen |= ring
+    for y, r in enumerate(rows):
+        for x, ch in enumerate(r):
+            if ch != ".":
+                g[y + P - spec["lift"]][x + P] = ch
+    return ["".join(r) for r in g]
+
+
 def write_png(path, pixels, width, height):
     raw = b"".join(b"\x00" + bytes(c for px in row for c in px) for row in pixels)
 
@@ -785,11 +818,14 @@ def build():
         sprite_png(headers / f"{name}.png", rows)
     hexes = public / "hexes"
     hexes.mkdir(parents=True, exist_ok=True)
+    keep = set(HEXES) | {f"scheme-{n}" for n in HEX_SCHEMES} | {f"{n}-{s}" for n in HEXES for s in HEX_STATES}
     for stale in hexes.glob("*.png"):
-        if stale.stem not in HEXES and stale.stem.removeprefix("scheme-") not in HEX_SCHEMES:
+        if stale.stem not in keep:
             stale.unlink()
     for name, rows in HEXES.items():
         sprite_png(hexes / f"{name}.png", rows)
+        for state in HEX_STATES:
+            sprite_png(hexes / f"{name}-{state}.png", hex_state(rows, state))
     for name, rows in HEX_SCHEMES.items():
         sprite_png(hexes / f"scheme-{name}.png", rows)
     symbols = public / "symbols"
@@ -815,7 +851,9 @@ def build():
             name: {"pad": TOKEN_PAD, "width": len(SPRITES[name][0]) + 2 * TOKEN_PAD, "height": len(SPRITES[name]) + 2 * TOKEN_PAD, "src": f"/assets/tokens/{name}.svg", "art": f"/assets/sprites/{name}.png"}
             for name in TOKEN_SOURCES
         },
-        "hexes": {name: {"width": len(rows[0]), "height": len(rows), "src": f"/assets/hexes/{name}.png", "pieces": HEX_PIECES} for name, rows in HEXES.items()},
+        "hexes": {name: {"width": len(rows[0]), "height": len(rows), "src": f"/assets/hexes/{name}.png", "pieces": HEX_PIECES,
+                         "states": {state: {"src": f"/assets/hexes/{name}-{state}.png", "pad": STATE_PAD} for state in HEX_STATES}}
+                  for name, rows in HEXES.items()},
         "symbols": {arch: {"width": len(rows[0]), "height": len(rows), "src": f"/assets/symbols/{arch}.png"} for arch, rows in ARCHETYPE_SYMBOLS.items()},
         "board": {"width": len(board_rows[0]), "height": len(board_rows), "src": "/assets/board/d.png", "tiles": board_tiles},
         "headers": {name: {"width": len(rows[0]), "height": len(rows), "src": f"/assets/headers/{name}.png"} for name, rows in HEADERS.items()},

@@ -613,6 +613,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/lighthouse-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/lighthouse-hover.png",
+     "pad": 4
+    }
    }
   },
   "caves": {
@@ -624,6 +634,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/caves-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/caves-hover.png",
+     "pad": 4
+    }
    }
   },
   "lake-house": {
@@ -635,6 +655,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/lake-house-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/lake-house-hover.png",
+     "pad": 4
+    }
    }
   },
   "military-facility": {
@@ -646,6 +676,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/military-facility-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/military-facility-hover.png",
+     "pad": 4
+    }
    }
   },
   "weather-station": {
@@ -657,6 +697,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/weather-station-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/weather-station-hover.png",
+     "pad": 4
+    }
    }
   },
   "state-park": {
@@ -668,6 +718,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/state-park-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/state-park-hover.png",
+     "pad": 4
+    }
    }
   },
   "sawmill": {
@@ -679,6 +739,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/sawmill-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/sawmill-hover.png",
+     "pad": 4
+    }
    }
   },
   "mine": {
@@ -690,6 +760,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/mine-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/mine-hover.png",
+     "pad": 4
+    }
    }
   },
   "graveyard": {
@@ -701,6 +781,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/graveyard-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/graveyard-hover.png",
+     "pad": 4
+    }
    }
   },
   "ski-resort": {
@@ -712,6 +802,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/ski-resort-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/ski-resort-hover.png",
+     "pad": 4
+    }
    }
   },
   "fallout-bunker": {
@@ -723,6 +823,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/fallout-bunker-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/fallout-bunker-hover.png",
+     "pad": 4
+    }
    }
   },
   "occult-camp": {
@@ -734,6 +844,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/occult-camp-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/occult-camp-hover.png",
+     "pad": 4
+    }
    }
   },
   "shipping-docks": {
@@ -745,6 +865,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/shipping-docks-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/shipping-docks-hover.png",
+     "pad": 4
+    }
    }
   },
   "junkyard": {
@@ -756,6 +886,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/junkyard-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/junkyard-hover.png",
+     "pad": 4
+    }
    }
   },
   "beach-city": {
@@ -767,6 +907,16 @@
     "y": 22,
     "w": 46,
     "h": 24
+   },
+   "states": {
+    "candidate": {
+     "src": "/assets/hexes/beach-city-candidate.png",
+     "pad": 4
+    },
+    "hover": {
+     "src": "/assets/hexes/beach-city-hover.png",
+     "pad": 4
+    }
    }
   }
  },
