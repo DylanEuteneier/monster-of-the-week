@@ -449,3 +449,5 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .supply-row { display: flex; flex-wrap: wrap; align-items: flex-end; max-width: 220px; row-gap: 2px; }
 .supply-row > .token + .token { margin-left: -14px; }
 .supply-row.cubes { gap: 1px; }
+.standing-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; max-width: 220px; min-height: 12px; }
+.standing-group { display: inline-flex; gap: 1px; }

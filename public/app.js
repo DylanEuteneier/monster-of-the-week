@@ -237,13 +237,12 @@ function renderPlayers() {
   const rows = view.seating.map((id) => {
     const p = view.players[id];
     const group = spec.slayerGroups.find((g) => g.id === p.group);
-    const standing = view.factions.filter((f) => p.standing[f]).map((f) => `${esc(SUIT.get(factionById(f).archetype) ?? '')} ${p.standing[f]}`).join(' · ');
     return `
       <div class="player ${id === view.you ? 'player-you' : ''}">
         <span class="swatch" style="background:${colourOf(id)}"></span>
         <span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${id === view.you ? ' <span class="muted small">(you)</span>' : ''}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}
           <span class="small muted">${esc(SUIT.get(group?.archetype ?? '') ?? '')} ${esc(group?.name ?? '')}</span>
-          <span class="small">standing ${standing || '—'} · trophies ${p.trophyCount}</span>
+          <span class="small">trophies ${p.trophyCount}</span>
           <span class="supply-row cubes" title="${p.supply} in supply">${Array.from({ length: p.supply }, () => cubeHtml(colourOf(id), 8)).join('')}</span></span>
         <span class="player-status">${esc(playerStatus(id))}</span>
       </div>`;
@@ -299,7 +298,15 @@ function renderBoard() {
   });
   const presence = view.factions.map((f) => Object.values(view.board).reduce((n, pl) => n + (pl.cubes[f] ?? 0), 0));
   const total = presence.reduce((a, b) => a + b, 0);
-  const factions = view.factions.map((f, i) => `<div class="faction-chip"><span class="faction-name">${esc(fname(f))} <b>${presence[i]}</b> on the island</span><span class="supply-row" title="${view.supply[f]} in supply">${Array.from({ length: view.supply[f] }, () => tokenHtml(f, 1)).join('')}</span></div>`).join('');
+  /** Each player's standing with a faction, as cubes in their colour (IF1: influence is public). @param {string} f */
+  const standingRow = (f) => view.seating.filter((pid) => (view.players[pid].standing[f] ?? 0) > 0)
+    .map((pid) => `<span class="standing-group" title="${esc(pid)}: ${view.players[pid].standing[f]}">${Array.from({ length: view.players[pid].standing[f] }, () => cubeHtml(colourOf(pid), 8)).join('')}</span>`).join('');
+  const factions = view.factions.map((f, i) => `<div class="faction-chip">
+      <span class="faction-name">${esc(fname(f))} <b>${presence[i]}</b> on the island</span>
+      <span class="supply-row" title="${view.supply[f]} in supply">${Array.from({ length: view.supply[f] }, () => tokenHtml(f, 1)).join('')}</span>
+      <span class="small muted">influence</span>
+      <span class="standing-row">${standingRow(f) || '<span class="small muted">none yet</span>'}</span>
+    </div>`).join('');
   $('board').innerHTML = `
     <h2>The island</h2>
     <p class="small">Total presence <b>${total}</b> · the invaders win if it is more than <b>${esc(view.options.threshold)}</b> at the end.</p>
