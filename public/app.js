@@ -316,7 +316,7 @@ function piecesAt(loc, lit) {
     const tokens = Array.from({ length: n }, () => tokenHtml(f, 1, on ? 'candidate' : '')).join('');
     return `<span class="token-stack piece-row"${on ? ` data-action="pick-group" data-location="${esc(loc)}" data-faction="${esc(f)}"` : ''} title="${n} ${esc(fname(f))}">${tokens}</span>`;
   });
-  const cubes = Object.entries(place.influence).filter(([, n]) => n > 0)
+  const cubes = Object.entries(place.influence).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
     .flatMap(([pid, n]) => Array.from({ length: n }, () => cubeHtml(colourOf(pid), 8))).join('');
   const token = place.token ? `<span class="hidden-token" style="--owner:${colourOf(place.token.owner)}" title="a face-down token"></span>` : '';
   return `${rows.join('')}<span class="cube-row piece-row">${cubes}${token}</span>`;
@@ -330,7 +330,8 @@ function factionTable(lit) {
     const arch = spec.archetypes.find((a) => a.id === faction.archetype);
     const onIsland = Object.values(view.board).reduce((n, pl) => n + (pl.cubes[f] ?? 0), 0);
     const best = Math.max(0, ...view.seating.map((pid) => view.players[pid].standing[f] ?? 0));
-    const influence = view.seating.filter((pid) => (view.players[pid].standing[f] ?? 0) > 0).map((pid) => {
+    const influence = view.seating.filter((pid) => (view.players[pid].standing[f] ?? 0) > 0)
+      .sort((a, b) => view.players[b].standing[f] - view.players[a].standing[f]).map((pid) => {
       const n = view.players[pid].standing[f];
       return `<span class="standing-group${n === best ? ' is-leading' : ''}" title="${esc(pid)}: ${n}">${Array.from({ length: n }, () => cubeHtml(colourOf(pid), 8)).join('')}</span>`;
     }).join('');
