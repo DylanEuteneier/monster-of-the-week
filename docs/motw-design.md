@@ -887,7 +887,7 @@ Actual changes to mechanisms and game structure.
 | **Growth threshold** | *(Idea.)* The number of cubes a faction needs at a location to grow there at round end. Provisionally 2. |
 | **Hidden action** | *(Idea.)* One of a select few actions, such as setting a trap, that places a hidden token on a location, allowing bluffing or misdirection. |
 | **Hidden token** | *(Idea.)* A token placed blind side up on a location by a hidden action. Everyone can see it and who placed it. Its face stays hidden until the location resolves, when it flips and takes part. |
-| **Home location** | *(Idea.)* The location a faction starts on with its largest group. One of its archetype's three locations. |
+| **Home location** | *(Idea.)* The location a faction starts on with its largest group. One of its archetype's three locations, drawn at random in the first draft. |
 | **Host page** | The prototype page where a game is started: seats are named, options and bots chosen, and the magic links copied. |
 | **Humanoid faction** | *(Idea.)* A faction whose battles can give rise to Undead. Which factions are humanoid is not yet defined. |
 | **Influence** | *(Idea.)* A player's standing with a faction. Public. Held with several factions at once. It can be spent from a faction and placed on a location, where it counts toward collecting trophies. |
@@ -908,13 +908,14 @@ Actual changes to mechanisms and game structure.
 | **Round** | One full cycle of the phases. |
 | **Ruleset** | A sample selection of candidates that could be played together, built to show one character of game, such as the lightest rules. Listed in Appendix E. |
 | **Runner-up** | *(Idea.)* The player with the second most influence at a location. |
-| **Scorched earth** | *(Idea.)* A location removed from play for the rest of the game after a tied fight there. |
+| **Scorched earth** | *(Idea.)* A location removed from play for the rest of the game after a true tie there. Everything on it returns to its supply. A region whose locations are all scorched is impassable. |
 | **Seat** | One player's place in a prototype game, reached through its magic link. |
 | **Slayer group** | What a player plays: one of five groups of characters modelled on a monster-of-the-week trope, each linked to one archetype. |
 | **Slot** | A question the game has to answer, such as how a fight resolves. Candidates in the same slot share a two-letter prefix. |
 | **Supply** | *(First draft.)* Where a cube waits off the board. Each colour has one supply: a player's cubes return to that player, to be placed again with later actions; a faction's cubes return to that faction, to be placed again later. No piece is ever removed from the game entirely. |
 | **Standing tie** | *(Idea.)* A tie between players that is not broken. |
 | **Tied fight** | *(Idea.)* A fight between two groups of the same size. Both are wiped out, unless one of the factions has affinity for the location, in which case it wins. |
+| **True tie** | *(First draft.)* A tied fight at a location aligned with neither faction. Both groups are wiped out, nobody is rewarded, and the location is scorched. |
 | **Trophy** | *(Idea.)* A cube removed in a fight as a casualty and kept by a player. |
 | **Two-faction limit** | *(Idea.)* The rule that a location can hold at most two factions. |
 | **Volatility** | *(Idea.)* The number of cubes present at a location. When it reaches a threshold, the location boils over. |
