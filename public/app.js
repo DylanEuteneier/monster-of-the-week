@@ -10,7 +10,7 @@
  * are chosen on the board one step at a time: each step's candidates are
  * spotlit (hexes) or lit gold (tokens), and the server checks the result.
  */
-import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice } from './engine.js';
+import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice, pendingDestinations } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml } from './pieces.js';
 
@@ -65,6 +65,11 @@ const ui = {
   target: {},
   /** table talk lines arrived while the overlay was closed */
   unread: 0,
+  /** a response waiting for its location to be clicked (Never Invite Them In) */
+  /** @type {string | null} */
+  responding: null,
+  /** draft: how many cards were kept when ui.keep was last reset */
+  keepFor: -1,
 };
 
 // ---------------------------------------------------------------------------
@@ -169,6 +174,8 @@ function resetDrafts(phaseKey) {
   ui.keep = [];
   ui.choosing = null;
   ui.target = {};
+  ui.responding = null;
+  ui.keepFor = -1;
 }
 
 /** @param {ChatLine[]} lines @param {boolean} reset */
@@ -254,27 +261,60 @@ function renderPlayers() {
 // Rendering — the island
 // ---------------------------------------------------------------------------
 
-/** The step being chosen on the board, if a target is being built. */
-function currentChoice() {
+/** @typedef {import('./engine.js').Target} Target */
+
+/** The step being chosen, if a target is being built. @param {Target} [t] */
+function currentChoice(t = ui.target) {
   const view = ui.view;
   if (!view || !ui.choosing) return null;
-  return nextChoice(/** @type {any} */ (view), view.you, ui.choosing, ui.target);
+  return nextChoice(/** @type {any} */ (view), view.you, ui.choosing, t);
+}
+
+/**
+ * What can be clicked on the board and the faction table right now: places,
+ * groups (a faction at a location) and factions. While a suit card's reading
+ * is still open, both readings' candidates show at once and the click decides.
+ */
+function picks() {
+  const view = ui.view;
+  /** @type {{ spots: string[], groups: { location: string, faction: string }[], factions: string[] }} */
+  const out = { spots: [], groups: [], factions: [] };
+  if (!view) return out;
+  if (view.phase === 'growth' && view.growing && view.growing.leaders[view.growing.next % view.growing.leaders.length] === view.you) {
+    out.spots = Object.keys(view.growing.due);
+    return out;
+  }
+  if (ui.responding && view.pending) {
+    out.spots = pendingDestinations(/** @type {any} */ (view), view.pending).filter((l) => (view.board[l].influence[view.you] ?? 0) > 0 && !view.pending?.blocked.includes(l));
+    return out;
+  }
+  const choice = currentChoice();
+  if (!choice) return out;
+  const steps = choice.kind === 'mode'
+    ? [currentChoice({ ...ui.target, mode: 'location' }), currentChoice({ ...ui.target, mode: 'faction' })]
+    : [choice];
+  for (const c of steps) {
+    if (!c) continue;
+    if (c.kind === 'location' || c.kind === 'split') out.spots.push(...c.options);
+    if (c.kind === 'group') out.groups.push(...c.options);
+    if (c.kind === 'faction') out.factions.push(...c.options);
+  }
+  return out;
 }
 
 /**
  * The pieces on one hex, as repeated pieces in rows: each faction's tokens in
  * its own row (a location holds at most two factions, LL1), then the
  * players' influence cubes. A candidate group's row is lit and clickable.
- * @param {string} loc @param {ReturnType<typeof currentChoice>} choice
+ * @param {string} loc @param {ReturnType<typeof picks>} lit
  */
-function piecesAt(loc, choice) {
+function piecesAt(loc, lit) {
   const view = /** @type {PlayerView} */ (ui.view);
   const place = view.board[loc];
-  const groupPick = choice && choice.kind === 'group' ? choice.options : [];
   const rows = Object.entries(place.cubes).filter(([, n]) => n > 0).map(([f, n]) => {
-    const lit = groupPick.some((g) => g.location === loc && g.faction === f);
-    const tokens = Array.from({ length: n }, () => tokenHtml(f, 1, lit ? 'candidate' : '')).join('');
-    return `<span class="token-stack piece-row"${lit ? ` data-action="pick-group" data-location="${esc(loc)}" data-faction="${esc(f)}"` : ''} title="${n} ${esc(fname(f))}">${tokens}</span>`;
+    const on = lit.groups.some((g) => g.location === loc && g.faction === f);
+    const tokens = Array.from({ length: n }, () => tokenHtml(f, 1, on ? 'candidate' : '')).join('');
+    return `<span class="token-stack piece-row"${on ? ` data-action="pick-group" data-location="${esc(loc)}" data-faction="${esc(f)}"` : ''} title="${n} ${esc(fname(f))}">${tokens}</span>`;
   });
   const cubes = Object.entries(place.influence).filter(([, n]) => n > 0)
     .flatMap(([pid, n]) => Array.from({ length: n }, () => cubeHtml(colourOf(pid), 8))).join('');
@@ -282,35 +322,49 @@ function piecesAt(loc, choice) {
   return `${rows.join('')}<span class="cube-row piece-row">${cubes}${token}</span>`;
 }
 
+/** The faction summaries: one row per faction in play. @param {ReturnType<typeof picks>} lit */
+function factionTable(lit) {
+  const view = /** @type {PlayerView} */ (ui.view);
+  const rows = view.factions.map((f) => {
+    const faction = factionById(f);
+    const arch = spec.archetypes.find((a) => a.id === faction.archetype);
+    const onIsland = Object.values(view.board).reduce((n, pl) => n + (pl.cubes[f] ?? 0), 0);
+    const best = Math.max(0, ...view.seating.map((pid) => view.players[pid].standing[f] ?? 0));
+    const influence = view.seating.filter((pid) => (view.players[pid].standing[f] ?? 0) > 0).map((pid) => {
+      const n = view.players[pid].standing[f];
+      return `<span class="standing-group${n === best ? ' is-leading' : ''}" title="${esc(pid)}: ${n}">${Array.from({ length: n }, () => cubeHtml(colourOf(pid), 8)).join('')}</span>`;
+    }).join('');
+    const on = lit.factions.includes(f);
+    return `<div class="faction-row${on ? ' is-candidate' : ''}"${on ? ` data-action="pick-faction" data-faction="${esc(f)}"` : ''}>
+      <span class="faction-id">${tokenHtml(f, 2, on ? 'candidate' : '')}<span><b>${esc(faction.name)}</b><span class="small muted">${esc(arch?.symbol ?? '')} ${esc(arch?.name ?? '')}</span></span></span>
+      <span class="faction-count"><b>${onIsland}</b><span class="small muted">on the island</span></span>
+      <span class="supply-row" title="${view.supply[f]} in supply">${Array.from({ length: view.supply[f] }, () => tokenHtml(f, 1)).join('')}</span>
+      <span class="standing-row">${influence || '<span class="small muted">—</span>'}</span>
+    </div>`;
+  });
+  return `<div class="faction-table">
+    <div class="faction-row faction-head small muted"><span>Faction</span><span>Presence</span><span>Supply</span><span>Influence (players' standing)</span></div>
+    ${rows.join('')}</div>`;
+}
+
 function renderBoard() {
   const view = ui.view;
   if (!view) return;
   const board = /** @type {{ width: number, height: number, src: string, tiles: { loc: string, region: string, x: number, y: number }[] } | undefined} */ (art.board);
   const S = 2;
-  const choice = currentChoice();
-  const spots = choice && (choice.kind === 'location' || choice.kind === 'split') ? choice.options : [];
+  const lit = picks();
   const chosen = new Set([ui.target.location, ui.target.to, ui.target.bluff, ...(ui.target.path ?? []), ...(ui.target.from ?? []), ...Object.keys(ui.target.split ?? {})].filter(Boolean));
   const tiles = (board?.tiles ?? []).map((t) => {
     const place = view.board[t.loc];
-    const lit = spots.includes(t.loc);
-    const state = lit ? 'candidate' : chosen.has(t.loc) ? 'hovered' : '';
-    return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}"${lit ? ` data-action="pick-location" data-location="${esc(t.loc)}"` : ''} title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? '<b>scorched</b>' : piecesAt(t.loc, choice), /** @type {import('./pieces.js').TargetState} */ (state))}</div>`;
+    const on = lit.spots.includes(t.loc);
+    const state = on ? 'candidate' : ui.choosing && chosen.has(t.loc) ? 'hovered' : '';
+    return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}"${on ? ` data-action="pick-location" data-location="${esc(t.loc)}"` : ''} title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? '<b>scorched</b>' : piecesAt(t.loc, lit), /** @type {import('./pieces.js').TargetState} */ (state))}</div>`;
   });
-  const presence = view.factions.map((f) => Object.values(view.board).reduce((n, pl) => n + (pl.cubes[f] ?? 0), 0));
-  const total = presence.reduce((a, b) => a + b, 0);
-  /** Each player's standing with a faction, as cubes in their colour (IF1: influence is public). @param {string} f */
-  const standingRow = (f) => view.seating.filter((pid) => (view.players[pid].standing[f] ?? 0) > 0)
-    .map((pid) => `<span class="standing-group" title="${esc(pid)}: ${view.players[pid].standing[f]}">${Array.from({ length: view.players[pid].standing[f] }, () => cubeHtml(colourOf(pid), 8)).join('')}</span>`).join('');
-  const factions = view.factions.map((f, i) => `<div class="faction-chip">
-      <span class="faction-name">${esc(fname(f))} <b>${presence[i]}</b> on the island</span>
-      <span class="supply-row" title="${view.supply[f]} in supply">${Array.from({ length: view.supply[f] }, () => tokenHtml(f, 1)).join('')}</span>
-      <span class="small muted">influence</span>
-      <span class="standing-row">${standingRow(f) || '<span class="small muted">none yet</span>'}</span>
-    </div>`).join('');
+  const total = Object.values(view.board).reduce((n, pl) => n + Object.values(pl.cubes).reduce((a, b) => a + b, 0), 0);
   $('board').innerHTML = `
     <h2>The island</h2>
-    <p class="small">Total presence <b>${total}</b> · the invaders win if it is more than <b>${esc(view.options.threshold)}</b> at the end.</p>
-    <div class="inline">${factions}</div>
+    <p class="small">Total presence <b>${total}</b> · the invaders win if it is more than <b>${esc(view.options.threshold)}</b> at the end of round ${view.rounds}.</p>
+    ${factionTable(lit)}
     ${board ? `<div class="board" style="width:${board.width * S}px;height:${board.height * S}px"><img class="sprite" src="${esc(board.src)}" width="${board.width * S}" height="${board.height * S}" alt="The island" style="position:absolute;left:0;top:0">${tiles.join('')}</div>` : ''}`;
 }
 
@@ -318,17 +372,47 @@ function renderBoard() {
 // Rendering — cards and the phase panel
 // ---------------------------------------------------------------------------
 
-/** @param {string} id @param {string} [actions] @param {boolean} [ticked] */
-function cardHtml(id, actions = '', ticked = false) {
+/**
+ * Could this response card fire right now? Mirrors the engine's triggers from
+ * the public view; the server has the final say.
+ * @param {PlayerView} view @param {string} cardId
+ */
+function responseReady(view, cardId) {
+  const r = cardById(cardId).response;
+  if (!r || view.phase !== 'play') return false;
+  const pend = view.pending;
+  const others = (/** @type {string} */ type) => view.events.some((e) => e.type === type && e.player !== view.you);
+  switch (r.trigger) {
+    case 'card-played': return !!pend && pend.player !== view.you && !pend.cancelled;
+    case 'move-into-your-location': return !!pend && pend.player !== view.you && !pend.cancelled
+      && pendingDestinations(/** @type {any} */ (view), pend).some((l) => (view.board[l].influence[view.you] ?? 0) > 0 && !pend.blocked.includes(l));
+    case 'token-placed': return others('token-placed');
+    case 'influence-spent': return others('influence-spent');
+    case 'influence-placed': return others('influence-placed');
+    case 'pass': return others('pass');
+    default: return false;
+  }
+}
+
+/**
+ * A card. `mode` says what clicking it does: 'act' (play its action),
+ * 'respond' (fire its response), 'keep' (draft), or '' (nothing).
+ * @param {string} id @param {{ mode?: '' | 'act' | 'respond' | 'keep', ticked?: boolean, influence?: boolean }} [o]
+ */
+function cardHtml(id, o = {}) {
   const c = cardById(id);
   const suit = spec.archetypes.find((a) => a.id === c.suit);
-  const band = c.suit ? `<span>${esc(suit?.symbol ?? '')} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)} · +${c.influence}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
-  return `<div class="card card-suit-${esc(c.suit ?? 'none')} ${ticked ? 'card-ticked' : ''}" data-card="${esc(id)}">
+  const band = c.suit ? `<span>${esc(suit?.symbol ?? '')} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
+  const influence = c.suit ? (o.influence
+    ? `<span class="card-influence" data-action="influence" data-card="${esc(id)}" title="Spend for ${c.influence} influence with the ${esc(suit?.name ?? '')} faction">+${c.influence}</span>`
+    : `<span class="card-influence is-off">+${c.influence}</span>`) : '';
+  const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : ''].filter(Boolean).join(' ');
+  return `<div class="${classes}" data-card="${esc(id)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
     <div class="card-band">${band}</div>
+    ${influence}
     <span class="card-name">${esc(c.name)}</span>
     <p class="small">${esc(c.text)}</p>
     ${c.response ? `<p class="small card-response"><b>Response, ${esc(c.response.timing)}: ${esc(c.response.name)}.</b> ${esc(c.response.text)}</p>` : ''}
-    ${actions}
   </div>`;
 }
 
@@ -357,67 +441,58 @@ function renderDraft() {
   if (me.picked) return `<h2>Draft</h2>${waitingFor('You have picked.')}<div class="cards">${me.kept.map((c) => cardHtml(c)).join('')}</div>`;
   const need = me.kept.length + 1;
   const pool = [...me.kept, ...me.batch];
+  if (ui.keepFor !== me.kept.length) {
+    ui.keep = me.kept.slice();
+    ui.keepFor = me.kept.length;
+  }
   ui.keep = ui.keep.filter((c) => pool.includes(c));
   return `<h2>Draft</h2>
-    <p class="small">Keep <b>${need}</b> of these: your kept cards rejoin the batch each pass (DR3). ${ui.keep.length}/${need} chosen.</p>
-    <div class="cards">${pool.map((c) => cardHtml(c, '', ui.keep.includes(c))).join('')}</div>
-    <button class="btn btn-primary" data-action="pick" ${ui.keep.length === need ? '' : 'disabled'}>Keep these</button>`;
+    <p class="small">Click the card to keep. You keep <b>${need}</b> this pass: your kept cards are ticked; untick one to swap it for a new card.</p>
+    <div class="cards">${pool.map((c) => cardHtml(c, { mode: 'keep', ticked: ui.keep.includes(c) })).join('')}</div>`;
 }
 
 function renderPlay() {
   const view = /** @type {PlayerView} */ (ui.view);
   const me = view.me;
   const pending = view.pending;
-  const responses = me.hand.filter((c) => cardById(c).response);
-  const respondBar = responses.length ? `<div class="stack"><b class="small">Responses (play at any time)</b>${responses.map((c) => {
-    const r = /** @type {NonNullable<ReturnType<typeof cardById>['response']>} */ (cardById(c).response);
-    const where = r.trigger === 'move-into-your-location' && pending?.target ? Object.keys(view.board).filter((l) => (view.board[l].influence[view.you] ?? 0) > 0) : [];
-    return where.length
-      ? where.map((l) => `<button class="btn" data-action="respond" data-card="${esc(c)}" data-location="${esc(l)}">${esc(r.name)}: ${esc(locationById(l).name)}</button>`).join('')
-      : `<button class="btn" data-action="respond" data-card="${esc(c)}">${esc(r.name)}</button>`;
-  }).join('')}</div>` : '';
-  if (pending) {
-    const line = `<p><b>${esc(pending.player)}</b> plays <b>${esc(cardById(pending.card).name)}</b>: ${esc(describeTarget(pending.card, pending.target))}${pending.cancelled ? ' (cancelled)' : ''}${pending.blocked.length ? ` · blocked: ${pending.blocked.map((l) => esc(locationById(l).name)).join(', ')}` : ''}</p>`;
-    return `<h2>Play</h2>${line}${pending.player === view.you ? '<button class="btn btn-primary" data-action="confirm">Confirm</button>' : waitingFor('Answer with a response now, or let it resolve.')}${respondBar}`;
-  }
-  if (view.toAct !== view.you) return `<h2>Play</h2>${waitingFor('')}<div class="cards">${me.hand.map((c) => cardHtml(c)).join('')}</div>${respondBar}`;
-  if (ui.choosing) return renderTargeting(ui.choosing);
+  const ready = me.hand.filter((c) => responseReady(view, c));
+  const myTurn = view.toAct === view.you && !pending;
   const mustOpen = view.first === view.you && !view.opened && me.hand.some((c) => cardById(c).marked);
-  const buttons = (/** @type {string} */ c) => {
+  if (myTurn && ui.choosing) return renderTargeting(ui.choosing);
+  const hand = me.hand.map((c) => {
     const card = cardById(c);
-    return `<div class="inline">${card.action ? `<button class="btn btn-primary" data-action="act" data-card="${esc(c)}">Action</button>` : ''}${card.suit && !mustOpen ? `<button class="btn" data-action="influence" data-card="${esc(c)}">Influence +${card.influence}</button>` : ''}</div>`;
-  };
-  return `<h2>Your turn</h2>${mustOpen ? '<p class="small">You go first: open with your marked card.</p>' : ''}
-    <div class="cards">${me.hand.map((c) => cardHtml(c, buttons(c))).join('')}</div>
-    <button class="btn" data-action="pass">Pass</button>${respondBar}`;
+    const canAct = myTurn && !!card.action && (!mustOpen || !!card.marked);
+    const mode = ready.includes(c) ? 'respond' : canAct ? 'act' : '';
+    return cardHtml(c, { mode, influence: myTurn && !mustOpen && !!card.suit });
+  }).join('');
+  let head;
+  if (ui.responding) head = `<p>Click the location to block on the board.</p><button class="btn" data-action="back">Back</button>`;
+  else if (pending) {
+    head = `<p><b>${esc(pending.player)}</b> plays <b>${esc(cardById(pending.card).name)}</b>: ${esc(describeTarget(pending.card, pending.target))}${pending.cancelled ? ' (cancelled)' : ''}${pending.blocked.length ? ` · blocked: ${pending.blocked.map((l) => esc(locationById(l).name)).join(', ')}` : ''}</p>`
+      + (pending.player === view.you ? '<button class="btn btn-primary" data-action="confirm">Let it resolve</button>' : waitingFor('Click a glowing card to answer it, or let it resolve.'));
+  } else if (myTurn) head = `<p>${mustOpen ? 'You go first: click your marked card to open the round.' : 'Click a card to play its action, or its corner badge to spend it for influence.'}</p><button class="btn" data-action="pass">Pass</button>`;
+  else head = waitingFor(ready.length ? 'Click a glowing card to answer.' : '');
+  return `<h2>${myTurn ? 'Your turn' : 'Play'}</h2>${head}<div class="cards">${hand}</div>`;
 }
 
 /** The panel beside the board while a target is built on it. @param {string} cardId */
 function renderTargeting(cardId) {
   const choice = /** @type {NonNullable<ReturnType<typeof currentChoice>>} */ (currentChoice());
   const card = cardById(cardId);
+  const suit = spec.archetypes.find((a) => a.id === card.suit);
   const PROMPTS = {
-    location: 'Choose the target location on the board.', to: 'Choose where they go.', bluff: 'Choose where the bluff goes, or skip it.',
-    path: 'Choose the next location on the trail, or stop here.', from: 'Choose a location they come from.',
+    location: 'Click the target location.', to: 'Click where they go.', bluff: 'Click where the bluff goes.',
+    path: 'Click the next location on the trail.', from: 'Click a location they come from.',
   };
   let body = '';
-  if (choice.kind === 'mode') {
-    body = `<p>Choose the target:</p><div class="inline"><button class="btn btn-primary" data-action="mode" data-mode="location">${esc(SUIT.get(card.suit ?? '') ?? '')} location (any faction)</button><button class="btn btn-primary" data-action="mode" data-mode="faction">${esc(SUIT.get(card.suit ?? '') ?? '')} faction (anywhere)</button></div>`;
-  } else if (choice.kind === 'location') {
-    body = `<p>${esc(PROMPTS[choice.key])}</p>${choice.options.length ? '' : '<p class="small muted">Nowhere is possible.</p>'}${choice.optional ? '<button class="btn" data-action="skip">Done</button>' : ''}`;
-  } else if (choice.kind === 'group') {
-    body = `<p>Choose a group: click its gold token on the board.</p>${choice.options.length ? '' : '<p class="small muted">No group can be chosen.</p>'}${choice.optional ? '<button class="btn" data-action="skip">Done</button>' : ''}`;
-  } else if (choice.kind === 'faction') {
-    body = `<p>Choose the faction:</p><div class="inline">${choice.options.map((f) => `<button class="btn" data-action="pick-faction" data-faction="${esc(f)}">${tokenHtml(f, 1)} ${esc(fname(f))}</button>`).join('')}</div>`;
-  } else if (choice.kind === 'direction') {
-    body = `<p>Choose a direction:</p><div class="inline">${choice.options.map((d) => `<button class="btn" data-action="pick-direction" data-direction="${esc(d)}">${esc(d)}</button>`).join('')}</div>`;
-  } else if (choice.kind === 'split') {
-    body = `<p>Click adjacent locations to send cubes there, one per click. ${choice.left} left to place, across at least two locations.</p>`;
-  } else {
-    body = `<p>Ready: ${esc(describeTarget(cardId, ui.target))}.</p><button class="btn btn-primary" data-action="play-target">Play it</button>`;
-  }
-  return `<h2>${esc(card.name)}</h2><p class="small">${esc(card.text)}</p>${body}
-    <div class="inline"><button class="btn" data-action="target-none">Play it for no effect</button><button class="btn" data-action="back">Back</button></div>`;
+  if (choice.kind === 'mode') body = `<p>Click a lit ${esc(suit?.symbol ?? '')} location to target it (any faction), or a lit ${esc(suit?.name ?? '')} token to target the faction (anywhere).</p>`;
+  else if (choice.kind === 'location') body = `<p>${esc(PROMPTS[choice.key])}</p>${choice.options.length ? '' : '<p class="small muted">Nowhere is possible.</p>'}${choice.optional ? `<button class="btn" data-action="skip">${choice.key === 'bluff' ? 'No bluff' : 'Done'}</button>` : ''}`;
+  else if (choice.kind === 'group') body = `<p>Click a lit group of tokens on the board.</p>${choice.options.length ? '' : '<p class="small muted">No group can be chosen.</p>'}${choice.optional ? '<button class="btn" data-action="skip">Done</button>' : ''}`;
+  else if (choice.kind === 'faction') body = '<p>Click the faction in the table above the island.</p>';
+  else if (choice.kind === 'direction') body = `<p>Choose a direction:</p><div class="inline">${choice.options.map((d) => `<button class="btn" data-action="pick-direction" data-direction="${esc(d)}">${esc(d)}</button>`).join('')}</div>`;
+  else if (choice.kind === 'split') body = `<p>Click adjacent locations to send cubes there, one per click: ${choice.left} left, across at least two.</p>`;
+  return `<h2>${esc(card.name)}</h2><div class="inline">${cardHtml(cardId)}<div class="stack">${body}
+    <div class="inline"><button class="btn" data-action="target-none">Play it for no effect</button><button class="btn" data-action="back">Back</button></div></div></div>`;
 }
 
 function renderGrowth() {
@@ -425,8 +500,7 @@ function renderGrowth() {
   const g = view.growing;
   if (!g) return '<h2>Growth</h2>';
   const mine = g.leaders[g.next % g.leaders.length] === view.you;
-  const spots = Object.keys(g.due).map((l) => `<button class="btn" data-action="grow" data-location="${esc(l)}">${esc(locationById(l).name)}</button>`).join('');
-  return `<h2>Growth</h2><p>${esc(fname(g.faction))} is short of cubes and grows as far as its supply allows; its influence leaders choose where.</p>${mine ? `<div class="inline">${spots}</div>` : waitingFor('')}`;
+  return `<h2>Growth</h2><p>${esc(fname(g.faction))} is short of cubes and grows as far as its supply allows; its influence leaders choose where.</p>${mine ? '<p>Click a lit location to grow there.</p>' : waitingFor('')}`;
 }
 
 function renderEnded() {
@@ -574,23 +648,44 @@ function onClick(event) {
   const action = target.dataset.action;
   const view = ui.view;
   const card = target.dataset.card ?? '';
-  if (action === 'pick') return sendMove({ type: 'pick', keep: ui.keep.slice() });
   if (action === 'pass') return sendMove({ type: 'pass' });
   if (action === 'confirm') return sendMove({ type: 'confirm' });
   if (action === 'influence') return sendMove({ type: 'play', card, use: 'influence' });
-  if (action === 'respond') return sendMove({ type: 'respond', card, location: target.dataset.location });
-  if (action === 'grow') return sendMove({ type: 'grow', location: target.dataset.location ?? '' });
-  if (action === 'act') {
-    ui.choosing = card;
+  if (action === 'back') {
+    ui.choosing = null;
     ui.target = {};
+    ui.responding = null;
     return render();
   }
-  if (ui.choosing && action) {
+  if (action === 'target-none' && ui.choosing) {
+    const id = ui.choosing;
+    ui.choosing = null;
+    ui.target = {};
+    return sendMove({ type: 'play', card: id, use: 'action', target: null });
+  }
+  const loc = target.dataset.location ?? '';
+  if (action === 'pick-location' && view?.phase === 'growth') return sendMove({ type: 'grow', location: loc });
+  if (action === 'pick-location' && ui.responding) {
+    const id = ui.responding;
+    ui.responding = null;
+    return sendMove({ type: 'respond', card: id, location: loc });
+  }
+  if (ui.choosing && ['pick-location', 'pick-group', 'pick-faction', 'pick-direction', 'skip'].includes(action ?? '')) {
     const t = ui.target;
-    const choice = currentChoice();
-    const loc = target.dataset.location ?? '';
-    if (action === 'mode') t.mode = /** @type {'location' | 'faction'} */ (target.dataset.mode);
-    else if (action === 'pick-faction') t.faction = target.dataset.faction;
+    let choice = currentChoice();
+    // A suit card's reading is decided by what is clicked: one of its
+    // locations (location target) or one of its faction's groups (faction).
+    if (choice?.kind === 'mode') {
+      const asLocation = currentChoice({ ...t, mode: 'location' });
+      const asFaction = currentChoice({ ...t, mode: 'faction' });
+      const fits = (/** @type {ReturnType<typeof currentChoice>} */ c) => !!c && ((action === 'pick-location' && (c.kind === 'location' || c.kind === 'split') && c.options.includes(loc))
+        || (action === 'pick-group' && c.kind === 'group' && c.options.some((g) => g.location === loc && g.faction === target.dataset.faction))
+        || (action === 'pick-faction' && c.kind === 'faction' && c.options.includes(target.dataset.faction ?? '')));
+      t.mode = fits(asLocation) ? 'location' : fits(asFaction) ? 'faction' : t.mode;
+      if (!t.mode) return;
+      choice = currentChoice();
+    }
+    if (action === 'pick-faction') t.faction = target.dataset.faction;
     else if (action === 'pick-direction') t.direction = target.dataset.direction;
     else if (action === 'pick-group' && choice?.kind === 'group') {
       if (choice.key === 'move') t.moves = [...(t.moves ?? []), { location: loc, faction: target.dataset.faction ?? '', to: '' }];
@@ -606,21 +701,14 @@ function onClick(event) {
       else if (choice.key === 'path') t.path = [...(t.path ?? []), '__stop'];
       else if (choice.key === 'from') t.from = [...(t.from ?? []), '__stop'];
     } else if (action === 'skip' && choice?.kind === 'group') t.moves = [...(t.moves ?? []), { location: '__stop', faction: '', to: '__stop' }];
-    else if (action === 'play-target') {
-      const id = ui.choosing;
+    // A finished target plays the card at once.
+    if (currentChoice()?.kind === 'done') {
+      const id = /** @type {string} */ (ui.choosing);
       ui.choosing = null;
+      ui.target = {};
       return sendMove({ type: 'play', card: id, use: 'action', target: finish(t) });
     }
-    if (['mode', 'pick-faction', 'pick-direction', 'pick-group', 'pick-location', 'skip'].includes(action)) return render();
-  }
-  if (action === 'target-none' && ui.choosing) {
-    const id = ui.choosing;
-    ui.choosing = null;
-    return sendMove({ type: 'play', card: id, use: 'action', target: null });
-  }
-  if (action === 'back') {
-    ui.choosing = null;
-    return renderPhase();
+    return render();
   }
   if (action === 'toggle-overlay') {
     const panel = document.getElementById(target.dataset.target ?? '');
@@ -658,13 +746,35 @@ function finish(t) {
   return out;
 }
 
-/** Draft: tick or untick a card to keep. @param {MouseEvent} event */
+/** Clicking a card: keep it (draft), play its action, or fire its response. @param {MouseEvent} event */
 function onCardClick(event) {
-  const el = event.target instanceof HTMLElement ? event.target.closest('[data-card]') : null;
-  if (!el || !ui.view || ui.view.phase !== 'draft' || ui.view.me.picked || (event.target instanceof HTMLElement && event.target.closest('[data-action]'))) return;
+  const view = ui.view;
+  const el = event.target instanceof HTMLElement ? event.target.closest('[data-card-mode]') : null;
+  if (!view || !el || (event.target instanceof HTMLElement && event.target.closest('[data-action]'))) return;
   const id = /** @type {HTMLElement} */ (el).dataset.card ?? '';
-  ui.keep = ui.keep.includes(id) ? ui.keep.filter((c) => c !== id) : [...ui.keep, id];
-  renderPhase();
+  const mode = /** @type {HTMLElement} */ (el).dataset.cardMode;
+  if (mode === 'keep') {
+    ui.keep = ui.keep.includes(id) ? ui.keep.filter((c) => c !== id) : [...ui.keep, id];
+    const need = view.me.kept.length + 1;
+    if (ui.keep.length === need) return sendMove({ type: 'pick', keep: ui.keep.slice() });
+    return renderPhase();
+  }
+  if (mode === 'respond') {
+    if (cardById(id).response?.trigger === 'move-into-your-location') {
+      ui.responding = id;
+      return render();
+    }
+    return sendMove({ type: 'respond', card: id });
+  }
+  if (mode === 'act') {
+    ui.choosing = id;
+    ui.target = {};
+    if (currentChoice()?.kind === 'done') {
+      ui.choosing = null;
+      return sendMove({ type: 'play', card: id, use: 'action', target: {} });
+    }
+    return render();
+  }
 }
 
 /** @param {SubmitEvent} event */

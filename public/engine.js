@@ -164,6 +164,7 @@ export { spec };
  * @property {{ player: string, card: string, target: Target | null, cancelled: boolean, blocked: string[] } | null} pending
  * @property {RoundLog[]} log
  * @property {GameState['result']} result
+ * @property {GameEvent[]} events  what the last action did (public), for responses
  * @property {{ hand: string[], kept: string[], batch: string[], picked: boolean, trophies: Record<string, number>, known: string[], leftOut: string[] | null }} me
  */
 
@@ -758,8 +759,8 @@ function triggerMatches(state, pid, response, location) {
   }
 }
 
-/** Where a pending action would move cubes into (for blocks). @param {GameState} state @param {Pending} pend */
-function pendingDestinations(state, pend) {
+/** Where a pending action would move cubes into (for blocks). @param {GameState | PlayerView} state @param {{ card: string, target: Target | null }} pend */
+export function pendingDestinations(state, pend) {
   const t = pend.target;
   if (!t) return [];
   const card = cardById(pend.card);
@@ -1490,6 +1491,7 @@ export function playerView(state, playerId) {
     pending: state.pending ? { player: state.pending.player, card: state.pending.card, target: state.pending.target, cancelled: state.pending.cancelled, blocked: state.pending.blocked.slice() } : null,
     log: structuredClone(state.log),
     result: state.result ? structuredClone(state.result) : null,
+    events: structuredClone(state.events),
     me: {
       hand: me.hand.slice(), kept: me.kept.slice(), batch: me.batch.slice(), picked: me.picked, trophies: { ...me.trophies }, known: me.known.slice(),
       leftOut: me.known.includes('leftout') ? state.leftOut.slice() : null,
