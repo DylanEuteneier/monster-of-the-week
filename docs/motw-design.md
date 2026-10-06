@@ -477,6 +477,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - It applies at every location that meets the threshold, whether or not a fight happened there.
     - Growth never follows a mid-round fight straight away.
     - A faction that controls one of its aligned locations gains one extra cube there (AL3, 3.3).
+    - First draft: a faction whose supply runs short grows as far as its supply allows. Its influence leader chooses which locations grow; tied influence leaders take turns placing one cube each, in turn order from the first player.
     - First draft: growth never happens before a fight, so when growth runs each location holds only one faction. The question of two factions growing at one location does not arise.
     - *Open:* whether a location that growth pushes to the volatility threshold boils over at once, or waits for the next round.
   - `GR2` *Through cards (out of the first draft):* one use of a card grows a faction and gains the player influence with it (CU4, 3.7). Cards can trigger growth alongside growth at resolution.
@@ -2331,7 +2332,7 @@ For each fight:
 
 **Locations that don't fight:** influence there stays into the next round. Hidden tokens there stay face down (UT1).
 
-**Growth (GR1, AL3):** after all fights, every location where a faction has at least [2] cubes gains 1 cube of that faction from its supply. Each such location holds only one faction, since every contested location has just fought. A faction that controls a location aligned with its archetype gains 1 extra cube there, but only where the location already grows. **Gap:** what happens when a faction's supply runs out.
+**Growth (GR1, AL3):** after all fights, every location where a faction has at least [2] cubes gains 1 cube of that faction from its supply. Each such location holds only one faction, since every contested location has just fought. A faction that controls a location aligned with its archetype gains 1 extra cube there, but only where the location already grows. If a faction's supply runs short, it grows as far as its supply allows, and its influence leader chooses which locations grow (including any extra cube from AL3). When the lead is tied, the tied influence leaders take turns placing one cube each, in turn order from the first player.
 
 ### G.5 The end of the game
 
@@ -2351,6 +2352,5 @@ Avoiding fights is a bet that a faction wins (few trophies keep influence whole)
 ### G.6 Gaps to close
 
 - **To come with the cards:** every card and what it does; how card uses combine; movement types; card A and B; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).
-- **Gap:** a faction whose supply is empty when it should grow (and the total cubes per faction).
 - **Gap:** if every location in a region is scorched, whether pieces can still move through it.
 - **Balancing:** rounds, hand size, the presence threshold, the growth threshold, seeding numbers, each player's starting cubes, and starting influence with the linked faction.
