@@ -548,6 +548,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     4. Some cards can be multi-use; some single-use. Multi-use means a card offers more than one action, of which the player takes one; every card is played once.
     5. Like Inis, some cards could have an "on your turn" action and an "in response" action, so the card can be spent either way.
        - "In response" actions can be unique actions informed purely by the theme. Unlike the card's turn action, they don't have to apply to the suit's locations or factions (principles 1 and 2 govern turn actions only).
+    6. A card that lets one faction act on another (for example possession or abduction) needs you to lead the acting faction (IL1). If you don't lead it, the card's other use is to gain influence with that faction instead.
 - **The staleness tension (designer's observation, 2026-10-05):** if each card always does the same unique action at the same place, the game gets stale quickly. If each card allows similar, more flexible actions, each action loses its impact, immediacy and vibe. The card design has to sit between the two.
 - **Common card actions (designer's seed, 2026-10-05; to be worked through in step 2):**
   - `CA1` *Gain influence:* a simple, straightforward action. The player gains some influence (stake) with a faction.
