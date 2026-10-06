@@ -19,7 +19,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 **Goal:** a first draft of the rules, complete enough to build a playable web app prototype on.
 
 1. **First draft of the rules** *(drafted; Appendix G. What's left comes with the cards or with balancing).* In each decision area, start from the designer's favourite candidate. Where an idea has a close second, record it as that area's first variant. The draft is one ruleset, not a set of samples.
-2. **First draft of the cards** *(next).* Define the cards the draft ruleset needs, and design player actions (3.7) and hidden actions (`IN1`, 3.11) together with them.
+2. **First draft of the cards** *(in progress; principles in 3.7, ideas in Appendix H).* Define the cards the draft ruleset needs, and design player actions (3.7) and hidden actions (`IN1`, 3.11) together with them.
 3. **Build the web app prototype.** Restate the rules and cards as an implementation spec (F.16), then build them on the existing scaffold.
 
 Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `DR4`, `MC3`, `FR1`, `PT2`, `ST3`, `ET3`. The draft kept `DR3`, `DR4` and `PT2`, chose `FR5`, `ST1` and `ET4` instead of `FR1`, `ST3` and `ET3`, and left `MC3` to the cards.
@@ -48,6 +48,14 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 | 3.15 Victory | `WC1` the island or one faction wins; `TH1` end-game presence threshold (provisionally more than 15); `FX1` factions tied on presence: most locations controlled, and if still tied they win together (`FX2`), scoring each player's influence minus trophies with each, added up; `EG3` player score: a faction wins, influence with it minus its trophies; the island wins, `TS2` weakest colour: the count of the colour a player holds fewest of, ties to the next weakest colour (`WT1`). Ties when a faction wins (`ET4`): fewest trophies of that faction, then affinity, then the next faction (`ET1`). Players tied after every tiebreaker share the victory. Avoiding fights is a bet on a faction win | None |
 | 3.16 Player-count scaling | 3 to 5 players (decision). `PS1` fixed pool of 21 unique cards in place of the tiered pool (D7): hands of 6/5/4 at 3/4/5 players, with 3/1/1 cards left out unseen | None |
 | 3.1 Map (regions and borders) | The prototype board, layout D: five regions of three in a ring round a central lake. Mountains (Weather Station, Ski Resort, Mine), Badlands (Military Facility, Junkyard, Caves), Coast (Fallout Bunker, Shipping Docks, Lighthouse), Old Town (Graveyard, Beach City, Occult Camp), Woods (State Park, Sawmill, The Lake House). Borders: Mountains–Badlands, Badlands–Coast, Coast–Old Town, Old Town–Woods, Woods–Mountains | None |
+
+**Where the cards stand (end of session, 2026-10-05):**
+
+- Structure: five archetype suits of three cards (Strike, Shift, Signature) plus six unsuited extras, A to D and two unmarked; a fixed pool of 21 (PS1); hands of 6, 5 and 4.
+- Thirteen card principles in 3.7. Above all, every card is strongly thematic, unique, and something a slayer group would do. Presence actions have no cube limits, move any faction (IL1 is out of the first draft), and spend influence from the faction moved; as many as possible are unique moves (principle 13).
+- Appendix H holds six rounds of ideas and one candidate set (H.8, Set v1). Track Them in the Snow (a mancala move) is the model for a unique move.
+- Next: a Set v2 built from the round 6 unique moves; fix Set v1's weaknesses (only one presence sink, no merges, Call in the Men in Black too strong); then the unsuited extras, inspired by Inis.
+- Balancing note: a simulation of the board suggests about six moves a round hold total presence near 30 to 35 cubes, so the presence threshold (now more than 15) should move near that.
 
 Everything else is in the backlog below; finished work is in the changelog (A.2).
 
@@ -903,6 +911,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-03 | Candidate ideas added or refined for standing ties, end-game ties, faction ties, growth at round end, bluff tokens, marker cubes, and unresolved hidden tokens | Ruled out: removing an unresolved hidden token at round end, whether revealed or not |
 | 2026-10-04 | Current focus set: first draft of the rules, then the cards, then the web app prototype. Other open work moved to the backlog | Done before this: fits and clashes for the combat cluster, affinity, ties between players, location control, alignment, volatility, information and the draft; a first pass of trade-offs; four sample rulesets. Prototype architecture (D8), scaffold (built and deployed), art direction (D9), palette (D11) and the prototype art set (F.17) |
 | 2026-10-05 | First draft of the rules written up (Appendix G), from the designer's picks in each area. New candidates: CA1–CA3 (card action seeds), IL1 (only the influence leader moves a faction), FR5 (half rounded down, minimum 1), ET4 (fewest trophies first), WT1 (next weakest colour), FX2 (tied factions win together). General rules: one supply per colour; no piece leaves the game. No decisions recorded | Out of the first draft: archetype powers, card-driven growth, boil-over, card-triggered fights, dynamic round end, spillover, costly displacement, dice |
+| 2026-10-05 | Card design started. Archetype suits (SU1) with Strike, Shift and Signature slots; fixed pool of 21 (PS1); four marked cards A to D (FP2); card principles 1–13 in 3.7; card catalogue started (Appendix H). First draft taken without IL1 (now the first variant): any faction can be moved, with influence spent from the faction moved. General rule: cards only shift cubes. Adjacent means hexes sharing a border. No decisions recorded | Set aside: location cards (LK1), the tiered pool for the first draft (D7 stays recorded) |
 
 ---
 
