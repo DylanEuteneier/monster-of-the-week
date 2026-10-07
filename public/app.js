@@ -63,6 +63,9 @@ const ui = {
   choosing: null,
   /** @type {import('./engine.js').Target} */
   target: {},
+  /** the target before each pick, so Back undoes one step at a time */
+  /** @type {import('./engine.js').Target[]} */
+  undo: [],
   /** table talk lines arrived while the overlay was closed */
   unread: 0,
   /** a response waiting for its location to be clicked (Never Invite Them In) */
@@ -192,6 +195,7 @@ function resetDrafts(phaseKey) {
   ui.keep = [];
   ui.choosing = null;
   ui.target = {};
+  ui.undo = [];
   ui.responding = null;
   ui.keepFor = -1;
 }
@@ -657,7 +661,7 @@ function renderTargeting(cardId) {
   step('turn', esc(choice.kind === 'mode' ? (empty.length === 2 ? 'Nothing to target: play it for no effect' : 'Pick an option on the card') : none ? 'Nothing to target: play it for no effect' : words), arrows);
   if ((choice.kind === 'location' || choice.kind === 'group') && choice.optional) handAction('skip', { label: choice.kind === 'location' && choice.key === 'bluff' ? 'No bluff' : 'Done' });
   handAction('target-none', { tip: 'Play it for no effect' });
-  handAction('back');
+  handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
   toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, influence: true, next: !t.mode && !!card.suit, reading: t.mode, empty } : { dim: true })), false);
 }
 
@@ -831,6 +835,12 @@ function onClick(event) {
     return sendMove({ type: 'play', card, use: 'influence' });
   }
   if (action === 'back') {
+    // Undo the last pick (a reading counts); with nothing left to undo, put the card down.
+    const last = ui.choosing ? ui.undo.pop() : undefined;
+    if (last) {
+      ui.target = last;
+      return render();
+    }
     ui.choosing = null;
     ui.target = {};
     ui.responding = null;
@@ -850,6 +860,7 @@ function onClick(event) {
     return sendMove({ type: 'respond', card: id, location: loc });
   }
   if (ui.choosing && ['pick-location', 'pick-group', 'pick-faction', 'pick-direction', 'skip'].includes(action ?? '')) {
+    ui.undo.push(structuredClone(ui.target));
     const t = ui.target;
     let choice = currentChoice();
     // A suit card's reading is decided by what is clicked: one of its
@@ -899,6 +910,7 @@ function onClick(event) {
   if (action === 'set-mode') {
     // Picking or switching the reading (on the card) restarts the target in that reading.
     ui.choosing = target.dataset.card ?? ui.choosing;
+    ui.undo.push(structuredClone(ui.target));
     ui.target = { mode: /** @type {'location' | 'faction'} */ (target.dataset.mode) };
     return render();
   }
@@ -970,6 +982,7 @@ function onCardClick(event) {
   if (mode === 'act') {
     ui.choosing = id;
     ui.target = {};
+    ui.undo = [];
     if (currentChoice()?.kind === 'done') {
       ui.choosing = null;
       return sendMove({ type: 'play', card: id, use: 'action', target: {} });
