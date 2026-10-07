@@ -242,7 +242,11 @@
       "slot": "strike",
       "influence": 2,
       "action": "lure",
-      "text": "The largest group adjacent to the target moves into it, all of it. Target: the bait location."
+      "text": "The largest group adjacent to the target moves into it, all of it. Target: the bait location.",
+      "readings": {
+        "location": "a ◐ location, any faction comes.",
+        "faction": "anywhere, only the Nocturnals come."
+      }
     },
     {
       "id": "track-snow",
@@ -251,7 +255,11 @@
       "slot": "shift",
       "influence": 3,
       "action": "sow",
-      "text": "Drive the target group hex by bordering hex, leaving 1 cube and 1 of your influence in each location entered, while your influence with that faction lasts. A location it can't enter ends the chase; leftover cubes stay together at the last location."
+      "text": "Drive the target group hex by bordering hex, leaving 1 cube and 1 of your influence in each location entered, while your influence with that faction lasts. A location it can't enter ends the chase; leftover cubes stay together at the last location. Target: the group chased.",
+      "readings": {
+        "location": "any group at a ◐ location.",
+        "faction": "a Nocturnal group anywhere."
+      }
     },
     {
       "id": "silver-bullets",
@@ -261,6 +269,10 @@
       "influence": 4,
       "action": "token",
       "text": "Hidden: at its fight, each group loses 2 more cubes as casualties.",
+      "readings": {
+        "location": "a ◐ location.",
+        "faction": "a location holding the Nocturnals."
+      },
       "response": {
         "id": "never-invite",
         "name": "Never Invite Them In",
@@ -276,7 +288,11 @@
       "slot": "strike",
       "influence": 2,
       "action": "broadcast",
-      "text": "Call the groups of one faction from up to two locations anywhere into the target. Target: where they answer."
+      "text": "Call the groups of one faction from up to two locations anywhere into the target. Target: where they answer.",
+      "readings": {
+        "location": "any faction, into an ↂ location.",
+        "faction": "the Sci-Fi faction, into any location."
+      }
     },
     {
       "id": "leak",
@@ -285,7 +301,11 @@
       "slot": "shift",
       "influence": 3,
       "action": "halve",
-      "text": "Half the target group, rounded down, leaves for an adjacent location of your choice."
+      "text": "Half the target group, rounded down, leaves for an adjacent location of your choice. Target: the group split.",
+      "readings": {
+        "location": "any group at an ↂ location.",
+        "faction": "a Sci-Fi group anywhere."
+      }
     },
     {
       "id": "beam",
@@ -294,7 +314,11 @@
       "slot": "signature",
       "influence": 4,
       "action": "teleport",
-      "text": "Lift the target group and set it down at any location on the island.",
+      "text": "Lift the target group and set it down at any location on the island. Target: the group taken.",
+      "readings": {
+        "location": "any group at an ↂ location.",
+        "faction": "a Sci-Fi group anywhere."
+      },
       "response": {
         "id": "classified",
         "name": "Classified",
@@ -310,7 +334,11 @@
       "slot": "strike",
       "influence": 2,
       "action": "spread",
-      "text": "The target group puts 1 cube into every adjacent location it can enter, as far as its cubes go."
+      "text": "The target group puts 1 cube into every adjacent location it can enter, as far as its cubes go. Target: the infected group.",
+      "readings": {
+        "location": "any group at a ⏏ location.",
+        "faction": "a Sentient group anywhere."
+      }
     },
     {
       "id": "reroute",
@@ -319,7 +347,11 @@
       "slot": "shift",
       "influence": 3,
       "action": "gather-region",
-      "text": "Move one faction's cubes from every location in the target's region into the target. Target: the destination."
+      "text": "Move one faction's cubes from every location in the target's region into the target. Target: the destination.",
+      "readings": {
+        "location": "any faction, into a ⏏ location.",
+        "faction": "the Sentients, into any location."
+      }
     },
     {
       "id": "traffic",
@@ -328,7 +360,11 @@
       "slot": "signature",
       "influence": 4,
       "action": "conveyor",
-      "text": "Choose one of the six hex directions; every group of the target moves one hex that way, where it can. Loc: every group in a ⏏ location's region. Fac: every Sentient group.",
+      "text": "Choose one of the six hex directions; every group of the target moves one hex that way, where it can.",
+      "readings": {
+        "location": "every group in a ⏏ location's region.",
+        "faction": "every Sentient group on the island."
+      },
       "response": {
         "id": "pull-plug",
         "name": "Pull the Plug",
@@ -344,7 +380,11 @@
       "slot": "strike",
       "influence": 2,
       "action": "draw-adjacent",
-      "text": "Every cube in adjacent locations is drawn into the target. Target: where the bell rings."
+      "text": "Every cube in adjacent locations is drawn into the target. Target: where the bell rings.",
+      "readings": {
+        "location": "a ☾ location, any faction comes.",
+        "faction": "anywhere, only Undead cubes come."
+      }
     },
     {
       "id": "board-up",
@@ -353,7 +393,11 @@
       "slot": "shift",
       "influence": 3,
       "action": "split",
-      "text": "The target group is turned away, split across at least two adjacent locations."
+      "text": "The target group is turned away, split across at least two adjacent locations. Target: the group.",
+      "readings": {
+        "location": "any group at a ☾ location.",
+        "faction": "an Undead group anywhere."
+      }
     },
     {
       "id": "salt-burn",
@@ -363,6 +407,10 @@
       "influence": 4,
       "action": "token",
       "text": "Hidden: at its fight, both groups lose all their cubes; trophies are handed out as normal and the location is not scorched.",
+      "readings": {
+        "location": "a ☾ location.",
+        "faction": "a location holding the Undead."
+      },
       "response": {
         "id": "seance",
         "name": "Hold a Séance",
@@ -378,7 +426,11 @@
       "slot": "strike",
       "influence": 2,
       "action": "gather-neighbours",
-      "text": "Every group of one faction in neighbouring regions moves into the target. Target: the circle."
+      "text": "Every group of one faction in neighbouring regions moves into the target. Target: the circle.",
+      "readings": {
+        "location": "any faction, into a ⎈ location.",
+        "faction": "the Demons, into any location."
+      }
     },
     {
       "id": "lamps",
@@ -387,7 +439,11 @@
       "slot": "shift",
       "influence": 3,
       "action": "drive-out",
-      "text": "At a contested location, the target faction is driven to an adjacent location of your choice, so the fight there doesn't happen. Loc: the smaller faction at a contested ⎈ location. Fac: the Demons, wherever they are contested."
+      "text": "At a contested location, the target faction is driven to an adjacent location of your choice, so the fight there doesn't happen. Target: the faction driven out.",
+      "readings": {
+        "location": "the smaller faction at a contested ⎈ location.",
+        "faction": "the Demons, wherever they are contested."
+      }
     },
     {
       "id": "house-fire",
@@ -397,6 +453,10 @@
       "influence": 4,
       "action": "token",
       "text": "Hidden: any fight here counts as a true tie: both groups are wiped out and the location is scorched.",
+      "readings": {
+        "location": "a ⎈ location.",
+        "faction": "a location holding the Demons."
+      },
       "response": {
         "id": "sign-blood",
         "name": "Sign in Blood",
