@@ -622,7 +622,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   transition: transform 160ms ease-out;
   z-index: var(--i);
 }
-.hand:hover .card, .hand.is-open .card {
+.hand:has(.card:hover) .card, .hand.is-open .card {
   --x: calc(var(--off) * min(204px, 15vw)); --y: calc(-8px + var(--off) * var(--off) * 7px); --r: calc(var(--off) * 3.5deg);
 }
 .hand .card:hover, .hand .card.card-selected { --lift: 24px; z-index: 50; }
@@ -636,7 +636,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 /* Hand actions: icons that ride beside the fan, closed or open. */
 .hand-actions { position: absolute; bottom: 14px; left: 0; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; z-index: 70;
   transform: translateX(calc((var(--n, 1) - 1) / 2 * 46px + 120px)); transition: transform 160ms ease-out; }
-.hand:hover .hand-actions, .hand.is-open .hand-actions { transform: translateX(calc((var(--n, 1) - 1) / 2 * min(204px, 15vw) + 112px)); }
+.hand:has(.card:hover) .hand-actions, .hand.is-open .hand-actions { transform: translateX(calc((var(--n, 1) - 1) / 2 * min(204px, 15vw) + 112px)); }
 .hand-icon { width: 34px; height: 34px; display: grid; place-items: center; font-size: 18px; line-height: 1; cursor: pointer;
   background: var(--color-cell); color: var(--color-text); border: var(--border); box-shadow: 2px 2px 0 var(--ink); }
 .hand-icon:hover:not(:disabled) { border-color: var(--color-accent); }
