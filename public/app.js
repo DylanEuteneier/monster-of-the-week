@@ -513,7 +513,8 @@ function renderMine() {
   const me = view.players[view.you];
   const standing = view.factions.filter((f) => (me.standing[f] ?? 0) > 0).sort((a, b) => me.standing[b] - me.standing[a])
     .map((f) => chip(tokenHtml(f, 1), me.standing[f], `Your influence with ${fname(f)}: ${me.standing[f]}. Moves spend it.`)).join('');
-  setHtml('mine', `${chip(cubeHtml(colourOf(view.you), 9), me.supply, `Supply: ${me.supply} influence cubes`)}${chip('<span class="bluff"></span>', me.bluffs, `Bluff tokens: ${me.bluffs}`)}<span class="chip-sep"></span><span class="chip-label" title="Your influence with each faction; moves spend it">Influence</span>${standing || '<span class="muted">none</span>'}`);
+  setHtml('mine', `${chip(cubeHtml(colourOf(view.you), 9), me.supply, `Supply: ${me.supply} influence cubes`)}${chip('<span class="bluff"></span>', me.bluffs, `Bluff tokens: ${me.bluffs}`)}`);
+  setHtml('influence', `<span class="chip-label" title="Your influence with each faction; moves spend it">Influence</span>${standing || '<span class="muted small">none</span>'}`);
 }
 
 /** Your trophies (secret): a token and count per faction. */

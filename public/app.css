@@ -757,3 +757,11 @@ body:has(.hand.is-hovering) #phase, body:has(.hand.is-open) #phase, body:has(.ha
 .hand.is-open .card { --x: calc(var(--off) * min(204px, calc((100vw - 60px) / var(--n, 1)))); --r: 0deg; --nudge: 0px; }
 .card-band { gap: 6px; }
 .card-band > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The bar keeps only supply and bluffs; influence and trophies float in
+   vertical stacks either side, rising from the bar. */
+.dock { grid-template-columns: auto minmax(0, 1fr); }
+.side-stack { position: fixed; bottom: calc(var(--bar-h) + 10px); z-index: 14; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: 6px 8px; background: var(--color-panel-2); border: var(--border); box-shadow: 2px 2px 0 var(--ink); }
+.side-left { left: 10px; }
+.side-right { right: 10px; align-items: flex-end; }
+.side-stack .chip { font-size: 12px; }
