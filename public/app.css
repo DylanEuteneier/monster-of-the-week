@@ -665,3 +665,4 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .hand:has(.card:hover) .card:hover ~ .card { --nudge: 56px; }
 .hand:has(.card:hover) .card:has(~ .card:hover) { --nudge: -56px; }
 .fan-slop { width: calc(var(--n, 1) * var(--gap) + 260px); }
+.hand:has(.card:hover, .fan-slop:hover) .hand-actions { transform: translateX(calc((var(--n, 1) - 1) / 2 * var(--gap) + 112px + 56px)); }
