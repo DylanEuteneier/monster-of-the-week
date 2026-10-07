@@ -19,11 +19,14 @@
     <section class="panel" id="board" aria-label="The island"></section>
   </main>
 
-  <div class="hand" id="hand" aria-label="Your hand"></div>
+  <!-- Yours: the bar, your hand, your influence and trophies. Fixed to the
+       window on desktop; ordinary sections after the island on phones. The
+       bar comes first so the side tabs can follow its turn colour (.dock ~). -->
   <section class="dock" id="dock" aria-label="Your bar">
     <div class="bar-mine" id="mine" aria-label="Your resources"></div>
     <div class="bar-step" id="phase" aria-live="polite"></div>
   </section>
+  <div class="hand" id="hand" aria-label="Your hand"></div>
   <aside class="side-stack side-left" id="influence" data-action="toggle-side" aria-label="Your influence with each faction"></aside>
   <aside class="side-stack side-right" id="score" data-action="toggle-side" aria-label="Your trophies"></aside>
 

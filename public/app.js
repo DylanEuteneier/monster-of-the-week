@@ -70,8 +70,6 @@ const ui = {
   responding: null,
   /** draft: how many cards were kept when ui.keep was last reset */
   keepFor: -1,
-  /** the hand is fanned open by a tap (touch screens) */
-  handOpen: false,
   /** the phone map window has been centred once */
   boardCentred: false,
   /** a side stack opened by a tap: 'influence', 'score' or null */
@@ -526,9 +524,9 @@ function renderHand() {
   const { cards, open } = handNext;
   const n = cards.length;
   const fanned = cards.map((html, i) => html.replace('<div class="card', `<div style="--i:${i};--off:${i - (n - 1) / 2}" class="card`)).join('');
-  setHtml('hand', n ? `<button class="hand-tab" data-action="toggle-hand" aria-label="Show or hide your hand">Hand ${n}</button><div class="fan">${fanned}</div>` : '');
+  setHtml('hand', n ? `<div class="fan">${fanned}</div>` : '');
   const el = $('hand');
-  el.classList.toggle('is-open', open || ui.handOpen);
+  el.classList.toggle('is-open', open);
   el.classList.toggle('is-locked', !!ui.choosing || !!ui.responding);
   el.style.setProperty('--n', String(n));
 }
@@ -888,10 +886,6 @@ function onClick(event) {
     ui.choosing = target.dataset.card ?? ui.choosing;
     ui.target = { mode: /** @type {'location' | 'faction'} */ (target.dataset.mode) };
     return render();
-  }
-  if (action === 'toggle-hand') {
-    ui.handOpen = !ui.handOpen;
-    return renderHand();
   }
   if (action === 'expand-player') {
     // Switch the open card in place, so the accordion animates.

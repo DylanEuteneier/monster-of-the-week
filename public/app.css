@@ -1,5 +1,53 @@
+/* ===========================================================================
+   Monster of the Week — styles for the table (/p/…, /hotseat), /host and /assets.
+
+   One rule per component, in this order: tokens, base, shared pieces, the
+   host and assets pages, then the table. Phone overrides sit in one block at
+   the end. Prototype styling only (see CLAUDE.md): nothing here is a rule.
+
+   POSITIONING CATALOGUE — every element is placed by exactly one of these.
+
+   1. Normal flow (static). The header, the hotseat seat bar and the table's
+      sections (slayer groups, factions, island) stack down the page inside
+      main.table. Inside them, layout is flex or grid only.
+
+   2. Fixed to the window (desktop). Each has one home and one z-index:
+        .hand          above the bar, centred, height 0; its cards hang upward  z: --z-hand
+        .dock          the bar along the bottom                                 z: --z-dock
+        .side-stack    tabs rising from the bar's two ends                      z: --z-side
+        .overlay       the log and table talk, top right                        z: --z-overlay
+        .overlay-buttons  their buttons, top right                              z: --z-overlay-buttons
+        .toast         messages, bottom centre                                  z: --z-toast
+      On phones the hand, bar and tabs drop back into normal flow (1), after
+      the island.
+
+   3. Absolute inside a relative parent, at coordinates from data:
+        .board > .board-tile   pixel positions from the board art (inline style)
+        .hex > sprite/state/pieces   sizes from pieces.js (inline style)
+        .token > face/art, .cube > faces   drawn pieces
+        .hand .fan > .card     anchored at the fan's centre-bottom, moved only
+                               by transform (see 4)
+        .card-dim::after       the dark wash over a card
+        .overlay-close         the × in an overlay's corner
+
+   4. Transform only, for motion. Nothing animates layout. Hand cards are
+      placed by four custom properties combined in one transform:
+        --x (spread from centre), --y (how far the card hangs below the
+        hand's baseline), --r (tilt), --nudge (shuffle aside for a raised
+        neighbour). Each hand state below sets only these.
+      Hover lifts on hexes and tokens are translateY.
+
+   5. Scroll containers: on phones only — the slayer-group strip, the faction
+      strip and the island (sideways). On desktop nothing scrolls inside the
+      page; the page itself is at least as wide as the island section
+      (body min-width from --map-width, set by app.js), so it scrolls as one.
+
+   6. Sizes from script: --map-width (the island art's width), --n (cards in
+      hand), and per-card --i (index) and --off (offset from the middle).
+=========================================================================== */
+
 /* ---------------------------------------------------------------------------
-   Design tokens
+   Tokens
 --------------------------------------------------------------------------- */
 :root {
   --space-1: 4px;
@@ -8,9 +56,9 @@
   --space-4: 16px;
   --space-6: 24px;
 
-  /* Night theme (2026-10-06): every colour is a palette colour (assets/README.md).
-     Square corners, 2px solid ink borders and a hard offset shadow give a
-     printed, pixel feel without any UI art. */
+  /* Night theme: every colour is a palette colour (assets/README.md). Square
+     corners, 2px solid ink borders and a hard offset shadow give a printed,
+     pixel feel without any UI art. */
   --radius: 0;
   --line: 2px;
   --border: var(--line) solid var(--color-border);
@@ -44,6 +92,19 @@
   --font-body: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --font-display: "Tiny5", "Courier New", monospace;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* The table's bottom bar, how much of each card shows above it, card width. */
+  --bar-h: 44px;
+  --peek: 70px;
+  --card-w: 214px;
+
+  /* Stacking, lowest first (catalogue 2). */
+  --z-toast: 10;
+  --z-hand: 15;
+  --z-dock: 16;
+  --z-side: 17;
+  --z-overlay: 20;
+  --z-overlay-buttons: 21;
 }
 
 /* ---------------------------------------------------------------------------
@@ -63,13 +124,14 @@ html, body {
 /* Tiny5 has one weight; never fake-bold it. */
 h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; letter-spacing: 0.04em; text-transform: uppercase; }
 h2 { font-size: 16px; color: var(--color-accent); }
-a { color: var(--color-link); }
 h3 { font-size: 14px; }
+a { color: var(--color-link); }
 p { margin: 0; }
+button { font: inherit; }
+[hidden] { display: none !important; }
 .muted { color: var(--color-muted); }
 .small { font-size: 12px; }
 .mono { font-family: var(--font-mono); }
-button { font: inherit; }
 
 .btn {
   padding: var(--space-1) var(--space-3);
@@ -96,8 +158,39 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   color: var(--color-text);
 }
 
+.tag {
+  display: inline-block;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-muted);
+  border-radius: 0;
+  background: var(--color-accent);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+}
+
+/* Layout helpers */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-panel);
+  border: var(--border);
+  border-radius: 0;
+  box-shadow: var(--shadow);
+}
+.panel:empty { display: none; }
+.stack { display: flex; flex-direction: column; gap: var(--space-2); }
+.row, .inline { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.grow { flex: 1; min-width: 0; }
+
 /* ---------------------------------------------------------------------------
-   Layout
+   Page header and the hotseat seat bar
 --------------------------------------------------------------------------- */
 .topbar {
   display: flex;
@@ -113,126 +206,6 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .topbar h1 { font-size: 20px; letter-spacing: 0.06em; color: var(--color-accent); text-shadow: 2px 2px 0 var(--ink); }
 .topbar .phase-label { font-family: var(--font-display); font-size: 16px; text-transform: uppercase; }
 
-.layout {
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(0, 3fr) minmax(280px, 1.4fr);
-  grid-template-areas: "left centre right";
-  gap: var(--space-4);
-  padding: var(--space-4);
-  align-items: start;
-}
-.column-left { grid-area: left; }
-.column-centre { grid-area: centre; }
-.column-right { grid-area: right; }
-.column { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
-
-@media (max-width: 1100px) {
-  .layout {
-    grid-template-columns: 1fr;
-    grid-template-areas: "centre" "left" "right";
-  }
-}
-
-.panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  background: var(--color-panel);
-  border: var(--border);
-  border-radius: 0;
-  box-shadow: var(--shadow);
-}
-.panel:empty { display: none; }
-
-.stack { display: flex; flex-direction: column; gap: var(--space-2); }
-.row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
-.row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.inline { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
-.grow { flex: 1; min-width: 0; }
-.notice { padding: var(--space-2); border: var(--border); background: var(--color-lake); }
-
-/* ---------------------------------------------------------------------------
-   Seats
---------------------------------------------------------------------------- */
-.player-list { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--space-2); }
-.players-strip .player { flex: 1 1 180px; }
-.player {
-  display: grid;
-  grid-template-columns: 12px 1fr;
-  grid-template-areas: "swatch name" "swatch status";
-  column-gap: var(--space-2);
-  align-items: center;
-  padding: var(--space-2);
-  border: var(--border);
-  border-radius: 0;
-  background: var(--color-panel-2);
-  box-shadow: 2px 2px 0 var(--ink);
-}
-.player-you { border-color: var(--color-accent); }
-.player-name { flex-wrap: wrap; }
-.swatch { grid-area: swatch; width: 12px; height: 100%; min-height: 32px; border: var(--line) solid var(--ink); }
-.player-name { grid-area: name; font-weight: 600; display: flex; align-items: center; gap: var(--space-1); }
-.player-status { grid-area: status; font-size: 12px; color: var(--color-muted); }
-.presence { width: 7px; height: 7px; border-radius: 50%; background: var(--color-border); }
-.presence-on { background: var(--color-ok); }
-
-/* ---------------------------------------------------------------------------
-   Board
---------------------------------------------------------------------------- */
-.factions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-2); }
-.faction { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); border: var(--border); border-radius: var(--radius); background: var(--color-cell); }
-.faction .symbol { color: var(--color-accent); font-size: 18px; }
-.locations { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-2); }
-.location { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2); border: var(--border); border-radius: var(--radius); background: var(--color-cell); }
-
-/* ---------------------------------------------------------------------------
-   Log, chat, toast
---------------------------------------------------------------------------- */
-.log-round { display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
-.chat-lines { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow-y: auto; font-size: 12px; }
-.chat-line b { font-weight: 600; }
-.chat-form { display: flex; gap: var(--space-2); }
-.chat-input { flex: 1; min-width: 0; }
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: var(--space-6);
-  transform: translateX(-50%);
-  padding: var(--space-2) var(--space-4);
-  border: var(--border);
-  background: var(--color-danger);
-  color: var(--color-text);
-  box-shadow: var(--shadow);
-  z-index: 10;
-}
-.toast.info { background: var(--color-lake); }
-
-/* ---------------------------------------------------------------------------
-   Host page
---------------------------------------------------------------------------- */
-.host {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
-  gap: var(--space-4);
-  padding: var(--space-4);
-  align-items: start;
-}
-.seats { display: flex; flex-direction: column; gap: var(--space-2); }
-.links { display: flex; flex-direction: column; gap: var(--space-2); }
-.link-row {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) max-content;
-  align-items: center;
-  gap: var(--space-2);
-}
-.link-row a { overflow-wrap: anywhere; }
-.option-choice { border: var(--border); border-radius: var(--radius); padding: var(--space-2) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
-.option-choice label { align-items: flex-start; }
-
-/* ---------------------------------------------------------------------------
-   Hotseat seat bar and small tags
---------------------------------------------------------------------------- */
 .seatbar {
   display: flex;
   flex-wrap: wrap;
@@ -243,79 +216,48 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   background: var(--color-accent-soft);
 }
 .seatbar .seat { padding: var(--space-1) var(--space-3); }
-.tag {
-  display: inline-block;
-  padding: 0 var(--space-1);
-  border-radius: 0;
-  background: var(--color-accent);
-  color: var(--ink);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  vertical-align: middle;
-}
 
 /* ---------------------------------------------------------------------------
-   Sprites (built by assets/sprites.py into public/assets/)
---------------------------------------------------------------------------- */
-.sprite { image-rendering: pixelated; image-rendering: crisp-edges; display: block; flex: none; }
-
-/* ---------------------------------------------------------------------------
-   Assets page
---------------------------------------------------------------------------- */
-.assets-page { padding: var(--space-4); max-width: 80rem; margin: 0 auto; gap: var(--space-4); }
-.asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: var(--space-2); }
-.asset { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2); border: var(--border); border-radius: var(--radius); background: var(--color-cell); min-width: 0; }
-.asset-missing { border-style: dashed; }
-.asset-scales { display: flex; align-items: flex-end; gap: var(--space-3); flex-wrap: wrap; }
-.asset-scale { margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
-.asset a { overflow-wrap: anywhere; }
-.palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); gap: var(--space-2); }
-.swatch-row { display: flex; align-items: center; gap: var(--space-2); }
-.swatch-row i { width: 24px; height: 24px; border: var(--border); border-radius: 3px; flex: none; }
-
-/* ---------------------------------------------------------------------------
-   Pieces on the board: presence tokens and influence cubes
+   Pieces: sprites, presence tokens, influence cubes, hexes (pieces.js)
    Clean, physical CSS objects; only the art printed on a token is pixel art.
 --------------------------------------------------------------------------- */
+.sprite { image-rendering: pixelated; image-rendering: crisp-edges; display: block; flex: none; }
+.suit-icon { display: inline-block; vertical-align: middle; }
+.suit-line { display: inline-flex; align-items: center; gap: 4px; }
+
 .token {
   --token-face: #fbf6ea;
   --token-face-shade: #ece2cc;
   --token-edge: #d2c3a3;
   --token-edge-dark: #a8956f;
   --t: 1.5px; /* one layer of cardboard edge; scaled per token */
-  position: relative;
-  display: inline-block;
-  flex: none;
   --token-edges:
     drop-shadow(0 var(--t) 0 var(--token-edge))
     drop-shadow(0 var(--t) 0 var(--token-edge))
     drop-shadow(0 var(--t) 0 var(--token-edge-dark));
   --token-shadow: drop-shadow(0 calc(var(--t) * 2.5) calc(var(--t) * 2.5) rgb(20 16 38 / 0.35));
+  position: relative;
+  display: inline-block;
+  flex: none;
   filter: var(--token-edges) var(--token-shadow);
   transition: transform 80ms ease-out;
 }
-/* Target states (2026-10-06). Nothing is drawn outside the token: a candidate
-   token's own cardboard edge turns gold and its face takes a strong gold
-   tint, pulsing gently; hovered, the face brightens further and the token
-   lifts. The gold is palette y. */
+/* Target states. Nothing is drawn outside the token: a candidate's own
+   cardboard edge turns gold and its face takes a gold tint; hovered, the face
+   brightens further and the token lifts. */
 .token.is-candidate {
   --token-face: color-mix(in oklab, #fbf6ea, var(--state-candidate) 45%);
   --token-face-shade: color-mix(in oklab, #ece2cc, var(--state-candidate) 55%);
   --token-edge: var(--state-candidate);
   --token-edge-dark: color-mix(in oklab, var(--state-candidate), black 35%);
   cursor: pointer;
-  animation: candidate-pulse 1.4s ease-in-out infinite;
 }
 .token.is-candidate:hover, .token.is-candidate.is-hovered {
   --token-face: color-mix(in oklab, #fbf6ea, var(--state-hover) 70%);
   --token-face-shade: color-mix(in oklab, #ece2cc, var(--state-candidate) 35%);
   --token-shadow: drop-shadow(0 calc(var(--t) * 4) calc(var(--t) * 3) rgb(20 16 38 / 0.45));
   transform: translateY(calc(var(--t) * -2));
-  animation: none;
 }
-@keyframes candidate-pulse { 50% { --token-face: color-mix(in oklab, #fbf6ea, var(--state-candidate) 70%); filter: var(--token-edges) var(--token-shadow) brightness(1.12); } }
-@media (prefers-reduced-motion: reduce) { .token.is-candidate { animation: none; } }
 .token-face {
   position: absolute;
   inset: 0;
@@ -324,6 +266,10 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   mask: var(--cut) center / 100% 100% no-repeat;
 }
 .token-art { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; }
+/* Small tokens (supplies, standing, pieces on hexes, trophies) get one light
+   shadow instead of the full stack of cardboard filters, for speed. */
+.supply-row .token, .hex-pieces .token, .trophies .token { filter: drop-shadow(0 1px 0 var(--token-edge-dark)); }
+.supply-row .token.is-candidate, .hex-pieces .token.is-candidate { filter: drop-shadow(0 1px 0 var(--state-candidate)) drop-shadow(0 -1px 0 var(--state-candidate)); }
 
 .cube {
   --c: #c8364c;
@@ -356,374 +302,284 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   background: linear-gradient(90deg, color-mix(in oklab, var(--c), black 26%), color-mix(in oklab, var(--c), black 36%));
 }
 
-/* A location with its pieces (layout under review on /assets) */
-.place { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: start; padding: var(--space-3); border: var(--border); border-radius: var(--radius); background: var(--color-cell); }
-.place-pieces { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+/* Rows of pieces. Each token carries its width as --w; later ones overlap. */
 .stack-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .token-stack { display: flex; align-items: flex-end; }
-/* Each piece carries its width as --w; later pieces overlap the one before. */
 .token-stack > * + * { margin-left: calc(var(--w) * -0.55); }
 .cube-row { display: flex; align-items: flex-end; gap: 2px; }
-.count { font-family: var(--font-display); font-size: 16px; }
+.supply-row { display: flex; flex-wrap: wrap; align-items: flex-end; max-width: 220px; row-gap: 2px; }
+.supply-row > .token + .token { margin-left: -14px; }
+.supply-row.cubes { gap: 1px; }
+.standing-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; max-width: 220px; min-height: 12px; }
+/* A player's cubes with one faction; the influence leader's are underlined in gold. */
+.standing-group { display: inline-flex; gap: 1px; padding-bottom: 2px; border-bottom: 2px solid transparent; }
+.standing-group.is-leading { border-bottom-color: var(--state-candidate); }
+.trophies { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.trophies > .token + .token { margin-left: -12px; }
+.hidden-token { width: 10px; height: 10px; margin-left: 3px; background: var(--color-panel-2); border: 2px solid var(--owner); box-shadow: 1px 1px 0 var(--ink); }
 
-/* Board hexes: the hex art with its pieces laid over the clear lower part */
-.hex { position: relative; flex: none; }
+/* Hexes: the hex art, its target-state art over it (CSS picks which shows),
+   and its pieces laid over the clear lower part. */
+.hex { position: relative; flex: none; transition: transform 80ms ease-out; }
 .hex > .sprite { position: absolute; inset: 0; }
-/* Target states: the candidate and hovered art (a ring inside the border,
-   same size as the tile) sit over it; CSS picks which one shows. */
 .hex > .hex-state { position: absolute; display: none; image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: none; }
 .hex.is-candidate { cursor: pointer; }
 .hex.is-candidate > .hex-state-candidate { display: block; }
 .hex.is-candidate:hover > .hex-state-candidate, .hex.is-candidate.is-hovered > .hex-state-candidate { display: none; }
 .hex.is-candidate:hover > .hex-state-hover, .hex.is-candidate.is-hovered > .hex-state-hover { display: block; }
-.hex { transition: transform 80ms ease-out; }
 .hex.is-candidate:hover, .hex.is-candidate.is-hovered { transform: translateY(-2px); }
-.board-tile:has(.hex.is-candidate:hover), .board-tile:has(.is-hovered) { z-index: 1; }
 .hex-pieces { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .hex-pieces .stack-row { flex-wrap: nowrap; gap: 4px; justify-content: center; }
 .hex-pieces .token-stack > * + * { margin-left: calc(var(--w) * -0.66); }
+.hex-pieces .piece-row { display: flex; justify-content: center; align-items: flex-end; min-height: 0; max-width: 100%; }
+.hex-pieces .piece-row[data-action] { cursor: pointer; }
+.hex-pieces .cube-row { gap: 0; }
+.hex-pieces .cube-row > .cube + .cube { margin-left: -2px; }
 .hex-grid { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-start; }
 
-/* Suggested board layouts on /assets */
+/* The island: the board art with tiles placed over it (catalogue 3). */
 .board { position: relative; flex: none; max-width: 100%; }
+.board-tile:has(.hex.is-candidate:hover), .board-tile:has(.is-hovered) { z-index: 1; }
+.board-tile.is-scorched { filter: grayscale(1) brightness(0.6); }
 
-/* Player cards on /assets */
+/* ---------------------------------------------------------------------------
+   Seats (host page, and the base for the table's slayer groups)
+--------------------------------------------------------------------------- */
+.player-list { display: flex; flex-direction: row; flex-wrap: wrap; gap: var(--space-2); }
+.player {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  grid-template-areas: "swatch name" "swatch status";
+  column-gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2);
+  border: var(--border);
+  border-radius: 0;
+  background: var(--color-panel-2);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.player-you { border-color: var(--color-accent); }
+.swatch { grid-area: swatch; width: 12px; height: 100%; min-height: 32px; border: var(--line) solid var(--ink); }
+.player-name { grid-area: name; font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.player-status { grid-area: status; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--color-muted); }
+.presence { width: 7px; height: 7px; border-radius: 50%; background: var(--color-border); }
+.presence-on { background: var(--color-ok); }
+
+/* ---------------------------------------------------------------------------
+   Host page
+--------------------------------------------------------------------------- */
+.host {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+  gap: var(--space-4);
+  padding: var(--space-4);
+  align-items: start;
+}
+.seats, .links { display: flex; flex-direction: column; gap: var(--space-2); }
+.link-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: var(--space-2);
+}
+.link-row a { overflow-wrap: anywhere; }
+.option-choice { border: var(--border); border-radius: var(--radius); padding: var(--space-2) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+.option-choice label { align-items: flex-start; }
+
+/* ---------------------------------------------------------------------------
+   Assets page
+--------------------------------------------------------------------------- */
+.assets-page { padding: var(--space-4); max-width: 80rem; margin: 0 auto; gap: var(--space-4); }
+.asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: var(--space-2); }
+.asset { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2); border: var(--border); border-radius: var(--radius); background: var(--color-cell); min-width: 0; }
+.asset-scales { display: flex; align-items: flex-end; gap: var(--space-3); flex-wrap: wrap; }
+.asset-scale { margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+.asset a { overflow-wrap: anywhere; }
+.palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); gap: var(--space-2); }
+.swatch-row { display: flex; align-items: center; gap: var(--space-2); }
+.swatch-row i { width: 24px; height: 24px; border: var(--border); border-radius: 3px; flex: none; }
 .player-cards { display: flex; flex-wrap: wrap; gap: var(--space-3); }
 .player-card { display: flex; flex-direction: column; width: min-content; min-width: 160px; border: var(--border); border-radius: var(--radius); background: var(--color-panel); overflow: hidden; }
 .player-card > .sprite { border-bottom: 2px solid var(--color-text); }
 .player-card-body { display: flex; gap: var(--space-2); align-items: center; padding: var(--space-2); }
 
-/* The table (first draft): cards, pieces on hexes, faction chips. Plain CSS in
-   the palette with clean solid borders; no pixel assets for UI (2026-10-06). */
-.cards { display: flex; flex-wrap: wrap; gap: var(--space-3); }
-.card {
-  --suit: var(--suit-none);
-  width: 196px; display: flex; flex-direction: column; gap: 4px;
-  padding: 0 var(--space-2) var(--space-2);
-  background: var(--card-face); color: var(--card-ink);
-  border: var(--line) solid var(--ink); box-shadow: var(--shadow);
+/* ===========================================================================
+   The table (/p/…, /hotseat)
+=========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Page frame: sections in normal flow (catalogue 1). The page is never
+   narrower than the island section, so every section shares one width and a
+   narrow window scrolls the page as one (catalogue 5).
+--------------------------------------------------------------------------- */
+body { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px + 2 * var(--space-4)); }
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-4);
+  /* room to scroll the last section clear of the bar and the resting hand */
+  padding-bottom: calc(var(--bar-h) + var(--peek) + 24px);
 }
-.card-band { margin: 0 calc(var(--space-2) * -1) 2px; padding: 3px var(--space-2); background: var(--suit); color: var(--ink); border-bottom: var(--line) solid var(--ink);
-  font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; }
-.card-name { font-family: var(--font-display); font-size: 13px; text-transform: uppercase; line-height: 1.15; }
-.card p { margin: 0; color: #5a5454; }
-.card-response { border-top: 1px dashed #a0948f; padding-top: 4px; }
-.card .btn { background: #e0f2f4; color: var(--ink); }
-.card .btn-primary { background: var(--color-accent); }
-.card-ticked { outline: 3px solid var(--state-candidate); outline-offset: 2px; }
-#phase .card { cursor: pointer; }
-.card-suit-nocturnals { --suit: var(--suit-nocturnals); }
-.card-suit-scifi { --suit: var(--suit-scifi); }
-.card-suit-sentients { --suit: var(--suit-sentients); }
-.card-suit-undead { --suit: var(--suit-undead); }
-.card-suit-demonic { --suit: var(--suit-demonic); }
-.piece { display: inline-flex; align-items: center; gap: 1px; font-size: 10px; font-weight: 600; color: var(--color-text); text-shadow: 1px 1px 0 var(--ink); }
-.faction-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; background: var(--color-panel-2); border: var(--border); box-shadow: 2px 2px 0 var(--ink); }
-.board-tile.is-scorched { filter: grayscale(1) brightness(0.6); }
-.tag { display: inline-block; padding: 0 4px; border: 1px solid var(--color-muted); font-size: 10px; text-transform: uppercase; font-family: var(--font-display); }
+.table > .panel { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px); contain: layout paint; }
+.faction-table, .players-strip .player-list { min-width: min(var(--map-width, 0px), 100%); }
 
-/* The table layout (2026-10-06): slayer groups across the top, the map, then
-   the phase panel with its cards in a row; the log and table talk are
-   expandable overlays. */
-.table { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); max-width: 1200px; margin: 0 auto; }
-#board { align-items: center; }
-#phase .cards { flex-wrap: nowrap; overflow-x: auto; padding-bottom: var(--space-2); }
-#phase .card { flex: 0 0 196px; }
-.overlay-buttons { position: fixed; right: var(--space-4); bottom: var(--space-4); display: flex; gap: var(--space-2); z-index: 21; }
-.overlay { position: fixed; right: var(--space-4); bottom: calc(var(--space-4) + 44px); width: min(380px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; z-index: 20; }
-.overlay-close { position: absolute; top: var(--space-2); right: var(--space-2); padding: 0 var(--space-2); }
-.log-round { padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-cell); }
-
-/* Pieces on a hex: one row per faction's tokens, one row of influence cubes. */
-.hex-pieces .piece-row { display: flex; justify-content: center; align-items: flex-end; min-height: 0; max-width: 100%; }
-.hex-pieces .piece-row[data-action] { cursor: pointer; }
-.hex-pieces .cube-row { gap: 0; }
-.hex-pieces .cube-row > .cube + .cube { margin-left: -2px; }
-.hidden-token { width: 10px; height: 10px; margin-left: 3px; background: var(--color-panel-2); border: 2px solid var(--owner); box-shadow: 1px 1px 0 var(--ink); }
-.overlay[hidden], [hidden] { display: none !important; }
-
-/* Supplies as pieces: a faction's tokens, a player's cubes, overlapping. */
-.faction-chip { flex-direction: column; align-items: flex-start; gap: 4px; }
-.faction-name { font-size: 12px; }
-.supply-row { display: flex; flex-wrap: wrap; align-items: flex-end; max-width: 220px; row-gap: 2px; }
-.supply-row > .token + .token { margin-left: -14px; }
-.supply-row.cubes { gap: 1px; }
-.standing-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; max-width: 220px; min-height: 12px; }
-.standing-group { display: inline-flex; gap: 1px; }
-
-/* The faction table: one row per faction in play. */
-.faction-table { display: flex; flex-direction: column; width: 100%; border: var(--border); box-shadow: var(--shadow); background: var(--color-panel-2); }
-.faction-row { display: grid; grid-template-columns: minmax(170px, 1.2fr) 90px minmax(150px, 1.4fr) minmax(150px, 1.6fr); align-items: center; gap: var(--space-3); padding: 6px var(--space-2); border-bottom: 1px solid var(--color-panel); }
-.faction-row:last-child { border-bottom: 0; }
-.faction-head { padding-top: 4px; padding-bottom: 4px; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; }
-.faction-row.is-candidate { cursor: pointer; background: var(--color-accent-soft); outline: 2px solid var(--state-candidate); outline-offset: -2px; }
-.faction-id { display: flex; align-items: center; gap: var(--space-2); }
-.faction-id > span:last-child { display: flex; flex-direction: column; }
-.faction-count { display: flex; flex-direction: column; }
-.faction-count b { font-family: var(--font-display); font-size: 18px; }
-.standing-group.is-leading { outline: 1px solid var(--state-candidate); outline-offset: 2px; }
-
-/* Cards you can click: lift on hover; a ready response glows. */
-.card { position: relative; }
-.card-act, .card-keep, .card-respond { cursor: pointer; transition: transform 80ms ease-out; }
-.card-act:hover, .card-keep:hover, .card-respond:hover { transform: translateY(-3px); }
-.card-act { outline: 2px solid var(--state-candidate); outline-offset: 2px; }
-.card-respond { outline: 3px solid var(--color-link); outline-offset: 2px; animation: candidate-glow 1.2s ease-in-out infinite; }
-@keyframes candidate-glow { 50% { outline-color: var(--state-hover); } }
-.card-influence { position: static; margin-left: 2px; padding: 0 5px; font-family: var(--font-display); font-size: 13px; background: var(--color-accent); color: var(--ink); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
-.card-influence:hover { background: var(--color-accent-strong); }
-.card-influence.is-off { background: #e0f2f4; color: #7d7071; cursor: default; box-shadow: none; }
-@media (prefers-reduced-motion: reduce) { .card-respond { animation: none; } }
-#phase > .btn, #phase .stack > .btn { align-self: flex-start; }
-.trophies { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
-.trophies > .token + .token { margin-left: -12px; }
-
-/* Slayer groups: a horizontal accordion of cards made of stacked rows: the
-   name and status, then (when open) group, supply, hand and, for you,
-   trophies. Closed cards keep their rows folded to zero width, so the strip
-   is as tall as the tallest open card and switching animates. */
+/* ---------------------------------------------------------------------------
+   Slayer groups: a horizontal accordion of stacked rows. The open card shows
+   group, supply, hand and (for you) trophies; closed tabs show the name, the
+   cards in hand and the supply, six cubes to a row.
+--------------------------------------------------------------------------- */
 .player-list.accordion { flex-wrap: nowrap; align-items: stretch; }
-.accordion .player { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; gap: 4px; flex: 0 0 auto; min-width: 0;
-  padding: var(--space-2) var(--space-3); border-left: 6px solid var(--seat); cursor: pointer; transition: flex-grow 240ms ease-out, background-color 240ms; }
-.accordion .player.is-open { flex: 1 1 auto; cursor: default; background: var(--color-panel); }
+.accordion .player {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 4px;
+  flex: 0 1 auto;
+  min-width: 64px;
+  overflow: hidden;
+  padding: var(--space-2) var(--space-3);
+  border-left: 6px solid var(--seat);
+  cursor: pointer;
+}
 .accordion .player:not(.is-open):hover { border-top-color: var(--color-accent); border-right-color: var(--color-accent); border-bottom-color: var(--color-accent); }
+.accordion .player.is-open { flex: 1 1 auto; min-width: 0; overflow: visible; cursor: default; background: var(--color-panel); }
+.accordion .swatch { display: none; }
 .player-row { display: flex; align-items: center; gap: var(--space-3); white-space: nowrap; min-height: 18px; }
 .player-head { justify-content: space-between; }
 .player-row .field-label { width: 64px; flex: none; font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
 .player-row .field-value { font-size: 12px; display: flex; align-items: center; }
-.accordion .player-detail { display: flex; flex-direction: column; gap: 4px; max-width: 0; opacity: 0; overflow: hidden; transition: max-width 240ms ease-out, opacity 200ms ease-out; }
-.accordion .player.is-open .player-detail { max-width: 640px; opacity: 1; }
+/* Closed: the head stacks (name, then status and cards); details fold away. */
+.accordion .player:not(.is-open) .player-head { flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.accordion .player:not(.is-open) .player-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.accordion .player:not(.is-open) .mini-cards { margin-left: 0; }
+.accordion .player-detail { display: flex; flex-direction: column; gap: 4px; max-width: 0; opacity: 0; overflow: hidden; }
+.accordion .player.is-open .player-detail { max-width: none; min-width: 0; opacity: 1; animation: fade-in 120ms ease-out; }
 .accordion .player-detail .supply-row, .accordion .player-detail .trophies { flex-wrap: nowrap; max-width: none; }
-.accordion .swatch { display: none; }
-@media (prefers-reduced-motion: reduce) { .accordion .player, .accordion .player-detail { transition: none; } }
-/* A card back, for counting cards in hand: plum with a cream edge. */
+.accordion .player.is-open .player-detail .supply-row, .accordion .player.is-open .player-detail .trophies { flex-wrap: wrap; }
+.player-supply-mini { display: grid; grid-template-columns: repeat(6, max-content); gap: 1px; align-content: start; justify-content: start; max-height: 60px; overflow: hidden; }
+.accordion .player.is-open .player-supply-mini { max-height: 0; opacity: 0; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+/* A card back, for counting cards in hand. */
 .mini-cards { display: inline-flex; align-items: center; margin-left: 4px; vertical-align: middle; }
 .mini-card { width: 11px; height: 15px; background: var(--card-face); border: 1px solid var(--ink); box-shadow: inset 0 0 0 2px var(--card-face), inset 0 0 0 7px var(--color-accent-soft), 1px 1px 0 var(--ink); }
 .mini-card + .mini-card { margin-left: -5px; }
-.player-status { display: inline-flex; align-items: center; gap: 4px; }
-.suit-icon { display: inline-block; vertical-align: middle; }
-.suit-line { display: inline-flex; align-items: center; gap: 4px; }
-/* The open card never shrinks below its content; closed tabs give way, and
-   the strip scrolls sideways on narrow screens rather than clipping. */
-.player-list.accordion { overflow-x: visible; }
-.accordion .player { flex: 0 1 auto; min-width: 72px; }
-.accordion .player.is-open { flex: 1 0 auto; min-width: max-content; }
-.accordion .player:not(.is-open) .player-head { min-width: 0; }
-.accordion .player:not(.is-open) .player-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-/* Room inside the scrolling hand for the cards' outlines, shadows and hover lift. */
-#phase .cards { padding: 8px 8px 12px; margin: -8px -8px -4px; }
-/* Closed tabs: the status and cards in hand sit below the name. */
-.accordion .player:not(.is-open) .player-head { flex-direction: column; align-items: flex-start; gap: 4px; }
-.accordion .player:not(.is-open) .mini-cards { margin-left: 0; }
 
-/* Faction table reflow (2026-10-06): wide, four columns whose token and cube
-   rows wrap inside their cells; narrow (by the table's own width), each
-   faction stacks: name and presence, then supply, then influence, each
-   labelled. */
-.faction-table { container-type: inline-size; }
-.faction-row { grid-template-columns: minmax(150px, 1.1fr) 64px minmax(0, 1.4fr) minmax(0, 1.4fr); grid-template-areas: "id count supply influence"; }
+/* ---------------------------------------------------------------------------
+   Factions: one row per faction (token and name, supply, influence). Narrow
+   (by the table's own width), each row stacks with labels.
+--------------------------------------------------------------------------- */
+.faction-table { display: flex; flex-direction: column; width: 100%; container-type: inline-size; border: var(--border); box-shadow: var(--shadow); background: var(--color-panel); }
+.faction-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(0, 1.5fr) minmax(0, 1.5fr);
+  grid-template-areas: "id supply influence";
+  align-items: center;
+  gap: var(--space-3);
+  padding: 6px var(--space-2);
+  border-bottom: 1px solid var(--color-cell);
+}
+.faction-row:last-child { border-bottom: 0; }
 .faction-row > .cell-id { grid-area: id; min-width: 0; }
-.faction-row > .faction-count { grid-area: count; }
 .faction-row > .cell-supply { grid-area: supply; min-width: 0; }
 .faction-row > .cell-influence { grid-area: influence; min-width: 0; }
-.faction-head > span:nth-child(1) { grid-area: id; } .faction-head > span:nth-child(2) { grid-area: count; }
-.faction-head > span:nth-child(3) { grid-area: supply; } .faction-head > span:nth-child(4) { grid-area: influence; }
+.faction-head { padding-top: 4px; padding-bottom: 4px; border-bottom: 0; background: var(--ink); font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; }
+.faction-head > span:nth-child(1) { grid-area: id; }
+.faction-head > span:nth-child(2) { grid-area: supply; }
+.faction-head > span:nth-child(3) { grid-area: influence; }
+.faction-row.is-candidate { cursor: pointer; background: color-mix(in oklab, var(--color-panel), var(--state-candidate) 14%); outline: 2px solid var(--state-candidate); outline-offset: -2px; }
+.faction-id { display: flex; align-items: center; gap: var(--space-2); }
+.faction-id > span:last-child { display: flex; flex-direction: column; }
 .faction-cell { display: flex; align-items: center; gap: var(--space-2); }
 .faction-table .supply-row, .faction-table .standing-row { max-width: none; flex-wrap: wrap; row-gap: 3px; }
 .faction-table .supply-row { padding-left: 14px; }
 .faction-table .supply-row > .token { margin-left: -14px; }
 @container (max-width: 720px) {
   .faction-head { display: none; }
-  .faction-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "id count" "supply supply" "influence influence"; row-gap: 6px; }
+  .faction-row { grid-template-columns: minmax(0, 1fr); grid-template-areas: "id" "supply" "influence"; row-gap: 6px; }
   .faction-cell::before { content: attr(data-label); flex: none; width: 72px; font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
-  .faction-count { align-items: flex-end; }
 }
-/* Faction table colours: the panel's own navy family, not plum. */
-.faction-table { background: var(--color-panel); }
-.faction-row { border-bottom: 1px solid var(--color-cell); }
-.faction-head { background: var(--ink); border-bottom: 0; }
-.faction-row.is-candidate { background: color-mix(in oklab, var(--color-panel), var(--state-candidate) 14%); }
-/* The influence leader: a crisp gold underline (a 1px outline blurred off-pixel). */
-.standing-group.is-leading { outline: none; padding-bottom: 2px; border-bottom: 2px solid var(--state-candidate); }
-.standing-group { padding-bottom: 2px; border-bottom: 2px solid transparent; }
-/* Every display table is at least as wide as the map (set from JS as --map-width). */
-.faction-table, .players-strip .player-list, #phase .cards { min-width: min(var(--map-width, 0px), 100%); }
-.table > .panel { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px); }
-/* No presence column (2026-10-06): the total is above the table and the pieces are on the map. */
-.faction-row { grid-template-columns: minmax(150px, 1fr) minmax(0, 1.5fr) minmax(0, 1.5fr); grid-template-areas: "id supply influence"; }
-.faction-head > span:nth-child(2) { grid-area: supply; } .faction-head > span:nth-child(3) { grid-area: influence; }
-@container (max-width: 720px) {
-  .faction-row { grid-template-columns: minmax(0, 1fr); grid-template-areas: "id" "supply" "influence"; }
+
+/* ---------------------------------------------------------------------------
+   The island section: the board art centred in its window.
+--------------------------------------------------------------------------- */
+#board { align-items: center; }
+#board > h2 { align-self: flex-start; }
+.map-window { display: flex; justify-content: center; max-width: 100%; }
+
+/* ---------------------------------------------------------------------------
+   Cards
+--------------------------------------------------------------------------- */
+.card {
+  --suit: var(--suit-none);
+  position: relative;
+  width: var(--card-w);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 var(--space-2) var(--space-2);
+  background: var(--card-face);
+  color: var(--card-ink);
+  border: var(--line) solid var(--ink);
+  box-shadow: var(--shadow);
 }
-/* Closed tabs also show the supply, wrapped six to a row so the tab stays narrow. */
-.player-supply-mini { display: grid; grid-template-columns: repeat(6, max-content); gap: 1px; align-content: start; justify-content: start; }
-.accordion .player.is-open .player-supply-mini { display: none; }
-/* Smoother accordion (2026-10-06): only animatable properties change, all on
-   one curve. The card grows (flex-grow), its rows unfold (max-width) and then
-   fade in; closing fades first. The compact supply cross-fades instead of
-   switching display. */
-:root { --accordion-ease: cubic-bezier(0.22, 0.8, 0.3, 1); --accordion-time: 340ms; }
-.accordion .player { flex: 0 0 auto; min-width: 72px; transition: flex-grow var(--accordion-time) var(--accordion-ease), background-color var(--accordion-time) var(--accordion-ease); }
-.accordion .player.is-open { flex: 1 0 auto; min-width: 72px; }
-.accordion .player-detail { transition: max-width var(--accordion-time) var(--accordion-ease), opacity 160ms ease-out; }
-.accordion .player.is-open .player-detail { transition: max-width var(--accordion-time) var(--accordion-ease), opacity 220ms ease-out 120ms; }
-.accordion .player-supply-mini { max-height: 60px; opacity: 1; overflow: hidden; transition: max-height var(--accordion-time) var(--accordion-ease), opacity 160ms ease-out; }
-.accordion .player.is-open .player-supply-mini { display: grid; max-height: 0; opacity: 0; }
-/* Faster accordion. */
-:root { --accordion-time: 200ms; }
-.accordion .player-detail { transition: max-width var(--accordion-time) var(--accordion-ease), opacity 100ms ease-out; }
-.accordion .player.is-open .player-detail { transition: max-width var(--accordion-time) var(--accordion-ease), opacity 140ms ease-out 60ms; }
-.accordion .player-supply-mini { transition: max-height var(--accordion-time) var(--accordion-ease), opacity 100ms ease-out; }
-/* Performance: small tokens (supplies, standing, pieces on hexes) get one light
-   shadow instead of the full stack of cardboard filters; panels contain their
-   own layout and paint. */
-.supply-row .token, .hex-pieces .token, .trophies .token { filter: drop-shadow(0 1px 0 var(--token-edge-dark)); }
-.supply-row .token.is-candidate, .hex-pieces .token.is-candidate { filter: drop-shadow(0 1px 0 var(--state-candidate)) drop-shadow(0 -1px 0 var(--state-candidate)); }
-.table > .panel { contain: layout paint; }
-/* Performance first (2026-10-06): only cheap animations. No looping
-   animations; the accordion switches instantly and its details fade in
-   (opacity only); hovers move things (transform only). */
-.token.is-candidate { animation: none; }
-.card-respond { animation: none; outline-color: var(--color-link); }
-.accordion .player, .accordion .player-detail, .accordion .player-supply-mini { transition: none; }
-.accordion .player.is-open .player-detail { animation: fade-in 120ms ease-out; }
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-.accordion .player-detail { max-width: 0; }
-.accordion .player.is-open .player-detail { max-width: none; }
-.board-tile .hex { transition: transform 80ms ease-out; }
-
-/* The hand (2026-10-06): the phase panel docks to the bottom of the window so
-   the hand stays in view while the map scrolls; cards share the row instead of
-   scrolling; dimmed when they can't be used; the card being played stays
-   raised. The log and table talk buttons move to the top right. */
-#phase { position: sticky; bottom: 0; z-index: 5; max-height: 48vh; overflow-y: auto; box-shadow: 0 -4px 0 var(--ink), var(--shadow); }
-#phase .cards { flex-wrap: nowrap; overflow-x: auto; }
-#phase .card { flex: 1 1 0; min-width: 150px; max-width: 230px; }
-#phase .card p { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-#phase .card .card-response { -webkit-line-clamp: 3; }
-.card-dim { opacity: 0.55; }
-.card-dim:hover { opacity: 0.85; }
-.card-selected { transform: translateY(-6px); outline: 3px solid var(--state-candidate); outline-offset: 2px; }
-.overlay-buttons-top { top: 10px; bottom: auto; }
-.overlay { top: 56px; bottom: auto; }
-
-/* The hand (2026-10-06, reworked for predictable hovering). A fixed overlay
-   at the bottom of the window. Closed: the cards overlap low, tops peeking.
-   Open (a card hovered): the cards spread side by side without overlapping,
-   all still low, and the hovered card rises fully into view. While a card is
-   being played, it alone rises, in its own slot. One hover zone sits behind
-   all the cards (about half a card high), so moving between cards never
-   lands on the wrong one. Transform-only animation. */
-#phase { position: sticky; top: 8px; bottom: auto; z-index: 6; max-height: none; overflow: visible; box-shadow: var(--shadow); }
-.table { padding-bottom: 150px; }
-.hand { position: fixed; left: 0; right: 0; bottom: 0; height: 0; z-index: 15; pointer-events: none; --card-w: 190px; --gap: min(var(--card-w) + 12px, calc((100vw - 240px) / var(--n, 1))); }
-.hand .fan { position: absolute; left: 50%; bottom: 0; width: 0; height: 0; }
-.hand .card {
-  --x: calc(var(--off) * 46px); --y: 64%; --r: calc(var(--off) * 3deg);
-  position: absolute; left: 0; bottom: 0; width: var(--card-w); margin: 0; pointer-events: auto; z-index: calc(var(--i) + 1);
-  transform-origin: 50% 100%;
-  transform: translate(calc(-50% + var(--x)), var(--y)) rotate(var(--r));
-  transition: transform 140ms ease-out 80ms;
+.card-suit-nocturnals { --suit: var(--suit-nocturnals); }
+.card-suit-scifi { --suit: var(--suit-scifi); }
+.card-suit-sentients { --suit: var(--suit-sentients); }
+.card-suit-undead { --suit: var(--suit-undead); }
+.card-suit-demonic { --suit: var(--suit-demonic); }
+.card-band {
+  display: flex; justify-content: space-between; gap: 6px;
+  margin: 0 calc(var(--space-2) * -1) 2px; padding: 3px var(--space-2);
+  background: var(--suit); color: var(--ink); border-bottom: var(--line) solid var(--ink);
+  font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
 }
-.hand.is-hovering .card, .hand.is-open .card { --x: calc(var(--off) * var(--gap)); --y: 58%; --r: 0deg; transition-delay: 0ms; }
-.hand .card:hover, .hand.is-open .card { --y: 0%; }
-.hand:has(.card:hover) .card:hover { --y: -12px; z-index: 50; }
-.hand .card.card-selected { --y: -8px; --r: 0deg; z-index: 50; }
-.hand .card::before { content: none; }
-.fan-slop { display: block; position: absolute; left: 0; bottom: 0; z-index: 0; pointer-events: none; transform: translateX(-50%);
-  width: calc(var(--n, 1) * var(--gap) + 120px); height: 130px; }
-.hand.is-hovering .fan-slop, .hand.is-open .fan-slop { pointer-events: auto; }
-.hand .card-dim { opacity: 1; }
-.hand-tab { position: absolute; left: 50%; bottom: 8px; transform: translate(-50%, 0); pointer-events: auto; z-index: 60;
-  padding: 2px 10px; font-family: var(--font-display); font-size: 11px; text-transform: uppercase; background: var(--color-panel-2); color: var(--color-text);
-  border: var(--border); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; display: none; }
-@media (hover: none) { .hand-tab { display: block; bottom: auto; top: -160px; } }
-@media (prefers-reduced-motion: reduce) { .hand .card { transition: none; } }
-
-/* Hand actions: icons that ride beside the fan, closed or open. */
-.hand-actions { position: absolute; bottom: 14px; left: 0; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; z-index: 70;
-  transform: translateX(calc((var(--n, 1) - 1) / 2 * 46px + 120px)); transition: transform 160ms ease-out; }
-.hand.is-hovering .hand-actions, .hand.is-open .hand-actions { transform: translateX(calc((var(--n, 1) - 1) / 2 * var(--gap) + 112px)); }
-.hand-icon { width: 34px; height: 34px; display: grid; place-items: center; font-size: 18px; line-height: 1; cursor: pointer;
-  background: var(--color-cell); color: var(--color-text); border: var(--border); box-shadow: 2px 2px 0 var(--ink); }
-.hand-icon:hover:not(:disabled) { border-color: var(--color-accent); }
-.hand-icon:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: none; }
-.hand-icon.is-primary { background: var(--color-accent); color: var(--ink); }
-.hand-icon:disabled { opacity: 0.45; cursor: not-allowed; }
-/* Dimmed cards stay opaque: a dark wash over the card, not transparency. */
-.card-dim, .card-dim:hover, .hand .card-dim { opacity: 1; }
+.card-band > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-name { font-family: var(--font-display); font-size: 13px; text-transform: uppercase; line-height: 1.15; }
+.card p { margin: 0; color: #5a5454; }
+.card-response { border-top: 1px dashed #a0948f; padding-top: 4px; }
+/* Text on the left, the card's options (readings, influence) on the right. */
+.card-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: start; }
+.card-text { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.card-options { display: flex; flex-direction: column; gap: 4px; }
+.card-opt {
+  display: flex; align-items: center; justify-content: center; gap: 3px; min-width: 40px; padding: 2px 4px;
+  font-size: 10px; font-family: var(--font-display); text-transform: uppercase;
+  background: #e0f2f4; color: var(--ink); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink);
+}
+.card-opt b { font-size: 13px; }
+button.card-opt { cursor: pointer; }
+button.card-opt:hover { background: #f6cca1; }
+.card-opt.is-off { opacity: 0.55; box-shadow: none; }
+.card-opt.is-next { background: var(--color-accent); }
+.card-opt.is-on { background: var(--color-accent); outline: 2px solid var(--ink); outline-offset: 1px; }
+/* Card states: playable (act), keepable in the draft (keep), a ready
+   response, ticked to keep, dimmed (a dark wash, never transparency). */
+.card-act, .card-keep, .card-respond { cursor: pointer; }
+.card-ticked { outline: 3px solid var(--state-candidate); outline-offset: 2px; }
+.card-respond { outline: 3px solid var(--color-link); outline-offset: 2px; }
 .card-dim::after { content: ""; position: absolute; inset: 0; background: rgb(48 43 45 / 0.38); pointer-events: none; }
 .card-dim:hover::after { background: rgb(48 43 45 / 0.18); }
-/* A card is selected: no fanning until Back; the selected card stays raised. */
-.hand.is-locked .card, .hand.is-locked .fan-slop { pointer-events: none; }
-/* Gentler fan (2026-10-06): open spacing stays overlapping; the hovered card
-   rises and its neighbours shuffle aside to reveal it. */
-.hand { --gap: min(118px, calc((100vw - 300px) / var(--n, 1))); --shove: 0px; }
-.hand .card { --nudge: 0px; transform: translate(calc(-50% + var(--x) + var(--nudge)), var(--y)) rotate(var(--r)); }
-.hand.is-hovering .card { --x: calc(var(--off) * var(--gap)); --r: calc(var(--off) * 2deg); }
-.hand:has(.card:hover) .card:hover { --r: 0deg; }
-.hand:has(.card:hover) .card:hover ~ .card { --nudge: 56px; }
-.hand:has(.card:hover) .card:has(~ .card:hover) { --nudge: -56px; }
-.fan-slop { width: calc(var(--n, 1) * var(--gap) + 260px); }
-.hand.is-hovering .hand-actions { transform: translateX(calc((var(--n, 1) - 1) / 2 * var(--gap) + 112px + 56px)); }
-/* The hover zone is now script (watchHand in app.js): .hand.is-hovering. */
-.fan-slop { display: none !important; }
-.hand.is-hovering .card:hover { --y: -12px; z-index: 50; --r: 0deg; }
-.hand.is-hovering .card:hover ~ .card { --nudge: 56px; }
-.hand.is-hovering .card:has(~ .card:hover) { --nudge: -56px; }
 
-/* The guide (2026-10-06): the phase panel floats above the hand at the bottom
-   centre: the next step, and its buttons (pass, let it resolve, keep, back,
-   play for no effect, done). */
-#phase { position: fixed; left: 50%; top: auto; bottom: 168px; transform: translateX(-50%); z-index: 16;
-  width: min(560px, calc(100vw - 32px)); max-height: 40vh; overflow-y: auto; gap: var(--space-2);
-  background: var(--color-panel-2); box-shadow: var(--shadow); }
-#phase h2 { font-size: 14px; }
-.guide-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: flex-end; }
-.guide-btn { display: inline-flex; align-items: center; gap: 6px; }
-.guide-icon { font-size: 15px; line-height: 1; }
-.hand-actions { display: none; }
-.table { padding-bottom: 420px; }
-/* The guide sits just above the resting hand; a raised card passes in front. */
-#phase { bottom: 84px; width: min(480px, calc(100vw - 32px)); padding: var(--space-2) var(--space-3); z-index: 14; }
-#phase h2 { font-size: 12px; }
-#phase p { font-size: 13px; }
-/* A small guide: hugs its content, small text, compact buttons. */
-#phase { width: max-content; max-width: min(380px, calc(100vw - 32px)); padding: 6px 10px; gap: 4px; bottom: 76px; box-shadow: 2px 2px 0 var(--ink); }
-#phase h2 { font-size: 10px; letter-spacing: 0.06em; }
-#phase p, #phase .notice { font-size: 11px; line-height: 1.35; }
-#phase .notice { padding: 2px 6px; border-width: 1px; }
-#phase .btn, #phase .guide-btn { padding: 1px 8px; font-size: 11px; box-shadow: 1px 1px 0 var(--ink); }
-#phase .guide-icon { font-size: 12px; }
-.guide-actions { gap: 4px; }
-/* The guide is exempt from the map-width rule, and lays out in one compact row. */
-.table > #phase { min-width: 0; }
-#phase { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-#phase > * { margin: 0; }
-#phase h2 { flex: none; }
-#phase > p, #phase > .stack, #phase > .notice { flex: 1 1 180px; }
-#phase .guide-actions { flex: none; }
-/* The guide is never covered: it stays above the hand, and rises clear of
-   the cards while the fan is open or a card is raised. */
-#phase { z-index: 16; transition: bottom 140ms ease-out; }
-body:has(.hand.is-hovering) #phase, body:has(.hand.is-open) #phase, body:has(.hand .card-selected) #phase { bottom: 178px; }
-
-/* ===========================================================================
-   The bottom bar (2026-10-06): one slim bar along the bottom; the hand sits
-   above it, tops peeking, and rises on hover. The bar's colour is the turn:
-   gold for your move, cyan when you can answer. Overrides the earlier hand
-   overlay and floating guide.
-=========================================================================== */
-:root { --bar-h: 44px; --peek: 70px; }
-.table { padding-bottom: calc(var(--bar-h) + var(--peek) + 24px); }
-.dock { position: fixed; left: 0; right: 0; bottom: 0; height: var(--bar-h); z-index: 16;
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 0 12px;
-  background: var(--color-panel-2); border-top: 3px solid var(--ink); }
+/* ---------------------------------------------------------------------------
+   The bar (catalogue 2): your supply and bluffs, then the current step and its
+   buttons. Its colour is the turn: gold for your move, cyan when you can answer.
+--------------------------------------------------------------------------- */
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-dock);
+  height: var(--bar-h);
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px;
+  padding: 0 12px;
+  background: var(--color-panel-2);
+  border-top: 3px solid var(--ink);
+}
 .dock.is-turn { border-top-color: var(--color-accent); background: color-mix(in oklab, var(--color-panel-2), var(--color-accent) 12%); }
 .dock.is-respond { border-top-color: var(--color-link); background: color-mix(in oklab, var(--color-panel-2), var(--color-link) 12%); }
-.bar-mine, .bar-score { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-.dock .bar-step#phase { position: static; transform: none; width: auto; max-width: none; min-width: 0; max-height: none; height: auto; margin: 0; padding: 0;
-  display: flex; align-items: center; justify-content: center; gap: 10px; background: none; border: 0; box-shadow: none; overflow: hidden; z-index: auto; }
+.bar-mine { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.bar-step { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; min-width: 0; overflow: hidden; }
 .bar-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .dock.is-turn .bar-text { color: var(--color-accent); }
 .dock.is-respond .bar-text { color: var(--color-link); }
@@ -733,166 +589,157 @@ body:has(.hand.is-hovering) #phase, body:has(.hand.is-open) #phase, body:has(.ha
 .bar-btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: none; }
 .bar-btn.is-primary { background: var(--color-accent); color: var(--ink); font-weight: 600; }
 .bar-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.bar-icon { width: 30px; height: 28px; padding: 0; display: grid; place-items: center; font-size: 16px; line-height: 1; }
 .chip { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; cursor: help; }
 .chip b { font-weight: 600; }
-.chip-sep { width: 1px; height: 20px; background: var(--color-cell); }
-.chip-label { font-family: var(--font-display); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
 .bluff { width: 10px; height: 10px; background: var(--color-cell); border: 2px solid var(--color-muted); box-shadow: 1px 1px 0 var(--ink); }
-.bar-score { position: relative; }
-.score-pop { position: absolute; right: 0; bottom: calc(100% + 10px); min-width: 330px; padding: 8px 10px; background: var(--color-panel); border: var(--border); box-shadow: var(--shadow); white-space: normal; font-size: 12px; z-index: 30; }
-.score-pop table { border-collapse: collapse; margin-top: 4px; width: 100%; }
-.score-pop td { padding: 2px 6px 2px 0; }
-.score-pop td:nth-child(2) { text-align: right; padding-right: 10px; }
 
-/* The hand: fixed just above the bar; closed, only the top of each card shows;
-   hovered, the cards spread a little and the hovered one rises fully. */
-.hand { position: fixed; left: 0; right: 0; bottom: var(--bar-h); top: auto; height: 0; z-index: 15; pointer-events: none; }
-.hand .fan { position: absolute; left: 50%; bottom: 0; width: 0; height: 0; }
-.hand .card { --y: calc(100% - var(--peek)); }
-.hand.is-hovering .card { --y: calc(100% - var(--peek) + 6px); }
-.hand.is-hovering .card:hover, .hand .card.card-selected { --y: 0px; z-index: 50; }
-.hand.is-open .card { --y: 0px; }
-.hand-tab { top: auto; bottom: calc(var(--peek) + 6px); }
-/* Open hand (the draft): spread out to read every card, side by side. */
-.hand.is-open .card { --x: calc(var(--off) * min(204px, calc((100vw - 60px) / var(--n, 1)))); --r: 0deg; --nudge: 0px; }
-.card-band { gap: 6px; }
-.card-band > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* The bar keeps only supply and bluffs; influence and trophies float in
-   vertical stacks either side, rising from the bar. */
-.dock { grid-template-columns: auto minmax(0, 1fr); }
-.side-stack { position: fixed; bottom: calc(var(--bar-h) + 10px); z-index: 14; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
-  padding: 6px 8px; background: var(--color-panel-2); border: var(--border); box-shadow: 2px 2px 0 var(--ink); }
-.side-left { left: 10px; }
-.side-right { right: 10px; align-items: flex-end; }
-.side-stack .chip { font-size: 12px; }
-/* Side stacks: very concise until hovered or tapped. Compact: tokens and
-   numbers only (trophies: only the factions held). Expanded: a heading,
-   names, and every faction. */
-.side-stack { padding: 4px 6px; gap: 3px; cursor: pointer; }
-.side-head, .side-name { display: none; }
-.side-head { font-family: var(--font-display); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
+/* Influence (left) and trophies (right): tabs rising from the bar's ends,
+   in its colours. Compact: tokens and numbers only (trophies: only those
+   held). Hovered or tapped: a heading, names, and every faction. */
+.side-stack {
+  position: fixed; bottom: calc(var(--bar-h) - 3px); z-index: var(--z-side);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  padding: 4px 6px;
+  background: var(--color-panel-2);
+  border: 2px solid var(--ink); border-bottom: 0;
+  cursor: pointer;
+}
+.side-left { left: 8px; }
+.side-right { right: 8px; align-items: flex-end; }
+.dock.is-turn ~ .side-stack { background: color-mix(in oklab, var(--color-panel-2), var(--color-accent) 12%); border-color: var(--color-accent); }
+.dock.is-respond ~ .side-stack { background: color-mix(in oklab, var(--color-panel-2), var(--color-link) 12%); border-color: var(--color-link); }
+.side-head { display: none; font-family: var(--font-display); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
+.side-name { display: none; }
 .side-row { display: flex; align-items: center; gap: 4px; font-size: 12px; }
 .side-row b { min-width: 10px; text-align: center; }
 .side-row.is-zero { display: none; }
+.side-stack:not(:has(.side-row:not(.is-zero)))::before { content: "·"; color: var(--color-muted); font-size: 12px; padding: 0 4px; }
 .side-stack:hover, .side-stack.is-open { padding: 6px 10px; gap: 4px; }
+.side-stack:hover::before, .side-stack.is-open::before { content: none; }
 .side-stack:hover .side-head, .side-stack.is-open .side-head { display: block; }
 .side-stack:hover .side-name, .side-stack.is-open .side-name { display: inline; color: var(--color-muted); font-size: 11px; }
 .side-stack:hover .side-row.is-zero, .side-stack.is-open .side-row.is-zero { display: flex; opacity: 0.6; }
-/* Side stacks as tabs growing out of the bar: same colours, no gap. */
-.side-stack { bottom: calc(var(--bar-h) - 3px); box-shadow: none; border: 2px solid var(--ink); border-bottom: 0; background: var(--color-panel-2); z-index: 17; }
-.side-left { left: 8px; }
-.side-right { right: 8px; }
-.dock.is-turn ~ .side-stack { background: color-mix(in oklab, var(--color-panel-2), var(--color-accent) 12%); border-color: var(--color-accent); }
-.dock.is-respond ~ .side-stack { background: color-mix(in oklab, var(--color-panel-2), var(--color-link) 12%); border-color: var(--color-link); }
-.side-stack:not(:has(.side-row:not(.is-zero)))::before { content: "·"; color: var(--color-muted); font-size: 12px; padding: 0 4px; }
-.side-stack:hover::before, .side-stack.is-open::before { content: none; }
-/* No standing gold outlines on playable or selected cards; the lift on hover
-   (and the raised selected card) says enough. Draft ticks keep theirs. */
-.card-act, .card-selected { outline: none; }
-/* The raised card follows the last card touched (set by watchHand), not
-   strict :hover, so gaps and edges don't drop it. */
-.hand.is-hovering .card:hover { --y: calc(100% - var(--peek) + 6px); z-index: calc(var(--i) + 1); --nudge: 0px; }
-.hand.is-hovering .card.is-active { --y: 0px; z-index: 50; --r: 0deg; }
-.hand.is-hovering .card:hover ~ .card, .hand.is-hovering .card:has(~ .card:hover) { --nudge: 0px; }
-.hand.is-hovering .card.is-active ~ .card { --nudge: 56px; }
-.hand.is-hovering .card:has(~ .card.is-active) { --nudge: -56px; }
-/* Neutralise the older :hover raise rules (more specific) so is-active decides. */
-.hand:has(.card:hover) .card:hover { --y: calc(100% - var(--peek) + 6px); z-index: calc(var(--i) + 1); --r: 0deg; }
-.hand:has(.card:hover) .card:hover ~ .card, .hand:has(.card:hover) .card:has(~ .card:hover) { --nudge: 0px; }
-.hand:has(.card:hover) .card.is-active, .hand.is-hovering .card.is-active.card { --y: 0px; z-index: 50; }
-.hand:has(.card.is-active) .card.is-active ~ .card { --nudge: 56px; }
-.hand:has(.card.is-active) .card:has(~ .card.is-active) { --nudge: -56px; }
-.hand.is-open .card.is-active, .hand.is-open .card:hover { --y: 0px; }
-.hand.is-locked .card.is-active:not(.card-selected) { --y: calc(100% - var(--peek)); }
-.reading-toggle { display: inline-flex; gap: 0; flex: none; }
-.reading-toggle .bar-btn { display: inline-flex; align-items: center; gap: 4px; box-shadow: none; }
-.reading-toggle .bar-btn + .bar-btn { border-left: 0; }
-.reading-toggle .bar-btn.is-on { background: var(--color-accent); color: var(--ink); }
-/* Card options on the right of the card: its readings and its influence. */
-.card-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: start; }
-.card-text { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.card-options { display: flex; flex-direction: column; gap: 4px; }
-.card-opt { display: flex; align-items: center; justify-content: center; gap: 3px; min-width: 40px; padding: 2px 4px; font-size: 10px; font-family: var(--font-display); text-transform: uppercase;
-  background: #e0f2f4; color: var(--ink); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); }
-button.card-opt { cursor: pointer; }
-button.card-opt:hover { background: #f6cca1; }
-.card-opt b { font-size: 13px; }
-.card-opt.is-off { opacity: 0.55; box-shadow: none; }
-.card-opt.is-next { background: var(--color-accent); }
-.card-opt.is-on { background: var(--color-accent); outline: 2px solid var(--ink); outline-offset: 1px; }
-.card { width: 214px; }
-#phase .card, .hand .card { width: 214px; }
+
+/* ---------------------------------------------------------------------------
+   The hand (catalogue 2–4): fixed just above the bar, height 0, with each card
+   hanging from the fan's centre-bottom. Cards move only by transform, from
+   --x, --y, --r and --nudge. The states, each overriding the one before:
+     resting       cards overlap and tilt; only their tops (--peek) show
+     .is-hovering  the pointer is over the hand (watchHand in app.js): they
+                   spread and straighten a little
+     .is-active    the card last touched (watchHand) rises fully; its
+                   neighbours shuffle aside
+     .is-open      the draft: every card raised, side by side
+     .is-locked    a card is selected: only it is raised and clickable
+--------------------------------------------------------------------------- */
+.hand {
+  --gap: min(118px, calc((100vw - 300px) / var(--n, 1)));
+  position: fixed; left: 0; right: 0; bottom: var(--bar-h); z-index: var(--z-hand);
+  height: 0;
+  pointer-events: none;
+}
+.hand .fan { position: absolute; left: 50%; bottom: 0; width: 0; height: 0; }
+.hand .card {
+  --x: calc(var(--off) * 46px);
+  --y: calc(100% - var(--peek));
+  --r: calc(var(--off) * 3deg);
+  --nudge: 0px;
+  position: absolute; left: 0; bottom: 0; z-index: calc(var(--i) + 1);
+  margin: 0;
+  pointer-events: auto;
+  transform-origin: 50% 100%;
+  transform: translate(calc(-50% + var(--x) + var(--nudge)), var(--y)) rotate(var(--r));
+  transition: transform 140ms ease-out 80ms;
+}
+.hand.is-hovering .card { --x: calc(var(--off) * var(--gap)); --y: calc(100% - var(--peek) + 6px); --r: calc(var(--off) * 2deg); transition-delay: 0ms; }
+.hand .card.is-active { --y: 0px; --r: 0deg; z-index: 50; }
+.hand .card.is-active ~ .card { --nudge: 56px; }
+.hand .card:has(~ .card.is-active) { --nudge: -56px; }
+.hand.is-open .card { --x: calc(var(--off) * min(204px, calc((100vw - 60px) / var(--n, 1)))); --y: 0px; --r: 0deg; transition-delay: 0ms; }
+.hand.is-locked .card { pointer-events: none; --nudge: 0px; }
 .hand.is-locked .card.card-selected { pointer-events: auto; }
-/* A selected card is pinned: raised, upright, unshuffled; hovering it changes nothing. */
-.hand .card.card-selected, .hand .card.card-selected:hover { --y: 0px !important; --r: 0deg !important; --nudge: 0px !important; z-index: 50 !important; }
-.hand.is-locked .card:not(.card-selected) { --nudge: 0px !important; }
-.bar-icon { width: 30px; height: 28px; padding: 0; display: grid; place-items: center; font-size: 16px; line-height: 1; }
+.hand .card.card-selected { --y: 0px; --r: 0deg; --nudge: 0px; z-index: 50; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hand .card { transition: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Overlays (log, table talk) and the toast (catalogue 2)
+--------------------------------------------------------------------------- */
+.overlay-buttons { position: fixed; top: 10px; right: var(--space-4); z-index: var(--z-overlay-buttons); display: flex; gap: var(--space-2); }
+.overlay { position: fixed; top: 56px; right: var(--space-4); z-index: var(--z-overlay); width: min(380px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
+.overlay-close { position: absolute; top: var(--space-2); right: var(--space-2); padding: 0 var(--space-2); }
+.log-round { display: flex; flex-direction: column; gap: 2px; font-size: 12px; padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-cell); }
+.chat-lines { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow-y: auto; font-size: 12px; }
+.chat-line b { font-weight: 600; }
+.chat-form { display: flex; gap: var(--space-2); }
+.chat-input { flex: 1; min-width: 0; }
+.toast {
+  position: fixed; left: 50%; bottom: var(--space-6); z-index: var(--z-toast);
+  transform: translateX(-50%);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border);
+  background: var(--color-danger);
+  color: var(--color-text);
+  box-shadow: var(--shadow);
+}
+.toast.info { background: var(--color-lake); }
 
 /* ===========================================================================
-   Phones and touch-only screens (2026-10-06): the bar, the hand and the side
-   tabs are ordinary sections below the map, in reading order, fully shown.
+   Phones and touch-only screens: one column that fits the screen. Sections
+   run edge to edge; the bar, hand and side sections are ordinary sections
+   after the island (catalogue 1); the slayer groups, factions and island
+   scroll sideways in place (catalogue 5).
 =========================================================================== */
 @media (max-width: 600px), (hover: none) and (pointer: coarse) {
-  body { display: flex; flex-direction: column; }
-  .topbar { order: -3; } .seatbar { order: -2; } main.table { order: -1; padding-bottom: var(--space-4); }
-  .dock { order: 1; } .hand { order: 2; } #influence { order: 3; } #score { order: 4; }
-  .dock { position: static; height: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; margin: 0 var(--space-4); border: var(--border); }
-  .dock .bar-step#phase { flex: 1 1 100%; justify-content: flex-start; flex-wrap: wrap; overflow: visible; }
-  .bar-text { white-space: normal; }
-  .hand { position: static; height: auto; margin: var(--space-3) var(--space-4); pointer-events: auto; }
-  .hand .fan { position: static; width: auto; height: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: var(--space-3); }
-  .hand .card, .hand .card.card-selected, .hand .card.card-selected:hover, .hand.is-hovering .card, .hand.is-open .card {
-    position: relative; left: auto; bottom: auto; width: auto; transform: none !important; transition: none; z-index: auto !important; }
-  .hand .card.card-selected { outline: 3px solid var(--state-candidate); outline-offset: 2px; }
-  .hand .card p { -webkit-line-clamp: unset; display: block; }
-  .hand-tab { display: none !important; }
-  .side-stack { position: static; margin: 0 var(--space-4) var(--space-3); border: var(--border); align-items: stretch; padding: 8px 10px; }
-  .side-head, .side-name { display: inline; }
-  .side-head { display: block; }
-  .side-row.is-zero { display: flex; opacity: 0.6; }
-  .side-stack::before { content: none !important; }
-  .dock, .hand, .side-stack { max-width: calc(100vw - 2 * var(--space-4)); box-sizing: border-box; }
-  /* No map-width minimum on phones; the map scrolls sideways inside its own section. */
-  .faction-table, .players-strip .player-list, #phase .cards, .table > .panel { min-width: 0 !important; }
-  main.table { max-width: 100vw; box-sizing: border-box; }
-  /* The map is a window you pan in both directions; the rows around it stay put. */
-  #board { align-items: stretch; }
-  #board .map-window { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; border: 0; margin: 0; width: 100%; justify-content: flex-start; }
-  .board { max-width: none; }
-  /* Faction sheets: a sideways-scrolling strip of cards, like the slayer groups. */
+  body { min-width: 0; }
+
+  .table { max-width: 100vw; padding: 0; gap: 0; }
+  .table > .panel { min-width: 0; margin: 0; box-shadow: none; border-left: 0; border-right: 0; }
+  .table > .panel + .panel { border-top: 0; }
+  .faction-table, .players-strip .player-list { min-width: 0; }
+
+  /* Slayer groups: the strip scrolls; tabs keep their size. */
+  .player-list.accordion { overflow-x: auto; padding-bottom: 4px; }
+  .accordion .player { flex: 0 0 auto; min-width: 72px; overflow: visible; }
+  .accordion .player.is-open { flex: 1 0 auto; min-width: 72px; }
+  .accordion .player.is-open .player-detail { min-width: auto; }
+  .accordion .player.is-open .player-detail .supply-row, .accordion .player.is-open .player-detail .trophies { flex-wrap: nowrap; }
+
+  /* Factions: a sideways strip of cards. */
   .faction-table { flex: none; flex-direction: row; overflow-x: auto; scroll-snap-type: x proximity; gap: var(--space-2); padding-bottom: 4px;
     background: none; border: 0; box-shadow: none; container-type: normal; }
-  .faction-table .faction-row.faction-head { display: none !important; }
+  .faction-table .faction-row.faction-head { display: none; }
   .faction-table .faction-row { flex: 0 0 min(250px, 78%); scroll-snap-align: start; display: flex; flex-direction: column; align-items: stretch; gap: 6px;
     padding: 8px 10px; background: var(--color-panel-2); border: var(--border); }
   .faction-table .faction-cell { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 3px; }
   .faction-table .faction-cell::before { content: attr(data-label); font-family: var(--font-display); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
-  .side-right { align-items: stretch; }
+
+  /* The island: full height, scrolls sideways. */
+  #board { align-items: stretch; }
+  .map-window { width: 100%; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
+  .board { max-width: none; }
+
+  /* The bar: a section with the step on its own line. */
+  .dock { position: static; height: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px;
+    border: var(--border); border-left: 0; border-right: 0; }
+  .bar-step { flex: 1 1 100%; justify-content: flex-start; overflow: visible; }
+  .bar-text { white-space: normal; }
+
+  /* The hand: every card in full, in a grid. */
+  .hand { position: static; height: auto; padding: var(--space-3); background: var(--color-panel); pointer-events: auto; }
+  .hand .fan { position: static; width: auto; height: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: var(--space-3); }
+  .hand .card { position: relative; left: auto; bottom: auto; width: auto; z-index: auto; transform: none; transition: none; }
+  .hand .card.is-active, .hand .card.card-selected { z-index: auto; }
+  .hand .card.card-selected { outline: 3px solid var(--state-candidate); outline-offset: 2px; }
+
+  /* Influence and trophies: static sections, always in full. */
+  .side-stack, .side-stack:hover, .side-stack.is-open { position: static; align-items: stretch; gap: 3px; padding: 8px 10px; border: var(--border); border-left: 0; border-right: 0; border-top: 0; cursor: default; }
+  .side-stack:not(:has(.side-row:not(.is-zero)))::before { content: none; }
+  .side-head { display: block; }
+  .side-name { display: inline; }
+  .side-row.is-zero { display: flex; opacity: 0.6; }
   .side-right .side-row { flex-direction: row-reverse; justify-content: flex-end; }
-}
-.map-window { display: flex; justify-content: center; max-width: 100%; }
-/* Desktop: the open slayer group shrinks and wraps rather than overflow its section. */
-@media (min-width: 601px) and (hover: hover) {
-  .accordion .player.is-open { min-width: 0; flex: 1 1 auto; }
-  .accordion .player:not(.is-open) { flex-shrink: 1; min-width: 64px; overflow: hidden; }
-  .accordion .player:not(.is-open) .player-supply-mini { flex-wrap: wrap; }
-  .accordion .player.is-open .player-detail { max-width: none; min-width: 0; }
-  .accordion .player.is-open .player-detail .supply-row, .accordion .player.is-open .player-detail .trophies { flex-wrap: wrap; }
-}
-/* Desktop: the page column is never narrower than the map's section, so every
-   section keeps the same width and a narrow window scrolls the page as one. */
-body { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px + 2 * var(--space-4)); }
-/* Phones: sections run edge to edge, stacked with no grey gutters between. */
-@media (max-width: 600px), (hover: none) and (pointer: coarse) {
-  main.table { padding: 0; gap: 0; }
-  body { min-width: 0; }
-  .player-list.accordion { overflow-x: auto; padding-bottom: 4px; }
-  .table > .panel, .dock, .hand, .side-stack { margin: 0 !important; max-width: none; width: auto; box-shadow: none; border-left: 0; border-right: 0; }
-  .table > .panel + .panel, .side-stack, .hand { border-top: 0; }
-  .hand { padding: var(--space-3); background: var(--color-panel); }
-}
-#board > h2 { align-self: flex-start; }
-/* Phones: the influence and trophies sections are static; hover and tap change nothing. */
-@media (max-width: 600px), (hover: none) and (pointer: coarse) {
-  .side-stack, .side-stack:hover, .side-stack.is-open { padding: 8px 10px; gap: 3px; cursor: default; }
 }
