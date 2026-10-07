@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   spec, createGame, validate, applyMove, playerView, waitingOn, shuffle, resolveOptions, IllegalMoveError,
-  totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter, nextChoice, previewTarget,
+  totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter, nextChoice, previewTarget, checkTarget,
 } from '../public/engine.js';
 import { botMove } from '../public/bots.js';
 import { playOut } from '../scripts/simulate.js';
@@ -345,4 +345,18 @@ test('previewTarget runs a move with the game options (influence placed at the d
   const to = adj[loc].adjacent[0];
   const after = previewTarget(s, 'ann', 'board-up', { mode: 'faction', location: loc, faction: f, split: { [to]: 2, [adj[loc].adjacent[1]]: 1 } });
   assert.equal(after.board[to].influence.ann, 1);
+});
+
+test('Switch to Plan B moves only your own influence, up to 3, to one location', () => {
+  const s = clear(newGame());
+  const [x, y, z] = spec.locations.map((l) => l.id);
+  s.board[x].influence = { ann: 2, bob: 4 };
+  s.board[y].influence = { ann: 1 };
+  const c = nextChoice(s, 'ann', 'plan-b', {});
+  assert.ok(c.kind === 'location' && c.options.includes(z));
+  const step = nextChoice(s, 'ann', 'plan-b', { location: z, from: [x, x] });
+  assert.ok(step.kind === 'location' && step.key === 'from' && !step.options.includes(x) && step.options.includes(y));
+  assert.ok(checkTarget(s, 'ann', cardById('plan-b'), { location: z, from: [x, x, x] }));
+  const after = previewTarget(s, 'ann', 'plan-b', { location: z, from: [x, x, y] });
+  assert.deepEqual([after.board[x].influence, after.board[y].influence, after.board[z].influence], [{ bob: 4 }, {}, { ann: 3 }]);
 });

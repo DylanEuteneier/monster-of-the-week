@@ -654,6 +654,7 @@ function renderTargeting(cardId) {
   });
   const key = choice.kind === 'location' || (choice.kind === 'group' && choice.key === 'lure') ? choice.key : choice.kind;
   const words = choice.kind === 'split' ? `Send cubes: ${choice.left} left`
+    : choice.kind === 'location' && choice.key === 'from' && card.action === 'move-influence' ? `Pick your influence to move · ${3 - (ui.target.from ?? []).filter((l) => l !== '__stop').length} left`
     : choice.kind === 'location' && choice.key === 'path' ? `Pick the next step · ${choice.left} left` : WORDS[key] ?? '';
   const arrows = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';
   const t = ui.target;
@@ -928,7 +929,7 @@ function onClick(event) {
 }
 
 /** Cards built one step at a time: each step shows on the board as soon as it is picked. */
-const STEPWISE = ['sow', 'split', 'broadcast', 'move-two'];
+const STEPWISE = ['sow', 'split', 'broadcast', 'move-two', 'move-influence'];
 
 /**
  * The view as the table shows it: the real one, or, while a step-by-step
@@ -977,7 +978,7 @@ function onPreview(event) {
     const chips = view.factions.map((f) => [f, (place.cubes[f] ?? 0) - (was.cubes[f] ?? 0)]).filter(([, n]) => n)
       .map(([f, n]) => `<span class="preview-chip ${Number(n) > 0 ? 'is-up' : 'is-down'}">${tokenHtml(String(f), 1)}${Number(n) > 0 ? '+' : '−'}${Math.abs(Number(n))}</span>`);
     const mine = (place.influence[view.you] ?? 0) - (was.influence[view.you] ?? 0);
-    if (mine) chips.push(`<span class="preview-chip is-up">${cubeHtml(colourOf(view.you), 8)}+${mine}</span>`);
+    if (mine) chips.push(`<span class="preview-chip ${mine > 0 ? 'is-up' : 'is-down'}">${cubeHtml(colourOf(view.you), 8)}${mine > 0 ? '+' : '−'}${Math.abs(mine)}</span>`);
     const box = document.querySelector(`#board [data-tile="${CSS.escape(loc)}"] .hex-preview`);
     if (box) box.innerHTML = chips.join('');
   }

@@ -831,7 +831,6 @@ export function pendingDestinations(state, pend) {
     case 'spread': return t.location ? MAP[t.location].adjacent : [];
     case 'conveyor': return LOCATION_IDS;
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': return (t.moves ?? []).map((m) => m.to);
-    case 'move-influence': case 'cash-in': return t.location ? [t.location] : [];
     default: return [];
   }
 }
@@ -1406,6 +1405,13 @@ export function sampleTarget(state, pid, cardId, rng) {
       case 'halve': case 'drive-out': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(MAP[g.loc].adjacent) }; break;
       case 'teleport': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(LOCATION_IDS) }; break;
       case 'spread': if (g) t = { mode, location: g.loc, faction: g.f }; break;
+      case 'move-influence': {
+        const mine = LOCATION_IDS.filter((l) => (state.board[l].influence[pid] ?? 0) > 0);
+        const to = pick(holdingSpots(state, card, mode));
+        const from = mine.filter((l) => l !== to);
+        if (to && from.length) t = { mode, location: to, from: Array.from({ length: 1 + Math.floor(rng() * 3) }, () => pick(from)) };
+        break;
+      }
       case 'split': {
         if (!g) break;
         const n = cubesOf(state, g.loc, g.f);
