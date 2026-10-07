@@ -789,3 +789,10 @@ body:has(.hand.is-hovering) #phase, body:has(.hand.is-open) #phase, body:has(.ha
 /* No standing gold outlines on playable or selected cards; the lift on hover
    (and the raised selected card) says enough. Draft ticks keep theirs. */
 .card-act, .card-selected { outline: none; }
+/* The raised card follows the last card touched (set by watchHand), not
+   strict :hover, so gaps and edges don't drop it. */
+.hand.is-hovering .card:hover { --y: calc(100% - var(--peek) + 6px); z-index: calc(var(--i) + 1); --nudge: 0px; }
+.hand.is-hovering .card.is-active { --y: 0px; z-index: 50; --r: 0deg; }
+.hand.is-hovering .card:hover ~ .card, .hand.is-hovering .card:has(~ .card:hover) { --nudge: 0px; }
+.hand.is-hovering .card.is-active ~ .card { --nudge: 56px; }
+.hand.is-hovering .card:has(~ .card.is-active) { --nudge: -56px; }

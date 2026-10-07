@@ -943,9 +943,17 @@ function watchHand() {
     const hand = document.getElementById('hand');
     if (!hand) return;
     const cards = [...hand.querySelectorAll('.card')];
-    if (!cards.length || hand.classList.contains('is-locked')) return void hand.classList.remove('is-hovering');
+    if (!cards.length || hand.classList.contains('is-locked')) {
+      hand.classList.remove('is-hovering');
+      cards.forEach((x) => x.classList.remove('is-active'));
+      return;
+    }
     const over = document.elementFromPoint(at.x, at.y);
-    const onCard = !!over && !!over.closest('#hand .card');
+    const card = over ? over.closest('#hand .card') : null;
+    const onCard = !!card;
+    // The raised card keeps its place until another card is touched or the pointer leaves the hand.
+    const activate = (/** @type {Element | null} */ c) => cards.forEach((x) => x.classList.toggle('is-active', x === c));
+    if (card) activate(card);
     if (!hand.classList.contains('is-hovering')) {
       if (onCard) hand.classList.add('is-hovering');
       return;
@@ -955,7 +963,10 @@ function watchHand() {
     const right = Math.max(...boxes.map((b) => b.right)) + 70;
     const top = Math.min(...boxes.map((b) => b.top)) - 16;
     const inside = at.x >= left && at.x <= right && at.y >= top;
-    if (!inside && !onCard) hand.classList.remove('is-hovering');
+    if (!inside && !onCard) {
+      hand.classList.remove('is-hovering');
+      activate(null);
+    }
   };
   document.addEventListener('pointermove', (event) => {
     at = { x: event.clientX, y: event.clientY };
