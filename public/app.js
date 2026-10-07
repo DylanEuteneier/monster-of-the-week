@@ -326,9 +326,7 @@ function picks() {
   }
   const choice = currentChoice();
   if (!choice) return out;
-  const steps = choice.kind === 'mode'
-    ? [currentChoice({ ...ui.target, mode: 'location' }), currentChoice({ ...ui.target, mode: 'faction' })]
-    : [choice];
+  const steps = choice.kind === 'mode' ? [] : [choice];
   for (const c of steps) {
     if (!c) continue;
     if (c.kind === 'location' || c.kind === 'split') out.spots.push(...c.options);
@@ -598,19 +596,28 @@ function renderPlay() {
   return step(ready.length ? 'respond' : 'wait', ready.length ? 'Answer?' : esc(waitingText()));
 }
 
+/** The current view (for helpers that need it). */
+const view0 = () => /** @type {PlayerView} */ (ui.view);
+
 /** Building a card's target: the bar names the step in a few words. @param {string} cardId */
 function renderTargeting(cardId) {
   const choice = /** @type {NonNullable<ReturnType<typeof currentChoice>>} */ (currentChoice());
   const card = cardById(cardId);
   const suit = spec.archetypes.find((a) => a.id === card.suit);
   const WORDS = /** @type {Record<string, string>} */ ({
-    mode: `Pick a ${suit?.name ?? ''} location or group`, location: 'Pick a location', to: 'Pick where they go', bluff: 'Pick a spot for the bluff', path: 'Pick the next step',
+    mode: 'Pick a reading', location: 'Pick a location', to: 'Pick where they go', bluff: 'Pick a spot for the bluff', path: 'Pick the next step',
     from: 'Pick where they come from', group: 'Pick a group', faction: 'Pick a faction', direction: 'Pick a direction', done: 'Ready',
   });
   const key = choice.kind === 'location' ? choice.key : choice.kind;
   const words = choice.kind === 'split' ? `Send cubes: ${choice.left} left` : WORDS[key] ?? '';
-  const extra = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';
-  step('turn', esc(words), extra);
+  const arrows = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';
+  // Two readings: a toggle, always visible; nothing lights up until one is picked.
+  const sf = view0().factions.find((f) => factionById(f).archetype === card.suit);
+  const toggle = card.suit ? `<span class="reading-toggle" role="group" aria-label="Reading">
+      <button class="bar-btn${t.mode === 'location' ? ' is-on' : ''}" data-action="set-mode" data-mode="location" title="Location target: one of the ${esc(suit?.name ?? '')} locations, any faction">${suitIcon(card.suit, 1)} Location</button>
+      <button class="bar-btn${t.mode === 'faction' ? ' is-on' : ''}" data-action="set-mode" data-mode="faction" title="Faction target: ${esc(sf ? fname(sf) : '')}, anywhere">${sf ? tokenHtml(sf, 1) : ''} Faction</button>
+    </span>` : '';
+  step('turn', esc(choice.kind === 'mode' ? 'Pick a reading' : words), `${toggle}${arrows}`);
   if ((choice.kind === 'location' || choice.kind === 'group') && choice.optional) handAction('skip', { label: choice.kind === 'location' && choice.key === 'bluff' ? 'No bluff' : 'Done' });
   handAction('target-none', { tip: 'Play it for no effect' });
   handAction('back');
@@ -839,6 +846,11 @@ function onClick(event) {
     ui.sideOpen = ui.sideOpen === side ? null : side;
     for (const id of ['influence', 'score']) document.getElementById(id)?.classList.toggle('is-open', ui.sideOpen === id);
     return;
+  }
+  if (action === 'set-mode' && ui.choosing) {
+    // Picking or switching the reading restarts the target in that reading.
+    ui.target = { mode: /** @type {'location' | 'faction'} */ (target.dataset.mode) };
+    return render();
   }
   if (action === 'toggle-hand') {
     ui.handOpen = !ui.handOpen;

@@ -804,3 +804,7 @@ body:has(.hand.is-hovering) #phase, body:has(.hand.is-open) #phase, body:has(.ha
 .hand:has(.card.is-active) .card:has(~ .card.is-active) { --nudge: -56px; }
 .hand.is-open .card.is-active, .hand.is-open .card:hover { --y: 0px; }
 .hand.is-locked .card.is-active:not(.card-selected) { --y: calc(100% - var(--peek)); }
+.reading-toggle { display: inline-flex; gap: 0; flex: none; }
+.reading-toggle .bar-btn { display: inline-flex; align-items: center; gap: 4px; box-shadow: none; }
+.reading-toggle .bar-btn + .bar-btn { border-left: 0; }
+.reading-toggle .bar-btn.is-on { background: var(--color-accent); color: var(--ink); }
