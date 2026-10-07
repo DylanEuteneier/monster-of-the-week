@@ -655,3 +655,5 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .hand .card { transition: transform 160ms ease-out 90ms; }
 .hand:has(.card:hover, .fan-slop:hover) .card { transition-delay: 0ms; }
 .hand .card { z-index: calc(var(--i) + 1); }
+/* Tighter hover slop: just the open fan plus a small margin. */
+.fan-slop { height: 300px; width: calc((var(--n, 1) - 1) * min(204px, 15vw) + 190px + 80px); }
