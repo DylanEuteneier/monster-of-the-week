@@ -217,7 +217,12 @@ function sendChat(text) {
 /** @type {Record<PlayerView['phase'], string>} */
 const PHASE_LABELS = { draft: 'Draft', play: 'Play', growth: 'Growth', ended: 'Game over' };
 
-const SUIT = new Map(spec.archetypes.map((a) => [a.id, a.symbol]));
+const SYMBOLS = /** @type {Record<string, { width: number, height: number, src: string }>} */ (art.symbols ?? {});
+/** An archetype's pixel symbol (the art on the hexes), or '' if not drawn. @param {string | null | undefined} archetype @param {number} [scale] */
+function suitIcon(archetype, scale = 2) {
+  const s = archetype ? SYMBOLS[archetype] : undefined;
+  return s ? `<img class="sprite suit-icon" src="${esc(s.src)}" width="${s.width * scale}" height="${s.height * scale}" alt="">` : '';
+}
 /** @param {string} f */
 const fname = (f) => factionById(f).name;
 
@@ -258,7 +263,7 @@ function renderPlayers() {
     const trophies = view.factions.filter((f) => view.me.trophies[f]).map((f) => Array.from({ length: view.me.trophies[f] }, () => tokenHtml(f, 1)).join('')).join('');
     const row = (/** @type {string} */ label, /** @type {string} */ value) => `<span class="player-row"><span class="field-label">${label}</span><span class="field-value">${value}</span></span>`;
     const rows = [
-      row('Group', `${esc(SUIT.get(group?.archetype ?? '') ?? '')} ${esc(group?.name ?? '')}`),
+      row('Group', `${suitIcon(group?.archetype)} ${esc(group?.name ?? '')}`),
       row('Supply', `<span class="supply-row cubes" title="${p.supply} in supply">${Array.from({ length: p.supply }, () => cubeHtml(colourOf(id), 8)).join('')}</span>`),
       row('Hand', miniCards(p.handSize) || '<span class="muted">empty</span>'),
       id === view.you ? row('Trophies', `<span class="trophies" title="Secret: only you see these (IN2)">${trophies || '<span class="muted">none yet</span>'}</span>`) : '',
@@ -352,7 +357,7 @@ function factionTable(lit) {
     }).join('');
     const on = lit.factions.includes(f);
     return `<div class="faction-row${on ? ' is-candidate' : ''}"${on ? ` data-action="pick-faction" data-faction="${esc(f)}"` : ''}>
-      <span class="faction-id">${tokenHtml(f, 2, on ? 'candidate' : '')}<span><b>${esc(faction.name)}</b><span class="small muted">${esc(arch?.symbol ?? '')} ${esc(arch?.name ?? '')}</span></span></span>
+      <span class="faction-id">${tokenHtml(f, 2, on ? 'candidate' : '')}<span><b>${esc(faction.name)}</b><span class="small muted suit-line">${suitIcon(arch?.id)} ${esc(arch?.name ?? '')}</span></span></span>
       <span class="faction-count" title="${onIsland} on the island"><b>${onIsland}</b></span>
       <span class="supply-row" title="${view.supply[f]} in supply">${Array.from({ length: view.supply[f] }, () => tokenHtml(f, 1)).join('')}</span>
       <span class="standing-row">${influence || '<span class="small muted">—</span>'}</span>
@@ -418,7 +423,7 @@ function responseReady(view, cardId) {
 function cardHtml(id, o = {}) {
   const c = cardById(id);
   const suit = spec.archetypes.find((a) => a.id === c.suit);
-  const band = c.suit ? `<span>${esc(suit?.symbol ?? '')} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
+  const band = c.suit ? `<span class="suit-line">${suitIcon(c.suit)} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
   const influence = c.suit ? (o.influence
     ? `<span class="card-influence" data-action="influence" data-card="${esc(id)}" title="Spend for ${c.influence} influence with the ${esc(suit?.name ?? '')} faction">+${c.influence}</span>`
     : `<span class="card-influence is-off">+${c.influence}</span>`) : '';
@@ -502,7 +507,7 @@ function renderTargeting(cardId) {
     path: 'Click the next location on the trail.', from: 'Click a location they come from.',
   };
   let body = '';
-  if (choice.kind === 'mode') body = `<p>Click a lit ${esc(suit?.symbol ?? '')} location to target it (any faction), or a lit ${esc(suit?.name ?? '')} token to target the faction (anywhere).</p>`;
+  if (choice.kind === 'mode') body = `<p>Click a lit ${suitIcon(card.suit)} location to target it (any faction), or a lit ${esc(suit?.name ?? '')} token to target the faction (anywhere).</p>`;
   else if (choice.kind === 'location') body = `<p>${esc(PROMPTS[choice.key])}</p>${choice.options.length ? '' : '<p class="small muted">Nowhere is possible.</p>'}${choice.optional ? `<button class="btn" data-action="skip">${choice.key === 'bluff' ? 'No bluff' : 'Done'}</button>` : ''}`;
   else if (choice.kind === 'group') body = `<p>Click a lit group of tokens on the board.</p>${choice.options.length ? '' : '<p class="small muted">No group can be chosen.</p>'}${choice.optional ? '<button class="btn" data-action="skip">Done</button>' : ''}`;
   else if (choice.kind === 'faction') body = '<p>Click the faction in the table above the island.</p>';

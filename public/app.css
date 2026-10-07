@@ -501,3 +501,5 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .mini-card { width: 11px; height: 15px; background: var(--card-face); border: 1px solid var(--ink); box-shadow: inset 0 0 0 2px var(--card-face), inset 0 0 0 7px var(--color-accent-soft), 1px 1px 0 var(--ink); }
 .mini-card + .mini-card { margin-left: -5px; }
 .player-status { display: inline-flex; align-items: center; gap: 4px; }
+.suit-icon { display: inline-block; vertical-align: middle; }
+.suit-line { display: inline-flex; align-items: center; gap: 4px; }
