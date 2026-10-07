@@ -892,3 +892,7 @@ body { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px + 2 * va
   .hand { padding: var(--space-3); background: var(--color-panel); }
 }
 #board > h2 { align-self: flex-start; }
+/* Phones: the influence and trophies sections are static; hover and tap change nothing. */
+@media (max-width: 600px), (hover: none) and (pointer: coarse) {
+  .side-stack, .side-stack:hover, .side-stack.is-open { padding: 8px 10px; gap: 3px; cursor: default; }
+}
