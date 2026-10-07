@@ -97,7 +97,6 @@
   --bar-h: 44px;
   --peek: 70px;
   --card-w: 214px;
-  --sel-peek: 124px;     /* a selected card at rest: band, name and options show */
 
   /* Stacking, lowest first (catalogue 2). */
   --z-hand: 15;
@@ -641,8 +640,8 @@ button.card-opt:hover { background: #f6cca1; }
      .is-active    the card last touched (watchHand) rises fully; its
                    neighbours shuffle aside
      .is-open      the draft: every card raised, side by side
-     .is-locked    a card is selected: only it is clickable; a tall one rests
-                   at --sel-peek and rises on hover (.card-selected)
+     .is-locked    a card is selected: only it is clickable; it rests at
+                   --peek like the others and rises on hover (.card-selected)
 --------------------------------------------------------------------------- */
 .hand {
   --gap: min(118px, calc((100vw - 300px) / var(--n, 1)));
@@ -670,8 +669,8 @@ button.card-opt:hover { background: #f6cca1; }
 .hand.is-open .card { --x: calc(var(--off) * min(204px, calc((100vw - 60px) / var(--n, 1)))); --y: 0px; --r: 0deg; transition-delay: 0ms; }
 .hand.is-locked .card { pointer-events: none; --nudge: 0px; }
 .hand.is-locked .card.card-selected { pointer-events: auto; }
-/* Selected: a tall card sinks to --sel-peek, clear of the map; hovering it brings it all up. */
-.hand .card.card-selected { --y: max(0px, calc(100% - var(--sel-peek))); --r: 0deg; --nudge: 0px; z-index: 50; transition-delay: 0ms; }
+/* Selected: rests as low as the others (--peek), clear of the map; hovering it brings it all up. */
+.hand .card.card-selected { --y: calc(100% - var(--peek)); --r: 0deg; --nudge: 0px; z-index: 50; transition-delay: 0ms; }
 .hand .card.card-selected:hover { --y: 0px; }
 
 @media (prefers-reduced-motion: reduce) {
