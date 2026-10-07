@@ -460,7 +460,7 @@ const ICONS = /** @type {Record<string, [string, string]>} */ ({
 /** An action as an icon that rides with the hand. @param {string} action @param {{ primary?: boolean, disabled?: boolean, label?: string }} [o] */
 function handAction(action, o = {}) {
   const [glyph, label] = ICONS[action];
-  handNext.actions.push(`<button class="hand-icon${o.primary ? ' is-primary' : ''}" data-action="${action}" title="${esc(o.label ?? label)}" aria-label="${esc(o.label ?? label)}"${o.disabled ? ' disabled' : ''}>${glyph}</button>`);
+  handNext.actions.push(`<button class="btn guide-btn${o.primary ? ' btn-primary' : ''}" data-action="${action}"${o.disabled ? ' disabled' : ''}><span class="guide-icon" aria-hidden="true">${glyph}</span>${esc(o.label ?? label)}</button>`);
   return '';
 }
 
@@ -475,8 +475,7 @@ function renderHand() {
   const { cards, open, actions } = handNext;
   const n = cards.length;
   const fanned = cards.map((html, i) => html.replace('<div class="card', `<div style="--i:${i};--off:${i - (n - 1) / 2}" class="card`)).join('');
-  const icons = actions.length ? `<div class="hand-actions">${actions.join('')}</div>` : '';
-  setHtml('hand', n || actions.length ? `<button class="hand-tab" data-action="toggle-hand" aria-label="Show or hide your hand">Hand · ${n}</button><div class="fan">${fanned}${icons}</div>` : '');
+  setHtml('hand', n ? `<button class="hand-tab" data-action="toggle-hand" aria-label="Show or hide your hand">Hand · ${n}</button><div class="fan">${fanned}</div>` : '');
   const el = $('hand');
   el.classList.toggle('is-open', open || ui.handOpen);
   // While a card is selected (being played or answering), the fan holds still until Back.
@@ -493,7 +492,9 @@ function renderPhase() {
     return;
   }
   const renderers = { draft: renderDraft, play: renderPlay, growth: renderGrowth, ended: renderEnded };
-  setHtml('phase', renderers[view.phase]());
+  const body = renderers[view.phase]();
+  const actions = handNext.actions.length ? `<div class="guide-actions">${handNext.actions.join('')}</div>` : '';
+  setHtml('phase', `${body}${actions}`);
   renderHand();
 }
 
@@ -543,8 +544,8 @@ function renderPlay() {
   if (ui.responding) head = `<p>Click the location to block on the board.</p>${handAction('back')}`;
   else if (pending) {
     head = `<p><b>${esc(pending.player)}</b> plays <b>${esc(cardById(pending.card).name)}</b>: ${esc(describeTarget(pending.card, pending.target))}${pending.cancelled ? ' (cancelled)' : ''}${pending.blocked.length ? ` · blocked: ${pending.blocked.map((l) => esc(locationById(l).name)).join(', ')}` : ''}</p>`
-      + (pending.player === view.you ? `<p class="small">Others may answer now; click ✓ beside your hand to let it resolve.</p>${handAction('confirm', { primary: true })}` : waitingFor('Click a glowing card to answer it, or let it resolve.'));
-  } else if (myTurn) head = `<p>${mustOpen ? 'You go first: click your marked card to open the round.' : 'Click a card to play its action, or its influence badge to spend it for influence; » passes.'}</p>${mustOpen ? '' : handAction('pass')}`;
+      + (pending.player === view.you ? `<p class="small">Others may answer now. Let it resolve when you're ready.</p>${handAction('confirm', { primary: true })}` : waitingFor('Click a glowing card to answer it, or let it resolve.'));
+  } else if (myTurn) head = `<p>${mustOpen ? 'You go first: click your marked card to open the round.' : 'Click a card to play its action, or its influence badge to spend it for influence.'}</p>${mustOpen ? '' : handAction('pass')}`;
   else head = waitingFor(ready.length ? 'Click a glowing card to answer.' : '');
   toHand(handCards, false);
   return `<h2>${myTurn ? 'Your turn' : 'Play'}</h2>${head}`;
