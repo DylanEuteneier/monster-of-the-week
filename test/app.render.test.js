@@ -62,7 +62,7 @@ before(async () => {
     HTMLSelectElement: class {},
     HTMLInputElement: class {},
     document: {
-      documentElement: new FakeElement(),
+      documentElement: Object.assign(new FakeElement(), { style: { setProperty: () => {} } }),
       /** @param {string} id */
       getElementById: (id) => {
         if (!elements.has(id)) elements.set(id, new FakeElement());
