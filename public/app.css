@@ -643,3 +643,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .hand-icon:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: none; }
 .hand-icon.is-primary { background: var(--color-accent); color: var(--ink); }
 .hand-icon:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Dimmed cards stay opaque: a dark wash over the card, not transparency. */
+.card-dim, .card-dim:hover, .hand .card-dim { opacity: 1; }
+.card-dim::after { content: ""; position: absolute; inset: 0; background: rgb(48 43 45 / 0.38); pointer-events: none; }
+.card-dim:hover::after { background: rgb(48 43 45 / 0.18); }
