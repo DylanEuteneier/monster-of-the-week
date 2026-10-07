@@ -175,7 +175,7 @@ function main() {
   const profile = /** @type {import('../public/bots.js').Profile} */ (profileArg);
   const players = ['ann', 'bob', 'cat', 'dan', 'eve'].slice(0, Number(playersArg));
   const states = sampleStates(Number(nArg), Number(seedArg), players, profile);
-  const cards = spec.cards.filter((c) => c.action);
+  const cards = /** @type {import('../public/engine.js').Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action);
   /** @type {Record<string, Record<typeof MEASURES[number], number[]> & { leaves: number, capped: number }>} */
   const stats = /** @type {any} */ (Object.fromEntries(cards.map((c) => [c.id, { ...Object.fromEntries(MEASURES.map((m) => [m, []])), leaves: 0, capped: 0 }])));
   for (const state of states) {

@@ -188,7 +188,8 @@ export const variants = /** @type {Variant[]} */ (spec.variants);
 const factionsById = new Map(spec.factions.map((faction) => [faction.id, faction]));
 const locationsById = new Map(spec.locations.map((location) => [location.id, location]));
 /** @type {Map<string, Card>} */
-const cardsById = new Map(spec.cards.map((card) => [card.id, card]));
+// Test cards (spec.testCards) are ideas under measurement: never dealt, but playable on a copy.
+const cardsById = new Map(/** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).map((card) => [card.id, card]));
 /** @type {Record<string, { q: number, r: number, region: string, adjacent: string[], mirror: string | null }>} */
 const MAP = spec.map.locations;
 /** @type {Record<string, { neighbours: string[] }>} */
@@ -490,6 +491,12 @@ function placeTarget(state, card, t) {
 /** The factions a destination card may move: any (location mode) or only the suit's (faction mode). @param {GameState} state @param {Card} card @param {Target} t */
 const movable = (state, card, t) => (card.suit && t.mode === 'faction' ? [/** @type {string} */ (suitFaction(state, card))] : state.factions.slice());
 
+/** Locations under the two-target rule: a suit location, or one holding the suit's faction. @param {GameState} state @param {Card} card @param {'location' | 'faction'} mode */
+function holdingSpots(state, card, mode) {
+  const sf = suitFaction(state, card);
+  return LOCATION_IDS.filter((loc) => !state.board[loc].scorched && (mode === 'location' ? suitLocations(card).includes(loc) : cubesOf(state, loc, /** @type {string} */ (sf)) > 0));
+}
+
 /** Free locations for a hidden token under the two-target rule (3.11). @param {GameState} state @param {Card} card @param {'location' | 'faction'} mode */
 function tokenSpots(state, card, mode) {
   const sf = suitFaction(state, card);
@@ -559,6 +566,18 @@ export function checkTarget(state, pid, card, t) {
         if (t.faction !== suitFaction(state, card)) return 'Only the suit\'s faction.';
       } else return 'Choose a location target or a faction target.';
       return t.to && MAP[t.location].adjacent.includes(t.to) ? null : 'Choose an adjacent location to drive them to.';
+    }
+    case 'move-influence': {
+      if ((t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode).includes(t.location)) return 'Choose the target location.';
+      const from = t.from ?? [];
+      if (from.length < 1 || from.length > 3) return 'Move 1 to 3 influence.';
+      for (const l of new Set(from)) if (l === t.location || from.filter((x) => x === l).length > (state.board[l]?.influence[pid] ?? 0)) return 'You don\'t have that much influence there.';
+      return null;
+    }
+    case 'cash-in': {
+      if ((t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode).includes(t.location)) return 'Choose the target location.';
+      if (!t.faction || cubesOf(state, t.location, t.faction) <= 0 || (state.players[pid].standing[t.faction] ?? 0) <= 0) return 'Choose a faction there you have standing with.';
+      return null;
     }
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
       const moves = t.moves ?? [];
@@ -719,6 +738,26 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} drives ${n} ${names(f)} out of ${lname(from)}.`);
       break;
     }
+    case 'move-influence': {
+      const to = /** @type {string} */ (t.location);
+      for (const from of t.from ?? []) {
+        if ((state.board[from].influence[pid] ?? 0) <= 0) continue;
+        state.board[from].influence[pid] -= 1;
+        if (state.board[from].influence[pid] === 0) delete state.board[from].influence[pid];
+        state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + 1;
+      }
+      logLine(state, `${pid}: ${card.name} moves ${(t.from ?? []).length} influence to ${lname(to)}.`);
+      break;
+    }
+    case 'cash-in': {
+      const to = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
+      const n = Math.min(3, state.players[pid].standing[f] ?? 0);
+      state.players[pid].standing[f] -= n;
+      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
+      for (let i = 0; i < n; i++) state.events.push({ type: 'influence-placed', player: pid, faction: f, location: to });
+      logLine(state, `${pid}: ${card.name} places ${n} influence at ${lname(to)}.`);
+      break;
+    }
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
       for (const m of t.moves ?? []) {
         const n = card.action === 'move-half' ? Math.floor(cubesOf(state, m.location, m.faction) / 2) : cubesOf(state, m.location, m.faction);
@@ -774,6 +813,7 @@ export function pendingDestinations(state, pend) {
     case 'spread': return t.location ? MAP[t.location].adjacent : [];
     case 'conveyor': return LOCATION_IDS;
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': return (t.moves ?? []).map((m) => m.to);
+    case 'move-influence': case 'cash-in': return t.location ? [t.location] : [];
     default: return [];
   }
 }
@@ -1066,6 +1106,7 @@ function fight(state, loc) {
   let winnerLoss = Math.max(1, Math.floor(nl / 2));
   if (effect === 'silver-bullets') winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
   if (effect === 'salt-burn') winnerLoss = place.cubes[winner];
+  if (effect === 'force-field') winnerLoss = 0; // test card (round 8)
   winnerLoss = Math.min(winnerLoss, place.cubes[winner]);
   place.cubes[loser] -= loserLoss;
   place.cubes[winner] -= winnerLoss;
@@ -1073,7 +1114,7 @@ function fight(state, loc) {
   logLine(state, `  ${name}: ${factionById(winner).name} beat ${factionById(loser).name}; casualties ${loserLoss} and ${winnerLoss}.`);
   // Trophies (TD1): bigger pile to the leader, smaller to the runner-up.
   const piles = [{ faction: loser, n: loserLoss }, { faction: winner, n: winnerLoss }].filter((x) => x.n > 0).sort((x, y) => y.n - x.n);
-  const ranking = rankAt(state, loc);
+  const ranking = rankAt(state, loc, effect === 'hijack-feed' ? token?.owner : undefined); // hijack-feed: test card (round 8)
   const collectors = ranking.places;
   /** @param {{ faction: string, n: number }} pile @param {string | null} pid */
   const give = (pile, pid) => {
@@ -1085,7 +1126,9 @@ function fight(state, loc) {
   if (ranking.involved === 1 && collectors[0]) {
     for (const pile of piles) give(pile, collectors[0]); // UP1
   } else {
-    piles.forEach((pile, i) => give(pile, collectors[i] ?? null));
+    // sign-contract (test card, round 8): the bigger pile to the runner-up, the smaller to the leader.
+    const order = effect === 'sign-contract' ? piles.slice().reverse() : piles;
+    order.forEach((pile, i) => give(pile, collectors[i] ?? null));
   }
   // Influence after the fight (AF3 adjusted, AS1).
   const leader = collectors[0];
@@ -1106,11 +1149,11 @@ function fight(state, loc) {
  * Rank players by influence at a location, with affinity breaking ties (AB1)
  * and standing ties using up their places (PT2, ST1). `places` lists who
  * collects first and second place (null where a tie used the place up).
- * @param {GameState} state @param {string} loc
+ * @param {GameState} state @param {string} loc @param {string} [twice]  a player whose influence counts twice (test card hijack-feed)
  */
-function rankAt(state, loc) {
+function rankAt(state, loc, twice) {
   const place = state.board[loc];
-  const entries = Object.entries(place.influence).filter(([, n]) => n > 0);
+  const entries = Object.entries(place.influence).filter(([, n]) => n > 0).map(([pid, n]) => /** @type {[string, number]} */ ([pid, pid === twice ? 2 * n : n]));
   const involved = entries.length;
   const byAmount = new Map();
   for (const [pid, n] of entries) byAmount.set(n, [...(byAmount.get(n) ?? []), pid]);
@@ -1456,6 +1499,19 @@ export function nextChoice(state, pid, cardId, t) {
     case 'conveyor':
       if (mode === 'location' && !t.location) return { kind: 'location', key: 'location', options: suitLocations(card) };
       return t.direction ? { kind: 'done' } : { kind: 'direction', options: spec.map.directions.map((d) => d.id) };
+    case 'move-influence': {
+      const mine = (/** @type {string} */ l) => state.board[l].influence[pid] ?? 0;
+      if (!t.location) return { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((to) => LOCATION_IDS.some((l) => l !== to && mine(l) > 0)) };
+      const from = t.from ?? [];
+      if (from.includes('__stop') || from.length >= 3) return { kind: 'done' };
+      const opts = LOCATION_IDS.filter((l) => l !== t.location && mine(l) - from.filter((x) => x === l).length > 0);
+      return opts.length ? { kind: 'location', key: 'from', options: opts, optional: from.length > 0 } : { kind: 'done' };
+    }
+    case 'cash-in': {
+      const has = (/** @type {string} */ l) => factionsAt(state, l).filter((f) => (state.players[pid].standing[f] ?? 0) > 0);
+      if (!t.location) return { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((l) => has(l).length > 0) };
+      return t.faction ? { kind: 'done' } : { kind: 'faction', options: has(t.location) };
+    }
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
       const moves = t.moves ?? [];
       if (moves.some((m) => m.location === '__stop')) return { kind: 'done' };

@@ -37,6 +37,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
      - ☾ the Bell (2) 11.8 / 0.7 / 8.9 / 1.1; Board Up (3) 8.4 / 0.5 / 5.1 / 1.4; Salt and Burn (4) 3.8 / 0.4 / 1.0 / 1.0.
      - ⎈ Summoning Circle (2) 13.6 / 0.7 / 8.1 / 1.0; Lamps (3) 4.7 / 0.2 / 2.3 / 0.4; House on Fire (4) 2.7 / 0.4 / 1.1 / 1.1.
      - Hidden tokens look one round ahead only, so they are undercounted. Rule-breaking (4) is judged from the card text, not measured.
+   - *Influence economy (designer, 2026-10-07):* it feels too tight: too few locations become influence contests. Measured (`scripts/economy.js`, 200 games, 5 players, smart bots; at the end of each round's play phase): fights per round fall from 3.6 (round 1) to 1.7 (round 5). Fights with no player influence at them: 94% in round 1, 67% in round 2, 30% in round 3, 19% in round 4, 9% in round 5; fights with two or more players' influence: 1%, 9%, 40%, 59%, 72%. Players hold 10–17 standing each but have only 0.2 (round 1) to 4.4 (round 5) influence on the board: the bottleneck is getting influence onto the board, not earning it. Random bots and 3 players show the same shape.
 
 Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `DR4`, `MC3`, `FR1`, `PT2`, `ST3`, `ET3`. The draft kept `DR3`, `DR4` and `PT2`, chose `FR5`, `ST1` and `ET4` instead of `FR1`, `ST3` and `ET3`, and left `MC3` to the cards.
 
@@ -2574,6 +2575,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Track Them in the Snow (v2) | Signature | Sow | Drive the target group hex by bordering hex, leaving 1 cube and 1 of your influence in each location entered; the chase lasts while you have influence with that faction; a blocked location ends it; leftover cubes stay together at the last location. **Target:** the group chased. *Location:* any faction's group at a ◐ location. *Faction:* a Nocturnal group anywhere. | – | 3 | 7 |
 | Never Invite Them In (v2) | Shift | Block | Nothing can be moved into the target this round. **Target:** the threshold. *Location:* a ◐ location; no faction can enter. *Faction:* the Nocturnals; they can't be moved into any location they aren't already in. | – | 3 | 7 |
 | Hold a Midnight Vigil (v2) | – | Influence, timing | Gain 2 influence with the target faction, or 4 if you have already passed this round. **Target:** the Nocturnal faction, or a faction controlling a ◐ location. | – | – | 7 |
+| Stake Out the Den | – | Influence (move) | Move up to 3 of your influence from other locations to the target. **Target:** the den. *Location:* a ◐ location. *Faction:* a location holding the Nocturnals. | – | – | 8 |
 
 ### H.2 ↂ 80's Sci-Fi: Military Facility, Weather Station, State Park
 
@@ -2594,6 +2596,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Beam Them Up (v2) | Signature | Teleport | Lift the target group and set it down at any location on the island. **Target:** the group taken. *Location:* any faction's group at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | 3 | 7 |
 | Leak the Documents (v3) | Shift | Halve | Half the target group, rounded down, leaves for an adjacent location of your choice. **Target:** the group split. *Location:* any faction at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | 3 | 7 |
 | Call in the Men in Black (v2) | – | Standing effect | For the rest of the round, cubes about to be moved into the target go to an adjacent location of your choice instead. **Target:** the cordon. *Location:* an ↂ location, against any faction. *Faction:* the Sci-Fi faction, wherever it is moved. | – | – | 7 |
+| Raise the Force Field | – | Fight math, protection | Place a face-down token (and a bluff) on the target. At its fight, the winner loses no cubes. **Target:** *Location:* an ↂ location. *Faction:* a location holding the Sci-Fi faction. | – | – | 8 |
 
 ### H.3 ⏏ Sentients: Shipping Docks, Junkyard, Beach City
 
@@ -2614,6 +2617,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Reprogram the Traffic Lights (v2) | Shift | Conveyor | Choose one of the six hex directions; every group of the target moves one hex that way, where it can. **Target:** *Location:* every group in a ⏏ location's region. *Faction:* every Sentient group on the island. | – | 3 | 7 |
 | Back Up to the Cloud (v2) | – | Network jump | Move the target group across the network, however far. **Target:** the group moved. *Location:* any faction's group, from one ⏏ location to another. *Faction:* a Sentient group, to any location holding another Sentient group. | – | – | 7 |
 | Hack the Mainframe (v2) | Signature | Fight math | At this round's fight at the target, the target faction also counts its cubes in the rest of that region. **Target:** *Location:* a ⏏ location; you choose which faction there benefits. *Faction:* the Sentients, at any fight they're in. | – | 3 | 7 |
+| Hijack the Feed | – | Fight math, trophies | Place a face-down token (and a bluff) on the target. At its fight, the token's owner counts their influence there twice when the trophies are handed out. **Target:** *Location:* a ⏏ location. *Faction:* a location holding the Sentients. | – | – | 8 |
 
 ### H.4 ☾ Undead: Sawmill, Mine, Graveyard
 
@@ -2632,6 +2636,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Lead the Horde (v2) | Shift | Shove | Move the target group into an adjacent location; if that would make three factions there, the smaller group already there is shoved on to an adjacent location of your choice. **Target:** the horde. *Location:* any faction's group at a ☾ location. *Faction:* an Undead group anywhere. | – | 3 | 7 |
 | Salt and Burn the Bones (v2) | Signature | Fight math, sink | At this round's fight at the target, both groups lose all their cubes; trophies are handed out as normal and the location is not scorched. **Target:** *Location:* a ☾ location. *Faction:* any fight the Undead are in. | – | 3 | 7 |
 | Draw the Salt Line (v2) | – | Pin | Nothing moves into or out of the target this round. **Target:** *Location:* a ☾ location. *Faction:* the Undead; none of their cubes can move. | – | – | 7 |
+| Take Over the Wake | – | Influence (place) | Place up to 3 influence at the target, spent from your standing with a faction there. **Target:** the wake. *Location:* a ☾ location. *Faction:* a location holding the Undead. | – | – | 8 |
 
 ### H.5 ⎈ Demons: Caves, Lighthouse, The Lake House
 
@@ -2652,6 +2657,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Smash the Mirror (v3) | Signature | Mirror | The target group passes to its reflection across the lake (G.1; locations with no reflection can't be used). **Target:** the group reflected. *Location:* any faction's group at a ⎈ location. *Faction:* a Demon group anywhere. | – | 3 | 7 |
 | Light Every Lamp (v2) | Shift | Split | At a contested location, the target faction is driven to an adjacent location of your choice, so the fight there doesn't happen. **Target:** the faction driven out. *Location:* the smaller faction at a contested ⎈ location. *Faction:* the Demons, wherever they are contested. | – | 3 | 7 |
 | Set the House on Fire (v2) | – | Fight math, sink | Any fight at the target this round counts as a true tie: both groups are wiped out and the location is scorched. **Target:** *Location:* a ⎈ location. *Faction:* any fight the Demons are in. | – | – | 7 |
+| Sign the Contract | – | Fight math, trophies | Place a face-down token (and a bluff) on the target. At its fight, the bigger trophy pile goes to the runner-up and the smaller to the leader. **Target:** *Location:* a ⎈ location. *Faction:* a location holding the Demons. | – | – | 8 |
 
 ### H.6 Unsuited extras
 
@@ -2685,6 +2691,8 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 - Round 7, two-target rewrites (principle 14): the strongest ideas rewritten so each names its target and reads two ways. The location reading fights over the suit's ground with any faction; the faction reading pushes the suit's monster anywhere. Some effects change character between readings: Reprogram the Traffic Lights moves one region or the whole Sentient network; Back Up to the Cloud jumps between ⏏ locations or between Sentient groups; Never Invite Them In shuts a door or bars the Nocturnals from new ground. Twenty cards across the five suits have round 7 versions; a Set v2 can be picked from them.
 
 - Hidden effects must apply to whatever fight happens at their location, never only if a particular faction is in it (3.11). Round 7 entries that need rewording: Hack the Mainframe ("the target faction counts its cubes in the region") and the faction readings of Salt and Burn the Bones and Set the House on Fire ("any fight the Undead/Demons are in"). Under the placement rule their faction reading becomes "a location holding the suit's faction", and the effect must work on whichever two factions end up fighting there.
+
+- Round 8 (2026-10-07; suggestions, driven by Claude at the designer's request): aimed at the top two criteria of the strength ranking (Current focus 4), where the data showed gaps: taking influence control of a contested location (Stake Out the Den, Take Over the Wake: influence moved or placed without moving cubes) and shaping big fights, including for the invaders (Raise the Force Field: protection; Hijack the Feed and Sign the Contract: trophy redirection). Measured as never-dealt test cards (`spec.testCards`, `scripts/balance.js`, 200 states, 5 players): all five score low on every measure (battle 1.1–1.7, control 0.2–0.5). They are capped by the influence economy, not their wording: in rounds 1–2 most fights have no player influence at them (see Current focus 4). Unique and slightly rule-breaking: Stake Out the Den (moves influence, which nothing else does), Sign the Contract (reverses TD1's pile order), Hijack the Feed (bends the ranking).
 
 ### H.8 Candidate sets
 

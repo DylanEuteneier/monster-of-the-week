@@ -1009,5 +1009,75 @@
         "mirror": "beach-city"
       }
     }
+  },
+  "testCards": {
+    "notes": "Round 8 ideas (Appendix H), under measurement by scripts/balance.js. Never dealt; not rules. Influence 3 is a placeholder.",
+    "cards": [
+      {
+        "id": "stake-out",
+        "name": "Stake Out the Den",
+        "suit": "nocturnals",
+        "slot": "–",
+        "influence": 3,
+        "action": "move-influence",
+        "text": "Move up to 3 of your influence from other locations to the target. Target: the den.",
+        "readings": {
+          "location": "a ◐ location.",
+          "faction": "a location holding the Nocturnals."
+        }
+      },
+      {
+        "id": "force-field",
+        "name": "Raise the Force Field",
+        "suit": "scifi",
+        "slot": "–",
+        "influence": 3,
+        "action": "token",
+        "text": "Hidden: at its fight, the winner loses no cubes.",
+        "readings": {
+          "location": "an ↂ location.",
+          "faction": "a location holding the Sci-Fi faction."
+        }
+      },
+      {
+        "id": "hijack-feed",
+        "name": "Hijack the Feed",
+        "suit": "sentients",
+        "slot": "–",
+        "influence": 3,
+        "action": "token",
+        "text": "Hidden: at its fight, the token's owner counts their influence there twice when the trophies are handed out.",
+        "readings": {
+          "location": "a ⏏ location.",
+          "faction": "a location holding the Sentients."
+        }
+      },
+      {
+        "id": "take-wake",
+        "name": "Take Over the Wake",
+        "suit": "undead",
+        "slot": "–",
+        "influence": 3,
+        "action": "cash-in",
+        "text": "Place up to 3 influence at the target, spent from your standing with a faction there. Target: the wake.",
+        "readings": {
+          "location": "a ☾ location.",
+          "faction": "a location holding the Undead."
+        }
+      },
+      {
+        "id": "sign-contract",
+        "name": "Sign the Contract",
+        "suit": "demonic",
+        "slot": "–",
+        "influence": 3,
+        "action": "token",
+        "text": "Hidden: at its fight, the bigger trophy pile goes to the runner-up and the smaller to the leader.",
+        "readings": {
+          "location": "a ⎈ location.",
+          "faction": "a location holding the Demons."
+        }
+      }
+    ]
   }
 }

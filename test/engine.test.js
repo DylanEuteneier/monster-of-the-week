@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   spec, createGame, validate, applyMove, playerView, waitingOn, shuffle, resolveOptions, IllegalMoveError,
-  totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter, nextChoice,
+  totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter, nextChoice, previewTarget,
 } from '../public/engine.js';
 import { botMove } from '../public/bots.js';
 import { playOut } from '../scripts/simulate.js';
@@ -314,4 +314,23 @@ test('Leave Out Fresh Meat asks which group comes when the largest are tied', ()
   const c = nextChoice(s, 'ann', 'fresh-meat', { mode: 'location', location: bait });
   assert.ok(c.kind === 'group' && c.key === 'lure' && c.options.length === 2);
   assert.equal(nextChoice(s, 'ann', 'fresh-meat', { mode: 'location', location: bait, faction: s.factions[2], from: [y] }).kind, 'done');
+});
+
+// Round 8 test cards (spec.testCards): never dealt, measured by scripts/balance.js.
+
+test('test cards are never dealt', () => {
+  const s = newGame();
+  const dealt = s.seating.flatMap((pid) => s.players[pid].batch).concat(s.leftOut);
+  for (const c of spec.testCards.cards) assert.ok(!dealt.includes(c.id));
+});
+
+test('Take Over the Wake places up to 3 influence from standing with a faction there', () => {
+  const s = clear(newGame());
+  const f = /** @type {string} */ (s.factions[3]);
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
+  s.board[loc].cubes[f] = 2;
+  s.players.ann.standing[f] = 5;
+  const after = previewTarget(s, 'ann', 'take-wake', { mode: 'location', location: loc, faction: f });
+  assert.equal(after.board[loc].influence.ann, 3);
+  assert.equal(after.players.ann.standing[f], 2);
 });
