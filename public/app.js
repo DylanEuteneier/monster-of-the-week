@@ -455,12 +455,16 @@ function cardHtml(id, o = {}) {
   // The card's options, on its right: its two readings and its influence.
   // Live (clickable) on your turn; lit as the next step once the card is picked.
   const live = !!o.influence;
+  // What each reading targets, under the effect; once one is chosen the other fades.
+  const r = 'readings' in c ? c.readings : undefined;
+  const reading = (/** @type {'location' | 'faction'} */ m, /** @type {string} */ label, /** @type {string} */ text) => `<div class="card-reading${o.reading ? (o.reading === m ? ' is-on' : ' is-off') : ''}"><dt>${label}</dt><dd>${esc(text)}</dd></div>`;
+  const readings = r ? `<dl class="card-readings small">${reading('location', 'LOC', r.location)}${reading('faction', 'FAC', `${r.faction}${sf ? ` (${fname(sf)})` : ''}`)}</dl>` : '';
   const opt = (/** @type {string} */ action, /** @type {string} */ inner, /** @type {string} */ tip, /** @type {boolean} */ on, /** @type {Record<string, string>} */ data = {}) => live
     ? `<button class="card-opt${on ? ' is-on' : ''}${o.next ? ' is-next' : ''}" data-action="${action}" data-card="${esc(id)}"${Object.entries(data).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('')} title="${esc(tip)}">${inner}</button>`
     : `<span class="card-opt is-off" title="${esc(tip)}">${inner}</span>`;
   const options = c.suit ? `<div class="card-options">
-      ${c.action ? opt('set-mode', 'LOC', `Location target: one of the ${suit?.name ?? ''} locations, any faction`, o.reading === 'location', { mode: 'location' }) : ''}
-      ${c.action ? opt('set-mode', 'FAC', `Faction target: ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}, anywhere`, o.reading === 'faction', { mode: 'faction' }) : ''}
+      ${c.action ? opt('set-mode', 'LOC', `Location target: ${r?.location ?? ''}`, o.reading === 'location', { mode: 'location' }) : ''}
+      ${c.action ? opt('set-mode', 'FAC', `Faction target: ${r?.faction ?? ''}${sf ? ` (${fname(sf)})` : ''}`, o.reading === 'faction', { mode: 'faction' }) : ''}
       ${opt('influence', `<b>+${c.influence}</b>`, `Spend for ${c.influence} influence with ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}`, false)}
     </div>` : '';
   const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : ''].filter(Boolean).join(' ');
@@ -471,6 +475,7 @@ function cardHtml(id, o = {}) {
       <div class="card-text">
         <span class="card-name">${esc(c.name)}</span>
         <p class="small">${esc(c.text)}</p>
+        ${readings}
         ${c.response ? `<p class="small card-response"><b>Response, ${esc(c.response.timing)}: ${esc(c.response.name)}.</b> ${esc(c.response.text)}</p>` : ''}
       </div>
       ${options}
@@ -640,7 +645,8 @@ function renderTargeting(cardId) {
     from: 'Pick where they come from', group: 'Pick a group', faction: 'Pick a faction', direction: 'Pick a direction', done: 'Ready',
   });
   const key = choice.kind === 'location' ? choice.key : choice.kind;
-  const words = choice.kind === 'split' ? `Send cubes: ${choice.left} left` : WORDS[key] ?? '';
+  const words = choice.kind === 'split' ? `Send cubes: ${choice.left} left`
+    : choice.kind === 'location' && choice.key === 'path' ? `Pick the next step · ${choice.left} left` : WORDS[key] ?? '';
   const arrows = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';
   const t = ui.target;
   step('turn', esc(choice.kind === 'mode' ? 'Pick an option on the card' : words), arrows);

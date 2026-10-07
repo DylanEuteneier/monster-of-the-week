@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   spec, createGame, validate, applyMove, playerView, waitingOn, shuffle, resolveOptions, IllegalMoveError,
-  totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter,
+  totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter, nextChoice,
 } from '../public/engine.js';
 import { botMove } from '../public/bots.js';
 import { playOut } from '../scripts/simulate.js';
@@ -253,4 +253,41 @@ test('illegal moves throw IllegalMoveError and leave the state untouched', () =>
   assert.throws(() => applyMove(s, { playerId: 'ann', move: { type: 'pass' } }), IllegalMoveError);
   assert.equal(JSON.stringify(s), before);
   void botMove;
+});
+
+// Step-by-step targets (nextChoice): only candidates that do something -----
+
+test('Track Them in the Snow lights only groups you can chase, and counts the steps left', () => {
+  const s = clear(newGame());
+  const f = /** @type {string} */ (s.factions[0]); // the Nocturnal faction
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals')?.id);
+  s.board[loc].cubes[f] = 3;
+  s.players.ann.standing[f] = 0;
+  const groups = (/** @type {any} */ c) => c.kind === 'group' ? c.options : [];
+  assert.deepEqual(groups(nextChoice(s, 'ann', 'track-snow', { mode: 'faction' })), []);
+  s.players.ann.standing[f] = 2;
+  assert.deepEqual(groups(nextChoice(s, 'ann', 'track-snow', { mode: 'faction' })), [{ location: loc, faction: f }]);
+  const step = nextChoice(s, 'ann', 'track-snow', { mode: 'faction', location: loc, faction: f });
+  assert.equal(step.kind === 'location' && step.left, 2);
+});
+
+test('Board Up the Windows never lets the last cube make a one-location split', () => {
+  const s = clear(newGame());
+  const f = /** @type {string} */ (s.factions[3]); // the Undead faction
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
+  s.board[loc].cubes[f] = 2;
+  const first = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations)[loc].adjacent[0];
+  const c = nextChoice(s, 'ann', 'board-up', { mode: 'faction', location: loc, faction: f, split: { [first]: 1 } });
+  assert.ok(c.kind === 'split' && !c.options.includes(first));
+});
+
+test('Broadcast a Signal offers only factions that can enter the target', () => {
+  const s = clear(newGame());
+  const [x, y, z] = s.factions;
+  const to = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'scifi')?.id);
+  s.board[to].cubes = { [/** @type {string} */ (x)]: 1, [/** @type {string} */ (y)]: 1 };
+  const far = /** @type {string} */ (spec.locations.find((l) => l.id !== to)?.id);
+  s.board[far].cubes[/** @type {string} */ (z)] = 2;
+  const c = nextChoice(s, 'ann', 'broadcast', { mode: 'location', location: to });
+  assert.ok(c.kind === 'faction' && !c.options.includes(/** @type {string} */ (z)));
 });

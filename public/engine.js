@@ -1363,7 +1363,7 @@ export function sampleTarget(state, pid, cardId, rng) {
  * For the table: the next choice in building a card's target, given what has
  * been chosen so far. Not a rule; it offers the legal options one step at a
  * time, and the server still checks the finished target (checkTarget).
- * @typedef {{ kind: 'mode' } | { kind: 'location', key: 'location' | 'to' | 'bluff' | 'path' | 'from', options: string[], optional?: boolean }
+ * @typedef {{ kind: 'mode' } | { kind: 'location', key: 'location' | 'to' | 'bluff' | 'path' | 'from', options: string[], optional?: boolean, left?: number }
  *   | { kind: 'group', key: 'group' | 'move', options: { location: string, faction: string }[], optional?: boolean }
  *   | { kind: 'faction', options: string[] } | { kind: 'direction', options: string[] }
  *   | { kind: 'split', options: string[], left: number } | { kind: 'done' }} Choice
@@ -1379,6 +1379,8 @@ export function nextChoice(state, pid, cardId, t) {
   const groupOk = (/** @type {{ location: string, faction: string }} */ g) => !card.suit || (mode === 'location' ? suitLocations(card).includes(g.location) : g.faction === sf);
   const placeOk = (/** @type {string} */ loc) => !state.board[loc].scorched && (!card.suit || mode === 'faction' || suitLocations(card).includes(loc));
   const ok = (/** @type {Target} */ x) => !checkTarget(state, pid, card, x);
+  /** Where a group could go, among `reach`. */
+  const exits = (/** @type {{ location: string, faction: string }} */ g, /** @type {string[]} */ reach) => reach.filter((l) => l !== g.location && canEnter(state, l, g.faction));
   /** The factions this reading may move: any (location target) or only the suit's (faction target). */
   const movers = card.suit && mode === 'faction' ? [/** @type {string} */ (sf)] : state.factions.slice();
   switch (card.action) {
@@ -1396,7 +1398,7 @@ export function nextChoice(state, pid, cardId, t) {
     }
     case 'broadcast':
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => movers.some((f) => canEnter(state, loc, f) && LOCATION_IDS.some((l) => l !== loc && cubesOf(state, l, f) > 0))) };
-      if (!t.faction) return { kind: 'faction', options: (mode === 'faction' && sf ? [sf] : state.factions).filter((f) => LOCATION_IDS.some((l) => l !== t.location && cubesOf(state, l, f) > 0)) };
+      if (!t.faction) return { kind: 'faction', options: movers.filter((f) => canEnter(state, /** @type {string} */ (t.location), f) && LOCATION_IDS.some((l) => l !== t.location && cubesOf(state, l, f) > 0)) };
       if ((t.from ?? []).includes('__stop')) return { kind: 'done' };
       if ((t.from ?? []).length < 2) {
         const opts = LOCATION_IDS.filter((l) => l !== t.location && !(t.from ?? []).includes(l) && cubesOf(state, l, /** @type {string} */ (t.faction)) > 0);
@@ -1410,30 +1412,36 @@ export function nextChoice(state, pid, cardId, t) {
       return { kind: 'done' };
     }
     case 'sow': {
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk) };
+      // Only groups that can be chased at least one step: influence with the faction, and a bordering location it can enter.
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => (state.players[pid].standing[g.faction] ?? 0) > 0 && exits(g, MAP[g.location].adjacent).length > 0) };
       const path = t.path ?? [];
       if (path.includes('__stop')) return { kind: 'done' };
       const at = path.length ? path[path.length - 1] : t.location;
       const f = /** @type {string} */ (t.faction);
-      const room = cubesOf(state, t.location, f) - path.length > 0 && (state.players[pid].standing[f] ?? 0) - path.length > 0;
-      const opts = room ? MAP[at].adjacent.filter((l) => canEnter(state, l, f) && l !== t.location) : [];
-      return opts.length ? { kind: 'location', key: 'path', options: opts, optional: path.length > 0 } : { kind: 'done' };
+      // Steps left: one cube and one influence per location entered.
+      const left = Math.min(cubesOf(state, t.location, f), state.players[pid].standing[f] ?? 0) - path.length;
+      const opts = left > 0 ? MAP[at].adjacent.filter((l) => canEnter(state, l, f) && l !== t.location) : [];
+      return opts.length ? { kind: 'location', key: 'path', options: opts, optional: path.length > 0, left } : { kind: 'done' };
     }
     case 'halve': case 'drive-out': case 'teleport': {
       if (!t.location) {
-        const gs = groups.filter(groupOk).filter((g) => card.action !== 'halve' || cubesOf(state, g.location, g.faction) >= 2);
+        const gs = groups.filter(groupOk).filter((g) => (card.action !== 'halve' || cubesOf(state, g.location, g.faction) >= 2)
+          && exits(g, card.action === 'teleport' ? LOCATION_IDS : MAP[g.location].adjacent).length > 0);
         return { kind: 'group', key: 'group', options: card.action === 'drive-out' ? gs.filter((g) => MAP[g.location].adjacent.some((to) => ok({ ...t, location: g.location, faction: g.faction, to }))) : gs };
       }
       const reach = card.action === 'teleport' ? LOCATION_IDS.filter((l) => l !== t.location) : MAP[t.location].adjacent;
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: reach.filter((to) => canEnter(state, to, /** @type {string} */ (t.faction))) };
     }
     case 'spread':
-      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk) };
+      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => exits(g, MAP[g.location].adjacent).length > 0) };
     case 'split': {
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => cubesOf(state, g.location, g.faction) >= 2) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => cubesOf(state, g.location, g.faction) >= 2 && exits(g, MAP[g.location].adjacent).length >= 2) };
       const placedN = Object.values(t.split ?? {}).reduce((a, b) => a + b, 0);
       const left = cubesOf(state, t.location, /** @type {string} */ (t.faction)) - placedN;
-      return left > 0 ? { kind: 'split', options: MAP[t.location].adjacent.filter((l) => canEnter(state, l, /** @type {string} */ (t.faction))), left } : { kind: 'done' };
+      const dests = MAP[t.location].adjacent.filter((l) => canEnter(state, l, /** @type {string} */ (t.faction)));
+      // At least two locations: the last cube can't join the only one used so far.
+      const used = Object.keys(t.split ?? {}).filter((d) => (t.split?.[d] ?? 0) > 0);
+      return left > 0 ? { kind: 'split', options: left === 1 && used.length === 1 ? dests.filter((d) => d !== used[0]) : dests, left } : { kind: 'done' };
     }
     case 'conveyor':
       if (mode === 'location' && !t.location) return { kind: 'location', key: 'location', options: suitLocations(card) };
@@ -1447,7 +1455,8 @@ export function nextChoice(state, pid, cardId, t) {
         return { kind: 'location', key: 'to', options: reach.filter((l) => canEnter(state, l, last.faction)) };
       }
       const max = card.action === 'move-two' ? 2 : 1;
-      if (moves.length < max) return { kind: 'group', key: 'move', options: groups.filter((g) => !moves.some((m) => m.location === g.location && m.faction === g.faction)), optional: moves.length > 0 };
+      const reachOf = (/** @type {string} */ l) => (card.action === 'move-far' ? twoHex(l) : MAP[l].adjacent);
+      if (moves.length < max) return { kind: 'group', key: 'move', options: groups.filter((g) => !moves.some((m) => m.location === g.location && m.faction === g.faction) && exits(g, reachOf(g.location)).length > 0), optional: moves.length > 0 };
       return { kind: 'done' };
     }
     default: return { kind: 'done' };
