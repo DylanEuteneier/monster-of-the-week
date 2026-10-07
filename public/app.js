@@ -448,7 +448,8 @@ function renderDraft() {
   }
   ui.keep = ui.keep.filter((c) => pool.includes(c));
   return `<h2>Draft</h2>
-    <p class="small">Click the card to keep. You keep <b>${need}</b> this pass: your kept cards are ticked; untick one to swap it for a new card.</p>
+    <p class="small">Click cards to choose the <b>${need}</b> you keep this pass: your kept cards start ticked; untick one to swap it for a new card. ${ui.keep.length}/${need} chosen.</p>
+    <button class="btn btn-primary" data-action="pick" ${ui.keep.length === need ? '' : 'disabled'}>Keep ${ui.keep.length === need ? 'these' : `${need}`}</button>
     <div class="cards">${pool.map((c) => cardHtml(c, { mode: 'keep', ticked: ui.keep.includes(c) })).join('')}</div>`;
 }
 
@@ -649,6 +650,7 @@ function onClick(event) {
   const action = target.dataset.action;
   const view = ui.view;
   const card = target.dataset.card ?? '';
+  if (action === 'pick') return sendMove({ type: 'pick', keep: ui.keep.slice() });
   if (action === 'pass') return sendMove({ type: 'pass' });
   if (action === 'confirm') return sendMove({ type: 'confirm' });
   if (action === 'influence') return sendMove({ type: 'play', card, use: 'influence' });
@@ -756,8 +758,6 @@ function onCardClick(event) {
   const mode = /** @type {HTMLElement} */ (el).dataset.cardMode;
   if (mode === 'keep') {
     ui.keep = ui.keep.includes(id) ? ui.keep.filter((c) => c !== id) : [...ui.keep, id];
-    const need = view.me.kept.length + 1;
-    if (ui.keep.length === need) return sendMove({ type: 'pick', keep: ui.keep.slice() });
     return renderPhase();
   }
   if (mode === 'respond') {
