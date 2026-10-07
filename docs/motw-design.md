@@ -2766,6 +2766,8 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
   - Back Up to the Cloud (network jump): 5.8; Smash the Mirror: 4.7. Fixed destinations limit them.
   - Why hidden tokens score low in every round: placing one takes a cube from your supply (MC3), and by round 3 half of players have none left (rounds 1 to 5: 0%, 8%, 51%, 78%, 80% of turns with an empty supply; 40 bot games, 5 players). Their effects are not what holds them back. See Current focus 4.
 
+- *Designer (2026-10-07), on rounds 9 to 13:* cards that change a group's size (add, remove or convert cubes: Wait for the Full Moon, Reprogram the Drones, Open the Pit, the infectious Virus) seem underpowered, and boring too. Later rounds look elsewhere.
+
 ### H.8 Candidate sets
 
 A candidate set picks three cards per suit and attaches the responses, so the whole pool can be read as cards. Each is a suggestion to test, not a decision.
