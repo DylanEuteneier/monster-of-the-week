@@ -659,3 +659,9 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .fan-slop { height: 300px; width: calc((var(--n, 1) - 1) * min(204px, 15vw) + 190px + 80px); }
 /* Hover slop: wide along the bottom, tight above the cards. */
 .fan-slop { bottom: -40px; height: 290px; width: calc((var(--n, 1) - 1) * min(204px, 15vw) + 190px + 240px); }
+/* Hover slop per card (replaces the rectangle): while the fan is open, each
+   card's hover area reaches 70px left, right and below, but not above, so
+   the top edge is exactly the cards'. */
+.fan-slop { display: none; }
+.hand .card::before { content: ""; position: absolute; left: -70px; right: -70px; top: 0; bottom: -80px; z-index: -1; pointer-events: none; }
+.hand:has(.card:hover) .card::before, .hand.is-open .card::before { pointer-events: auto; }
