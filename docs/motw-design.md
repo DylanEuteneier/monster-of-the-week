@@ -22,6 +22,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 2. **First draft of the cards** *(in progress; principles in 3.7, ideas in Appendix H).* Define the cards the draft ruleset needs, and design player actions (3.7) and hidden actions (`IN1`, 3.11) together with them.
 3. **Build the web app prototype.** Restate the rules and cards as an implementation spec (F.16), then build them on the existing scaffold.
 4. **Review card action balance** *(opened 2026-10-07; not started).* Playtesting the prototype shows some actions are far stronger than others: Ring the Church Bell can swing presence massively, while others only shift it marginally. Review every card's action for how much presence it can move.
+   - *Every current card is temporary (designer, 2026-10-07):* Set v2 and the scaffold extras exist to gather data and test the systems; none is a final card. The balance figures below describe these test cards, not the finished set.
    - *Direction (designer, 2026-10-07):* a spread of power between cards is desirable. A weaker action is balanced in other ways, for example: it does something special, unique and slightly rule-breaking; or it gives more influence when spent for influence.
    - *Strength ranking (designer, 2026-10-07; provisional, from gut, subject to change):* an action is stronger the higher it reaches on this list:
      1. It can alter the outcome of a large, high-trophy battle, whether for the player's own goals or to undo another player's.
@@ -2708,7 +2709,7 @@ A candidate set picks three cards per suit and attaches the responses, so the wh
 
 **Set v2 (2026-10-06)**
 
-Built to principles 1–14, the Strike/Shift/Signature slots (Signature carrying the response and the highest influence), fight modifiers as hidden tokens, and responses that never just move cubes. *Loc* is the location reading (a suit location, any faction); *Fac* is the faction reading (the suit's faction, anywhere).
+*Temporary (2026-10-07): every card in this set is for gathering data and testing systems, not a final card.* Built to principles 1–14, the Strike/Shift/Signature slots (Signature carrying the response and the highest influence), fight modifiers as hidden tokens, and responses that never just move cubes. *Loc* is the location reading (a suit location, any faction); *Fac* is the faction reading (the suit's faction, anywhere).
 
 | Suit | Slot (Infl.) | Card | Kind | Effect and target | Response |
 |---|---|---|---|---|---|
