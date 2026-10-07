@@ -558,3 +558,14 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 /* Closed tabs also show the supply, wrapped six to a row so the tab stays narrow. */
 .player-supply-mini { display: grid; grid-template-columns: repeat(6, max-content); gap: 1px; align-content: start; justify-content: start; }
 .accordion .player.is-open .player-supply-mini { display: none; }
+/* Smoother accordion (2026-10-06): only animatable properties change, all on
+   one curve. The card grows (flex-grow), its rows unfold (max-width) and then
+   fade in; closing fades first. The compact supply cross-fades instead of
+   switching display. */
+:root { --accordion-ease: cubic-bezier(0.22, 0.8, 0.3, 1); --accordion-time: 340ms; }
+.accordion .player { flex: 0 0 auto; min-width: 72px; transition: flex-grow var(--accordion-time) var(--accordion-ease), background-color var(--accordion-time) var(--accordion-ease); }
+.accordion .player.is-open { flex: 1 0 auto; min-width: 72px; }
+.accordion .player-detail { transition: max-width var(--accordion-time) var(--accordion-ease), opacity 160ms ease-out; }
+.accordion .player.is-open .player-detail { transition: max-width var(--accordion-time) var(--accordion-ease), opacity 220ms ease-out 120ms; }
+.accordion .player-supply-mini { max-height: 60px; opacity: 1; overflow: hidden; transition: max-height var(--accordion-time) var(--accordion-ease), opacity 160ms ease-out; }
+.accordion .player.is-open .player-supply-mini { display: grid; max-height: 0; opacity: 0; }
