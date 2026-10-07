@@ -70,6 +70,9 @@ const ui = {
   responding: null,
   /** draft: how many cards were kept when ui.keep was last reset */
   keepFor: -1,
+  /** the slayer group card open in the accordion (null: your own) */
+  /** @type {string | null} */
+  expanded: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -238,23 +241,32 @@ function playerStatus(playerId) {
   return waitingOn(view).includes(playerId) ? 'to act' : `${view.players[playerId].handSize} cards`;
 }
 
+/** The slayer groups: a horizontal accordion, one card open at a time (yours by default). */
 function renderPlayers() {
   const view = ui.view;
   if (!view) return;
+  const open = ui.expanded && view.seating.includes(ui.expanded) ? ui.expanded : view.you;
   const rows = view.seating.map((id) => {
     const p = view.players[id];
     const group = spec.slayerGroups.find((g) => g.id === p.group);
+    const isOpen = id === open;
+    const trophies = id === view.you
+      ? `<span class="small trophies" title="Your trophies: secret (IN2)">trophies ${view.factions.filter((f) => view.me.trophies[f]).map((f) => Array.from({ length: view.me.trophies[f] }, () => tokenHtml(f, 1)).join('')).join('') || '<span class="muted">none</span>'}</span>` : '';
     return `
-      <div class="player ${id === view.you ? 'player-you' : ''}">
+      <div class="player ${id === view.you ? 'player-you' : ''} ${isOpen ? 'is-open' : ''}" data-action="expand-player" data-player="${esc(id)}" aria-expanded="${isOpen}">
         <span class="swatch" style="background:${colourOf(id)}"></span>
-        <span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${id === view.you ? ' <span class="muted small">(you)</span>' : ''}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}
-          <span class="small muted">${esc(SUIT.get(group?.archetype ?? '') ?? '')} ${esc(group?.name ?? '')}</span>
-          ${id === view.you ? `<span class="small trophies" title="Your trophies: secret (IN2)">trophies ${view.factions.filter((f) => view.me.trophies[f]).map((f) => Array.from({ length: view.me.trophies[f] }, () => tokenHtml(f, 1)).join('')).join('') || '<span class="muted">none</span>'}</span>` : ''}
-          <span class="supply-row cubes" title="${p.supply} in supply">${Array.from({ length: p.supply }, () => cubeHtml(colourOf(id), 8)).join('')}</span></span>
-        <span class="player-status">${esc(playerStatus(id))}</span>
+        <span class="player-tab">
+          <span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}</span>
+          <span class="player-status">${esc(playerStatus(id))}</span>
+        </span>
+        ${isOpen ? `<span class="player-detail">
+          <span class="small muted">${esc(SUIT.get(group?.archetype ?? '') ?? '')} ${esc(group?.name ?? '')}${id === view.you ? ' · you' : ''}</span>
+          <span class="supply-row cubes" title="${p.supply} in supply">${Array.from({ length: p.supply }, () => cubeHtml(colourOf(id), 8)).join('')}</span>
+          ${trophies}
+        </span>` : ''}
       </div>`;
   });
-  $('players').innerHTML = `<h2>Slayer groups</h2><div class="player-list">${rows.join('')}</div>`;
+  $('players').innerHTML = `<h2>Slayer groups</h2><div class="player-list accordion">${rows.join('')}</div>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -712,6 +724,10 @@ function onClick(event) {
       return sendMove({ type: 'play', card: id, use: 'action', target: finish(t) });
     }
     return render();
+  }
+  if (action === 'expand-player') {
+    ui.expanded = target.dataset.player ?? null;
+    return renderPlayers();
   }
   if (action === 'toggle-overlay') {
     const panel = document.getElementById(target.dataset.target ?? '');
