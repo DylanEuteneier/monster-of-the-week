@@ -1089,7 +1089,8 @@
         "readings": {
           "location": "an ↂ location.",
           "faction": "a location holding the Sci-Fi faction."
-        }
+        },
+        "round": 8
       },
       {
         "id": "hijack-feed",
@@ -1102,7 +1103,8 @@
         "readings": {
           "location": "a ⏏ location.",
           "faction": "a location holding the Sentients."
-        }
+        },
+        "round": 8
       },
       {
         "id": "take-wake",
@@ -1115,7 +1117,8 @@
         "readings": {
           "location": "a ☾ location.",
           "faction": "a location holding the Undead."
-        }
+        },
+        "round": 8
       },
       {
         "id": "sign-contract",
@@ -1128,7 +1131,8 @@
         "readings": {
           "location": "a ⎈ location.",
           "faction": "a location holding the Demons."
-        }
+        },
+        "round": 8
       },
       {
         "id": "leak-press",
@@ -1141,7 +1145,8 @@
         "readings": {
           "location": "any group at an ↂ location.",
           "faction": "a Sci-Fi group anywhere."
-        }
+        },
+        "round": 9
       },
       {
         "id": "lamps-either",
@@ -1154,7 +1159,8 @@
         "readings": {
           "location": "either faction at a contested ⎈ location.",
           "faction": "the Demons, wherever they are contested."
-        }
+        },
+        "round": 9
       },
       {
         "id": "virus-infect",
@@ -1167,7 +1173,8 @@
         "readings": {
           "location": "any group at a ⏏ location.",
           "faction": "a Sentient group anywhere."
-        }
+        },
+        "round": 9
       },
       {
         "id": "full-moon",
@@ -1180,7 +1187,8 @@
         "readings": {
           "location": "any group at a ◐ location.",
           "faction": "a Nocturnal group anywhere."
-        }
+        },
+        "round": 10
       },
       {
         "id": "tractor-beam",
@@ -1193,7 +1201,8 @@
         "readings": {
           "location": "a contest at an ↂ location.",
           "faction": "a contest the Sci-Fi faction is in."
-        }
+        },
+        "round": 10
       },
       {
         "id": "drones",
@@ -1206,7 +1215,8 @@
         "readings": {
           "location": "a group in a contest at a ⏏ location.",
           "faction": "a group fighting the Sentients; its cubes become Sentients."
-        }
+        },
+        "round": 10
       },
       {
         "id": "banshee",
@@ -1219,7 +1229,8 @@
         "readings": {
           "location": "a ☾ location; any faction is driven.",
           "faction": "anywhere; only Undead groups are driven."
-        }
+        },
+        "round": 10
       },
       {
         "id": "pit",
@@ -1232,7 +1243,8 @@
         "readings": {
           "location": "a small group at a ⎈ location.",
           "faction": "a small group sharing a location with the Demons."
-        }
+        },
+        "round": 10
       },
       {
         "id": "cancel",

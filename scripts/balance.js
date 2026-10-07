@@ -12,7 +12,10 @@
  *   4. rule-breaking: from the card text, not measured
  * Also the old measure: presence after reckoning (fights, then growth).
  *
- *   node scripts/balance.js [states=300] [seed=1] [players=5] [bots=smart] [option=value ...] [only=card,card]
+ *   node scripts/balance.js [states=300] [seed=1] [players=5] [bots=smart] [option=value ...] [only=card,card] [out=file.json]
+ *
+ * out= also writes the scores as JSON (npm run cards:score writes
+ * public/card-scores.json, which the assets page shows).
  *
  * It plays bot games and samples states at the start of turns in the play
  * phase. In each state, for every card with an action, it walks every target
@@ -26,6 +29,7 @@
  */
 import { createGame, applyMove, nextRandom, spec, totalPresence, cardById, nextChoice, previewTarget, resolveFight, growthDue, checkTarget } from '../public/engine.js';
 import { botMove } from '../public/bots.js';
+import { writeFileSync } from 'node:fs';
 
 /** @typedef {import('../public/engine.js').GameState} GameState @typedef {import('../public/engine.js').Target} Target */
 
@@ -174,13 +178,15 @@ function main() {
   const [nArg = '300', seedArg = '1', playersArg = '5', profileArg = 'smart'] = process.argv.slice(2).filter((a) => !a.includes('='));
   const options = Object.fromEntries(process.argv.slice(2).filter((a) => a.includes('=')).map((a) => a.split('=')));
   const only = options.only?.split(','); // only=card,card scores just those cards
+  const outFile = options.out;
   delete options.only;
+  delete options.out;
   const profile = /** @type {import('../public/bots.js').Profile} */ (profileArg);
   const players = ['ann', 'bob', 'cat', 'dan', 'eve'].slice(0, Number(playersArg));
   const states = sampleStates(Number(nArg), Number(seedArg), players, profile, options);
   const cards = /** @type {import('../public/engine.js').Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action && (!only || only.includes(c.id)));
-  /** @type {Record<string, Record<typeof MEASURES[number], number[]> & { leaves: number, capped: number }>} */
-  const stats = /** @type {any} */ (Object.fromEntries(cards.map((c) => [c.id, { ...Object.fromEntries(MEASURES.map((m) => [m, []])), leaves: 0, capped: 0 }])));
+  /** @type {Record<string, Record<typeof MEASURES[number], number[]> & { leaves: number, capped: number, playable: number }>} */
+  const stats = /** @type {any} */ (Object.fromEntries(cards.map((c) => [c.id, { ...Object.fromEntries(MEASURES.map((m) => [m, []])), leaves: 0, capped: 0, playable: 0 }])));
   for (const state of states) {
     const pid = state.seating[state.turn];
     const base = reckon(state);
@@ -188,6 +194,7 @@ function main() {
       const ts = targets(state, pid, card.id).filter((t) => !checkTarget(state, pid, card, t));
       const st = stats[card.id];
       st.leaves += ts.length;
+      if (ts.length) st.playable += 1;
       if (ts.length >= LEAVES_PER_CARD) st.capped += 1;
       const best = Object.fromEntries(MEASURES.map((m) => [m, 0]));
       for (const t of ts) {
@@ -201,10 +208,15 @@ function main() {
   const often = (/** @type {number[]} */ xs) => `${(100 * xs.filter((x) => x > 0).length / (xs.length || 1)).toFixed(0)}%`;
   const col = (/** @type {number[]} */ xs) => `${mean(xs).toFixed(1).padStart(5)} ${often(xs).padStart(4)} ${String(Math.max(...xs)).padStart(3)}`;
   console.log(`${states.length} states, ${players.length} players, ${profile} bots, ${JSON.stringify(options)}. Each column: mean of the card's best target per state, how often above 0, largest.`);
-  console.log(`${'card'.padEnd(30)} | 1 battle (trophies+flips) | 2 control taken | 3 pieces moved | 3 influence placed | presence swing | targets`);
+  console.log(`${'card'.padEnd(30)} | playable | 1 battle (trophies+flips) | 2 control taken | 3 pieces moved | 3 influence placed | presence swing | targets`);
   const rows = cards.map((c) => ({ c, st: stats[c.id] })).sort((x, y) => mean(y.st.battle) - mean(x.st.battle));
+  if (outFile) {
+    const round1 = (/** @type {number} */ x) => Math.round(x * 10) / 10;
+    const scores = Object.fromEntries(rows.map(({ c, st }) => [c.id, { playable: round1(100 * st.playable / states.length), ...Object.fromEntries(MEASURES.map((m) => [m, round1(mean(st[m]))])) }]));
+    writeFileSync(outFile, `${JSON.stringify({ measured: new Date().toISOString().slice(0, 10), states: states.length, players: players.length, bots: profile, options, scores }, null, 2)}\n`);
+  }
   for (const { c, st } of rows) {
-    console.log(`${c.name.padEnd(30)} | ${col(st.battle).padEnd(25)} | ${col(st.control).padEnd(15)} | ${col(st.moved).padEnd(14)} | ${col(st.placed).padEnd(18)} | ${col(st.presence).padEnd(14)} | ${(st.leaves / states.length).toFixed(0)}${st.capped ? ` (capped ${st.capped}x)` : ''}`);
+    console.log(`${c.name.padEnd(30)} | ${`${(100 * st.playable / states.length).toFixed(0)}%`.padStart(8)} | ${col(st.battle).padEnd(25)} | ${col(st.control).padEnd(15)} | ${col(st.moved).padEnd(14)} | ${col(st.placed).padEnd(18)} | ${col(st.presence).padEnd(14)} | ${(st.leaves / states.length).toFixed(0)}${st.capped ? ` (capped ${st.capped}x)` : ''}`);
   }
 }
 

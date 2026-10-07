@@ -1,0 +1,273 @@
+{
+  "measured": "2026-10-07",
+  "states": 200,
+  "players": 5,
+  "bots": "smart",
+  "options": {},
+  "scores": {
+    "extra-a": {
+      "playable": 100,
+      "battle": 24.1,
+      "control": 1.6,
+      "moved": 14.1,
+      "placed": 2,
+      "presence": 14.7
+    },
+    "extra-b": {
+      "playable": 100,
+      "battle": 17.6,
+      "control": 0.9,
+      "moved": 7.5,
+      "placed": 1,
+      "presence": 11.3
+    },
+    "broadcast": {
+      "playable": 100,
+      "battle": 16.5,
+      "control": 0.7,
+      "moved": 8.6,
+      "placed": 1,
+      "presence": 11.5
+    },
+    "traffic": {
+      "playable": 100,
+      "battle": 15.2,
+      "control": 1.1,
+      "moved": 11.1,
+      "placed": 2.1,
+      "presence": 8.4
+    },
+    "extra-c": {
+      "playable": 100,
+      "battle": 14.1,
+      "control": 0.8,
+      "moved": 7.5,
+      "placed": 1,
+      "presence": 9.7
+    },
+    "summoning": {
+      "playable": 100,
+      "battle": 14,
+      "control": 0.8,
+      "moved": 8,
+      "placed": 1,
+      "presence": 9.1
+    },
+    "beam": {
+      "playable": 92.5,
+      "battle": 13,
+      "control": 0.6,
+      "moved": 4.8,
+      "placed": 0.7,
+      "presence": 8.6
+    },
+    "track-snow": {
+      "playable": 75,
+      "battle": 11.5,
+      "control": 1.6,
+      "moved": 4.5,
+      "placed": 3,
+      "presence": 7.5
+    },
+    "bell": {
+      "playable": 100,
+      "battle": 11.3,
+      "control": 0.7,
+      "moved": 8.9,
+      "placed": 1.2,
+      "presence": 7
+    },
+    "fresh-meat": {
+      "playable": 100,
+      "battle": 10,
+      "control": 0.6,
+      "moved": 6.8,
+      "placed": 1,
+      "presence": 6.8
+    },
+    "reroute": {
+      "playable": 96,
+      "battle": 9,
+      "control": 0.5,
+      "moved": 6.4,
+      "placed": 0.9,
+      "presence": 6
+    },
+    "extra-d": {
+      "playable": 100,
+      "battle": 8.9,
+      "control": 0.7,
+      "moved": 3.4,
+      "placed": 1,
+      "presence": 5.5
+    },
+    "board-up": {
+      "playable": 92,
+      "battle": 7.5,
+      "control": 0.6,
+      "moved": 6,
+      "placed": 1.8,
+      "presence": 7.2
+    },
+    "banshee": {
+      "playable": 97.5,
+      "battle": 7.4,
+      "control": 0.6,
+      "moved": 6.3,
+      "placed": 1.2,
+      "presence": 4.9
+    },
+    "leak-press": {
+      "playable": 89.5,
+      "battle": 7.3,
+      "control": 0.5,
+      "moved": 2.1,
+      "placed": 0.6,
+      "presence": 4.4
+    },
+    "tractor-beam": {
+      "playable": 59,
+      "battle": 5.9,
+      "control": 0.5,
+      "moved": 4.2,
+      "placed": 0.7,
+      "presence": 0.8
+    },
+    "leak": {
+      "playable": 89.5,
+      "battle": 5.3,
+      "control": 0.3,
+      "moved": 2.1,
+      "placed": 0.6,
+      "presence": 3.5
+    },
+    "virus": {
+      "playable": 99,
+      "battle": 5,
+      "control": 0.6,
+      "moved": 3.4,
+      "placed": 2.1,
+      "presence": 4.3
+    },
+    "lamps-either": {
+      "playable": 60,
+      "battle": 4.7,
+      "control": 0.3,
+      "moved": 2.8,
+      "placed": 0.5,
+      "presence": 3.9
+    },
+    "lamps": {
+      "playable": 60,
+      "battle": 4.3,
+      "control": 0.3,
+      "moved": 2.4,
+      "placed": 0.5,
+      "presence": 3.7
+    },
+    "virus-infect": {
+      "playable": 99,
+      "battle": 4.3,
+      "control": 0.3,
+      "moved": 3.4,
+      "placed": 2.1,
+      "presence": 4.3
+    },
+    "drones": {
+      "playable": 61,
+      "battle": 2.9,
+      "control": 0,
+      "moved": 1.5,
+      "placed": 0,
+      "presence": 2.2
+    },
+    "salt-burn": {
+      "playable": 59.5,
+      "battle": 2.7,
+      "control": 0.2,
+      "moved": 1.1,
+      "placed": 1.1,
+      "presence": 1
+    },
+    "change-plan": {
+      "playable": 61,
+      "battle": 2.3,
+      "control": 0.4,
+      "moved": 0,
+      "placed": 1.3,
+      "presence": 0
+    },
+    "plan-b": {
+      "playable": 61,
+      "battle": 2.3,
+      "control": 0.4,
+      "moved": 0,
+      "placed": 1.3,
+      "presence": 0
+    },
+    "full-moon": {
+      "playable": 90.5,
+      "battle": 1.9,
+      "control": 0,
+      "moved": 2.7,
+      "placed": 0,
+      "presence": 3.9
+    },
+    "house-fire": {
+      "playable": 59,
+      "battle": 1.6,
+      "control": 0.3,
+      "moved": 1.1,
+      "placed": 1.1,
+      "presence": 0.8
+    },
+    "silver-bullets": {
+      "playable": 59.5,
+      "battle": 1.4,
+      "control": 0.3,
+      "moved": 1,
+      "placed": 1,
+      "presence": 0.5
+    },
+    "force-field": {
+      "playable": 59.5,
+      "battle": 1.4,
+      "control": 0.4,
+      "moved": 1.1,
+      "placed": 1.1,
+      "presence": 0.5
+    },
+    "take-wake": {
+      "playable": 83,
+      "battle": 1.3,
+      "control": 0.5,
+      "moved": 0,
+      "placed": 2.4,
+      "presence": 0
+    },
+    "hijack-feed": {
+      "playable": 59.5,
+      "battle": 0.9,
+      "control": 0.3,
+      "moved": 1.1,
+      "placed": 1.1,
+      "presence": 0
+    },
+    "sign-contract": {
+      "playable": 59,
+      "battle": 0.8,
+      "control": 0.3,
+      "moved": 1.1,
+      "placed": 1.1,
+      "presence": 0
+    },
+    "pit": {
+      "playable": 92.5,
+      "battle": 0.8,
+      "control": 0,
+      "moved": 0,
+      "placed": 0,
+      "presence": 1.3
+    }
+  }
+}

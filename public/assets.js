@@ -9,6 +9,7 @@ import { spec } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { LAYOUT_SUGGESTIONS } from './layout-suggestions.js';
+import { cardHtml } from './cards.js';
 
 
 /** @param {unknown} value */
@@ -92,6 +93,49 @@ function render() {
 }
 
 render();
+
+/**
+ * Cards: every card the engine can play, for review, drawn as the table
+ * draws them. The deck, the test cards from the revision rounds (never
+ * dealt), and cards held out, in one grid sorted by suit, then type, then
+ * action. Tags on each card place it on the balance review's measures
+ * (Current focus 4), from public/card-scores.json, written by
+ * `npm run cards:score`. The tag bands are a reading aid, not rules.
+ */
+async function cards() {
+  /** @type {{ measured: string, states: number, players: number, bots: string, options: Record<string, string>, scores: Record<string, Record<string, number>> } | null} */
+  let data = null;
+  try { data = await (await fetch('/card-scores.json')).json(); } catch { /* not measured yet */ }
+  /** @typedef {{ id: string, suit: string | null, action: string | null, name: string, round?: number, marked?: string }} AnyCard */
+  const deck = /** @type {AnyCard[]} */ (/** @type {unknown} */ (spec.cards));
+  const tests = /** @type {AnyCard[]} */ (/** @type {unknown} */ (spec.testCards.cards));
+  const all = [...deck.map((c) => ({ c, status: c.marked ? 'Scaffold' : 'Deck' })), ...tests.map((c) => ({ c, status: c.round ? `Test · round ${c.round}` : 'Held out' }))];
+  /** Types, from H.9's action types. */
+  const TYPES = ['Presence', 'Fight modifier', 'Influence', 'Response only'];
+  const typeOf = (/** @type {string | null} */ action) => (!action ? 'Response only' : action === 'token' ? 'Fight modifier' : ['move-influence', 'cash-in'].includes(action) ? 'Influence' : 'Presence');
+  const suits = [...spec.archetypes.map((a) => a.id), null];
+  all.sort((x, y) => suits.indexOf(x.c.suit) - suits.indexOf(y.c.suit) || TYPES.indexOf(typeOf(x.c.action)) - TYPES.indexOf(typeOf(y.c.action))
+    || (x.c.action ?? '').localeCompare(y.c.action ?? '') || x.c.name.localeCompare(y.c.name));
+  // Bands: [measure, label, mid from, high from].
+  const BANDS = /** @type {const} */ ([['battle', 'Battle', 5, 10], ['control', 'Control', 0.5, 1], ['moved', 'Moved', 3, 7], ['placed', 'Influence', 1, 2], ['playable', 'Playable', 50, 80]]);
+  const tags = (/** @type {AnyCard} */ c, /** @type {string} */ status) => {
+    const sc = data?.scores[c.id];
+    const measured = !c.action ? '' : !sc ? '<span class="review-tag">Not measured</span>' : BANDS.map(([m, label, mid, high]) => {
+      const v = sc[m] ?? 0;
+      const band = v >= high ? 'high' : v >= mid ? 'mid' : 'low';
+      return `<span class="review-tag is-${band}" title="${esc(label)}: ${v}${m === 'playable' ? '% of states' : ''} (${band})">${esc(label)} <b>${v}${m === 'playable' ? '%' : ''}</b></span>`;
+    }).join('');
+    return `<div class="review-tags"><span class="review-tag is-status">${esc(status)}</span><span class="review-tag is-status">${esc(typeOf(c.action))} · <span class="mono">${esc(c.action ?? 'none')}</span></span>${measured}</div>`;
+  };
+  const how = data
+    ? `Measured ${esc(data.measured)}: ${data.states} states from ${esc(data.bots)} bot games at ${data.players} players${Object.keys(data.options).length ? `, ${esc(JSON.stringify(data.options))}` : ''}; each number is the mean of the card's best play per state (<span class="mono">npm run cards:score</span>).`
+    : 'Not measured yet: run <span class="mono">npm run cards:score</span>.';
+  $('cards').innerHTML = `<div class="row-between"><h2>Cards</h2><span class="small muted">${all.length} cards: ${deck.length} in the deck, ${tests.length} out of the deal</span></div>
+    <p class="small muted">Every card the engine can play, for review, sorted by suit, then type, then action. Tags: green high, gold mid, grey low. <b>Battle</b> trophies changing hands plus fights flipped (mid ${BANDS[0][2]}, high ${BANDS[0][3]}); <b>Control</b> contested locations where you become sole top influence (${BANDS[1][2]} / ${BANDS[1][3]}); <b>Moved</b> pieces moved or placed (${BANDS[2][2]} / ${BANDS[2][3]}); <b>Influence</b> influence placed (${BANDS[3][2]} / ${BANDS[3][3]}); <b>Playable</b> states with a legal target (${BANDS[4][2]}% / ${BANDS[4][3]}%). Rule-breaking is judged from the text; hidden tokens are undercounted (one round ahead). ${how}</p>
+    <div class="review-grid">${all.map(({ c, status }) => cardHtml(c.id, { extra: tags(c, status) })).join('')}</div>`;
+}
+
+cards();
 
 /** The interactive board on /assets: candidates are spotlit, hovered ones are in daylight, and a click picks the target. */
 function targeting() {
