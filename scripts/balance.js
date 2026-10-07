@@ -12,7 +12,7 @@
  *   4. rule-breaking: from the card text, not measured
  * Also the old measure: presence after reckoning (fights, then growth).
  *
- *   node scripts/balance.js [states=300] [seed=1] [players=5] [bots=smart]
+ *   node scripts/balance.js [states=300] [seed=1] [players=5] [bots=smart] [option=value ...]
  *
  * It plays bot games and samples states at the start of turns in the play
  * phase. In each state, for every card with an action, it walks every target
@@ -145,13 +145,13 @@ function finish(t) {
   return out;
 }
 
-/** Sample play-phase states from bot games. @param {number} n @param {number} seed @param {string[]} players @param {import('../public/bots.js').Profile} profile */
-function sampleStates(n, seed, players, profile) {
+/** Sample play-phase states from bot games. @param {number} n @param {number} seed @param {string[]} players @param {import('../public/bots.js').Profile} profile @param {Record<string, string>} options */
+function sampleStates(n, seed, players, profile, options) {
   const rng = seededRng(seed);
   /** @type {GameState[]} */
   const states = [];
   for (let g = 0; states.length < n; g++) {
-    let game = createGame({ seed: seed * 1000 + g, players });
+    let game = createGame({ seed: seed * 1000 + g, players, options });
     for (let moves = 0; moves < 20000 && game.phase !== 'ended'; moves++) {
       if (game.phase === 'play' && !game.pending && rng() < 0.15) states.push(structuredClone(game));
       let moved = false;
@@ -171,10 +171,11 @@ function sampleStates(n, seed, players, profile) {
 const MEASURES = /** @type {const} */ (['battle', 'control', 'moved', 'placed', 'presence']);
 
 function main() {
-  const [nArg = '300', seedArg = '1', playersArg = '5', profileArg = 'smart'] = process.argv.slice(2);
+  const [nArg = '300', seedArg = '1', playersArg = '5', profileArg = 'smart'] = process.argv.slice(2).filter((a) => !a.includes('='));
+  const options = Object.fromEntries(process.argv.slice(2).filter((a) => a.includes('=')).map((a) => a.split('=')));
   const profile = /** @type {import('../public/bots.js').Profile} */ (profileArg);
   const players = ['ann', 'bob', 'cat', 'dan', 'eve'].slice(0, Number(playersArg));
-  const states = sampleStates(Number(nArg), Number(seedArg), players, profile);
+  const states = sampleStates(Number(nArg), Number(seedArg), players, profile, options);
   const cards = /** @type {import('../public/engine.js').Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action);
   /** @type {Record<string, Record<typeof MEASURES[number], number[]> & { leaves: number, capped: number }>} */
   const stats = /** @type {any} */ (Object.fromEntries(cards.map((c) => [c.id, { ...Object.fromEntries(MEASURES.map((m) => [m, []])), leaves: 0, capped: 0 }])));
@@ -197,7 +198,7 @@ function main() {
   const mean = (/** @type {number[]} */ xs) => xs.reduce((a, b) => a + b, 0) / (xs.length || 1);
   const often = (/** @type {number[]} */ xs) => `${(100 * xs.filter((x) => x > 0).length / (xs.length || 1)).toFixed(0)}%`;
   const col = (/** @type {number[]} */ xs) => `${mean(xs).toFixed(1).padStart(5)} ${often(xs).padStart(4)} ${String(Math.max(...xs)).padStart(3)}`;
-  console.log(`${states.length} states, ${players.length} players, ${profile} bots. Each column: mean of the card's best target per state, how often above 0, largest.`);
+  console.log(`${states.length} states, ${players.length} players, ${profile} bots, ${JSON.stringify(options)}. Each column: mean of the card's best target per state, how often above 0, largest.`);
   console.log(`${'card'.padEnd(30)} | 1 battle (trophies+flips) | 2 control taken | 3 pieces moved | 3 influence placed | presence swing | targets`);
   const rows = cards.map((c) => ({ c, st: stats[c.id] })).sort((x, y) => mean(y.st.battle) - mean(x.st.battle));
   for (const { c, st } of rows) {

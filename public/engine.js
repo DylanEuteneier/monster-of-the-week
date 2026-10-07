@@ -136,7 +136,7 @@ export { spec };
 
 /**
  * @typedef {{ type: 'pick', keep: string[] }
- *   | { type: 'play', card: string, use: 'action' | 'influence', target?: Target | null }
+ *   | { type: 'play', card: string, use: 'action' | 'influence', target?: Target | null, location?: string }
  *   | { type: 'confirm' }
  *   | { type: 'withdraw' }
  *   | { type: 'pass' }
@@ -334,13 +334,17 @@ function move(state, pid, faction, from, to, count, placedAt) {
   state.board[from].cubes[faction] -= n;
   if (state.board[from].cubes[faction] === 0) delete state.board[from].cubes[faction];
   state.board[to].cubes[faction] = cubesOf(state, to, faction) + n;
-  const key = `${to}:${faction}`;
-  if (!placedAt.has(key) && (state.players[pid].standing[faction] ?? 0) > 0) {
+  const place = (/** @type {string} */ loc, /** @type {string} */ key, /** @type {number} */ amount) => {
+    if (placedAt.has(key)) return;
     placedAt.add(key);
-    state.players[pid].standing[faction] -= 1;
-    state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + 1;
-    state.events.push({ type: 'influence-placed', player: pid, faction, location: to });
-  }
+    const k = Math.min(amount, state.players[pid].standing[faction] ?? 0);
+    if (k <= 0) return;
+    state.players[pid].standing[faction] -= k;
+    state.board[loc].influence[pid] = (state.board[loc].influence[pid] ?? 0) + k;
+    for (let i = 0; i < k; i++) state.events.push({ type: 'influence-placed', player: pid, faction, location: loc });
+  };
+  place(to, `${to}:${faction}`, num(state, 'influencePerMove'));
+  if (state.options.influenceAtOrigin === 'on') place(from, `${from}:${faction}:origin`, 1); // test lever
   return n;
 }
 
@@ -495,6 +499,19 @@ const movable = (state, card, t) => (card.suit && t.mode === 'faction' ? [/** @t
 function holdingSpots(state, card, mode) {
   const sf = suitFaction(state, card);
   return LOCATION_IDS.filter((loc) => !state.board[loc].scorched && (mode === 'location' ? suitLocations(card).includes(loc) : cubesOf(state, loc, /** @type {string} */ (sf)) > 0));
+}
+
+/**
+ * Where 1 influence goes when a card is spent for influence, under the test
+ * lever influenceToBoard: the locations its faction controls (LC2). Empty
+ * when the lever is off.
+ * @param {GameState | PlayerView} state @param {string} cardId
+ */
+export function influenceSpots(state, cardId) {
+  const card = cardById(cardId);
+  if (state.options.influenceToBoard !== 'on' || !card.suit) return [];
+  const f = factionOfArchetype(state, card.suit);
+  return LOCATION_IDS.filter((loc) => !state.board[loc].scorched && controllerOf(/** @type {GameState} */ (state), loc) === f);
 }
 
 /** Free locations for a hidden token under the two-target rule (3.11). @param {GameState} state @param {Card} card @param {'location' | 'faction'} mode */
@@ -874,7 +891,10 @@ export function validate(state, submission) {
   }
   if (m.use === 'influence') {
     if (!card.suit) return no('Unsuited cards have no influence use.');
-    return p.supply > 0 ? OK : no('Your supply is empty.');
+    if (p.supply <= 0) return no('Your supply is empty.');
+    const spots = influenceSpots(state, m.card);
+    if (spots.length ? !spots.includes(m.location ?? '') : m.location) return no('Choose a location its faction controls for 1 of the influence.');
+    return OK;
   }
   if (m.use !== 'action') return no('Choose the action or the influence.');
   const e = checkTarget(state, pid, card, m.target ?? null);
@@ -930,6 +950,12 @@ export function applyMove(state, submission) {
         p.supply -= gain;
         p.standing[faction] += gain;
         next.events.push({ type: 'influence-spent', player: pid, faction, amount: gain });
+        if (m.location && gain > 0) {
+          // Test lever influenceToBoard: 1 of it goes onto the chosen location.
+          p.standing[faction] -= 1;
+          next.board[m.location].influence[pid] = (next.board[m.location].influence[pid] ?? 0) + 1;
+          next.events.push({ type: 'influence-placed', player: pid, faction, location: m.location });
+        }
         logLine(next, `${pid} plays ${card.name} for ${gain} influence with ${factionById(faction).name}.`);
         next.turn = (next.turn + 1) % next.seating.length;
         return next;
@@ -1537,7 +1563,7 @@ export function nextChoice(state, pid, cardId, t) {
  * @returns {{ board: GameState['board'], players: GameState['players'] }}
  */
 export function previewTarget(state, pid, cardId, t) {
-  const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, round: state.round, events: [], log: [] })));
+  const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, round: state.round, options: state.options, events: [], log: [] })));
   act(copy, pid, cardById(cardId), t);
   return { board: copy.board, players: copy.players };
 }

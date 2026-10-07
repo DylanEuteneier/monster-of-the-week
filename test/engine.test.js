@@ -334,3 +334,15 @@ test('Take Over the Wake places up to 3 influence from standing with a faction t
   assert.equal(after.board[loc].influence.ann, 3);
   assert.equal(after.players.ann.standing[f], 2);
 });
+
+test('previewTarget runs a move with the game options (influence placed at the destination)', () => {
+  const s = clear(newGame());
+  const f = /** @type {string} */ (s.factions[3]);
+  const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
+  s.board[loc].cubes[f] = 3;
+  s.players.ann.standing[f] = 2;
+  const to = adj[loc].adjacent[0];
+  const after = previewTarget(s, 'ann', 'board-up', { mode: 'faction', location: loc, faction: f, split: { [to]: 2, [adj[loc].adjacent[1]]: 1 } });
+  assert.equal(after.board[to].influence.ann, 1);
+});

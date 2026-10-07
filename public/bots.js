@@ -18,11 +18,22 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, sampleTarget, playableResponses, validate, applyMove, resolveFight, totalPresence, presenceOf, spec,
+  cardById, sampleTarget, playableResponses, validate, applyMove, resolveFight, totalPresence, presenceOf, spec, influenceSpots,
 } from './engine.js';
 
 /** @typedef {import('./engine.js').GameState} GameState */
 /** @typedef {import('./engine.js').Move} Move */
+
+/**
+ * Spending a card for influence; under the test lever influenceToBoard, 1 of
+ * it goes onto a location its faction controls (`at` picks which).
+ * @param {GameState} state @param {string} cardId @param {(spots: string[]) => string} [at]
+ * @returns {Move}
+ */
+function spend(state, cardId, at = (spots) => spots[0]) {
+  const spots = influenceSpots(state, cardId);
+  return spots.length ? { type: 'play', card: cardId, use: 'influence', location: at(spots) } : { type: 'play', card: cardId, use: 'influence' };
+}
 /** @typedef {'random' | 'smart' | 'invader' | 'island'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile }} BotOptions */
 
@@ -91,11 +102,11 @@ function randomMove(state, pid, rng) {
   const cardId = pick(playable);
   const card = cardById(cardId);
   if (card.suit && (rng() >= RANDOM_ODDS.action || p.supply <= 0)) {
-    const influence = legal(state, pid, { type: 'play', card: cardId, use: 'influence' });
+    const influence = legal(state, pid, spend(state, cardId, pick));
     if (influence) return influence;
   }
   const target = sampleTarget(state, pid, cardId, rng);
-  if (!target && card.suit) return legal(state, pid, { type: 'play', card: cardId, use: 'influence' }) ?? { type: 'pass' };
+  if (!target && card.suit) return legal(state, pid, spend(state, cardId, pick)) ?? { type: 'pass' };
   return legal(state, pid, { type: 'play', card: cardId, use: 'action', target }) ?? { type: 'pass' };
 }
 
@@ -162,7 +173,11 @@ function candidates(state, pid, rng) {
   const moves = [{ type: 'pass' }];
   for (const cardId of new Set(p.hand)) {
     const card = cardById(cardId);
-    if (card.suit) moves.push({ type: 'play', card: cardId, use: 'influence' });
+    if (card.suit) {
+      const spots = influenceSpots(state, cardId);
+      if (spots.length) for (const location of spots) moves.push({ type: 'play', card: cardId, use: 'influence', location });
+      else moves.push({ type: 'play', card: cardId, use: 'influence' });
+    }
     if (!card.action) continue;
     /** @type {Set<string>} */
     const seen = new Set();
@@ -253,7 +268,7 @@ function cardWorth(state, pid, cardId, rng, profile, base) {
   s.pending = null;
   s.players[pid].hand = [cardId];
   let best = card.response ? 0.5 : 0;
-  const infl = /** @type {Move} */ ({ type: 'play', card: cardId, use: 'influence' });
+  const infl = spend(s, cardId);
   if (card.suit && validate(s, { playerId: pid, move: infl }).ok) best = Math.max(best, evaluate(after(s, pid, infl), pid, profile) - base);
   if (card.action) {
     for (let i = 0; i < 4; i++) {

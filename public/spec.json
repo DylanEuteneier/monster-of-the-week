@@ -765,6 +765,60 @@
           "description": "Seats take slayer groups in spec order."
         }
       ]
+    },
+    {
+      "id": "influencePerMove",
+      "label": "Influence per move",
+      "description": "Test lever (influence economy, 2026-10-07): influence a move places at each destination, from standing with the faction moved (CA2).",
+      "default": "1",
+      "choices": [
+        {
+          "id": "1",
+          "label": "1",
+          "description": "The first draft."
+        },
+        {
+          "id": "2",
+          "label": "2",
+          "description": "Test lever."
+        }
+      ]
+    },
+    {
+      "id": "influenceToBoard",
+      "label": "Influence onto the board",
+      "description": "Test lever (influence economy, 2026-10-07): when a card is spent for influence, 1 of it goes onto a location its faction controls.",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "The first draft: all to standing."
+        },
+        {
+          "id": "on",
+          "label": "On",
+          "description": "Test lever: 1 onto a controlled location, the player's choice."
+        }
+      ]
+    },
+    {
+      "id": "influenceAtOrigin",
+      "label": "Influence where cubes leave",
+      "description": "Test lever (influence economy, 2026-10-07): a move also places 1 influence where the cubes left from.",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "The first draft."
+        },
+        {
+          "id": "on",
+          "label": "On",
+          "description": "Test lever."
+        }
+      ]
     }
   ],
   "map": {

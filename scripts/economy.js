@@ -2,7 +2,7 @@
 /**
  * Influence economy study: how many fights are influence contests.
  *
- *   node scripts/economy.js [games=200] [seed=1] [players=5] [bots=smart]
+ *   node scripts/economy.js [games=200] [seed=1] [players=5] [bots=smart] [option=value ...]
  *
  * Plays bot games and, at the end of each round's play phase (just before the
  * fights), looks at every contested location: how many players have
@@ -21,14 +21,15 @@ function seededRng(seed) {
 }
 
 function main() {
-  const [gamesArg = '200', seedArg = '1', playersArg = '5', profileArg = 'smart'] = process.argv.slice(2);
+  const [gamesArg = '200', seedArg = '1', playersArg = '5', profileArg = 'smart'] = process.argv.slice(2).filter((a) => !a.includes('='));
+  const options = Object.fromEntries(process.argv.slice(2).filter((a) => a.includes('=')).map((a) => a.split('=')));
   const profile = /** @type {import('../public/bots.js').Profile} */ (profileArg);
   const players = ['ann', 'bob', 'cat', 'dan', 'eve'].slice(0, Number(playersArg));
   const rng = seededRng(Number(seedArg));
   /** @type {Record<number, { rounds: number, fights: number, by: number[], onBoard: number, standing: number, influenced: number }>} */
   const byRound = {};
   for (let g = 0; g < Number(gamesArg); g++) {
-    let game = createGame({ seed: Number(seedArg) * 1000 + g, players });
+    let game = createGame({ seed: Number(seedArg) * 1000 + g, players, options });
     for (let moves = 0; moves < 20000 && game.phase !== 'ended'; moves++) {
       let next = null;
       for (const playerId of game.seating) {
@@ -56,7 +57,7 @@ function main() {
     }
   }
   const n = players.length;
-  console.log(`${gamesArg} games, ${n} players, ${profile} bots. At the end of each round's play phase:`);
+  console.log(`${gamesArg} games, ${n} players, ${profile} bots, ${JSON.stringify(options)}. At the end of each round's play phase:`);
   console.log('round | fights | by players with influence there: 0 / 1 / 2 / 3+ | locations with any influence | influence on board per player | standing held per player');
   for (const [round, r] of Object.entries(byRound)) {
     const f = (/** @type {number} */ x) => (x / r.rounds).toFixed(1);
