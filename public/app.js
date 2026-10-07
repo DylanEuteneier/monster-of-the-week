@@ -1114,6 +1114,13 @@ function watchHand() {
       activate(null);
     }
   };
+  // A click in the slop (anywhere not on a card) drops the hand; it rises again only from a card.
+  document.addEventListener('pointerdown', (event) => {
+    const hand = document.getElementById('hand');
+    if (!hand?.classList.contains('is-hovering') || (event.target instanceof Element && event.target.closest('#hand .card'))) return;
+    hand.classList.remove('is-hovering');
+    hand.querySelectorAll('.card').forEach((x) => x.classList.remove('is-active'));
+  });
   document.addEventListener('pointermove', (event) => {
     at = { x: event.clientX, y: event.clientY };
     if (!queued) {
