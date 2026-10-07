@@ -238,8 +238,12 @@ function playerStatus(playerId) {
   if (!view) return '';
   if (view.phase === 'draft') return view.players[playerId].picked ? 'picked' : 'picking…';
   if (view.phase === 'ended') return view.result?.players.includes(playerId) ? 'wins' : '';
-  const n = view.players[playerId].handSize;
-  return waitingOn(view).includes(playerId) ? 'to act' : `${n} card${n === 1 ? '' : 's'}`;
+  return waitingOn(view).includes(playerId) ? 'to act' : '';
+}
+
+/** Cards in hand as little card backs, one each. @param {number} n */
+function miniCards(n) {
+  return n > 0 ? `<span class="mini-cards" title="${n} card${n === 1 ? '' : 's'} in hand">${'<span class="mini-card"></span>'.repeat(n)}</span>` : '';
 }
 
 /** The slayer groups: a horizontal accordion, one card open at a time (yours by default). */
@@ -252,21 +256,17 @@ function renderPlayers() {
     const group = spec.slayerGroups.find((g) => g.id === p.group);
     const isOpen = id === open;
     const trophies = view.factions.filter((f) => view.me.trophies[f]).map((f) => Array.from({ length: view.me.trophies[f] }, () => tokenHtml(f, 1)).join('')).join('');
-    const field = (/** @type {string} */ label, /** @type {string} */ value) => `<span class="field-label">${label}</span><span class="field-value">${value}</span>`;
-    const detail = [
-      field('Group', `${esc(SUIT.get(group?.archetype ?? '') ?? '')} ${esc(group?.name ?? '')}`),
-      field('Supply', `<span class="supply-row cubes" title="${p.supply} in supply">${Array.from({ length: p.supply }, () => cubeHtml(colourOf(id), 8)).join('')}</span>`),
-      field('Hand', `${p.handSize} card${p.handSize === 1 ? '' : 's'}`),
-      id === view.you ? field('Trophies', `<span class="trophies" title="Secret: only you see these (IN2)">${trophies || '<span class="muted">none yet</span>'}</span>`) : '',
+    const row = (/** @type {string} */ label, /** @type {string} */ value) => `<span class="player-row"><span class="field-label">${label}</span><span class="field-value">${value}</span></span>`;
+    const rows = [
+      row('Group', `${esc(SUIT.get(group?.archetype ?? '') ?? '')} ${esc(group?.name ?? '')}`),
+      row('Supply', `<span class="supply-row cubes" title="${p.supply} in supply">${Array.from({ length: p.supply }, () => cubeHtml(colourOf(id), 8)).join('')}</span>`),
+      row('Hand', miniCards(p.handSize) || '<span class="muted">empty</span>'),
+      id === view.you ? row('Trophies', `<span class="trophies" title="Secret: only you see these (IN2)">${trophies || '<span class="muted">none yet</span>'}</span>`) : '',
     ].join('');
     return `
-      <div class="player ${id === view.you ? 'player-you' : ''} ${isOpen ? 'is-open' : ''}" data-action="expand-player" data-player="${esc(id)}" aria-expanded="${isOpen}">
-        <span class="swatch" style="background:${colourOf(id)}"></span>
-        <span class="player-tab">
-          <span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${id === view.you ? ' <span class="muted small">(you)</span>' : ''}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}</span>
-          <span class="player-status">${esc(playerStatus(id))}</span>
-        </span>
-        <span class="player-detail" aria-hidden="${!isOpen}">${detail}</span>
+      <div class="player ${id === view.you ? 'player-you' : ''} ${isOpen ? 'is-open' : ''}" data-action="expand-player" data-player="${esc(id)}" aria-expanded="${isOpen}" style="--seat:${colourOf(id)}">
+        <span class="player-row player-head"><span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${id === view.you ? ' <span class="muted small">(you)</span>' : ''}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}</span><span class="player-status">${esc(playerStatus(id))}${miniCards(p.handSize)}</span></span>
+        <span class="player-detail" aria-hidden="${!isOpen}">${rows}</span>
       </div>`;
   });
   $('players').innerHTML = `<h2>Slayer groups</h2><div class="player-list accordion">${rows.join('')}</div>`;

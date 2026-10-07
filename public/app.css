@@ -478,21 +478,26 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .trophies { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 .trophies > .token + .token { margin-left: -12px; }
 
-/* Slayer groups: a horizontal accordion. Closed cards are slim tabs; the open
-   one grows to show the slayer group, the supply and (yours) the trophies. */
+/* Slayer groups: a horizontal accordion of cards made of stacked rows: the
+   name and status, then (when open) group, supply, hand and, for you,
+   trophies. Closed cards keep their rows folded to zero width, so the strip
+   is as tall as the tallest open card and switching animates. */
 .player-list.accordion { flex-wrap: nowrap; align-items: stretch; }
-.accordion .player { flex: 0 0 auto; display: flex; gap: var(--space-2); align-items: stretch; cursor: pointer; transition: flex-grow 240ms ease-out, background-color 240ms; min-width: 0; }
+.accordion .player { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; gap: 4px; flex: 0 0 auto; min-width: 0;
+  padding: var(--space-2) var(--space-3); border-left: 6px solid var(--seat); cursor: pointer; transition: flex-grow 240ms ease-out, background-color 240ms; }
 .accordion .player.is-open { flex: 1 1 auto; cursor: default; background: var(--color-panel); }
-.accordion .swatch { width: 10px; height: auto; min-height: 36px; flex: none; }
-.player-tab { display: flex; flex-direction: column; justify-content: center; gap: 2px; white-space: nowrap; }
-.player-detail { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; column-gap: var(--space-3); row-gap: 4px; min-width: 0; padding-left: var(--space-3); border-left: 1px solid var(--color-cell); }
-.field-label { font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
-.field-value { font-size: 12px; min-width: 0; }
-.accordion .player:not(.is-open):hover { border-color: var(--color-accent); }
-/* Every card keeps its details (one line each, never wrapping), so the strip
-   is as tall as the tallest open card; closed details fold to zero width. */
-.accordion .player-detail { max-width: 0; opacity: 0; overflow: hidden; padding-left: 0; border-left-color: transparent; white-space: nowrap;
-  transition: max-width 240ms ease-out, opacity 200ms ease-out, padding-left 240ms ease-out; }
-.accordion .player.is-open .player-detail { max-width: 640px; opacity: 1; padding-left: var(--space-3); border-left-color: var(--color-cell); }
+.accordion .player:not(.is-open):hover { border-top-color: var(--color-accent); border-right-color: var(--color-accent); border-bottom-color: var(--color-accent); }
+.player-row { display: flex; align-items: center; gap: var(--space-3); white-space: nowrap; min-height: 18px; }
+.player-head { justify-content: space-between; }
+.player-row .field-label { width: 64px; flex: none; font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
+.player-row .field-value { font-size: 12px; display: flex; align-items: center; }
+.accordion .player-detail { display: flex; flex-direction: column; gap: 4px; max-width: 0; opacity: 0; overflow: hidden; transition: max-width 240ms ease-out, opacity 200ms ease-out; }
+.accordion .player.is-open .player-detail { max-width: 640px; opacity: 1; }
 .accordion .player-detail .supply-row, .accordion .player-detail .trophies { flex-wrap: nowrap; max-width: none; }
+.accordion .swatch { display: none; }
 @media (prefers-reduced-motion: reduce) { .accordion .player, .accordion .player-detail { transition: none; } }
+/* A card back, for counting cards in hand: plum with a cream edge. */
+.mini-cards { display: inline-flex; align-items: center; margin-left: 4px; vertical-align: middle; }
+.mini-card { width: 11px; height: 15px; background: var(--card-face); border: 1px solid var(--ink); box-shadow: inset 0 0 0 2px var(--card-face), inset 0 0 0 7px var(--color-accent-soft), 1px 1px 0 var(--ink); }
+.mini-card + .mini-card { margin-left: -5px; }
+.player-status { display: inline-flex; align-items: center; gap: 4px; }
