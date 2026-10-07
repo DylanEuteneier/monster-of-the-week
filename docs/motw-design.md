@@ -2688,7 +2688,8 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 | B (scaffold) | Move one group up to two hexes away, through locations it can enter. |
 | C (scaffold) | Move one group to an adjacent location. |
 | D (scaffold) | Move half of one group, rounded down, to an adjacent location. |
-| Cancel (real) | *Response, before:* when a player is about to play a card's turn action or response, cancel it; the card is spent. The only cancel in the pool (3.7, principle 5). |
+| Change the Plan (second pivot; draft wording, in the prototype from 2026-10-07) | Move up to 3 of your influence from other locations to one location. Takes the Cancel's place while responses are out of the first draft. |
+| Cancel (out with responses) | *Response, before:* when a player is about to play a card's turn action or response, cancel it; the card is spent. The only cancel in the pool (3.7, principle 5). Held out of the deal while responses are out of the first draft (2026-10-07). |
 | Switch to Plan B (pivot; draft wording, in the prototype from 2026-10-07) | Move up to 3 of your influence from other locations to one location. Replaced the unmarked placeholder at the designer's request. |
 
 **Pivot cards (designer, 2026-10-07).** One or more of the unsuited extras are pivot cards: a "pivot" or "plan B" theme, moving the player's own influence (never another player's, D13). This replaces the ◐ idea Stake Out the Den (round 8) as the home of that move. Draft wording to measure (suggestion): *Switch to Plan B:* move up to 3 of your influence from other locations to one location. Measured as a test card (200 states, 5 players): battle 2.1, usable in 46% of states, control taken 0.4, influence moved 1.3; with `influenceToBoard=on`, 4.1, 73%, 0.7 and 2.4.

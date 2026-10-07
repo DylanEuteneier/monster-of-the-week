@@ -40,7 +40,7 @@ test('content ids are unique across every list, cards included', () => {
   assert.equal(new Set(ids).size, ids.length);
 });
 
-test('the pool is 21 cards: five suits of Strike, Shift and Signature, A to D, and the cancel (SU1, PS1, FP2)', () => {
+test('the pool is 21 cards: five suits of Strike, Shift and Signature, A to D, and two pivots (SU1, PS1, FP2)', () => {
   assert.equal(spec.cards.length, 21);
   for (const a of spec.archetypes) {
     const suit = spec.cards.filter((c) => c.suit === a.id);
@@ -48,7 +48,8 @@ test('the pool is 21 cards: five suits of Strike, Shift and Signature, A to D, a
     assert.ok(suit.find((c) => c.slot === 'signature')?.response, `${a.id} Signature carries a response`);
   }
   assert.deepEqual(spec.cards.filter((c) => c.marked).map((c) => c.marked).sort(), ['A', 'B', 'C', 'D']);
-  assert.equal(spec.cards.filter((c) => c.response?.id === 'cancel').length, 1);
+  assert.equal(spec.cards.filter((c) => c.action === 'move-influence').length, 2);
+  assert.ok(!spec.cards.some((c) => c.id === 'cancel'), 'the Cancel is held out with responses');
 });
 
 test('the map is symmetric, with five regions of three (layout D)', () => {
@@ -233,9 +234,9 @@ test('views hide other hands, token faces and trophy totals (3.11, IN2)', () => 
 
 test('the cancel response stops a card that is in progress (principle 5; responses on)', () => {
   let s = draftAll(createGame({ seed: 11, players: PLAYERS, options: { responses: 'on' } }));
-  const holder = PLAYERS.find((pid) => s.players[pid].hand.includes('cancel'));
   const actor = /** @type {string} */ (s.first);
-  if (!holder || holder === actor) return; // not dealt that way with this seed
+  const holder = /** @type {string} */ (PLAYERS.find((pid) => pid !== actor));
+  s.players[holder].hand.push('cancel'); // held out of the deal with responses; given by hand here
   const card = s.players[actor].hand.find((c) => cardById(c).marked) ?? s.players[actor].hand.find((c) => cardById(c).action);
   if (!card) return;
   s = applyMove(s, { playerId: actor, move: { type: 'play', card, use: 'action', target: null } });
@@ -377,6 +378,7 @@ test('with responses out (the first draft), a played action resolves at once and
   const next = applyMove(s, { playerId: actor, move: { type: 'play', card, use: 'action', target: null } });
   assert.equal(next.pending, null);
   assert.notEqual(next.seating[next.turn], actor);
-  const holder = PLAYERS.find((pid) => next.players[pid].hand.includes('cancel'));
-  if (holder) assert.equal(validate(next, { playerId: holder, move: { type: 'respond', card: 'cancel' } }).ok, false);
+  const holder = /** @type {string} */ (PLAYERS.find((pid) => pid !== actor));
+  next.players[holder].hand.push('cancel');
+  assert.equal(validate(next, { playerId: holder, move: { type: 'respond', card: 'cancel' } }).ok, false);
 });
