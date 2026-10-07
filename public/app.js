@@ -447,8 +447,8 @@ function cardHtml(id, o = {}) {
     ? `<button class="card-opt${on ? ' is-on' : ''}${o.next ? ' is-next' : ''}" data-action="${action}" data-card="${esc(id)}"${Object.entries(data).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('')} title="${esc(tip)}">${inner}</button>`
     : `<span class="card-opt is-off" title="${esc(tip)}">${inner}</span>`;
   const options = c.suit ? `<div class="card-options">
-      ${c.action ? opt('set-mode', 'Location', `Location target: one of the ${suit?.name ?? ''} locations, any faction`, o.reading === 'location', { mode: 'location' }) : ''}
-      ${c.action ? opt('set-mode', 'Faction', `Faction target: ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}, anywhere`, o.reading === 'faction', { mode: 'faction' }) : ''}
+      ${c.action ? opt('set-mode', 'LOC', `Location target: one of the ${suit?.name ?? ''} locations, any faction`, o.reading === 'location', { mode: 'location' }) : ''}
+      ${c.action ? opt('set-mode', 'FAC', `Faction target: ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}, anywhere`, o.reading === 'faction', { mode: 'faction' }) : ''}
       ${opt('influence', `<b>+${c.influence}</b>`, `Spend for ${c.influence} influence with ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}`, false)}
     </div>` : '';
   const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : ''].filter(Boolean).join(' ');
