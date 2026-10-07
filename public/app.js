@@ -783,6 +783,14 @@ function renderSeatbar() {
 
 /** @param {MouseEvent} event */
 function onClick(event) {
+  // Clicking away from a selected card (on nothing you can choose) unselects it.
+  if ((ui.choosing || ui.responding) && event.target instanceof HTMLElement
+    && !event.target.closest('[data-action], .card-selected, #dock, .side-stack, .overlay, .overlay-buttons')) {
+    ui.choosing = null;
+    ui.responding = null;
+    ui.target = {};
+    return render();
+  }
   const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target.closest('[data-action]') : null);
   if (!target) return;
   const action = target.dataset.action;
