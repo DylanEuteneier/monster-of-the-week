@@ -38,6 +38,13 @@ The current focus, below, lists what is being worked on right now; the backlog h
      - ⎈ Summoning Circle (2) 13.6 / 0.7 / 8.1 / 1.0; Lamps (3) 4.7 / 0.2 / 2.3 / 0.4; House on Fire (4) 2.7 / 0.4 / 1.1 / 1.1.
      - Hidden tokens look one round ahead only, so they are undercounted. Rule-breaking (4) is judged from the card text, not measured.
    - *Influence economy (designer, 2026-10-07):* it feels too tight: too few locations become influence contests. Measured (`scripts/economy.js`, 200 games, 5 players, smart bots; at the end of each round's play phase): fights per round fall from 3.6 (round 1) to 1.7 (round 5). Fights with no player influence at them: 94% in round 1, 67% in round 2, 30% in round 3, 19% in round 4, 9% in round 5; fights with two or more players' influence: 1%, 9%, 40%, 59%, 72%. Players hold 10–17 standing each but have only 0.2 (round 1) to 4.4 (round 5) influence on the board: the bottleneck is getting influence onto the board, not earning it. Random bots and 3 players show the same shape.
+   - *Levers under test (designer: all three good candidates, 2026-10-07):* variants in `spec.json`, off by default. Fights with no player influence at them, rounds 1 / 2 / 3 / 5, and influence on the board per player in round 5 (`scripts/economy.js`, 200 games, 5 players):
+     - Off (the first draft): 94% / 67% / 30% / 9%; 4.4.
+     - `influencePerMove=2` (2 per destination): 95% / 64% / 34% / 12%; 6.6. Little change early: moves are rare in round 1.
+     - `influenceAtOrigin=on` (1 also where the cubes leave): 92% / 53% / 23% / 6%; 6.9.
+     - `influenceToBoard=on` (1 of a card spent for influence goes onto a location its faction controls): 47% / 13% / 6% / 2%; 8.9. The only lever that changes round 1.
+     - All three: 45% / 16% / 5% / 3%; 11.5.
+     - With `influenceToBoard=on`, the cards that need influence already on the board gain the most: Stake Out the Den's battle score rises from 1.1 to 3.2 and it can be used in 61% of states (29% before); the hidden tokens rise a little; Track falls (11.3 to 9.6), since standing goes to the board instead of the chase.
 
 Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `DR4`, `MC3`, `FR1`, `PT2`, `ST3`, `ET3`. The draft kept `DR3`, `DR4` and `PT2`, chose `FR5`, `ST1` and `ET4` instead of `FR1`, `ST3` and `ET3`, and left `MC3` to the cards.
 
@@ -955,6 +962,12 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** 3.7 (suit structure), Appendix H (Set v2 influence values).
 - **Date:** 2026-10-07
 
+#### D13. No one moves another player's influence
+
+- **Decided:** no card or rule ever moves another player's influence. A card may move the player's own influence.
+- **Affects:** 3.7 (cards), 3.11.
+- **Date:** 2026-10-07
+
 ### A.2 Changelog
 
 Actual changes to mechanisms and game structure.
@@ -972,6 +985,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-04 | Current focus set: first draft of the rules, then the cards, then the web app prototype. Other open work moved to the backlog | Done before this: fits and clashes for the combat cluster, affinity, ties between players, location control, alignment, volatility, information and the draft; a first pass of trade-offs; four sample rulesets. Prototype architecture (D8), scaffold (built and deployed), art direction (D9), palette (D11) and the prototype art set (F.17) |
 | 2026-10-05 | First draft of the rules written up (Appendix G), from the designer's picks in each area. New candidates: CA1–CA3 (card action seeds), IL1 (only the influence leader moves a faction), FR5 (half rounded down, minimum 1), ET4 (fewest trophies first), WT1 (next weakest colour), FX2 (tied factions win together). General rules: one supply per colour; no piece leaves the game. No decisions recorded | Out of the first draft: archetype powers, card-driven growth, boil-over, card-triggered fights, dynamic round end, spillover, costly displacement, dice |
 | 2026-10-05 | Card design started. Archetype suits (SU1) with Strike, Shift and Signature slots; fixed pool of 21 (PS1); four marked cards A to D (FP2); card principles 1–13 in 3.7; card catalogue started (Appendix H). First draft taken without IL1 (now the first variant): any faction can be moved, with influence spent from the faction moved. General rule: cards only shift cubes. Adjacent means hexes sharing a border. No decisions recorded | Set aside: location cards (LK1), the tiered pool for the first draft (D7 stays recorded) |
+| 2026-10-07 | No one moves another player's influence (D13). Influence economy levers under test as variants: influencePerMove, influenceToBoard, influenceAtOrigin (all off by default) | Designer: all three are good candidates |
 | 2026-10-07 | Printed influence: the same total per suit, split card by card, not fixed by slot (D12). Card action balance review opened | Starting split stays 2/3/4 per suit (9 each) until the review changes it |
 
 ---
@@ -2692,7 +2706,7 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 
 - Hidden effects must apply to whatever fight happens at their location, never only if a particular faction is in it (3.11). Round 7 entries that need rewording: Hack the Mainframe ("the target faction counts its cubes in the region") and the faction readings of Salt and Burn the Bones and Set the House on Fire ("any fight the Undead/Demons are in"). Under the placement rule their faction reading becomes "a location holding the suit's faction", and the effect must work on whichever two factions end up fighting there.
 
-- Round 8 (2026-10-07; suggestions, driven by Claude at the designer's request): aimed at the top two criteria of the strength ranking (Current focus 4), where the data showed gaps: taking influence control of a contested location (Stake Out the Den, Take Over the Wake: influence moved or placed without moving cubes) and shaping big fights, including for the invaders (Raise the Force Field: protection; Hijack the Feed and Sign the Contract: trophy redirection). Measured as never-dealt test cards (`spec.testCards`, `scripts/balance.js`, 200 states, 5 players): all five score low on every measure (battle 1.1–1.7, control 0.2–0.5). They are capped by the influence economy, not their wording: in rounds 1–2 most fights have no player influence at them (see Current focus 4). Unique and slightly rule-breaking: Stake Out the Den (moves influence, which nothing else does), Sign the Contract (reverses TD1's pile order), Hijack the Feed (bends the ranking).
+- Round 8 (2026-10-07; suggestions, driven by Claude at the designer's request): aimed at the top two criteria of the strength ranking (Current focus 4), where the data showed gaps: taking influence control of a contested location (Stake Out the Den, Take Over the Wake: influence moved or placed without moving cubes) and shaping big fights, including for the invaders (Raise the Force Field: protection; Hijack the Feed and Sign the Contract: trophy redirection). Measured as never-dealt test cards (`spec.testCards`, `scripts/balance.js`, 200 states, 5 players): all five score low on every measure (battle 1.1–1.7, control 0.2–0.5). They are capped by the influence economy, not their wording: in rounds 1–2 most fights have no player influence at them (see Current focus 4). Unique and slightly rule-breaking: Stake Out the Den (moves the player's own influence, which nothing else does; D13 forbids moving anyone else's. Designer's seed for its theme: a "pivot" or "plan B"), Sign the Contract (reverses TD1's pile order), Hijack the Feed (bends the ranking).
 
 ### H.8 Candidate sets
 
