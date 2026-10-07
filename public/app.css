@@ -538,3 +538,11 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   .faction-cell::before { content: attr(data-label); flex: none; width: 72px; font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
   .faction-count { align-items: flex-end; }
 }
+/* Faction table colours: the panel's own navy family, not plum. */
+.faction-table { background: var(--color-panel); }
+.faction-row { border-bottom: 1px solid var(--color-cell); }
+.faction-head { background: var(--ink); border-bottom: 0; }
+.faction-row.is-candidate { background: color-mix(in oklab, var(--color-panel), var(--state-candidate) 14%); }
+/* The influence leader: a crisp gold underline (a 1px outline blurred off-pixel). */
+.standing-group.is-leading { outline: none; padding-bottom: 2px; border-bottom: 2px solid var(--state-candidate); }
+.standing-group { padding-bottom: 2px; border-bottom: 2px solid transparent; }
