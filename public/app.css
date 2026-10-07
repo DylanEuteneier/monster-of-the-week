@@ -569,3 +569,8 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .accordion .player.is-open .player-detail { transition: max-width var(--accordion-time) var(--accordion-ease), opacity 220ms ease-out 120ms; }
 .accordion .player-supply-mini { max-height: 60px; opacity: 1; overflow: hidden; transition: max-height var(--accordion-time) var(--accordion-ease), opacity 160ms ease-out; }
 .accordion .player.is-open .player-supply-mini { display: grid; max-height: 0; opacity: 0; }
+/* Faster accordion. */
+:root { --accordion-time: 200ms; }
+.accordion .player-detail { transition: max-width var(--accordion-time) var(--accordion-ease), opacity 100ms ease-out; }
+.accordion .player.is-open .player-detail { transition: max-width var(--accordion-time) var(--accordion-ease), opacity 140ms ease-out 60ms; }
+.accordion .player-supply-mini { transition: max-height var(--accordion-time) var(--accordion-ease), opacity 100ms ease-out; }
