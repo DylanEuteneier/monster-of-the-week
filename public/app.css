@@ -654,3 +654,5 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .card-dim, .card-dim:hover, .hand .card-dim { opacity: 1; }
 .card-dim::after { content: ""; position: absolute; inset: 0; background: rgb(48 43 45 / 0.38); pointer-events: none; }
 .card-dim:hover::after { background: rgb(48 43 45 / 0.18); }
+/* A card is selected: no fanning until Back; the selected card stays raised. */
+.hand.is-locked .card, .hand.is-locked .fan-slop { pointer-events: none; }

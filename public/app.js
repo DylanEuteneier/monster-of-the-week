@@ -479,6 +479,8 @@ function renderHand() {
   setHtml('hand', n || actions.length ? `<button class="hand-tab" data-action="toggle-hand" aria-label="Show or hide your hand">Hand · ${n}</button><div class="fan"><div class="fan-slop" aria-hidden="true"></div>${fanned}${icons}</div>` : '');
   const el = $('hand');
   el.classList.toggle('is-open', open || ui.handOpen);
+  // While a card is selected (being played or answering), the fan holds still until Back.
+  el.classList.toggle('is-locked', !!ui.choosing || !!ui.responding);
   el.style.setProperty('--n', String(n));
 }
 
