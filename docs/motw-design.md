@@ -23,6 +23,11 @@ The current focus, below, lists what is being worked on right now; the backlog h
 3. **Build the web app prototype.** Restate the rules and cards as an implementation spec (F.16), then build them on the existing scaffold.
 4. **Review card action balance** *(opened 2026-10-07; not started).* Playtesting the prototype shows some actions are far stronger than others: Ring the Church Bell can swing presence massively, while others only shift it marginally. Review every card's action for how much presence it can move.
    - *Direction (designer, 2026-10-07):* a spread of power between cards is desirable. A weaker action is balanced in other ways, for example: it does something special, unique and slightly rule-breaking; or it gives more influence when spent for influence.
+   - *Strength ranking (designer, 2026-10-07; provisional, from gut, subject to change):* an action is stronger the higher it reaches on this list:
+     1. It can alter the outcome of a large, high-trophy battle, whether for the player's own goals or to undo another player's.
+     2. It can take influence control of a contested region.
+     3. It can move tokens and place lots of influence.
+     4. It can move in ways that break the normal rules.
    - *First measurement (2026-10-07, `scripts/balance.js`):* presence change at the next reckoning, best play per state, 200 states from bot games at 5 players. Fights decide almost every swing; growth barely registers. Most cards help the island more than the invaders. Typical best swing: Broadcast 11.0, Beam 8.7, Summoning Circle 8.7, Traffic Lights 7.5, Track 7.3, the Bell 7.2 (largest single swing, 26), Board Up 6.9, Fresh Meat 6.7, Reroute 5.8, the Virus 4.0, Lamps 3.4, Leak 3.2, the hidden tokens 0.4–1.5 (one round ahead only, so undercounted). The unsuited scaffold moves outscore most suit cards.
 
 Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `DR4`, `MC3`, `FR1`, `PT2`, `ST3`, `ET3`. The draft kept `DR3`, `DR4` and `PT2`, chose `FR5`, `ST1` and `ET4` instead of `FR1`, `ST3` and `ET3`, and left `MC3` to the cards.
