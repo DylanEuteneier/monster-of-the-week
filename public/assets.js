@@ -132,7 +132,26 @@ async function cards() {
     : 'Not measured yet: run <span class="mono">npm run cards:score</span>.';
   $('cards').innerHTML = `<div class="row-between"><h2>Cards</h2><span class="small muted">${all.length} cards: ${deck.length} in the deck, ${tests.length} out of the deal</span></div>
     <p class="small muted">Every card the engine can play, for review, sorted by suit, then type, then action. Tags: green high, gold mid, grey low. <b>Battle</b> trophies changing hands plus fights flipped (mid ${BANDS[0][2]}, high ${BANDS[0][3]}); <b>Control</b> contested locations where you become sole top influence (${BANDS[1][2]} / ${BANDS[1][3]}); <b>Moved</b> pieces moved or placed (${BANDS[2][2]} / ${BANDS[2][3]}); <b>Influence</b> influence placed (${BANDS[3][2]} / ${BANDS[3][3]}); <b>Playable</b> states with a legal target (${BANDS[4][2]}% / ${BANDS[4][3]}%). Rule-breaking is judged from the text; hidden tokens are undercounted (one round ahead). ${how}</p>
-    <div class="review-grid">${all.map(({ c, status }) => cardHtml(c.id, { extra: tags(c, status) })).join('')}</div>`;
+    <div class="review-grid" id="review-grid"></div>`;
+  const items = all.map(({ c, status }) => cardHtml(c.id, { extra: tags(c, status) }));
+  // Masonry that reads left to right: each card, in order, goes to the shortest column.
+  const grid = $('review-grid');
+  let columns = 0;
+  const layout = () => {
+    const width = parseFloat(getComputedStyle(grid).getPropertyValue('--col')) || 214;
+    const gap = parseFloat(getComputedStyle(grid).columnGap) || 12;
+    const n = Math.max(1, Math.floor((grid.clientWidth + gap) / (width + gap)));
+    if (n === columns) return;
+    columns = n;
+    grid.innerHTML = Array.from({ length: n }, () => '<div class="review-col"></div>').join('');
+    const cols = /** @type {HTMLElement[]} */ ([...grid.children]);
+    for (const html of items) {
+      const shortest = cols.reduce((a, b) => (b.offsetHeight < a.offsetHeight ? b : a));
+      shortest.insertAdjacentHTML('beforeend', html);
+    }
+  };
+  layout();
+  new ResizeObserver(layout).observe(grid);
 }
 
 cards();
