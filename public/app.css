@@ -574,3 +574,20 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .accordion .player-detail { transition: max-width var(--accordion-time) var(--accordion-ease), opacity 100ms ease-out; }
 .accordion .player.is-open .player-detail { transition: max-width var(--accordion-time) var(--accordion-ease), opacity 140ms ease-out 60ms; }
 .accordion .player-supply-mini { transition: max-height var(--accordion-time) var(--accordion-ease), opacity 100ms ease-out; }
+/* Performance: small tokens (supplies, standing, pieces on hexes) get one light
+   shadow instead of the full stack of cardboard filters; panels contain their
+   own layout and paint. */
+.supply-row .token, .hex-pieces .token, .trophies .token { filter: drop-shadow(0 1px 0 var(--token-edge-dark)); }
+.supply-row .token.is-candidate, .hex-pieces .token.is-candidate { filter: drop-shadow(0 1px 0 var(--state-candidate)) drop-shadow(0 -1px 0 var(--state-candidate)); }
+.table > .panel { contain: layout paint; }
+/* Performance first (2026-10-06): only cheap animations. No looping
+   animations; the accordion switches instantly and its details fade in
+   (opacity only); hovers move things (transform only). */
+.token.is-candidate { animation: none; }
+.card-respond { animation: none; outline-color: var(--color-link); }
+.accordion .player, .accordion .player-detail, .accordion .player-supply-mini { transition: none; }
+.accordion .player.is-open .player-detail { animation: fade-in 120ms ease-out; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.accordion .player-detail { max-width: 0; }
+.accordion .player.is-open .player-detail { max-width: none; }
+.board-tile .hex { transition: transform 80ms ease-out; }

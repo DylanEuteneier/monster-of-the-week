@@ -84,6 +84,16 @@ function esc(value) {
   return String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch] ?? ch);
 }
 
+/** Last HTML written to each panel, so unchanged panels aren't rebuilt. @type {Map<string, string>} */
+const written = new Map();
+
+/** Replace a panel's HTML only if it changed (rebuilding hundreds of pieces is costly). @param {string} id @param {string} html */
+function setHtml(id, html) {
+  if (written.get(id) === html) return;
+  written.set(id, html);
+  $(id).innerHTML = html;
+}
+
 /** @param {string} id */
 function $(id) {
   const element = document.getElementById(id);
@@ -230,11 +240,11 @@ function renderHeader() {
   const view = ui.view;
   const status = view ? `Round ${view.round} of ${view.rounds} — ${PHASE_LABELS[view.phase]}` : ui.connectionNote;
   const you = view ? `<span class="row"><span class="swatch" style="height:12px;background:${colourOf(view.you)}"></span> ${esc(view.you)}</span>` : '';
-  $('header').innerHTML = `
+  setHtml('header', `
     <h1>MONSTER OF THE WEEK</h1>
     <span class="phase-label">${esc(status)}</span>
     ${you}
-    <span class="muted small">${esc(ui.connectionNote)}</span>`;
+    <span class="muted small">${esc(ui.connectionNote)}</span>`);
 }
 
 /** @param {string} playerId */
@@ -275,7 +285,7 @@ function renderPlayers() {
         <span class="player-detail" aria-hidden="${!isOpen}">${rows}</span>
       </div>`;
   });
-  $('players').innerHTML = `<h2>Slayer groups</h2><div class="player-list accordion">${rows.join('')}</div>`;
+  setHtml('players', `<h2>Slayer groups</h2><div class="player-list accordion">${rows.join('')}</div>`);
 }
 
 // ---------------------------------------------------------------------------
@@ -383,11 +393,11 @@ function renderBoard() {
   const total = Object.values(view.board).reduce((n, pl) => n + Object.values(pl.cubes).reduce((a, b) => a + b, 0), 0);
   // Display tables are never narrower than the map (they may be wider).
   if (board) document.documentElement.style.setProperty('--map-width', `${board.width * S}px`);
-  $('board').innerHTML = `
+  setHtml('board', `
     <h2>The island</h2>
     <p class="small">Total presence <b>${total}</b> · the invaders win if it is more than <b>${esc(view.options.threshold)}</b> at the end of round ${view.rounds}.</p>
     ${factionTable(lit)}
-    ${board ? `<div class="board" style="width:${board.width * S}px;height:${board.height * S}px"><img class="sprite" src="${esc(board.src)}" width="${board.width * S}" height="${board.height * S}" alt="The island" style="position:absolute;left:0;top:0">${tiles.join('')}</div>` : ''}`;
+    ${board ? `<div class="board" style="width:${board.width * S}px;height:${board.height * S}px"><img class="sprite" src="${esc(board.src)}" width="${board.width * S}" height="${board.height * S}" alt="The island" style="position:absolute;left:0;top:0">${tiles.join('')}</div>` : ''}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -441,11 +451,11 @@ function renderPhase() {
   const view = ui.view;
   if (!view) {
     if (ui.hotseat.enabled) return renderHotseatEmpty();
-    $('phase').innerHTML = ui.token ? `<h2>Table</h2><p class="muted">${esc(ui.connectionNote)}</p>` : '<h2>No seat</h2><p>Open the player link you were given (it looks like <span class="mono">/p/…</span>).</p>';
+    setHtml('phase', ui.token ? `<h2>Table</h2><p class="muted">${esc(ui.connectionNote)}</p>` : '<h2>No seat</h2><p>Open the player link you were given (it looks like <span class="mono">/p/…</span>).</p>');
     return;
   }
   const renderers = { draft: renderDraft, play: renderPlay, growth: renderGrowth, ended: renderEnded };
-  $('phase').innerHTML = renderers[view.phase]();
+  setHtml('phase', renderers[view.phase]());
 }
 
 /** @param {string} label */
@@ -542,7 +552,7 @@ function renderLog() {
   const view = ui.view;
   if (!view) return;
   const rounds = view.log.slice().reverse().map((entry) => `<div class="log-round">${entry.events.map((line) => `<span>${esc(line)}</span>`).join('')}</div>`);
-  $('log').innerHTML = `<h2>Log</h2>${rounds.join('') || '<p class="muted small">Nothing has resolved yet.</p>'}`;
+  setHtml('log', `<h2>Log</h2>${rounds.join('') || '<p class="muted small">Nothing has resolved yet.</p>'}`);
 }
 
 function renderChat() {
