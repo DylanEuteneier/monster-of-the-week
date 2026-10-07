@@ -591,3 +591,18 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .accordion .player-detail { max-width: 0; }
 .accordion .player.is-open .player-detail { max-width: none; }
 .board-tile .hex { transition: transform 80ms ease-out; }
+
+/* The hand (2026-10-06): the phase panel docks to the bottom of the window so
+   the hand stays in view while the map scrolls; cards share the row instead of
+   scrolling; dimmed when they can't be used; the card being played stays
+   raised. The log and table talk buttons move to the top right. */
+#phase { position: sticky; bottom: 0; z-index: 5; max-height: 48vh; overflow-y: auto; box-shadow: 0 -4px 0 var(--ink), var(--shadow); }
+#phase .cards { flex-wrap: nowrap; overflow-x: auto; }
+#phase .card { flex: 1 1 0; min-width: 150px; max-width: 230px; }
+#phase .card p { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+#phase .card .card-response { -webkit-line-clamp: 3; }
+.card-dim { opacity: 0.55; }
+.card-dim:hover { opacity: 0.85; }
+.card-selected { transform: translateY(-6px); outline: 3px solid var(--state-candidate); outline-offset: 2px; }
+.overlay-buttons-top { top: 10px; bottom: auto; }
+.overlay { top: 56px; bottom: auto; }

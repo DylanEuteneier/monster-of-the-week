@@ -429,7 +429,7 @@ function responseReady(view, cardId) {
 /**
  * A card. `mode` says what clicking it does: 'act' (play its action),
  * 'respond' (fire its response), 'keep' (draft), or '' (nothing).
- * @param {string} id @param {{ mode?: '' | 'act' | 'respond' | 'keep', ticked?: boolean, influence?: boolean }} [o]
+ * @param {string} id @param {{ mode?: '' | 'act' | 'respond' | 'keep', ticked?: boolean, influence?: boolean, dim?: boolean, selected?: boolean }} [o]
  */
 function cardHtml(id, o = {}) {
   const c = cardById(id);
@@ -438,8 +438,9 @@ function cardHtml(id, o = {}) {
   const influence = c.suit ? (o.influence
     ? `<span class="card-influence" data-action="influence" data-card="${esc(id)}" title="Spend for ${c.influence} influence with the ${esc(suit?.name ?? '')} faction">+${c.influence}</span>`
     : `<span class="card-influence is-off">+${c.influence}</span>`) : '';
-  const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : ''].filter(Boolean).join(' ');
-  return `<div class="${classes}" data-card="${esc(id)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
+  const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : ''].filter(Boolean).join(' ');
+  const full = `${c.name}. ${c.text}${c.response ? ` Response (${c.response.timing}): ${c.response.name}. ${c.response.text}` : ''}`;
+  return `<div class="${classes}" data-card="${esc(id)}" title="${esc(full)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
     <div class="card-band">${band.replace('{{influence}}', influence)}</div>
     <span class="card-name">${esc(c.name)}</span>
     <p class="small">${esc(c.text)}</p>
@@ -495,14 +496,14 @@ function renderPlay() {
     const card = cardById(c);
     const canAct = myTurn && !!card.action && (!mustOpen || !!card.marked);
     const mode = ready.includes(c) ? 'respond' : canAct ? 'act' : '';
-    return cardHtml(c, { mode, influence: myTurn && !mustOpen && !!card.suit });
+    return cardHtml(c, { mode, influence: myTurn && !mustOpen && !!card.suit, dim: !mode });
   }).join('');
   let head;
   if (ui.responding) head = `<p>Click the location to block on the board.</p><button class="btn" data-action="back">Back</button>`;
   else if (pending) {
     head = `<p><b>${esc(pending.player)}</b> plays <b>${esc(cardById(pending.card).name)}</b>: ${esc(describeTarget(pending.card, pending.target))}${pending.cancelled ? ' (cancelled)' : ''}${pending.blocked.length ? ` · blocked: ${pending.blocked.map((l) => esc(locationById(l).name)).join(', ')}` : ''}</p>`
       + (pending.player === view.you ? '<button class="btn btn-primary" data-action="confirm">Let it resolve</button>' : waitingFor('Click a glowing card to answer it, or let it resolve.'));
-  } else if (myTurn) head = `<p>${mustOpen ? 'You go first: click your marked card to open the round.' : 'Click a card to play its action, or its influence badge to spend it for influence.'}</p><button class="btn" data-action="pass">Pass</button>`;
+  } else if (myTurn) head = `<div class="row-between"><p>${mustOpen ? 'You go first: click your marked card to open the round.' : 'Click a card to play its action, or its influence badge to spend it for influence.'}</p><button class="btn" data-action="pass">Pass</button></div>`;
   else head = waitingFor(ready.length ? 'Click a glowing card to answer.' : '');
   return `<h2>${myTurn ? 'Your turn' : 'Play'}</h2>${head}<div class="cards">${hand}</div>`;
 }
@@ -523,8 +524,11 @@ function renderTargeting(cardId) {
   else if (choice.kind === 'faction') body = '<p>Click the faction in the table above the island.</p>';
   else if (choice.kind === 'direction') body = `<p>Choose a direction:</p><div class="inline">${choice.options.map((d) => `<button class="btn" data-action="pick-direction" data-direction="${esc(d)}">${esc(d)}</button>`).join('')}</div>`;
   else if (choice.kind === 'split') body = `<p>Click adjacent locations to send cubes there, one per click: ${choice.left} left, across at least two.</p>`;
-  return `<h2>${esc(card.name)}</h2><div class="inline">${cardHtml(cardId)}<div class="stack">${body}
-    <div class="inline"><button class="btn" data-action="target-none">Play it for no effect</button><button class="btn" data-action="back">Back</button></div></div></div>`;
+  const view = /** @type {PlayerView} */ (ui.view);
+  const hand = view.me.hand.map((c) => cardHtml(c, { selected: c === cardId, dim: c !== cardId })).join('');
+  return `<h2>Playing ${esc(card.name)}</h2><div class="stack">${body}
+    <div class="inline"><button class="btn" data-action="target-none">Play it for no effect</button><button class="btn" data-action="back">Back</button></div></div>
+    <div class="cards">${hand}</div>`;
 }
 
 function renderGrowth() {
