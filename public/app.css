@@ -832,7 +832,7 @@ button.card-opt:hover { background: #f6cca1; }
    Phones and touch-only screens (2026-10-06): the bar, the hand and the side
    tabs are ordinary sections below the map, in reading order, fully shown.
 =========================================================================== */
-@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px), (hover: none) and (pointer: coarse) {
   body { display: flex; flex-direction: column; }
   .topbar { order: -3; } .seatbar { order: -2; } main.table { order: -1; padding-bottom: var(--space-4); }
   .dock { order: 1; } .hand { order: 2; } #influence { order: 3; } #score { order: 4; }
@@ -872,7 +872,7 @@ button.card-opt:hover { background: #f6cca1; }
 }
 .map-window { display: flex; justify-content: center; max-width: 100%; }
 /* Phones: sections run edge to edge, stacked with no grey gutters between. */
-@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+@media (max-width: 600px), (hover: none) and (pointer: coarse) {
   main.table { padding: 0; gap: 0; }
   .table > .panel, .dock, .hand, .side-stack { margin: 0 !important; max-width: none; width: auto; box-shadow: none; border-left: 0; border-right: 0; }
   .table > .panel + .panel, .side-stack, .hand { border-top: 0; }
