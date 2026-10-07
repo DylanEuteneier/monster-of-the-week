@@ -641,7 +641,8 @@ button.card-opt:hover { background: #f6cca1; }
                    neighbours shuffle aside
      .is-open      the draft: every card raised, side by side
      .is-locked    a card is selected: only it is clickable; it rests at
-                   --peek like the others and rises on hover (.card-selected)
+                   --peek like the others and rises on hover (.card-selected),
+                   but stays up until a reading is picked (.card-needs-reading)
 --------------------------------------------------------------------------- */
 .hand {
   --gap: min(118px, calc((100vw - 300px) / var(--n, 1)));
@@ -671,7 +672,7 @@ button.card-opt:hover { background: #f6cca1; }
 .hand.is-locked .card.card-selected { pointer-events: auto; }
 /* Selected: rests as low as the others (--peek), clear of the map; hovering it brings it all up. */
 .hand .card.card-selected { --y: calc(100% - var(--peek)); --r: 0deg; --nudge: 0px; z-index: 50; transition-delay: 0ms; }
-.hand .card.card-selected:hover { --y: 0px; }
+.hand .card.card-selected:hover, .hand .card.card-selected.card-needs-reading { --y: 0px; }
 
 @media (prefers-reduced-motion: reduce) {
   .hand .card { transition: none; }
