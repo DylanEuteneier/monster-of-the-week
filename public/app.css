@@ -703,3 +703,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 #phase h2 { flex: none; }
 #phase > p, #phase > .stack, #phase > .notice { flex: 1 1 180px; }
 #phase .guide-actions { flex: none; }
+/* The guide is never covered: it stays above the hand, and rises clear of
+   the cards while the fan is open or a card is raised. */
+#phase { z-index: 16; transition: bottom 140ms ease-out; }
+body:has(.hand.is-hovering) #phase, body:has(.hand.is-open) #phase, body:has(.hand .card-selected) #phase { bottom: 178px; }
