@@ -1379,15 +1379,23 @@ export function nextChoice(state, pid, cardId, t) {
   const groupOk = (/** @type {{ location: string, faction: string }} */ g) => !card.suit || (mode === 'location' ? suitLocations(card).includes(g.location) : g.faction === sf);
   const placeOk = (/** @type {string} */ loc) => !state.board[loc].scorched && (!card.suit || mode === 'faction' || suitLocations(card).includes(loc));
   const ok = (/** @type {Target} */ x) => !checkTarget(state, pid, card, x);
+  /** The factions this reading may move: any (location target) or only the suit's (faction target). */
+  const movers = card.suit && mode === 'faction' ? [/** @type {string} */ (sf)] : state.factions.slice();
   switch (card.action) {
-    case 'lure': case 'draw-adjacent':
-      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk) };
-    case 'gather-region': case 'gather-neighbours':
-      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk) };
-      if (!t.faction) return mode === 'faction' && sf ? { kind: 'faction', options: [sf] } : { kind: 'faction', options: state.factions.filter((f) => ok({ ...t, faction: f })) };
+    case 'lure': case 'draw-adjacent': {
+      // Only where it would do something: a group of a faction that may come is adjacent and can enter.
+      const comes = (/** @type {string} */ loc) => MAP[loc].adjacent.some((from) => movers.some((f) => cubesOf(state, from, f) > 0 && canEnter(state, loc, f)));
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter(comes) };
+    }
+    case 'gather-region': case 'gather-neighbours': {
+      const sources = (/** @type {string} */ loc) => LOCATION_IDS.filter((l) => l !== loc && (card.action === 'gather-region' ? regionOf(l) === regionOf(loc) : REGIONS[regionOf(loc)].neighbours.includes(regionOf(l))));
+      const gathers = (/** @type {string} */ loc, /** @type {string} */ f) => canEnter(state, loc, f) && sources(loc).some((l) => cubesOf(state, l, f) > 0);
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => movers.some((f) => gathers(loc, f))) };
+      if (!t.faction) return { kind: 'faction', options: movers.filter((f) => gathers(/** @type {string} */ (t.location), f)) };
       return { kind: 'done' };
+    }
     case 'broadcast':
-      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk) };
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => movers.some((f) => canEnter(state, loc, f) && LOCATION_IDS.some((l) => l !== loc && cubesOf(state, l, f) > 0))) };
       if (!t.faction) return { kind: 'faction', options: (mode === 'faction' && sf ? [sf] : state.factions).filter((f) => LOCATION_IDS.some((l) => l !== t.location && cubesOf(state, l, f) > 0)) };
       if ((t.from ?? []).includes('__stop')) return { kind: 'done' };
       if ((t.from ?? []).length < 2) {
