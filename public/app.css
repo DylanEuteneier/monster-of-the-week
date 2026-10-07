@@ -786,3 +786,6 @@ body:has(.hand.is-hovering) #phase, body:has(.hand.is-open) #phase, body:has(.ha
 .dock.is-respond ~ .side-stack { background: color-mix(in oklab, var(--color-panel-2), var(--color-link) 12%); border-color: var(--color-link); }
 .side-stack:not(:has(.side-row:not(.is-zero)))::before { content: "·"; color: var(--color-muted); font-size: 12px; padding: 0 4px; }
 .side-stack:hover::before, .side-stack.is-open::before { content: none; }
+/* No standing gold outlines on playable or selected cards; the lift on hover
+   (and the raised selected card) says enough. Draft ticks keep theirs. */
+.card-act, .card-selected { outline: none; }
