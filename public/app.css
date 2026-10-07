@@ -512,3 +512,6 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .accordion .player:not(.is-open) .player-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* Room inside the scrolling hand for the cards' outlines, shadows and hover lift. */
 #phase .cards { padding: 8px 8px 12px; margin: -8px -8px -4px; }
+/* Closed tabs: the status and cards in hand sit below the name. */
+.accordion .player:not(.is-open) .player-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+.accordion .player:not(.is-open) .mini-cards { margin-left: 0; }
