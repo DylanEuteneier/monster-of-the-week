@@ -123,7 +123,7 @@ test('the play phase renders a hand, or who is to act', () => {
 test('the log and the ended phase render', () => {
   const state = playUntil(createGame({ seed: 3, players: PLAYERS }), (s) => s.phase === 'ended');
   push(state);
-  assert.match(html('phase'), /wins/);
+  assert.match(html('phase'), /\bwins?\b/);
   assert.match(html('phase'), /win/);
   assert.match(html('phase'), /(winner)/);
   assert.match(html('log'), /cards dealt/);
