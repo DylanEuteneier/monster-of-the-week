@@ -249,7 +249,7 @@ function renderPlayers() {
         <span class="swatch" style="background:${colourOf(id)}"></span>
         <span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${id === view.you ? ' <span class="muted small">(you)</span>' : ''}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}
           <span class="small muted">${esc(SUIT.get(group?.archetype ?? '') ?? '')} ${esc(group?.name ?? '')}</span>
-          <span class="small">trophies ${p.trophyCount}</span>
+          ${id === view.you ? `<span class="small trophies" title="Your trophies: secret (IN2)">trophies ${view.factions.filter((f) => view.me.trophies[f]).map((f) => Array.from({ length: view.me.trophies[f] }, () => tokenHtml(f, 1)).join('')).join('') || '<span class="muted">none</span>'}</span>` : ''}
           <span class="supply-row cubes" title="${p.supply} in supply">${Array.from({ length: p.supply }, () => cubeHtml(colourOf(id), 8)).join('')}</span></span>
         <span class="player-status">${esc(playerStatus(id))}</span>
       </div>`;

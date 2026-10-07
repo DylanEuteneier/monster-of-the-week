@@ -153,7 +153,7 @@ export { spec };
  * @property {number} round
  * @property {number} rounds
  * @property {string[]} seating
- * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, trophyCount: number, picked: boolean }>} players
+ * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, picked: boolean }>} players
  * @property {{ faction: string, leaders: string[], next: number, due: Record<string, number> } | null} growing
  * @property {string[]} factions
  * @property {Record<string, { cubes: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean }>} board
@@ -1063,7 +1063,7 @@ function fight(state, loc) {
   const give = (pile, pid) => {
     if (pid) {
       state.players[pid].trophies[pile.faction] += pile.n;
-      logLine(state, `  ${pid} takes a pile of ${pile.n}.`);
+      logLine(state, `  ${pid} takes a pile of ${pile.n} ${factionById(pile.faction).name}.`);
     } else state.supply[pile.faction] += pile.n;
   };
   if (ranking.involved === 1 && collectors[0]) {
@@ -1476,7 +1476,7 @@ export function playerView(state, playerId) {
     seating: state.seating.slice(),
     players: Object.fromEntries(state.seating.map((id) => {
       const p = state.players[id];
-      return [id, { group: p.group, standing: { ...p.standing }, supply: p.supply, bluffs: p.bluffs, handSize: state.phase === 'draft' ? p.kept.length : p.hand.length, trophyCount: Object.values(p.trophies).reduce((a, b) => a + b, 0), picked: p.picked }];
+      return [id, { group: p.group, standing: { ...p.standing }, supply: p.supply, bluffs: p.bluffs, handSize: state.phase === 'draft' ? p.kept.length : p.hand.length, picked: p.picked }];
     })),
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {

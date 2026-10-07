@@ -228,6 +228,7 @@ test('views hide other hands, token faces and trophy totals (3.11, IN2)', () => 
   assert.equal(JSON.stringify(view).includes(JSON.stringify(s.players.bob.hand)), s.players.bob.hand.length === 0);
   assert.equal(view.me.leftOut, null);
   assert.ok(!('trophies' in view.players.bob));
+  assert.ok(!JSON.stringify(view.players).includes('trophy'));
 });
 
 test('the cancel response stops a card that is in progress (principle 5)', () => {

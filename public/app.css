@@ -476,3 +476,5 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .card-influence.is-off { background: #e0f2f4; color: #7d7071; cursor: default; box-shadow: none; }
 @media (prefers-reduced-motion: reduce) { .card-respond { animation: none; } }
 #phase > .btn, #phase .stack > .btn { align-self: flex-start; }
+.trophies { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.trophies > .token + .token { margin-left: -12px; }
