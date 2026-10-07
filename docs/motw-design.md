@@ -596,9 +596,10 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
         - It applies to every suit card where possible. For an influence action it reads: gain influence with the suit's faction, or with a faction controlling one of the suit's locations.
         - **Why:** it gives cards flexibility while keeping strong ties to their theme, and it lets strategies evolve and change during the round, as a puzzle that still feels like the suit.
   - First draft, suit structure (from a suggestion, 2026-10-05). Each suit has three cards:
-    - *Strike:* a move that creates a contest at or from a suit location. Printed influence 2.
-    - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3.
+    - *Strike:* a move that creates a contest at or from a suit location. Printed influence 2 to start.
+    - *Shift:* a relocation that concentrates or scatters cubes. Printed influence 3 to start.
     - *Signature:* the suit's primary card. The archetype's rule-bend, plus the suit's response (one per suit, so five in the pool; the one cancel response is separate, on one of the two unmarked unsuited cards), and the suit's highest printed influence, provisionally 4 (2026-10-06).
+    - *Printed influence (D12, 2026-10-07):* not fixed by slot. Every suit prints the same total influence (9 at present), split across its three cards however balances them; the 2/3/4 above is the starting split.
     - Across a suit's cards, one concentrates and one scatters. Concentrating cubes feeds growth (GR1 needs 2 or more cubes); scattering them into single cubes stops growth, so both sides of the win condition have a tool in every suit.
 - **Card ideas** are catalogued in Appendix H, all in one format. Every entry there is an idea, not a decision.
   - The unsuited extras come later. They are spice, balance and swing for the suited cards, and take inspiration from Inis's unique effect cards.
@@ -934,6 +935,12 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** Appendix F.
 - **Date:** 2026-10-03
 
+#### D12. Printed influence per suit
+
+- **Decided:** printed influence is not fixed by slot. Every suit's cards print the same total influence, split card by card however balances them: a weaker action can print more influence. Power may differ between cards (a spread is desirable); a weaker action is balanced in other ways, such as more influence when spent for influence, or doing something special, unique and slightly rule-breaking.
+- **Affects:** 3.7 (suit structure), Appendix H (Set v2 influence values).
+- **Date:** 2026-10-07
+
 ### A.2 Changelog
 
 Actual changes to mechanisms and game structure.
@@ -950,6 +957,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-03 | Candidate ideas added or refined for standing ties, end-game ties, faction ties, growth at round end, bluff tokens, marker cubes, and unresolved hidden tokens | Ruled out: removing an unresolved hidden token at round end, whether revealed or not |
 | 2026-10-04 | Current focus set: first draft of the rules, then the cards, then the web app prototype. Other open work moved to the backlog | Done before this: fits and clashes for the combat cluster, affinity, ties between players, location control, alignment, volatility, information and the draft; a first pass of trade-offs; four sample rulesets. Prototype architecture (D8), scaffold (built and deployed), art direction (D9), palette (D11) and the prototype art set (F.17) |
 | 2026-10-05 | First draft of the rules written up (Appendix G), from the designer's picks in each area. New candidates: CA1–CA3 (card action seeds), IL1 (only the influence leader moves a faction), FR5 (half rounded down, minimum 1), ET4 (fewest trophies first), WT1 (next weakest colour), FX2 (tied factions win together). General rules: one supply per colour; no piece leaves the game. No decisions recorded | Out of the first draft: archetype powers, card-driven growth, boil-over, card-triggered fights, dynamic round end, spillover, costly displacement, dice |
+| 2026-10-07 | Printed influence: the same total per suit, split card by card, not fixed by slot (D12). Card action balance review opened | Starting split stays 2/3/4 per suit (9 each) until the review changes it |
 | 2026-10-05 | Card design started. Archetype suits (SU1) with Strike, Shift and Signature slots; fixed pool of 21 (PS1); four marked cards A to D (FP2); card principles 1–13 in 3.7; card catalogue started (Appendix H). First draft taken without IL1 (now the first variant): any faction can be moved, with influence spent from the faction moved. General rule: cards only shift cubes. Adjacent means hexes sharing a border. No decisions recorded | Set aside: location cards (LK1), the tiered pool for the first draft (D7 stays recorded) |
 
 ---
