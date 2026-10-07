@@ -72,6 +72,8 @@ const ui = {
   keepFor: -1,
   /** the hand is fanned open by a tap (touch screens) */
   handOpen: false,
+  /** the phone map window has been centred once */
+  boardCentred: false,
   /** a side stack opened by a tap: 'influence', 'score' or null */
   /** @type {string | null} */
   sideOpen: null,
@@ -396,11 +398,19 @@ function renderBoard() {
   const total = Object.values(view.board).reduce((n, pl) => n + Object.values(pl.cubes).reduce((a, b) => a + b, 0), 0);
   // Display tables are never narrower than the map (they may be wider).
   if (board) document.documentElement.style.setProperty('--map-width', `${board.width * S}px`);
+  // Phones: start the map window centred on the island, once.
+  if (board && !ui.boardCentred && typeof requestAnimationFrame === 'function') requestAnimationFrame(() => {
+    const box = /** @type {HTMLElement} */ (document.querySelector('#board .map-window'));
+    if (!box || ui.boardCentred || box.scrollWidth <= box.clientWidth) return;
+    box.scrollLeft = (box.scrollWidth - box.clientWidth) / 2;
+    ui.boardCentred = true;
+  });
+  setHtml('factions', `<h2>Factions</h2>
+    <p class="small">Total presence <b>${total}</b> · the invaders win if it is more than <b>${esc(view.options.threshold)}</b> at the end of round ${view.rounds}.</p>
+    ${factionTable(lit)}`);
   setHtml('board', `
     <h2>The island</h2>
-    <p class="small">Total presence <b>${total}</b> · the invaders win if it is more than <b>${esc(view.options.threshold)}</b> at the end of round ${view.rounds}.</p>
-    ${factionTable(lit)}
-    ${board ? `<div class="board" style="width:${board.width * S}px;height:${board.height * S}px"><img class="sprite" src="${esc(board.src)}" width="${board.width * S}" height="${board.height * S}" alt="The island" style="position:absolute;left:0;top:0">${tiles.join('')}</div>` : ''}`);
+    ${board ? `<div class="map-window"><div class="board" style="width:${board.width * S}px;height:${board.height * S}px"><img class="sprite" src="${esc(board.src)}" width="${board.width * S}" height="${board.height * S}" alt="The island" style="position:absolute;left:0;top:0">${tiles.join('')}</div></div>` : ''}`);
 }
 
 // ---------------------------------------------------------------------------
