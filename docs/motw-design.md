@@ -2594,6 +2594,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Hold a Midnight Vigil (v2) | – | Influence, timing | Gain 2 influence with the target faction, or 4 if you have already passed this round. **Target:** the Nocturnal faction, or a faction controlling a ◐ location. | – | – | 7 |
 | Stake Out the Den | – | Influence (move) | Move up to 3 of your influence from other locations to the target. **Target:** the den. *Location:* a ◐ location. *Faction:* a location holding the Nocturnals. | – | – | 8 |
 | Wait for the Full Moon | – | Reinforce | Up to 3 cubes from the faction's supply join the target group. **Target:** the group. *Location:* any faction at a ◐ location. *Faction:* a Nocturnal group anywhere. | – | – | 10 |
+| Chase Them Down the Slope | – | Slide | Choose a direction; the target group slides hex by hex that way until it reaches a location it can't enter, or the coast. **Target:** the group. *Location:* any faction at a ◐ location. *Faction:* a Nocturnal group anywhere. | – | – | 11 |
 
 ### H.2 ↂ 80's Sci-Fi: Military Facility, Weather Station, State Park
 
@@ -2617,6 +2618,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Raise the Force Field | – | Fight math, protection | Place a face-down token (and a bluff) on the target. At its fight, the winner loses no cubes. **Target:** *Location:* an ↂ location. *Faction:* a location holding the Sci-Fi faction. | – | – | 8 |
 | Leak It to the Press | – | Halve, far | Half the target group, rounded down, goes to any location on the island it can enter. **Target:** the group split. *Location:* any faction at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | – | 9 |
 | Turn On the Tractor Beam | – | Carry a fight | Both groups at the target are lifted together into an adjacent location with no cubes; the fight happens there. **Target:** the contest. *Location:* a contest at an ↂ location. *Faction:* a contest the Sci-Fi faction is in. | – | – | 10 |
+| Crash-Land the Saucer | – | Chain reaction | Choose a direction; the target group moves one hex that way. Any group of another faction in its way is knocked one hex on, the same way, and so on down the line; a group with nowhere to go stays. **Target:** the group. *Location:* any faction at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | – | 11 |
 
 ### H.3 ⏏ Sentients: Shipping Docks, Junkyard, Beach City
 
@@ -2640,6 +2642,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Hijack the Feed | – | Fight math, trophies | Place a face-down token (and a bluff) on the target. At its fight, the token's owner counts their influence there twice when the trophies are handed out. **Target:** *Location:* a ⏏ location. *Faction:* a location holding the Sentients. | – | – | 8 |
 | Spread a Virus (infectious) | – | Scatter, attrition | As Spread a Virus (v2); where a cube joins another faction, that faction loses 1 cube to its supply. **Target:** the infected group. *Location:* any faction at a ⏏ location. *Faction:* a Sentient group anywhere. | – | – | 9 |
 | Reprogram the Drones | – | Defect | Up to 3 cubes of the target group change sides: they join the other faction at that location (swapped through the supplies). **Target:** the group that defects. *Location:* a group in a contest at a ⏏ location. *Faction:* a group fighting the Sentients; its cubes become Sentients. | – | – | 10 |
+| Livestream the Fight | – | Fight math, double trophies | Place a face-down token (and a bluff) on the target. At its fight, each trophy pile is doubled from its faction's supply. **Target:** *Location:* a ⏏ location. *Faction:* a location holding the Sentients. | – | – | 11 |
 
 ### H.4 ☾ Undead: Sawmill, Mine, Graveyard
 
@@ -2660,6 +2663,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Draw the Salt Line (v2) | – | Pin | Nothing moves into or out of the target this round. **Target:** *Location:* a ☾ location. *Faction:* the Undead; none of their cubes can move. | – | – | 7 |
 | Take Over the Wake | – | Influence (place) | Place up to 3 influence at the target, spent from your standing with a faction there. **Target:** the wake. *Location:* a ☾ location. *Faction:* a location holding the Undead. | – | – | 8 |
 | Hear the Banshee Wail | – | Repel | Every group next to the target is driven one hex straight on, away from it, where it can enter. **Target:** where she wails. *Location:* a ☾ location; any faction is driven. *Faction:* anywhere; only Undead groups are driven. | – | – | 10 |
+| Lay Them to Rest | – | Fight math, no trophies | Place a face-down token (and a bluff) on the target. At its fight, no one takes trophies; the cubes lost go back to their supplies. **Target:** *Location:* a ☾ location. *Faction:* a location holding the Undead. | – | – | 11 |
 
 ### H.5 ⎈ Demons: Caves, Lighthouse, The Lake House
 
@@ -2677,6 +2681,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Smash the Mirror (v2) | – | Mirror | Move a group at a ⎈ location to its reflection across the lake, or bring one from the reflection. On layout D: Lighthouse and State Park, The Lake House and Fallout Bunker; Caves has none. | – | – | 6 |
 | Light Every Lamp (either side) | – | Split | At a contested location, either faction is driven to an adjacent location of your choice, so the fight there doesn't happen. **Target:** the faction driven out. *Location:* either faction at a contested ⎈ location. *Faction:* the Demons, wherever they are contested. | – | – | 9 |
 | Open the Pit | – | Remove | The target group, 3 cubes or fewer, falls in: its cubes go back to its supply. **Target:** the group. *Location:* a small group at a ⎈ location. *Faction:* a small group sharing a location with the Demons. | – | – | 10 |
+| Trade Souls | – | Swap, far | The target group trades places with any other group on the island (of another faction). **Target:** the first soul. *Location:* any faction at a ⎈ location. *Faction:* a Demon group anywhere. | – | – | 11 |
 | Read from the Book (v2) | – | Leap | Move a group at a ⎈ location over an adjacent location into the one beyond it, in a straight line. | – | – | 6 |
 | Read from the Book (v3) | Strike | Leap | The target group leaps over an adjacent location into the one beyond it, in a straight line. **Target:** the possessed group. *Location:* any faction's group at a ⎈ location. *Faction:* a Demon group anywhere. | – | 2 | 7 |
 | Smash the Mirror (v3) | Signature | Mirror | The target group passes to its reflection across the lake (G.1; locations with no reflection can't be used). **Target:** the group reflected. *Location:* any faction's group at a ⎈ location. *Faction:* a Demon group anywhere. | – | 3 | 7 |
@@ -2733,6 +2738,13 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
   - Turn On the Tractor Beam: 5.9 (6.9), 53%, largest 40. It changes who wins the trophies, not the fight: the same fight happens where other players hold the influence (its presence swing is near 0). The most unique of the round; strong when it can be played.
   - Reprogram the Drones 2.9 (2.8); Wait for the Full Moon 1.9 (3.1); Open the Pit 0.8 (1.5). Weak.
   - A finding about the system: cards that change a group's size score low, and cards that move whole groups score high. A fight's trophies are its cubes lost, so adding cubes rarely flips a winner, and taking cubes away shrinks the prize (as with the infectious Virus in round 9). Open the Pit is weak by construction: it only reaches small groups, so small fights.
+
+- Round 11 (2026-10-07; suggestions, driven by Claude). Leaning into what scored well (moving whole groups, changing who collects), plus two open entries from H.9 (chain reaction; double trophies) and trophy denial. Battle score and how often playable, against Reroute 9.0:
+  - Chase Them Down the Slope (slide in a line until stopped): 9.9, 91%.
+  - Trade Souls (a group trades places with any group of another faction): 9.6, 97%; it moves more pieces than any suit card (12.8). Swaps never make three factions, so it can almost always be played.
+  - Crash-Land the Saucer (chain reaction: knocks groups on down a line): 8.5, 93%; 8.8 pieces moved.
+  - Livestream the Fight (double trophies) 1.6 and Lay Them to Rest (no trophies) 0.8: like every hidden token so far, low and playable in about 60% of states. Trophy effects only matter where players hold influence at a fight, which is rare early (Current focus 4).
+  - The card review on the assets page (`/assets`, Cards) now shows every card the engine can play, deck and test cards, drawn as the table draws them and tagged with these measures (designer, 2026-10-07: every new card the engine can play goes there for review).
 
 ### H.8 Candidate sets
 

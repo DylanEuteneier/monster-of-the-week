@@ -517,6 +517,24 @@ function pushes(state, loc, factions) {
   }).filter((g) => g.to && canEnter(state, g.to, g.f));
 }
 
+/** Where a slide stops: hex by hex in one direction while the group can enter (round 11). @param {GameState} state @param {string} loc @param {string} f @param {string} dir */
+function slideEnd(state, loc, f, dir) {
+  let at = loc;
+  for (let next = step(state, at, dir); next && next !== loc && canEnter(state, next, f); next = step(state, at, dir)) at = next;
+  return at;
+}
+/** Can two groups trade places (round 11)? Each must be able to stand where the other was. @param {GameState} state @param {{ location: string, faction: string }} a @param {{ location: string, faction: string }} b */
+function canSwap(state, a, b) {
+  if (a.location === b.location || a.faction === b.faction) return false;
+  const after = (/** @type {string} */ loc, /** @type {string} */ out, /** @type {string} */ inn) => {
+    const place = state.board[loc];
+    if (place.scorched) return false;
+    const left = factionsAt(state, loc).filter((f) => f !== out);
+    return left.includes(inn) || left.length < 2;
+  };
+  return cubesOf(state, a.location, a.faction) > 0 && cubesOf(state, b.location, b.faction) > 0 && after(a.location, a.faction, b.faction) && after(b.location, b.faction, a.faction);
+}
+
 /**
  * Where 1 influence goes when a card is spent for influence, under the test
  * lever influenceToBoard: the locations its faction controls (LC2). Empty
@@ -620,6 +638,20 @@ export function checkTarget(state, pid, card, t) {
       if (t.mode === 'location') return suitLocations(card).includes(t.location) ? null : 'That location is not one of the suit\'s.';
       if (t.mode === 'faction') return other && other === suitFaction(state, card) ? null : 'The group must share its location with the suit\'s faction.';
       return 'Choose a location target or a faction target.';
+    }
+    case 'slide': case 'chain': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      if (!spec.map.directions.some((d) => d.id === t.direction)) return 'Choose a direction.';
+      const next = step(state, /** @type {string} */ (t.location), /** @type {string} */ (t.direction));
+      if (card.action === 'slide') return slideEnd(state, /** @type {string} */ (t.location), /** @type {string} */ (t.faction), /** @type {string} */ (t.direction)) !== t.location ? null : 'It can\'t move that way.';
+      return next && !state.board[next].scorched ? null : 'Nothing lies that way.';
+    }
+    case 'swap-far': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      const other = t.moves?.[0];
+      return other && canSwap(state, { location: /** @type {string} */ (t.location), faction: /** @type {string} */ (t.faction) }, other) ? null : 'Choose a group elsewhere that can trade places with it.';
     }
     case 'repel': return placeTarget(state, card, t) ?? (pushes(state, /** @type {string} */ (t.location), movable(state, card, t)).length ? null : 'Nothing next to it can be pushed away.');
     case 'move-influence': {
@@ -850,6 +882,43 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} swallows ${n} ${names(f)} at ${lname(loc)}.`);
       break;
     }
+    case 'slide': {
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
+      const to = slideEnd(state, from, f, /** @type {string} */ (t.direction));
+      const n = move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      logLine(state, `${pid}: ${card.name} sends ${n} ${names(f)} sliding from ${lname(from)} to ${lname(to)}.`);
+      break;
+    }
+    case 'chain': {
+      // The group moves one hex; each group of another faction in its way is knocked one hex on, the same way, and so on down the line.
+      const dir = /** @type {string} */ (t.direction);
+      const knock = (/** @type {string} */ loc, /** @type {string} */ incoming, /** @type {number} */ depth) => {
+        const next = step(state, loc, dir);
+        if (!next || depth > 12) return;
+        for (const g of factionsAt(state, loc).filter((x) => x !== incoming)) {
+          knock(next, g, depth + 1);
+          move(state, pid, g, loc, next, cubesOf(state, loc, g), placed);
+        }
+      };
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
+      const to = step(state, from, dir);
+      if (to) {
+        knock(to, f, 0);
+        move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      }
+      logLine(state, `${pid}: ${card.name} crashes ${names(f)} ${dir} from ${lname(from)}.`);
+      break;
+    }
+    case 'swap-far': {
+      const a = { location: /** @type {string} */ (t.location), faction: /** @type {string} */ (t.faction) }, b = /** @type {{ location: string, faction: string }} */ (t.moves?.[0]);
+      const nb = cubesOf(state, b.location, b.faction);
+      delete state.board[b.location].cubes[b.faction];
+      move(state, pid, a.faction, a.location, b.location, cubesOf(state, a.location, a.faction), placed);
+      state.board[b.location].cubes[b.faction] = nb;
+      move(state, pid, b.faction, b.location, a.location, nb, placed);
+      logLine(state, `${pid}: ${card.name}: ${names(a.faction)} at ${lname(a.location)} and ${names(b.faction)} at ${lname(b.location)} trade places.`);
+      break;
+    }
     case 'repel': {
       let n = 0;
       for (const g of pushes(state, /** @type {string} */ (t.location), movable(state, card, t))) n += move(state, pid, g.f, g.from, /** @type {string} */ (g.to), cubesOf(state, g.from, g.f), placed) ? 1 : 0;
@@ -930,6 +999,8 @@ export function pendingDestinations(state, pend) {
     case 'split': return Object.keys(t.split ?? {});
     case 'spread': case 'infect': return t.location ? MAP[t.location].adjacent : [];
     case 'carry-fight': return t.to ? [t.to] : [];
+    case 'slide': case 'chain': return LOCATION_IDS;
+    case 'swap-far': return [t.location ?? '', t.moves?.[0]?.location ?? ''].filter(Boolean);
     case 'repel': return t.location ? MAP[t.location].adjacent.flatMap((a) => MAP[a].adjacent) : [];
     case 'conveyor': return LOCATION_IDS;
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': return (t.moves ?? []).map((m) => m.to);
@@ -1250,6 +1321,11 @@ function fight(state, loc) {
   logLine(state, `  ${name}: ${factionById(winner).name} beat ${factionById(loser).name}; casualties ${loserLoss} and ${winnerLoss}.`);
   // Trophies (TD1): bigger pile to the leader, smaller to the runner-up.
   const piles = [{ faction: loser, n: loserLoss }, { faction: winner, n: winnerLoss }].filter((x) => x.n > 0).sort((x, y) => y.n - x.n);
+  if (effect === 'livestream') for (const pile of piles) { // test card (round 11): each pile doubled from its faction's supply
+    const extra = Math.min(pile.n, state.supply[pile.faction]);
+    state.supply[pile.faction] -= extra;
+    pile.n += extra;
+  }
   const ranking = rankAt(state, loc, effect === 'hijack-feed' ? token?.owner : undefined); // hijack-feed: test card (round 8)
   const collectors = ranking.places;
   /** @param {{ faction: string, n: number }} pile @param {string | null} pid */
@@ -1259,7 +1335,8 @@ function fight(state, loc) {
       logLine(state, `  ${pid} takes a pile of ${pile.n} ${factionById(pile.faction).name}.`);
     } else state.supply[pile.faction] += pile.n;
   };
-  if (ranking.involved === 1 && collectors[0]) {
+  if (effect === 'lay-to-rest') for (const pile of piles) give(pile, null); // test card (round 11): no one takes trophies
+  else if (ranking.involved === 1 && collectors[0]) {
     for (const pile of piles) give(pile, collectors[0]); // UP1
   } else {
     // sign-contract (test card, round 8): the bigger pile to the runner-up, the smaller to the leader.
@@ -1637,6 +1714,16 @@ export function nextChoice(state, pid, cardId, t) {
       const dests = (/** @type {string} */ loc) => MAP[loc].adjacent.filter((to) => ok({ mode, location: loc, to }));
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((loc) => dests(loc).length > 0) };
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: dests(t.location) };
+    }
+    case 'slide': case 'chain': {
+      const dirs = (/** @type {string} */ loc, /** @type {string} */ f) => spec.map.directions.map((d) => d.id).filter((d) => ok({ mode, location: loc, faction: f, direction: d }));
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => dirs(g.location, g.faction).length > 0) };
+      return t.direction ? { kind: 'done' } : { kind: 'direction', options: dirs(t.location, /** @type {string} */ (t.faction)) };
+    }
+    case 'swap-far': {
+      const partners = (/** @type {{ location: string, faction: string }} */ a) => groups.filter((b) => canSwap(state, a, b));
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => partners(g).length > 0) };
+      return t.moves?.length ? { kind: 'done' } : { kind: 'group', key: 'move', options: partners({ location: t.location, faction: /** @type {string} */ (t.faction) }) };
     }
     case 'repel':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => pushes(state, loc, movers).length > 0) };

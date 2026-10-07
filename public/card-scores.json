@@ -85,6 +85,22 @@
       "placed": 1,
       "presence": 6.8
     },
+    "ski-slope": {
+      "playable": 90.5,
+      "battle": 9.9,
+      "control": 0.5,
+      "moved": 5.5,
+      "placed": 0.8,
+      "presence": 6.4
+    },
+    "trade-souls": {
+      "playable": 97,
+      "battle": 9.6,
+      "control": 0.6,
+      "moved": 12.8,
+      "placed": 1.7,
+      "presence": 6.1
+    },
     "reroute": {
       "playable": 96,
       "battle": 9,
@@ -100,6 +116,14 @@
       "moved": 3.4,
       "placed": 1,
       "presence": 5.5
+    },
+    "saucer": {
+      "playable": 92.5,
+      "battle": 8.5,
+      "control": 0.6,
+      "moved": 8.8,
+      "placed": 1.5,
+      "presence": 6.2
     },
     "board-up": {
       "playable": 92,
@@ -221,6 +245,14 @@
       "placed": 1.1,
       "presence": 0.8
     },
+    "livestream": {
+      "playable": 59.5,
+      "battle": 1.6,
+      "control": 0.3,
+      "moved": 1.1,
+      "placed": 1.1,
+      "presence": 0
+    },
     "silver-bullets": {
       "playable": 59.5,
       "battle": 1.4,
@@ -257,6 +289,14 @@
       "playable": 59,
       "battle": 0.8,
       "control": 0.3,
+      "moved": 1.1,
+      "placed": 1.1,
+      "presence": 0
+    },
+    "lay-to-rest": {
+      "playable": 59.5,
+      "battle": 0.8,
+      "control": 0.2,
       "moved": 1.1,
       "placed": 1.1,
       "presence": 0

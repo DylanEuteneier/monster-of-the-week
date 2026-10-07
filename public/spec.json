@@ -1076,7 +1076,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the deal: rounds 8 to 10 ideas under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). Never dealt; not rules. Influence on the ideas is a placeholder.",
+    "notes": "Cards out of the deal: rounds 8 to 11 ideas under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). Never dealt; not rules. Influence on the ideas is a placeholder.",
     "cards": [
       {
         "id": "force-field",
@@ -1245,6 +1245,76 @@
           "faction": "a small group sharing a location with the Demons."
         },
         "round": 10
+      },
+      {
+        "id": "ski-slope",
+        "name": "Chase Them Down the Slope",
+        "suit": "nocturnals",
+        "slot": "–",
+        "influence": 3,
+        "action": "slide",
+        "round": 11,
+        "text": "Choose a direction; the target group slides hex by hex that way until it reaches a location it can’t enter, or the coast. Target: the group.",
+        "readings": {
+          "location": "any group at a ◐ location.",
+          "faction": "a Nocturnal group anywhere."
+        }
+      },
+      {
+        "id": "saucer",
+        "name": "Crash-Land the Saucer",
+        "suit": "scifi",
+        "slot": "–",
+        "influence": 3,
+        "action": "chain",
+        "round": 11,
+        "text": "Choose a direction; the target group moves one hex that way. Any group of another faction in its way is knocked one hex on, the same way, and so on down the line; a group with nowhere to go stays. Target: the group.",
+        "readings": {
+          "location": "any group at an ↂ location.",
+          "faction": "a Sci-Fi group anywhere."
+        }
+      },
+      {
+        "id": "livestream",
+        "name": "Livestream the Fight",
+        "suit": "sentients",
+        "slot": "–",
+        "influence": 3,
+        "action": "token",
+        "round": 11,
+        "text": "Hidden: at its fight, each trophy pile is doubled from its faction’s supply.",
+        "readings": {
+          "location": "a ⏏ location.",
+          "faction": "a location holding the Sentients."
+        }
+      },
+      {
+        "id": "lay-to-rest",
+        "name": "Lay Them to Rest",
+        "suit": "undead",
+        "slot": "–",
+        "influence": 3,
+        "action": "token",
+        "round": 11,
+        "text": "Hidden: at its fight, no one takes trophies; the cubes lost go back to their supplies.",
+        "readings": {
+          "location": "a ☾ location.",
+          "faction": "a location holding the Undead."
+        }
+      },
+      {
+        "id": "trade-souls",
+        "name": "Trade Souls",
+        "suit": "demonic",
+        "slot": "–",
+        "influence": 3,
+        "action": "swap-far",
+        "round": 11,
+        "text": "The target group trades places with any other group on the island, if each can stand where the other was. Target: the first soul.",
+        "readings": {
+          "location": "any group at a ⎈ location.",
+          "faction": "a Demon group anywhere."
+        }
       },
       {
         "id": "cancel",

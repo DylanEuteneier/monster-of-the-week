@@ -392,6 +392,35 @@ test('Hear the Banshee Wail drives each neighbouring group one hex straight on, 
   assert.equal(after.board[near].cubes[f], undefined);
 });
 
+test('Trade Souls swaps two groups of different factions anywhere (round 11)', () => {
+  const s = clear(newGame());
+  const [f, g, h] = /** @type {string[]} */ (s.factions);
+  const demonic = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'demonic')?.id);
+  const far = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals')?.id);
+  s.board[demonic].cubes = { [f]: 2 };
+  s.board[far].cubes = { [g]: 5, [h]: 1 };
+  const t = { mode: /** @type {const} */ ('location'), location: demonic, faction: f, moves: [{ location: far, faction: g, to: '' }] };
+  assert.equal(checkTarget(s, 'ann', cardById('trade-souls'), t), null);
+  const after = previewTarget(s, 'ann', 'trade-souls', t);
+  assert.deepEqual(after.board[demonic].cubes, { [g]: 5 });
+  assert.deepEqual(after.board[far].cubes, { [h]: 1, [f]: 2 });
+  s.board[far].cubes = { [f]: 5 };
+  assert.ok(checkTarget(s, 'ann', cardById('trade-souls'), { ...t, moves: [{ location: far, faction: f, to: '' }] })); // a group of the same faction: nothing to trade
+});
+
+test('Lay Them to Rest: no one takes trophies at its fight (round 11)', () => {
+  const s = clear(newGame());
+  const [f, g] = /** @type {string[]} */ (s.factions);
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
+  s.board[loc].cubes = { [f]: 2, [g]: 5 };
+  s.board[loc].influence = { ann: 2 };
+  s.board[loc].token = { owner: 'ann', card: 'lay-to-rest' };
+  const before = s.supply[f];
+  const after = resolveFight(s, loc);
+  assert.equal(after.players.ann.trophies[f], 0);
+  assert.equal(after.supply[f], before + 2);
+});
+
 test('previewTarget runs a move with the game options (influence placed at the destination)', () => {
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[3]);
