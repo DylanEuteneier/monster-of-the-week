@@ -515,3 +515,26 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 /* Closed tabs: the status and cards in hand sit below the name. */
 .accordion .player:not(.is-open) .player-head { flex-direction: column; align-items: flex-start; gap: 4px; }
 .accordion .player:not(.is-open) .mini-cards { margin-left: 0; }
+
+/* Faction table reflow (2026-10-06): wide, four columns whose token and cube
+   rows wrap inside their cells; narrow (by the table's own width), each
+   faction stacks: name and presence, then supply, then influence, each
+   labelled. */
+.faction-table { container-type: inline-size; }
+.faction-row { grid-template-columns: minmax(150px, 1.1fr) 64px minmax(0, 1.4fr) minmax(0, 1.4fr); grid-template-areas: "id count supply influence"; }
+.faction-row > .cell-id { grid-area: id; min-width: 0; }
+.faction-row > .faction-count { grid-area: count; }
+.faction-row > .cell-supply { grid-area: supply; min-width: 0; }
+.faction-row > .cell-influence { grid-area: influence; min-width: 0; }
+.faction-head > span:nth-child(1) { grid-area: id; } .faction-head > span:nth-child(2) { grid-area: count; }
+.faction-head > span:nth-child(3) { grid-area: supply; } .faction-head > span:nth-child(4) { grid-area: influence; }
+.faction-cell { display: flex; align-items: center; gap: var(--space-2); }
+.faction-table .supply-row, .faction-table .standing-row { max-width: none; flex-wrap: wrap; row-gap: 3px; }
+.faction-table .supply-row { padding-left: 14px; }
+.faction-table .supply-row > .token { margin-left: -14px; }
+@container (max-width: 720px) {
+  .faction-head { display: none; }
+  .faction-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "id count" "supply supply" "influence influence"; row-gap: 6px; }
+  .faction-cell::before { content: attr(data-label); flex: none; width: 72px; font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
+  .faction-count { align-items: flex-end; }
+}
