@@ -423,14 +423,13 @@ function responseReady(view, cardId) {
 function cardHtml(id, o = {}) {
   const c = cardById(id);
   const suit = spec.archetypes.find((a) => a.id === c.suit);
-  const band = c.suit ? `<span class="suit-line">${suitIcon(c.suit)} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
+  const band = c.suit ? `<span class="suit-line">${suitIcon(c.suit)} ${esc(suit?.name ?? '')}</span><span class="suit-line">${esc(c.slot)} ${'{{influence}}'}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
   const influence = c.suit ? (o.influence
     ? `<span class="card-influence" data-action="influence" data-card="${esc(id)}" title="Spend for ${c.influence} influence with the ${esc(suit?.name ?? '')} faction">+${c.influence}</span>`
     : `<span class="card-influence is-off">+${c.influence}</span>`) : '';
   const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : ''].filter(Boolean).join(' ');
   return `<div class="${classes}" data-card="${esc(id)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
-    <div class="card-band">${band}</div>
-    ${influence}
+    <div class="card-band">${band.replace('{{influence}}', influence)}</div>
     <span class="card-name">${esc(c.name)}</span>
     <p class="small">${esc(c.text)}</p>
     ${c.response ? `<p class="small card-response"><b>Response, ${esc(c.response.timing)}: ${esc(c.response.name)}.</b> ${esc(c.response.text)}</p>` : ''}
@@ -492,7 +491,7 @@ function renderPlay() {
   else if (pending) {
     head = `<p><b>${esc(pending.player)}</b> plays <b>${esc(cardById(pending.card).name)}</b>: ${esc(describeTarget(pending.card, pending.target))}${pending.cancelled ? ' (cancelled)' : ''}${pending.blocked.length ? ` · blocked: ${pending.blocked.map((l) => esc(locationById(l).name)).join(', ')}` : ''}</p>`
       + (pending.player === view.you ? '<button class="btn btn-primary" data-action="confirm">Let it resolve</button>' : waitingFor('Click a glowing card to answer it, or let it resolve.'));
-  } else if (myTurn) head = `<p>${mustOpen ? 'You go first: click your marked card to open the round.' : 'Click a card to play its action, or its corner badge to spend it for influence.'}</p><button class="btn" data-action="pass">Pass</button>`;
+  } else if (myTurn) head = `<p>${mustOpen ? 'You go first: click your marked card to open the round.' : 'Click a card to play its action, or its influence badge to spend it for influence.'}</p><button class="btn" data-action="pass">Pass</button>`;
   else head = waitingFor(ready.length ? 'Click a glowing card to answer.' : '');
   return `<h2>${myTurn ? 'Your turn' : 'Play'}</h2>${head}<div class="cards">${hand}</div>`;
 }
