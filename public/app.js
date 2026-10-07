@@ -641,10 +641,10 @@ function renderTargeting(cardId) {
   const card = cardById(cardId);
   const suit = spec.archetypes.find((a) => a.id === card.suit);
   const WORDS = /** @type {Record<string, string>} */ ({
-    mode: 'Pick a reading', location: 'Pick a location', to: 'Pick where they go', bluff: 'Pick a spot for the bluff', path: 'Pick the next step',
+    mode: 'Pick a reading', location: 'Pick a location', to: 'Pick where they go', bluff: 'Pick a spot for the bluff', path: 'Pick the next step', lure: 'Tied: pick which group comes',
     from: 'Pick where they come from', group: 'Pick a group', faction: 'Pick a faction', direction: 'Pick a direction', done: 'Ready',
   });
-  const key = choice.kind === 'location' ? choice.key : choice.kind;
+  const key = choice.kind === 'location' || (choice.kind === 'group' && choice.key === 'lure') ? choice.key : choice.kind;
   const words = choice.kind === 'split' ? `Send cubes: ${choice.left} left`
     : choice.kind === 'location' && choice.key === 'path' ? `Pick the next step · ${choice.left} left` : WORDS[key] ?? '';
   const arrows = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';
@@ -867,7 +867,8 @@ function onClick(event) {
     if (action === 'pick-faction') t.faction = target.dataset.faction;
     else if (action === 'pick-direction') t.direction = target.dataset.direction;
     else if (action === 'pick-group' && choice?.kind === 'group') {
-      if (choice.key === 'move') t.moves = [...(t.moves ?? []), { location: loc, faction: target.dataset.faction ?? '', to: '' }];
+      if (choice.key === 'lure') Object.assign(t, { faction: target.dataset.faction, from: [loc] });
+      else if (choice.key === 'move') t.moves = [...(t.moves ?? []), { location: loc, faction: target.dataset.faction ?? '', to: '' }];
       else Object.assign(t, { location: loc, faction: target.dataset.faction });
     } else if (action === 'pick-location' && choice?.kind === 'location') {
       if (choice.key === 'path') t.path = [...(t.path ?? []), loc];

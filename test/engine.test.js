@@ -291,3 +291,27 @@ test('Broadcast a Signal offers only factions that can enter the target', () => 
   const c = nextChoice(s, 'ann', 'broadcast', { mode: 'location', location: to });
   assert.ok(c.kind === 'faction' && !c.options.includes(/** @type {string} */ (z)));
 });
+
+test('Track Them in the Snow never enters a location twice', () => {
+  const s = clear(newGame());
+  const f = /** @type {string} */ (s.factions[0]);
+  const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals')?.id);
+  s.board[loc].cubes[f] = 4;
+  s.players.ann.standing[f] = 4;
+  const a = adj[loc].adjacent[0];
+  const c = nextChoice(s, 'ann', 'track-snow', { mode: 'faction', location: loc, faction: f, path: [a] });
+  assert.ok(c.kind === 'location' && !c.options.includes(a) && !c.options.includes(loc));
+});
+
+test('Leave Out Fresh Meat asks which group comes when the largest are tied', () => {
+  const s = clear(newGame());
+  const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const bait = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals' && adj[l.id].adjacent.length >= 2)?.id);
+  const [x, y] = adj[bait].adjacent;
+  s.board[x].cubes[/** @type {string} */ (s.factions[1])] = 3;
+  s.board[y].cubes[/** @type {string} */ (s.factions[2])] = 3;
+  const c = nextChoice(s, 'ann', 'fresh-meat', { mode: 'location', location: bait });
+  assert.ok(c.kind === 'group' && c.key === 'lure' && c.options.length === 2);
+  assert.equal(nextChoice(s, 'ann', 'fresh-meat', { mode: 'location', location: bait, faction: s.factions[2], from: [y] }).kind, 'done');
+});

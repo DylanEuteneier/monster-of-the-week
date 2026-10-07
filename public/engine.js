@@ -613,9 +613,9 @@ function act(state, pid, card, t) {
       let left = cubesOf(state, start, f);
       delete state.board[start].cubes[f];
       let at = start;
-      const visited = [];
+      const visited = /** @type {string[]} */ ([]);
       for (const next of t.path ?? []) {
-        if (left <= 0 || !MAP[at].adjacent.includes(next) || !canEnter(state, next, f, state.pending?.blocked) || (state.players[pid].standing[f] ?? 0) <= 0) break;
+        if (left <= 0 || next === start || visited.includes(next) || !MAP[at].adjacent.includes(next) || !canEnter(state, next, f, state.pending?.blocked) || (state.players[pid].standing[f] ?? 0) <= 0) break;
         state.board[next].cubes[f] = cubesOf(state, next, f) + 1;
         state.players[pid].standing[f] -= 1;
         state.board[next].influence[pid] = (state.board[next].influence[pid] ?? 0) + 1;
@@ -1364,7 +1364,7 @@ export function sampleTarget(state, pid, cardId, rng) {
  * been chosen so far. Not a rule; it offers the legal options one step at a
  * time, and the server still checks the finished target (checkTarget).
  * @typedef {{ kind: 'mode' } | { kind: 'location', key: 'location' | 'to' | 'bluff' | 'path' | 'from', options: string[], optional?: boolean, left?: number }
- *   | { kind: 'group', key: 'group' | 'move', options: { location: string, faction: string }[], optional?: boolean }
+ *   | { kind: 'group', key: 'group' | 'move' | 'lure', options: { location: string, faction: string }[], optional?: boolean }
  *   | { kind: 'faction', options: string[] } | { kind: 'direction', options: string[] }
  *   | { kind: 'split', options: string[], left: number } | { kind: 'done' }} Choice
  * @param {GameState} state @param {string} pid @param {string} cardId @param {Target} t
@@ -1387,7 +1387,16 @@ export function nextChoice(state, pid, cardId, t) {
     case 'lure': case 'draw-adjacent': {
       // Only where it would do something: a group of a faction that may come is adjacent and can enter.
       const comes = (/** @type {string} */ loc) => MAP[loc].adjacent.some((from) => movers.some((f) => cubesOf(state, from, f) > 0 && canEnter(state, loc, f)));
-      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter(comes) };
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter(comes) };
+      if (card.action === 'lure' && !t.faction) {
+        // Fresh Meat: a tie for the largest group goes to the player's choice (G.8).
+        const to = t.location;
+        const near = MAP[to].adjacent.flatMap((from) => movers.map((f) => ({ location: from, faction: f, n: cubesOf(state, from, f) }))).filter((g) => g.n > 0 && canEnter(state, to, g.faction));
+        const most = Math.max(0, ...near.map((g) => g.n));
+        const tied = near.filter((g) => g.n === most).map(({ location, faction }) => ({ location, faction }));
+        if (tied.length > 1) return { kind: 'group', key: 'lure', options: tied };
+      }
+      return { kind: 'done' };
     }
     case 'gather-region': case 'gather-neighbours': {
       const sources = (/** @type {string} */ loc) => LOCATION_IDS.filter((l) => l !== loc && (card.action === 'gather-region' ? regionOf(l) === regionOf(loc) : REGIONS[regionOf(loc)].neighbours.includes(regionOf(l))));
@@ -1420,7 +1429,8 @@ export function nextChoice(state, pid, cardId, t) {
       const f = /** @type {string} */ (t.faction);
       // Steps left: one cube and one influence per location entered.
       const left = Math.min(cubesOf(state, t.location, f), state.players[pid].standing[f] ?? 0) - path.length;
-      const opts = left > 0 ? MAP[at].adjacent.filter((l) => canEnter(state, l, f) && l !== t.location) : [];
+      // The chase never enters a location twice, nor goes back to its start (G.8).
+      const opts = left > 0 ? MAP[at].adjacent.filter((l) => canEnter(state, l, f) && l !== t.location && !path.includes(l)) : [];
       return opts.length ? { kind: 'location', key: 'path', options: opts, optional: path.length > 0, left } : { kind: 'done' };
     }
     case 'halve': case 'drive-out': case 'teleport': {

@@ -2490,11 +2490,12 @@ Where a rule or card left a detail open, the engine (`public/engine.js`) uses th
 - **Responses in the web prototype:** a played action is *pending* until its player confirms; "before" responses (the cancel, Never Invite Them In) can be played while it is pending; "after" responses answer what the last action did, until the next card is played or a player passes. Each event is answered once. The cancel can't cancel a response, since responses resolve at once.
 - **Taking a card back (web prototype):** until anyone answers it, the acting player can take a pending card back into their hand.
 - **Leave Out Fresh Meat:** the largest group adjacent to the bait location that can enter moves in; ties go to the player's choice.
-- **Track Them in the Snow:** the whole group sets off; each location entered gets 1 cube and 1 influence; leftover cubes stay together where the chase stops, or at the start if it never moved.
+- **Track Them in the Snow:** the whole group sets off; each location entered gets 1 cube and 1 influence; leftover cubes stay together where the chase stops, or at the start if it never moved; the chase never enters a location twice, nor returns to its start (provisional, picked for the prototype 2026-10-07).
 - **Board Up the Windows:** the player divides the group across two or more adjacent locations as they like.
 - **Spread a Virus:** cubes go to adjacent locations in map order, one each, as far as the group lasts.
 - **Ring the Church Bell, Draw a Summoning Circle, Reroute the Power Grid:** groups move in, largest first, until the two-faction limit stops a group.
 - **Reprogram the Traffic Lights:** groups move one at a time in map order; a group that can't enter stays.
+- **Light Every Lamp:** when both factions at the location are the same size, either may be driven out, since neither is larger (provisional, picked for the prototype 2026-10-07).
 - **Silver Bullets:** the loser already loses everything, so the winner loses 2 more.
 - **Salt and Burn the Bones:** the winner loses everything too; both piles are handed out as trophies.
 - **Hidden tokens:** the marker cube comes from the player's supply and counts as their influence at the location; it returns with the rest of that location's influence after the fight (MC3).
