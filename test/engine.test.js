@@ -6,6 +6,7 @@ import {
   totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter, nextChoice, previewTarget, checkTarget, printedOf, sampleTarget,
 } from '../public/engine.js';
 import { botMove } from '../public/bots.js';
+import scores from '../public/card-scores.json' with { type: 'json' };
 import { playOut } from '../scripts/simulate.js';
 
 /** @typedef {import('../public/engine.js').GameState} GameState */
@@ -325,7 +326,7 @@ test('a fixed deck never deals test cards', () => {
   for (const c of spec.testCards.cards) assert.ok(!dealt.includes(c.id));
 });
 
-test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence (9 per suit), the unsuited extras kept', () => {
+test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence weighted to strength (D12), the unsuited extras kept', () => {
   for (let seed = 1; seed <= 20; seed++) {
     const s = createGame({ seed, players: PLAYERS, options: { deck: 'mixed' } });
     const deck = /** @type {string[]} */ (s.deck);
@@ -336,6 +337,9 @@ test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence (9
       const mine = deck.map((id) => cardById(id)).filter((c) => c.suit === arch.id);
       assert.deepEqual(mine.map((c) => c.slot).sort(), ['shift', 'signature', 'strike']);
       assert.deepEqual(mine.map((c) => printedOf(s, c.id)).sort(), [2, 3, 4]);
+      // Weighted to strength (D12): a weaker action never prints less than a stronger one.
+      const battle = (/** @type {string} */ id) => /** @type {Record<string, { battle: number }>} */ (scores.scores)[id]?.battle ?? 0;
+      for (const x of mine) for (const y of mine) if (battle(x.id) < battle(y.id)) assert.ok(printedOf(s, x.id) > printedOf(s, y.id), `${x.id} vs ${y.id}`);
     }
     for (const c of spec.cards.filter((x) => !x.suit)) assert.ok(deck.includes(c.id));
   }

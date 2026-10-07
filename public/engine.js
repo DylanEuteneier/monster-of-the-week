@@ -15,6 +15,8 @@
  * Where this file and docs/motw-design.md disagree, the design document wins.
  */
 import spec from './spec.json' with { type: 'json' };
+// Measured card strength (scripts/balance.js, npm run cards:score): sets printed influence (D12).
+import cardScores from './card-scores.json' with { type: 'json' };
 
 export { spec };
 
@@ -424,38 +426,40 @@ export function createGame(input) {
       hand: [], kept: [], batch: [], picked: false, known: [],
     };
   });
-  // Prototype test plumbing, not a rule: a mixed deck draws one Strike, Shift
-  // and Signature per suit from the deck and the test cards, and prints 2, 3
-  // and 4 influence across each suit in random order (D12: 9 per suit). The
-  // unsuited extras stay as they are.
-  /** @type {string[] | undefined} */
-  let deck;
-  /** @type {Record<string, number> | undefined} */
-  let printed;
+  // The deck. Mixed (prototype test plumbing, not a rule): each suit draws
+  // one Strike, Shift and Signature from the deck and the test cards; the
+  // unsuited extras stay. Fixed: Set v2.
+  /** @type {string[]} */
+  let deck = spec.cards.map((c) => c.id);
   if (options.deck === 'mixed') {
     const pool = /** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action);
     deck = [];
-    printed = {};
     for (const arch of spec.archetypes) {
-      /** @type {string[]} */
-      const picks = [];
       for (const slot of ['strike', 'shift', 'signature']) {
         const s = shuffle(pool.filter((c) => c.suit === arch.id && c.slot === slot).map((c) => c.id), rngState);
         rngState = s.rngState;
-        if (s.items[0]) picks.push(s.items[0]);
+        if (s.items[0]) deck.push(s.items[0]);
       }
-      const amounts = shuffle([2, 3, 4], rngState);
-      rngState = amounts.rngState;
-      picks.forEach((id, i) => { /** @type {Record<string, number>} */ (printed)[id] = amounts.items[i]; });
-      deck.push(...picks);
     }
     deck.push(...spec.cards.filter((c) => !c.suit).map((c) => c.id));
+  }
+  // Printed influence (D12): each suit prints 2, 3 and 4 (9 in all), weighted
+  // to strength: the weakest action gets the most. Strength is the measured
+  // battle score; ties fall at random.
+  /** @type {Record<string, number>} */
+  const printed = {};
+  const scores = /** @type {Record<string, { battle?: number }>} */ (cardScores.scores);
+  for (const arch of spec.archetypes) {
+    const s = shuffle(deck.filter((id) => cardById(id).suit === arch.id), rngState);
+    rngState = s.rngState;
+    const byStrength = s.items.slice().sort((a, b) => (scores[b]?.battle ?? 0) - (scores[a]?.battle ?? 0));
+    byStrength.forEach((id, i) => { printed[id] = [2, 3, 4][i] ?? 3; });
   }
   /** @type {GameState} */
   const state = {
     version: spec.meta.version, options, rngState, phase: 'draft', round: 1, seating: input.players.slice(), players, factions,
     board, supply, leftOut: [], pass: 1, first: null, turn: 0, passesInRow: 0, opened: false, pending: null, events: [], growing: null,
-    log: [], result: null, ...(deck ? { deck, printed } : {}),
+    log: [], result: null, deck, printed,
   };
   return deal(state);
 }
