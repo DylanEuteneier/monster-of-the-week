@@ -505,7 +505,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .suit-line { display: inline-flex; align-items: center; gap: 4px; }
 /* The open card never shrinks below its content; closed tabs give way, and
    the strip scrolls sideways on narrow screens rather than clipping. */
-.player-list.accordion { overflow-x: auto; padding-bottom: 4px; }
+.player-list.accordion { overflow-x: visible; }
 .accordion .player { flex: 0 1 auto; min-width: 72px; }
 .accordion .player.is-open { flex: 1 0 auto; min-width: max-content; }
 .accordion .player:not(.is-open) .player-head { min-width: 0; }
@@ -871,9 +871,22 @@ button.card-opt:hover { background: #f6cca1; }
   .side-right .side-row { flex-direction: row-reverse; justify-content: flex-end; }
 }
 .map-window { display: flex; justify-content: center; max-width: 100%; }
+/* Desktop: the open slayer group shrinks and wraps rather than overflow its section. */
+@media (min-width: 601px) and (hover: hover) {
+  .accordion .player.is-open { min-width: 0; flex: 1 1 auto; }
+  .accordion .player:not(.is-open) { flex-shrink: 1; min-width: 64px; overflow: hidden; }
+  .accordion .player:not(.is-open) .player-supply-mini { flex-wrap: wrap; }
+  .accordion .player.is-open .player-detail { max-width: none; min-width: 0; }
+  .accordion .player.is-open .player-detail .supply-row, .accordion .player.is-open .player-detail .trophies { flex-wrap: wrap; }
+}
+/* Desktop: the page column is never narrower than the map's section, so every
+   section keeps the same width and a narrow window scrolls the page as one. */
+body { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px + 2 * var(--space-4)); }
 /* Phones: sections run edge to edge, stacked with no grey gutters between. */
 @media (max-width: 600px), (hover: none) and (pointer: coarse) {
   main.table { padding: 0; gap: 0; }
+  body { min-width: 0; }
+  .player-list.accordion { overflow-x: auto; padding-bottom: 4px; }
   .table > .panel, .dock, .hand, .side-stack { margin: 0 !important; max-width: none; width: auto; box-shadow: none; border-left: 0; border-right: 0; }
   .table > .panel + .panel, .side-stack, .hand { border-top: 0; }
   .hand { padding: var(--space-3); background: var(--color-panel); }
