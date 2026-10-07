@@ -103,6 +103,8 @@ export { spec };
  * @property {Record<string, Place>} board
  * @property {Record<string, number>} supply  faction → cubes in its supply
  * @property {string[]} leftOut    cards not dealt this round (DR5)
+ * @property {string[]} [deck]     this game's 21 cards (variant deck=mixed); absent: spec.cards
+ * @property {Record<string, number>} [printed]  this game's printed influence by card (variant deck=mixed); absent: each card's own
  * @property {number} pass         draft: which pick this is (1-based)
  * @property {string | null} first  this round's first player (FP2)
  * @property {number} turn         index into seating of the player to act
@@ -160,6 +162,8 @@ export { spec };
  * @property {string[]} factions
  * @property {Record<string, { cubes: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean }>} board
  * @property {Record<string, number>} supply
+ * @property {string[]} deck  this game's cards
+ * @property {Record<string, number>} printed  this game's printed influence by card
  * @property {string | null} first
  * @property {boolean} opened  the first player has opened with their marked card
  * @property {string | null} toAct
@@ -420,19 +424,51 @@ export function createGame(input) {
       hand: [], kept: [], batch: [], picked: false, known: [],
     };
   });
+  // Prototype test plumbing, not a rule: a mixed deck draws one Strike, Shift
+  // and Signature per suit from the deck and the test cards, and prints 2, 3
+  // and 4 influence across each suit in random order (D12: 9 per suit). The
+  // unsuited extras stay as they are.
+  /** @type {string[] | undefined} */
+  let deck;
+  /** @type {Record<string, number> | undefined} */
+  let printed;
+  if (options.deck === 'mixed') {
+    const pool = /** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action);
+    deck = [];
+    printed = {};
+    for (const arch of spec.archetypes) {
+      /** @type {string[]} */
+      const picks = [];
+      for (const slot of ['strike', 'shift', 'signature']) {
+        const s = shuffle(pool.filter((c) => c.suit === arch.id && c.slot === slot).map((c) => c.id), rngState);
+        rngState = s.rngState;
+        if (s.items[0]) picks.push(s.items[0]);
+      }
+      const amounts = shuffle([2, 3, 4], rngState);
+      rngState = amounts.rngState;
+      picks.forEach((id, i) => { /** @type {Record<string, number>} */ (printed)[id] = amounts.items[i]; });
+      deck.push(...picks);
+    }
+    deck.push(...spec.cards.filter((c) => !c.suit).map((c) => c.id));
+  }
   /** @type {GameState} */
   const state = {
     version: spec.meta.version, options, rngState, phase: 'draft', round: 1, seating: input.players.slice(), players, factions,
     board, supply, leftOut: [], pass: 1, first: null, turn: 0, passesInRow: 0, opened: false, pending: null, events: [], growing: null,
-    log: [], result: null,
+    log: [], result: null, ...(deck ? { deck, printed } : {}),
   };
   return deal(state);
 }
 
+/** This game's cards: its mixed deck, or the fixed pool. @param {GameState | PlayerView} state */
+export const deckOf = (state) => ('deck' in state && state.deck ? state.deck.slice() : spec.cards.map((card) => card.id));
+/** A card's printed influence in this game. @param {GameState | PlayerView} state @param {string} cardId */
+export const printedOf = (state, cardId) => ('printed' in state && state.printed?.[cardId]) || cardById(cardId).influence;
+
 /** Start a round's draft: shuffle all 21 cards, deal hands, leave the rest out (PS1, DR4, DR5). @param {GameState} state */
 function deal(state) {
   const handSize = /** @type {Record<string, number>} */ (spec.constants.handSize)[String(state.seating.length)];
-  const s = shuffle(spec.cards.map((card) => card.id), state.rngState);
+  const s = shuffle(deckOf(state), state.rngState);
   state.rngState = s.rngState;
   state.seating.forEach((pid, i) => {
     const p = state.players[pid];
@@ -1301,7 +1337,7 @@ export function applyMove(state, submission) {
       const card = cardById(m.card);
       if (m.use === 'influence') {
         const faction = factionOfArchetype(next, /** @type {string} */ (card.suit));
-        const gain = Math.min(card.influence, p.supply);
+        const gain = Math.min(printedOf(state, card.id), p.supply);
         p.supply -= gain;
         p.standing[faction] += gain;
         next.events.push({ type: 'influence-spent', player: pid, faction, amount: gain });
@@ -1799,10 +1835,45 @@ export function sampleTarget(state, pid, cardId, rng) {
         break;
       }
     }
+    if (!t && !SAMPLED.has(/** @type {string} */ (card.action))) t = walkTarget(state, pid, cardId, mode, rng);
     if (t && !checkTarget(state, pid, card, t)) return t;
   }
   return null;
 }
+/** Actions sampleTarget guesses directly; any other walks the table's choices. */
+const SAMPLED = new Set(['lure', 'draw-adjacent', 'gather-region', 'gather-neighbours', 'broadcast', 'sow', 'token', 'halve', 'drive-out', 'drive-out-either', 'teleport', 'halve-far', 'spread', 'infect', 'move-influence', 'split', 'conveyor', 'move-two', 'move-one', 'move-half', 'move-far']);
+
+/**
+ * A random target built one choice at a time, as the table offers them (for bots).
+ * @param {GameState} state @param {string} pid @param {string} cardId @param {'location' | 'faction'} mode @param {() => number} rng @returns {Target | null}
+ */
+function walkTarget(state, pid, cardId, mode, rng) {
+  const pick = (/** @type {any[]} */ xs) => xs[Math.floor(rng() * xs.length)];
+  /** @type {Target} */
+  let t = cardById(cardId).suit ? { mode } : {};
+  for (let steps = 0; steps < 30; steps++) {
+    const c = nextChoice(state, pid, cardId, t);
+    if (c.kind === 'done') return finishWalk(t);
+    if (c.kind === 'mode') { t = { mode }; continue; }
+    if ('optional' in c && c.optional && rng() < 0.3) return finishWalk(t);
+    if (!('options' in c) || !c.options.length) return null;
+    const o = pick(/** @type {any[]} */ (c.options));
+    if (c.kind === 'faction') t = { ...t, faction: o };
+    else if (c.kind === 'direction') t = { ...t, direction: o };
+    else if (c.kind === 'split') t = { ...t, split: { ...(t.split ?? {}), [o]: (t.split?.[o] ?? 0) + 1 } };
+    else if (c.kind === 'group') {
+      if (c.key === 'lure') t = { ...t, faction: o.faction, from: [o.location] };
+      else if (c.key === 'move') t = { ...t, moves: [...(t.moves ?? []), { location: o.location, faction: o.faction, to: '' }] };
+      else t = { ...t, location: o.location, faction: o.faction };
+    } else if (c.key === 'path') t = { ...t, path: [...(t.path ?? []), o] };
+    else if (c.key === 'from') t = { ...t, from: [...(t.from ?? []), o] };
+    else if (c.key === 'to' && t.moves?.length && !t.moves[t.moves.length - 1].to) t = { ...t, moves: t.moves.map((m, i, a) => (i === a.length - 1 ? { ...m, to: o } : m)) };
+    else t = { ...t, [c.key]: o };
+  }
+  return null;
+}
+/** @param {Target} t */
+const finishWalk = (t) => t;
 
 /**
  * For the table: the next choice in building a card's target, given what has
@@ -2067,6 +2138,8 @@ export function playerView(state, playerId) {
       return [loc, { cubes: { ...place.cubes }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched }];
     })),
     supply: { ...state.supply },
+    deck: deckOf(state),
+    printed: Object.fromEntries(deckOf(state).map((id) => [id, printedOf(state, id)])),
     growing: state.growing ? structuredClone(state.growing) : null,
     first: state.first,
     opened: state.opened,

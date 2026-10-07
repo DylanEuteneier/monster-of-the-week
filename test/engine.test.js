@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   spec, createGame, validate, applyMove, playerView, waitingOn, shuffle, resolveOptions, IllegalMoveError,
-  totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter, nextChoice, previewTarget, checkTarget,
+  totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter, nextChoice, previewTarget, checkTarget, printedOf, sampleTarget,
 } from '../public/engine.js';
 import { botMove } from '../public/bots.js';
 import { playOut } from '../scripts/simulate.js';
@@ -319,10 +319,36 @@ test('Leave Out Fresh Meat asks which group comes when the largest are tied', ()
 
 // Round 8 test cards (spec.testCards): never dealt, measured by scripts/balance.js.
 
-test('test cards are never dealt', () => {
-  const s = newGame();
+test('a fixed deck never deals test cards', () => {
+  const s = createGame({ seed: 1, players: PLAYERS, options: { deck: 'fixed' } });
   const dealt = s.seating.flatMap((pid) => s.players[pid].batch).concat(s.leftOut);
   for (const c of spec.testCards.cards) assert.ok(!dealt.includes(c.id));
+});
+
+test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence (9 per suit), the unsuited extras kept', () => {
+  for (let seed = 1; seed <= 20; seed++) {
+    const s = createGame({ seed, players: PLAYERS, options: { deck: 'mixed' } });
+    const deck = /** @type {string[]} */ (s.deck);
+    assert.equal(deck.length, 21);
+    const dealt = s.seating.flatMap((pid) => s.players[pid].batch).concat(s.leftOut);
+    assert.deepEqual([...dealt].sort(), [...deck].sort());
+    for (const arch of spec.archetypes) {
+      const mine = deck.map((id) => cardById(id)).filter((c) => c.suit === arch.id);
+      assert.deepEqual(mine.map((c) => c.slot).sort(), ['shift', 'signature', 'strike']);
+      assert.deepEqual(mine.map((c) => printedOf(s, c.id)).sort(), [2, 3, 4]);
+    }
+    for (const c of spec.cards.filter((x) => !x.suit)) assert.ok(deck.includes(c.id));
+  }
+});
+
+test('bots can target every test card that has a target (a walk through the table\'s choices)', () => {
+  const s = clear(newGame());
+  const [f, g] = /** @type {string[]} */ (s.factions);
+  for (const loc of spec.locations.map((l) => l.id)) s.board[loc].cubes = { [loc.length % 2 ? f : g]: 3 };
+  for (const card of spec.testCards.cards.filter((c) => c.action && c.action !== 'token' && c.action !== 'cash-in' && c.action !== 'surveil')) {
+    const t = sampleTarget(s, 'ann', card.id, rng(7));
+    if (t) assert.equal(checkTarget(s, 'ann', cardById(card.id), t), null, card.id);
+  }
 });
 
 test('Take Over the Wake places up to 3 influence from standing with a faction there', () => {
