@@ -432,22 +432,37 @@ function responseReady(view, cardId) {
 /**
  * A card. `mode` says what clicking it does: 'act' (play its action),
  * 'respond' (fire its response), 'keep' (draft), or '' (nothing).
- * @param {string} id @param {{ mode?: '' | 'act' | 'respond' | 'keep', ticked?: boolean, influence?: boolean, dim?: boolean, selected?: boolean }} [o]
+ * @param {string} id @param {{ mode?: '' | 'act' | 'respond' | 'keep', ticked?: boolean, influence?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string }} [o]
  */
 function cardHtml(id, o = {}) {
   const c = cardById(id);
   const suit = spec.archetypes.find((a) => a.id === c.suit);
-  const band = c.suit ? `<span class="suit-line">${suitIcon(c.suit)} ${esc(suit?.name ?? '')}</span><span class="suit-line">${esc(c.slot)} ${'{{influence}}'}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
-  const influence = c.suit ? (o.influence
-    ? `<span class="card-influence" data-action="influence" data-card="${esc(id)}" title="Spend for ${c.influence} influence with the ${esc(suit?.name ?? '')} faction">+${c.influence}</span>`
-    : `<span class="card-influence is-off">+${c.influence}</span>`) : '';
+  const view = ui.view;
+  const sf = view && c.suit ? view.factions.find((f) => factionById(f).archetype === c.suit) : undefined;
+  const band = c.suit ? `<span class="suit-line">${suitIcon(c.suit)} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
+  // The card's options, on its right: its two readings and its influence.
+  // Live (clickable) on your turn; lit as the next step once the card is picked.
+  const live = !!o.influence;
+  const opt = (/** @type {string} */ action, /** @type {string} */ inner, /** @type {string} */ tip, /** @type {boolean} */ on, /** @type {Record<string, string>} */ data = {}) => live
+    ? `<button class="card-opt${on ? ' is-on' : ''}${o.next ? ' is-next' : ''}" data-action="${action}" data-card="${esc(id)}"${Object.entries(data).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('')} title="${esc(tip)}">${inner}</button>`
+    : `<span class="card-opt is-off" title="${esc(tip)}">${inner}</span>`;
+  const options = c.suit ? `<div class="card-options">
+      ${c.action ? opt('set-mode', `${suitIcon(c.suit, 1)}<span>Loc</span>`, `Location target: one of the ${suit?.name ?? ''} locations, any faction`, o.reading === 'location', { mode: 'location' }) : ''}
+      ${c.action ? opt('set-mode', `${sf ? tokenHtml(sf, 1) : ''}<span>Fac</span>`, `Faction target: ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}, anywhere`, o.reading === 'faction', { mode: 'faction' }) : ''}
+      ${opt('influence', `<b>+${c.influence}</b>`, `Spend for ${c.influence} influence with ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}`, false)}
+    </div>` : '';
   const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : ''].filter(Boolean).join(' ');
   const full = `${c.name}. ${c.text}${c.response ? ` Response (${c.response.timing}): ${c.response.name}. ${c.response.text}` : ''}`;
   return `<div class="${classes}" data-card="${esc(id)}" title="${esc(full)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
-    <div class="card-band">${band.replace('{{influence}}', influence)}</div>
-    <span class="card-name">${esc(c.name)}</span>
-    <p class="small">${esc(c.text)}</p>
-    ${c.response ? `<p class="small card-response"><b>Response, ${esc(c.response.timing)}: ${esc(c.response.name)}.</b> ${esc(c.response.text)}</p>` : ''}
+    <div class="card-band">${band}</div>
+    <div class="card-main">
+      <div class="card-text">
+        <span class="card-name">${esc(c.name)}</span>
+        <p class="small">${esc(c.text)}</p>
+        ${c.response ? `<p class="small card-response"><b>Response, ${esc(c.response.timing)}: ${esc(c.response.name)}.</b> ${esc(c.response.text)}</p>` : ''}
+      </div>
+      ${options}
+    </div>
   </div>`;
 }
 
@@ -571,6 +586,7 @@ function renderPlay() {
   const ready = me.hand.filter((c) => responseReady(view, c));
   const myTurn = view.toAct === view.you && !pending;
   const mustOpen = view.first === view.you && !view.opened && me.hand.some((c) => cardById(c).marked);
+  if (ui.choosing && !me.hand.includes(ui.choosing)) ui.choosing = null;
   if (myTurn && ui.choosing) return renderTargeting(ui.choosing);
   toHand(me.hand.map((c) => {
     const card = cardById(c);
@@ -611,19 +627,13 @@ function renderTargeting(cardId) {
   const key = choice.kind === 'location' ? choice.key : choice.kind;
   const words = choice.kind === 'split' ? `Send cubes: ${choice.left} left` : WORDS[key] ?? '';
   const arrows = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';
-  // Two readings: a toggle, always visible; nothing lights up until one is picked.
   const t = ui.target;
-  const sf = view0().factions.find((f) => factionById(f).archetype === card.suit);
-  const toggle = card.suit ? `<span class="reading-toggle" role="group" aria-label="Reading">
-      <button class="bar-btn${t.mode === 'location' ? ' is-on' : ''}" data-action="set-mode" data-mode="location" title="Location target: one of the ${esc(suit?.name ?? '')} locations, any faction">${suitIcon(card.suit, 1)} Location</button>
-      <button class="bar-btn${t.mode === 'faction' ? ' is-on' : ''}" data-action="set-mode" data-mode="faction" title="Faction target: ${esc(sf ? fname(sf) : '')}, anywhere">${sf ? tokenHtml(sf, 1) : ''} Faction</button>
-    </span>` : '';
-  step('turn', esc(choice.kind === 'mode' ? 'Pick a reading' : words), `${toggle}${arrows}`);
+  step('turn', esc(choice.kind === 'mode' ? 'Pick an option on the card' : words), arrows);
   if ((choice.kind === 'location' || choice.kind === 'group') && choice.optional) handAction('skip', { label: choice.kind === 'location' && choice.key === 'bluff' ? 'No bluff' : 'Done' });
   handAction('target-none', { tip: 'Play it for no effect' });
   handAction('back');
   const view = /** @type {PlayerView} */ (ui.view);
-  toHand(view.me.hand.map((c) => cardHtml(c, { selected: c === cardId, dim: c !== cardId })), false);
+  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, influence: true, next: !t.mode && !!card.suit, reading: t.mode } : { dim: true })), false);
 }
 
 function renderGrowth() {
@@ -782,7 +792,11 @@ function onClick(event) {
   if (action === 'pass') return sendMove({ type: 'pass' });
   if (action === 'confirm') return sendMove({ type: 'confirm' });
   if (action === 'withdraw') return sendMove({ type: 'withdraw' });
-  if (action === 'influence') return sendMove({ type: 'play', card, use: 'influence' });
+  if (action === 'influence') {
+    ui.choosing = null;
+    ui.target = {};
+    return sendMove({ type: 'play', card, use: 'influence' });
+  }
   if (action === 'back') {
     ui.choosing = null;
     ui.target = {};
@@ -848,8 +862,9 @@ function onClick(event) {
     for (const id of ['influence', 'score']) document.getElementById(id)?.classList.toggle('is-open', ui.sideOpen === id);
     return;
   }
-  if (action === 'set-mode' && ui.choosing) {
-    // Picking or switching the reading restarts the target in that reading.
+  if (action === 'set-mode') {
+    // Picking or switching the reading (on the card) restarts the target in that reading.
+    ui.choosing = target.dataset.card ?? ui.choosing;
     ui.target = { mode: /** @type {'location' | 'faction'} */ (target.dataset.mode) };
     return render();
   }
