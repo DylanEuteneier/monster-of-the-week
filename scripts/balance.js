@@ -1,20 +1,28 @@
 // @ts-check
 /**
- * Card action balance study: how much each card's action can change the
- * presence the island will hold after the next reckoning.
+ * Card action balance study, scored on the designer's provisional strength
+ * ranking (Current focus 4):
+ *   1. battles: altering the outcome of a large, high-trophy fight; the
+ *      trophies that change hands at this round's fights, plus fights whose
+ *      winner flips, weighted by the cubes lost there
+ *   2. control: contested locations (two factions) where the player becomes
+ *      the sole top-influence player
+ *   3. movement: pieces moved or placed (faction tokens, hidden tokens) and
+ *      influence placed
+ *   4. rule-breaking: from the card text, not measured
+ * Also the old measure: presence after reckoning (fights, then growth).
  *
  *   node scripts/balance.js [states=300] [seed=1] [players=5] [bots=smart]
  *
  * It plays bot games and samples states at the start of turns in the play
  * phase. In each state, for every card with an action, it walks every target
- * the table would offer (nextChoice), plays it on a copy (previewTarget) and
- * reckons the copy as if the round ended now: every fight, then growth as far
- * as supply allows. The score of a target is the presence after that
- * reckoning minus the presence after reckoning the untouched board, so a
- * positive score helps the invaders and a negative one helps the island.
+ * the table would offer (nextChoice) and plays it on a copy (previewTarget).
+ * Each measure takes the card's best target in that state; the table shows
+ * the mean of those bests, how often the best is above zero, and the largest.
  *
  * A measuring tool, not a rule: one round's horizon, other players' replies
- * ignored, growth amounts only (not where leaders put it).
+ * ignored, growth amounts only (not where leaders put it), ties for top
+ * influence count as no one's.
  */
 import { createGame, applyMove, nextRandom, spec, totalPresence, cardById, nextChoice, previewTarget, resolveFight, growthDue, checkTarget } from '../public/engine.js';
 import { botMove } from '../public/bots.js';
@@ -29,16 +37,61 @@ function seededRng(seed) {
   return () => { const r = nextRandom(s); s = r.state; return r.value; };
 }
 
-/** Presence after fights, then growth as far as each faction's supply allows. @param {GameState} state */
-function reckoned(state) {
+/**
+ * The round's end on a copy: every fight, then growth as far as supply allows.
+ * @param {GameState} state
+ */
+function reckon(state) {
   let s = state;
+  /** @type {Record<string, { winner: string, lost: number }>} */
+  const fights = {};
   for (const loc of Object.keys(s.board)) {
     const place = s.board[loc];
-    if (!place.scorched && Object.values(place.cubes).filter((n) => n > 0).length === 2) s = resolveFight(s, loc);
+    const here = Object.keys(place.cubes).filter((f) => place.cubes[f] > 0);
+    if (place.scorched || here.length !== 2) continue;
+    const before = here.reduce((n, f) => n + place.cubes[f], 0);
+    s = resolveFight(s, loc);
+    const after = s.board[loc];
+    const winner = here.find((f) => (after.cubes[f] ?? 0) > 0) ?? '';
+    fights[loc] = { winner, lost: before - here.reduce((n, f) => n + (after.cubes[f] ?? 0), 0) };
   }
   let grown = 0;
   for (const f of s.factions) grown += Math.min(s.supply[f], Object.values(growthDue(s, f)).reduce((a, b) => a + b, 0));
-  return totalPresence(s) + grown;
+  const trophies = Object.fromEntries(s.seating.map((pid) => [pid, Object.values(s.players[pid].trophies).reduce((a, b) => a + b, 0)]));
+  return { presence: totalPresence(s) + grown, trophies, fights };
+}
+
+/** The sole top-influence player at a location, or null. @param {GameState['board'][string]} place */
+function topOf(place) {
+  const e = Object.entries(place.influence).filter(([, n]) => n > 0).sort((x, y) => y[1] - x[1]);
+  return e.length && (e.length === 1 || e[0][1] > e[1][1]) ? e[0][0] : null;
+}
+
+/** @param {GameState['board'][string]} place */
+const contested = (place) => !place.scorched && Object.values(place.cubes).filter((n) => n > 0).length === 2;
+
+/**
+ * Score one target against the untouched board.
+ * @param {GameState} state @param {string} pid @param {ReturnType<typeof reckon>} base @param {ReturnType<typeof previewTarget>} after
+ */
+function score(state, pid, base, after) {
+  const next = { ...structuredClone(state), board: structuredClone(after.board), players: structuredClone(after.players) };
+  const r = reckon(next);
+  const trophies = state.seating.reduce((n, p) => n + Math.abs(r.trophies[p] - base.trophies[p]), 0);
+  let flips = 0;
+  for (const loc of new Set([...Object.keys(r.fights), ...Object.keys(base.fights)])) {
+    const x = base.fights[loc], y = r.fights[loc];
+    if ((x?.winner ?? '') !== (y?.winner ?? '')) flips += Math.max(x?.lost ?? 0, y?.lost ?? 0);
+  }
+  let control = 0, moved = 0, placed = 0;
+  for (const loc of Object.keys(state.board)) {
+    const was = state.board[loc], now = after.board[loc];
+    if (contested(now) && topOf(now) === pid && topOf(was) !== pid) control += 1;
+    for (const f of new Set([...Object.keys(was.cubes), ...Object.keys(now.cubes)])) moved += Math.max(0, (now.cubes[f] ?? 0) - (was.cubes[f] ?? 0));
+    if (now.token && !was.token) moved += 1;
+    placed += Math.max(0, (now.influence[pid] ?? 0) - (was.influence[pid] ?? 0));
+  }
+  return { battle: trophies + flips, trophies, flips, control, moved, placed, presence: r.presence - base.presence };
 }
 
 /** Every finished target the table offers for a card (depth-first, capped). @param {GameState} state @param {string} pid @param {string} cardId */
@@ -115,43 +168,40 @@ function sampleStates(n, seed, players, profile) {
   return states.slice(0, n);
 }
 
+const MEASURES = /** @type {const} */ (['battle', 'control', 'moved', 'placed', 'presence']);
+
 function main() {
   const [nArg = '300', seedArg = '1', playersArg = '5', profileArg = 'smart'] = process.argv.slice(2);
   const profile = /** @type {import('../public/bots.js').Profile} */ (profileArg);
   const players = ['ann', 'bob', 'cat', 'dan', 'eve'].slice(0, Number(playersArg));
   const states = sampleStates(Number(nArg), Number(seedArg), players, profile);
   const cards = spec.cards.filter((c) => c.action);
-  /** @type {Record<string, { up: number[], down: number[], swing: number[], usable: number, leaves: number, capped: number }>} */
-  const stats = Object.fromEntries(cards.map((c) => [c.id, { up: [], down: [], swing: [], usable: 0, leaves: 0, capped: 0 }]));
+  /** @type {Record<string, Record<typeof MEASURES[number], number[]> & { leaves: number, capped: number }>} */
+  const stats = /** @type {any} */ (Object.fromEntries(cards.map((c) => [c.id, { ...Object.fromEntries(MEASURES.map((m) => [m, []])), leaves: 0, capped: 0 }])));
   for (const state of states) {
     const pid = state.seating[state.turn];
-    const base = reckoned(state);
+    const base = reckon(state);
     for (const card of cards) {
       const ts = targets(state, pid, card.id).filter((t) => !checkTarget(state, pid, card, t));
       const st = stats[card.id];
       st.leaves += ts.length;
       if (ts.length >= LEAVES_PER_CARD) st.capped += 1;
-      let up = 0, down = 0;
+      const best = Object.fromEntries(MEASURES.map((m) => [m, 0]));
       for (const t of ts) {
-        const { board } = previewTarget(state, pid, card.id, t);
-        const d = reckoned({ ...structuredClone(state), board: structuredClone(board) }) - base;
-        up = Math.max(up, d);
-        down = Math.min(down, d);
+        const sc = score(state, pid, base, previewTarget(state, pid, card.id, t));
+        for (const m of MEASURES) best[m] = m === 'presence' ? Math.max(best[m], Math.abs(sc[m])) : Math.max(best[m], sc[m]);
       }
-      if (up || down) st.usable += 1;
-      st.up.push(up);
-      st.down.push(down);
-      st.swing.push(Math.max(up, -down));
+      for (const m of MEASURES) st[m].push(best[m]);
     }
   }
   const mean = (/** @type {number[]} */ xs) => xs.reduce((a, b) => a + b, 0) / (xs.length || 1);
-  const pct = (/** @type {number[]} */ xs, /** @type {number} */ p) => { const s = xs.slice().sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p * s.length))] ?? 0; };
-  console.log(`${states.length} states, ${players.length} players, ${profile} bots. Presence change at the next reckoning (+ invaders, - island).`);
-  console.log('card                            usable  best+ mean  p90  max | best- mean  p10  min | swing mean  max | targets/state');
-  const rows = cards.map((c) => ({ c, st: stats[c.id] })).sort((a, b) => mean(b.st.swing) - mean(a.st.swing));
+  const often = (/** @type {number[]} */ xs) => `${(100 * xs.filter((x) => x > 0).length / (xs.length || 1)).toFixed(0)}%`;
+  const col = (/** @type {number[]} */ xs) => `${mean(xs).toFixed(1).padStart(5)} ${often(xs).padStart(4)} ${String(Math.max(...xs)).padStart(3)}`;
+  console.log(`${states.length} states, ${players.length} players, ${profile} bots. Each column: mean of the card's best target per state, how often above 0, largest.`);
+  console.log(`${'card'.padEnd(30)} | 1 battle (trophies+flips) | 2 control taken | 3 pieces moved | 3 influence placed | presence swing | targets`);
+  const rows = cards.map((c) => ({ c, st: stats[c.id] })).sort((x, y) => mean(y.st.battle) - mean(x.st.battle));
   for (const { c, st } of rows) {
-    const f = (/** @type {number} */ x) => x.toFixed(1).padStart(5);
-    console.log(`${c.name.padEnd(32)}${(100 * st.usable / states.length).toFixed(0).padStart(5)}%  ${f(mean(st.up))}${f(pct(st.up, 0.9))}${f(Math.max(...st.up))} | ${f(mean(st.down))}${f(pct(st.down, 0.1))}${f(Math.min(...st.down))} | ${f(mean(st.swing))}${f(Math.max(...st.swing))} | ${(st.leaves / states.length).toFixed(0)}${st.capped ? ` (capped ${st.capped}x)` : ''}`);
+    console.log(`${c.name.padEnd(30)} | ${col(st.battle).padEnd(25)} | ${col(st.control).padEnd(15)} | ${col(st.moved).padEnd(14)} | ${col(st.placed).padEnd(18)} | ${col(st.presence).padEnd(14)} | ${(st.leaves / states.length).toFixed(0)}${st.capped ? ` (capped ${st.capped}x)` : ''}`);
   }
 }
 

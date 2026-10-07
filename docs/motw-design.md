@@ -29,6 +29,13 @@ The current focus, below, lists what is being worked on right now; the backlog h
      3. It can move tokens and place lots of influence.
      4. It can move in ways that break the normal rules.
    - *First measurement (2026-10-07, `scripts/balance.js`):* presence change at the next reckoning, best play per state, 200 states from bot games at 5 players. Fights decide almost every swing; growth barely registers. Most cards help the island more than the invaders. Typical best swing: Broadcast 11.0, Beam 8.7, Summoning Circle 8.7, Traffic Lights 7.5, Track 7.3, the Bell 7.2 (largest single swing, 26), Board Up 6.9, Fresh Meat 6.7, Reroute 5.8, the Virus 4.0, Lamps 3.4, Leak 3.2, the hidden tokens 0.4–1.5 (one round ahead only, so undercounted). The unsuited scaffold moves outscore most suit cards.
+   - *Second measurement (2026-10-07, `scripts/balance.js`, same setup), on the strength ranking:* mean of each card's best target per state. (1) battles: trophies changing hands at this round's fights plus fights whose winner flips, weighted by the cubes lost; (2) contested locations where the player becomes sole top influence; (3) pieces moved or placed, and influence placed. By suit, printed influence in brackets, as battle / control / moved / influence placed:
+     - ◐ Fresh Meat (2) 10.0 / 0.6 / 6.9 / 0.9; Track (3) 11.3 / 1.3 / 4.8 / 3.0; Silver Bullets (4) 1.3 / 0.3 / 1.1 / 1.1.
+     - ↂ Broadcast (2) 17.7 / 0.7 / 8.7 / 1.0; Leak (3) 4.9 / 0.4 / 2.3 / 0.5; Beam (4) 13.8 / 0.6 / 5.1 / 0.6.
+     - ⏏ Virus (2) 4.6 / 0.6 / 3.1 / 1.9; Reroute (3) 8.1 / 0.5 / 6.3 / 0.9; Traffic Lights (4) 14.5 / 1.1 / 11.0 / 2.0.
+     - ☾ the Bell (2) 11.8 / 0.7 / 8.9 / 1.1; Board Up (3) 8.4 / 0.5 / 5.1 / 1.4; Salt and Burn (4) 3.8 / 0.4 / 1.0 / 1.0.
+     - ⎈ Summoning Circle (2) 13.6 / 0.7 / 8.1 / 1.0; Lamps (3) 4.7 / 0.2 / 2.3 / 0.4; House on Fire (4) 2.7 / 0.4 / 1.1 / 1.1.
+     - Hidden tokens look one round ahead only, so they are undercounted. Rule-breaking (4) is judged from the card text, not measured.
 
 Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `DR4`, `MC3`, `FR1`, `PT2`, `ST3`, `ET3`. The draft kept `DR3`, `DR4` and `PT2`, chose `FR5`, `ST1` and `ET4` instead of `FR1`, `ST3` and `ET3`, and left `MC3` to the cards.
 
