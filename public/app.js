@@ -96,6 +96,9 @@ function esc(value) {
   return String(value).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch] ?? ch);
 }
 
+/** A supply drawn piece by piece; above 30, one piece and the number. @param {number} n @param {() => string} piece */
+const pile = (n, piece) => (n > 30 ? `${piece()}<b class="pile-count">×${n}</b>` : Array.from({ length: n }, piece).join(''));
+
 /** Last HTML written to each panel, so unchanged panels aren't rebuilt. @type {Map<string, string>} */
 const written = new Map();
 
@@ -281,14 +284,14 @@ function renderPlayers() {
     const row = (/** @type {string} */ label, /** @type {string} */ value) => `<span class="player-row"><span class="field-label">${label}</span><span class="field-value">${value}</span></span>`;
     const rows = [
       row('Group', `${suitIcon(group?.archetype)} ${esc(group?.name ?? '')}`),
-      row('Supply', `<span class="supply-row cubes" title="${p.supply} in supply">${Array.from({ length: p.supply }, () => cubeHtml(colourOf(id), 8)).join('')}</span>`),
+      row('Supply', `<span class="supply-row cubes" title="${p.supply} in supply">${pile(p.supply, () => cubeHtml(colourOf(id), 8))}</span>`),
       row('Hand', miniCards(p.handSize) || '<span class="muted">empty</span>'),
       id === view.you ? row('Trophies', `<span class="trophies" title="Secret: only you see these (IN2)">${trophies || '<span class="muted">none yet</span>'}</span>`) : '',
     ].join('');
     return `
       <div class="player ${id === view.you ? 'player-you' : ''} ${isOpen ? 'is-open' : ''}" data-action="expand-player" data-player="${esc(id)}" aria-expanded="${isOpen}" style="--seat:${colourOf(id)}">
         <span class="player-row player-head"><span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${id === view.you ? ' <span class="muted small">(you)</span>' : ''}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}</span><span class="player-status">${esc(playerStatus(id))}${miniCards(p.handSize)}</span></span>
-        <span class="player-supply-mini" title="${p.supply} in supply">${Array.from({ length: p.supply }, () => cubeHtml(colourOf(id), 7)).join('')}</span>
+        <span class="player-supply-mini" title="${p.supply} in supply">${pile(p.supply, () => cubeHtml(colourOf(id), 7))}</span>
         <span class="player-detail" aria-hidden="${!isOpen}">${rows}</span>
       </div>`;
   });
@@ -377,7 +380,7 @@ function factionTable(lit) {
     const on = lit.factions.includes(f);
     return `<div class="faction-row${on ? ' is-candidate' : ''}"${on ? ` data-action="pick-faction" data-faction="${esc(f)}"` : ''}>
       <span class="faction-id cell-id">${tokenHtml(f, 2, on ? 'candidate' : '')}<span><b>${esc(faction.name)}</b><span class="small muted suit-line">${suitIcon(arch?.id)} ${esc(arch?.name ?? '')}</span></span></span>
-      <span class="faction-cell cell-supply" data-label="Supply"><span class="supply-row" title="${view.supply[f]} in supply">${Array.from({ length: view.supply[f] }, () => tokenHtml(f, 1)).join('')}</span></span>
+      <span class="faction-cell cell-supply" data-label="Supply"><span class="supply-row" title="${view.supply[f]} in supply">${pile(view.supply[f], () => tokenHtml(f, 1))}</span></span>
       <span class="faction-cell cell-influence" data-label="Influence"><span class="standing-row">${influence || '<span class="small muted">—</span>'}</span></span>
     </div>`;
   });
