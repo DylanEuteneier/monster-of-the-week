@@ -606,3 +606,40 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .card-selected { transform: translateY(-6px); outline: 3px solid var(--state-candidate); outline-offset: 2px; }
 .overlay-buttons-top { top: 10px; bottom: auto; }
 .overlay { top: 56px; bottom: auto; }
+
+/* The hand as a fan (2026-10-06): a fixed overlay at the bottom of the window.
+   Resting, the cards sit low and overlap, their tops peeking up; hovered or
+   opened, they fan out along an arc. Transform-only animation. */
+#phase { position: sticky; top: 8px; bottom: auto; z-index: 6; max-height: none; overflow: visible; box-shadow: var(--shadow); }
+.table { padding-bottom: 150px; }
+.hand { position: fixed; left: 0; right: 0; bottom: 0; height: 0; z-index: 15; pointer-events: none; }
+.hand .fan { position: absolute; left: 50%; bottom: 0; width: 0; height: 0; }
+.hand .card {
+  --x: calc(var(--off) * 46px); --y: 62%; --r: calc(var(--off) * 3deg); --lift: 0px;
+  position: absolute; left: 0; bottom: 0; width: 190px; margin: 0; pointer-events: auto;
+  transform-origin: 50% 140%;
+  transform: translate(calc(-50% + var(--x)), calc(var(--y) - var(--lift))) rotate(var(--r));
+  transition: transform 160ms ease-out;
+  z-index: var(--i);
+}
+.hand:hover .card, .hand.is-open .card {
+  --x: calc(var(--off) * min(204px, 15vw)); --y: calc(-8px + var(--off) * var(--off) * 7px); --r: calc(var(--off) * 3.5deg);
+}
+.hand .card:hover, .hand .card.card-selected { --lift: 24px; z-index: 50; }
+.hand .card.card-selected { transform: translate(calc(-50% + var(--x)), calc(var(--y) - var(--lift))) rotate(0deg); }
+.hand .card-dim { opacity: 0.7; }
+.hand-tab { position: absolute; left: 50%; bottom: 8px; transform: translate(-50%, 0); pointer-events: auto; z-index: 60;
+  padding: 2px 10px; font-family: var(--font-display); font-size: 11px; text-transform: uppercase; background: var(--color-panel-2); color: var(--color-text);
+  border: var(--border); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; display: none; }
+@media (hover: none) { .hand-tab { display: block; bottom: auto; top: -160px; } }
+@media (prefers-reduced-motion: reduce) { .hand .card { transition: none; } }
+/* Hand actions: icons that ride beside the fan, closed or open. */
+.hand-actions { position: absolute; bottom: 14px; left: 0; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; z-index: 70;
+  transform: translateX(calc((var(--n, 1) - 1) / 2 * 46px + 120px)); transition: transform 160ms ease-out; }
+.hand:hover .hand-actions, .hand.is-open .hand-actions { transform: translateX(calc((var(--n, 1) - 1) / 2 * min(204px, 15vw) + 112px)); }
+.hand-icon { width: 34px; height: 34px; display: grid; place-items: center; font-size: 18px; line-height: 1; cursor: pointer;
+  background: var(--color-cell); color: var(--color-text); border: var(--border); box-shadow: 2px 2px 0 var(--ink); }
+.hand-icon:hover:not(:disabled) { border-color: var(--color-accent); }
+.hand-icon:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: none; }
+.hand-icon.is-primary { background: var(--color-accent); color: var(--ink); }
+.hand-icon:disabled { opacity: 0.45; cursor: not-allowed; }

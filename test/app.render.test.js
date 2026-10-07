@@ -27,6 +27,8 @@ class FakeElement {
     this.scrollTop = 0;
     this.scrollHeight = 0;
     this.value = '';
+    this.classList = { toggle() {} };
+    this.style = { setProperty() {} };
   }
   addEventListener() {}
 }
@@ -108,8 +110,8 @@ test('the draft renders the island, the seats and the cards to keep', () => {
   assert.match(html('board'), /src="\/assets\/hexes\/lighthouse.png"/);
   assert.match(html('board'), /Total presence <b>35<\/b>/);
   for (const id of PLAYERS) assert.ok(html('players').includes(id));
-  assert.match(html('phase'), /data-card-mode="keep"/);
-  for (const c of state.players[ME].batch) assert.ok(html('phase').includes(`data-card="${c}"`));
+  assert.match(html('hand'), /data-card-mode="keep"/);
+  for (const c of state.players[ME].batch) assert.ok(html('hand').includes(`data-card="${c}"`));
 });
 
 test('the play phase renders a hand, or who is to act', () => {

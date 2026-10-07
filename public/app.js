@@ -70,6 +70,8 @@ const ui = {
   responding: null,
   /** draft: how many cards were kept when ui.keep was last reset */
   keepFor: -1,
+  /** the hand is fanned open by a tap (touch screens) */
+  handOpen: false,
   /** the slayer group card open in the accordion (null: your own) */
   /** @type {string | null} */
   expanded: null,
@@ -448,7 +450,40 @@ function cardHtml(id, o = {}) {
   </div>`;
 }
 
+/** Cards and action icons for the hand overlay, collected while the phase panel renders. @type {{ cards: string[], open: boolean, actions: string[] }} */
+let handNext = { cards: [], open: false, actions: [] };
+
+const ICONS = /** @type {Record<string, [string, string]>} */ ({
+  pass: ['»', 'Pass'], confirm: ['✓', 'Let it resolve'], pick: ['✓', 'Keep these'], 'target-none': ['⊘', 'Play it for no effect'], back: ['↩', 'Back'], skip: ['■', 'Done'],
+});
+
+/** An action as an icon that rides with the hand. @param {string} action @param {{ primary?: boolean, disabled?: boolean, label?: string }} [o] */
+function handAction(action, o = {}) {
+  const [glyph, label] = ICONS[action];
+  handNext.actions.push(`<button class="hand-icon${o.primary ? ' is-primary' : ''}" data-action="${action}" title="${esc(o.label ?? label)}" aria-label="${esc(o.label ?? label)}"${o.disabled ? ' disabled' : ''}>${glyph}</button>`);
+  return '';
+}
+
+/** Send cards to the fanned hand; `open` fans it out without hovering (the draft). @param {string[]} cards @param {boolean} open */
+function toHand(cards, open) {
+  handNext = { ...handNext, cards, open };
+  return '';
+}
+
+/** The hand: a fixed overlay at the bottom of the window that fans out when hovered or opened. */
+function renderHand() {
+  const { cards, open, actions } = handNext;
+  const n = cards.length;
+  const fanned = cards.map((html, i) => html.replace('<div class="card', `<div style="--i:${i};--off:${i - (n - 1) / 2}" class="card`)).join('');
+  const icons = actions.length ? `<div class="hand-actions">${actions.join('')}</div>` : '';
+  setHtml('hand', n || actions.length ? `<button class="hand-tab" data-action="toggle-hand" aria-label="Show or hide your hand">Hand · ${n}</button><div class="fan">${fanned}${icons}</div>` : '');
+  const el = $('hand');
+  el.classList.toggle('is-open', open || ui.handOpen);
+  el.style.setProperty('--n', String(n));
+}
+
 function renderPhase() {
+  handNext = { cards: [], open: false, actions: [] };
   const view = ui.view;
   if (!view) {
     if (ui.hotseat.enabled) return renderHotseatEmpty();
@@ -457,6 +492,7 @@ function renderPhase() {
   }
   const renderers = { draft: renderDraft, play: renderPlay, growth: renderGrowth, ended: renderEnded };
   setHtml('phase', renderers[view.phase]());
+  renderHand();
 }
 
 /** @param {string} label */
@@ -470,7 +506,10 @@ function waitingFor(label) {
 function renderDraft() {
   const view = /** @type {PlayerView} */ (ui.view);
   const me = view.me;
-  if (me.picked) return `<h2>Draft</h2>${waitingFor('You have picked.')}<div class="cards">${me.kept.map((c) => cardHtml(c)).join('')}</div>`;
+  if (me.picked) {
+    toHand(me.kept.map((c) => cardHtml(c)), false);
+    return `<h2>Draft</h2>${waitingFor('You have picked.')}`;
+  }
   const need = me.kept.length + 1;
   const pool = [...me.kept, ...me.batch];
   if (ui.keepFor !== me.kept.length) {
@@ -480,8 +519,8 @@ function renderDraft() {
   ui.keep = ui.keep.filter((c) => pool.includes(c));
   return `<h2>Draft</h2>
     <p class="small">Click cards to choose the <b>${need}</b> you keep this pass: your kept cards start ticked; untick one to swap it for a new card. ${ui.keep.length}/${need} chosen.</p>
-    <button class="btn btn-primary" data-action="pick" ${ui.keep.length === need ? '' : 'disabled'}>Keep ${ui.keep.length === need ? 'these' : `${need}`}</button>
-    <div class="cards">${pool.map((c) => cardHtml(c, { mode: 'keep', ticked: ui.keep.includes(c) })).join('')}</div>`;
+    ${handAction('pick', { primary: true, disabled: ui.keep.length !== need, label: ui.keep.length === need ? 'Keep these' : `Choose ${need} to keep` })}
+    ${toHand(pool.map((c) => cardHtml(c, { mode: 'keep', ticked: ui.keep.includes(c) })), true)}`;
 }
 
 function renderPlay() {
@@ -492,20 +531,21 @@ function renderPlay() {
   const myTurn = view.toAct === view.you && !pending;
   const mustOpen = view.first === view.you && !view.opened && me.hand.some((c) => cardById(c).marked);
   if (myTurn && ui.choosing) return renderTargeting(ui.choosing);
-  const hand = me.hand.map((c) => {
+  const handCards = me.hand.map((c) => {
     const card = cardById(c);
     const canAct = myTurn && !!card.action && (!mustOpen || !!card.marked);
     const mode = ready.includes(c) ? 'respond' : canAct ? 'act' : '';
     return cardHtml(c, { mode, influence: myTurn && !mustOpen && !!card.suit, dim: !mode });
-  }).join('');
+  });
   let head;
-  if (ui.responding) head = `<p>Click the location to block on the board.</p><button class="btn" data-action="back">Back</button>`;
+  if (ui.responding) head = `<p>Click the location to block on the board.</p>${handAction('back')}`;
   else if (pending) {
     head = `<p><b>${esc(pending.player)}</b> plays <b>${esc(cardById(pending.card).name)}</b>: ${esc(describeTarget(pending.card, pending.target))}${pending.cancelled ? ' (cancelled)' : ''}${pending.blocked.length ? ` · blocked: ${pending.blocked.map((l) => esc(locationById(l).name)).join(', ')}` : ''}</p>`
-      + (pending.player === view.you ? '<button class="btn btn-primary" data-action="confirm">Let it resolve</button>' : waitingFor('Click a glowing card to answer it, or let it resolve.'));
-  } else if (myTurn) head = `<div class="row-between"><p>${mustOpen ? 'You go first: click your marked card to open the round.' : 'Click a card to play its action, or its influence badge to spend it for influence.'}</p><button class="btn" data-action="pass">Pass</button></div>`;
+      + (pending.player === view.you ? `<p class="small">Others may answer now; click ✓ beside your hand to let it resolve.</p>${handAction('confirm', { primary: true })}` : waitingFor('Click a glowing card to answer it, or let it resolve.'));
+  } else if (myTurn) head = `<p>${mustOpen ? 'You go first: click your marked card to open the round.' : 'Click a card to play its action, or its influence badge to spend it for influence; » passes.'}</p>${mustOpen ? '' : handAction('pass')}`;
   else head = waitingFor(ready.length ? 'Click a glowing card to answer.' : '');
-  return `<h2>${myTurn ? 'Your turn' : 'Play'}</h2>${head}<div class="cards">${hand}</div>`;
+  toHand(handCards, false);
+  return `<h2>${myTurn ? 'Your turn' : 'Play'}</h2>${head}`;
 }
 
 /** The panel beside the board while a target is built on it. @param {string} cardId */
@@ -519,16 +559,15 @@ function renderTargeting(cardId) {
   };
   let body = '';
   if (choice.kind === 'mode') body = `<p>Click a lit ${suitIcon(card.suit)} location to target it (any faction), or a lit ${esc(suit?.name ?? '')} token to target the faction (anywhere).</p>`;
-  else if (choice.kind === 'location') body = `<p>${esc(PROMPTS[choice.key])}</p>${choice.options.length ? '' : '<p class="small muted">Nowhere is possible.</p>'}${choice.optional ? `<button class="btn" data-action="skip">${choice.key === 'bluff' ? 'No bluff' : 'Done'}</button>` : ''}`;
-  else if (choice.kind === 'group') body = `<p>Click a lit group of tokens on the board.</p>${choice.options.length ? '' : '<p class="small muted">No group can be chosen.</p>'}${choice.optional ? '<button class="btn" data-action="skip">Done</button>' : ''}`;
+  else if (choice.kind === 'location') body = `<p>${esc(PROMPTS[choice.key])}</p>${choice.options.length ? '' : '<p class="small muted">Nowhere is possible.</p>'}${choice.optional ? handAction('skip', { label: choice.key === 'bluff' ? 'No bluff' : 'Done' }) : ''}`;
+  else if (choice.kind === 'group') body = `<p>Click a lit group of tokens on the board.</p>${choice.options.length ? '' : '<p class="small muted">No group can be chosen.</p>'}${choice.optional ? handAction('skip') : ''}`;
   else if (choice.kind === 'faction') body = '<p>Click the faction in the table above the island.</p>';
   else if (choice.kind === 'direction') body = `<p>Choose a direction:</p><div class="inline">${choice.options.map((d) => `<button class="btn" data-action="pick-direction" data-direction="${esc(d)}">${esc(d)}</button>`).join('')}</div>`;
   else if (choice.kind === 'split') body = `<p>Click adjacent locations to send cubes there, one per click: ${choice.left} left, across at least two.</p>`;
   const view = /** @type {PlayerView} */ (ui.view);
-  const hand = view.me.hand.map((c) => cardHtml(c, { selected: c === cardId, dim: c !== cardId })).join('');
+  toHand(view.me.hand.map((c) => cardHtml(c, { selected: c === cardId, dim: c !== cardId })), false);
   return `<h2>Playing ${esc(card.name)}</h2><div class="stack">${body}
-    <div class="inline"><button class="btn" data-action="target-none">Play it for no effect</button><button class="btn" data-action="back">Back</button></div></div>
-    <div class="cards">${hand}</div>`;
+    ${handAction('target-none')}${handAction('back')}</div>`;
 }
 
 function renderGrowth() {
@@ -746,6 +785,10 @@ function onClick(event) {
       return sendMove({ type: 'play', card: id, use: 'action', target: finish(t) });
     }
     return render();
+  }
+  if (action === 'toggle-hand') {
+    ui.handOpen = !ui.handOpen;
+    return renderHand();
   }
   if (action === 'expand-player') {
     // Switch the open card in place, so the accordion animates.
