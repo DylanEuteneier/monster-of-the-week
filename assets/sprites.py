@@ -547,7 +547,7 @@ PATH = ["ss", "ss", "zs"]
 SYMBOL_AT = ((HEX_W + 2 - 9) // 2, 49)   # bottom middle, over the lower border
 
 
-def hex_tile(building, at, archetype, ground=None, decor=(), landscape=(), bright_night=False, light="night"):
+def hex_tile(building, at, archetype, ground=None, decor=(), landscape=(), bright_night=False, light="night", moonlit=True):
     """Place a building sprite on a hex, with a soft shadow to the lower right.
     The border takes the archetype's colours and its symbol sits on the ground.
     `landscape` painters run on the ground first, then `decor` sprites
@@ -597,7 +597,7 @@ def hex_tile(building, at, archetype, ground=None, decor=(), landscape=(), brigh
         for x, y in shaded:
             if (x, y) not in shape:
                 g[y][x] = _shadow_of(g[y][x]) if PALETTE.get(g[y][x]) else g[y][x]
-    if NIGHT_MODE:                                         # moonlight from the west on the tile's shores
+    if NIGHT_MODE and moonlit:                             # moonlight from the west on the tile's shores
         wet = lambda x, y: 0 <= y < H and 0 <= x < W and (day[y][x] in "bN" or (
             day[y][x] in "wa" and any(0 <= x + i < W and day[y][x + i] in "bN" for i in (-1, 1))))
         def water(x, y):
@@ -695,6 +695,9 @@ LOCATION_ART = {
 
 # Tiles whose landscape keeps the lighter night map, so detail survives the dark.
 BRIGHT_NIGHT = {"mine", "junkyard"}
+# Tiles with no shore light: the Sawmill's river runs so near the edge that its
+# lit bank would recolour the whole strip of grass beyond it.
+NO_MOONLIGHT = {"sawmill"}
 
 
 def _place(building):
@@ -705,7 +708,7 @@ def _place(building):
 
 HEXES = {
     loc: hex_tile(building, at=(spec[4] if len(spec) > 4 else _place(building)), archetype=LOCATION_ARCHETYPE[loc],
-                  ground={"top": top}, decor=decor, landscape=landscape, bright_night=loc in BRIGHT_NIGHT)
+                  ground={"top": top}, decor=decor, landscape=landscape, bright_night=loc in BRIGHT_NIGHT, moonlit=loc not in NO_MOONLIGHT)
     for loc, spec in LOCATION_ART.items()
     for building, top, landscape, decor in [spec[:4]]
 }
@@ -721,7 +724,7 @@ HEX_STATES = {"candidate": "spotlight", "hover": "day"}
 HEX_STATE_TILES = {
     state: {
         loc: hex_tile(building, at=(spec[4] if len(spec) > 4 else _place(building)), archetype=LOCATION_ARCHETYPE[loc],
-                      ground={"top": top}, decor=decor, landscape=landscape, bright_night=loc in BRIGHT_NIGHT, light=light)
+                      ground={"top": top}, decor=decor, landscape=landscape, bright_night=loc in BRIGHT_NIGHT, light=light, moonlit=loc not in NO_MOONLIGHT)
         for loc, spec in LOCATION_ART.items()
         for building, top, landscape, decor in [spec[:4]]
     }
