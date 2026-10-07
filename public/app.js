@@ -10,7 +10,7 @@
  * are chosen on the board one step at a time: each step's candidates are
  * spotlit (hexes) or lit gold (tokens), and the server checks the result.
  */
-import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice, pendingDestinations } from './engine.js';
+import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice, pendingDestinations, checkTarget, previewTarget } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml } from './pieces.js';
 
@@ -63,6 +63,9 @@ const ui = {
   choosing: null,
   /** @type {import('./engine.js').Target} */
   target: {},
+  /** the lit choice whose outcome is previewed on the board */
+  /** @type {HTMLElement | null} */
+  previewing: null,
   /** the target before each pick, so Back undoes one step at a time */
   /** @type {import('./engine.js').Target[]} */
   undo: [],
@@ -399,7 +402,7 @@ function renderBoard() {
     const place = view.board[t.loc];
     const on = lit.spots.includes(t.loc);
     const state = on ? 'candidate' : ui.choosing && chosen.has(t.loc) ? 'hovered' : '';
-    return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}"${on ? ` data-action="pick-location" data-location="${esc(t.loc)}"` : ''} title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? '<b>scorched</b>' : piecesAt(t.loc, lit), /** @type {import('./pieces.js').TargetState} */ (state))}</div>`;
+    return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}" data-tile="${esc(t.loc)}"${on ? ` data-action="pick-location" data-location="${esc(t.loc)}"` : ''} title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? '<b>scorched</b>' : piecesAt(t.loc, lit), /** @type {import('./pieces.js').TargetState} */ (state))}<div class="hex-preview" aria-hidden="true"></div></div>`;
   });
   const total = Object.values(view.board).reduce((n, pl) => n + Object.values(pl.cubes).reduce((a, b) => a + b, 0), 0);
   // Display tables are never narrower than the map (they may be wider).
@@ -860,38 +863,10 @@ function onClick(event) {
     return sendMove({ type: 'respond', card: id, location: loc });
   }
   if (ui.choosing && ['pick-location', 'pick-group', 'pick-faction', 'pick-direction', 'skip'].includes(action ?? '')) {
-    ui.undo.push(structuredClone(ui.target));
     const t = ui.target;
-    let choice = currentChoice();
-    // A suit card's reading is decided by what is clicked: one of its
-    // locations (location target) or one of its faction's groups (faction).
-    if (choice?.kind === 'mode') {
-      const asLocation = currentChoice({ ...t, mode: 'location' });
-      const asFaction = currentChoice({ ...t, mode: 'faction' });
-      const fits = (/** @type {ReturnType<typeof currentChoice>} */ c) => !!c && ((action === 'pick-location' && (c.kind === 'location' || c.kind === 'split') && c.options.includes(loc))
-        || (action === 'pick-group' && c.kind === 'group' && c.options.some((g) => g.location === loc && g.faction === target.dataset.faction))
-        || (action === 'pick-faction' && c.kind === 'faction' && c.options.includes(target.dataset.faction ?? '')));
-      t.mode = fits(asLocation) ? 'location' : fits(asFaction) ? 'faction' : t.mode;
-      if (!t.mode) return;
-      choice = currentChoice();
-    }
-    if (action === 'pick-faction') t.faction = target.dataset.faction;
-    else if (action === 'pick-direction') t.direction = target.dataset.direction;
-    else if (action === 'pick-group' && choice?.kind === 'group') {
-      if (choice.key === 'lure') Object.assign(t, { faction: target.dataset.faction, from: [loc] });
-      else if (choice.key === 'move') t.moves = [...(t.moves ?? []), { location: loc, faction: target.dataset.faction ?? '', to: '' }];
-      else Object.assign(t, { location: loc, faction: target.dataset.faction });
-    } else if (action === 'pick-location' && choice?.kind === 'location') {
-      if (choice.key === 'path') t.path = [...(t.path ?? []), loc];
-      else if (choice.key === 'from') t.from = [...(t.from ?? []), loc];
-      else if (choice.key === 'to' && t.moves?.length) t.moves[t.moves.length - 1].to = loc;
-      else t[choice.key] = loc;
-    } else if (action === 'pick-location' && choice?.kind === 'split') t.split = { ...(t.split ?? {}), [loc]: (t.split?.[loc] ?? 0) + 1 };
-    else if (action === 'skip' && choice?.kind === 'location') {
-      if (choice.key === 'bluff') t.bluff = '';
-      else if (choice.key === 'path') t.path = [...(t.path ?? []), '__stop'];
-      else if (choice.key === 'from') t.from = [...(t.from ?? []), '__stop'];
-    } else if (action === 'skip' && choice?.kind === 'group') t.moves = [...(t.moves ?? []), { location: '__stop', faction: '', to: '__stop' }];
+    const before = structuredClone(t);
+    if (!applyPick(t, action ?? '', target)) return;
+    ui.undo.push(before);
     // A finished target plays the card at once.
     if (currentChoice()?.kind === 'done') {
       const id = /** @type {string} */ (ui.choosing);
@@ -949,6 +924,75 @@ function onClick(event) {
     ui.hotseat.follow = target instanceof HTMLInputElement ? target.checked : !ui.hotseat.follow;
     if (ui.view) followTheAction(ui.view);
   }
+}
+
+/**
+ * Outcome preview: hovering a lit choice that would finish the target (or
+ * extend a path or a list of sources) shows on each hex what the play would
+ * change: +n / -n cubes per faction, and your influence placed.
+ * @param {PointerEvent} event
+ */
+function onPreview(event) {
+  const el = event.target instanceof HTMLElement ? /** @type {HTMLElement | null} */ (event.target.closest('#board [data-action^="pick-"], #factions [data-action^="pick-"]')) : null;
+  if (el === ui.previewing) return;
+  ui.previewing = el;
+  for (const box of document.querySelectorAll('#board .hex-preview')) box.innerHTML = '';
+  const view = ui.view;
+  if (!el || !view || !ui.choosing) return;
+  const t = structuredClone(ui.target);
+  if (!applyPick(t, el.dataset.action ?? '', el)) return;
+  const done = finish(t);
+  if (checkTarget(/** @type {any} */ (view), view.you, cardById(ui.choosing), done)) return;
+  const after = previewTarget(view, view.you, ui.choosing, done);
+  for (const [loc, place] of Object.entries(after)) {
+    const was = view.board[loc];
+    const chips = view.factions.map((f) => [f, (place.cubes[f] ?? 0) - (was.cubes[f] ?? 0)]).filter(([, n]) => n)
+      .map(([f, n]) => `<span class="preview-chip ${Number(n) > 0 ? 'is-up' : 'is-down'}">${tokenHtml(String(f), 1)}${Number(n) > 0 ? '+' : '−'}${Math.abs(Number(n))}</span>`);
+    const mine = (place.influence[view.you] ?? 0) - (was.influence[view.you] ?? 0);
+    if (mine) chips.push(`<span class="preview-chip is-up">${cubeHtml(colourOf(view.you), 8)}+${mine}</span>`);
+    const box = document.querySelector(`#board [data-tile="${CSS.escape(loc)}"] .hex-preview`);
+    if (box) box.innerHTML = chips.join('');
+  }
+}
+
+/**
+ * Apply one board pick (a lit location, group, faction or direction, or Done)
+ * to a target being built. Mutates `t`; false if the pick fits no step.
+ * @param {import('./engine.js').Target} t @param {string} action @param {HTMLElement} el
+ */
+function applyPick(t, action, el) {
+  const loc = el.dataset.location ?? '';
+  let choice = currentChoice(t);
+  // A suit card's reading is decided by what is clicked: one of its
+  // locations (location target) or one of its faction's groups (faction).
+  if (choice?.kind === 'mode') {
+    const asLocation = currentChoice({ ...t, mode: 'location' });
+    const asFaction = currentChoice({ ...t, mode: 'faction' });
+    const fits = (/** @type {ReturnType<typeof currentChoice>} */ c) => !!c && ((action === 'pick-location' && (c.kind === 'location' || c.kind === 'split') && c.options.includes(loc))
+      || (action === 'pick-group' && c.kind === 'group' && c.options.some((g) => g.location === loc && g.faction === el.dataset.faction))
+      || (action === 'pick-faction' && c.kind === 'faction' && c.options.includes(el.dataset.faction ?? '')));
+    t.mode = fits(asLocation) ? 'location' : fits(asFaction) ? 'faction' : t.mode;
+    if (!t.mode) return false;
+    choice = currentChoice(t);
+  }
+  if (action === 'pick-faction') t.faction = el.dataset.faction;
+  else if (action === 'pick-direction') t.direction = el.dataset.direction;
+  else if (action === 'pick-group' && choice?.kind === 'group') {
+    if (choice.key === 'lure') Object.assign(t, { faction: el.dataset.faction, from: [loc] });
+    else if (choice.key === 'move') t.moves = [...(t.moves ?? []), { location: loc, faction: el.dataset.faction ?? '', to: '' }];
+    else Object.assign(t, { location: loc, faction: el.dataset.faction });
+  } else if (action === 'pick-location' && choice?.kind === 'location') {
+    if (choice.key === 'path') t.path = [...(t.path ?? []), loc];
+    else if (choice.key === 'from') t.from = [...(t.from ?? []), loc];
+    else if (choice.key === 'to' && t.moves?.length) t.moves[t.moves.length - 1].to = loc;
+    else t[choice.key] = loc;
+  } else if (action === 'pick-location' && choice?.kind === 'split') t.split = { ...(t.split ?? {}), [loc]: (t.split?.[loc] ?? 0) + 1 };
+  else if (action === 'skip' && choice?.kind === 'location') {
+    if (choice.key === 'bluff') t.bluff = '';
+    else if (choice.key === 'path') t.path = [...(t.path ?? []), '__stop'];
+    else if (choice.key === 'from') t.from = [...(t.from ?? []), '__stop'];
+  } else if (action === 'skip' && choice?.kind === 'group') t.moves = [...(t.moves ?? []), { location: '__stop', faction: '', to: '__stop' }];
+  return true;
 }
 
 /** Strip the "stop" markers the step-by-step builder uses. @param {import('./engine.js').Target} t */
@@ -1053,6 +1097,7 @@ function watchHand() {
 function main() {
   watchHand();
   document.addEventListener('click', onClick);
+  document.addEventListener('pointerover', onPreview);
   document.addEventListener('click', onCardClick);
   $('chat-form').addEventListener('submit', onChatSubmit);
   render();

@@ -341,6 +341,13 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .board { position: relative; flex: none; max-width: 100%; }
 .board-tile:has(.hex.is-candidate:hover), .board-tile:has(.is-hovered) { z-index: 1; }
 .board-tile.is-scorched { filter: grayscale(1) brightness(0.6); }
+/* Outcome preview (onPreview in app.js): chips under the hex's middle, above its neighbours. */
+.hex-preview { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; width: max-content; max-width: 120px; pointer-events: none; }
+.hex-preview:empty { display: none; }
+.preview-chip { display: inline-flex; align-items: center; gap: 2px; padding: 1px 4px 1px 2px; font-size: 12px; font-weight: 700; color: var(--ink); background: var(--card-face); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); }
+.preview-chip.is-up { background: #c9f0b8; }
+.preview-chip.is-down { background: #f5c1b5; }
+.board-tile:has(.hex-preview:not(:empty)) { z-index: 3; }
 
 /* ---------------------------------------------------------------------------
    Seats (host page, and the base for the table's slayer groups)

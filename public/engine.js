@@ -1474,6 +1474,18 @@ export function nextChoice(state, pid, cardId, t) {
 }
 
 /**
+ * For the table: the board a finished target would leave, without playing it.
+ * Not a rule; it runs the card's action on a copy (a player view is enough).
+ * @param {GameState | PlayerView} state @param {string} pid @param {string} cardId @param {Target} t
+ * @returns {Record<string, { cubes: Record<string, number>, influence: Record<string, number> }>}
+ */
+export function previewTarget(state, pid, cardId, t) {
+  const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, round: state.round, events: [], log: [] })));
+  act(copy, pid, cardById(cardId), t);
+  return copy.board;
+}
+
+/**
  * A target in words, for the table. @param {string} cardId @param {Target | null} t
  */
 export function describeTarget(cardId, t) {
