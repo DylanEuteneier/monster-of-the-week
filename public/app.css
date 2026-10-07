@@ -625,14 +625,14 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   transform: translate(calc(-50% + var(--x)), var(--y)) rotate(var(--r));
   transition: transform 140ms ease-out 80ms;
 }
-.hand:has(.card:hover, .fan-slop:hover) .card, .hand.is-open .card { --x: calc(var(--off) * var(--gap)); --y: 58%; --r: 0deg; transition-delay: 0ms; }
+.hand.is-hovering .card, .hand.is-open .card { --x: calc(var(--off) * var(--gap)); --y: 58%; --r: 0deg; transition-delay: 0ms; }
 .hand .card:hover, .hand.is-open .card { --y: 0%; }
 .hand:has(.card:hover) .card:hover { --y: -12px; z-index: 50; }
 .hand .card.card-selected { --y: -8px; --r: 0deg; z-index: 50; }
 .hand .card::before { content: none; }
 .fan-slop { display: block; position: absolute; left: 0; bottom: 0; z-index: 0; pointer-events: none; transform: translateX(-50%);
   width: calc(var(--n, 1) * var(--gap) + 120px); height: 130px; }
-.hand:has(.card:hover, .fan-slop:hover) .fan-slop, .hand.is-open .fan-slop { pointer-events: auto; }
+.hand.is-hovering .fan-slop, .hand.is-open .fan-slop { pointer-events: auto; }
 .hand .card-dim { opacity: 1; }
 .hand-tab { position: absolute; left: 50%; bottom: 8px; transform: translate(-50%, 0); pointer-events: auto; z-index: 60;
   padding: 2px 10px; font-family: var(--font-display); font-size: 11px; text-transform: uppercase; background: var(--color-panel-2); color: var(--color-text);
@@ -643,7 +643,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 /* Hand actions: icons that ride beside the fan, closed or open. */
 .hand-actions { position: absolute; bottom: 14px; left: 0; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; z-index: 70;
   transform: translateX(calc((var(--n, 1) - 1) / 2 * 46px + 120px)); transition: transform 160ms ease-out; }
-.hand:has(.card:hover, .fan-slop:hover) .hand-actions, .hand.is-open .hand-actions { transform: translateX(calc((var(--n, 1) - 1) / 2 * var(--gap) + 112px)); }
+.hand.is-hovering .hand-actions, .hand.is-open .hand-actions { transform: translateX(calc((var(--n, 1) - 1) / 2 * var(--gap) + 112px)); }
 .hand-icon { width: 34px; height: 34px; display: grid; place-items: center; font-size: 18px; line-height: 1; cursor: pointer;
   background: var(--color-cell); color: var(--color-text); border: var(--border); box-shadow: 2px 2px 0 var(--ink); }
 .hand-icon:hover:not(:disabled) { border-color: var(--color-accent); }
@@ -660,9 +660,14 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
    rises and its neighbours shuffle aside to reveal it. */
 .hand { --gap: min(118px, calc((100vw - 300px) / var(--n, 1))); --shove: 0px; }
 .hand .card { --nudge: 0px; transform: translate(calc(-50% + var(--x) + var(--nudge)), var(--y)) rotate(var(--r)); }
-.hand:has(.card:hover, .fan-slop:hover) .card { --x: calc(var(--off) * var(--gap)); --r: calc(var(--off) * 2deg); }
+.hand.is-hovering .card { --x: calc(var(--off) * var(--gap)); --r: calc(var(--off) * 2deg); }
 .hand:has(.card:hover) .card:hover { --r: 0deg; }
 .hand:has(.card:hover) .card:hover ~ .card { --nudge: 56px; }
 .hand:has(.card:hover) .card:has(~ .card:hover) { --nudge: -56px; }
 .fan-slop { width: calc(var(--n, 1) * var(--gap) + 260px); }
-.hand:has(.card:hover, .fan-slop:hover) .hand-actions { transform: translateX(calc((var(--n, 1) - 1) / 2 * var(--gap) + 112px + 56px)); }
+.hand.is-hovering .hand-actions { transform: translateX(calc((var(--n, 1) - 1) / 2 * var(--gap) + 112px + 56px)); }
+/* The hover zone is now script (watchHand in app.js): .hand.is-hovering. */
+.fan-slop { display: none !important; }
+.hand.is-hovering .card:hover { --y: -12px; z-index: 50; --r: 0deg; }
+.hand.is-hovering .card:hover ~ .card { --nudge: 56px; }
+.hand.is-hovering .card:has(~ .card:hover) { --nudge: -56px; }

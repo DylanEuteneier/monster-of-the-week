@@ -476,7 +476,7 @@ function renderHand() {
   const n = cards.length;
   const fanned = cards.map((html, i) => html.replace('<div class="card', `<div style="--i:${i};--off:${i - (n - 1) / 2}" class="card`)).join('');
   const icons = actions.length ? `<div class="hand-actions">${actions.join('')}</div>` : '';
-  setHtml('hand', n || actions.length ? `<button class="hand-tab" data-action="toggle-hand" aria-label="Show or hide your hand">Hand · ${n}</button><div class="fan"><div class="fan-slop" aria-hidden="true"></div>${fanned}${icons}</div>` : '');
+  setHtml('hand', n || actions.length ? `<button class="hand-tab" data-action="toggle-hand" aria-label="Show or hide your hand">Hand · ${n}</button><div class="fan">${fanned}${icons}</div>` : '');
   const el = $('hand');
   el.classList.toggle('is-open', open || ui.handOpen);
   // While a card is selected (being played or answering), the fan holds still until Back.
@@ -878,7 +878,46 @@ function onChatSubmit(event) {
   input.value = '';
 }
 
+/**
+ * The hand's hover zone, in script (reliable where a CSS zone wasn't): the fan
+ * opens when the pointer touches a card and stays open while the pointer is
+ * within the cards' outline, widened 70px to the sides, down to the bottom of
+ * the window and 16px above. Checked once per frame while the pointer moves.
+ */
+function watchHand() {
+  let queued = false;
+  /** @type {{ x: number, y: number }} */
+  let at = { x: -1, y: -1 };
+  const check = () => {
+    queued = false;
+    const hand = document.getElementById('hand');
+    if (!hand) return;
+    const cards = [...hand.querySelectorAll('.card')];
+    if (!cards.length || hand.classList.contains('is-locked')) return void hand.classList.remove('is-hovering');
+    const over = document.elementFromPoint(at.x, at.y);
+    const onCard = !!over && !!over.closest('#hand .card');
+    if (!hand.classList.contains('is-hovering')) {
+      if (onCard) hand.classList.add('is-hovering');
+      return;
+    }
+    const boxes = cards.map((c) => c.getBoundingClientRect());
+    const left = Math.min(...boxes.map((b) => b.left)) - 70;
+    const right = Math.max(...boxes.map((b) => b.right)) + 70;
+    const top = Math.min(...boxes.map((b) => b.top)) - 16;
+    const inside = at.x >= left && at.x <= right && at.y >= top;
+    if (!inside && !onCard) hand.classList.remove('is-hovering');
+  };
+  document.addEventListener('pointermove', (event) => {
+    at = { x: event.clientX, y: event.clientY };
+    if (!queued) {
+      queued = true;
+      requestAnimationFrame(check);
+    }
+  }, { passive: true });
+}
+
 function main() {
+  watchHand();
   document.addEventListener('click', onClick);
   document.addEventListener('click', onCardClick);
   $('chat-form').addEventListener('submit', onChatSubmit);
