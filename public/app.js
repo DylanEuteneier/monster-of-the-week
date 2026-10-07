@@ -476,7 +476,7 @@ function renderHand() {
   const n = cards.length;
   const fanned = cards.map((html, i) => html.replace('<div class="card', `<div style="--i:${i};--off:${i - (n - 1) / 2}" class="card`)).join('');
   const icons = actions.length ? `<div class="hand-actions">${actions.join('')}</div>` : '';
-  setHtml('hand', n || actions.length ? `<button class="hand-tab" data-action="toggle-hand" aria-label="Show or hide your hand">Hand · ${n}</button><div class="fan">${fanned}${icons}</div>` : '');
+  setHtml('hand', n || actions.length ? `<button class="hand-tab" data-action="toggle-hand" aria-label="Show or hide your hand">Hand · ${n}</button><div class="fan"><div class="fan-slop" aria-hidden="true"></div>${fanned}${icons}</div>` : '');
   const el = $('hand');
   el.classList.toggle('is-open', open || ui.handOpen);
   el.style.setProperty('--n', String(n));
