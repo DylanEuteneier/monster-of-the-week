@@ -21,6 +21,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 1. **First draft of the rules** *(drafted; Appendix G. What's left comes with the cards or with balancing).* In each decision area, start from the designer's favourite candidate. Where an idea has a close second, record it as that area's first variant. The draft is one ruleset, not a set of samples.
 2. **First draft of the cards** *(in progress; principles in 3.7, ideas in Appendix H).* Define the cards the draft ruleset needs, and design player actions (3.7) and hidden actions (`IN1`, 3.11) together with them.
 3. **Build the web app prototype.** Restate the rules and cards as an implementation spec (F.16), then build them on the existing scaffold.
+4. **Review card action balance** *(opened 2026-10-07; not started).* Playtesting the prototype shows some actions are far stronger than others: Ring the Church Bell can swing presence massively, while others only shift it marginally. Review every card's action for how much presence it can move.
 
 Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `DR4`, `MC3`, `FR1`, `PT2`, `ST3`, `ET3`. The draft kept `DR3`, `DR4` and `PT2`, chose `FR5`, `ST1` and `ET4` instead of `FR1`, `ST3` and `ET3`, and left `MC3` to the cards.
 
