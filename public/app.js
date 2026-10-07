@@ -482,11 +482,14 @@ function cardHtml(id, o = {}) {
 let handNext = { cards: [], open: false, actions: [], state: 'wait', text: '', extra: '' };
 
 const LABELS = /** @type {Record<string, string>} */ ({ pass: 'Pass', confirm: 'Confirm', withdraw: 'Back', pick: 'Keep', 'target-none': 'No effect', back: 'Back', skip: 'Done' });
+const ACTION_ICONS = /** @type {Record<string, string>} */ ({ pass: '»', confirm: '✓', withdraw: '↩', pick: '✓', 'target-none': '⊘', back: '↩', skip: '✓' });
 const ARROWS = /** @type {Record<string, string>} */ ({ E: '→', NE: '↗', NW: '↖', W: '←', SW: '↙', SE: '↘' });
 
 /** A labelled button on the bar. @param {string} action @param {{ primary?: boolean, disabled?: boolean, label?: string, tip?: string }} [o] */
 function handAction(action, o = {}) {
-  handNext.actions.push(`<button class="bar-btn${o.primary ? ' is-primary' : ''}" data-action="${action}"${o.tip ? ` title="${esc(o.tip)}"` : ''}${o.disabled ? ' disabled' : ''}>${esc(o.label ?? LABELS[action])}</button>`);
+  const name = o.label ?? LABELS[action];
+  const tip = o.tip ? `${name}: ${o.tip}` : name;
+  handNext.actions.push(`<button class="bar-btn bar-icon${o.primary ? ' is-primary' : ''}" data-action="${action}" title="${esc(tip)}" aria-label="${esc(name)}"${o.disabled ? ' disabled' : ''}>${ACTION_ICONS[action] ?? esc(name)}</button>`);
   return '';
 }
 
