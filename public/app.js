@@ -580,7 +580,7 @@ function renderPlay() {
     const mode = ready.includes(c) ? 'respond' : canAct ? 'act' : '';
     return cardHtml(c, { mode, influence: myTurn && !mustOpen && !!card.suit, dim: !mode });
   }), false);
-  const played = pending ? `<b>${esc(pending.player)}</b> plays <span title="${esc(describeTarget(pending.card, pending.target))}">${esc(cardById(pending.card).name)}</span>${pending.cancelled ? ' (cancelled)' : ''}` : '';
+  const played = pending ? `${pending.player === view.you ? '<b>You</b> play' : `<b>${esc(pending.player)}</b> plays`} <span title="${esc(describeTarget(pending.card, pending.target))}">${esc(cardById(pending.card).name)}</span>${pending.cancelled ? ' (cancelled)' : ''}` : '';
   if (ui.responding) {
     handAction('back');
     return step('respond', 'Pick a location to block');
