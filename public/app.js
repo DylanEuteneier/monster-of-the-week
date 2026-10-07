@@ -612,6 +612,7 @@ function renderTargeting(cardId) {
   const words = choice.kind === 'split' ? `Send cubes: ${choice.left} left` : WORDS[key] ?? '';
   const arrows = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';
   // Two readings: a toggle, always visible; nothing lights up until one is picked.
+  const t = ui.target;
   const sf = view0().factions.find((f) => factionById(f).archetype === card.suit);
   const toggle = card.suit ? `<span class="reading-toggle" role="group" aria-label="Reading">
       <button class="bar-btn${t.mode === 'location' ? ' is-on' : ''}" data-action="set-mode" data-mode="location" title="Location target: one of the ${esc(suit?.name ?? '')} locations, any faction">${suitIcon(card.suit, 1)} Location</button>
