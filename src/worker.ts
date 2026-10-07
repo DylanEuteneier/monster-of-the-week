@@ -277,6 +277,8 @@ export class Game extends DurableObject<Env> {
     this.send(server, { type: 'state', view: playerView(this.game, playerId), online: this.online(), bots: this.bots ?? [] });
     this.send(server, { type: 'chat', lines: this.chat ?? [] });
     this.broadcastPresence();
+    // A table that stalled (a bot that failed, a code reload) picks up again when anyone connects.
+    this.ctx.waitUntil(this.runBots());
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -333,10 +335,16 @@ export class Game extends DurableObject<Env> {
 
   private tryBotMove(playerId: string): boolean {
     if (!this.game) return false;
-    const move = botMove(this.game, { playerId, rng: Math.random });
-    if (!move) return false;
-    this.game = applyMove(this.game, { playerId, move });
-    return true;
+    try {
+      const move = botMove(this.game, { playerId, rng: Math.random });
+      if (!move) return false;
+      this.game = applyMove(this.game, { playerId, move });
+      return true;
+    } catch (error) {
+      // A bad bot move must never freeze the table: log it and let the seat sit this tick out.
+      console.error(`bot ${playerId} failed:`, error);
+      return false;
+    }
   }
 
   private async handleChat(playerId: string, text: string): Promise<void> {

@@ -218,8 +218,8 @@ export function cardById(id) {
   return card;
 }
 
-/** @param {{ options: Options }} state @param {string} id */
-const num = (state, id) => Number(state.options[id]);
+/** An option's number; a game saved before an option existed uses its default. @param {{ options: Options }} state @param {string} id */
+const num = (state, id) => Number(state.options[id] ?? variants.find((v) => v.id === id)?.default);
 
 // ---------------------------------------------------------------------------
 // Randomness — seeded, never from the system (Appendix F.4)

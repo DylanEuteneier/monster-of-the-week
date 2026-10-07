@@ -245,8 +245,10 @@ function smartMove(state, pid, rng, profile) {
   if (state.pending) return state.pending.player === pid ? { type: 'confirm' } : null;
   if (state.seating[state.turn] !== pid) return null;
 
-  let best = /** @type {Move} */ ({ type: 'pass' }), bestV = -Infinity;
-  for (const move of candidates(state, pid, rng)) {
+  // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
+  const moves = candidates(state, pid, rng);
+  let best = moves[0] ?? null, bestV = -Infinity;
+  for (const move of moves) {
     const v = value(after(state, pid, move));
     if (v > bestV) {
       best = move;

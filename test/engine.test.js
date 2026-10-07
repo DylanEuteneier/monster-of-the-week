@@ -360,3 +360,11 @@ test('Switch to Plan B moves only your own influence, up to 3, to one location',
   const after = previewTarget(s, 'ann', 'plan-b', { location: z, from: [x, x, y] });
   assert.deepEqual([after.board[x].influence, after.board[y].influence, after.board[z].influence], [{ bob: 4 }, {}, { ann: 3 }]);
 });
+
+test('a game saved before an option existed plays on with its default', () => {
+  const s = newGame(7);
+  delete (/** @type {Record<string, string>} */ (s.options)).influencePerMove;
+  const end = playOut(s, rng(7), undefined, Object.fromEntries(s.seating.map((pid) => [pid, 'smart'])));
+  assert.equal(end.phase, 'ended');
+  for (const pid of end.seating) for (const n of Object.values(end.players[pid].standing)) assert.ok(Number.isFinite(n));
+});
