@@ -43,6 +43,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
      - `influencePerMove=2` (2 per destination): 95% / 64% / 34% / 12%; 6.6. Little change early: moves are rare in round 1.
      - `influenceAtOrigin=on` (1 also where the cubes leave): 92% / 53% / 23% / 6%; 6.9.
      - `influenceToBoard=on` (1 of a card spent for influence goes onto a location its faction controls): 47% / 13% / 6% / 2%; 8.9. The only lever that changes round 1.
+       - *Designer (2026-10-07):* off for now; held in reserve, to bring in if more influence is needed.
      - All three: 45% / 16% / 5% / 3%; 11.5.
      - With `influenceToBoard=on`, the cards that need influence already on the board gain the most: Stake Out the Den's battle score rises from 1.1 to 3.2 and it can be used in 61% of states (29% before); the hidden tokens rise a little; Track falls (11.3 to 9.6), since standing goes to the board instead of the chase.
 
@@ -2687,6 +2688,8 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 | D (scaffold) | Move half of one group, rounded down, to an adjacent location. |
 | Cancel (real) | *Response, before:* when a player is about to play a card's turn action or response, cancel it; the card is spent. The only cancel in the pool (3.7, principle 5). |
 | Unmarked (scaffold) | Move one group to an adjacent location. |
+
+**Pivot cards (designer, 2026-10-07).** One or more of the unsuited extras are pivot cards: a "pivot" or "plan B" theme, moving the player's own influence (never another player's, D13). This replaces the ◐ idea Stake Out the Den (round 8) as the home of that move. Draft wording to measure (suggestion): *Switch to Plan B:* move up to 3 of your influence from other locations to one location. Measured as a test card (200 states, 5 players): battle 2.1, usable in 46% of states, control taken 0.4, influence moved 1.3; with `influenceToBoard=on`, 4.1, 73%, 0.7 and 2.4.
 
 ### H.7 Notes from the revision rounds
 

@@ -1068,17 +1068,11 @@
     "notes": "Round 8 ideas (Appendix H), under measurement by scripts/balance.js. Never dealt; not rules. Influence 3 is a placeholder.",
     "cards": [
       {
-        "id": "stake-out",
-        "name": "Stake Out the Den",
-        "suit": "nocturnals",
+        "id": "plan-b",
+        "name": "Switch to Plan B",
         "slot": "–",
-        "influence": 3,
         "action": "move-influence",
-        "text": "Move up to 3 of your influence from other locations to the target. Target: the den.",
-        "readings": {
-          "location": "a ◐ location.",
-          "faction": "a location holding the Nocturnals."
-        }
+        "text": "Pivot: move up to 3 of your influence from other locations to one location."
       },
       {
         "id": "force-field",

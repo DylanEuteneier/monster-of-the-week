@@ -12,7 +12,7 @@
  *   4. rule-breaking: from the card text, not measured
  * Also the old measure: presence after reckoning (fights, then growth).
  *
- *   node scripts/balance.js [states=300] [seed=1] [players=5] [bots=smart] [option=value ...]
+ *   node scripts/balance.js [states=300] [seed=1] [players=5] [bots=smart] [option=value ...] [only=card,card]
  *
  * It plays bot games and samples states at the start of turns in the play
  * phase. In each state, for every card with an action, it walks every target
@@ -173,10 +173,12 @@ const MEASURES = /** @type {const} */ (['battle', 'control', 'moved', 'placed', 
 function main() {
   const [nArg = '300', seedArg = '1', playersArg = '5', profileArg = 'smart'] = process.argv.slice(2).filter((a) => !a.includes('='));
   const options = Object.fromEntries(process.argv.slice(2).filter((a) => a.includes('=')).map((a) => a.split('=')));
+  const only = options.only?.split(','); // only=card,card scores just those cards
+  delete options.only;
   const profile = /** @type {import('../public/bots.js').Profile} */ (profileArg);
   const players = ['ann', 'bob', 'cat', 'dan', 'eve'].slice(0, Number(playersArg));
   const states = sampleStates(Number(nArg), Number(seedArg), players, profile, options);
-  const cards = /** @type {import('../public/engine.js').Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action);
+  const cards = /** @type {import('../public/engine.js').Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action && (!only || only.includes(c.id)));
   /** @type {Record<string, Record<typeof MEASURES[number], number[]> & { leaves: number, capped: number }>} */
   const stats = /** @type {any} */ (Object.fromEntries(cards.map((c) => [c.id, { ...Object.fromEntries(MEASURES.map((m) => [m, []])), leaves: 0, capped: 0 }])));
   for (const state of states) {

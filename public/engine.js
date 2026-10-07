@@ -497,6 +497,7 @@ const movable = (state, card, t) => (card.suit && t.mode === 'faction' ? [/** @t
 
 /** Locations under the two-target rule: a suit location, or one holding the suit's faction. @param {GameState} state @param {Card} card @param {'location' | 'faction'} mode */
 function holdingSpots(state, card, mode) {
+  if (!card.suit) return LOCATION_IDS.filter((loc) => !state.board[loc].scorched); // unsuited: any location
   const sf = suitFaction(state, card);
   return LOCATION_IDS.filter((loc) => !state.board[loc].scorched && (mode === 'location' ? suitLocations(card).includes(loc) : cubesOf(state, loc, /** @type {string} */ (sf)) > 0));
 }
@@ -585,7 +586,7 @@ export function checkTarget(state, pid, card, t) {
       return t.to && MAP[t.location].adjacent.includes(t.to) ? null : 'Choose an adjacent location to drive them to.';
     }
     case 'move-influence': {
-      if ((t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode).includes(t.location)) return 'Choose the target location.';
+      if ((card.suit && t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode ?? 'location').includes(t.location)) return 'Choose the target location.';
       const from = t.from ?? [];
       if (from.length < 1 || from.length > 3) return 'Move 1 to 3 influence.';
       for (const l of new Set(from)) if (l === t.location || from.filter((x) => x === l).length > (state.board[l]?.influence[pid] ?? 0)) return 'You don\'t have that much influence there.';
