@@ -206,7 +206,7 @@ def backdrop(tiles, grounds, lake_centre, coasts=None, night=lambda ch: ch, dark
             c.g[y][x] = night(c.g[y][x])
     if darken:                                            # moonlight from the west
         moonlight(c.g, [(x, y) for y in range(H) for x in range(W)],
-                  lambda x, y: 0 <= x < W and 0 <= y < H and (x, y) not in land, darken, stamped)
+                  lambda x, y: not (0 <= x < W and 0 <= y < H) or (x, y) not in land, darken, stamped)   # past the edge is more sea
     for x, y in waves:                                    # waves catch a little moonlight
         if c.g[y][x] == night("N"):
             c.g[y][x] = "N"
