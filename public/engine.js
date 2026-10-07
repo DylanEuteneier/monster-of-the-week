@@ -218,6 +218,9 @@ export function cardById(id) {
   return card;
 }
 
+/** Are responses in play? Out of the first draft unless the variant turns them on. @param {{ options: Options }} state */
+export const responsesOn = (state) => (state.options.responses ?? 'off') === 'on';
+
 /** An option's number; a game saved before an option existed uses its default. @param {{ options: Options }} state @param {string} id */
 const num = (state, id) => Number(state.options[id] ?? variants.find((v) => v.id === id)?.default);
 
@@ -847,6 +850,7 @@ export function validate(state, submission) {
   if (state.phase === 'ended') return no('The game is over.');
   if (!m || typeof m !== 'object') return no('That is not a move.');
   if (m.type === 'respond') {
+    if (!responsesOn(state)) return no('Responses are out of the first draft.');
     if (state.phase !== 'play') return no('Responses are played during the play phase.');
     if (!p.hand.includes(m.card)) return no('That card is not in your hand.');
     const response = cardById(m.card).response;
@@ -960,8 +964,15 @@ export function applyMove(state, submission) {
         next.turn = (next.turn + 1) % next.seating.length;
         return next;
       }
-      next.pending = { player: pid, card: m.card, target: m.target ?? null, cancelled: false, blocked: [], responded: [], before: { opened: state.opened, passesInRow: state.passesInRow } };
       logLine(next, `${pid} plays ${card.name}.`);
+      if (!responsesOn(next)) {
+        // No responses (the first draft): the action resolves at once.
+        if (m.target) act(next, pid, card, m.target);
+        else logLine(next, `${card.name} has nothing to act on.`);
+        next.turn = (next.turn + 1) % next.seating.length;
+        return next;
+      }
+      next.pending = { player: pid, card: m.card, target: m.target ?? null, cancelled: false, blocked: [], responded: [], before: { opened: state.opened, passesInRow: state.passesInRow } };
       return next;
     }
     case 'withdraw': {
@@ -1342,7 +1353,7 @@ export function waitingOn(state) {
 
 /** For the bots and the UI: response cards a player could play right now. @param {GameState} state @param {string} pid */
 export function playableResponses(state, pid) {
-  if (state.phase !== 'play') return [];
+  if (state.phase !== 'play' || !responsesOn(state)) return [];
   const p = state.players[pid];
   /** @type {{ card: string, location?: string }[]} */
   const out = [];

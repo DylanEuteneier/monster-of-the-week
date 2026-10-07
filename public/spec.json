@@ -819,6 +819,24 @@
           "description": "Test lever."
         }
       ]
+    },
+    {
+      "id": "responses",
+      "label": "Responses",
+      "description": "Out of the first draft (designer, 2026-10-07): responses stay candidate ideas. Off: a played action resolves at once and cards' responses are ignored.",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "The first draft: no responses; actions resolve at once."
+        },
+        {
+          "id": "on",
+          "label": "On",
+          "description": "Responses and the pending step (the earlier prototype)."
+        }
+      ]
     }
   ],
   "map": {

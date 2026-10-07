@@ -10,7 +10,7 @@
  * are chosen on the board one step at a time: each step's candidates are
  * spotlit (hexes) or lit gold (tokens), and the server checks the result.
  */
-import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice, pendingDestinations, checkTarget, previewTarget } from './engine.js';
+import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice, pendingDestinations, checkTarget, previewTarget, responsesOn } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml } from './pieces.js';
 
@@ -476,7 +476,9 @@ function cardHtml(id, o = {}) {
       ${opt('influence', `<b>+${c.influence}</b>`, `Spend for ${c.influence} influence with ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}`, false)}
     </div>` : '';
   const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : '', o.selected && o.next ? 'card-needs-reading' : ''].filter(Boolean).join(' ');
-  const full = `${c.name}. ${c.text}${c.response ? ` Response (${c.response.timing}): ${c.response.name}. ${c.response.text}` : ''}`;
+  // Responses are out of the first draft: their text shows only when the variant turns them on.
+  const response = c.response && view && responsesOn(view) ? c.response : null;
+  const full = `${c.name}. ${c.text}${response ? ` Response (${response.timing}): ${response.name}. ${response.text}` : ''}`;
   return `<div class="${classes}" data-card="${esc(id)}" title="${esc(full)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
     <div class="card-band">${band}</div>
     <div class="card-main">
@@ -484,7 +486,7 @@ function cardHtml(id, o = {}) {
         <span class="card-name">${esc(c.name)}</span>
         <p class="small">${esc(c.text)}</p>
         ${readings}
-        ${c.response ? `<p class="small card-response"><b>Response, ${esc(c.response.timing)}: ${esc(c.response.name)}.</b> ${esc(c.response.text)}</p>` : ''}
+        ${response ? `<p class="small card-response"><b>Response, ${esc(response.timing)}: ${esc(response.name)}.</b> ${esc(response.text)}</p>` : ''}
       </div>
       ${options}
     </div>

@@ -231,8 +231,8 @@ test('views hide other hands, token faces and trophy totals (3.11, IN2)', () => 
   assert.ok(!JSON.stringify(view.players).includes('trophy'));
 });
 
-test('the cancel response stops a card that is in progress (principle 5)', () => {
-  let s = draftAll(newGame(11));
+test('the cancel response stops a card that is in progress (principle 5; responses on)', () => {
+  let s = draftAll(createGame({ seed: 11, players: PLAYERS, options: { responses: 'on' } }));
   const holder = PLAYERS.find((pid) => s.players[pid].hand.includes('cancel'));
   const actor = /** @type {string} */ (s.first);
   if (!holder || holder === actor) return; // not dealt that way with this seed
@@ -367,4 +367,16 @@ test('a game saved before an option existed plays on with its default', () => {
   const end = playOut(s, rng(7), undefined, Object.fromEntries(s.seating.map((pid) => [pid, 'smart'])));
   assert.equal(end.phase, 'ended');
   for (const pid of end.seating) for (const n of Object.values(end.players[pid].standing)) assert.ok(Number.isFinite(n));
+});
+
+test('with responses out (the first draft), a played action resolves at once and responses are refused', () => {
+  const s = draftAll(newGame(11));
+  const actor = /** @type {string} */ (s.first);
+  const card = s.players[actor].hand.find((c) => cardById(c).marked) ?? s.players[actor].hand.find((c) => cardById(c).action);
+  if (!card) return;
+  const next = applyMove(s, { playerId: actor, move: { type: 'play', card, use: 'action', target: null } });
+  assert.equal(next.pending, null);
+  assert.notEqual(next.seating[next.turn], actor);
+  const holder = PLAYERS.find((pid) => next.players[pid].hand.includes('cancel'));
+  if (holder) assert.equal(validate(next, { playerId: holder, move: { type: 'respond', card: 'cancel' } }).ok, false);
 });
