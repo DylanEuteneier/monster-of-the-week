@@ -549,3 +549,9 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 /* Every display table is at least as wide as the map (set from JS as --map-width). */
 .faction-table, .players-strip .player-list, #phase .cards { min-width: min(var(--map-width, 0px), 100%); }
 .table > .panel { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px); }
+/* No presence column (2026-10-06): the total is above the table and the pieces are on the map. */
+.faction-row { grid-template-columns: minmax(150px, 1fr) minmax(0, 1.5fr) minmax(0, 1.5fr); grid-template-areas: "id supply influence"; }
+.faction-head > span:nth-child(2) { grid-area: supply; } .faction-head > span:nth-child(3) { grid-area: influence; }
+@container (max-width: 720px) {
+  .faction-row { grid-template-columns: minmax(0, 1fr); grid-template-areas: "id" "supply" "influence"; }
+}

@@ -348,7 +348,6 @@ function factionTable(lit) {
   const rows = view.factions.map((f) => {
     const faction = factionById(f);
     const arch = spec.archetypes.find((a) => a.id === faction.archetype);
-    const onIsland = Object.values(view.board).reduce((n, pl) => n + (pl.cubes[f] ?? 0), 0);
     const best = Math.max(0, ...view.seating.map((pid) => view.players[pid].standing[f] ?? 0));
     const influence = view.seating.filter((pid) => (view.players[pid].standing[f] ?? 0) > 0)
       .sort((a, b) => view.players[b].standing[f] - view.players[a].standing[f]).map((pid) => {
@@ -358,13 +357,12 @@ function factionTable(lit) {
     const on = lit.factions.includes(f);
     return `<div class="faction-row${on ? ' is-candidate' : ''}"${on ? ` data-action="pick-faction" data-faction="${esc(f)}"` : ''}>
       <span class="faction-id cell-id">${tokenHtml(f, 2, on ? 'candidate' : '')}<span><b>${esc(faction.name)}</b><span class="small muted suit-line">${suitIcon(arch?.id)} ${esc(arch?.name ?? '')}</span></span></span>
-      <span class="faction-count" title="${onIsland} on the island"><b>${onIsland}</b></span>
       <span class="faction-cell cell-supply" data-label="Supply"><span class="supply-row" title="${view.supply[f]} in supply">${Array.from({ length: view.supply[f] }, () => tokenHtml(f, 1)).join('')}</span></span>
       <span class="faction-cell cell-influence" data-label="Influence"><span class="standing-row">${influence || '<span class="small muted">—</span>'}</span></span>
     </div>`;
   });
   return `<div class="faction-table">
-    <div class="faction-row faction-head small muted"><span>Faction</span><span>Presence</span><span>Supply</span><span>Influence (players' standing)</span></div>
+    <div class="faction-row faction-head small muted"><span>Faction</span><span>Supply</span><span>Influence (players' standing)</span></div>
     ${rows.join('')}</div>`;
 }
 
