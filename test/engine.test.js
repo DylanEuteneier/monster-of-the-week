@@ -363,6 +363,35 @@ test('Leak It to the Press sends half the group anywhere (round 9)', () => {
   assert.equal(previewTarget(s, 'ann', 'leak-press', t).board[far].cubes[f], 2);
 });
 
+test('Turn On the Tractor Beam carries both groups of a contest to an empty neighbour (round 10)', () => {
+  const s = clear(newGame());
+  const [f, g] = /** @type {string[]} */ (s.factions);
+  const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'scifi')?.id);
+  const [to] = adj[loc].adjacent;
+  s.board[loc].cubes = { [f]: 2, [g]: 4 };
+  const t = { mode: /** @type {const} */ ('location'), location: loc, to };
+  assert.equal(checkTarget(s, 'ann', cardById('tractor-beam'), t), null);
+  assert.deepEqual(previewTarget(s, 'ann', 'tractor-beam', t).board[to].cubes, { [f]: 2, [g]: 4 });
+  s.board[to].cubes = { [f]: 1 };
+  assert.ok(checkTarget(s, 'ann', cardById('tractor-beam'), t)); // only into a location with no cubes
+});
+
+test('Hear the Banshee Wail drives each neighbouring group one hex straight on, away (round 10)', () => {
+  const s = clear(newGame());
+  const f = /** @type {string} */ (s.factions[0]);
+  const map = /** @type {Record<string, { q: number, r: number, adjacent: string[] }>} */ (spec.map.locations);
+  const at = (/** @type {number} */ q, /** @type {number} */ r) => Object.keys(map).find((l) => map[l].q === q && map[l].r === r);
+  // A straight line of three locations: centre, neighbour, and the hex beyond.
+  const undead = spec.locations.filter((l) => l.archetype === 'undead').map((l) => l.id);
+  const line = undead.flatMap((c) => map[c].adjacent.map((n) => [c, n, at(2 * map[n].q - map[c].q, 2 * map[n].r - map[c].r)])).find((x) => x[2]);
+  const [centre, near, beyond] = /** @type {string[]} */ (line);
+  s.board[near].cubes[f] = 3;
+  const after = previewTarget(s, 'ann', 'banshee', { mode: 'location', location: centre });
+  assert.equal(after.board[beyond].cubes[f], 3);
+  assert.equal(after.board[near].cubes[f], undefined);
+});
+
 test('previewTarget runs a move with the game options (influence placed at the destination)', () => {
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[3]);

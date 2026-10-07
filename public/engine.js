@@ -505,6 +505,18 @@ function holdingSpots(state, card, mode) {
   return LOCATION_IDS.filter((loc) => !state.board[loc].scorched && (mode === 'location' ? suitLocations(card).includes(loc) : cubesOf(state, loc, /** @type {string} */ (sf)) > 0));
 }
 
+/** Round 10 test cards. @param {GameState | PlayerView} state @param {string} loc */
+const contestAt = (state, loc) => !state.board[loc].scorched && factionsAt(/** @type {GameState} */ (state), loc).length === 2;
+/** Where each group next to `loc` would be pushed: one hex straight on, away from it (repel). @param {GameState} state @param {string} loc @param {string[]} factions */
+function pushes(state, loc, factions) {
+  const { q, r } = MAP[loc];
+  return MAP[loc].adjacent.flatMap((from) => {
+    const d = spec.map.directions.find((x) => x.dq === MAP[from].q - q && x.dr === MAP[from].r - r);
+    const to = d ? step(state, from, d.id) : null;
+    return factionsAt(state, from).filter((f) => factions.includes(f)).map((f) => ({ from, f, to }));
+  }).filter((g) => g.to && canEnter(state, g.to, g.f));
+}
+
 /**
  * Where 1 influence goes when a card is spent for influence, under the test
  * lever influenceToBoard: the locations its faction controls (LC2). Empty
@@ -589,6 +601,27 @@ export function checkTarget(state, pid, card, t) {
       } else return 'Choose a location target or a faction target.';
       return t.to && MAP[t.location].adjacent.includes(t.to) ? null : 'Choose an adjacent location to drive them to.';
     }
+    case 'reinforce': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      return state.supply[/** @type {string} */ (t.faction)] > 0 ? null : 'That faction has no cubes in its supply.';
+    }
+    case 'carry-fight': {
+      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      if (!t.location || !contestAt(state, t.location)) return 'Choose a contested location.';
+      if (t.mode === 'location' ? !suitLocations(card).includes(t.location) : cubesOf(state, t.location, /** @type {string} */ (suitFaction(state, card))) <= 0) return 'That contest is not the suit\'s.';
+      return t.to && MAP[t.location].adjacent.includes(t.to) && factionsAt(state, t.to).length === 0 && canEnter(state, t.to, factionsAt(state, t.location)[0]) ? null : 'Choose an adjacent location with no cubes.';
+    }
+    case 'defect': case 'pit': {
+      if (!t.location || !t.faction || cubesOf(state, t.location, t.faction) <= 0) return 'Choose a group on the board.';
+      const other = factionsAt(state, t.location).find((f) => f !== t.faction);
+      if (card.action === 'defect' && !contestAt(state, t.location)) return 'Choose a group in a contest.';
+      if (card.action === 'pit' && cubesOf(state, t.location, t.faction) > 3) return 'Only a group of 3 or fewer cubes.';
+      if (t.mode === 'location') return suitLocations(card).includes(t.location) ? null : 'That location is not one of the suit\'s.';
+      if (t.mode === 'faction') return other && other === suitFaction(state, card) ? null : 'The group must share its location with the suit\'s faction.';
+      return 'Choose a location target or a faction target.';
+    }
+    case 'repel': return placeTarget(state, card, t) ?? (pushes(state, /** @type {string} */ (t.location), movable(state, card, t)).length ? null : 'Nothing next to it can be pushed away.');
     case 'move-influence': {
       if ((card.suit && t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode ?? 'location').includes(t.location)) return 'Choose the target location.';
       const from = t.from ?? [];
@@ -783,6 +816,46 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} drives ${n} ${names(f)} out of ${lname(from)}.`);
       break;
     }
+    case 'reinforce': {
+      const f = /** @type {string} */ (t.faction), loc = /** @type {string} */ (t.location);
+      const n = Math.min(3, state.supply[f]);
+      state.supply[f] -= n;
+      state.board[loc].cubes[f] = cubesOf(state, loc, f) + n;
+      logLine(state, `${pid}: ${card.name} adds ${n} ${names(f)} at ${lname(loc)} from the supply.`);
+      break;
+    }
+    case 'carry-fight': {
+      const from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
+      for (const f of factionsAt(state, from)) move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      logLine(state, `${pid}: ${card.name} carries the fight at ${lname(from)} to ${lname(to)}.`);
+      break;
+    }
+    case 'defect': {
+      const f = /** @type {string} */ (t.faction), loc = /** @type {string} */ (t.location);
+      const other = /** @type {string} */ (factionsAt(state, loc).find((x) => x !== f));
+      const n = Math.min(3, cubesOf(state, loc, f), state.supply[other]);
+      state.board[loc].cubes[f] -= n;
+      if (state.board[loc].cubes[f] <= 0) delete state.board[loc].cubes[f];
+      state.supply[f] += n;
+      state.supply[other] -= n;
+      state.board[loc].cubes[other] += n;
+      logLine(state, `${pid}: ${card.name} turns ${n} ${names(f)} to the ${names(other)} at ${lname(loc)}.`);
+      break;
+    }
+    case 'pit': {
+      const f = /** @type {string} */ (t.faction), loc = /** @type {string} */ (t.location);
+      const n = cubesOf(state, loc, f);
+      delete state.board[loc].cubes[f];
+      state.supply[f] += n;
+      logLine(state, `${pid}: ${card.name} swallows ${n} ${names(f)} at ${lname(loc)}.`);
+      break;
+    }
+    case 'repel': {
+      let n = 0;
+      for (const g of pushes(state, /** @type {string} */ (t.location), movable(state, card, t))) n += move(state, pid, g.f, g.from, /** @type {string} */ (g.to), cubesOf(state, g.from, g.f), placed) ? 1 : 0;
+      logLine(state, `${pid}: ${card.name} drives ${n} group${n === 1 ? '' : 's'} away from ${lname(/** @type {string} */ (t.location))}.`);
+      break;
+    }
     case 'move-influence': {
       const to = /** @type {string} */ (t.location);
       for (const from of t.from ?? []) {
@@ -856,6 +929,8 @@ export function pendingDestinations(state, pend) {
     case 'sow': return t.path ?? [];
     case 'split': return Object.keys(t.split ?? {});
     case 'spread': case 'infect': return t.location ? MAP[t.location].adjacent : [];
+    case 'carry-fight': return t.to ? [t.to] : [];
+    case 'repel': return t.location ? MAP[t.location].adjacent.flatMap((a) => MAP[a].adjacent) : [];
     case 'conveyor': return LOCATION_IDS;
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': return (t.moves ?? []).map((m) => m.to);
     default: return [];
@@ -1554,6 +1629,17 @@ export function nextChoice(state, pid, cardId, t) {
       const reach = far ? LOCATION_IDS.filter((l) => l !== t.location) : MAP[t.location].adjacent;
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: reach.filter((to) => canEnter(state, to, /** @type {string} */ (t.faction))) };
     }
+    case 'reinforce':
+      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => state.supply[g.faction] > 0) };
+    case 'defect': case 'pit':
+      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter((g) => ok({ mode, location: g.location, faction: g.faction })) };
+    case 'carry-fight': {
+      const dests = (/** @type {string} */ loc) => MAP[loc].adjacent.filter((to) => ok({ mode, location: loc, to }));
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((loc) => dests(loc).length > 0) };
+      return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: dests(t.location) };
+    }
+    case 'repel':
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => pushes(state, loc, movers).length > 0) };
     case 'spread': case 'infect':
       return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => exits(g, MAP[g.location].adjacent).length > 0) };
     case 'split': {

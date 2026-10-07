@@ -1076,7 +1076,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the deal: round 8 and round 9 ideas under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). Never dealt; not rules. Influence on the ideas is a placeholder.",
+    "notes": "Cards out of the deal: rounds 8 to 10 ideas under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). Never dealt; not rules. Influence on the ideas is a placeholder.",
     "cards": [
       {
         "id": "force-field",
@@ -1167,6 +1167,71 @@
         "readings": {
           "location": "any group at a ⏏ location.",
           "faction": "a Sentient group anywhere."
+        }
+      },
+      {
+        "id": "full-moon",
+        "name": "Wait for the Full Moon",
+        "suit": "nocturnals",
+        "slot": "–",
+        "influence": 3,
+        "action": "reinforce",
+        "text": "Up to 3 cubes from the faction’s supply join the target group. Target: the group.",
+        "readings": {
+          "location": "any group at a ◐ location.",
+          "faction": "a Nocturnal group anywhere."
+        }
+      },
+      {
+        "id": "tractor-beam",
+        "name": "Turn On the Tractor Beam",
+        "suit": "scifi",
+        "slot": "–",
+        "influence": 3,
+        "action": "carry-fight",
+        "text": "Both groups at the target are lifted together into an adjacent location with no cubes; the fight happens there. Target: the contest.",
+        "readings": {
+          "location": "a contest at an ↂ location.",
+          "faction": "a contest the Sci-Fi faction is in."
+        }
+      },
+      {
+        "id": "drones",
+        "name": "Reprogram the Drones",
+        "suit": "sentients",
+        "slot": "–",
+        "influence": 3,
+        "action": "defect",
+        "text": "Up to 3 cubes of the target group change sides: they join the other faction at that location (swapped through the supplies). Target: the group that defects.",
+        "readings": {
+          "location": "a group in a contest at a ⏏ location.",
+          "faction": "a group fighting the Sentients; its cubes become Sentients."
+        }
+      },
+      {
+        "id": "banshee",
+        "name": "Hear the Banshee Wail",
+        "suit": "undead",
+        "slot": "–",
+        "influence": 3,
+        "action": "repel",
+        "text": "Every group next to the target is driven one hex straight on, away from it, where it can enter. Target: where she wails.",
+        "readings": {
+          "location": "a ☾ location; any faction is driven.",
+          "faction": "anywhere; only Undead groups are driven."
+        }
+      },
+      {
+        "id": "pit",
+        "name": "Open the Pit",
+        "suit": "demonic",
+        "slot": "–",
+        "influence": 3,
+        "action": "pit",
+        "text": "The target group, 3 cubes or fewer, falls in: its cubes go back to its supply. Target: the group.",
+        "readings": {
+          "location": "a small group at a ⎈ location.",
+          "faction": "a small group sharing a location with the Demons."
         }
       },
       {

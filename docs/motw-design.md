@@ -2593,6 +2593,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Never Invite Them In (v2) | Shift | Block | Nothing can be moved into the target this round. **Target:** the threshold. *Location:* a ◐ location; no faction can enter. *Faction:* the Nocturnals; they can't be moved into any location they aren't already in. | – | 3 | 7 |
 | Hold a Midnight Vigil (v2) | – | Influence, timing | Gain 2 influence with the target faction, or 4 if you have already passed this round. **Target:** the Nocturnal faction, or a faction controlling a ◐ location. | – | – | 7 |
 | Stake Out the Den | – | Influence (move) | Move up to 3 of your influence from other locations to the target. **Target:** the den. *Location:* a ◐ location. *Faction:* a location holding the Nocturnals. | – | – | 8 |
+| Wait for the Full Moon | – | Reinforce | Up to 3 cubes from the faction's supply join the target group. **Target:** the group. *Location:* any faction at a ◐ location. *Faction:* a Nocturnal group anywhere. | – | – | 10 |
 
 ### H.2 ↂ 80's Sci-Fi: Military Facility, Weather Station, State Park
 
@@ -2615,6 +2616,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Call in the Men in Black (v2) | – | Standing effect | For the rest of the round, cubes about to be moved into the target go to an adjacent location of your choice instead. **Target:** the cordon. *Location:* an ↂ location, against any faction. *Faction:* the Sci-Fi faction, wherever it is moved. | – | – | 7 |
 | Raise the Force Field | – | Fight math, protection | Place a face-down token (and a bluff) on the target. At its fight, the winner loses no cubes. **Target:** *Location:* an ↂ location. *Faction:* a location holding the Sci-Fi faction. | – | – | 8 |
 | Leak It to the Press | – | Halve, far | Half the target group, rounded down, goes to any location on the island it can enter. **Target:** the group split. *Location:* any faction at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | – | 9 |
+| Turn On the Tractor Beam | – | Carry a fight | Both groups at the target are lifted together into an adjacent location with no cubes; the fight happens there. **Target:** the contest. *Location:* a contest at an ↂ location. *Faction:* a contest the Sci-Fi faction is in. | – | – | 10 |
 
 ### H.3 ⏏ Sentients: Shipping Docks, Junkyard, Beach City
 
@@ -2637,6 +2639,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Hack the Mainframe (v2) | Signature | Fight math | At this round's fight at the target, the target faction also counts its cubes in the rest of that region. **Target:** *Location:* a ⏏ location; you choose which faction there benefits. *Faction:* the Sentients, at any fight they're in. | – | 3 | 7 |
 | Hijack the Feed | – | Fight math, trophies | Place a face-down token (and a bluff) on the target. At its fight, the token's owner counts their influence there twice when the trophies are handed out. **Target:** *Location:* a ⏏ location. *Faction:* a location holding the Sentients. | – | – | 8 |
 | Spread a Virus (infectious) | – | Scatter, attrition | As Spread a Virus (v2); where a cube joins another faction, that faction loses 1 cube to its supply. **Target:** the infected group. *Location:* any faction at a ⏏ location. *Faction:* a Sentient group anywhere. | – | – | 9 |
+| Reprogram the Drones | – | Defect | Up to 3 cubes of the target group change sides: they join the other faction at that location (swapped through the supplies). **Target:** the group that defects. *Location:* a group in a contest at a ⏏ location. *Faction:* a group fighting the Sentients; its cubes become Sentients. | – | – | 10 |
 
 ### H.4 ☾ Undead: Sawmill, Mine, Graveyard
 
@@ -2656,6 +2659,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Salt and Burn the Bones (v2) | Signature | Fight math, sink | At this round's fight at the target, both groups lose all their cubes; trophies are handed out as normal and the location is not scorched. **Target:** *Location:* a ☾ location. *Faction:* any fight the Undead are in. | – | 3 | 7 |
 | Draw the Salt Line (v2) | – | Pin | Nothing moves into or out of the target this round. **Target:** *Location:* a ☾ location. *Faction:* the Undead; none of their cubes can move. | – | – | 7 |
 | Take Over the Wake | – | Influence (place) | Place up to 3 influence at the target, spent from your standing with a faction there. **Target:** the wake. *Location:* a ☾ location. *Faction:* a location holding the Undead. | – | – | 8 |
+| Hear the Banshee Wail | – | Repel | Every group next to the target is driven one hex straight on, away from it, where it can enter. **Target:** where she wails. *Location:* a ☾ location; any faction is driven. *Faction:* anywhere; only Undead groups are driven. | – | – | 10 |
 
 ### H.5 ⎈ Demons: Caves, Lighthouse, The Lake House
 
@@ -2672,6 +2676,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Set the House on Fire | – | Fight math, sink | Mark a ⎈ location. Any fight there this round counts as a true tie: both groups are wiped out and the location is scorched. | – | – | 4b |
 | Smash the Mirror (v2) | – | Mirror | Move a group at a ⎈ location to its reflection across the lake, or bring one from the reflection. On layout D: Lighthouse and State Park, The Lake House and Fallout Bunker; Caves has none. | – | – | 6 |
 | Light Every Lamp (either side) | – | Split | At a contested location, either faction is driven to an adjacent location of your choice, so the fight there doesn't happen. **Target:** the faction driven out. *Location:* either faction at a contested ⎈ location. *Faction:* the Demons, wherever they are contested. | – | – | 9 |
+| Open the Pit | – | Remove | The target group, 3 cubes or fewer, falls in: its cubes go back to its supply. **Target:** the group. *Location:* a small group at a ⎈ location. *Faction:* a small group sharing a location with the Demons. | – | – | 10 |
 | Read from the Book (v2) | – | Leap | Move a group at a ⎈ location over an adjacent location into the one beyond it, in a straight line. | – | – | 6 |
 | Read from the Book (v3) | Strike | Leap | The target group leaps over an adjacent location into the one beyond it, in a straight line. **Target:** the possessed group. *Location:* any faction's group at a ⎈ location. *Faction:* a Demon group anywhere. | – | 2 | 7 |
 | Smash the Mirror (v3) | Signature | Mirror | The target group passes to its reflection across the lake (G.1; locations with no reflection can't be used). **Target:** the group reflected. *Location:* any faction's group at a ⎈ location. *Faction:* a Demon group anywhere. | – | 3 | 7 |
@@ -2722,6 +2727,12 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
   - Light Every Lamp (either side): 4.7 against 4.3; 6.4 against 5.6. Lamps has a target in only 55% of states (a contested ⎈ location, or a contested Demon group). Its limit is how often it can be played, not which side it drives out.
   - Spread a Virus (infectious): 4.3 against 5.0; 4.7 against 5.3. Worse: taking cubes off the board outside a fight shrinks the fights and so the trophies at stake. Attrition works against criterion 1 as measured.
   - Elsewhere in the same run, with the deck as it stands (pivots in, responses out): the pivots score 2.3 battle and can be played in 44% of states (4.3 and 87% with `influenceToBoard=on`); the unsuited scaffold moves A to C still outscore every suit card (A: 24.1).
+
+- Round 10 (2026-10-07; suggestions, driven by Claude). Designer's direction for the rounds: no dialling in on any one card unless something about it is very compelling; each round brings new ideas and looks for the most unique candidates that are balanced well and on the strong side. Five moves no card makes: reinforce from supply (Wait for the Full Moon), carry a whole fight elsewhere (Turn On the Tractor Beam), change cubes' side (Reprogram the Drones), push away, the Bell's opposite (Hear the Banshee Wail), and remove a small group (Open the Pit). Battle score (with `influenceToBoard=on` in brackets), how often it can be played, against Broadcast 16.4, the Bell 11.3, Reroute 9.0 and Lamps 4.3:
+  - Hear the Banshee Wail: 7.4 (8.2), 79%. The strongest of the round, near Reroute. Unique and readable.
+  - Turn On the Tractor Beam: 5.9 (6.9), 53%, largest 40. It changes who wins the trophies, not the fight: the same fight happens where other players hold the influence (its presence swing is near 0). The most unique of the round; strong when it can be played.
+  - Reprogram the Drones 2.9 (2.8); Wait for the Full Moon 1.9 (3.1); Open the Pit 0.8 (1.5). Weak.
+  - A finding about the system: cards that change a group's size score low, and cards that move whole groups score high. A fight's trophies are its cubes lost, so adding cubes rarely flips a winner, and taking cubes away shrinks the prize (as with the infectious Virus in round 9). Open the Pit is weak by construction: it only reaches small groups, so small fights.
 
 ### H.8 Candidate sets
 
