@@ -765,3 +765,24 @@ body:has(.hand.is-hovering) #phase, body:has(.hand.is-open) #phase, body:has(.ha
 .side-left { left: 10px; }
 .side-right { right: 10px; align-items: flex-end; }
 .side-stack .chip { font-size: 12px; }
+/* Side stacks: very concise until hovered or tapped. Compact: tokens and
+   numbers only (trophies: only the factions held). Expanded: a heading,
+   names, and every faction. */
+.side-stack { padding: 4px 6px; gap: 3px; cursor: pointer; }
+.side-head, .side-name { display: none; }
+.side-head { font-family: var(--font-display); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
+.side-row { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+.side-row b { min-width: 10px; text-align: center; }
+.side-row.is-zero { display: none; }
+.side-stack:hover, .side-stack.is-open { padding: 6px 10px; gap: 4px; }
+.side-stack:hover .side-head, .side-stack.is-open .side-head { display: block; }
+.side-stack:hover .side-name, .side-stack.is-open .side-name { display: inline; color: var(--color-muted); font-size: 11px; }
+.side-stack:hover .side-row.is-zero, .side-stack.is-open .side-row.is-zero { display: flex; opacity: 0.6; }
+/* Side stacks as tabs growing out of the bar: same colours, no gap. */
+.side-stack { bottom: calc(var(--bar-h) - 3px); box-shadow: none; border: 2px solid var(--ink); border-bottom: 0; background: var(--color-panel-2); z-index: 17; }
+.side-left { left: 8px; }
+.side-right { right: 8px; }
+.dock.is-turn ~ .side-stack { background: color-mix(in oklab, var(--color-panel-2), var(--color-accent) 12%); border-color: var(--color-accent); }
+.dock.is-respond ~ .side-stack { background: color-mix(in oklab, var(--color-panel-2), var(--color-link) 12%); border-color: var(--color-link); }
+.side-stack:not(:has(.side-row:not(.is-zero)))::before { content: "·"; color: var(--color-muted); font-size: 12px; padding: 0 4px; }
+.side-stack:hover::before, .side-stack.is-open::before { content: none; }

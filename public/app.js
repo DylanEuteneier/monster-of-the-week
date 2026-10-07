@@ -72,6 +72,9 @@ const ui = {
   keepFor: -1,
   /** the hand is fanned open by a tap (touch screens) */
   handOpen: false,
+  /** a side stack opened by a tap: 'influence', 'score' or null */
+  /** @type {string | null} */
+  sideOpen: null,
   /** the slayer group card open in the accordion (null: your own) */
   /** @type {string | null} */
   expanded: null,
@@ -512,16 +515,18 @@ function renderMine() {
   const view = /** @type {PlayerView} */ (ui.view);
   const me = view.players[view.you];
   const standing = view.factions.filter((f) => (me.standing[f] ?? 0) > 0).sort((a, b) => me.standing[b] - me.standing[a])
-    .map((f) => chip(tokenHtml(f, 1), me.standing[f], `Your influence with ${fname(f)}: ${me.standing[f]}. Moves spend it.`)).join('');
+    .map((f) => `<span class="side-row">${tokenHtml(f, 1)}<b>${me.standing[f]}</b><span class="side-name">${esc(fname(f))}</span></span>`).join('');
   setHtml('mine', `${chip(cubeHtml(colourOf(view.you), 9), me.supply, `Supply: ${me.supply} influence cubes`)}${chip('<span class="bluff"></span>', me.bluffs, `Bluff tokens: ${me.bluffs}`)}`);
-  setHtml('influence', `<span class="chip-label" title="Your influence with each faction; moves spend it">Influence</span>${standing || '<span class="muted small">none</span>'}`);
+  setHtml('influence', `<span class="side-head" data-action="toggle-side" data-side="influence">Influence</span>${standing || '<span class="side-row is-zero"><span class="muted">—</span></span>'}`);
+  $('influence').classList.toggle('is-open', ui.sideOpen === 'influence');
 }
 
 /** Your trophies (secret): a token and count per faction. */
 function renderScore() {
   const view = /** @type {PlayerView} */ (ui.view);
   const t = view.me.trophies;
-  setHtml('score', `<span class="chip-label" title="Your trophies are secret">Trophies</span>${view.factions.map((f) => chip(tokenHtml(f, 1), t[f], `${fname(f)} trophies: ${t[f]}`)).join('')}`);
+  setHtml('score', `<span class="side-head">Trophies <span class="muted">(secret)</span></span>${view.factions.map((f) => `<span class="side-row${t[f] ? '' : ' is-zero'}"><span class="side-name">${esc(fname(f))}</span><b>${t[f]}</b>${tokenHtml(f, 1)}</span>`).join('')}`);
+  $('score').classList.toggle('is-open', ui.sideOpen === 'score');
 }
 
 function renderPhase() {
@@ -826,6 +831,12 @@ function onClick(event) {
       return sendMove({ type: 'play', card: id, use: 'action', target: finish(t) });
     }
     return render();
+  }
+  if (action === 'toggle-side' || target.closest('.side-stack')) {
+    const side = /** @type {HTMLElement} */ (target.closest('.side-stack'))?.id ?? null;
+    ui.sideOpen = ui.sideOpen === side ? null : side;
+    for (const id of ['influence', 'score']) document.getElementById(id)?.classList.toggle('is-open', ui.sideOpen === id);
+    return;
   }
   if (action === 'toggle-hand') {
     ui.handOpen = !ui.handOpen;
