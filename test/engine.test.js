@@ -85,7 +85,7 @@ test('each slayer group starts with influence with its linked faction (G.7)', ()
     const arch = spec.slayerGroups.find((g) => g.id === p.group)?.archetype;
     const linked = s.factions.find((f) => spec.factions.find((x) => x.id === f)?.archetype === arch) ?? '';
     assert.equal(p.standing[linked], 3);
-    assert.equal(p.supply, 17);
+    assert.equal(p.supply, Number(spec.variants.find((v) => v.id === 'playerCubes')?.default) - 3);
   }
 });
 

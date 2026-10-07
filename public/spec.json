@@ -645,8 +645,8 @@
     {
       "id": "playerCubes",
       "label": "Cubes per player",
-      "description": "Each player's influence cubes (G.7).",
-      "default": "20",
+      "description": "Each player's influence cubes (G.7). 99 while the cards are designed: the supply is not a bound yet (designer, 2026-10-07); the balancing number comes later.",
+      "default": "99",
       "choices": [
         {
           "id": "15",
@@ -667,6 +667,11 @@
           "id": "30",
           "label": "30",
           "description": ""
+        },
+        {
+          "id": "99",
+          "label": "99 (no bound)",
+          "description": "Card design stage: the supply never runs out."
         }
       ]
     },
