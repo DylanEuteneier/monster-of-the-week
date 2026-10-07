@@ -827,3 +827,44 @@ button.card-opt:hover { background: #f6cca1; }
 .hand .card.card-selected, .hand .card.card-selected:hover { --y: 0px !important; --r: 0deg !important; --nudge: 0px !important; z-index: 50 !important; }
 .hand.is-locked .card:not(.card-selected) { --nudge: 0px !important; }
 .bar-icon { width: 30px; height: 28px; padding: 0; display: grid; place-items: center; font-size: 16px; line-height: 1; }
+
+/* ===========================================================================
+   Phones and touch-only screens (2026-10-06): the bar, the hand and the side
+   tabs are ordinary sections below the map, in reading order, fully shown.
+=========================================================================== */
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  body { display: flex; flex-direction: column; }
+  .topbar { order: -3; } .seatbar { order: -2; } main.table { order: -1; padding-bottom: var(--space-4); }
+  .dock { order: 1; } .hand { order: 2; } #influence { order: 3; } #score { order: 4; }
+  .dock { position: static; height: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; margin: 0 var(--space-4); border: var(--border); }
+  .dock .bar-step#phase { flex: 1 1 100%; justify-content: flex-start; flex-wrap: wrap; overflow: visible; }
+  .bar-text { white-space: normal; }
+  .hand { position: static; height: auto; margin: var(--space-3) var(--space-4); pointer-events: auto; }
+  .hand .fan { position: static; width: auto; height: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: var(--space-3); }
+  .hand .card, .hand .card.card-selected, .hand .card.card-selected:hover, .hand.is-hovering .card, .hand.is-open .card {
+    position: relative; left: auto; bottom: auto; width: auto; transform: none !important; transition: none; z-index: auto !important; }
+  .hand .card.card-selected { outline: 3px solid var(--state-candidate); outline-offset: 2px; }
+  .hand .card p { -webkit-line-clamp: unset; display: block; }
+  .hand-tab { display: none !important; }
+  .side-stack { position: static; margin: 0 var(--space-4) var(--space-3); border: var(--border); align-items: stretch; padding: 8px 10px; }
+  .side-head, .side-name { display: inline; }
+  .side-head { display: block; }
+  .side-row.is-zero { display: flex; opacity: 0.6; }
+  .side-stack::before { content: none !important; }
+  .dock, .hand, .side-stack { max-width: calc(100vw - 2 * var(--space-4)); box-sizing: border-box; }
+  /* No map-width minimum on phones; the map scrolls sideways inside its own section. */
+  .faction-table, .players-strip .player-list, #phase .cards, .table > .panel { min-width: 0 !important; }
+  main.table { max-width: 100vw; box-sizing: border-box; }
+  #board { overflow-x: auto; align-items: flex-start; -webkit-overflow-scrolling: touch; }
+  .board { max-width: none; }
+  /* Faction sheets: a sideways-scrolling strip of cards, like the slayer groups. */
+  .faction-table { flex-direction: row; overflow-x: auto; scroll-snap-type: x proximity; gap: var(--space-2); padding-bottom: 4px;
+    background: none; border: 0; box-shadow: none; container-type: normal; }
+  .faction-table .faction-row.faction-head { display: none !important; }
+  .faction-table .faction-row { flex: 0 0 min(250px, 78%); scroll-snap-align: start; display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+    padding: 8px 10px; background: var(--color-panel-2); border: var(--border); }
+  .faction-table .faction-cell { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 3px; }
+  .faction-table .faction-cell::before { content: attr(data-label); font-family: var(--font-display); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
+  .side-right { align-items: stretch; }
+  .side-right .side-row { flex-direction: row-reverse; justify-content: flex-end; }
+}
