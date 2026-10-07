@@ -210,13 +210,6 @@ def backdrop(tiles, grounds, lake_centre, coasts=None, night=lambda ch: ch, dark
     for x, y in waves:                                    # waves catch a little moonlight
         if c.g[y][x] == night("N"):
             c.g[y][x] = "N"
-    for x in range(W):                                    # the board's frame
-        for y in range(H):
-            edge = min(x, y, W - 1 - x, H - 1 - y)
-            if edge == 0 or edge == 4:
-                c.px(x, y, "k")
-            elif edge < 4:
-                c.px(x, y, "Q" if edge != 1 else "u")
     return c.rows()
 
 

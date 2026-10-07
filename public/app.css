@@ -420,7 +420,6 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .piece { display: inline-flex; align-items: center; gap: 1px; font-size: 10px; font-weight: 600; color: var(--color-text); text-shadow: 1px 1px 0 var(--ink); }
 .faction-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; background: var(--color-panel-2); border: var(--border); box-shadow: 2px 2px 0 var(--ink); }
 .board-tile.is-scorched { filter: grayscale(1) brightness(0.6); }
-.board { border: var(--line) solid var(--ink); box-shadow: var(--shadow); }
 .tag { display: inline-block; padding: 0 4px; border: 1px solid var(--color-muted); font-size: 10px; text-transform: uppercase; font-family: var(--font-display); }
 
 /* The table layout (2026-10-06): slayer groups across the top, the map, then
