@@ -481,9 +481,18 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 /* Slayer groups: a horizontal accordion. Closed cards are slim tabs; the open
    one grows to show the slayer group, the supply and (yours) the trophies. */
 .player-list.accordion { flex-wrap: nowrap; align-items: stretch; }
-.accordion .player { flex: 0 0 auto; display: flex; gap: var(--space-2); align-items: stretch; cursor: pointer; transition: flex-grow 160ms ease-out; min-width: 0; }
+.accordion .player { flex: 0 0 auto; display: flex; gap: var(--space-2); align-items: stretch; cursor: pointer; transition: flex-grow 240ms ease-out, background-color 240ms; min-width: 0; }
 .accordion .player.is-open { flex: 1 1 auto; cursor: default; background: var(--color-panel); }
 .accordion .swatch { width: 10px; height: auto; min-height: 36px; flex: none; }
 .player-tab { display: flex; flex-direction: column; justify-content: center; gap: 2px; white-space: nowrap; }
-.player-detail { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; padding-left: var(--space-2); border-left: 1px solid var(--color-cell); }
+.player-detail { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; column-gap: var(--space-3); row-gap: 4px; min-width: 0; padding-left: var(--space-3); border-left: 1px solid var(--color-cell); }
+.field-label { font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
+.field-value { font-size: 12px; min-width: 0; }
 .accordion .player:not(.is-open):hover { border-color: var(--color-accent); }
+/* Every card keeps its details (one line each, never wrapping), so the strip
+   is as tall as the tallest open card; closed details fold to zero width. */
+.accordion .player-detail { max-width: 0; opacity: 0; overflow: hidden; padding-left: 0; border-left-color: transparent; white-space: nowrap;
+  transition: max-width 240ms ease-out, opacity 200ms ease-out, padding-left 240ms ease-out; }
+.accordion .player.is-open .player-detail { max-width: 640px; opacity: 1; padding-left: var(--space-3); border-left-color: var(--color-cell); }
+.accordion .player-detail .supply-row, .accordion .player-detail .trophies { flex-wrap: nowrap; max-width: none; }
+@media (prefers-reduced-motion: reduce) { .accordion .player, .accordion .player-detail { transition: none; } }

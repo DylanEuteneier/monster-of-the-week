@@ -69,6 +69,7 @@ before(async () => {
         return elements.get(id);
       },
       addEventListener: () => {},
+      querySelectorAll: () => [],
     },
   });
   await import('../public/app.js');

@@ -238,7 +238,8 @@ function playerStatus(playerId) {
   if (!view) return '';
   if (view.phase === 'draft') return view.players[playerId].picked ? 'picked' : 'picking…';
   if (view.phase === 'ended') return view.result?.players.includes(playerId) ? 'wins' : '';
-  return waitingOn(view).includes(playerId) ? 'to act' : `${view.players[playerId].handSize} cards`;
+  const n = view.players[playerId].handSize;
+  return waitingOn(view).includes(playerId) ? 'to act' : `${n} card${n === 1 ? '' : 's'}`;
 }
 
 /** The slayer groups: a horizontal accordion, one card open at a time (yours by default). */
@@ -250,20 +251,22 @@ function renderPlayers() {
     const p = view.players[id];
     const group = spec.slayerGroups.find((g) => g.id === p.group);
     const isOpen = id === open;
-    const trophies = id === view.you
-      ? `<span class="small trophies" title="Your trophies: secret (IN2)">trophies ${view.factions.filter((f) => view.me.trophies[f]).map((f) => Array.from({ length: view.me.trophies[f] }, () => tokenHtml(f, 1)).join('')).join('') || '<span class="muted">none</span>'}</span>` : '';
+    const trophies = view.factions.filter((f) => view.me.trophies[f]).map((f) => Array.from({ length: view.me.trophies[f] }, () => tokenHtml(f, 1)).join('')).join('');
+    const field = (/** @type {string} */ label, /** @type {string} */ value) => `<span class="field-label">${label}</span><span class="field-value">${value}</span>`;
+    const detail = [
+      field('Group', `${esc(SUIT.get(group?.archetype ?? '') ?? '')} ${esc(group?.name ?? '')}`),
+      field('Supply', `<span class="supply-row cubes" title="${p.supply} in supply">${Array.from({ length: p.supply }, () => cubeHtml(colourOf(id), 8)).join('')}</span>`),
+      field('Hand', `${p.handSize} card${p.handSize === 1 ? '' : 's'}`),
+      id === view.you ? field('Trophies', `<span class="trophies" title="Secret: only you see these (IN2)">${trophies || '<span class="muted">none yet</span>'}</span>`) : '',
+    ].join('');
     return `
       <div class="player ${id === view.you ? 'player-you' : ''} ${isOpen ? 'is-open' : ''}" data-action="expand-player" data-player="${esc(id)}" aria-expanded="${isOpen}">
         <span class="swatch" style="background:${colourOf(id)}"></span>
         <span class="player-tab">
-          <span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}</span>
+          <span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${id === view.you ? ' <span class="muted small">(you)</span>' : ''}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}</span>
           <span class="player-status">${esc(playerStatus(id))}</span>
         </span>
-        ${isOpen ? `<span class="player-detail">
-          <span class="small muted">${esc(SUIT.get(group?.archetype ?? '') ?? '')} ${esc(group?.name ?? '')}${id === view.you ? ' · you' : ''}</span>
-          <span class="supply-row cubes" title="${p.supply} in supply">${Array.from({ length: p.supply }, () => cubeHtml(colourOf(id), 8)).join('')}</span>
-          ${trophies}
-        </span>` : ''}
+        <span class="player-detail" aria-hidden="${!isOpen}">${detail}</span>
       </div>`;
   });
   $('players').innerHTML = `<h2>Slayer groups</h2><div class="player-list accordion">${rows.join('')}</div>`;
@@ -726,8 +729,15 @@ function onClick(event) {
     return render();
   }
   if (action === 'expand-player') {
+    // Switch the open card in place, so the accordion animates.
     ui.expanded = target.dataset.player ?? null;
-    return renderPlayers();
+    for (const el of document.querySelectorAll('#players .player')) {
+      const open = /** @type {HTMLElement} */ (el).dataset.player === ui.expanded;
+      el.classList.toggle('is-open', open);
+      el.setAttribute('aria-expanded', String(open));
+      el.querySelector('.player-detail')?.setAttribute('aria-hidden', String(!open));
+    }
+    return;
   }
   if (action === 'toggle-overlay') {
     const panel = document.getElementById(target.dataset.target ?? '');
