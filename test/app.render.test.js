@@ -117,7 +117,7 @@ test('the draft renders the island, the seats and the cards to keep', () => {
 test('the play phase renders a hand, or who is to act', () => {
   const state = playUntil(createGame({ seed: 5, players: PLAYERS }), (s) => s.phase === 'play');
   push(state);
-  assert.match(html('phase'), /Your turn|Waiting for/);
+  assert.match(html('phase'), /step-status/);
 });
 
 test('the log and the ended phase render', () => {

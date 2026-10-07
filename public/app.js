@@ -450,60 +450,113 @@ function cardHtml(id, o = {}) {
   </div>`;
 }
 
-/** Cards and action icons for the hand overlay, collected while the phase panel renders. @type {{ cards: string[], open: boolean, actions: string[] }} */
-let handNext = { cards: [], open: false, actions: [] };
+// ---------------------------------------------------------------------------
+// The player board (2026-10-06): a fixed board along the bottom holding
+// everything you act with: the step bar (turn state, the steps of the card
+// being played, the buttons), your resources, your hand and your trophies
+// with a score preview. Minimal text: colour, icons and pieces carry the
+// meaning; words live in tooltips.
+// ---------------------------------------------------------------------------
+
+/**
+ * What the board shows, collected while the phase renders.
+ * @typedef {{ cards: string[], open: boolean, actions: string[], state: 'turn' | 'respond' | 'wait' | 'end', tip: string, body: string }} BoardNext
+ */
+/** @type {BoardNext} */
+let handNext = { cards: [], open: false, actions: [], state: 'wait', tip: '', body: '' };
 
 const ICONS = /** @type {Record<string, [string, string]>} */ ({
   pass: ['»', 'Pass'], confirm: ['✓', 'Let it resolve'], pick: ['✓', 'Keep these'], 'target-none': ['⊘', 'Play it for no effect'], back: ['↩', 'Back'], skip: ['■', 'Done'],
 });
+const ARROWS = /** @type {Record<string, string>} */ ({ E: '→', NE: '↗', NW: '↖', W: '←', SW: '↙', SE: '↘' });
+const STEP_ICONS = /** @type {Record<string, string>} */ ({ mode: '◎', location: '⬢', group: '●', faction: '◆', direction: '↻', split: '⇶', done: '✓' });
 
-/** An action as an icon that rides with the hand. @param {string} action @param {{ primary?: boolean, disabled?: boolean, label?: string }} [o] */
+/** An action button on the step bar: an icon, its words in the tooltip. @param {string} action @param {{ primary?: boolean, disabled?: boolean, label?: string }} [o] */
 function handAction(action, o = {}) {
   const [glyph, label] = ICONS[action];
-  handNext.actions.push(`<button class="btn guide-btn${o.primary ? ' btn-primary' : ''}" data-action="${action}"${o.disabled ? ' disabled' : ''}><span class="guide-icon" aria-hidden="true">${glyph}</span>${esc(o.label ?? label)}</button>`);
+  handNext.actions.push(`<button class="step-btn${o.primary ? ' is-primary' : ''}" data-action="${action}" title="${esc(o.label ?? label)}" aria-label="${esc(o.label ?? label)}"${o.disabled ? ' disabled' : ''}>${glyph}</button>`);
   return '';
 }
 
-/** Send cards to the fanned hand; `open` fans it out without hovering (the draft). @param {string[]} cards @param {boolean} open */
+/** Send cards to the hand; `open` raises them all (the draft). @param {string[]} cards @param {boolean} open */
 function toHand(cards, open) {
   handNext = { ...handNext, cards, open };
   return '';
 }
 
-/** The hand: a fixed overlay at the bottom of the window that fans out when hovered or opened. */
+/** Set the board's turn state and the step bar's middle. @param {BoardNext['state']} state @param {string} tip @param {string} [body] */
+function step(state, tip, body = '') {
+  handNext = { ...handNext, state, tip, body };
+}
+
+/** Seat-coloured dots for the players being waited on. */
+function waitingDots() {
+  const view = /** @type {PlayerView} */ (ui.view);
+  return waitingOn(view).filter((id) => id !== view.you).map((id) => `<span class="seat-dot" style="--c:${colourOf(id)}" title="Waiting for ${esc(id)}"></span>`).join('');
+}
+
+/** The hand, in the middle of the board. */
 function renderHand() {
-  const { cards, open, actions } = handNext;
+  const { cards, open } = handNext;
   const n = cards.length;
   const fanned = cards.map((html, i) => html.replace('<div class="card', `<div style="--i:${i};--off:${i - (n - 1) / 2}" class="card`)).join('');
-  setHtml('hand', n ? `<button class="hand-tab" data-action="toggle-hand" aria-label="Show or hide your hand">Hand · ${n}</button><div class="fan">${fanned}</div>` : '');
+  setHtml('hand', n ? `<button class="hand-tab" data-action="toggle-hand" aria-label="Show or hide your hand">${n}</button><div class="fan">${fanned}</div>` : '');
   const el = $('hand');
   el.classList.toggle('is-open', open || ui.handOpen);
-  // While a card is selected (being played or answering), the fan holds still until Back.
+  // While a card is selected (being played or answering), the hand holds still until Back.
   el.classList.toggle('is-locked', !!ui.choosing || !!ui.responding);
   el.style.setProperty('--n', String(n));
 }
 
+/** Your resources, left of the hand: supply, bluffs, standing with each faction. */
+function renderMine() {
+  const view = /** @type {PlayerView} */ (ui.view);
+  const me = view.players[view.you];
+  const group = spec.slayerGroups.find((g) => g.id === me.group);
+  const supply = Array.from({ length: me.supply }, () => cubeHtml(colourOf(view.you), 8)).join('');
+  const bluffs = '<span class="bluff"></span>'.repeat(me.bluffs);
+  const standing = view.factions.filter((f) => (me.standing[f] ?? 0) > 0).sort((a, b) => me.standing[b] - me.standing[a])
+    .map((f) => `<span class="mine-standing" title="Standing with ${esc(fname(f))}: ${me.standing[f]} (moves spend it)">${tokenHtml(f, 1)}${Array.from({ length: me.standing[f] }, () => cubeHtml(colourOf(view.you), 7)).join('')}</span>`).join('');
+  setHtml('mine', `
+    <span class="mine-row" title="${esc(group?.name ?? '')}">${suitIcon(group?.archetype)}<b>${esc(view.you)}</b></span>
+    <span class="mine-row" title="Supply: ${me.supply} influence cubes">${supply || '<span class="muted">·</span>'}</span>
+    <span class="mine-row" title="Bluff tokens: ${me.bluffs}">${bluffs || '<span class="muted">·</span>'}</span>
+    <span class="mine-row mine-standings">${standing}</span>`);
+}
+
+/** Your trophies (secret) and what you'd score now: island (weakest colour) and each faction (standing minus its trophies). */
+function renderScore() {
+  const view = /** @type {PlayerView} */ (ui.view);
+  const me = view.players[view.you];
+  const t = view.me.trophies;
+  const trophies = view.factions.map((f) => `<span class="score-item${t[f] ? '' : ' is-zero'}" title="${esc(fname(f))} trophies: ${t[f]}">${tokenHtml(f, 1)}<b>${t[f]}</b></span>`).join('');
+  const island = Math.min(...view.factions.map((f) => t[f]));
+  const byFaction = view.factions.map((f) => {
+    const s = (me.standing[f] ?? 0) - t[f];
+    return `<span class="score-item" title="If ${esc(fname(f))} win: ${s} (standing minus its trophies)">${tokenHtml(f, 1)}<b>${s > 0 ? '+' : ''}${s}</b></span>`;
+  }).join('');
+  setHtml('score', `
+    <span class="score-row" title="Your trophies (secret)">${trophies}</span>
+    <span class="score-row"><span class="score-item" title="If the island wins: ${island} (your weakest colour)"><span class="island-icon"></span><b>${island}</b></span>${byFaction}</span>`);
+}
+
 function renderPhase() {
-  handNext = { cards: [], open: false, actions: [] };
+  handNext = { cards: [], open: false, actions: [], state: 'wait', tip: '', body: '' };
   const view = ui.view;
   if (!view) {
     if (ui.hotseat.enabled) return renderHotseatEmpty();
-    setHtml('phase', ui.token ? `<h2>Table</h2><p class="muted">${esc(ui.connectionNote)}</p>` : '<h2>No seat</h2><p>Open the player link you were given (it looks like <span class="mono">/p/…</span>).</p>');
+    setHtml('phase', ui.token ? `<span class="muted small">${esc(ui.connectionNote)}</span>` : '<span class="small">Open the player link you were given (/p/…).</span>');
     return;
   }
   const renderers = { draft: renderDraft, play: renderPlay, growth: renderGrowth, ended: renderEnded };
-  const body = renderers[view.phase]();
-  const actions = handNext.actions.length ? `<div class="guide-actions">${handNext.actions.join('')}</div>` : '';
-  setHtml('phase', `${body}${actions}`);
+  renderers[view.phase]();
+  const glyph = { turn: '!', respond: '?', wait: '…', end: '★' }[handNext.state];
+  setHtml('phase', `<span class="step-status" title="${esc(handNext.tip)}">${glyph}</span><span class="step-body">${handNext.body}</span><span class="step-actions">${handNext.actions.join('')}</span>`);
+  const dock = $('dock');
+  for (const s of ['turn', 'respond', 'wait', 'end']) dock.classList.toggle(`is-${s}`, handNext.state === s);
   renderHand();
-}
-
-/** @param {string} label */
-function waitingFor(label) {
-  const view = ui.view;
-  if (!view) return '';
-  const pending = waitingOn(view);
-  return `<div class="notice">${label} Waiting for ${pending.map((id) => `<b>${esc(id)}</b>`).join(', ') || 'nobody'}.</div>`;
+  renderMine();
+  renderScore();
 }
 
 function renderDraft() {
@@ -511,7 +564,7 @@ function renderDraft() {
   const me = view.me;
   if (me.picked) {
     toHand(me.kept.map((c) => cardHtml(c)), false);
-    return `<h2>Draft</h2>${waitingFor('You have picked.')}`;
+    return step('wait', 'Picked. Waiting for the others.', waitingDots());
   }
   const need = me.kept.length + 1;
   const pool = [...me.kept, ...me.batch];
@@ -520,10 +573,10 @@ function renderDraft() {
     ui.keepFor = me.kept.length;
   }
   ui.keep = ui.keep.filter((c) => pool.includes(c));
-  return `<h2>Draft</h2>
-    <p class="small">Click cards to choose the <b>${need}</b> you keep this pass: your kept cards start ticked; untick one to swap it for a new card. ${ui.keep.length}/${need} chosen.</p>
-    ${handAction('pick', { primary: true, disabled: ui.keep.length !== need, label: ui.keep.length === need ? 'Keep these' : `Choose ${need} to keep` })}
-    ${toHand(pool.map((c) => cardHtml(c, { mode: 'keep', ticked: ui.keep.includes(c) })), true)}`;
+  const pips = Array.from({ length: need }, (_, i) => `<span class="pip${i < ui.keep.length ? ' is-done' : ''}"></span>`).join('');
+  step('turn', `Draft: tick ${need} card${need === 1 ? '' : 's'} to keep, then ✓`, `<span class="mini-card"></span>${pips}`);
+  handAction('pick', { primary: true, disabled: ui.keep.length !== need, label: `Keep ${need}` });
+  toHand(pool.map((c) => cardHtml(c, { mode: 'keep', ticked: ui.keep.includes(c) })), true);
 }
 
 function renderPlay() {
@@ -534,60 +587,68 @@ function renderPlay() {
   const myTurn = view.toAct === view.you && !pending;
   const mustOpen = view.first === view.you && !view.opened && me.hand.some((c) => cardById(c).marked);
   if (myTurn && ui.choosing) return renderTargeting(ui.choosing);
-  const handCards = me.hand.map((c) => {
+  toHand(me.hand.map((c) => {
     const card = cardById(c);
     const canAct = myTurn && !!card.action && (!mustOpen || !!card.marked);
     const mode = ready.includes(c) ? 'respond' : canAct ? 'act' : '';
     return cardHtml(c, { mode, influence: myTurn && !mustOpen && !!card.suit, dim: !mode });
-  });
-  let head;
-  if (ui.responding) head = `<p>Click the location to block on the board.</p>${handAction('back')}`;
-  else if (pending) {
-    head = `<p><b>${esc(pending.player)}</b> plays <b>${esc(cardById(pending.card).name)}</b>: ${esc(describeTarget(pending.card, pending.target))}${pending.cancelled ? ' (cancelled)' : ''}${pending.blocked.length ? ` · blocked: ${pending.blocked.map((l) => esc(locationById(l).name)).join(', ')}` : ''}</p>`
-      + (pending.player === view.you ? `<p class="small">Others may answer now. Let it resolve when you're ready.</p>${handAction('confirm', { primary: true })}` : waitingFor('Click a glowing card to answer it, or let it resolve.'));
-  } else if (myTurn) head = `<p>${mustOpen ? 'You go first: click your marked card to open the round.' : 'Click a card to play its action, or its influence badge to spend it for influence.'}</p>${mustOpen ? '' : handAction('pass')}`;
-  else head = waitingFor(ready.length ? 'Click a glowing card to answer.' : '');
-  toHand(handCards, false);
-  return `<h2>${myTurn ? 'Your turn' : 'Play'}</h2>${head}`;
+  }), false);
+  const pendingLine = pending ? `<span class="seat-dot" style="--c:${colourOf(pending.player)}" title="${esc(pending.player)}"></span><span class="step-card" title="${esc(describeTarget(pending.card, pending.target))}">${esc(cardById(pending.card).name)}</span>${pending.cancelled ? '<span class="step-flag" title="Cancelled">⊘</span>' : ''}` : '';
+  if (ui.responding) {
+    handAction('back');
+    return step('respond', 'Click the location to block', pendingLine);
+  }
+  if (pending && pending.player === view.you) {
+    handAction('confirm', { primary: true });
+    return step('turn', 'Others may answer now; ✓ lets it resolve', pendingLine);
+  }
+  if (pending) return step(ready.length ? 'respond' : 'wait', ready.length ? 'You can answer: click a glowing card' : `Waiting for ${pending.player}`, pendingLine);
+  if (myTurn) {
+    if (!mustOpen) handAction('pass');
+    return step('turn', mustOpen ? 'You go first: open with your marked card' : 'Your turn: click a card to act, its +n badge for influence, or » to pass');
+  }
+  return step(ready.length ? 'respond' : 'wait', ready.length ? 'You can answer: click a glowing card' : 'Waiting', waitingDots());
 }
 
-/** The panel beside the board while a target is built on it. @param {string} cardId */
+/** Building a card's target: the step bar shows pips for the steps taken and an icon for this one. @param {string} cardId */
 function renderTargeting(cardId) {
   const choice = /** @type {NonNullable<ReturnType<typeof currentChoice>>} */ (currentChoice());
   const card = cardById(cardId);
-  const suit = spec.archetypes.find((a) => a.id === card.suit);
-  const PROMPTS = {
-    location: 'Click the target location.', to: 'Click where they go.', bluff: 'Click where the bluff goes.',
-    path: 'Click the next location on the trail.', from: 'Click a location they come from.',
-  };
-  let body = '';
-  if (choice.kind === 'mode') body = `<p>Click a lit ${suitIcon(card.suit)} location to target it (any faction), or a lit ${esc(suit?.name ?? '')} token to target the faction (anywhere).</p>`;
-  else if (choice.kind === 'location') body = `<p>${esc(PROMPTS[choice.key])}</p>${choice.options.length ? '' : '<p class="small muted">Nowhere is possible.</p>'}${choice.optional ? handAction('skip', { label: choice.key === 'bluff' ? 'No bluff' : 'Done' }) : ''}`;
-  else if (choice.kind === 'group') body = `<p>Click a lit group of tokens on the board.</p>${choice.options.length ? '' : '<p class="small muted">No group can be chosen.</p>'}${choice.optional ? handAction('skip') : ''}`;
-  else if (choice.kind === 'faction') body = '<p>Click the faction in the table above the island.</p>';
-  else if (choice.kind === 'direction') body = `<p>Choose a direction:</p><div class="inline">${choice.options.map((d) => `<button class="btn" data-action="pick-direction" data-direction="${esc(d)}">${esc(d)}</button>`).join('')}</div>`;
-  else if (choice.kind === 'split') body = `<p>Click adjacent locations to send cubes there, one per click: ${choice.left} left, across at least two.</p>`;
+  const t = ui.target;
+  const TIPS = /** @type {Record<string, string>} */ ({
+    mode: `Click a lit location (any faction) or a lit ${spec.archetypes.find((a) => a.id === card.suit)?.name ?? ''} token (anywhere)`,
+    location: 'Click the target location', to: 'Click where they go', bluff: 'Click where the bluff goes, or ■', path: 'Click the next step of the trail, or ■',
+    from: 'Click where they come from, or ■', group: 'Click a lit group of tokens', faction: 'Click the faction in the table', direction: 'Choose a direction', split: 'Click neighbours to send cubes, one per click', done: 'Ready',
+  });
+  const key = choice.kind === 'location' ? choice.key : choice.kind;
+  const done = [t.mode, t.location, t.faction, t.to, t.direction].filter(Boolean).length + (t.path?.length ?? 0) + (t.from?.length ?? 0) + (t.moves?.length ?? 0) + Object.keys(t.split ?? {}).length;
+  const pips = Array.from({ length: done }, () => '<span class="pip is-done"></span>').join('');
+  const extra = choice.kind === 'direction' ? choice.options.map((d) => `<button class="step-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')
+    : choice.kind === 'split' ? `<b title="Cubes left to place">${choice.left}</b>` : '';
+  step('turn', TIPS[key] ?? '', `<span class="step-card" title="${esc(card.text)}">${esc(card.name)}</span>${pips}<span class="step-now" title="${esc(TIPS[key] ?? '')}">${STEP_ICONS[choice.kind] ?? '•'}</span>${extra}`);
+  if ((choice.kind === 'location' || choice.kind === 'group') && choice.optional) handAction('skip', { label: choice.kind === 'location' && choice.key === 'bluff' ? 'No bluff' : 'Done' });
+  handAction('target-none');
+  handAction('back');
   const view = /** @type {PlayerView} */ (ui.view);
   toHand(view.me.hand.map((c) => cardHtml(c, { selected: c === cardId, dim: c !== cardId })), false);
-  return `<h2>Playing ${esc(card.name)}</h2><div class="stack">${body}
-    ${handAction('target-none')}${handAction('back')}</div>`;
 }
 
 function renderGrowth() {
   const view = /** @type {PlayerView} */ (ui.view);
   const g = view.growing;
-  if (!g) return '<h2>Growth</h2>';
+  if (!g) return step('wait', 'Growth');
   const mine = g.leaders[g.next % g.leaders.length] === view.you;
-  return `<h2>Growth</h2><p>${esc(fname(g.faction))} is short of cubes and grows as far as its supply allows; its influence leaders choose where.</p>${mine ? '<p>Click a lit location to grow there.</p>' : waitingFor('')}`;
+  const body = `${tokenHtml(g.faction, 1)}<span class="step-now" title="${esc(fname(g.faction))} is short of cubes; its influence leaders choose where it grows">⬢</span>`;
+  return mine ? step('turn', `Click a lit location to grow ${fname(g.faction)}`, body) : step('wait', `Waiting for ${fname(g.faction)}'s influence leaders`, body + waitingDots());
 }
 
 function renderEnded() {
   const view = /** @type {PlayerView} */ (ui.view);
   const r = view.result;
-  if (!r) return '<h2>Game over</h2>';
-  const side = r.side === 'island' ? 'The island wins.' : `The invaders win: ${r.factions.map(fname).join(' and ')}.`;
-  const scores = view.seating.map((id) => `<li>${esc(id)}: ${r.scores[id]}${r.players.includes(id) ? ' <b>(winner)</b>' : ''}</li>`).join('');
-  return `<h2>Game over</h2><p>${esc(side)}</p><ul>${scores}</ul>`;
+  if (!r) return step('end', 'Game over');
+  const side = r.side === 'island' ? '<span class="island-icon" title="The island wins"></span>' : r.factions.map((f) => `<span title="${esc(fname(f))} win">${tokenHtml(f, 1)}</span>`).join('');
+  const winners = r.players.map((id) => `<span class="seat-dot" style="--c:${colourOf(id)}"></span><b title="winner: ${esc(id)}, score ${r.scores[id]}">${esc(id)}</b>`).join(' ');
+  step('end', `Game over. ${r.side === 'island' ? 'The island wins.' : 'The invaders win.'}`, `${side}<span class="step-flag">★</span>${winners}`);
 }
 
 // ---------------------------------------------------------------------------

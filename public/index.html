@@ -16,10 +16,16 @@
   <main class="table">
     <section class="panel players-strip" id="players" aria-label="Slayer groups"></section>
     <section class="panel" id="board" aria-label="The island"></section>
-    <section class="panel" id="phase" aria-label="Current phase"></section>
   </main>
 
-  <section class="hand" id="hand" aria-label="Your hand"></section>
+  <section class="dock" id="dock" aria-label="Your board">
+    <div class="stepbar" id="phase" aria-live="polite"></div>
+    <div class="dock-grid">
+      <div class="dock-mine" id="mine" aria-label="Your resources"></div>
+      <div class="hand" id="hand" aria-label="Your hand"></div>
+      <div class="dock-score" id="score" aria-label="Your trophies and score"></div>
+    </div>
+  </section>
 
   <div class="overlay-buttons overlay-buttons-top">
     <button class="btn" data-action="toggle-overlay" data-target="log-overlay">Log</button>
