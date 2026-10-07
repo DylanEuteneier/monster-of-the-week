@@ -468,7 +468,7 @@ function cardHtml(id, o = {}) {
 /** @type {BarNext} */
 let handNext = { cards: [], open: false, actions: [], state: 'wait', text: '', extra: '' };
 
-const LABELS = /** @type {Record<string, string>} */ ({ pass: 'Pass', confirm: 'Resolve', pick: 'Keep', 'target-none': 'No effect', back: 'Back', skip: 'Done' });
+const LABELS = /** @type {Record<string, string>} */ ({ pass: 'Pass', confirm: 'Confirm', withdraw: 'Back', pick: 'Keep', 'target-none': 'No effect', back: 'Back', skip: 'Done' });
 const ARROWS = /** @type {Record<string, string>} */ ({ E: '→', NE: '↗', NW: '↖', W: '←', SW: '↙', SE: '↘' });
 
 /** A labelled button on the bar. @param {string} action @param {{ primary?: boolean, disabled?: boolean, label?: string, tip?: string }} [o] */
@@ -586,7 +586,8 @@ function renderPlay() {
     return step('respond', 'Pick a location to block');
   }
   if (pending && pending.player === view.you) {
-    handAction('confirm', { primary: true, tip: 'Others may answer before it resolves' });
+    if (!pending.cancelled && !pending.blocked.length) handAction('withdraw', { tip: 'Take the card back (until someone answers)' });
+    handAction('confirm', { primary: true, tip: 'Others may answer first; confirm to carry it out' });
     return step('turn', played);
   }
   if (pending) return step(ready.length ? 'respond' : 'wait', ready.length ? `${played} · Answer?` : played);
@@ -772,6 +773,7 @@ function onClick(event) {
   if (action === 'pick') return sendMove({ type: 'pick', keep: ui.keep.slice() });
   if (action === 'pass') return sendMove({ type: 'pass' });
   if (action === 'confirm') return sendMove({ type: 'confirm' });
+  if (action === 'withdraw') return sendMove({ type: 'withdraw' });
   if (action === 'influence') return sendMove({ type: 'play', card, use: 'influence' });
   if (action === 'back') {
     ui.choosing = null;

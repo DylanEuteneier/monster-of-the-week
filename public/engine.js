@@ -79,6 +79,7 @@ export { spec };
  * @property {boolean} cancelled
  * @property {string[]} blocked  locations nothing may be moved into
  * @property {string[]} responded players who have answered this action
+ * @property {{ opened: boolean, passesInRow: number }} [before]  to put back if the card is taken back
  */
 
 /** @typedef {{ type: string, player: string, faction?: string, location?: string, amount?: number }} GameEvent */
@@ -137,6 +138,7 @@ export { spec };
  * @typedef {{ type: 'pick', keep: string[] }
  *   | { type: 'play', card: string, use: 'action' | 'influence', target?: Target | null }
  *   | { type: 'confirm' }
+ *   | { type: 'withdraw' }
  *   | { type: 'pass' }
  *   | { type: 'respond', card: string, location?: string }
  *   | { type: 'grow', location: string }} Move
@@ -811,6 +813,10 @@ export function validate(state, submission) {
   }
   if (state.phase !== 'play') return no('That move does not belong in this phase.');
   if (state.pending) {
+    if (m.type === 'withdraw') {
+      if (state.pending.player !== pid) return no('Only the acting player can take it back.');
+      return state.pending.responded.length || state.pending.cancelled || state.pending.blocked.length ? no('Someone has answered it; it is locked in.') : OK;
+    }
     if (m.type !== 'confirm') return no('An action is in progress.');
     return state.pending.player === pid ? OK : no('Only the acting player confirms.');
   }
@@ -888,8 +894,18 @@ export function applyMove(state, submission) {
         next.turn = (next.turn + 1) % next.seating.length;
         return next;
       }
-      next.pending = { player: pid, card: m.card, target: m.target ?? null, cancelled: false, blocked: [], responded: [] };
+      next.pending = { player: pid, card: m.card, target: m.target ?? null, cancelled: false, blocked: [], responded: [], before: { opened: state.opened, passesInRow: state.passesInRow } };
       logLine(next, `${pid} plays ${card.name}.`);
+      return next;
+    }
+    case 'withdraw': {
+      // Taken back before anyone answered: the card returns to hand (web prototype convenience).
+      const pend = /** @type {Pending} */ (next.pending);
+      p.hand.push(pend.card);
+      next.opened = pend.before?.opened ?? next.opened;
+      next.passesInRow = pend.before?.passesInRow ?? next.passesInRow;
+      next.pending = null;
+      logLine(next, `${pid} takes back ${cardById(pend.card).name}.`);
       return next;
     }
     case 'confirm': {

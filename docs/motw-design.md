@@ -2488,6 +2488,7 @@ Where a rule or card left a detail open, the engine (`public/engine.js`) uses th
 - **First player with no marked card dealt:** cannot happen at 4–5 players; at 3 players, if none is dealt, the first player rotates by round.
 - **Partial actions:** a card with no legal target can still be played as an action for no effect.
 - **Responses in the web prototype:** a played action is *pending* until its player confirms; "before" responses (the cancel, Never Invite Them In) can be played while it is pending; "after" responses answer what the last action did, until the next card is played or a player passes. Each event is answered once. The cancel can't cancel a response, since responses resolve at once.
+- **Taking a card back (web prototype):** until anyone answers it, the acting player can take a pending card back into their hand.
 - **Leave Out Fresh Meat:** the largest group adjacent to the bait location that can enter moves in; ties go to the player's choice.
 - **Track Them in the Snow:** the whole group sets off; each location entered gets 1 cube and 1 influence; leftover cubes stay together where the chase stops, or at the start if it never moved.
 - **Board Up the Windows:** the player divides the group across two or more adjacent locations as they like.
