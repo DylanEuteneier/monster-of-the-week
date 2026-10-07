@@ -557,6 +557,25 @@ function cameraSpots(state, pid, loc) {
     return [{ loc: l, f }];
   });
 }
+/** Where a Howl draws a group two hexes out: a location next to both, already holding that faction if one does, else the first it can enter (round 13). @param {GameState} state @param {string} target @param {string} from @param {string} f */
+function howlStep(state, target, from, f) {
+  const between = MAP[from].adjacent.filter((m) => MAP[target].adjacent.includes(m) && canEnter(state, m, f));
+  return between.find((m) => cubesOf(state, m, f) > 0) ?? between[0] ?? null;
+}
+/** Groups a Howl draws in (round 13). @param {GameState} state @param {string} target @param {string} f */
+const howlers = (state, target, f) => LOCATION_IDS.filter((l) => l !== target && !MAP[target].adjacent.includes(l) && twoHex(target).includes(l) && cubesOf(state, l, f) > 0)
+  .flatMap((from) => { const to = howlStep(state, target, from, f); return to ? [{ from, to }] : []; });
+/** Network jump destinations (round 13). @param {GameState} state @param {Card} card @param {Target} t */
+const networkSpots = (state, card, t) => (t.mode === 'location' ? suitLocations(card) : LOCATION_IDS.filter((l) => cubesOf(state, l, /** @type {string} */ (suitFaction(state, card))) > 0))
+  .filter((l) => l !== t.location && canEnter(state, l, /** @type {string} */ (t.faction)));
+/** Would a shove be needed, and who could be shoved (round 13)? The smaller group already there; ties are the player's choice. @param {GameState} state @param {string} to @param {string} f */
+function shoveable(state, to, f) {
+  const there = factionsAt(state, to);
+  if (there.includes(f) || there.length < 2) return null;
+  const least = Math.min(...there.map((x) => cubesOf(state, to, x)));
+  return there.filter((x) => cubesOf(state, to, x) === least);
+}
+
 /** Can a group join `to` after `mover` has entered it? @param {GameState} state @param {string} to @param {string} mover @param {string} f */
 const canFollow = (state, to, mover, f) => {
   const there = new Set([...factionsAt(state, to), mover]);
@@ -703,6 +722,43 @@ export function checkTarget(state, pid, card, t) {
       const m = b.to;
       if (!m || m === a || m === b.location || !MAP[a].adjacent.includes(m) || !MAP[b.location].adjacent.includes(m) || !canEnter(state, m, f) || !canFollow(state, m, f, b.faction)) return 'Choose a location next to both that both can enter.';
       return null;
+    }
+    case 'leap': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      const over = t.direction ? step(state, /** @type {string} */ (t.location), t.direction) : null;
+      const land = over ? step(state, over, /** @type {string} */ (t.direction)) : null;
+      return land && canEnter(state, land, /** @type {string} */ (t.faction)) ? null : 'Nothing to land on that way.';
+    }
+    case 'mirror': {
+      if (!t.location || !t.faction || cubesOf(state, t.location, t.faction) <= 0) return 'Choose a group on the board.';
+      const to = MAP[t.location].mirror;
+      if (!to || !canEnter(state, to, t.faction)) return 'It has no reflection it can enter.';
+      if (t.mode === 'location') return suitLocations(card).includes(t.location) || suitLocations(card).includes(to) ? null : 'Neither it nor its reflection is one of the suit\'s.';
+      if (t.mode === 'faction') return t.faction === suitFaction(state, card) ? null : 'That group is not the suit\'s faction.';
+      return 'Choose a location target or a faction target.';
+    }
+    case 'network': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      return t.to && networkSpots(state, card, t).includes(t.to) ? null : 'Choose where on the network it goes.';
+    }
+    case 'shove': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      const f = /** @type {string} */ (t.faction);
+      if (!t.to || !MAP[/** @type {string} */ (t.location)].adjacent.includes(t.to) || state.board[t.to].scorched) return 'Choose an adjacent location.';
+      const can = shoveable(state, t.to, f);
+      if (!can) return canEnter(state, t.to, f) ? null : 'It can\'t enter there.';
+      const g = t.moves?.[0];
+      if (!g || g.location !== t.to || !can.includes(g.faction) || !MAP[t.to].adjacent.includes(g.to) || !canEnter(state, g.to, g.faction)) return 'Shove the smaller group on to an adjacent location it can enter.';
+      return null;
+    }
+    case 'howl': {
+      const e = placeTarget(state, card, t);
+      if (e) return e;
+      if (!t.faction || !movable(state, card, t).includes(t.faction)) return 'Choose which faction answers.';
+      return howlers(state, t.location ?? '', t.faction).length ? null : 'No group of that faction two hexes away can come closer.';
     }
     case 'repel': return placeTarget(state, card, t) ?? (pushes(state, /** @type {string} */ (t.location), movable(state, card, t)).length ? null : 'Nothing next to it can be pushed away.');
     case 'move-influence': {
@@ -1006,6 +1062,38 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} drags ${names(f)} and ${names(b.faction)} into ${lname(b.to)}.`);
       break;
     }
+    case 'leap': {
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
+      const land = /** @type {string} */ (step(state, /** @type {string} */ (step(state, from, /** @type {string} */ (t.direction))), /** @type {string} */ (t.direction)));
+      const n = move(state, pid, f, from, land, cubesOf(state, from, f), placed);
+      logLine(state, `${pid}: ${card.name}: ${n} ${names(f)} leap from ${lname(from)} to ${lname(land)}.`);
+      break;
+    }
+    case 'mirror': case 'network': {
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
+      const to = /** @type {string} */ (card.action === 'mirror' ? MAP[from].mirror : t.to);
+      const n = move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      logLine(state, `${pid}: ${card.name} sends ${n} ${names(f)} from ${lname(from)} to ${lname(to)}.`);
+      break;
+    }
+    case 'shove': {
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
+      const g = t.moves?.[0];
+      if (g && shoveable(state, to, f)) move(state, pid, g.faction, to, g.to, cubesOf(state, to, g.faction), placed);
+      const n = move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      logLine(state, `${pid}: ${card.name} leads ${n} ${names(f)} into ${lname(to)}${g ? `, shoving ${names(g.faction)} on to ${lname(g.to)}` : ''}.`);
+      break;
+    }
+    case 'howl': {
+      const f = /** @type {string} */ (t.faction), target = /** @type {string} */ (t.location);
+      let n = 0;
+      for (const { from } of howlers(state, target, f)) {
+        const to = howlStep(state, target, from, f); // re-checked: an earlier group may have changed what can enter
+        if (to) n += move(state, pid, f, from, to, cubesOf(state, from, f), placed) ? 1 : 0;
+      }
+      logLine(state, `${pid}: ${card.name} draws ${n} ${names(f)} group${n === 1 ? '' : 's'} closer to ${lname(target)}.`);
+      break;
+    }
     case 'repel': {
       let n = 0;
       for (const g of pushes(state, /** @type {string} */ (t.location), movable(state, card, t))) n += move(state, pid, g.f, g.from, /** @type {string} */ (g.to), cubesOf(state, g.from, g.f), placed) ? 1 : 0;
@@ -1088,6 +1176,9 @@ export function pendingDestinations(state, pend) {
     case 'carry-fight': return t.to ? [t.to] : [];
     case 'slide': case 'chain': return LOCATION_IDS;
     case 'circle': return t.location ? MAP[t.location].adjacent : [];
+    case 'leap': case 'howl': return LOCATION_IDS;
+    case 'mirror': return t.location && MAP[t.location].mirror ? [/** @type {string} */ (MAP[t.location].mirror)] : [];
+    case 'network': case 'shove': return [t.to ?? '', t.moves?.[0]?.to ?? ''].filter(Boolean);
     case 'follow': return t.to ? [t.to] : [];
     case 'meet': return t.moves?.[0]?.to ? [t.moves[0].to] : [];
     case 'swap-far': return [t.location ?? '', t.moves?.[0]?.location ?? ''].filter(Boolean);
@@ -1816,6 +1907,31 @@ export function nextChoice(state, pid, cardId, t) {
       if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => partners(g).length > 0) };
       return t.moves?.length ? { kind: 'done' } : { kind: 'group', key: 'move', options: partners({ location: t.location, faction: /** @type {string} */ (t.faction) }) };
     }
+    case 'leap': {
+      const dirs = (/** @type {string} */ loc, /** @type {string} */ f) => spec.map.directions.map((d) => d.id).filter((d) => ok({ mode, location: loc, faction: f, direction: d }));
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => dirs(g.location, g.faction).length > 0) };
+      return t.direction ? { kind: 'done' } : { kind: 'direction', options: dirs(t.location, /** @type {string} */ (t.faction)) };
+    }
+    case 'mirror':
+      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter((g) => ok({ mode, location: g.location, faction: g.faction })) };
+    case 'network': {
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => networkSpots(state, card, { mode, location: g.location, faction: g.faction }).length > 0) };
+      return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: networkSpots(state, card, t) };
+    }
+    case 'shove': {
+      const f = /** @type {string} */ (t.faction);
+      const tos = (/** @type {string} */ loc, /** @type {string} */ gf) => MAP[loc].adjacent.filter((to) => !state.board[to].scorched && (canEnter(state, to, gf) || (shoveable(state, to, gf) ?? []).some((x) => MAP[to].adjacent.some((d) => canEnter(state, d, x)))));
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => tos(g.location, g.faction).length > 0) };
+      if (!t.to) return { kind: 'location', key: 'to', options: tos(t.location, f) };
+      const can = shoveable(state, t.to, f);
+      if (!can) return { kind: 'done' };
+      const g = t.moves?.[0];
+      if (!g) return { kind: 'group', key: 'move', options: can.filter((x) => MAP[/** @type {string} */ (t.to)].adjacent.some((d) => canEnter(state, d, x))).map((x) => ({ location: /** @type {string} */ (t.to), faction: x })) };
+      return g.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: MAP[t.to].adjacent.filter((d) => canEnter(state, d, g.faction)) };
+    }
+    case 'howl':
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => movers.some((f) => howlers(state, loc, f).length > 0)) };
+      return t.faction ? { kind: 'done' } : { kind: 'faction', options: movers.filter((f) => howlers(state, /** @type {string} */ (t.location), f).length > 0) };
     case 'circle':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => circlers(state, loc, movers).length > 0) };
     case 'surveil':

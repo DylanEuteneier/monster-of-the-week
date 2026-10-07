@@ -1076,7 +1076,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the deal: rounds 8 to 12 ideas under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). Never dealt; not rules. Influence on the ideas is a placeholder.",
+    "notes": "Cards out of the deal: rounds 8 to 13 ideas under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). Never dealt; not rules. Influence on the ideas is a placeholder.",
     "cards": [
       {
         "id": "force-field",
@@ -1384,6 +1384,76 @@
         "readings": {
           "location": "a ⎈ location.",
           "faction": "a location holding the Demons."
+        }
+      },
+      {
+        "id": "howl",
+        "name": "Howl at the Moon",
+        "suit": "nocturnals",
+        "slot": "–",
+        "influence": 3,
+        "action": "howl",
+        "round": 13,
+        "text": "Every group of one faction two hexes from the target moves one hex closer (to a location next to it; one already holding that faction if it can). Target: where the howl rises.",
+        "readings": {
+          "location": "a ◐ location; any one faction answers.",
+          "faction": "anywhere; the Nocturnals answer."
+        }
+      },
+      {
+        "id": "cloud",
+        "name": "Back Up to the Cloud",
+        "suit": "sentients",
+        "slot": "–",
+        "influence": 3,
+        "action": "network",
+        "round": 13,
+        "text": "Move the target group across the network, however far. Target: the group moved. (Round 7 wording, first built in round 13.)",
+        "readings": {
+          "location": "any group, from one ⏏ location to another.",
+          "faction": "a Sentient group, to any location holding another Sentient group."
+        }
+      },
+      {
+        "id": "horde",
+        "name": "Lead the Horde",
+        "suit": "undead",
+        "slot": "–",
+        "influence": 3,
+        "action": "shove",
+        "round": 13,
+        "text": "Move the target group into an adjacent location; if that would make three factions there, the smaller group already there is shoved on to an adjacent location of your choice. Target: the horde. (Round 7 wording, first built in round 13.)",
+        "readings": {
+          "location": "any group at a ☾ location.",
+          "faction": "an Undead group anywhere."
+        }
+      },
+      {
+        "id": "book-leap",
+        "name": "Read from the Book",
+        "suit": "demonic",
+        "slot": "–",
+        "influence": 3,
+        "action": "leap",
+        "round": 13,
+        "text": "The target group leaps over an adjacent location into the one beyond it, in a straight line. Target: the group. (Round 6 idea, first built in round 13; readings added.)",
+        "readings": {
+          "location": "any group at a ⎈ location.",
+          "faction": "a Demon group anywhere."
+        }
+      },
+      {
+        "id": "mirror",
+        "name": "Smash the Mirror",
+        "suit": "demonic",
+        "slot": "–",
+        "influence": 3,
+        "action": "mirror",
+        "round": 13,
+        "text": "Move the target group to its reflection across the lake. Target: the group. (Round 6 idea, first built in round 13; readings added.)",
+        "readings": {
+          "location": "a group at a ⎈ location or its reflection.",
+          "faction": "a Demon group with a reflection."
         }
       },
       {

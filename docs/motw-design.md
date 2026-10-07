@@ -44,6 +44,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
      - `influenceAtOrigin=on` (1 also where the cubes leave): 92% / 53% / 23% / 6%; 6.9.
      - `influenceToBoard=on` (1 of a card spent for influence goes onto a location its faction controls): 47% / 13% / 6% / 2%; 8.9. The only lever that changes round 1.
        - *Designer (2026-10-07):* off for now; held in reserve, to bring in if more influence is needed.
+   - *Hidden tokens and the supply (measured 2026-10-07, round 13 of the card rounds):* a hidden token needs a cube from the player's supply (MC3), and the supply empties as influence goes to standing and the board: the share of turns with an empty supply is 0% in round 1, 8% in round 2, 51% in round 3, 78% in round 4 and 80% in round 5 (40 bot games, 5 players). Every token card can be played in only about 60% of states for this reason. Open question for the designer.
      - All three: 45% / 16% / 5% / 3%; 11.5.
      - With `influenceToBoard=on`, the cards that need influence already on the board gain the most: Stake Out the Den's battle score rises from 1.1 to 3.2 and it can be used in 61% of states (29% before); the hidden tokens rise a little; Track falls (11.3 to 9.6), since standing goes to the board instead of the chase.
 
@@ -2596,6 +2597,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Wait for the Full Moon | – | Reinforce | Up to 3 cubes from the faction's supply join the target group. **Target:** the group. *Location:* any faction at a ◐ location. *Faction:* a Nocturnal group anywhere. | – | – | 10 |
 | Chase Them Down the Slope | – | Slide | Choose a direction; the target group slides hex by hex that way until it reaches a location it can't enter, or the coast. **Target:** the group. *Location:* any faction at a ◐ location. *Faction:* a Nocturnal group anywhere. | – | – | 11 |
 | Circle the Prey | – | Rotate | The groups round the target circle it: each moves one location on, clockwise, where it can enter. **Target:** the prey. *Location:* a ◐ location; any faction circles. *Faction:* anywhere; only Nocturnal groups circle. | – | – | 12 |
+| Howl at the Moon | – | Gather from range | Every group of one faction two hexes from the target moves one hex closer (to a location next to it; one already holding that faction if it can). **Target:** where the howl rises. *Location:* a ◐ location; any one faction answers. *Faction:* anywhere; the Nocturnals answer. | – | – | 13 |
 
 ### H.2 ↂ 80's Sci-Fi: Military Facility, Weather Station, State Park
 
@@ -2757,6 +2759,12 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
   - Drag Them Under (two neighbouring groups pulled into a third location next to both): 8.1, 87%.
   - Install the Cameras (1 influence at the target and each occupied neighbour): influence placed 2.8 in every state, but control only 0.6, below Track (1.6). Spreading influence thin rarely makes you the top player at a contest.
   - Invert the Pentagram (the smaller group wins): 2.3, the best hidden token so far (largest 26), still capped by the token's 59% reach.
+
+- Round 13 (2026-10-07; suggestions, driven by Claude). Four movement ideas from earlier rounds that were never built, now measured (Back Up to the Cloud v2, Lead the Horde v2, Read from the Book v2 and Smash the Mirror v2; the last two given two-target readings for the test), and one new one, Howl at the Moon (every group of one faction two hexes out moves one hex closer). Battle score and how often playable:
+  - Howl at the Moon: 9.9, 97%.
+  - Lead the Horde (shove): 8.4, 100%. Read from the Book (leap): 7.6, 100%, largest 45.
+  - Back Up to the Cloud (network jump): 5.8; Smash the Mirror: 4.7. Fixed destinations limit them.
+  - Why hidden tokens score low in every round: placing one takes a cube from your supply (MC3), and by round 3 half of players have none left (rounds 1 to 5: 0%, 8%, 51%, 78%, 80% of turns with an empty supply; 40 bot games, 5 players). Their effects are not what holds them back. See Current focus 4.
 
 ### H.8 Candidate sets
 

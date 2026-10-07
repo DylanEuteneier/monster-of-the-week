@@ -448,6 +448,24 @@ test('Circle the Prey: the groups round the target each move one location on, al
   assert.equal(map[centre].adjacent.reduce((n, l) => n + (after.board[l].cubes[f] ?? 0), 0), before); // no cube lost
 });
 
+test('Lead the Horde shoves the smaller group on when it would make three factions (round 13)', () => {
+  const s = clear(newGame());
+  const [f, g, h] = /** @type {string[]} */ (s.factions);
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const from = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
+  const to = map[from].adjacent[0];
+  const away = /** @type {string} */ (map[to].adjacent.find((l) => l !== from));
+  s.board[from].cubes = { [f]: 4 };
+  s.board[to].cubes = { [g]: 1, [h]: 3 };
+  const c = nextChoice(s, 'ann', 'horde', { mode: 'location', location: from, faction: f, to });
+  assert.ok(c.kind === 'group' && c.options.length === 1 && c.options[0].faction === g);
+  const t = { mode: /** @type {const} */ ('location'), location: from, faction: f, to, moves: [{ location: to, faction: g, to: away }] };
+  assert.equal(checkTarget(s, 'ann', cardById('horde'), t), null);
+  const after = previewTarget(s, 'ann', 'horde', t);
+  assert.deepEqual(after.board[to].cubes, { [h]: 3, [f]: 4 });
+  assert.equal(after.board[away].cubes[g], 1);
+});
+
 test('previewTarget runs a move with the game options (influence placed at the destination)', () => {
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[3]);
