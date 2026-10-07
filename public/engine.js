@@ -551,11 +551,12 @@ export function checkTarget(state, pid, card, t) {
       if (!t.from || t.from.length < 1 || t.from.length > 2 || t.from.some((l) => cubesOf(state, l, /** @type {string} */ (t.faction)) <= 0 || l === t.location)) return 'Choose one or two locations holding that faction.';
       return null;
     }
-    case 'halve': case 'teleport': case 'spread': case 'split': {
+    case 'halve': case 'halve-far': case 'teleport': case 'spread': case 'infect': case 'split': {
       const e = groupTarget(state, card, t);
       if (e) return e;
       const loc = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
       if (card.action === 'halve') return cubesOf(state, loc, f) >= 2 && t.to && MAP[loc].adjacent.includes(t.to) ? null : 'Half needs a group of 2 or more and an adjacent destination.';
+      if (card.action === 'halve-far') return cubesOf(state, loc, f) >= 2 && t.to && t.to !== loc && state.board[t.to] ? null : 'Half needs a group of 2 or more and a destination.';
       if (card.action === 'teleport') return t.to && t.to !== loc && state.board[t.to] ? null : 'Choose where to set it down.';
       if (card.action === 'split') {
         const split = t.split ?? {};
@@ -576,13 +577,13 @@ export function checkTarget(state, pid, card, t) {
       if (t.mode === 'location') return t.location && suitLocations(card).includes(t.location) ? null : 'Choose one of the suit\'s locations (its region moves).';
       return t.mode === 'faction' ? null : 'Choose a location target or a faction target.';
     }
-    case 'drive-out': {
+    case 'drive-out': case 'drive-out-either': {
       if (!t.location || factionsAt(state, t.location).length !== 2 || !t.faction || cubesOf(state, t.location, t.faction) <= 0) return 'Choose a faction at a contested location.';
       if (t.mode === 'location') {
         if (!suitLocations(card).includes(t.location)) return 'That location is not one of the suit\'s.';
         const [a, b] = factionsAt(state, t.location);
         const smaller = cubesOf(state, t.location, a) <= cubesOf(state, t.location, b) ? a : b;
-        if (cubesOf(state, t.location, t.faction) > cubesOf(state, t.location, smaller)) return 'Only the smaller faction can be driven out.';
+        if (card.action === 'drive-out' && cubesOf(state, t.location, t.faction) > cubesOf(state, t.location, smaller)) return 'Only the smaller faction can be driven out.';
       } else if (t.mode === 'faction') {
         if (t.faction !== suitFaction(state, card)) return 'Only the suit\'s faction.';
       } else return 'Choose a location target or a faction target.';
@@ -702,6 +703,12 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} sends ${n} ${names(f)} from ${lname(from)} to ${lname(/** @type {string} */ (t.to))}.`);
       break;
     }
+    case 'halve-far': {
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
+      const n = move(state, pid, f, from, /** @type {string} */ (t.to), Math.floor(cubesOf(state, from, f) / 2), placed);
+      logLine(state, `${pid}: ${card.name} sends ${n} ${names(f)} from ${lname(from)} to ${lname(/** @type {string} */ (t.to))}.`);
+      break;
+    }
     case 'teleport': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const n = move(state, pid, f, from, /** @type {string} */ (t.to), cubesOf(state, from, f), placed);
@@ -716,6 +723,23 @@ function act(state, pid, card, t) {
         if (move(state, pid, f, from, to, 1, placed)) reached.push(to);
       }
       logLine(state, `${pid}: ${card.name} spreads ${names(f)} into ${reached.map(lname).join(', ') || 'nowhere'}.`);
+      break;
+    }
+    case 'infect': {
+      // As spread; where a cube enters a location holding another faction, that faction loses 1 cube to its supply.
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
+      const reached = [];
+      for (const to of MAP[from].adjacent) {
+        if (cubesOf(state, from, f) <= 0) break;
+        if (!move(state, pid, f, from, to, 1, placed)) continue;
+        reached.push(to);
+        for (const other of factionsAt(state, to).filter((o) => o !== f)) {
+          state.board[to].cubes[other] -= 1;
+          if (state.board[to].cubes[other] <= 0) delete state.board[to].cubes[other];
+          state.supply[other] += 1;
+        }
+      }
+      logLine(state, `${pid}: ${card.name} infects ${reached.map(lname).join(', ') || 'nowhere'} with ${names(f)}.`);
       break;
     }
     case 'gather-region': case 'gather-neighbours': {
@@ -753,7 +777,7 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} shifts ${moved} group${moved === 1 ? '' : 's'} ${t.direction}.`);
       break;
     }
-    case 'drive-out': {
+    case 'drive-out': case 'drive-out-either': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const n = move(state, pid, f, from, /** @type {string} */ (t.to), cubesOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} drives ${n} ${names(f)} out of ${lname(from)}.`);
@@ -828,10 +852,10 @@ export function pendingDestinations(state, pend) {
   const card = cardById(pend.card);
   switch (card.action) {
     case 'lure': case 'broadcast': case 'gather-region': case 'gather-neighbours': case 'draw-adjacent': return t.location ? [t.location] : [];
-    case 'halve': case 'teleport': case 'drive-out': return t.to ? [t.to] : [];
+    case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': return t.to ? [t.to] : [];
     case 'sow': return t.path ?? [];
     case 'split': return Object.keys(t.split ?? {});
-    case 'spread': return t.location ? MAP[t.location].adjacent : [];
+    case 'spread': case 'infect': return t.location ? MAP[t.location].adjacent : [];
     case 'conveyor': return LOCATION_IDS;
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': return (t.moves ?? []).map((m) => m.to);
     default: return [];
@@ -1413,9 +1437,9 @@ export function sampleTarget(state, pid, cardId, rng) {
         t = { mode, location: loc, bluff: others.length && state.players[pid].bluffs > 0 ? pick(others) : undefined };
         break;
       }
-      case 'halve': case 'drive-out': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(MAP[g.loc].adjacent) }; break;
-      case 'teleport': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(LOCATION_IDS) }; break;
-      case 'spread': if (g) t = { mode, location: g.loc, faction: g.f }; break;
+      case 'halve': case 'drive-out': case 'drive-out-either': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(MAP[g.loc].adjacent) }; break;
+      case 'teleport': case 'halve-far': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(LOCATION_IDS) }; break;
+      case 'spread': case 'infect': if (g) t = { mode, location: g.loc, faction: g.f }; break;
       case 'move-influence': {
         const mine = LOCATION_IDS.filter((l) => (state.board[l].influence[pid] ?? 0) > 0);
         const to = pick(holdingSpots(state, card, mode));
@@ -1520,16 +1544,17 @@ export function nextChoice(state, pid, cardId, t) {
       const opts = left > 0 ? MAP[at].adjacent.filter((l) => canEnter(state, l, f) && l !== t.location && !path.includes(l)) : [];
       return opts.length ? { kind: 'location', key: 'path', options: opts, optional: path.length > 0, left } : { kind: 'done' };
     }
-    case 'halve': case 'drive-out': case 'teleport': {
+    case 'halve': case 'halve-far': case 'drive-out': case 'drive-out-either': case 'teleport': {
+      const far = card.action === 'teleport' || card.action === 'halve-far';
       if (!t.location) {
-        const gs = groups.filter(groupOk).filter((g) => (card.action !== 'halve' || cubesOf(state, g.location, g.faction) >= 2)
-          && exits(g, card.action === 'teleport' ? LOCATION_IDS : MAP[g.location].adjacent).length > 0);
-        return { kind: 'group', key: 'group', options: card.action === 'drive-out' ? gs.filter((g) => MAP[g.location].adjacent.some((to) => ok({ ...t, location: g.location, faction: g.faction, to }))) : gs };
+        const gs = groups.filter(groupOk).filter((g) => (!card.action.startsWith('halve') || cubesOf(state, g.location, g.faction) >= 2)
+          && exits(g, far ? LOCATION_IDS : MAP[g.location].adjacent).length > 0);
+        return { kind: 'group', key: 'group', options: card.action.startsWith('drive-out') ? gs.filter((g) => MAP[g.location].adjacent.some((to) => ok({ ...t, location: g.location, faction: g.faction, to }))) : gs };
       }
-      const reach = card.action === 'teleport' ? LOCATION_IDS.filter((l) => l !== t.location) : MAP[t.location].adjacent;
+      const reach = far ? LOCATION_IDS.filter((l) => l !== t.location) : MAP[t.location].adjacent;
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: reach.filter((to) => canEnter(state, to, /** @type {string} */ (t.faction))) };
     }
-    case 'spread':
+    case 'spread': case 'infect':
       return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => exits(g, MAP[g.location].adjacent).length > 0) };
     case 'split': {
       if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => cubesOf(state, g.location, g.faction) >= 2 && exits(g, MAP[g.location].adjacent).length >= 2) };
@@ -1581,7 +1606,7 @@ export function nextChoice(state, pid, cardId, t) {
  * @returns {{ board: GameState['board'], players: GameState['players'] }}
  */
 export function previewTarget(state, pid, cardId, t) {
-  const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, round: state.round, options: state.options, events: [], log: [] })));
+  const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options: state.options, events: [], log: [] })));
   act(copy, pid, cardById(cardId), t);
   return { board: copy.board, players: copy.players };
 }
@@ -1601,8 +1626,8 @@ export function describeTarget(cardId, t) {
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
     case 'sow': return `${F(t.faction)} from ${L(t.location)} via ${(t.path ?? []).map(L).join(', ')}${how}`;
     case 'token': return `token at ${L(t.location)}${t.bluff ? `, bluff at ${L(t.bluff)}` : ''}${how}`;
-    case 'halve': case 'teleport': case 'drive-out': return `${F(t.faction)} at ${L(t.location)} to ${L(t.to)}${how}`;
-    case 'spread': return `${F(t.faction)} at ${L(t.location)}${how}`;
+    case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': return `${F(t.faction)} at ${L(t.location)} to ${L(t.to)}${how}`;
+    case 'spread': case 'infect': return `${F(t.faction)} at ${L(t.location)}${how}`;
     case 'split': return `${F(t.faction)} at ${L(t.location)} split ${Object.entries(t.split ?? {}).map(([l, n]) => `${n} to ${L(l)}`).join(', ')}${how}`;
     case 'conveyor': return `${t.mode === 'location' ? `the ${regionOf(/** @type {string} */ (t.location))} region` : 'every Sentient group'} one hex ${t.direction}`;
     default: return (t.moves ?? []).map((m) => `${F(m.faction)} at ${L(m.location)} to ${L(m.to)}`).join('; ');

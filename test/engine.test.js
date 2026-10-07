@@ -336,6 +336,33 @@ test('Take Over the Wake places up to 3 influence from standing with a faction t
   assert.equal(after.players.ann.standing[f], 2);
 });
 
+test('Spread a Virus (infectious): each cube that joins another faction costs it 1 cube to its supply (round 9)', () => {
+  const s = clear(newGame());
+  const [f, g] = /** @type {string[]} */ (s.factions);
+  const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'sentients')?.id);
+  const [to] = adj[loc].adjacent;
+  s.board[loc].cubes[f] = 1;
+  s.board[to].cubes[g] = 3;
+  const supply = s.supply[g];
+  const after = previewTarget(s, 'ann', 'virus-infect', { mode: 'location', location: loc, faction: f });
+  assert.equal(after.board[to].cubes[f], 1);
+  assert.equal(after.board[to].cubes[g], 2);
+  assert.ok(!checkTarget(s, 'ann', cardById('virus-infect'), { mode: 'location', location: loc, faction: f }));
+  assert.equal(supply, s.supply[g]); // the preview leaves the game untouched
+});
+
+test('Leak It to the Press sends half the group anywhere (round 9)', () => {
+  const s = clear(newGame());
+  const f = /** @type {string} */ (s.factions[0]);
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'scifi')?.id);
+  const far = /** @type {string} */ (spec.locations.find((l) => l.id !== loc && !(/** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations))[loc].adjacent.includes(l.id))?.id);
+  s.board[loc].cubes[f] = 5;
+  const t = { mode: /** @type {const} */ ('location'), location: loc, faction: f, to: far };
+  assert.equal(checkTarget(s, 'ann', cardById('leak-press'), t), null);
+  assert.equal(previewTarget(s, 'ann', 'leak-press', t).board[far].cubes[f], 2);
+});
+
 test('previewTarget runs a move with the game options (influence placed at the destination)', () => {
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[3]);

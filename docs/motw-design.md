@@ -2614,6 +2614,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Leak the Documents (v3) | Shift | Halve | Half the target group, rounded down, leaves for an adjacent location of your choice. **Target:** the group split. *Location:* any faction at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | 3 | 7 |
 | Call in the Men in Black (v2) | – | Standing effect | For the rest of the round, cubes about to be moved into the target go to an adjacent location of your choice instead. **Target:** the cordon. *Location:* an ↂ location, against any faction. *Faction:* the Sci-Fi faction, wherever it is moved. | – | – | 7 |
 | Raise the Force Field | – | Fight math, protection | Place a face-down token (and a bluff) on the target. At its fight, the winner loses no cubes. **Target:** *Location:* an ↂ location. *Faction:* a location holding the Sci-Fi faction. | – | – | 8 |
+| Leak It to the Press | – | Halve, far | Half the target group, rounded down, goes to any location on the island it can enter. **Target:** the group split. *Location:* any faction at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | – | 9 |
 
 ### H.3 ⏏ Sentients: Shipping Docks, Junkyard, Beach City
 
@@ -2635,6 +2636,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Back Up to the Cloud (v2) | – | Network jump | Move the target group across the network, however far. **Target:** the group moved. *Location:* any faction's group, from one ⏏ location to another. *Faction:* a Sentient group, to any location holding another Sentient group. | – | – | 7 |
 | Hack the Mainframe (v2) | Signature | Fight math | At this round's fight at the target, the target faction also counts its cubes in the rest of that region. **Target:** *Location:* a ⏏ location; you choose which faction there benefits. *Faction:* the Sentients, at any fight they're in. | – | 3 | 7 |
 | Hijack the Feed | – | Fight math, trophies | Place a face-down token (and a bluff) on the target. At its fight, the token's owner counts their influence there twice when the trophies are handed out. **Target:** *Location:* a ⏏ location. *Faction:* a location holding the Sentients. | – | – | 8 |
+| Spread a Virus (infectious) | – | Scatter, attrition | As Spread a Virus (v2); where a cube joins another faction, that faction loses 1 cube to its supply. **Target:** the infected group. *Location:* any faction at a ⏏ location. *Faction:* a Sentient group anywhere. | – | – | 9 |
 
 ### H.4 ☾ Undead: Sawmill, Mine, Graveyard
 
@@ -2669,6 +2671,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | (response) Speak Its True Name | – | Influence | – | When a card's action targets a location where you have influence, move that influence to your standing with the faction there. | – | 3 |
 | Set the House on Fire | – | Fight math, sink | Mark a ⎈ location. Any fight there this round counts as a true tie: both groups are wiped out and the location is scorched. | – | – | 4b |
 | Smash the Mirror (v2) | – | Mirror | Move a group at a ⎈ location to its reflection across the lake, or bring one from the reflection. On layout D: Lighthouse and State Park, The Lake House and Fallout Bunker; Caves has none. | – | – | 6 |
+| Light Every Lamp (either side) | – | Split | At a contested location, either faction is driven to an adjacent location of your choice, so the fight there doesn't happen. **Target:** the faction driven out. *Location:* either faction at a contested ⎈ location. *Faction:* the Demons, wherever they are contested. | – | – | 9 |
 | Read from the Book (v2) | – | Leap | Move a group at a ⎈ location over an adjacent location into the one beyond it, in a straight line. | – | – | 6 |
 | Read from the Book (v3) | Strike | Leap | The target group leaps over an adjacent location into the one beyond it, in a straight line. **Target:** the possessed group. *Location:* any faction's group at a ⎈ location. *Faction:* a Demon group anywhere. | – | 2 | 7 |
 | Smash the Mirror (v3) | Signature | Mirror | The target group passes to its reflection across the lake (G.1; locations with no reflection can't be used). **Target:** the group reflected. *Location:* any faction's group at a ⎈ location. *Faction:* a Demon group anywhere. | – | 3 | 7 |
@@ -2713,6 +2716,12 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 - Hidden effects must apply to whatever fight happens at their location, never only if a particular faction is in it (3.11). Round 7 entries that need rewording: Hack the Mainframe ("the target faction counts its cubes in the region") and the faction readings of Salt and Burn the Bones and Set the House on Fire ("any fight the Undead/Demons are in"). Under the placement rule their faction reading becomes "a location holding the suit's faction", and the effect must work on whichever two factions end up fighting there.
 
 - Round 8 (2026-10-07; suggestions, driven by Claude at the designer's request): aimed at the top two criteria of the strength ranking (Current focus 4), where the data showed gaps: taking influence control of a contested location (Stake Out the Den, Take Over the Wake: influence moved or placed without moving cubes) and shaping big fights, including for the invaders (Raise the Force Field: protection; Hijack the Feed and Sign the Contract: trophy redirection). Measured as never-dealt test cards (`spec.testCards`, `scripts/balance.js`, 200 states, 5 players): all five score low on every measure (battle 1.1–1.7, control 0.2–0.5). They are capped by the influence economy, not their wording: in rounds 1–2 most fights have no player influence at them (see Current focus 4). Unique and slightly rule-breaking: Stake Out the Den (moves the player's own influence, which nothing else does; D13 forbids moving anyone else's. Designer's seed for its theme: a "pivot" or "plan B"), Sign the Contract (reverses TD1's pile order), Hijack the Feed (bends the ranking).
+
+- Round 9 (2026-10-07; suggestions, driven by Claude at the designer's request): one change each to the three weakest movers on battles (Leak, Lamps, the Virus), to see whether their wording or their situation holds them back. Measured as test cards against the dealt versions (200 states, 5 players; battle score, then with `influenceToBoard=on`):
+  - Leak It to the Press (half the group goes anywhere): 7.3 against Leak's 5.3; 7.9 against 5.6. The only clear gain, and it lands mid-pack (near Reroute and Board Up). Leak's limit was its reach.
+  - Light Every Lamp (either side): 4.7 against 4.3; 6.4 against 5.6. Lamps has a target in only 55% of states (a contested ⎈ location, or a contested Demon group). Its limit is how often it can be played, not which side it drives out.
+  - Spread a Virus (infectious): 4.3 against 5.0; 4.7 against 5.3. Worse: taking cubes off the board outside a fight shrinks the fights and so the trophies at stake. Attrition works against criterion 1 as measured.
+  - Elsewhere in the same run, with the deck as it stands (pivots in, responses out): the pivots score 2.3 battle and can be played in 44% of states (4.3 and 87% with `influenceToBoard=on`); the unsuited scaffold moves A to C still outscore every suit card (A: 24.1).
 
 ### H.8 Candidate sets
 

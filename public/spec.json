@@ -1076,7 +1076,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the deal: round 8 ideas under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). Never dealt; not rules. Influence 3 on the ideas is a placeholder.",
+    "notes": "Cards out of the deal: round 8 and round 9 ideas under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). Never dealt; not rules. Influence on the ideas is a placeholder.",
     "cards": [
       {
         "id": "force-field",
@@ -1128,6 +1128,45 @@
         "readings": {
           "location": "a ⎈ location.",
           "faction": "a location holding the Demons."
+        }
+      },
+      {
+        "id": "leak-press",
+        "name": "Leak It to the Press",
+        "suit": "scifi",
+        "slot": "–",
+        "influence": 3,
+        "action": "halve-far",
+        "text": "Half the target group, rounded down, goes to any location on the island it can enter. Target: the group split.",
+        "readings": {
+          "location": "any group at an ↂ location.",
+          "faction": "a Sci-Fi group anywhere."
+        }
+      },
+      {
+        "id": "lamps-either",
+        "name": "Light Every Lamp (either side)",
+        "suit": "demonic",
+        "slot": "–",
+        "influence": 3,
+        "action": "drive-out-either",
+        "text": "At a contested location, either faction is driven to an adjacent location of your choice, so the fight there doesn’t happen. Target: the faction driven out.",
+        "readings": {
+          "location": "either faction at a contested ⎈ location.",
+          "faction": "the Demons, wherever they are contested."
+        }
+      },
+      {
+        "id": "virus-infect",
+        "name": "Spread a Virus (infectious)",
+        "suit": "sentients",
+        "slot": "–",
+        "influence": 2,
+        "action": "infect",
+        "text": "The target group puts 1 cube into every adjacent location it can enter, as far as its cubes go. Where a cube joins another faction, that faction loses 1 cube to its supply. Target: the infected group.",
+        "readings": {
+          "location": "any group at a ⏏ location.",
+          "faction": "a Sentient group anywhere."
         }
       },
       {
