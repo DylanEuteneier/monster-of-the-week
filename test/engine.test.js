@@ -421,6 +421,33 @@ test('Lay Them to Rest: no one takes trophies at its fight (round 11)', () => {
   assert.equal(after.supply[f], before + 2);
 });
 
+test('Follow the Lights: the leader moves next door and a group of another faction follows it in (round 12)', () => {
+  const s = clear(newGame());
+  const [f, g] = /** @type {string[]} */ (s.factions);
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const from = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'scifi')?.id);
+  const to = map[from].adjacent[0];
+  const near = /** @type {string} */ (map[to].adjacent.find((l) => l !== from));
+  s.board[from].cubes = { [f]: 3 };
+  s.board[near].cubes = { [g]: 4 };
+  assert.equal(nextChoice(s, 'ann', 'follow-lights', { mode: 'location', location: from, faction: f, to }).kind, 'group');
+  const t = { mode: /** @type {const} */ ('location'), location: from, faction: f, to, moves: [{ location: near, faction: g, to: '' }] };
+  assert.equal(checkTarget(s, 'ann', cardById('follow-lights'), t), null);
+  assert.deepEqual(previewTarget(s, 'ann', 'follow-lights', t).board[to].cubes, { [f]: 3, [g]: 4 });
+});
+
+test('Circle the Prey: the groups round the target each move one location on, all at once (round 12)', () => {
+  const s = clear(newGame());
+  const f = /** @type {string} */ (s.factions[0]);
+  const map = /** @type {Record<string, { q: number, r: number, adjacent: string[] }>} */ (spec.map.locations);
+  // A ◐ location with a full ring of six neighbours, if the board has one; otherwise any with two in a row.
+  const centre = /** @type {string} */ (spec.locations.filter((l) => l.archetype === 'nocturnals').map((l) => l.id).sort((a, b) => map[b].adjacent.length - map[a].adjacent.length)[0]);
+  for (const l of map[centre].adjacent) s.board[l].cubes = { [f]: 1 };
+  const before = map[centre].adjacent.reduce((n, l) => n + (s.board[l].cubes[f] ?? 0), 0);
+  const after = previewTarget(s, 'ann', 'circle-prey', { mode: 'location', location: centre });
+  assert.equal(map[centre].adjacent.reduce((n, l) => n + (after.board[l].cubes[f] ?? 0), 0), before); // no cube lost
+});
+
 test('previewTarget runs a move with the game options (influence placed at the destination)', () => {
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[3]);

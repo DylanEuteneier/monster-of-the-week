@@ -2595,6 +2595,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Stake Out the Den | – | Influence (move) | Move up to 3 of your influence from other locations to the target. **Target:** the den. *Location:* a ◐ location. *Faction:* a location holding the Nocturnals. | – | – | 8 |
 | Wait for the Full Moon | – | Reinforce | Up to 3 cubes from the faction's supply join the target group. **Target:** the group. *Location:* any faction at a ◐ location. *Faction:* a Nocturnal group anywhere. | – | – | 10 |
 | Chase Them Down the Slope | – | Slide | Choose a direction; the target group slides hex by hex that way until it reaches a location it can't enter, or the coast. **Target:** the group. *Location:* any faction at a ◐ location. *Faction:* a Nocturnal group anywhere. | – | – | 11 |
+| Circle the Prey | – | Rotate | The groups round the target circle it: each moves one location on, clockwise, where it can enter. **Target:** the prey. *Location:* a ◐ location; any faction circles. *Faction:* anywhere; only Nocturnal groups circle. | – | – | 12 |
 
 ### H.2 ↂ 80's Sci-Fi: Military Facility, Weather Station, State Park
 
@@ -2619,6 +2620,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Leak It to the Press | – | Halve, far | Half the target group, rounded down, goes to any location on the island it can enter. **Target:** the group split. *Location:* any faction at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | – | 9 |
 | Turn On the Tractor Beam | – | Carry a fight | Both groups at the target are lifted together into an adjacent location with no cubes; the fight happens there. **Target:** the contest. *Location:* a contest at an ↂ location. *Faction:* a contest the Sci-Fi faction is in. | – | – | 10 |
 | Crash-Land the Saucer | – | Chain reaction | Choose a direction; the target group moves one hex that way. Any group of another faction in its way is knocked one hex on, the same way, and so on down the line; a group with nowhere to go stays. **Target:** the group. *Location:* any faction at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | – | 11 |
+| Follow the Lights | – | Follow the leader | The target group moves to an adjacent location; then a group of another faction next to that location may follow it in. **Target:** the leader. *Location:* any faction at an ↂ location. *Faction:* a Sci-Fi group anywhere. | – | – | 12 |
 
 ### H.3 ⏏ Sentients: Shipping Docks, Junkyard, Beach City
 
@@ -2643,6 +2645,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Spread a Virus (infectious) | – | Scatter, attrition | As Spread a Virus (v2); where a cube joins another faction, that faction loses 1 cube to its supply. **Target:** the infected group. *Location:* any faction at a ⏏ location. *Faction:* a Sentient group anywhere. | – | – | 9 |
 | Reprogram the Drones | – | Defect | Up to 3 cubes of the target group change sides: they join the other faction at that location (swapped through the supplies). **Target:** the group that defects. *Location:* a group in a contest at a ⏏ location. *Faction:* a group fighting the Sentients; its cubes become Sentients. | – | – | 10 |
 | Livestream the Fight | – | Fight math, double trophies | Place a face-down token (and a bluff) on the target. At its fight, each trophy pile is doubled from its faction's supply. **Target:** *Location:* a ⏏ location. *Faction:* a location holding the Sentients. | – | – | 11 |
+| Install the Cameras | – | Influence (place, spread) | Place 1 influence at the target and at each location next to it that holds cubes, each spent from your standing with a faction there (the one you hold most). **Target:** the hub. *Location:* a ⏏ location. *Faction:* a location holding the Sentients. | – | – | 12 |
 
 ### H.4 ☾ Undead: Sawmill, Mine, Graveyard
 
@@ -2664,6 +2667,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Take Over the Wake | – | Influence (place) | Place up to 3 influence at the target, spent from your standing with a faction there. **Target:** the wake. *Location:* a ☾ location. *Faction:* a location holding the Undead. | – | – | 8 |
 | Hear the Banshee Wail | – | Repel | Every group next to the target is driven one hex straight on, away from it, where it can enter. **Target:** where she wails. *Location:* a ☾ location; any faction is driven. *Faction:* anywhere; only Undead groups are driven. | – | – | 10 |
 | Lay Them to Rest | – | Fight math, no trophies | Place a face-down token (and a bluff) on the target. At its fight, no one takes trophies; the cubes lost go back to their supplies. **Target:** *Location:* a ☾ location. *Faction:* a location holding the Undead. | – | – | 11 |
+| Drag Them Under | – | Meet | The target group and a neighbouring group of another faction are both dragged into a location next to them both. **Target:** the first group. *Location:* any faction at a ☾ location. *Faction:* an Undead group anywhere. | – | – | 12 |
 
 ### H.5 ⎈ Demons: Caves, Lighthouse, The Lake House
 
@@ -2682,6 +2686,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 | Light Every Lamp (either side) | – | Split | At a contested location, either faction is driven to an adjacent location of your choice, so the fight there doesn't happen. **Target:** the faction driven out. *Location:* either faction at a contested ⎈ location. *Faction:* the Demons, wherever they are contested. | – | – | 9 |
 | Open the Pit | – | Remove | The target group, 3 cubes or fewer, falls in: its cubes go back to its supply. **Target:** the group. *Location:* a small group at a ⎈ location. *Faction:* a small group sharing a location with the Demons. | – | – | 10 |
 | Trade Souls | – | Swap, far | The target group trades places with any other group on the island (of another faction). **Target:** the first soul. *Location:* any faction at a ⎈ location. *Faction:* a Demon group anywhere. | – | – | 11 |
+| Invert the Pentagram | – | Fight math, reversal | Place a face-down token (and a bluff) on the target. At its fight, the smaller group wins. **Target:** *Location:* a ⎈ location. *Faction:* a location holding the Demons. | – | – | 12 |
 | Read from the Book (v2) | – | Leap | Move a group at a ⎈ location over an adjacent location into the one beyond it, in a straight line. | – | – | 6 |
 | Read from the Book (v3) | Strike | Leap | The target group leaps over an adjacent location into the one beyond it, in a straight line. **Target:** the possessed group. *Location:* any faction's group at a ⎈ location. *Faction:* a Demon group anywhere. | – | 2 | 7 |
 | Smash the Mirror (v3) | Signature | Mirror | The target group passes to its reflection across the lake (G.1; locations with no reflection can't be used). **Target:** the group reflected. *Location:* any faction's group at a ⎈ location. *Faction:* a Demon group anywhere. | – | 3 | 7 |
@@ -2745,6 +2750,13 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
   - Crash-Land the Saucer (chain reaction: knocks groups on down a line): 8.5, 93%; 8.8 pieces moved.
   - Livestream the Fight (double trophies) 1.6 and Lay Them to Rest (no trophies) 0.8: like every hidden token so far, low and playable in about 60% of states. Trophy effects only matter where players hold influence at a fight, which is rare early (Current focus 4).
   - The card review on the assets page (`/assets`, Cards) now shows every card the engine can play, deck and test cards, drawn as the table draws them and tagged with these measures (designer, 2026-10-07: every new card the engine can play goes there for review).
+
+- Round 12 (2026-10-07; suggestions, driven by Claude). More unique movers, one card aimed at control (criterion 2, which only Track serves well), and a reversal token. Battle score and how often playable:
+  - Follow the Lights (H.9's open "follow the leader": a group moves next door and a group of another faction follows it in): 15.1, 93%; 10.1 pieces moved. Close to Broadcast (16.4), the strongest new idea in rounds 8 to 12. It makes a fight wherever two groups are near each other.
+  - Circle the Prey (the groups round a location rotate one step): 10.5, 96%; 9.6 moved, largest 48.
+  - Drag Them Under (two neighbouring groups pulled into a third location next to both): 8.1, 87%.
+  - Install the Cameras (1 influence at the target and each occupied neighbour): influence placed 2.8 in every state, but control only 0.6, below Track (1.6). Spreading influence thin rarely makes you the top player at a contest.
+  - Invert the Pentagram (the smaller group wins): 2.3, the best hidden token so far (largest 26), still capped by the token's 59% reach.
 
 ### H.8 Candidate sets
 

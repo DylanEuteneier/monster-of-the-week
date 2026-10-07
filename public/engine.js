@@ -535,6 +535,34 @@ function canSwap(state, a, b) {
   return cubesOf(state, a.location, a.faction) > 0 && cubesOf(state, b.location, b.faction) > 0 && after(a.location, a.faction, b.faction) && after(b.location, b.faction, a.faction);
 }
 
+/** The ring round a location, clockwise: [from, to] for each neighbour with a next neighbour (round 12). @param {GameState} state @param {string} loc */
+function ringSteps(state, loc) {
+  const dirs = spec.map.directions.map((d) => d.id).reverse(); // E, SE, SW, W, NW, NE: clockwise on screen
+  const ring = dirs.map((d) => step(state, loc, d));
+  return ring.flatMap((from, i) => {
+    const to = ring[(i + 1) % ring.length];
+    return from && to ? [[from, to]] : [];
+  });
+}
+/** Groups that would circle (round 12). @param {GameState} state @param {string} loc @param {string[]} factions */
+const circlers = (state, loc, factions) => ringSteps(state, loc).flatMap(([from, to]) => factionsAt(state, from).filter((f) => factions.includes(f) && !state.board[to].scorched).map((f) => ({ from, to, f })));
+/** Where Install the Cameras places influence, with the faction it spends standing from (round 12). @param {GameState | PlayerView} state @param {string} pid @param {string} loc */
+function cameraSpots(state, pid, loc) {
+  const standing = { ...state.players[pid].standing };
+  return [loc, ...MAP[loc].adjacent].flatMap((l) => {
+    if (state.board[l].scorched) return [];
+    const f = factionsAt(/** @type {GameState} */ (state), l).filter((x) => (standing[x] ?? 0) > 0).sort((a, b) => (standing[b] ?? 0) - (standing[a] ?? 0))[0];
+    if (!f) return [];
+    standing[f] -= 1;
+    return [{ loc: l, f }];
+  });
+}
+/** Can a group join `to` after `mover` has entered it? @param {GameState} state @param {string} to @param {string} mover @param {string} f */
+const canFollow = (state, to, mover, f) => {
+  const there = new Set([...factionsAt(state, to), mover]);
+  return !state.board[to].scorched && (there.has(f) || there.size < 2);
+};
+
 /**
  * Where 1 influence goes when a card is spent for influence, under the test
  * lever influenceToBoard: the locations its faction controls (LC2). Empty
@@ -652,6 +680,29 @@ export function checkTarget(state, pid, card, t) {
       if (e) return e;
       const other = t.moves?.[0];
       return other && canSwap(state, { location: /** @type {string} */ (t.location), faction: /** @type {string} */ (t.faction) }, other) ? null : 'Choose a group elsewhere that can trade places with it.';
+    }
+    case 'circle': return placeTarget(state, card, t) ?? (circlers(state, /** @type {string} */ (t.location), movable(state, card, t)).length ? null : 'Nothing round it can circle.');
+    case 'surveil': {
+      if ((t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode).includes(t.location)) return 'Choose the target location.';
+      return cameraSpots(state, pid, t.location).length ? null : 'You have no standing with any faction there or next to it.';
+    }
+    case 'follow': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      const from = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
+      if (!t.to || !MAP[from].adjacent.includes(t.to) || !canEnter(state, t.to, f)) return 'Choose an adjacent location it can enter.';
+      const g = t.moves?.[0];
+      if (g && (g.faction === f || !MAP[t.to].adjacent.includes(g.location) || g.location === t.to || cubesOf(state, g.location, g.faction) <= 0 || !canFollow(state, t.to, f, g.faction))) return 'That group can\'t follow it in.';
+      return null;
+    }
+    case 'meet': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      const a = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction), b = t.moves?.[0];
+      if (!b || b.faction === f || cubesOf(state, b.location, b.faction) <= 0 || !MAP[a].adjacent.includes(b.location)) return 'Choose a neighbouring group of another faction.';
+      const m = b.to;
+      if (!m || m === a || m === b.location || !MAP[a].adjacent.includes(m) || !MAP[b.location].adjacent.includes(m) || !canEnter(state, m, f) || !canFollow(state, m, f, b.faction)) return 'Choose a location next to both that both can enter.';
+      return null;
     }
     case 'repel': return placeTarget(state, card, t) ?? (pushes(state, /** @type {string} */ (t.location), movable(state, card, t)).length ? null : 'Nothing next to it can be pushed away.');
     case 'move-influence': {
@@ -919,6 +970,42 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name}: ${names(a.faction)} at ${lname(a.location)} and ${names(b.faction)} at ${lname(b.location)} trade places.`);
       break;
     }
+    case 'circle': {
+      const moves = circlers(state, /** @type {string} */ (t.location), movable(state, card, t)).map((g) => ({ ...g, n: cubesOf(state, g.from, g.f) }));
+      for (const g of moves) { delete state.board[g.from].cubes[g.f]; } // all lift at once
+      let n = 0;
+      for (const g of moves) {
+        state.board[g.from].cubes[g.f] = cubesOf(state, g.from, g.f) + g.n;
+        n += move(state, pid, g.f, g.from, g.to, g.n, placed) ? 1 : 0; // a group that can't enter stays
+      }
+      logLine(state, `${pid}: ${card.name}: ${n} group${n === 1 ? '' : 's'} circle ${lname(/** @type {string} */ (t.location))}.`);
+      break;
+    }
+    case 'surveil': {
+      const spots = cameraSpots(state, pid, /** @type {string} */ (t.location));
+      for (const { loc, f } of spots) {
+        state.players[pid].standing[f] -= 1;
+        state.board[loc].influence[pid] = (state.board[loc].influence[pid] ?? 0) + 1;
+        state.events.push({ type: 'influence-placed', player: pid, faction: f, location: loc });
+      }
+      logLine(state, `${pid}: ${card.name} places influence at ${spots.map((x) => lname(x.loc)).join(', ')}.`);
+      break;
+    }
+    case 'follow': {
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
+      move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      const g = t.moves?.[0];
+      if (g) move(state, pid, g.faction, g.location, to, cubesOf(state, g.location, g.faction), placed);
+      logLine(state, `${pid}: ${card.name} leads ${names(f)} into ${lname(to)}${g ? `; ${names(g.faction)} follow` : ''}.`);
+      break;
+    }
+    case 'meet': {
+      const f = /** @type {string} */ (t.faction), a = /** @type {string} */ (t.location), b = /** @type {{ location: string, faction: string, to: string }} */ (t.moves?.[0]);
+      move(state, pid, f, a, b.to, cubesOf(state, a, f), placed);
+      move(state, pid, b.faction, b.location, b.to, cubesOf(state, b.location, b.faction), placed);
+      logLine(state, `${pid}: ${card.name} drags ${names(f)} and ${names(b.faction)} into ${lname(b.to)}.`);
+      break;
+    }
     case 'repel': {
       let n = 0;
       for (const g of pushes(state, /** @type {string} */ (t.location), movable(state, card, t))) n += move(state, pid, g.f, g.from, /** @type {string} */ (g.to), cubesOf(state, g.from, g.f), placed) ? 1 : 0;
@@ -1000,6 +1087,9 @@ export function pendingDestinations(state, pend) {
     case 'spread': case 'infect': return t.location ? MAP[t.location].adjacent : [];
     case 'carry-fight': return t.to ? [t.to] : [];
     case 'slide': case 'chain': return LOCATION_IDS;
+    case 'circle': return t.location ? MAP[t.location].adjacent : [];
+    case 'follow': return t.to ? [t.to] : [];
+    case 'meet': return t.moves?.[0]?.to ? [t.moves[0].to] : [];
     case 'swap-far': return [t.location ?? '', t.moves?.[0]?.location ?? ''].filter(Boolean);
     case 'repel': return t.location ? MAP[t.location].adjacent.flatMap((a) => MAP[a].adjacent) : [];
     case 'conveyor': return LOCATION_IDS;
@@ -1308,6 +1398,7 @@ function fight(state, loc) {
     winner = /** @type {string} */ (aligned);
     loser = winner === a ? b : a;
   } else [winner, loser] = na > nb ? [a, b] : [b, a];
+  if (effect === 'invert' && na !== nb) [winner, loser] = [loser, winner]; // test card (round 12): the smaller group wins
   const nl = place.cubes[loser];
   const loserLoss = nl; // the loser always loses everything (FR5)
   let winnerLoss = Math.max(1, Math.floor(nl / 2));
@@ -1724,6 +1815,28 @@ export function nextChoice(state, pid, cardId, t) {
       const partners = (/** @type {{ location: string, faction: string }} */ a) => groups.filter((b) => canSwap(state, a, b));
       if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => partners(g).length > 0) };
       return t.moves?.length ? { kind: 'done' } : { kind: 'group', key: 'move', options: partners({ location: t.location, faction: /** @type {string} */ (t.faction) }) };
+    }
+    case 'circle':
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => circlers(state, loc, movers).length > 0) };
+    case 'surveil':
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((loc) => cameraSpots(state, pid, loc).length > 0) };
+    case 'follow': {
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => exits(g, MAP[g.location].adjacent).length > 0) };
+      const f = /** @type {string} */ (t.faction);
+      if (!t.to) return { kind: 'location', key: 'to', options: MAP[t.location].adjacent.filter((l) => canEnter(state, l, f)) };
+      if (t.moves?.length) return { kind: 'done' };
+      const to = t.to;
+      const followers = groups.filter((g) => g.faction !== f && g.location !== to && MAP[to].adjacent.includes(g.location) && canFollow(state, to, f, g.faction));
+      return followers.length ? { kind: 'group', key: 'move', options: followers, optional: true } : { kind: 'done' };
+    }
+    case 'meet': {
+      const f = /** @type {string} */ (t.faction);
+      const places = (/** @type {string} */ a, /** @type {{ location: string, faction: string }} */ b) => MAP[a].adjacent.filter((m) => m !== b.location && MAP[b.location].adjacent.includes(m) && ok({ mode, location: a, faction: f, moves: [{ ...b, to: m }] }));
+      const partners = (/** @type {string} */ a, /** @type {string} */ af) => groups.filter((b) => b.faction !== af && MAP[a].adjacent.includes(b.location) && MAP[a].adjacent.some((m) => m !== b.location && MAP[b.location].adjacent.includes(m) && !checkTarget(state, pid, card, { mode, location: a, faction: af, moves: [{ ...b, to: m }] })));
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => partners(g.location, g.faction).length > 0) };
+      const b = t.moves?.[0];
+      if (!b) return { kind: 'group', key: 'move', options: partners(t.location, f) };
+      return b.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: places(t.location, b) };
     }
     case 'repel':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => pushes(state, loc, movers).length > 0) };

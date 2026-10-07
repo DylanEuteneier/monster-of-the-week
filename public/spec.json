@@ -1076,7 +1076,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the deal: rounds 8 to 11 ideas under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). Never dealt; not rules. Influence on the ideas is a placeholder.",
+    "notes": "Cards out of the deal: rounds 8 to 12 ideas under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). Never dealt; not rules. Influence on the ideas is a placeholder.",
     "cards": [
       {
         "id": "force-field",
@@ -1314,6 +1314,76 @@
         "readings": {
           "location": "any group at a ⎈ location.",
           "faction": "a Demon group anywhere."
+        }
+      },
+      {
+        "id": "circle-prey",
+        "name": "Circle the Prey",
+        "suit": "nocturnals",
+        "slot": "–",
+        "influence": 3,
+        "action": "circle",
+        "round": 12,
+        "text": "The groups round the target circle it: each moves one location on, clockwise, where it can enter. Target: the prey.",
+        "readings": {
+          "location": "a ◐ location; any faction circles.",
+          "faction": "anywhere; only Nocturnal groups circle."
+        }
+      },
+      {
+        "id": "follow-lights",
+        "name": "Follow the Lights",
+        "suit": "scifi",
+        "slot": "–",
+        "influence": 3,
+        "action": "follow",
+        "round": 12,
+        "text": "The target group moves to an adjacent location; then a group of another faction next to that location may follow it in. Target: the leader.",
+        "readings": {
+          "location": "any group at an ↂ location.",
+          "faction": "a Sci-Fi group anywhere."
+        }
+      },
+      {
+        "id": "cameras",
+        "name": "Install the Cameras",
+        "suit": "sentients",
+        "slot": "–",
+        "influence": 3,
+        "action": "surveil",
+        "round": 12,
+        "text": "Place 1 influence at the target and at each location next to it that holds cubes, each spent from your standing with a faction there (the one you hold most). Target: the hub.",
+        "readings": {
+          "location": "a ⏏ location.",
+          "faction": "a location holding the Sentients."
+        }
+      },
+      {
+        "id": "drag-under",
+        "name": "Drag Them Under",
+        "suit": "undead",
+        "slot": "–",
+        "influence": 3,
+        "action": "meet",
+        "round": 12,
+        "text": "The target group and a neighbouring group of another faction are both dragged into a location next to them both. Target: the first group.",
+        "readings": {
+          "location": "any group at a ☾ location.",
+          "faction": "an Undead group anywhere."
+        }
+      },
+      {
+        "id": "invert",
+        "name": "Invert the Pentagram",
+        "suit": "demonic",
+        "slot": "–",
+        "influence": 3,
+        "action": "token",
+        "round": 12,
+        "text": "Hidden: at its fight, the smaller group wins.",
+        "readings": {
+          "location": "a ⎈ location.",
+          "faction": "a location holding the Demons."
         }
       },
       {
