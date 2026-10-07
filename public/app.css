@@ -823,3 +823,6 @@ button.card-opt:hover { background: #f6cca1; }
 .card { width: 214px; }
 #phase .card, .hand .card { width: 214px; }
 .hand.is-locked .card.card-selected { pointer-events: auto; }
+/* A selected card is pinned: raised, upright, unshuffled; hovering it changes nothing. */
+.hand .card.card-selected, .hand .card.card-selected:hover { --y: 0px !important; --r: 0deg !important; --nudge: 0px !important; z-index: 50 !important; }
+.hand.is-locked .card:not(.card-selected) { --nudge: 0px !important; }
