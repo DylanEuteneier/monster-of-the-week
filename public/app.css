@@ -555,3 +555,6 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 @container (max-width: 720px) {
   .faction-row { grid-template-columns: minmax(0, 1fr); grid-template-areas: "id" "supply" "influence"; }
 }
+/* Closed tabs also show the supply, wrapped six to a row so the tab stays narrow. */
+.player-supply-mini { display: grid; grid-template-columns: repeat(6, max-content); gap: 1px; align-content: start; justify-content: start; }
+.accordion .player.is-open .player-supply-mini { display: none; }
