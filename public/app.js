@@ -1104,8 +1104,9 @@ function watchHand() {
       return;
     }
     const boxes = cards.map((c) => c.getBoundingClientRect());
-    const left = Math.min(...boxes.map((b) => b.left)) - 70;
-    const right = Math.max(...boxes.map((b) => b.right)) + 70;
+    // Slop: a little room beside the spread cards, so the hand doesn't drop at its edges but never spans the screen.
+    const left = Math.min(...boxes.map((b) => b.left)) - 24;
+    const right = Math.max(...boxes.map((b) => b.right)) + 24;
     const top = Math.min(...boxes.map((b) => b.top)) - 16;
     const inside = at.x >= left && at.x <= right && at.y >= top;
     if (!inside && !onCard) {
