@@ -339,16 +339,20 @@ function picks() {
 /**
  * The pieces on one hex, as repeated pieces in rows: each faction's tokens in
  * its own row (a location holds at most two factions, LL1), then the
- * players' influence cubes. A candidate group's row is lit and clickable.
+ * players' influence cubes. A candidate group's row is lit and clickable, and
+ * so is every group of a candidate faction.
  * @param {string} loc @param {ReturnType<typeof picks>} lit
  */
 function piecesAt(loc, lit) {
   const view = /** @type {PlayerView} */ (ui.view);
   const place = view.board[loc];
   const rows = Object.entries(place.cubes).filter(([, n]) => n > 0).map(([f, n]) => {
-    const on = lit.groups.some((g) => g.location === loc && g.faction === f);
-    const tokens = Array.from({ length: n }, () => tokenHtml(f, 1, on ? 'candidate' : '')).join('');
-    return `<span class="token-stack piece-row"${on ? ` data-action="pick-group" data-location="${esc(loc)}" data-faction="${esc(f)}"` : ''} title="${n} ${esc(fname(f))}">${tokens}</span>`;
+    // A group step lights the group; a faction step lights every group of that faction, and picking one picks the faction.
+    const group = lit.groups.some((g) => g.location === loc && g.faction === f);
+    const faction = !group && lit.factions.includes(f);
+    const action = group ? ` data-action="pick-group" data-location="${esc(loc)}" data-faction="${esc(f)}"` : faction ? ` data-action="pick-faction" data-faction="${esc(f)}"` : '';
+    const tokens = Array.from({ length: n }, () => tokenHtml(f, 1, group || faction ? 'candidate' : '')).join('');
+    return `<span class="token-stack piece-row"${action} title="${n} ${esc(fname(f))}">${tokens}</span>`;
   });
   const cubes = Object.entries(place.influence).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
     .flatMap(([pid, n]) => Array.from({ length: n }, () => cubeHtml(colourOf(pid), 8))).join('');
