@@ -610,7 +610,7 @@ function renderTargeting(cardId) {
   const key = choice.kind === 'location' ? choice.key : choice.kind;
   const words = choice.kind === 'split' ? `Send cubes: ${choice.left} left` : WORDS[key] ?? '';
   const extra = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';
-  step('turn', `<b>${esc(card.name)}</b> · ${esc(words)}`, extra);
+  step('turn', esc(words), extra);
   if ((choice.kind === 'location' || choice.kind === 'group') && choice.optional) handAction('skip', { label: choice.kind === 'location' && choice.key === 'bluff' ? 'No bluff' : 'Done' });
   handAction('target-none', { tip: 'Play it for no effect' });
   handAction('back');
