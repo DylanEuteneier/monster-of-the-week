@@ -709,61 +709,51 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 body:has(.hand.is-hovering) #phase, body:has(.hand.is-open) #phase, body:has(.hand .card-selected) #phase { bottom: 178px; }
 
 /* ===========================================================================
-   The player board (2026-10-06): fixed along the bottom; the step bar on top,
-   then your resources, your hand and your trophies with the score preview.
-   Turn state is colour and a badge: gold "!" your move, cyan "?" you can
-   answer, dim while waiting. Overrides the earlier floating hand and guide.
+   The bottom bar (2026-10-06): one slim bar along the bottom; the hand sits
+   above it, tops peeking, and rises on hover. The bar's colour is the turn:
+   gold for your move, cyan when you can answer. Overrides the earlier hand
+   overlay and floating guide.
 =========================================================================== */
-.table { padding-bottom: 240px; }
-.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; background: var(--color-panel-2); border-top: 3px solid var(--ink); box-shadow: 0 -3px 0 var(--color-cell); }
-.dock.is-turn { border-top-color: var(--color-accent); }
-.dock.is-respond { border-top-color: var(--color-link); }
-.dock .stepbar#phase {
-  position: relative; left: auto; right: auto; top: auto; bottom: auto; transform: none; z-index: 2;
-  width: auto; max-width: none; min-width: 0; max-height: none; overflow: visible; margin: 0;
-  display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 8px; height: 34px; padding: 0 12px;
-  background: var(--ink); border: 0; box-shadow: none; transition: none;
-}
-.dock.is-turn .stepbar { background: color-mix(in oklab, var(--ink), var(--color-accent) 18%); }
-.dock.is-respond .stepbar { background: color-mix(in oklab, var(--ink), var(--color-link) 18%); }
-.step-status { width: 22px; height: 22px; flex: none; display: grid; place-items: center; font-family: var(--font-display); font-size: 14px; background: var(--color-cell); color: var(--color-text); border: 2px solid var(--ink); cursor: help; }
-.dock.is-turn .step-status { background: var(--color-accent); color: var(--ink); }
-.dock.is-respond .step-status { background: var(--color-link); color: var(--ink); }
-.step-body { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; font-size: 12px; }
-.step-card { font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text); overflow: hidden; text-overflow: ellipsis; }
-.step-now { display: grid; place-items: center; width: 20px; height: 20px; font-size: 13px; background: var(--color-accent); color: var(--ink); border: 1px solid var(--ink); cursor: help; }
-.step-flag { color: var(--color-accent); }
-.step-actions { flex: none; display: flex; gap: 4px; }
-.step-btn { width: 26px; height: 26px; display: grid; place-items: center; font-size: 14px; line-height: 1; padding: 0; cursor: pointer; background: var(--color-cell); color: var(--color-text); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); }
-.step-btn:hover:not(:disabled) { border-color: var(--color-accent); }
-.step-btn:active:not(:disabled) { transform: translate(1px, 1px); box-shadow: none; }
-.step-btn.is-primary { background: var(--color-accent); color: var(--ink); }
-.step-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.pip { width: 8px; height: 8px; border: 1px solid var(--color-muted); background: transparent; }
-.pip.is-done { background: var(--color-accent); border-color: var(--ink); }
-.seat-dot { width: 10px; height: 10px; background: var(--c); border: 1px solid var(--ink); display: inline-block; }
-.dock-grid { display: grid; grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) minmax(190px, 260px); height: 118px; }
-.dock-mine, .dock-score { display: flex; flex-direction: column; justify-content: center; gap: 5px; padding: 6px 12px; min-width: 0; overflow: hidden; z-index: 2; background: var(--color-panel-2); }
-.dock-mine { border-right: 1px solid var(--color-cell); }
-.dock-score { border-left: 1px solid var(--color-cell); }
-.mine-row, .score-row { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 6px; font-size: 12px; min-height: 14px; }
-.mine-row .cube + .cube { margin-left: -1px; }
-.mine-standing { display: inline-flex; align-items: center; gap: 1px; margin-right: 6px; }
-.mine-standing .token { margin-right: 3px; }
-.bluff { width: 9px; height: 9px; background: var(--color-cell); border: 2px solid var(--color-muted); box-shadow: 1px 1px 0 var(--ink); }
-.score-item { display: inline-flex; align-items: center; gap: 2px; margin-right: 4px; font-size: 12px; cursor: help; }
-.score-item.is-zero { opacity: 0.5; }
-.island-icon { width: 14px; height: 16px; background: var(--suit-undead); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+:root { --bar-h: 44px; --peek: 70px; }
+.table { padding-bottom: calc(var(--bar-h) + var(--peek) + 24px); }
+.dock { position: fixed; left: 0; right: 0; bottom: 0; height: var(--bar-h); z-index: 16;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 0 12px;
+  background: var(--color-panel-2); border-top: 3px solid var(--ink); }
+.dock.is-turn { border-top-color: var(--color-accent); background: color-mix(in oklab, var(--color-panel-2), var(--color-accent) 12%); }
+.dock.is-respond { border-top-color: var(--color-link); background: color-mix(in oklab, var(--color-panel-2), var(--color-link) 12%); }
+.bar-mine, .bar-score { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.dock .bar-step#phase { position: static; transform: none; width: auto; max-width: none; min-width: 0; max-height: none; height: auto; margin: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center; gap: 10px; background: none; border: 0; box-shadow: none; overflow: hidden; z-index: auto; }
+.bar-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.dock.is-turn .bar-text { color: var(--color-accent); }
+.dock.is-respond .bar-text { color: var(--color-link); }
+.bar-actions { display: flex; gap: 6px; flex: none; }
+.bar-btn { padding: 3px 10px; font-size: 12px; cursor: pointer; background: var(--color-cell); color: var(--color-text); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.bar-btn:hover:not(:disabled) { border-color: var(--color-accent); }
+.bar-btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: none; }
+.bar-btn.is-primary { background: var(--color-accent); color: var(--ink); font-weight: 600; }
+.bar-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.chip { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; cursor: help; }
+.chip b { font-weight: 600; }
+.chip-sep { width: 1px; height: 20px; background: var(--color-cell); }
+.chip-label { font-family: var(--font-display); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
+.bluff { width: 10px; height: 10px; background: var(--color-cell); border: 2px solid var(--color-muted); box-shadow: 1px 1px 0 var(--ink); }
+.bar-score { position: relative; }
+.score-pop { position: absolute; right: 0; bottom: calc(100% + 10px); min-width: 330px; padding: 8px 10px; background: var(--color-panel); border: var(--border); box-shadow: var(--shadow); white-space: normal; font-size: 12px; z-index: 30; }
+.score-pop table { border-collapse: collapse; margin-top: 4px; width: 100%; }
+.score-pop td { padding: 2px 6px 2px 0; }
+.score-pop td:nth-child(2) { text-align: right; padding-right: 10px; }
 
-/* The hand lives in the board's middle: closed, the cards sit low with their
-   tops in view; hovered, they spread and the hovered one rises. */
-.dock .hand { position: relative; left: auto; right: auto; bottom: auto; height: 118px; z-index: 1; pointer-events: none; }
-.dock .hand .fan { position: absolute; left: 50%; bottom: 0; width: 0; height: 0; }
-.dock .hand .card { --y: 46%; }
-.dock .hand.is-hovering .card { --y: 40%; }
-.dock .hand.is-hovering .card:hover { --y: -60px; }
-.dock .hand.is-open .card { --y: -30px; }
-.dock .hand .card.card-selected { --y: -60px; }
-.dock .hand-tab { top: auto; bottom: 6px; }
-.dock-grid { grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) minmax(240px, 300px); }
-.score-item { margin-right: 2px; gap: 1px; }
+/* The hand: fixed just above the bar; closed, only the top of each card shows;
+   hovered, the cards spread a little and the hovered one rises fully. */
+.hand { position: fixed; left: 0; right: 0; bottom: var(--bar-h); top: auto; height: 0; z-index: 15; pointer-events: none; }
+.hand .fan { position: absolute; left: 50%; bottom: 0; width: 0; height: 0; }
+.hand .card { --y: calc(100% - var(--peek)); }
+.hand.is-hovering .card { --y: calc(100% - var(--peek) + 6px); }
+.hand.is-hovering .card:hover, .hand .card.card-selected { --y: 0px; z-index: 50; }
+.hand.is-open .card { --y: 0px; }
+.hand-tab { top: auto; bottom: calc(var(--peek) + 6px); }
+/* Open hand (the draft): spread out to read every card, side by side. */
+.hand.is-open .card { --x: calc(var(--off) * min(204px, calc((100vw - 60px) / var(--n, 1)))); --r: 0deg; --nudge: 0px; }
+.card-band { gap: 6px; }
+.card-band > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

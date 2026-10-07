@@ -117,13 +117,13 @@ test('the draft renders the island, the seats and the cards to keep', () => {
 test('the play phase renders a hand, or who is to act', () => {
   const state = playUntil(createGame({ seed: 5, players: PLAYERS }), (s) => s.phase === 'play');
   push(state);
-  assert.match(html('phase'), /step-status/);
+  assert.match(html('phase'), /bar-text/);
 });
 
 test('the log and the ended phase render', () => {
   const state = playUntil(createGame({ seed: 3, players: PLAYERS }), (s) => s.phase === 'ended');
   push(state);
-  assert.match(html('phase'), /Game over/);
+  assert.match(html('phase'), /wins/);
   assert.match(html('phase'), /win/);
   assert.match(html('phase'), /(winner)/);
   assert.match(html('log'), /cards dealt/);
