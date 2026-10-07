@@ -97,7 +97,7 @@
   --bar-h: 44px;
   --peek: 70px;
   --card-w: 214px;
-  --card-w-wide: 300px;  /* a selected card: wider, so long text stays short */
+  --sel-peek: 124px;     /* a selected card at rest: band, name and options show */
 
   /* Stacking, lowest first (catalogue 2). */
   --z-hand: 15;
@@ -565,6 +565,7 @@ button.card-opt:hover { background: #f6cca1; }
 .card-opt.is-off { opacity: 0.55; box-shadow: none; }
 .card-opt.is-next { background: var(--color-accent); }
 .card-opt.is-on { background: var(--color-accent); outline: 2px solid var(--ink); outline-offset: 1px; }
+.card-opt.is-empty, .card-opt.is-next.is-empty { background: #e0f2f4; opacity: 0.5; text-decoration: line-through; }
 /* Card states: playable (act), keepable in the draft (keep), a ready
    response, ticked to keep, dimmed (a dark wash, never transparency). */
 .card-act, .card-keep, .card-respond { cursor: pointer; }
@@ -640,8 +641,8 @@ button.card-opt:hover { background: #f6cca1; }
      .is-active    the card last touched (watchHand) rises fully; its
                    neighbours shuffle aside
      .is-open      the draft: every card raised, side by side
-     .is-locked    a card is selected: only it is clickable; it rises, wide,
-                   at the left (.card-selected)
+     .is-locked    a card is selected: only it is clickable; a tall one rests
+                   at --sel-peek and rises on hover (.card-selected)
 --------------------------------------------------------------------------- */
 .hand {
   --gap: min(118px, calc((100vw - 300px) / var(--n, 1)));
@@ -669,8 +670,9 @@ button.card-opt:hover { background: #f6cca1; }
 .hand.is-open .card { --x: calc(var(--off) * min(204px, calc((100vw - 60px) / var(--n, 1)))); --y: 0px; --r: 0deg; transition-delay: 0ms; }
 .hand.is-locked .card { pointer-events: none; --nudge: 0px; }
 .hand.is-locked .card.card-selected { pointer-events: auto; }
-/* Selected: wide and parked at the left, clear of the map's middle and of the influence tab. */
-.hand .card.card-selected { --x: calc(var(--card-w-wide) / 2 + 72px - 50vw); --y: 0px; --r: 0deg; --nudge: 0px; z-index: 50; width: var(--card-w-wide); }
+/* Selected: a tall card sinks to --sel-peek, clear of the map; hovering it brings it all up. */
+.hand .card.card-selected { --y: max(0px, calc(100% - var(--sel-peek))); --r: 0deg; --nudge: 0px; z-index: 50; transition-delay: 0ms; }
+.hand .card.card-selected:hover { --y: 0px; }
 
 @media (prefers-reduced-motion: reduce) {
   .hand .card { transition: none; }
@@ -744,7 +746,7 @@ button.card-opt:hover { background: #f6cca1; }
   .hand { position: static; height: auto; padding: var(--space-3); background: var(--color-panel); pointer-events: auto; }
   .hand .fan { position: static; width: auto; height: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: var(--space-3); }
   .hand .card { position: relative; left: auto; bottom: auto; width: auto; z-index: auto; transform: none; transition: none; }
-  .hand .card.is-active, .hand .card.card-selected { z-index: auto; width: auto; }
+  .hand .card.is-active, .hand .card.card-selected { z-index: auto; }
   .hand .card.card-selected { outline: 3px solid var(--state-candidate); outline-offset: 2px; }
 
   /* Influence and trophies: static sections, always in full. */
