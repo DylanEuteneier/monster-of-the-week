@@ -348,11 +348,11 @@ function picks() {
  * its own row (a location holds at most two factions, LL1), then the
  * players' influence cubes. A candidate group's row is lit and clickable, and
  * so is every group of a candidate faction.
- * @param {string} loc @param {ReturnType<typeof picks>} lit
+ * @param {string} loc @param {ReturnType<typeof picks>} lit @param {PlayerView['board']} [board]
  */
-function piecesAt(loc, lit) {
+function piecesAt(loc, lit, board = /** @type {PlayerView} */ (ui.view).board) {
   const view = /** @type {PlayerView} */ (ui.view);
-  const place = view.board[loc];
+  const place = board[loc];
   const rows = Object.entries(place.cubes).filter(([, n]) => n > 0).map(([f, n]) => {
     // A group step lights the group; a faction step lights every group of that faction, and picking one picks the faction.
     const group = lit.groups.some((g) => g.location === loc && g.faction === f);
@@ -369,7 +369,7 @@ function piecesAt(loc, lit) {
 
 /** The faction summaries: one row per faction in play. @param {ReturnType<typeof picks>} lit */
 function factionTable(lit) {
-  const view = /** @type {PlayerView} */ (ui.view);
+  const view = shownView();
   const rows = view.factions.map((f) => {
     const faction = factionById(f);
     const arch = spec.archetypes.find((a) => a.id === faction.archetype);
@@ -398,11 +398,12 @@ function renderBoard() {
   const S = 2;
   const lit = picks();
   const chosen = new Set([ui.target.location, ui.target.to, ui.target.bluff, ...(ui.target.path ?? []), ...(ui.target.from ?? []), ...Object.keys(ui.target.split ?? {})].filter(Boolean));
+  const shown = shownView().board;
   const tiles = (board?.tiles ?? []).map((t) => {
-    const place = view.board[t.loc];
+    const place = shown[t.loc];
     const on = lit.spots.includes(t.loc);
     const state = on ? 'candidate' : ui.choosing && chosen.has(t.loc) ? 'hovered' : '';
-    return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}" data-tile="${esc(t.loc)}"${on ? ` data-action="pick-location" data-location="${esc(t.loc)}"` : ''} title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? '<b>scorched</b>' : piecesAt(t.loc, lit), /** @type {import('./pieces.js').TargetState} */ (state))}<div class="hex-preview" aria-hidden="true"></div></div>`;
+    return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}" data-tile="${esc(t.loc)}"${on ? ` data-action="pick-location" data-location="${esc(t.loc)}"` : ''} title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? '<b>scorched</b>' : piecesAt(t.loc, lit, shown), /** @type {import('./pieces.js').TargetState} */ (state))}<div class="hex-preview" aria-hidden="true"></div></div>`;
   });
   const total = Object.values(view.board).reduce((n, pl) => n + Object.values(pl.cubes).reduce((a, b) => a + b, 0), 0);
   // Display tables are never narrower than the map (they may be wider).
@@ -552,7 +553,7 @@ const chip = (icon, value, tip) => `<span class="chip" title="${esc(tip)}">${ico
 
 /** Your resources, left of the bar: supply, bluffs, and standing with each faction. */
 function renderMine() {
-  const view = /** @type {PlayerView} */ (ui.view);
+  const view = shownView();
   const me = view.players[view.you];
   const standing = view.factions.filter((f) => (me.standing[f] ?? 0) > 0).sort((a, b) => me.standing[b] - me.standing[a])
     .map((f) => `<span class="side-row">${tokenHtml(f, 1)}<b>${me.standing[f]}</b><span class="side-name">${esc(fname(f))}</span></span>`).join('');
@@ -926,6 +927,32 @@ function onClick(event) {
   }
 }
 
+/** Cards built one step at a time: each step shows on the board as soon as it is picked. */
+const STEPWISE = ['sow', 'split', 'broadcast', 'move-two'];
+
+/**
+ * The view as the table shows it: the real one, or, while a step-by-step
+ * card's target is being built, with the steps picked so far already carried
+ * out on the board and in standing (Track leaves its cube and influence at
+ * each step). Nothing is sent until the target is finished, so Back still
+ * undoes a step.
+ * @returns {PlayerView}
+ */
+function shownView() {
+  const view = /** @type {PlayerView} */ (ui.view);
+  const card = ui.choosing ? cardById(ui.choosing) : null;
+  const t = finish(ui.target);
+  const started = t.path?.length || Object.keys(t.split ?? {}).length || t.from?.length || t.moves?.some((m) => m.to);
+  if (!card || !STEPWISE.includes(card.action ?? '') || !started) return view;
+  if (t.moves) t.moves = t.moves.filter((m) => m.to);
+  try {
+    const { board, players } = previewTarget(view, view.you, card.id, t);
+    return /** @type {PlayerView} */ (/** @type {unknown} */ ({ ...view, board, players: Object.fromEntries(Object.entries(view.players).map(([id, p]) => [id, { ...p, standing: players[id].standing }])) }));
+  } catch {
+    return view;
+  }
+}
+
 /**
  * Outcome preview: hovering a lit choice that would finish the target (or
  * extend a path or a list of sources) shows on each hex what the play would
@@ -943,9 +970,10 @@ function onPreview(event) {
   if (!applyPick(t, el.dataset.action ?? '', el)) return;
   const done = finish(t);
   if (checkTarget(/** @type {any} */ (view), view.you, cardById(ui.choosing), done)) return;
-  const after = previewTarget(view, view.you, ui.choosing, done);
+  const after = previewTarget(view, view.you, ui.choosing, done).board;
+  const now = shownView().board;
   for (const [loc, place] of Object.entries(after)) {
-    const was = view.board[loc];
+    const was = now[loc];
     const chips = view.factions.map((f) => [f, (place.cubes[f] ?? 0) - (was.cubes[f] ?? 0)]).filter(([, n]) => n)
       .map(([f, n]) => `<span class="preview-chip ${Number(n) > 0 ? 'is-up' : 'is-down'}">${tokenHtml(String(f), 1)}${Number(n) > 0 ? '+' : '−'}${Math.abs(Number(n))}</span>`);
     const mine = (place.influence[view.you] ?? 0) - (was.influence[view.you] ?? 0);
