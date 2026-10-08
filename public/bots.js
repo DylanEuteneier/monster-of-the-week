@@ -9,14 +9,14 @@
  *              chance of winning, P(each ending) × P(it wins under it), plus
  *              its raw margins, and keeps a goal (win the island, or back a
  *              faction for the invaders) that it switches only past a margin.
- *              Backing a faction needs more proof than going for trophy sets
- *              (designer). It searches one move ahead: each card in hand with
+ *              Its style is a lean toward factions or trophy sets that fades by
+ *              round (designer: more proof to back a faction early on). It searches one move ahead: each card in hand with
  *              sampled targets, its influence, and passing.
  * - goal-deep: goal, plus a reply lookahead: for its best moves it also plays
  *              the next player's best reply and keeps the move that is still
  *              best for it afterwards. Slower.
- * - backer:    goal, but quick to back a faction for the invaders (proof
- *              −0.3): the faction-ally player. Two of them at a table of five
+ * - backer:    goal, leaning toward backing a faction for the invaders (lean
+ *              +0.3 against goal's −0.3): the faction-ally player. Two of them at a table of five
  *              bring the invaders' ending about 40% of the time (the
  *              designer's target), so tuning tables seat two.
  * - hunter:    a trophy chaser with a plain value: trophy sets for the island
@@ -47,7 +47,7 @@ function spend(state, cardId, at = (spots) => spots[0]) {
 }
 /** @typedef {'goal' | 'goal-deep' | 'backer' | 'hunter'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory }} BotOptions */
-/** What a bot remembers between its turns: its goal. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal }} BotMemory */
+/** What a bot remembers between its turns: its goal, and this game's variation in its lean. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal, jitter?: number }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
 
 export const PROFILES = /** @type {Profile[]} */ (['goal', 'goal-deep', 'backer', 'hunter']);
@@ -147,49 +147,36 @@ function hunterValue(state, pid) {
 // ---------------------------------------------------------------------------
 
 /**
- * A goal bot's personality (tuning, not rules; settings tested in
- * tournaments, 2026-10-08, in F.9).
- * - proof: how much better backing a faction must look than the island before
- *   it goes for it (designer: more proof to aim for a faction win).
- * - hold: hysteresis, how far the case must turn before it switches back.
+ * A goal bot's persona (tuning, not rules; tested in tournaments, F.9).
+ * Style (designer, 2026-10-08: at the start a bot decides what to pursue
+ * somewhat arbitrarily from its play style; later the board decides):
+ * - lean: its bias toward backing a faction (+) or trophy sets (−). It fades
+ *   as the game goes on, from full in round 1 to nothing in the last round.
+ * - jitter: each game its lean varies by up to this much, at random.
+ * - hold: stubbornness, how far the case must turn before it switches plan.
+ * Competence (the same for every style):
  * - push: tokens of presence per remaining round it reckons one player can
  *   move the game toward the ending it wants.
- * - early: extra proof needed to back a faction per round left (designer,
- *   2026-10-08: players are less likely to commit to a faction in early
- *   rounds, and more likely in later rounds if they read the table as going
- *   that way); it fades to nothing by the last round.
- * - open: the chance it opens the game backing a faction (designer,
- *   2026-10-08: at the start a bot decides what to pursue somewhat
- *   arbitrarily, from its profile and play style; the board decides after).
- *   Early caution applies only to joining a faction, not to keeping one.
- * - inertia: how firmly it keeps the plan it holds, per round left (early
- *   on the board says little, so a plan is kept unless the case turns hard).
- * - linear: counts the island margin as hunter does (trophy sets plus a
- *   little for every trophy, against the best rival) instead of as a chance.
- * - flat: 1 to value its island goal without scaling it by the chance the
- *   island ending happens (it collects trophies rather than chasing presence).
- * - threat: how much it counts the best rival's chance of winning through
- *   the invaders (designer, 2026-10-08: a player with no hope there works to
- *   prevent the invaders' ending), so it acts against a rival pulling ahead
- *   with a faction.
- * - other: how much the goal it isn't pursuing still counts (0 to 1).
- * - margin: how much the raw margins count beside the win chance (trophies
- *   and standing against the best rival), so a bot far ahead or behind still
- *   reaches for one more (a probability flattens there).
- * @typedef {{ proof: number, hold: number, push: number, other: number, margin: number, early?: number, open?: number, inertia?: number, linear?: number, flat?: number, threat?: number }} Persona
+ * - margin: how much its standing margin with the likely winning faction
+ *   counts beside the win chance.
+ * - linear: how much its island margin (trophy sets, as hunter counts them)
+ *   counts.
+ * - threat: how much the best rival's chance of winning through the invaders
+ *   counts against it (designer: trophy players block a lone backer).
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number }} Persona
  */
 /** @type {Record<'goal' | 'goal-deep' | 'backer', Persona>} */
 const PERSONAS = {
   // linear 1: counting island trophies as hunter does closed hunter's lead (challenger 32% against 20%, 2026-10-08).
   // threat 1: trophy players act against a rival pulling ahead with a faction (designer); hunter fell from 41% to 20% against it (2026-10-08).
-  goal: { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1, threat: 1 },
-  'goal-deep': { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1, threat: 1 },
-  backer: { proof: -0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1, threat: 1 },
+  goal: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1 },
+  'goal-deep': { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1 },
+  backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1 },
 };
 
 /**
  * A profile's persona. For tuning, a profile can also be written
- * "goal:proof=0.4,other=0.6" (or "goal-deep:..."): the base persona with those
+ * "goal:lean=0,hold=0.1" (or "goal-deep:..."): the base persona with those
  * numbers changed.
  * @param {string} profile @returns {Persona | undefined}
  */
@@ -256,30 +243,30 @@ function goalValue(state, pid, goal, persona) {
   // Margins are added on their own, never scaled by an ending's chance: a margin can be negative, and scaling it would
   // reward a bot that is behind for making that ending less likely (2026-10-08 fix).
   const inv = c.pInvaders * 10 * c.asInvaders + persona.margin * c.marginInvaders;
-  const islandMargin = persona.linear ? persona.linear * 10 * c.linearIsland : persona.margin * c.marginIsland;
-  const isl = (persona.flat && goal === 'island' ? 1 : 1 - c.pInvaders) * 10 * c.asIsland + islandMargin;
+  const islandMargin = persona.linear * 10 * c.linearIsland;
+  const isl = (1 - c.pInvaders) * 10 * c.asIsland + islandMargin;
   const threat = (persona.threat ?? 0) * 10 * c.pInvaders * c.rivalInvaders;
-  return (goal === 'invaders' ? inv + persona.other * isl : isl + persona.other * inv) - threat + 0.02 * state.players[pid].supply;
+  return (goal === 'invaders' ? inv : isl) - threat + 0.02 * state.players[pid].supply;
 }
 
 /**
- * Which goal to pursue now: the ending where its chance of winning, if it
- * pushes the game that way, is best. Backing a faction needs `proof` more;
- * a goal already held is kept until the case turns by `hold`.
+ * Which goal to pursue now: the evidence (for each ending, how reachable it
+ * is if it pushes that way, times its chance of winning there) plus its lean,
+ * which fades by round. A plan it holds is kept until the case turns by
+ * `hold`.
  * @param {GameState} state @param {string} pid @param {Persona} persona @param {BotMemory} [memory] @param {() => number} [rng] @returns {Goal}
  */
 export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
-  if (memory && !memory.goal) memory.goal = rng() < (persona.open ?? 0) ? 'invaders' : 'island'; // the opening plan, from its profile
   const c = winChances(state, pid);
   const push = persona.push * (c.roundsLeft + 1);
   const reachInv = (1 - c.known) * Math.min(1, c.prior + 0.15) + c.known * sigmoid((c.projected - c.threshold - 0.5 + push) / c.spreadP);
   const reachIsl = (1 - c.known) * Math.min(1, 1 - c.prior + 0.15) + c.known * (1 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spreadP));
-  const edge = reachInv * c.asInvaders - reachIsl * c.asIsland;
+  const evidence = reachInv * c.asInvaders - reachIsl * c.asIsland;
+  if (memory && memory.jitter === undefined) memory.jitter = (rng() * 2 - 1) * persona.jitter; // this game's play style
+  const score = evidence + (persona.lean + (memory?.jitter ?? 0)) * (1 - c.known);
   const held = memory?.goal;
-  const keep = persona.hold + (persona.inertia ?? 0) * c.roundsLeft;
   /** @type {Goal} */
-  const goal = held === 'invaders' ? (edge > persona.proof - keep ? 'invaders' : 'island') // keeping a faction
-    : (edge > persona.proof + (persona.early ?? 0) * c.roundsLeft + (held ? keep : 0) ? 'invaders' : 'island'); // joining one: early caution
+  const goal = score > (held === 'invaders' ? -persona.hold : held === 'island' ? persona.hold : 0) ? 'invaders' : 'island';
   if (memory) memory.goal = goal;
   return goal;
 }

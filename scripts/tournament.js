@@ -39,7 +39,7 @@
  *   seats two faction backers, two goal trophy chasers and hunter, so the
  *   invaders' ending comes about 40% of the time. Card figures are also split
  *   by the profile that played them.
- *   Goal profiles take persona overrides: goal:proof=0.4,other=0.6; separate
+ *   Goal profiles take persona overrides: goal:lean=0,hold=0.1; separate
  *   profiles with semicolons when overrides use commas.
  * A measuring tool, not a rule; bot figures are a guide (Appendix F.9).
  */
@@ -220,7 +220,7 @@ function main() {
   const logFile = pairs.log, outFile = pairs.out;
   const probe = { rate: Number(pairs.probe ?? 0), sample: Number(pairs.probeSample ?? 6), cards: pairs.probeCards?.split(','), playouts: Number(pairs.probePlayouts ?? 2), targets: Number(pairs.probeTargets ?? 2) };
   for (const k of ['profiles', 'log', 'out', 'probe', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets']) delete pairs[k];
-  for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:proof=0.4)`);
+  for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:lean=0)`);
   const games = Number(gamesArg), seed = Number(seedArg);
   /** @type {GameRecord[]} */
   const records = logFile && existsSync(logFile) ? readFileSync(logFile, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
