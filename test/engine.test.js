@@ -238,7 +238,7 @@ test('the cancel response stops a card that is in progress (principle 5; respons
   const actor = /** @type {string} */ (s.first);
   const holder = /** @type {string} */ (PLAYERS.find((pid) => pid !== actor));
   s.players[holder].hand.push('cancel'); // held out of the deal with responses; given by hand here
-  const card = s.players[actor].hand.find((c) => cardById(c).marked) ?? s.players[actor].hand.find((c) => cardById(c).action);
+  const card = s.players[actor].hand.filter((c) => cardById(c).marked).sort((a, b) => String(cardById(a).marked).localeCompare(String(cardById(b).marked)))[0] ?? s.players[actor].hand.find((c) => cardById(c).action);
   if (!card) return;
   s = applyMove(s, { playerId: actor, move: { type: 'play', card, use: 'action', target: null } });
   s = applyMove(s, { playerId: holder, move: { type: 'respond', card: 'cancel' } });
@@ -326,7 +326,7 @@ test('a fixed deck never deals test cards', () => {
   for (const c of spec.testCards.cards) assert.ok(!dealt.includes(c.id));
 });
 
-test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence weighted to strength (D12), the unsuited extras kept', () => {
+test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence weighted to strength (D12), the marked extras kept, two unmarked extras drawn', () => {
   for (let seed = 1; seed <= 20; seed++) {
     const s = createGame({ seed, players: PLAYERS, options: { deck: 'mixed' } });
     const deck = /** @type {string[]} */ (s.deck);
@@ -341,7 +341,9 @@ test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence we
       const battle = (/** @type {string} */ id) => /** @type {Record<string, { battle: number }>} */ (scores.scores)[id]?.battle ?? 0;
       for (const x of mine) for (const y of mine) if (battle(x.id) < battle(y.id)) assert.ok(printedOf(s, x.id) > printedOf(s, y.id), `${x.id} vs ${y.id}`);
     }
-    for (const c of spec.cards.filter((x) => !x.suit)) assert.ok(deck.includes(c.id));
+    for (const c of spec.cards.filter((x) => !x.suit && x.marked)) assert.ok(deck.includes(c.id));
+    const unmarked = deck.map((id) => cardById(id)).filter((c) => !c.suit && !c.marked);
+    assert.equal(unmarked.length, 2);
   }
 });
 
@@ -496,6 +498,34 @@ test('Lead the Horde shoves the smaller group on when it would make three factio
   assert.equal(after.board[away].tokens[g], 1);
 });
 
+test('round 14 unsuited: Bail Out, Call for Backup, Fall Back and Stake Out move or add only your own influence', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const [x, y] = map[NEUTRAL].adjacent;
+  s.board[x].influence = { ann: 2, bob: 1 };
+  s.board[y].influence = { ann: 1 };
+  s.board[NEUTRAL].influence = { ann: 1 };
+  const bail = previewTarget(s, 'ann', 'bail-out', { location: x, to: NEUTRAL });
+  assert.deepEqual([bail.board[x].influence, bail.board[NEUTRAL].influence.ann], [{ bob: 1 }, 3]);
+  const backup = previewTarget(s, 'ann', 'call-backup', { location: x });
+  assert.deepEqual([backup.board[x].influence.ann, backup.players.ann.supply], [4, s.players.ann.supply - 2]);
+  const fall = previewTarget(s, 'ann', 'fall-back', { location: NEUTRAL });
+  assert.deepEqual([fall.board[NEUTRAL].influence.ann, fall.board[x].influence.ann, fall.board[x].influence.bob], [4, undefined, 1]);
+  const stake = previewTarget(s, 'ann', 'stake-out', { location: y });
+  assert.deepEqual([stake.board[y].influence.ann, stake.players.ann.supply], [5, s.players.ann.supply - 4]);
+  s.players.ann.supply = 0;
+  assert.ok(checkTarget(s, 'ann', cardById('stake-out'), { location: y }));
+});
+
+test('Seize the Moment gives its player another turn (round 14)', () => {
+  const s = draftAll(newGame());
+  s.opened = true;
+  const pid = s.seating[s.turn];
+  s.players[pid].hand.push('seize-moment');
+  const after = applyMove(s, { playerId: pid, move: { type: 'play', card: 'seize-moment', use: 'action', target: {} } });
+  assert.equal(after.seating[after.turn], pid);
+});
+
 test('previewTarget runs a move with the game options (influence placed at the destination)', () => {
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[3]);
@@ -533,7 +563,7 @@ test('a game saved before an option existed plays on with its default', () => {
 test('with responses out (the first draft), a played action resolves at once and responses are refused', () => {
   const s = draftAll(newGame(11));
   const actor = /** @type {string} */ (s.first);
-  const card = s.players[actor].hand.find((c) => cardById(c).marked) ?? s.players[actor].hand.find((c) => cardById(c).action);
+  const card = s.players[actor].hand.filter((c) => cardById(c).marked).sort((a, b) => String(cardById(a).marked).localeCompare(String(cardById(b).marked)))[0] ?? s.players[actor].hand.find((c) => cardById(c).action);
   if (!card) return;
   const next = applyMove(s, { playerId: actor, move: { type: 'play', card, use: 'action', target: null } });
   assert.equal(next.pending, null);

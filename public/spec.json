@@ -1094,7 +1094,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 13 ideas under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
+    "notes": "Cards out of the fixed deck: rounds 8 to 14 ideas (round 14: unsuited extras) under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
     "cards": [
       {
         "id": "force-field",
@@ -1489,6 +1489,57 @@
           "trigger": "card-played",
           "text": "When a player is about to play a card's turn action or response, cancel it; the card is spent."
         }
+      },
+      {
+        "id": "bail-out",
+        "name": "Bail Out",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "bail-out",
+        "round": 14,
+        "text": "Pivot: move all your influence at one location to any other location. Target: where you bail out from, then where it goes."
+      },
+      {
+        "id": "call-backup",
+        "name": "Call for Backup",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "backup",
+        "round": 14,
+        "text": "Double your influence at the target; the extra comes from your supply. Target: a location where you have influence."
+      },
+      {
+        "id": "fall-back",
+        "name": "Fall Back",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "fall-back",
+        "round": 14,
+        "text": "Pivot: move all your influence from every location next to the target into it. Target: the rallying point."
+      },
+      {
+        "id": "seize-moment",
+        "name": "Seize the Moment",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "seize",
+        "round": 14,
+        "text": "Take another turn right away."
+      },
+      {
+        "id": "stake-out",
+        "name": "Stake Out",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "stake",
+        "amount": 4,
+        "round": 14,
+        "text": "Place 4 influence from your supply on the target. Target: any location. (Designer seed, 2026-10-07.)"
       }
     ]
   }

@@ -441,7 +441,12 @@ export function createGame(input) {
         if (s.items[0]) deck.push(s.items[0]);
       }
     }
-    deck.push(...spec.cards.filter((c) => !c.suit).map((c) => c.id));
+    // Unsuited: the marked cards (A to D) and the cancel stay; the unmarked action slots draw from every unmarked unsuited card.
+    const unmarked = (/** @type {Card} */ c) => !c.suit && !('marked' in c && c.marked) && c.action;
+    deck.push(...spec.cards.filter((c) => !c.suit && !unmarked(c)).map((c) => c.id));
+    const extras = shuffle(pool.filter(unmarked).map((c) => c.id), rngState);
+    rngState = extras.rngState;
+    deck.push(...extras.items.slice(0, spec.cards.filter(unmarked).length));
   }
   // Printed influence (D12): each suit prints 2, 3 and 4 (9 in all), weighted
   // to strength: the weakest action gets the most. Strength is the measured
@@ -602,6 +607,8 @@ function howlStep(state, target, from, f) {
   const between = MAP[from].adjacent.filter((m) => MAP[target].adjacent.includes(m) && canEnter(state, m, f));
   return between.find((m) => tokensOf(state, m, f) > 0) ?? between[0] ?? null;
 }
+/** Fall Back: the locations next to `to` holding the player's influence (`to` itself not scorched). @param {GameState | PlayerView} state @param {string} pid @param {string} to */
+const fallBackFrom = (state, pid, to) => (state.board[to].scorched ? [] : MAP[to].adjacent.filter((l) => (state.board[l].influence[pid] ?? 0) > 0));
 /** Groups a Howl draws in (round 13). @param {GameState} state @param {string} target @param {string} f */
 const howlers = (state, target, f) => LOCATION_IDS.filter((l) => l !== target && !MAP[target].adjacent.includes(l) && twoHex(target).includes(l) && tokensOf(state, l, f) > 0)
   .flatMap((from) => { const to = howlStep(state, target, from, f); return to ? [{ from, to }] : []; });
@@ -813,6 +820,17 @@ export function checkTarget(state, pid, card, t) {
       if (!t.faction || tokensOf(state, t.location, t.faction) <= 0 || (state.players[pid].standing[t.faction] ?? 0) <= 0) return 'Choose a faction there you have standing with.';
       return null;
     }
+    case 'bail-out': {
+      if (!t.location || (state.board[t.location]?.influence[pid] ?? 0) <= 0) return 'Choose a location where you have influence.';
+      return t.to && t.to !== t.location && state.board[t.to] && !state.board[t.to].scorched ? null : 'Choose where your influence goes.';
+    }
+    case 'backup': {
+      if (!t.location || (state.board[t.location]?.influence[pid] ?? 0) <= 0) return 'Choose a location where you have influence.';
+      return state.players[pid].supply > 0 ? null : 'You have no cubes in your supply.';
+    }
+    case 'fall-back': return t.location && fallBackFrom(state, pid, t.location).length ? null : 'Choose a location next to your influence.';
+    case 'seize': return null;
+    case 'stake': return t.location && state.board[t.location] && !state.board[t.location].scorched ? (state.players[pid].supply > 0 ? null : 'You have no cubes in your supply.') : 'Choose a location.';
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
       const moves = t.moves ?? [];
       const max = card.action === 'move-two' ? 2 : 1;
@@ -1158,6 +1176,44 @@ function act(state, pid, card, t) {
       state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
       for (let i = 0; i < n; i++) state.events.push({ type: 'influence-placed', player: pid, faction: f, location: to });
       logLine(state, `${pid}: ${card.name} places ${n} influence at ${lname(to)}.`);
+      break;
+    }
+    case 'bail-out': {
+      const from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
+      const n = state.board[from].influence[pid] ?? 0;
+      delete state.board[from].influence[pid];
+      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
+      logLine(state, `${pid}: ${card.name} moves all ${n} of their influence from ${lname(from)} to ${lname(to)}.`);
+      break;
+    }
+    case 'backup': {
+      const to = /** @type {string} */ (t.location);
+      const n = Math.min(state.board[to].influence[pid] ?? 0, state.players[pid].supply);
+      state.players[pid].supply -= n;
+      state.board[to].influence[pid] += n;
+      logLine(state, `${pid}: ${card.name} doubles their influence at ${lname(to)} (+${n} from their supply).`);
+      break;
+    }
+    case 'fall-back': {
+      const to = /** @type {string} */ (t.location);
+      let n = 0;
+      for (const from of fallBackFrom(state, pid, to)) { n += state.board[from].influence[pid]; delete state.board[from].influence[pid]; }
+      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
+      logLine(state, `${pid}: ${card.name} gathers ${n} of their influence into ${lname(to)}.`);
+      break;
+    }
+    case 'stake': {
+      const to = /** @type {string} */ (t.location);
+      const n = Math.min(/** @type {number} */ ((/** @type {any} */ (card)).amount ?? 4), state.players[pid].supply);
+      state.players[pid].supply -= n;
+      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
+      logLine(state, `${pid}: ${card.name} places ${n} influence at ${lname(to)}.`);
+      break;
+    }
+    case 'seize': {
+      // Another turn: step the turn back one, so the usual advance after an action returns it to this player.
+      if (state.seating) state.turn = (state.turn + state.seating.length - 1) % state.seating.length; // previews carry no seating
+      logLine(state, `${pid}: ${card.name}, and takes another turn.`);
       break;
     }
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
@@ -2045,6 +2101,20 @@ export function nextChoice(state, pid, cardId, t) {
     case 'conveyor':
       if (mode === 'location' && !t.location) return { kind: 'location', key: 'location', options: suitLocations(card) };
       return t.direction ? { kind: 'done' } : { kind: 'direction', options: spec.map.directions.map((d) => d.id) };
+    case 'bail-out': {
+      const mine = LOCATION_IDS.filter((l) => (state.board[l].influence[pid] ?? 0) > 0);
+      if (!t.location) return { kind: 'location', key: 'location', options: mine };
+      return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: LOCATION_IDS.filter((l) => l !== t.location && !state.board[l].scorched) };
+    }
+    case 'backup':
+      if (state.players[pid].supply <= 0) return { kind: 'location', key: 'location', options: [] };
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => (state.board[l].influence[pid] ?? 0) > 0) };
+    case 'fall-back':
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => fallBackFrom(state, pid, l).length > 0) };
+    case 'seize': return { kind: 'done' };
+    case 'stake':
+      if (state.players[pid].supply <= 0) return { kind: 'location', key: 'location', options: [] };
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched) };
     case 'move-influence': {
       const mine = (/** @type {string} */ l) => state.board[l].influence[pid] ?? 0;
       if (!t.location) return { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((to) => LOCATION_IDS.some((l) => l !== to && mine(l) > 0)) };
@@ -2106,6 +2176,9 @@ export function describeTarget(cardId, t) {
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': return `${F(t.faction)} at ${L(t.location)} to ${L(t.to)}${how}`;
     case 'spread': case 'infect': return `${F(t.faction)} at ${L(t.location)}${how}`;
     case 'split': return `${F(t.faction)} at ${L(t.location)} split ${Object.entries(t.split ?? {}).map(([l, n]) => `${n} to ${L(l)}`).join(', ')}${how}`;
+    case 'bail-out': return `from ${L(t.location)} to ${L(t.to)}`;
+    case 'backup': case 'fall-back': case 'stake': return `at ${L(t.location)}`;
+    case 'seize': return 'another turn';
     case 'conveyor': return `${t.mode === 'location' ? `the ${regionOf(/** @type {string} */ (t.location))} region` : 'every Sentient group'} one hex ${t.direction}`;
     default: return (t.moves ?? []).map((m) => `${F(m.faction)} at ${L(m.location)} to ${L(m.to)}`).join('; ');
   }

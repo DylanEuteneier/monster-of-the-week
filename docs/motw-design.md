@@ -1002,6 +1002,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-07 | No one moves another player's influence (D13). Influence economy levers under test as variants: influencePerMove, influenceToBoard, influenceAtOrigin (all off by default) | Designer: all three are good candidates |
 | 2026-10-07 | Printed influence: the same total per suit, split card by card, not fixed by slot (D12). Card action balance review opened | Starting split stays 2/3/4 per suit (9 each) until the review changes it |
 | 2026-10-07 | Terms (D14): faction presence is tokens, player influence is cubes; every faction "cube" in the document, the card text and the prototype renamed to "token" | Reference-game appendices (C, I) keep their own games' terms |
+| 2026-10-07 | Mixed decks (prototype): the two unmarked unsuited slots draw at random from every unmarked unsuited card; A to D stay | Round 14 unsuited test cards can be dealt |
 
 ---
 
@@ -2725,6 +2726,8 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 
 **Pivot cards (designer, 2026-10-07).** One or more of the unsuited extras are pivot cards: a "pivot" or "plan B" theme, moving the player's own influence (never another player's, D13). This replaces the ◐ idea Stake Out the Den (round 8) as the home of that move. Draft wording to measure (suggestion): *Switch to Plan B:* move up to 3 of your influence from other locations to one location. Measured as a test card (200 states, 5 players): battle 2.1, usable in 46% of states, control taken 0.4, influence moved 1.3; with `influenceToBoard=on`, 4.1, 73%, 0.7 and 2.4.
 
+**Round 14 test cards (2026-10-07; suggestions):** Stake Out (the designer's seed), Bail Out, Fall Back, Call for Backup, Seize the Moment. Measured in H.7, round 14; a mixed deck can deal them in the two unmarked slots.
+
 ### H.7 Notes from the revision rounds
 
 - Round 1: the three scattering Shift cards (Hang Garlic, Board Up the Windows, Perform an Exorcism) are near twins.
@@ -2784,6 +2787,16 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
   - Shift: Howl at the Moon, Leak It to the Press, Back Up to the Cloud, Hear the Banshee Wail, Lead the Horde, Light Every Lamp (either side).
   - Signature: Wait for the Full Moon, Circle the Prey, Raise the Force Field, Turn On the Tractor Beam, Hijack the Feed, Reprogram the Drones, Livestream the Fight, Install the Cameras, Take Over the Wake, Lay Them to Rest, Sign the Contract, Open the Pit, Trade Souls, Invert the Pentagram, Smash the Mirror.
   - Bots can play every test card (a random walk through the table's choices); in 40 bot games with mixed decks, all 27 test cards were dealt and played.
+
+- Round 14 (2026-10-07; suggestions, driven by Claude, from the designer's seeds): the unsuited extras. *Designer:* unsuited cards should have unique abilities that no faction card offers, such as moving your own influence (as Plan B does); in general they should score high on strength; valuable influence actions should score very highly too, for example a card A like "Stake Out" that places a large amount of influence on a single location. Five built as test cards (slot `extra`, no influence use), measured with Switch to Plan B and the scaffold moves (200 states, 5 players, smart bots; battle, control, influence placed, playable):
+  - Stake Out (designer's seed; amount 4 as a starting number, in `spec.json`): place 4 influence from your supply on any location. 3.0, 0.8, 3.5, 90%: the most influence placed and as much control as any card, with Broadcast a Signal (0.8).
+  - Bail Out: move all your influence at one location to any other location. 1.9, 0.3, 1.0, 59%.
+  - Fall Back: move all your influence from every location next to the target into it. 1.1, 0.2, 1.3, 59%.
+  - Call for Backup: double your influence at the target, the extra from your supply. 0.2, 0.1, 0.8, 50%.
+  - Seize the Moment: take another turn right away. Scores 0: the measure looks at one card's own effect, so it can't see the extra turn.
+  - For comparison: Switch to Plan B 2.0, 0.4, 1.3, 59%; scaffold A 23.5, 1.6; Broadcast a Signal 17.8, 0.8.
+  - *Finding:* on the current measure, influence-only cards can't reach the strength of cards that move tokens. Battle counts trophies changing hands and fights whose winner flips; moving tokens changes the fights themselves, while influence only changes who collects. Influence cards also need influence already on the board (about 59% of states), except Stake Out, which draws on the supply. Measuring influence cards "very high" needs either bigger amounts or a measure that values control and influence placed more (the strength ranking is the designer's call).
+  - *Prototype:* in a mixed deck, the two unmarked unsuited slots now draw at random from every unmarked unsuited card (the pivots and these test cards); A to D stay.
 
 ### H.8 Candidate sets
 
