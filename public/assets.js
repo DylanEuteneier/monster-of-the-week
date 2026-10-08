@@ -122,6 +122,22 @@ async function cards() {
     return (/** @type {string} */ id) => { const i = ids.indexOf(id); return i < 0 ? 'low' : i < ids.length / 3 ? 'high' : i < (2 * ids.length) / 3 ? 'mid' : 'low'; };
   };
   const roundBand = rankBand(round), openingBand = rankBand(opening);
+  // Whole-game play figures from bot tournaments (designer, 2026-10-08): scripts/tournament.js out=public/card-play-stats.json, rewritten after every game.
+  /** @type {{ games: number, updated: string, profiles: string[], cards: Record<string, { held: number, playedPct: number | null, actionPct: number | null, dWinAction: number | null, dWinInfluence: number | null, winAfterAction: number | null, opener: number }> } | null} */
+  const plays = /** @type {any} */ (await load('/card-play-stats.json'));
+  const playTags = (/** @type {string} */ id) => {
+    const c = plays?.cards[id];
+    if (!c) return plays ? '<span class="review-tag">Not dealt yet</span>' : '';
+    const sign = (/** @type {number | null} */ x) => (x === null ? '–' : `${x > 0 ? '+' : ''}${x}`);
+    const tag = (/** @type {string} */ label, /** @type {string} */ v, /** @type {string} */ title) => `<span class="review-tag" title="${esc(title)}">${esc(label)} <b>${esc(v)}</b></span>`;
+    return tag('Held', String(c.held), 'Times in a hand at the start of play, over the tournament games')
+      + tag('Played', c.playedPct === null ? '–' : `${c.playedPct}%`, 'Share of the times it was held that it was played')
+      + tag('Action', c.actionPct === null ? '–' : `${c.actionPct}%`, 'Share of its plays that were for its action (the rest spent for influence)')
+      + tag('Δ win', sign(c.dWinAction), 'Mean swing in its player\'s chance of winning when played for its action, in percentage points')
+      + (c.dWinInfluence === null ? '' : tag('Δ win (infl.)', sign(c.dWinInfluence), 'Mean swing in win chance when spent for influence, in percentage points'))
+      + tag('Won after', c.winAfterAction === null ? '–' : `${c.winAfterAction}%`, 'How often the player who played it for its action went on to win (an even share is 100% ÷ players)')
+      + (c.opener ? tag('Opened', String(c.opener), 'Times it was played as the round\'s first play') : '');
+  };
   const benefitTag = (/** @type {RoundData} */ d, /** @type {(id: string) => string} */ band, /** @type {string} */ label, /** @type {string} */ id) => {
     const v = d?.scores[id];
     if (!v) return '';
@@ -146,14 +162,14 @@ async function cards() {
       const band = v >= high ? 'high' : v >= mid ? 'mid' : 'low';
       return `<span class="review-tag is-${band}" title="${esc(label)}: ${v}${m === 'playable' ? '% of states' : ''} (${band})">${esc(label)} <b>${v}${m === 'playable' ? '%' : ''}</b></span>`;
     }).join('') + (SHOW_SCORES ? benefitTag(round, roundBand, 'Round', c.id) + benefitTag(opening, openingBand, 'Opener', c.id) : '');
-    return `<div class="review-tags"><span class="review-tag is-status">${esc(status)}</span><span class="review-tag is-status">${esc(typeOf(c.action))} · <span class="mono">${esc(c.action ?? 'none')}</span></span>${measured}</div>`;
+    return `<div class="review-tags">${playTags(c.id)}<span class="review-tag is-status">${esc(status)}</span><span class="review-tag is-status">${esc(typeOf(c.action))} · <span class="mono">${esc(c.action ?? 'none')}</span></span>${measured}</div>`;
   };
   const how = data
     ? `Measured ${esc(data.measured)}: ${data.states} states from ${esc(data.bots)} bot games at ${data.players} players${Object.keys(data.options).length ? `, ${esc(JSON.stringify(data.options))}` : ''}; each number is the mean of the card's best play per state (<span class="mono">npm run cards:score</span>).`
     : 'Not measured yet: run <span class="mono">npm run cards:score</span>.';
   const roundHow = (/** @type {RoundData} */ d, /** @type {string} */ what) => (d ? ` <b>${what}</b>: ${d.partial ? `in progress, ${esc(d.partial)}` : `${d.states} states`}, ${esc(d.bots)} bots, ${d.playouts} playouts (${esc(d.measured)}).` : '');
   $('cards').innerHTML = `<div class="row-between"><h2>Cards</h2><span class="small muted">${all.length} cards: ${deck.length} in the deck, ${tests.length} out of the deal</span></div>
-    <p class="small muted">Every card the engine can play, for review, sorted by suit, then type, then action. ${SHOW_SCORES ? `Tags: green high, gold mid, grey low. <b>Battle</b> trophies changing hands plus fights flipped (mid ${BANDS[0][2]}, high ${BANDS[0][3]}); <b>Control</b> contested locations where you become sole top influence (${BANDS[1][2]} / ${BANDS[1][3]}); <b>Moved</b> pieces moved or placed (${BANDS[2][2]} / ${BANDS[2][3]}); <b>Influence</b> influence placed (${BANDS[3][2]} / ${BANDS[3][3]}); <b>Playable</b> states with a legal target (${BANDS[4][2]}% / ${BANDS[4][3]}%). Rule-breaking is judged from the text; hidden tokens are undercounted (one round ahead). ${how} <b>Round</b> and <b>Opener</b>: benefit to the player over a played-out round (every turn, and each round's first play), banded by rank; … marks a run still in progress.${roundHow(round, 'Round')}${roundHow(opening, 'Opener')}` : 'Strength scores are hidden until they can be trusted.'}</p>
+    <p class="small muted">Every card the engine can play, for review, sorted by suit, then type, then action. ${SHOW_SCORES ? `Tags: green high, gold mid, grey low. <b>Battle</b> trophies changing hands plus fights flipped (mid ${BANDS[0][2]}, high ${BANDS[0][3]}); <b>Control</b> contested locations where you become sole top influence (${BANDS[1][2]} / ${BANDS[1][3]}); <b>Moved</b> pieces moved or placed (${BANDS[2][2]} / ${BANDS[2][3]}); <b>Influence</b> influence placed (${BANDS[3][2]} / ${BANDS[3][3]}); <b>Playable</b> states with a legal target (${BANDS[4][2]}% / ${BANDS[4][3]}%). Rule-breaking is judged from the text; hidden tokens are undercounted (one round ahead). ${how} <b>Round</b> and <b>Opener</b>: benefit to the player over a played-out round (every turn, and each round's first play), banded by rank; … marks a run still in progress.${roundHow(round, 'Round')}${roundHow(opening, 'Opener')}` : 'Strength scores are hidden until they can be trusted.'}${plays ? ` <b>Play figures</b> from ${plays.games} bot tournament games (${esc(plays.profiles.join(', '))}; updated ${esc(plays.updated.slice(0, 16).replace('T', ' '))}): what the bots chose and how it went; correlation, not cause.` : ''}</p>
     <div class="review-grid" id="review-grid"></div>`;
   const items = all.map(({ c, status }) => cardHtml(c.id, { extra: tags(c, status) }));
   // Masonry that reads left to right: each card, in order, goes to the shortest column.
