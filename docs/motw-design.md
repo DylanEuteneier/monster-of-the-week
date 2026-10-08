@@ -44,6 +44,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
      - `influenceAtOrigin=on` (1 also where the tokens leave): 92% / 53% / 23% / 6%; 6.9.
      - `influenceToBoard=on` (1 of a card spent for influence goes onto a location its faction controls): 47% / 13% / 6% / 2%; 8.9. The only lever that changes round 1.
        - *Designer (2026-10-07):* off for now; held in reserve, to bring in if more influence is needed.
+   - *Measuring over a played-out round (designer, 2026-10-07):* the measurement tests are reworked so a whole round is played out. A card's strength is its **benefit to the player** (designer's pick): the player plays it, bots play the rest of the round through its fights, and the player's position after them (the bots' position value) is compared with letting the turn go. `scripts/roundplay.js`, with deep bots (designer's pick: a reply lookahead), runs on every core; `opening=1` measures each round's first play. The one-move measure (`scripts/balance.js`) is kept for comparison: it can't see a gambit that pays off later in the round.
    - *Hidden tokens and the supply (measured 2026-10-07, round 13 of the card rounds):* a hidden token needs a cube from the player's supply (MC3), and the supply empties as influence goes to standing and the board: the share of turns with an empty supply is 0% in round 1, 8% in round 2, 51% in round 3, 78% in round 4 and 80% in round 5 (40 bot games, 5 players). Every token card can be played in only about 60% of states for this reason. *Designer (2026-10-07):* supply shouldn't be a bound yet; it is a balancing concern, and we are in early card design. Designer: just bump it a bit. The prototype's default is now 30 cubes per player (`playerCubes`): turns with an empty supply fall to 0%, 0%, 2%, 18% and 40% in rounds 1 to 5 (from 0%, 8%, 51%, 78%, 80% at 20). With an unbounded supply (99, tried first), token cards could be played in 86–100% of states and their battle scores roughly doubled (Invert the Pentagram 6.9, Salt and Burn the Bones 6.3, Set the House on Fire 5.2).
      - All three: 45% / 16% / 5% / 3%; 11.5.
      - With `influenceToBoard=on`, the cards that need influence already on the board gain the most: Stake Out the Den's battle score rises from 1.1 to 3.2 and it can be used in 61% of states (29% before); the hidden tokens rise a little; Track falls (11.3 to 9.6), since standing goes to the board instead of the chase.
@@ -1003,6 +1004,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-07 | Printed influence: the same total per suit, split card by card, not fixed by slot (D12). Card action balance review opened | Starting split stays 2/3/4 per suit (9 each) until the review changes it |
 | 2026-10-07 | Terms (D14): faction presence is tokens, player influence is cubes; every faction "cube" in the document, the card text and the prototype renamed to "token" | Reference-game appendices (C, I) keep their own games' terms |
 | 2026-10-07 | Mixed decks (prototype): the two unmarked unsuited slots draw at random from every unmarked unsuited card; A to D stay | Round 14 unsuited test cards can be dealt |
+| 2026-10-07 | Card strength measured over a played-out round, as benefit to the player (designer); deep bots with a reply lookahead and strategy breakpoints on two axes (the ending; influence or trophies mid-game); bot tournament | Prototype tooling, not rules; the breakpoint numbers are suggestions to tune |
 
 ---
 
@@ -2268,6 +2270,20 @@ Where a game is started. The host page holds no game rules. Everything it does i
 - **Thousands of games.** A script plays whole games with bots and prints summary figures.
 - **What random bots are good for:** checking that the rules run from start to finish, exercising every phase, and testing the table. They don't read the board or follow each other, so they understate how real players behave.
 - **A limit for balancing.** Figures from random bots are a rough guide and not a prediction. Setting the balancing numbers in the current focus will need bots that play with some purpose, or the figures checked against human play.
+
+#### Bots that play to win (designer, 2026-10-07)
+
+- **Purpose.** Bots play out rounds to measure cards and play whole games to test the systems. *Designer:* bot speed is not a concern; bots should play as tactically and strategically as we can make them, and their reactions should be designed carefully.
+- **Profiles** (`public/bots.js`; tuning, not rules):
+  - *smart:* one move ahead. Tries each card in hand with sampled targets, and passing; projects this round's fights; keeps the best by its position value (the two endings weighed by how likely each looks).
+  - *deep (designer's pick):* smart plus a reply lookahead. For its ten best moves it also plays the next player's best reply, and keeps the move that is still best for it afterwards. About 4–8 times slower than smart.
+  - *deep-bold, deep-balanced, deep-cautious:* deep with strategy breakpoints, below.
+- **Strategy breakpoints (designer, 2026-10-07).** Points at which a bot shifts focus, with different numbers per bot to give each its own play profile. Two axes:
+  1. *The ending:* a trophy mix (the island wins) or faction influence (the invaders win). A bot commits when the projected presence is far enough from the threshold, or in the last round; otherwise it hedges. Which faction to back is two-sided (designer): if the invaders look like winning, the faction it has the best shot at leading; mid-game, if they look like losing, the faction that sets up the actions it wants to take with its cards.
+  2. *Mid-game:* influence on a faction (spending cards for standing) or actions that produce trophies, switching by round and by how much standing it already holds.
+  - Starting numbers are Claude's suggestions, in `STRATEGIES`, to be tuned with the designer.
+- **Tournament** (`scripts/tournament.js`): whole games with one profile per seat, rotated through the seats, counting wins and how each profile's games end.
+- **Bots read the full state.** A bot that plays to win would have to be limited to its own player view for a fair game against people; for measuring cards, full state is used. *Open:* whether to limit them.
 
 ### F.10 Single game
 

@@ -13,6 +13,12 @@
  *            invaders win, or the island) by how likely each looks.
  * - invader: smart, but always plays as if the invaders will win.
  * - island:  smart, but always plays as if the island will win.
+ * - deep:    smart, plus a reply lookahead: for its few best moves it also
+ *            plays the next player's best reply (as smart) and keeps the move
+ *            that is still best for it afterwards. Slower; used to play out
+ *            rounds when measuring cards (designer, 2026-10-07).
+ * - deep-bold, deep-balanced, deep-cautious: deep, with strategy breakpoints
+ *            (STRATEGIES below): the same search, different play profiles.
  *
  * Bots are a tool for checking the rules and rough figures, not a model of
  * real players. Their tuning numbers below are not rules.
@@ -34,10 +40,10 @@ function spend(state, cardId, at = (spots) => spots[0]) {
   const spots = influenceSpots(state, cardId);
   return spots.length ? { type: 'play', card: cardId, use: 'influence', location: at(spots) } : { type: 'play', card: cardId, use: 'influence' };
 }
-/** @typedef {'random' | 'smart' | 'invader' | 'island'} Profile */
+/** @typedef {'random' | 'smart' | 'invader' | 'island' | 'deep' | 'deep-bold' | 'deep-balanced' | 'deep-cautious'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile }} BotOptions */
 
-export const PROFILES = /** @type {Profile[]} */ (['random', 'smart', 'invader', 'island']);
+export const PROFILES = /** @type {Profile[]} */ (['random', 'smart', 'invader', 'island', 'deep', 'deep-bold', 'deep-balanced', 'deep-cautious']);
 
 /** Tuning for the bots, not rules. */
 const RANDOM_ODDS = { respond: 0.35, pass: 0.15, action: 0.6 };
@@ -46,6 +52,84 @@ const SMART = {
   noise: 0.15,       // random jitter on each move's value, so bots vary
   respondMargin: 0.4, // a response must beat holding the card by this much
   spread: 3,         // how sharply presence decides which faction is likely to win
+};
+/**
+ * Strategy breakpoints (designer, 2026-10-07): the points at which a bot
+ * shifts focus, on two axes. Each profile has its own numbers, so they play
+ * differently. Tuning for the bots, not rules.
+ *
+ * 1. The ending it plays for: a trophy mix (the island wins) or faction
+ *    influence (the invaders win). It commits to one when the projected
+ *    presence is `commit` or more from the threshold, or in the last round if
+ *    `lastRound`; otherwise it hedges by how likely each looks.
+ *    Which faction it backs depends on the ending (designer, 2026-10-07):
+ *    - if the invaders look like winning, the faction it has the best shot
+ *      at leading: among the factions within `backLead` presence of the top,
+ *      the one where its standing less trophies is furthest ahead of the
+ *      other players;
+ *    - mid-game, if the invaders look like losing, the faction that sets up
+ *      the actions it wants to take: the faction of most of the suit cards in
+ *      its hand (presence actions spend standing with the faction moved).
+ *      Standing with it counts `setup` per point, up to 3 per such card.
+ * 2. Mid-game, influence on a faction (spending cards for standing) or
+ *    actions that produce trophies. It builds influence through round
+ *    `buildRounds` while its standing with the faction it would back is
+ *    under `standingGoal`, then hunts trophies. `weight` is how much more the
+ *    current focus counts (standing while building; trophies and influence at
+ *    fights while hunting).
+ * @typedef {{ commit: number, lastRound: boolean, backLead: number, setup: number, buildRounds: number, standingGoal: number, weight: number }} Strategy
+ */
+export const STRATEGIES = /** @type {const} */ ({
+  bold:     { commit: 2, lastRound: true, backLead: 2, setup: 0.3, buildRounds: 1, standingGoal: 4, weight: 0.6 },
+  balanced: { commit: 5, lastRound: true, backLead: 4, setup: 0.25, buildRounds: 2, standingGoal: 7, weight: 0.4 },
+  cautious: { commit: 9, lastRound: true, backLead: 6, setup: 0.2, buildRounds: 3, standingGoal: 10, weight: 0.25 },
+});
+/** @type {Partial<Record<Profile, Strategy>>} */
+const STRATEGY_OF = { 'deep-bold': STRATEGIES.bold, 'deep-balanced': STRATEGIES.balanced, 'deep-cautious': STRATEGIES.cautious };
+
+/**
+ * Where a bot's focus is now, by its strategy's breakpoints (on the board
+ * after this round's fights, as they stand).
+ * @param {GameState} s @param {string} pid @param {Strategy} st
+ * @returns {{ ending: 'island' | 'invaders' | 'hedge', backs: string | null, setup: { faction: string, cards: number } | null, focus: 'influence' | 'trophies' }}
+ */
+export function plan(s, pid, st) {
+  const threshold = Number(s.options.threshold);
+  const total = totalPresence(s);
+  const last = s.round >= Number(s.options.rounds);
+  /** @type {'island' | 'invaders' | 'hedge'} */
+  let ending = 'hedge';
+  if (total - threshold >= st.commit) ending = 'invaders';
+  else if (threshold - total >= st.commit) ending = 'island';
+  else if (st.lastRound && last) ending = total > threshold ? 'invaders' : 'island';
+  const p = s.players[pid];
+  const net = (/** @type {string} */ id, /** @type {string} */ f) => (s.players[id].standing[f] ?? 0) - s.players[id].trophies[f];
+  // Invaders likely: the contender it has the best shot at leading.
+  const top = Math.max(...s.factions.map((f) => presenceOf(s, f)));
+  const contenders = s.factions.filter((f) => top - presenceOf(s, f) <= st.backLead);
+  const shot = (/** @type {string} */ f) => net(pid, f) - Math.max(...s.seating.filter((id) => id !== pid).map((id) => net(id, f)));
+  const backs = ending === 'island' ? null : contenders.slice().sort((a, b) => shot(b) - shot(a))[0] ?? null;
+  // Invaders unlikely: the faction behind most of its suit cards.
+  /** @type {Record<string, number>} */
+  const behind = {};
+  for (const c of p.hand) {
+    const suit = cardById(c).suit;
+    const f = suit ? s.factions[spec.archetypes.findIndex((a) => a.id === suit)] : null;
+    if (f) behind[f] = (behind[f] ?? 0) + 1;
+  }
+  const best = Object.entries(behind).sort((a, b) => b[1] - a[1])[0];
+  const setup = ending === 'island' && best ? { faction: best[0], cards: best[1] } : null;
+  const goal = backs ?? setup?.faction;
+  const standing = goal ? (p.standing[goal] ?? 0) : Math.max(...s.factions.map((f) => p.standing[f] ?? 0));
+  const focus = s.round <= st.buildRounds && standing < st.standingGoal ? 'influence' : 'trophies';
+  return { ending, backs, setup, focus };
+}
+
+/** Tuning for the deep bot's reply lookahead, not rules. */
+const DEEP = {
+  targets: 12,       // targets sampled per card for its own move
+  keep: 10,          // its best moves (one move ahead) checked against a reply
+  replyTargets: 8,   // targets sampled per card for the reply
 };
 
 /**
@@ -142,24 +226,31 @@ export function evaluate(state, pid, profile = 'smart') {
   const threshold = Number(s.options.threshold);
   const total = totalPresence(s);
   const uncertainty = 3 + 3 * roundsLeft;
-  const pInvaders = profile === 'invader' ? 1 : profile === 'island' ? 0 : 1 / (1 + Math.exp(-(total - threshold) / uncertainty));
+  const st = STRATEGY_OF[profile];
+  const pl = st ? plan(s, pid, st) : null;
+  const pInvaders = profile === 'invader' || pl?.ending === 'invaders' ? 1 : profile === 'island' || pl?.ending === 'island' ? 0 : 1 / (1 + Math.exp(-(total - threshold) / uncertainty));
+  // Focus (strategy axis 2): the current focus counts `weight` more.
+  const standingW = pl?.focus === 'influence' ? 1 + (st?.weight ?? 0) : 1;
+  const trophyW = pl?.focus === 'trophies' ? 1 + (st?.weight ?? 0) : 1;
 
-  // Invaders: each faction's chance to be the winner, from presence.
+  // Invaders: each faction's chance to be the winner, from presence (or the one it backs).
   const presence = s.factions.map((f) => presenceOf(s, f));
   const top = Math.max(...presence);
-  const weights = presence.map((n) => Math.exp((n - top) / SMART.spread));
+  const weights = pl?.backs && pl.ending === 'invaders' ? s.factions.map((f) => (f === pl.backs ? 1 : 0)) : presence.map((n) => Math.exp((n - top) / SMART.spread));
   const sum = weights.reduce((a, b) => a + b, 0);
   /** @param {string} id */
   const invaderScore = (id) => s.factions.reduce((acc, f, i) => {
     const p = s.players[id];
-    const onBoard = Object.values(s.board).reduce((n, pl) => n + (pl.influence[id] ?? 0), 0) * 0.15;
-    return acc + (weights[i] / sum) * ((p.standing[f] ?? 0) - p.trophies[f]) + onBoard / s.factions.length;
+    const onBoard = Object.values(s.board).reduce((n, place) => n + (place.influence[id] ?? 0), 0) * 0.15 * trophyW;
+    return acc + (weights[i] / sum) * (standingW * (p.standing[f] ?? 0) - p.trophies[f]) + onBoard / s.factions.length;
   }, 0);
   // Island: weakest colour first, then the next (TS2, WT1).
   /** @param {string} id */
   const islandScore = (id) => {
     const t = s.factions.map((f) => s.players[id].trophies[f]).sort((a, b) => a - b);
-    return t[0] + 0.35 * t[1] + 0.12 * t[2] + 0.02 * t.reduce((a, b) => a + b, 0);
+    // Standing with the faction behind its cards fuels the actions it wants to take (strategy axis 1, island side).
+    const fuel = pl?.setup && st ? st.setup * Math.min(s.players[id].standing[pl.setup.faction] ?? 0, 3 * pl.setup.cards) : 0;
+    return trophyW * (t[0] + 0.35 * t[1] + 0.12 * t[2] + 0.02 * t.reduce((a, b) => a + b, 0)) + (id === pid ? fuel : 0);
   };
   const others = s.seating.filter((id) => id !== pid);
   const vsBest = (/** @type {(id: string) => number} */ score) => score(pid) - Math.max(...others.map(score));
@@ -167,7 +258,7 @@ export function evaluate(state, pid, profile = 'smart') {
 }
 
 /** Every move worth considering on this bot's turn. @param {GameState} state @param {string} pid @param {() => number} rng */
-function candidates(state, pid, rng) {
+function candidates(state, pid, rng, targets = SMART.targets) {
   const p = state.players[pid];
   /** @type {Move[]} */
   const moves = [{ type: 'pass' }];
@@ -181,7 +272,7 @@ function candidates(state, pid, rng) {
     if (!card.action) continue;
     /** @type {Set<string>} */
     const seen = new Set();
-    for (let i = 0; i < SMART.targets * 2 && seen.size < SMART.targets; i++) {
+    for (let i = 0; i < targets * 2 && seen.size < targets; i++) {
       const target = sampleTarget(state, pid, cardId, rng);
       const key = JSON.stringify(target);
       if (seen.has(key)) continue;
@@ -246,7 +337,9 @@ function smartMove(state, pid, rng, profile) {
   if (state.seating[state.turn] !== pid) return null;
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
-  const moves = candidates(state, pid, rng);
+  const deep = profile.startsWith('deep');
+  const moves = candidates(state, pid, rng, deep ? DEEP.targets : SMART.targets);
+  if (deep) return deepPick(state, pid, rng, moves, profile);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
     const v = value(after(state, pid, move));
@@ -254,6 +347,34 @@ function smartMove(state, pid, rng, profile) {
       best = move;
       bestV = v;
     }
+  }
+  return best;
+}
+
+/**
+ * The deep bot's choice: its few best moves one move ahead, each followed by
+ * the next player's best reply (one move ahead, as smart), scored for this bot.
+ * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Profile} profile
+ */
+function deepPick(state, pid, rng, moves, profile) {
+  const noise = () => (rng() - 0.5) * SMART.noise;
+  const first = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: evaluate(s, pid, profile) + noise() }; })
+    .sort((a, b) => b.v - a.v).slice(0, DEEP.keep);
+  let best = first[0]?.move ?? null, bestV = -Infinity;
+  for (const { move, s } of first) {
+    let end = s;
+    const q = s.phase === 'play' && !s.pending ? s.seating[s.turn] : null;
+    if (q && q !== pid) {
+      let reply = null, replyV = -Infinity;
+      for (const m of candidates(s, q, rng, DEEP.replyTargets)) {
+        const r = after(s, q, m);
+        const v = evaluate(r, q) + noise();
+        if (v > replyV) { reply = r; replyV = v; }
+      }
+      if (reply) end = reply;
+    }
+    const v = evaluate(end, pid, profile) + noise();
+    if (v > bestV) { best = move; bestV = v; }
   }
   return best;
 }

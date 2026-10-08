@@ -32,6 +32,7 @@
 import { createGame, applyMove, nextRandom, spec, totalPresence, cardById, nextChoice, previewTarget, resolveFight, growthDue, checkTarget } from '../public/engine.js';
 import { botMove } from '../public/bots.js';
 import { writeFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 
 /** @typedef {import('../public/engine.js').GameState} GameState @typedef {import('../public/engine.js').Target} Target */
 
@@ -225,4 +226,7 @@ function main() {
   }
 }
 
-main();
+// Run as a script; scripts/roundplay.js imports the sampler.
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main();
+
+export { sampleStates, seededRng };
