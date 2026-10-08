@@ -889,7 +889,7 @@ function onClick(event) {
 }
 
 /** Cards built one step at a time: each step shows on the board as soon as it is picked. */
-const STEPWISE = ['sow', 'split', 'broadcast', 'move-two', 'move-influence'];
+const STEPWISE = ['sow', 'split', 'broadcast', 'move-influence'];
 
 /**
  * The view as the table shows it: the real one, or, while a step-by-step

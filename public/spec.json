@@ -19,7 +19,8 @@
       "home": 5,
       "other": 1
     },
-    "notes": "Hand sizes: PS1 (3.16). Seeding: SD1 (3.5)."
+    "notes": "Hand sizes: PS1 (3.16). Seeding: SD1 (3.5).",
+    "unsuitedSlots": 6
   },
   "archetypes": [
     {
@@ -476,47 +477,28 @@
       "marked": "A"
     },
     {
-      "id": "extra-b",
-      "name": "B (scaffold)",
+      "id": "lockdown",
+      "name": "Lock Down the Town",
       "suit": null,
       "slot": "extra",
       "influence": 0,
-      "action": "move-far",
-      "text": "Scaffold: move one group up to two hexes away, through locations it can enter.",
-      "marked": "B"
-    },
-    {
-      "id": "extra-c",
-      "name": "C (scaffold)",
-      "suit": null,
-      "slot": "extra",
-      "influence": 0,
-      "action": "move-one",
-      "text": "Scaffold: move one group to an adjacent location.",
+      "action": "lockdown",
+      "text": "Name a region; this round, no group moves into or out of it. Target: a location in the region.",
       "marked": "C"
     },
     {
-      "id": "extra-d",
-      "name": "D (scaffold)",
+      "id": "bounty",
+      "name": "Put a Bounty On It",
       "suit": null,
       "slot": "extra",
       "influence": 0,
-      "action": "move-half",
-      "text": "Scaffold: move half of one group, rounded down, to an adjacent location.",
+      "action": "bounty",
+      "text": "Name a faction; at every fight this round, its group loses 1 more token when it wins, into the trophy piles. Target: the faction.",
       "marked": "D"
     },
     {
-      "id": "change-plan",
-      "name": "Change the Plan",
-      "suit": null,
-      "slot": "extra",
-      "influence": 0,
-      "action": "move-influence",
-      "text": "Pivot: move up to 3 of your influence from other locations to one location."
-    },
-    {
       "id": "plan-b",
-      "name": "Switch to Plan B",
+      "name": "Plan B",
       "suit": null,
       "slot": "extra",
       "influence": 0,
@@ -1214,7 +1196,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 19 ideas (rounds 14 to 19: unsuited extras, rounds 18 and 19 marked-card candidates (Set a Trap adopted as A); rounds 17 to 19: revisions of the weakest) under measurement by scripts/tournament.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
+    "notes": "Cards out of the fixed deck: rounds 8 to 19 ideas (rounds 14 to 19: unsuited extras, rounds 18 and 19 marked-card candidates (Set a Trap, Lock Down the Town and Put a Bounty On It adopted as A, C and D); rounds 17 to 19: revisions of the weakest) under measurement by scripts/tournament.js. A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
     "cards": [
       {
         "id": "force-field",
@@ -1581,22 +1563,6 @@
         }
       },
       {
-        "id": "cancel",
-        "name": "Cancel",
-        "suit": null,
-        "slot": "extra",
-        "influence": 0,
-        "action": null,
-        "text": "Response only.",
-        "response": {
-          "id": "cancel",
-          "name": "Cancel",
-          "timing": "before",
-          "trigger": "card-played",
-          "text": "When a player is about to play a card's turn action or response, cancel it; the card is spent."
-        }
-      },
-      {
         "id": "bail-out",
         "name": "Bail Out",
         "suit": null,
@@ -1784,7 +1750,7 @@
         "influence": 0,
         "action": "split-up",
         "round": 18,
-        "text": "Opening gambit (marked-card candidate for B to D): place 1 influence from your supply at up to three locations in different regions; this round, your influence at each counts double at its fight. Target: the locations."
+        "text": "Opening gambit (marked-card candidate for B): place 1 influence from your supply at up to three locations in different regions; this round, your influence at each counts double at its fight. Target: the locations."
       },
       {
         "id": "research",
@@ -1794,7 +1760,7 @@
         "influence": 0,
         "action": "research",
         "round": 18,
-        "text": "Opening gambit (marked-card candidate for B to D): you have seen the cards left out this round; take one into your hand and put one of yours back in its place. Target: the card to take, then the one to put back."
+        "text": "Opening gambit (marked-card candidate for B): you have seen the cards left out this round; take one into your hand and put one of yours back in its place. Target: the card to take, then the one to put back."
       },
       {
         "id": "tip-off",
@@ -1804,7 +1770,7 @@
         "influence": 0,
         "action": "tipoff",
         "round": 18,
-        "text": "Opening gambit (marked-card candidate for B to D): name a faction; for the rest of the round, whenever anyone moves it, place 1 influence from your supply where it lands. Target: the faction."
+        "text": "Opening gambit (marked-card candidate for B): name a faction; for the rest of the round, whenever anyone moves it, place 1 influence from your supply where it lands. Target: the faction."
       },
       {
         "id": "wake-dead",
@@ -1847,26 +1813,6 @@
           "location": "any group at a ⏏ location.",
           "faction": "a Sentient group anywhere."
         }
-      },
-      {
-        "id": "bounty",
-        "name": "Put a Bounty On It",
-        "suit": null,
-        "slot": "extra",
-        "influence": 0,
-        "action": "bounty",
-        "round": 19,
-        "text": "Opening gambit (marked-card candidate for B to D): name a faction; at every fight this round, its group loses 1 more token when it wins, into the trophy piles. Target: the faction."
-      },
-      {
-        "id": "lockdown",
-        "name": "Lock Down the Town",
-        "suit": null,
-        "slot": "extra",
-        "influence": 0,
-        "action": "lockdown",
-        "round": 19,
-        "text": "Opening gambit (marked-card candidate for B to D): name a region; this round, no group moves into or out of it. Target: a location in the region."
       },
       {
         "id": "virus-reach",

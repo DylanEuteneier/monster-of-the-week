@@ -97,7 +97,7 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 
 **Where the cards stand (2026-10-06):**
 
-- Structure: five archetype suits of three, Strike (influence 2), Shift (3) and Signature (4, the suit's primary card: the archetype's rule-bend plus the suit's response); six unsuited extras, A to D and two unmarked, one of which holds the only cancel response. Fixed pool of 21 (PS1); hands of 6, 5 and 4.
+- Structure: five archetype suits of three, Strike (influence 2), Shift (3) and Signature (4, the suit's primary card: the archetype's rule-bend plus the suit's response); six unsuited extras, A to D and two unmarked (the Cancel removed, 2026-10-08). Fixed pool of 21 (PS1); hands of 6, 5 and 4.
 - Card principles 1–14 in 3.7. Every suit card targets either a suit location (any faction) or the suit's faction (anywhere) (principle 14). Presence actions have no token limits, move any faction, and spend influence from the faction moved; as many as possible are unique moves.
 - Responses are interrupts, few, thematic, and never just move tokens (blocking is fine); each says whether it resolves before or after its trigger; no responses to responses.
 - Fight modifiers are only hidden actions, with all of 3.11's hidden-token rules: one token per location, bluffs placed under the same rules, effects that apply to any fight there.
@@ -618,7 +618,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     4. Some cards can be multi-use; some single-use. Multi-use means a card offers more than one action, of which the player takes one; every card is played once.
     5. Like Inis, some cards could have an "on your turn" action and an "in response" action, so the card can be spent either way.
        - "In response" actions can be unique actions informed purely by the theme. Unlike the card's turn action, they don't have to apply to the suit's locations or factions (principles 1 and 2 govern turn actions only).
-       - Responses are interrupts: played the moment their trigger happens, on anyone's turn, and they don't use a turn. First draft: each response says when it resolves, before or after its trigger, depending on what it does. A cancel response (like Inis's Geis) resolves before, and there is only ever one cancel response in the pool. It is on one of the two unmarked unsuited cards, not on A to D.
+       - Responses are interrupts: played the moment their trigger happens, on anyone's turn, and they don't use a turn. First draft: each response says when it resolves, before or after its trigger, depending on what it does. A cancel response (like Inis's Geis) resolves before, and there is only ever one cancel response in the pool. It is on one of the two unmarked unsuited cards, not on A to D. *Designer (2026-10-08): the Cancel card is removed entirely; the pool has no cancel response.*
        - First draft: a response can't be answered by another response. If the response makes the triggering action impossible, that action resolves as far as it can, and its card is still spent.
        - In the web prototype the game never pauses for responses; a response fires as it happens (2026-10-06). A turn action is announced when its card is played and stays *in progress* while the acting player chooses its targets; a "before" response (the cancel, a block) can fire in that window. An "after" response fires once the action has resolved. If no one fires, the action resolves when the acting player confirms.
        - Responses should be few. Most ways to undo or alter another player's move are presence actions taken on a normal turn, so responses are kept for what a turn can't do.
@@ -641,7 +641,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - First draft, suit structure (from a suggestion, 2026-10-05). Each suit has three cards:
     - *Strike:* a move that creates a contest at or from a suit location. Printed influence 2 to start.
     - *Shift:* a relocation that concentrates or scatters tokens. Printed influence 3 to start.
-    - *Signature:* the suit's primary card. The archetype's rule-bend, plus the suit's response (one per suit, so five in the pool; the one cancel response is separate, on one of the two unmarked unsuited cards), and the suit's highest printed influence, provisionally 4 (2026-10-06).
+    - *Signature:* the suit's primary card. The archetype's rule-bend, plus the suit's response (one per suit, so five in the pool; the Cancel was removed, 2026-10-08), and the suit's highest printed influence, provisionally 4 (2026-10-06).
     - *Printed influence (D12, 2026-10-07):* not fixed by slot. Every suit prints the same total influence (9 at present), split across its three cards however balances them; the 2/3/4 above is the starting split. Always weighted to the action's strength: the weakest of the three prints the most.
     - Across a suit's cards, one concentrates and one scatters. Concentrating tokens feeds growth (GR1 needs 2 or more tokens); scattering them into single tokens stops growth, so both sides of the win condition have a tool in every suit.
 - **Card ideas** are catalogued in Appendix H, all in one format. Every entry there is an idea, not a decision.
@@ -1053,6 +1053,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-08 | One tuning tool (designer): simulate, economy, balance and roundplay merged into the tournament, with per-card play figures and controlled probes; `npm run cards:plays` | The engine still reads `card-scores.json` for D12's order (all 0, so random) until D12 takes a trusted measure |
 | 2026-10-08 | Bots pruned to the strongest (designer): goal (standard), goal-deep, hunter | Goal bots tuned by challenger tournaments; two backers force the invaders' ending 40% of the time |
 | 2026-10-08 | Round 18 adopted (designer): Set a Trap is marked card A; Wake the Dead replaces Take Over the Wake | B to D stay scaffolds; Research Montage returned to the test cards (no board effect, a blind draft pick) |
+| 2026-10-08 | Round 19 adopted (designer): Lock Down the Town is C, Put a Bounty On It is D. Switch to Plan B and Change the Plan merged into one card, Plan B. The Cancel removed entirely. Every scaffold card removed | B and one unmarked slot are open; the prototype fills them from the unmarked unsuited cards so the pool stays 21 |
 | 2026-10-07 | Card scores reset to 0 and not to be trusted until cards are measured over whole rounds with strategic bots (designer). Tuning process: tournaments to tune the bots, then card tuning passes, repeat | D12's weighting falls back to random 2/3/4 per suit while every score is 0 |
 | 2026-10-07 | D15 starting place: each faction moved to a new location pays 1 of its influence there, regardless of group size (variant `whoPays`, each by default). Card scores taken off the card review page until they can be trusted (designer) | Economy, 100 bot games: with IC1, fights with 2+ players bidding rise from 1% to about 40% in round 1 (fewer fights, 0.6 a round against 3.2); each-pays slightly ahead of selected-pays |
 | 2026-10-07 | IC1 in the first draft: the influence a card places is a requirement (D15). The core loop recorded (D16) | Bot games after IC1: fewer fights (1.4 a round) and the invaders win 97% (30 games); presence climbs to about 50 against a threshold of 20 |
@@ -2808,17 +2809,18 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 
 To come later: spice, balance and swing for the suited cards, inspired by Inis's unique effect cards (3.7). Four are marked A to D (FP2).
 
-**Scaffold placeholders for the first build (2026-10-06).** Stand-ins so the pool is 21 and A to D can set the first player. *Scaffold:* not designs and not rules; replaced when the extras are designed. Like all extras they have no influence use.
+**The unsuited cards (2026-10-08).** The scaffold placeholders (2026-10-06: A moved up to two groups, B one group up to two hexes, C one group, D half a group) are removed (designer). Like all extras these have no influence use.
 
-| Card | Placeholder effect |
+| Card | Effect |
 |---|---|
-| Set a Trap (A; round 18, designer adopted 2026-10-08) | Name a location; the first group to move into it this round loses half (rounded down), as your trophies. **Target:** the location. Replaced the A scaffold, which moved up to two groups, each to an adjacent location. |
-| B (scaffold) | Move one group up to two hexes away, through locations it can enter. |
-| C (scaffold) | Move one group to an adjacent location. |
-| D (scaffold) | Move half of one group, rounded down, to an adjacent location. |
-| Change the Plan (second pivot; draft wording, in the prototype from 2026-10-07) | Move up to 3 of your influence from other locations to one location. Takes the Cancel's place while responses are out of the first draft. |
-| Cancel (out with responses) | *Response, before:* when a player is about to play a card's turn action or response, cancel it; the card is spent. The only cancel in the pool (3.7, principle 5). Held out of the deal while responses are out of the first draft (2026-10-07). |
-| Switch to Plan B (pivot; draft wording, in the prototype from 2026-10-07) | Move up to 3 of your influence from other locations to one location. Replaced the unmarked placeholder at the designer's request. |
+| Set a Trap (A; round 18, designer adopted 2026-10-08) | Name a location; the first group to move into it this round loses half (rounded down), as your trophies. **Target:** the location. |
+| B | Open: no card yet. |
+| Lock Down the Town (C; round 19, designer adopted 2026-10-08) | Name a region; this round, no group moves into or out of it. **Target:** a location in the region. |
+| Put a Bounty On It (D; round 19, designer adopted 2026-10-08) | Name a faction; at every fight this round, its group loses 1 more token when it wins, into the trophy piles. **Target:** the faction. |
+| Plan B (pivot; draft wording, in the prototype from 2026-10-07) | Move up to 3 of your influence from other locations to one location. One copy (designer, 2026-10-08): Switch to Plan B and Change the Plan were the same card. |
+| Unmarked | Open: no card yet. The Cancel is removed entirely (designer, 2026-10-08). |
+
+*Prototype:* while B and the second unmarked slot are open, each game fills them at random from the unmarked unsuited cards (test cards included), so the pool stays at 21 and the draft still leaves cards out (DR5). Not a rule.
 
 **Pivot cards (designer, 2026-10-07).** One or more of the unsuited extras are pivot cards: a "pivot" or "plan B" theme, moving the player's own influence (never another player's, D13). This replaces the ◐ idea Stake Out the Den (round 8) as the home of that move. Draft wording to measure (suggestion): *Switch to Plan B:* move up to 3 of your influence from other locations to one location. Measured as a test card (200 states, 5 players): battle 2.1, usable in 46% of states, control taken 0.4, influence moved 1.3; with `influenceToBoard=on`, 4.1, 73%, 0.7 and 2.4.
 
@@ -2923,6 +2925,7 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
   - *Marked-card candidates:* Set a Trap (A) +0.92 / +1.61; Lock Down the Town +0.79 / +1.35; Put a Bounty On It +0.96 / +1.13; Research Montage +1.24 / +1.53; Split Up, Gang! +0.60 / +0.76; Tip Off the Sheriff +0.40 / +0.70. Scaffolds: B +2.15 / +1.82, C +1.80 / +1.24, D +0.95 / +0.95. Both new cards are always playable (no target missing).
   - *Faction:* Network the Virus v2 −0.36 / +0.21, still unplayable in about 40% of probes (standing to pay, IC1), worse than Network the Virus +0.17 / +0.39 and Spread a Virus +0.07 / +0.66.
   - *Readings:* the B scaffold's opener figure moved from +0.78 (round 18) to +1.82 here, so opener gaps under about 1 point are unproven. Lock Down the Town and Put a Bounty On It sit between the C and D scaffolds as openers.
+  - *Designer (2026-10-08): adopted* Lock Down the Town as C and Put a Bounty On It as D (Claude's suggestion: the stronger opener takes the earlier letter, FP2).
 
 ### H.8 Candidate sets
 

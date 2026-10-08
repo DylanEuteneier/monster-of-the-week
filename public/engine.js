@@ -174,7 +174,7 @@ export { spec };
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, picked: boolean }>} players
  * @property {{ faction: string, leaders: string[], next: number, due: Record<string, number> } | null} growing
  * @property {string[]} factions
- * @property {Record<string, { tokens: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean, claim?: string, truce?: boolean, double?: string[], trap?: string, wake?: boolean }>} board
+ * @property {Record<string, { tokens: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean, claim?: string, truce?: boolean, double?: string[], trap?: string, wake?: boolean, lock?: boolean }>} board
  * @property {Record<string, number>} supply
  * @property {string[]} deck  this game's cards
  * @property {Record<string, number>} printed  this game's printed influence by card
@@ -429,6 +429,9 @@ export function resolveOptions(raw = {}) {
   return options;
 }
 
+/** An unsuited card with an action and no mark: it can fill an open unsuited slot. @param {Card} c */
+const unmarkedExtra = (c) => !c.suit && !('marked' in c && c.marked) && !!c.action;
+
 /**
  * @param {{ seed: number, players: string[], options?: Partial<Options> }} input
  * @returns {GameState}
@@ -507,13 +510,15 @@ export function createGame(input) {
         if (s.items[0]) deck.push(s.items[0]);
       }
     }
-    // Unsuited: the marked cards (A to D) and the cancel stay; the unmarked action slots draw from every unmarked unsuited card.
-    const unmarked = (/** @type {Card} */ c) => !c.suit && !('marked' in c && c.marked) && c.action;
-    deck.push(...spec.cards.filter((c) => !c.suit && !unmarked(c)).map((c) => c.id));
-    const extras = shuffle(pool.filter(unmarked).map((c) => c.id), rngState);
-    rngState = extras.rngState;
-    deck.push(...extras.items.slice(0, spec.cards.filter(unmarked).length));
+    // Unsuited: the marked cards stay; the other slots draw from every unmarked unsuited card.
+    deck.push(...spec.cards.filter((c) => !c.suit && !unmarkedExtra(c)).map((c) => c.id));
   }
+  // Six unsuited slots (PS1). While some have no card yet (prototype), they
+  // are filled at random from the unmarked unsuited cards, so the pool stays 21.
+  const unsuited = deck.filter((id) => !cardById(id).suit).length;
+  const fill = shuffle(/** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => unmarkedExtra(c) && !deck.includes(c.id)).map((c) => c.id), rngState);
+  rngState = fill.rngState;
+  deck.push(...fill.items.slice(0, Math.max(0, spec.constants.unsuitedSlots - unsuited)));
   // Printed influence (D12): each suit prints 2, 3 and 4 (9 in all), weighted
   // to strength: the weakest action gets the most. Strength is the probe
   // result (the change in a player's chance of winning when the card is
@@ -1020,17 +1025,6 @@ function checkShape(state, pid, card, t) {
       return t.faction && from && MAP[t.location].adjacent.includes(from) && tokensOf(state, from, t.faction) > 0 && canEnter(state, t.location, t.faction) ? null : 'Choose a group next to it.';
     }
     case 'stake': return t.location && state.board[t.location] && !state.board[t.location].scorched ? (state.players[pid].supply > 0 ? null : 'You have no cubes in your supply.') : 'Choose a location.';
-    case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
-      const moves = t.moves ?? [];
-      const max = card.action === 'move-two' ? 2 : 1;
-      if (moves.length < 1 || moves.length > max) return `Choose ${max === 2 ? 'one or two groups' : 'a group'} to move.`;
-      for (const m of moves) {
-        if (tokensOf(state, m.location, m.faction) <= 0) return 'Choose a group on the board.';
-        const reach = card.action === 'move-far' ? twoHex(m.location) : MAP[m.location].adjacent;
-        if (!reach.includes(m.to)) return 'That is too far.';
-      }
-      return null;
-    }
     default: return 'Unknown card.';
   }
 }
@@ -1569,14 +1563,6 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} draws ${move(state, pid, f, from, to, tokensOf(state, from, f), placed)} ${names(f)} into ${lname(to)}.`);
       break;
     }
-    case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
-      for (const m of t.moves ?? []) {
-        const n = card.action === 'move-half' ? Math.floor(tokensOf(state, m.location, m.faction) / 2) : tokensOf(state, m.location, m.faction);
-        const got = move(state, pid, m.faction, m.location, m.to, n, placed);
-        if (got) logLine(state, `${pid}: ${card.name} moves ${got} ${names(m.faction)} to ${lname(m.to)}.`);
-      }
-      break;
-    }
   }
 }
 
@@ -1634,7 +1620,6 @@ export function pendingDestinations(state, pend) {
     case 'swap-far': return [t.location ?? '', t.moves?.[0]?.location ?? ''].filter(Boolean);
     case 'repel': return t.location ? MAP[t.location].adjacent.flatMap((a) => MAP[a].adjacent) : [];
     case 'conveyor': return LOCATION_IDS;
-    case 'move-two': case 'move-one': case 'move-half': case 'move-far': return (t.moves ?? []).map((m) => m.to);
     default: return [];
   }
 }
@@ -1846,7 +1831,6 @@ function respond(state, pid, cardId, location) {
   if (pend) pend.responded.push(pid);
   logLine(state, `${pid} answers with ${response.name}.`);
   switch (response.id) {
-    case 'cancel': if (pend) pend.cancelled = true; break;
     case 'never-invite': if (pend && location) pend.blocked.push(location); break;
     case 'classified': {
       const e = state.events.find((x) => x.type === 'token-placed' && x.player !== pid && (!location || x.location === location));
@@ -2282,12 +2266,6 @@ export function sampleTarget(state, pid, cardId, rng) {
         break;
       }
       case 'conveyor': t = { mode, location: pick(LOCATION_IDS), direction: pick(spec.map.directions).id }; break;
-      case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
-        if (!g) break;
-        const reach = card.action === 'move-far' ? twoHex(g.loc) : MAP[g.loc].adjacent;
-        t = { moves: [{ location: g.loc, faction: g.f, to: pick(reach) }] };
-        break;
-      }
     }
     if (!t && !SAMPLED.has(/** @type {string} */ (card.action))) t = walkTarget(state, pid, cardId, mode, rng);
     if (t && !checkTarget(state, pid, card, t)) return t;
@@ -2295,7 +2273,7 @@ export function sampleTarget(state, pid, cardId, rng) {
   return null;
 }
 /** Actions sampleTarget guesses directly; any other walks the table's choices. */
-const SAMPLED = new Set(['lure', 'draw-adjacent', 'gather-region', 'gather-neighbours', 'broadcast', 'sow', 'token', 'halve', 'drive-out', 'drive-out-either', 'teleport', 'halve-far', 'spread', 'infect', 'move-influence', 'split', 'conveyor', 'move-two', 'move-one', 'move-half', 'move-far']);
+const SAMPLED = new Set(['lure', 'draw-adjacent', 'gather-region', 'gather-neighbours', 'broadcast', 'sow', 'token', 'halve', 'drive-out', 'drive-out-either', 'teleport', 'halve-far', 'spread', 'infect', 'move-influence', 'split', 'conveyor']);
 
 /**
  * A random target built one choice at a time, as the table offers them (for bots).
@@ -2602,19 +2580,6 @@ function nextShape(state, pid, cardId, t) {
       const has = (/** @type {string} */ l) => factionsAt(state, l).filter((f) => (state.players[pid].standing[f] ?? 0) > 0);
       if (!t.location) return { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((l) => has(l).length > 0) };
       return t.faction ? { kind: 'done' } : { kind: 'faction', options: has(t.location) };
-    }
-    case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
-      const moves = t.moves ?? [];
-      if (moves.some((m) => m.location === '__stop')) return { kind: 'done' };
-      const last = moves[moves.length - 1];
-      if (last && !last.to) {
-        const reach = card.action === 'move-far' ? twoHex(last.location) : MAP[last.location].adjacent;
-        return { kind: 'location', key: 'to', options: reach.filter((l) => canEnter(state, l, last.faction)) };
-      }
-      const max = card.action === 'move-two' ? 2 : 1;
-      const reachOf = (/** @type {string} */ l) => (card.action === 'move-far' ? twoHex(l) : MAP[l].adjacent);
-      if (moves.length < max) return { kind: 'group', key: 'move', options: groups.filter((g) => !moves.some((m) => m.location === g.location && m.faction === g.faction) && exits(g, reachOf(g.location)).length > 0), optional: moves.length > 0 };
-      return { kind: 'done' };
     }
     default: return { kind: 'done' };
   }

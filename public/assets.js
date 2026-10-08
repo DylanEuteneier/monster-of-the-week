@@ -146,7 +146,7 @@ async function cards() {
   /** @typedef {{ id: string, suit: string | null, action: string | null, name: string, round?: number, marked?: string }} AnyCard */
   const deck = /** @type {AnyCard[]} */ (/** @type {unknown} */ (spec.cards));
   const tests = /** @type {AnyCard[]} */ (/** @type {unknown} */ (spec.testCards.cards));
-  const all = [...deck.map((c) => ({ c, status: c.marked ? 'Scaffold' : 'Deck' })), ...tests.map((c) => ({ c, status: c.round ? `Test · round ${c.round}` : 'Held out' }))];
+  const all = [...deck.map((c) => ({ c, status: c.marked ? `Deck · marked ${c.marked}` : 'Deck' })), ...tests.map((c) => ({ c, status: c.round ? `Test · round ${c.round}` : 'Held out' }))];
   /** Types, from H.9's action types. */
   const TYPES = ['Presence', 'Fight modifier', 'Influence', 'Response only'];
   const typeOf = (/** @type {string | null} */ action) => (!action ? 'Response only' : action === 'token' ? 'Fight modifier' : ['move-influence', 'cash-in'].includes(action) ? 'Influence' : 'Presence');

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   spec, createGame, validate, applyMove, playerView, waitingOn, shuffle, resolveOptions, IllegalMoveError,
-  totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter, nextChoice, previewTarget, checkTarget, printedOf, sampleTarget,
+  totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter, nextChoice, previewTarget, checkTarget, printedOf, sampleTarget, deckOf, factionOfArchetype,
 } from '../public/engine.js';
 import { botMove } from '../public/bots.js';
 import cardStrength from '../public/card-strength.json' with { type: 'json' };
@@ -43,16 +43,20 @@ test('content ids are unique across every list, cards included', () => {
   assert.equal(new Set(ids).size, ids.length);
 });
 
-test('the pool is 21 cards: five suits of Strike, Shift and Signature, A to D, and two pivots (SU1, PS1, FP2)', () => {
-  assert.equal(spec.cards.length, 21);
+test('the pool is 21 cards: five suits of Strike, Shift and Signature, and six unsuited, open slots filled from the unmarked (SU1, PS1, FP2)', () => {
+  for (const deck of ['fixed', 'mixed']) {
+    const g = createGame({ seed: 3, players: PLAYERS, options: { deck } });
+    assert.equal(deckOf(g).length, 21);
+    assert.equal(new Set(deckOf(g)).size, 21);
+    assert.equal(deckOf(g).filter((id) => !cardById(id).suit).length, 6);
+  }
   for (const a of spec.archetypes) {
     const suit = spec.cards.filter((c) => c.suit === a.id);
     assert.deepEqual(suit.map((c) => [c.slot, c.influence]).sort(), [['shift', 3], ['signature', 4], ['strike', 2]]);
     assert.ok(suit.find((c) => c.slot === 'signature')?.response, `${a.id} Signature carries a response`);
   }
-  assert.deepEqual(spec.cards.filter((c) => c.marked).map((c) => c.marked).sort(), ['A', 'B', 'C', 'D']);
-  assert.equal(spec.cards.filter((c) => c.action === 'move-influence').length, 2);
-  assert.ok(!spec.cards.some((c) => c.id === 'cancel'), 'the Cancel is held out with responses');
+  assert.deepEqual(spec.cards.filter((c) => c.marked).map((c) => c.marked).sort(), ['A', 'C', 'D']); // B to come
+  assert.equal(spec.cards.filter((c) => c.action === 'move-influence').length, 1); // Plan B, one copy
 });
 
 test('the map is symmetric, with five regions of three (layout D)', () => {
@@ -239,21 +243,6 @@ test('views hide other hands, token faces and trophy totals (3.11, IN2)', () => 
   assert.ok(!JSON.stringify(view.players).includes('trophy'));
 });
 
-test('the cancel response stops a card that is in progress (principle 5; responses on)', () => {
-  let s = draftAll(createGame({ seed: 11, players: PLAYERS, options: { responses: 'on' } }));
-  const actor = /** @type {string} */ (s.first);
-  const holder = /** @type {string} */ (PLAYERS.find((pid) => pid !== actor));
-  s.players[holder].hand.push('cancel'); // held out of the deal with responses; given by hand here
-  const card = s.players[actor].hand.filter((c) => cardById(c).marked).sort((a, b) => String(cardById(a).marked).localeCompare(String(cardById(b).marked)))[0] ?? s.players[actor].hand.find((c) => cardById(c).action);
-  if (!card) return;
-  s = applyMove(s, { playerId: actor, move: { type: 'play', card, use: 'action', target: null } });
-  s = applyMove(s, { playerId: holder, move: { type: 'respond', card: 'cancel' } });
-  assert.equal(s.pending?.cancelled, true);
-  s = applyMove(s, { playerId: actor, move: { type: 'confirm' } });
-  assert.equal(s.pending, null);
-  assert.ok(!s.players[holder].hand.includes('cancel'));
-});
-
 test('illegal moves throw IllegalMoveError and leave the state untouched', () => {
   const s = newGame();
   const before = JSON.stringify(s);
@@ -326,13 +315,15 @@ test('Leave Out Fresh Meat asks which group comes when the largest are tied', ()
 
 // Round 8 test cards (spec.testCards): never dealt in a fixed deck, measured by scripts/tournament.js.
 
-test('a fixed deck never deals test cards', () => {
+test('a fixed deck deals test cards only into open unsuited slots', () => {
   const s = createGame({ seed: 1, players: PLAYERS, options: { deck: 'fixed' } });
   const dealt = s.seating.flatMap((pid) => s.players[pid].batch).concat(s.leftOut);
-  for (const c of spec.testCards.cards) assert.ok(!dealt.includes(c.id));
+  const tests = dealt.filter((id) => spec.testCards.cards.some((c) => c.id === id));
+  assert.equal(tests.length, 6 - spec.cards.filter((c) => !c.suit).length);
+  for (const id of tests) assert.ok(!cardById(id).suit && !cardById(id).marked);
 });
 
-test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence weighted to strength (D12), the marked extras kept, two unmarked extras drawn', () => {
+test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence weighted to strength (D12), the marked extras kept, the other unsuited slots drawn from the unmarked', () => {
   for (let seed = 1; seed <= 20; seed++) {
     const s = createGame({ seed, players: PLAYERS, options: { deck: 'mixed' } });
     const deck = /** @type {string[]} */ (s.deck);
@@ -349,7 +340,7 @@ test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence we
     }
     for (const c of spec.cards.filter((x) => !x.suit && x.marked)) assert.ok(deck.includes(c.id));
     const unmarked = deck.map((id) => cardById(id)).filter((c) => !c.suit && !c.marked);
-    assert.equal(unmarked.length, 2);
+    assert.equal(unmarked.length, 6 - spec.cards.filter((x) => !x.suit && x.marked).length);
   }
 });
 
@@ -526,7 +517,7 @@ test('previewTarget runs a move with the game options (influence placed at the d
   assert.equal(after.board[to].influence.ann, 1);
 });
 
-test('Switch to Plan B moves only your own influence, up to 3, to one location', () => {
+test('Plan B moves only your own influence, up to 3, to one location', () => {
   const s = clear(newGame());
   const [x, y, z] = spec.locations.map((l) => l.id);
   s.board[x].influence = { ann: 2, bob: 4 };
@@ -612,10 +603,13 @@ test('IC1: a move goes only as far as the player can pay for the influence it pl
   s.players.ann.standing[A] = 1;
   const one = previewTarget(s, 'ann', 'virus', { mode: 'faction', location: from, faction: A });
   assert.equal(map[from].adjacent.filter((l) => one.board[l].tokens[A]).length, 1); // 1 standing: one location
-  s.players.ann.standing[A] = 0;
-  assert.ok(checkTarget(s, 'ann', cardById('extra-c'), { moves: [{ location: from, faction: A, to: map[from].adjacent[0] }] }));
+  const sci = /** @type {string} */ (factionOfArchetype(s, 'scifi'));
+  s.board[from].tokens = { [sci]: 5 };
+  s.players.ann.standing[sci] = 0;
+  const beam = { mode: /** @type {const} */ ('faction'), location: from, faction: sci, to: map[from].adjacent[0] };
+  assert.ok(checkTarget(s, 'ann', cardById('beam'), beam));
   const off = { ...s, options: { ...s.options, influenceRequired: 'off' } };
-  assert.equal(checkTarget(off, 'ann', cardById('extra-c'), { moves: [{ location: from, faction: A, to: map[from].adjacent[0] }] }), null);
+  assert.equal(checkTarget(off, 'ann', cardById('beam'), beam), null);
 });
 
 test('D15: each faction moved pays its own (whoPays=each, first draft); only the selected faction pays, the others free (whoPays=selected)', () => {
@@ -662,12 +656,12 @@ test('round 18: Set a Trap springs on the first group in; Tip Off the Sheriff pa
   // Trap: 4 tokens move in, 2 are lost to the trap's owner.
   s.board[x].tokens = { [A]: 4 };
   s.board[NEUTRAL].trap = 'bob';
-  const trapped = previewTarget(s, 'ann', 'extra-c', { moves: [{ location: x, faction: A, to: NEUTRAL }] });
+  const trapped = previewTarget(s, 'ann', 'lamps', { mode: 'location', location: x, faction: A, to: NEUTRAL });
   assert.deepEqual([trapped.board[NEUTRAL].tokens[A], trapped.players.bob.trophies[A], trapped.board[NEUTRAL].trap], [2, 2, undefined]);
   delete s.board[NEUTRAL].trap;
   // Tip-off: bob tipped A, so ann's move of A gives bob 1 influence where it lands.
   s.tips = [{ pid: 'bob', faction: A }];
-  const tipped = previewTarget(s, 'ann', 'extra-c', { moves: [{ location: x, faction: A, to: NEUTRAL }] });
+  const tipped = previewTarget(s, 'ann', 'lamps', { mode: 'location', location: x, faction: A, to: NEUTRAL });
   assert.equal(tipped.board[NEUTRAL].influence.bob, 1);
   s.tips = [];
   // Split Up: ann 2 doubled beats bob 3.
@@ -711,7 +705,7 @@ test('round 19: Lock Down the Town stops moves across its region\'s border; Put 
   const locked = previewTarget(s, 'ann', 'lockdown', { location: inside });
   assert.ok(Object.keys(map).filter((l) => map[l].region === map[inside].region).every((l) => locked.board[l].lock));
   for (const l of Object.keys(map)) if (locked.board[l].lock) s.board[l].lock = true;
-  const blocked = previewTarget(s, 'ann', 'extra-c', { moves: [{ location: out, faction: A, to: inside }] });
+  const blocked = previewTarget(s, 'ann', 'lamps', { mode: 'location', location: out, faction: A, to: inside });
   assert.equal(blocked.board[inside].tokens[A], undefined);
   s.board[out].tokens = {};
   for (const l of Object.keys(map)) delete s.board[l].lock;
