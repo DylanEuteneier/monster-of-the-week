@@ -587,3 +587,23 @@ test('round 15 unsuited: Claim the Spoils takes every pile, Call a Truce stops t
   s.lastPlayed = 'lay-trail';
   assert.equal(previewTarget(s, 'ann', 'steal-playbook', t).board[NEUTRAL].tokens[C], 3);
 });
+
+test('round 16 unsuited: Canvass the Town, Set the Bait, Change Allegiance, Stake Out (6)', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const [x, y] = map[NEUTRAL].adjacent;
+  const supply = s.players.ann.supply;
+  const canvass = previewTarget(s, 'ann', 'canvass', { from: [x, y, NEUTRAL] });
+  assert.deepEqual([x, y, NEUTRAL].map((l) => canvass.board[l].influence.ann).concat(canvass.players.ann.supply), [1, 1, 1, supply - 3]);
+  s.board[x].tokens = { [A]: 3 };
+  const bait = { location: NEUTRAL, faction: A, from: [x] };
+  assert.equal(checkTarget(s, 'ann', cardById('set-bait'), bait), null);
+  const baited = previewTarget(s, 'ann', 'set-bait', bait);
+  assert.deepEqual([baited.board[NEUTRAL].tokens[A], baited.board[NEUTRAL].influence.ann >= 2], [3, true]);
+  s.players.ann.standing = { [A]: 5, [B]: 0 };
+  const c = nextChoice(s, 'ann', 'change-allegiance', { faction: A });
+  assert.ok(c.kind === 'faction' && c.key === 'to' && !c.options.includes(A));
+  const moved = previewTarget(s, 'ann', 'change-allegiance', { faction: A, to: B });
+  assert.deepEqual([moved.players.ann.standing[A], moved.players.ann.standing[B]], [1, 4]);
+  assert.equal(previewTarget(s, 'ann', 'stake-out-6', { location: y }).board[y].influence.ann, 6);
+});

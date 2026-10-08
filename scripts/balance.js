@@ -113,7 +113,7 @@ function targets(state, pid, cardId) {
     switch (c.kind) {
       case 'done': out.push(finish(t)); return;
       case 'mode': next({ mode: 'location' }); next({ mode: 'faction' }); return;
-      case 'faction': for (const f of c.options) next({ faction: f }); return;
+      case 'faction': for (const f of c.options) next({ [c.key ?? 'faction']: f }); return;
       case 'direction': for (const d of c.options) next({ direction: d }); return;
       case 'split': for (const l of c.options) next({ split: { ...(t.split ?? {}), [l]: (t.split?.[l] ?? 0) + 1 } }); return;
       case 'group':

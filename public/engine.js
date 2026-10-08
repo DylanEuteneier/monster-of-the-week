@@ -844,6 +844,20 @@ export function checkTarget(state, pid, card, t) {
       return state.players[pid].supply > 0 ? null : 'You have no cubes in your supply.';
     }
     case 'fall-back': return t.location && fallBackFrom(state, pid, t.location).length ? null : 'Choose a location next to your influence.';
+    case 'canvass': {
+      const at = t.from ?? [];
+      if (at.length < 1 || at.length > 4 || new Set(at).size !== at.length || at.some((l) => !state.board[l] || state.board[l].scorched)) return 'Choose one to four locations.';
+      return state.players[pid].supply > 0 ? null : 'You have no cubes in your supply.';
+    }
+    case 'bait': {
+      if (!t.location || !state.board[t.location] || state.board[t.location].scorched) return 'Choose where to set the bait.';
+      const from = t.from?.[0];
+      return t.faction && from && MAP[t.location].adjacent.includes(from) && tokensOf(state, from, t.faction) > 0 && canEnter(state, t.location, t.faction) ? null : 'Choose a group next to it.';
+    }
+    case 'allegiance': {
+      if (!t.faction || (state.players[pid].standing[t.faction] ?? 0) <= 0) return 'Choose a faction you have standing with.';
+      return t.to && t.to !== t.faction && state.factions.includes(t.to) ? null : 'Choose the faction your standing goes to.';
+    }
     case 'claim': case 'truce': return t.location && state.board[t.location] && !state.board[t.location].scorched ? null : 'Choose a location.';
     case 'copy': return 'Nothing has been played to copy yet.';
     case 'trail': {
@@ -1230,6 +1244,29 @@ function act(state, pid, card, t) {
       state.players[pid].supply -= n;
       state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
       logLine(state, `${pid}: ${card.name} places ${n} influence at ${lname(to)}.`);
+      break;
+    }
+    case 'canvass': {
+      const at = (t.from ?? []).slice(0, state.players[pid].supply);
+      for (const l of at) state.board[l].influence[pid] = (state.board[l].influence[pid] ?? 0) + 1;
+      state.players[pid].supply -= at.length;
+      logLine(state, `${pid}: ${card.name} places 1 influence at each of ${at.map(lname).join(', ')}.`);
+      break;
+    }
+    case 'bait': {
+      const to = /** @type {string} */ (t.location), from = /** @type {string} */ (t.from?.[0]), f = /** @type {string} */ (t.faction);
+      const n = Math.min(2, state.players[pid].supply);
+      state.players[pid].supply -= n;
+      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
+      logLine(state, `${pid}: ${card.name} at ${lname(to)} (${n} influence) and draws ${move(state, pid, f, from, to, tokensOf(state, from, f), placed)} ${names(f)} in.`);
+      break;
+    }
+    case 'allegiance': {
+      const f = /** @type {string} */ (t.faction), to = /** @type {string} */ (t.to);
+      const n = Math.min(4, state.players[pid].standing[f] ?? 0);
+      state.players[pid].standing[f] -= n;
+      state.players[pid].standing[to] = (state.players[pid].standing[to] ?? 0) + n;
+      logLine(state, `${pid}: ${card.name} moves ${n} standing from ${names(f)} to ${names(to)}.`);
       break;
     }
     case 'claim': {
@@ -1953,7 +1990,7 @@ function walkTarget(state, pid, cardId, mode, rng) {
     if ('optional' in c && c.optional && rng() < 0.3) return finishWalk(t);
     if (!('options' in c) || !c.options.length) return null;
     const o = pick(/** @type {any[]} */ (c.options));
-    if (c.kind === 'faction') t = { ...t, faction: o };
+    if (c.kind === 'faction') t = { ...t, [c.key ?? 'faction']: o };
     else if (c.kind === 'direction') t = { ...t, direction: o };
     else if (c.kind === 'split') t = { ...t, split: { ...(t.split ?? {}), [o]: (t.split?.[o] ?? 0) + 1 } };
     else if (c.kind === 'group') {
@@ -1976,7 +2013,7 @@ const finishWalk = (t) => t;
  * time, and the server still checks the finished target (checkTarget).
  * @typedef {{ kind: 'mode' } | { kind: 'location', key: 'location' | 'to' | 'bluff' | 'path' | 'from', options: string[], optional?: boolean, left?: number }
  *   | { kind: 'group', key: 'group' | 'move' | 'lure', options: { location: string, faction: string }[], optional?: boolean }
- *   | { kind: 'faction', options: string[] } | { kind: 'direction', options: string[] }
+ *   | { kind: 'faction', key?: 'faction' | 'to', options: string[] } | { kind: 'direction', options: string[] }
  *   | { kind: 'split', options: string[], left: number } | { kind: 'done' }} Choice
  * @param {GameState} state @param {string} pid @param {string} cardId @param {Target} t
  * @returns {Choice}
@@ -2146,6 +2183,20 @@ export function nextChoice(state, pid, cardId, t) {
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => (state.board[l].influence[pid] ?? 0) > 0) };
     case 'fall-back':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => fallBackFrom(state, pid, l).length > 0) };
+    case 'canvass': {
+      if (state.players[pid].supply <= 0) return { kind: 'location', key: 'from', options: [] };
+      const at = t.from ?? [];
+      if (at.includes('__stop') || at.length >= Math.min(4, state.players[pid].supply)) return { kind: 'done' };
+      return { kind: 'location', key: 'from', options: LOCATION_IDS.filter((l) => !state.board[l].scorched && !at.includes(l)), optional: at.length > 0 };
+    }
+    case 'bait': {
+      const into = (/** @type {string} */ to) => MAP[to].adjacent.flatMap((from) => factionsAt(state, from).filter((f) => canEnter(state, to, f)).map((f) => ({ location: from, faction: f })));
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched && into(l).length > 0) };
+      return t.faction ? { kind: 'done' } : { kind: 'group', key: 'lure', options: into(t.location) };
+    }
+    case 'allegiance':
+      if (!t.faction) return { kind: 'faction', options: state.factions.filter((f) => (state.players[pid].standing[f] ?? 0) > 0) };
+      return t.to ? { kind: 'done' } : { kind: 'faction', key: 'to', options: state.factions.filter((f) => f !== t.faction) };
     case 'claim': case 'truce':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched) };
     case 'copy': return { kind: 'location', key: 'location', options: [] };
@@ -2221,6 +2272,9 @@ export function describeTarget(cardId, t) {
     case 'bail-out': return `from ${L(t.location)} to ${L(t.to)}`;
     case 'backup': case 'fall-back': case 'stake': return `at ${L(t.location)}`;
     case 'claim': case 'truce': return `at ${L(t.location)}`;
+    case 'canvass': return `at ${(t.from ?? []).map(L).join(', ')}`;
+    case 'bait': return `at ${L(t.location)}, drawing ${F(t.faction)} from ${L(t.from?.[0])}`;
+    case 'allegiance': return `${F(t.faction)} to ${F(t.to)}`;
     case 'trail': return `${F(t.faction)} from ${L(t.from?.[0])} into ${L(t.location)}`;
     case 'conveyor': return `${t.mode === 'location' ? `the ${regionOf(/** @type {string} */ (t.location))} region` : 'every Sentient group'} one hex ${t.direction}`;
     default: return (t.moves ?? []).map((m) => `${F(m.faction)} at ${L(m.location)} to ${L(m.to)}`).join('; ');

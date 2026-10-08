@@ -1094,7 +1094,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 15 ideas (rounds 14 and 15: unsuited extras) under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
+    "notes": "Cards out of the fixed deck: rounds 8 to 16 ideas (rounds 14 to 16: unsuited extras) under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
     "cards": [
       {
         "id": "force-field",
@@ -1570,6 +1570,47 @@
         "action": "trail",
         "round": 15,
         "text": "Move a whole group into a location where you alone have the most influence, from a location next to it. Target: your location, then the group."
+      },
+      {
+        "id": "canvass",
+        "name": "Canvass the Town",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "canvass",
+        "round": 16,
+        "text": "Place 1 influence from your supply at each of up to four locations. Target: the locations."
+      },
+      {
+        "id": "set-bait",
+        "name": "Set the Bait",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "bait",
+        "round": 16,
+        "text": "Place 2 influence from your supply at the target, then draw a whole group into it from a location next to it. Target: the bait, then the group."
+      },
+      {
+        "id": "change-allegiance",
+        "name": "Change Allegiance",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "allegiance",
+        "round": 16,
+        "text": "Move up to 4 of your standing from one faction to another. Target: the faction you leave, then the one you join."
+      },
+      {
+        "id": "stake-out-6",
+        "name": "Stake Out (6)",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "stake",
+        "amount": 6,
+        "round": 16,
+        "text": "Place 6 influence from your supply on the target. Target: any location. (Stake Out with a larger amount, to see how strength grows with it.)"
       }
     ]
   }
