@@ -1666,7 +1666,7 @@
       },
       {
         "id": "change-allegiance",
-        "name": "Change Allegiance",
+        "name": "Defect",
         "suit": null,
         "slot": "extra",
         "influence": 0,

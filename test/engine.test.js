@@ -575,7 +575,7 @@ test('round 15 unsuited: Claim the Spoils takes every pile, Call a Truce stops t
   assert.equal(previewTarget(s, 'ann', 'steal-playbook', t).board[NEUTRAL].tokens[C], 3);
 });
 
-test('round 16 unsuited: Canvass the Town, Set the Bait, Change Allegiance, Stake Out (6)', () => {
+test('round 16 unsuited: Canvass the Town, Set the Bait, Defect, Stake Out (6)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const [x, y] = map[NEUTRAL].adjacent;
