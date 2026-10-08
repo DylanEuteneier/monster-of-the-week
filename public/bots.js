@@ -17,6 +17,10 @@
  *            plays the next player's best reply (as smart) and keeps the move
  *            that is still best for it afterwards. Slower; used to play out
  *            rounds when measuring cards (designer, 2026-10-07).
+ * - trophy, hunter: smart, but prioritising trophies (designer, 2026-10-07:
+ *            players prioritising trophies is what makes the invaders win
+ *            less). They read the island's ending as nearer than the board
+ *            says, by TROPHY_LEAN tokens of presence.
  * - deep-bold, deep-balanced, deep-cautious: deep, with strategy breakpoints
  *            (STRATEGIES below): the same search, different play profiles.
  *
@@ -40,10 +44,10 @@ function spend(state, cardId, at = (spots) => spots[0]) {
   const spots = influenceSpots(state, cardId);
   return spots.length ? { type: 'play', card: cardId, use: 'influence', location: at(spots) } : { type: 'play', card: cardId, use: 'influence' };
 }
-/** @typedef {'random' | 'smart' | 'invader' | 'island' | 'deep' | 'deep-bold' | 'deep-balanced' | 'deep-cautious'} Profile */
+/** @typedef {'random' | 'smart' | 'trophy' | 'hunter' | 'invader' | 'island' | 'deep' | 'deep-bold' | 'deep-balanced' | 'deep-cautious'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile }} BotOptions */
 
-export const PROFILES = /** @type {Profile[]} */ (['random', 'smart', 'invader', 'island', 'deep', 'deep-bold', 'deep-balanced', 'deep-cautious']);
+export const PROFILES = /** @type {Profile[]} */ (['random', 'smart', 'trophy', 'hunter', 'invader', 'island', 'deep', 'deep-bold', 'deep-balanced', 'deep-cautious']);
 
 /** Tuning for the bots, not rules. */
 const RANDOM_ODDS = { respond: 0.35, pass: 0.15, action: 0.6 };
@@ -127,6 +131,9 @@ export function plan(s, pid, st) {
   const focus = s.round <= st.buildRounds && standing < st.standingGoal ? 'influence' : 'trophies';
   return { ending, backs, setup, focus };
 }
+
+/** Trophy priority (tuning, not rules): how many tokens of presence a profile shifts the island's ending nearer by. */
+const TROPHY_LEAN = /** @type {Partial<Record<Profile, number>>} */ ({ trophy: 15, hunter: 30 });
 
 /** Tuning for the deep bot's reply lookahead, not rules. */
 const DEEP = {
@@ -231,7 +238,7 @@ export function evaluate(state, pid, profile = 'smart') {
   const uncertainty = 3 + 3 * roundsLeft;
   const st = STRATEGY_OF[profile];
   const pl = st ? plan(s, pid, st) : null;
-  const pInvaders = profile === 'invader' || pl?.ending === 'invaders' ? 1 : profile === 'island' || pl?.ending === 'island' ? 0 : 1 / (1 + Math.exp(-(total - threshold) / uncertainty));
+  const pInvaders = profile === 'invader' || pl?.ending === 'invaders' ? 1 : profile === 'island' || pl?.ending === 'island' ? 0 : 1 / (1 + Math.exp(-(total - threshold - (TROPHY_LEAN[profile] ?? 0)) / uncertainty));
   // Focus (strategy axis 2): the current focus counts `weight` more.
   const standingW = pl?.focus === 'influence' ? 1 + (st?.weight ?? 0) : 1;
   const trophyW = pl?.focus === 'trophies' ? 1 + (st?.weight ?? 0) : 1;
