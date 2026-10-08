@@ -5,11 +5,10 @@
  * plays it, and bots play the rest of the round (every seat, the player's own
  * later turns too) through the round's fights. Its strength is how much
  * better off the player ends the round than if they had let the turn go,
- * scored by the bots' own position value (evaluate in public/bots.js:
- * trophies, standing and influence, weighed by how the game looks like
- * ending).
+ * scored as the player's chance of winning (winChances in public/bots.js:
+ * P(each ending) × P(the player wins under it)), in percentage points.
  *
- *   node scripts/roundplay.js [states=40] [seed=1] [players=5] [playouts=4] [targets=3] [bots=deep] [only=card,card] [opening=1] [out=file.json] [option=value ...]
+ *   node scripts/roundplay.js [states=40] [seed=1] [players=5] [playouts=4] [targets=3] [bots=goal] [only=card,card] [opening=1] [out=file.json] [option=value ...]
  *
  * - The player picks the target as a strong player would: it samples
  *   targets, keeps the few best one move ahead (`targets`), plays each out
@@ -31,7 +30,10 @@ import { availableParallelism } from 'node:os';
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { applyMove, spec, cardById, sampleTarget, validate } from '../public/engine.js';
-import { botMove, evaluate } from '../public/bots.js';
+import { botMove, winChances } from '../public/bots.js';
+
+/** The player's chance of winning, in percentage points. @param {GameState} s @param {string} pid */
+const chance = (s, pid) => { const c = winChances(s, pid); return 100 * (c.pInvaders * c.asInvaders + (1 - c.pInvaders) * c.asIsland); };
 import { sampleStates, seededRng } from './balance.js';
 
 /** @typedef {import('../public/engine.js').GameState} GameState @typedef {import('../public/engine.js').Move} Move */
@@ -74,7 +76,7 @@ function play(state, pid, move) {
 function measureState(state, cardIds, o) {
   const pid = state.seating[state.turn];
   const seeds = Array.from({ length: o.playouts }, (_, i) => o.seed * 7919 + i);
-  const mean = (/** @type {GameState} */ s) => seeds.reduce((n, seed) => n + evaluate(playRest(s, seed, o.bots), pid), 0) / seeds.length;
+  const mean = (/** @type {GameState} */ s) => seeds.reduce((n, seed) => n + chance(playRest(s, seed, o.bots), pid), 0) / seeds.length;
   // Baseline: the turn goes by with nothing played (a measuring device, not a move in the game).
   const skip = structuredClone(state);
   skip.opened = true;
@@ -95,7 +97,7 @@ function measureState(state, cardIds, o) {
       if (target && validate(s, { playerId: pid, move }).ok) moves.set(JSON.stringify(target), move);
     }
     if (!moves.size) { out[cardId] = null; continue; }
-    const best = [...moves.values()].map((m) => { const after = play(s, pid, m); return { after, v: evaluate(after, pid) }; })
+    const best = [...moves.values()].map((m) => { const after = play(s, pid, m); return { after, v: chance(after, pid) }; })
       .sort((a, b) => b.v - a.v).slice(0, o.targets);
     out[cardId] = Math.max(...best.map((b) => mean(b.after))) - base;
   }
@@ -104,7 +106,7 @@ function measureState(state, cardIds, o) {
 
 function main() {
   const args = process.argv.slice(2);
-  const [nArg = '40', seedArg = '1', playersArg = '5', playoutsArg = '4', targetsArg = '3', botsArg = 'deep'] = args.filter((a) => !a.includes('='));
+  const [nArg = '40', seedArg = '1', playersArg = '5', playoutsArg = '4', targetsArg = '3', botsArg = 'goal'] = args.filter((a) => !a.includes('='));
   const options = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => a.split('=')));
   const only = options.only?.split(','), outFile = options.out, opening = options.opening === '1';
   delete options.only; delete options.out; delete options.opening;
@@ -143,7 +145,7 @@ function main() {
     process.stderr.write('\n');
     const stats = table();
     if (outFile) write(stats, false);
-    console.log(`${done} ${opening ? 'opening ' : ''}states, ${players.length} players, ${job.bots} bots, ${job.playouts} playouts, best of ${job.targets} targets, ${JSON.stringify(options)}. Benefit: the player's position after the round's fights, against letting the turn go (mean, how often above 0, largest).`);
+    console.log(`${done} ${opening ? 'opening ' : ''}states, ${players.length} players, ${job.bots} bots, ${job.playouts} playouts, best of ${job.targets} targets, ${JSON.stringify(options)}. Benefit: the player's chance of winning after the round's fights, against letting the turn go, in percentage points (mean, how often above 0, largest).`);
     console.log(`${'card'.padEnd(30)} | playable | benefit`);
     for (const s of stats) console.log(`${cardById(s.id).name.padEnd(30)} | ${`${s.playable.toFixed(0)}%`.padStart(8)} | ${s.mean.toFixed(2).padStart(6)} ${`${s.up.toFixed(0)}%`.padStart(4)} ${s.max.toFixed(2).padStart(6)}`);
   }
@@ -152,7 +154,7 @@ function main() {
 if (isMainThread) main();
 else {
   const d = workerData;
-  const states = sampleStates(d.n, d.seed, d.players, 'smart', d.options, d.opening);
+  const states = sampleStates(d.n, d.seed, d.players, d.bots, d.options, d.opening); // states from games the same bots play
   for (let i = d.worker; i < states.length; i += d.workers) {
     parentPort?.postMessage(measureState(states[i], d.cardIds, { playouts: d.playouts, targets: d.targets, bots: d.bots, seed: d.seed * 100003 + i }));
   }
