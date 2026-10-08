@@ -1054,6 +1054,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-08 | Bots pruned to the strongest (designer): goal (standard), goal-deep, hunter | Goal bots tuned by challenger tournaments; two backers force the invaders' ending 40% of the time |
 | 2026-10-08 | Round 18 adopted (designer): Set a Trap is marked card A; Wake the Dead replaces Take Over the Wake | B to D stay scaffolds; Research Montage returned to the test cards (no board effect, a blind draft pick) |
 | 2026-10-08 | Round 19 adopted (designer): Lock Down the Town is C, Put a Bounty On It is D. Switch to Plan B and Change the Plan merged into one card, Plan B. The Cancel removed entirely. Every scaffold card removed | B and one unmarked slot are open; the prototype fills them from the unmarked unsuited cards so the pool stays 21 |
+| 2026-10-08 | Research Montage removed outright (designer): a useless card | The table's card-choice step, used only by it, removed from the prototype |
 | 2026-10-07 | Card scores reset to 0 and not to be trusted until cards are measured over whole rounds with strategic bots (designer). Tuning process: tournaments to tune the bots, then card tuning passes, repeat | D12's weighting falls back to random 2/3/4 per suit while every score is 0 |
 | 2026-10-07 | D15 starting place: each faction moved to a new location pays 1 of its influence there, regardless of group size (variant `whoPays`, each by default). Card scores taken off the card review page until they can be trusted (designer) | Economy, 100 bot games: with IC1, fights with 2+ players bidding rise from 1% to about 40% in round 1 (fewer fights, 0.6 a round against 3.2); each-pays slightly ahead of selected-pays |
 | 2026-10-07 | IC1 in the first draft: the influence a card places is a requirement (D15). The core loop recorded (D16) | Bot games after IC1: fewer fights (1.4 a round) and the invaders win 97% (30 games); presence climbs to about 50 against a threshold of 20 |
@@ -2925,7 +2926,7 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
   - *Marked-card candidates:* Set a Trap (A) +0.92 / +1.61; Lock Down the Town +0.79 / +1.35; Put a Bounty On It +0.96 / +1.13; Research Montage +1.24 / +1.53; Split Up, Gang! +0.60 / +0.76; Tip Off the Sheriff +0.40 / +0.70. Scaffolds: B +2.15 / +1.82, C +1.80 / +1.24, D +0.95 / +0.95. Both new cards are always playable (no target missing).
   - *Faction:* Network the Virus v2 −0.36 / +0.21, still unplayable in about 40% of probes (standing to pay, IC1), worse than Network the Virus +0.17 / +0.39 and Spread a Virus +0.07 / +0.66.
   - *Readings:* the B scaffold's opener figure moved from +0.78 (round 18) to +1.82 here, so opener gaps under about 1 point are unproven. Lock Down the Town and Put a Bounty On It sit between the C and D scaffolds as openers.
-  - *Designer (2026-10-08): adopted* Lock Down the Town as C and Put a Bounty On It as D (Claude's suggestion: the stronger opener takes the earlier letter, FP2).
+  - *Designer (2026-10-08): adopted* Lock Down the Town as C and Put a Bounty On It as D (Claude's suggestion: the stronger opener takes the earlier letter, FP2). Research Montage removed outright (designer, 2026-10-08): a useless card.
 
 ### H.8 Candidate sets
 

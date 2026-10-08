@@ -146,8 +146,6 @@ export { spec };
  * @property {boolean} [realOnly]  only one location was free: place the real token there (else the bluff)
  * @property {{ location: string, faction: string, to: string }[]} [moves]
  * @property {string} [lead]       the faction the player leads, on cards that move several factions (D15)
- * @property {string} [take]       Research Montage (round 18): the left-out card taken
- * @property {string} [give]       Research Montage (round 18): the card from hand put back
  */
 
 /**
@@ -664,8 +662,6 @@ function ringSteps(state, loc) {
 }
 /** Groups that would circle (round 12). @param {GameState} state @param {string} loc @param {string[]} factions */
 const circlers = (state, loc, factions) => ringSteps(state, loc).flatMap(([from, to]) => factionsAt(state, from).filter((f) => factions.includes(f) && !state.board[to].scorched).map((f) => ({ from, to, f })));
-/** The left-out cards this player can see (Research Montage's holder has done the research). @param {GameState | PlayerView} state */
-const leftOutSeen = (state) => ('leftOut' in state ? state.leftOut : state.me.leftOut ?? []);
 /** Network the Virus v2 (round 19): every location within two hexes the group's faction can enter, nearest first. @param {GameState | PlayerView} state @param {string} loc @param {string} f */
 const reachOf = (state, loc, f) => twoHex(loc).filter((l) => !state.board[l].scorched && canEnter(/** @type {GameState} */ (state), l, f)).sort((a, b) => Number(!MAP[loc].adjacent.includes(a)) - Number(!MAP[loc].adjacent.includes(b)));
 /** Network the Virus (round 18): every other location holding the group's faction. @param {GameState | PlayerView} state @param {string} loc @param {string} f */
@@ -996,7 +992,6 @@ function checkShape(state, pid, card, t) {
       if (at.length < 1 || at.length > 3 || new Set(at).size !== at.length || new Set(at.map(regionOf)).size !== at.length || at.some((l) => !state.board[l] || state.board[l].scorched)) return 'Choose up to three locations in different regions.';
       return state.players[pid].supply > 0 ? null : 'You have no cubes in your supply.';
     }
-    case 'research': return t.take && leftOutSeen(state).includes(t.take) && t.give && state.players[pid].hand.includes(t.give) && t.give !== card.id ? null : 'Choose a left-out card to take and one of yours to put back.';
     case 'trap': return t.location && state.board[t.location] && !state.board[t.location].scorched && !state.board[t.location].trap ? null : 'Choose a location without a trap.';
     case 'tipoff': case 'bounty': return t.faction && state.factions.includes(t.faction) ? null : 'Choose a faction.';
     case 'lockdown': return t.location && state.board[t.location] && !state.board[t.location].lock ? null : 'Choose a location in a region not already locked down.';
@@ -1484,14 +1479,6 @@ function act(state, pid, card, t) {
       }
       state.players[pid].supply -= at.length;
       logLine(state, `${pid}: ${card.name}: 1 influence each at ${at.map(lname).join(', ')}, counting double there this round.`);
-      break;
-    }
-    case 'research': {
-      const p = state.players[pid], take = /** @type {string} */ (t.take), give = /** @type {string} */ (t.give);
-      p.hand = p.hand.filter((c, i, a) => c !== give || a.indexOf(c) !== i);
-      p.hand.push(take);
-      state.leftOut = state.leftOut.filter((c) => c !== take).concat(give);
-      logLine(state, `${pid}: ${card.name}: swaps a card with one left out.`);
       break;
     }
     case 'trap': {
@@ -2314,7 +2301,7 @@ const finishWalk = (t) => t;
  * @typedef {{ kind: 'mode' } | { kind: 'location', key: 'location' | 'to' | 'bluff' | 'path' | 'from', options: string[], optional?: boolean, left?: number }
  *   | { kind: 'group', key: 'group' | 'move' | 'lure', options: { location: string, faction: string }[], optional?: boolean }
  *   | { kind: 'faction', key?: 'faction' | 'to' | 'lead', options: string[] } | { kind: 'direction', options: string[] }
- *   | { kind: 'split', options: string[], left: number } | { kind: 'card', key: 'take' | 'give', options: string[] } | { kind: 'done' }} Choice
+ *   | { kind: 'split', options: string[], left: number } | { kind: 'done' }} Choice
  * @param {GameState} state @param {string} pid @param {string} cardId @param {Target} t
  * @returns {Choice}
  */
@@ -2533,11 +2520,6 @@ function nextShape(state, pid, cardId, t) {
       if ((t.from ?? []).includes('__stop') || at.length >= Math.min(3, state.players[pid].supply)) return { kind: 'done' };
       return { kind: 'location', key: 'from', options: LOCATION_IDS.filter((l) => !state.board[l].scorched && !at.map(regionOf).includes(regionOf(l))), optional: at.length > 0 };
     }
-    case 'research': {
-      if (!t.take) return { kind: 'card', key: 'take', options: leftOutSeen(state).slice() };
-      const hand = state.players[pid]?.hand ?? /** @type {{ me?: { hand: string[] } }} */ (/** @type {unknown} */ (state)).me?.hand ?? []; // the client passes a player view
-      return t.give ? { kind: 'done' } : { kind: 'card', key: 'give', options: hand.filter((c) => c !== cardId) };
-    }
     case 'trap':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched && !state.board[l].trap) };
     case 'tipoff': case 'bounty':
@@ -2618,7 +2600,6 @@ export function describeTarget(cardId, t) {
     case 'surveil-supply': case 'wake': case 'raise-stakes': return `at ${L(t.location)}${how}`;
     case 'canvass-contest': return 'every contested location';
     case 'split-up': return `at ${(t.from ?? []).map(L).join(', ')}`;
-    case 'research': return `take ${t.take ? cardById(t.take).name : '?'}, put back ${t.give ? cardById(t.give).name : '?'}`;
     case 'trap': case 'wake-dead': return `at ${L(t.location)}${how}`;
     case 'tipoff': case 'bounty': return `on ${F(t.faction)}`;
     case 'lockdown': return `the region of ${L(t.location)}`;
@@ -2685,7 +2666,7 @@ export function playerView(state, playerId) {
     events: structuredClone(state.events),
     me: {
       hand: me.hand.slice(), kept: me.kept.slice(), batch: me.batch.slice(), picked: me.picked, trophies: { ...me.trophies }, known: me.known.slice(),
-      leftOut: me.known.includes('leftout') || me.hand.includes('research') ? state.leftOut.slice() : null, // Research Montage's holder has done the research (round 18)
+      leftOut: me.known.includes('leftout') ? state.leftOut.slice() : null,
     },
   };
 }

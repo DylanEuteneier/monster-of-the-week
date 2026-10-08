@@ -1753,16 +1753,6 @@
         "text": "Opening gambit (marked-card candidate for B): place 1 influence from your supply at up to three locations in different regions; this round, your influence at each counts double at its fight. Target: the locations."
       },
       {
-        "id": "research",
-        "name": "Research Montage",
-        "suit": null,
-        "slot": "extra",
-        "influence": 0,
-        "action": "research",
-        "round": 18,
-        "text": "Opening gambit (marked-card candidate for B): you have seen the cards left out this round; take one into your hand and put one of yours back in its place. Target: the card to take, then the one to put back."
-      },
-      {
         "id": "tip-off",
         "name": "Tip Off the Sheriff",
         "suit": null,

@@ -680,14 +680,8 @@ test('round 18: Set a Trap springs on the first group in; Tip Off the Sheriff pa
   assert.equal(woke.players.bob.trophies[B], 0);
 });
 
-test('round 18: Research Montage swaps a hand card with a left-out one; Network the Virus reaches every location of its faction', () => {
+test('round 18: Network the Virus reaches every location of its faction', () => {
   const s = clear(newGame());
-  s.leftOut = ['broadcast'];
-  s.players.ann.hand = ['research', 'bell'];
-  const t = { take: 'broadcast', give: 'bell' };
-  assert.equal(checkTarget(s, 'ann', cardById('research'), t), null);
-  const after = previewTarget(s, 'ann', 'research', t);
-  assert.ok(after.players.ann.hand.includes('broadcast') && !after.players.ann.hand.includes('bell'));
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const far = /** @type {string} */ (Object.keys(map).find((l) => l !== NEUTRAL && !map[NEUTRAL].adjacent.includes(l)));
   s.board[NEUTRAL].tokens = { [A]: 3 };
