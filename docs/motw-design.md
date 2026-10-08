@@ -2921,6 +2921,27 @@ Fits best with the rules as they stand: fight modifiers, growth modifiers, align
 
 ---
 
+### H.10 Influence wording review (D15)
+
+*Designer (2026-10-07):* review every card for places where the location and amount of influence placed is vague or unspecified, and specify it. Under IC1 (D15) the influence a card places is a requirement, so the text has to say exactly where and how much. The prototype today follows G.8: 1 influence at each location a group moves into, per faction moved, from standing with that faction; under IC1, a move it can't pay for doesn't happen. *The suggested wordings below are suggestions, for the designer to accept or change, pattern by pattern.*
+
+| Pattern | Cards | What the text says now | Suggested wording (suggestion) |
+|---|---|---|---|
+| A. One group, one destination | Leave Out Fresh Meat, Leak the Documents, Beam Them Up, Leak It to the Press, Light Every Lamp (both), Chase Them Down the Slope, Read from the Book, Smash the Mirror, Back Up to the Cloud, Lay a Trail, scaffolds B, C, D | Nothing about influence | "Place 1 influence where it lands, from your standing with its faction." |
+| B. One faction, several groups, one destination | Broadcast a Signal, Reroute the Power Grid, Draw a Summoning Circle, Howl at the Moon | Nothing | "Place 1 influence at the target, from your standing with that faction." (One placement however many groups come; for Howl the groups land next to the target, so: "at each location a group moves into".) |
+| C. One group, several destinations | Spread a Virus (both), Board Up the Windows | Nothing | "Place 1 influence at each location it moves into, from your standing with its faction; it moves into only as many as you can pay for." |
+| D. Several factions move | Ring the Church Bell, Hear the Banshee Wail, Circle the Prey, Reprogram the Traffic Lights, Crash-Land the Saucer (knock-ons), Turn On the Tractor Beam, Trade Souls, Drag Them Under, Follow the Lights, Lead the Horde (the shove), scaffold A (two groups) | Nothing | "Place 1 influence at each location a group moves into, from your standing with that group's faction; a group you can't pay for stays." |
+| E. Nothing moves | Wait for the Full Moon, Reprogram the Drones, Open the Pit, Claim the Spoils, Call a Truce | Nothing; they place none | No influence, so no requirement: under IC1 these are the only board actions anyone can play with no standing. |
+| F. Influence from the supply | Hidden tokens (Silver Bullets, Salt and Burn, House on Fire, and the test fight modifiers), Stake Out, Canvass the Town, Call for Backup | Stake Out, Canvass and Backup are exact. Hidden tokens don't mention the marker cube | Hidden tokens: "Place it, and a bluff, each with 1 of your cubes from your supply on it, counting as 1 of your influence there." |
+| G. Your own influence or standing | Switch to Plan B, Change the Plan, Bail Out, Fall Back, Change Allegiance | Exact | No change. |
+| H. Already exact | Track Them in the Snow, Take Over the Wake, Install the Cameras | Exact | No change. |
+| Special | Set the Bait; Steal Their Playbook | Set the Bait: 2 from the supply is exact, but the drawn group also places 1 from standing, unstated. Steal Their Playbook: whatever the copied card places | Set the Bait: either say "then draw a group in (1 influence from your standing with its faction)" or make the draw free. Steal Their Playbook: "Its influence and requirements apply as written." |
+
+**Questions for the designer, raised by IC1:**
+- *Pattern D:* when a card moves several factions, should each moved group need its own faction's influence (as suggested), or only the target faction, with the others carried along free? Ring the Church Bell, for example, today draws only the factions the player can pay for.
+- *Knock-ons:* groups pushed or shoved as a side effect (the Saucer's line, the Horde's shove, the Banshee's wail): paid like any other move, or free?
+- *Pattern E:* size-change and fight-rule cards place no influence, so IC1 never limits them. Is that intended, or should they place (and require) influence too?
+
 ## Appendix I: Reference card catalogue
 
 Cards and card-driven mechanisms from other games, as raw material for our own (Appendix H). Each section says how complete and how verified it is. These describe other designers' games; nothing here is a mechanism of ours.
