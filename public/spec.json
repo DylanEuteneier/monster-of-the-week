@@ -814,6 +814,24 @@
       ]
     },
     {
+      "id": "whoPays",
+      "label": "Who pays to move several factions",
+      "description": "D15 (designer, 2026-10-07; first-draft starting place, not set in stone): each faction moved to a new location costs 1 influence from that faction, placed on the new location, regardless of the size of the group moved. A draw-in can place up to two; a spread more. Alternative: only the selected faction pays.",
+      "default": "each",
+      "choices": [
+        {
+          "id": "each",
+          "label": "Each faction",
+          "description": "The first draft: each faction moved to a new location pays 1 influence from that faction, placed there; a group you can’t pay for stays."
+        },
+        {
+          "id": "selected",
+          "label": "Selected faction",
+          "description": "Alternative: only the faction you select (or lead) pays; the other factions come along free and place nothing. It moves first."
+        }
+      ]
+    },
+    {
       "id": "influenceAtOrigin",
       "label": "Influence where tokens leave",
       "description": "Test lever (influence economy, 2026-10-07): a move also places 1 influence where the tokens left from.",

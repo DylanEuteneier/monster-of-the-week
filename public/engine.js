@@ -139,6 +139,7 @@ export { spec };
  * @property {string} [bluff]      where the bluff goes (hidden cards)
  * @property {boolean} [realOnly]  only one location was free: place the real token there (else the bluff)
  * @property {{ location: string, faction: string, to: string }[]} [moves]
+ * @property {string} [lead]       the faction the player leads, on cards that move several factions (D15)
  */
 
 /**
@@ -232,6 +233,21 @@ export function cardById(id) {
 export const responsesOn = (state) => (state.options.responses ?? 'off') === 'on';
 /** IC1 (designer, 2026-10-07): the influence a card places is a requirement. @param {{ options: Options }} state */
 export const influenceRequired = (state) => (state.options.influenceRequired ?? 'on') === 'on';
+/** D15, as a variant: each faction moved pays its own (first draft), or only the selected faction pays (others free). @param {{ options: Options }} state */
+export const selectedPays = (state) => (state.options.whoPays ?? 'each') === 'selected';
+/** Cards that move several factions at once: the player names the faction they lead (location reading). */
+const LEADS = new Set(['draw-adjacent', 'conveyor', 'repel', 'circle', 'carry-fight']);
+/**
+ * The faction that pays a card's influence (D15): the faction the player
+ * selects (a target group's, or the one named on a card that moves several),
+ * or the suit's faction in the faction reading. Other factions the card moves
+ * come along free (designer). null: each group pays its own (scaffold multi-moves).
+ * @param {GameState} state @param {Card} card @param {Target} t @returns {string | null}
+ */
+function ledFaction(state, card, t) {
+  if (LEADS.has(/** @type {string} */ (card.action))) return card.suit && t.mode === 'faction' ? /** @type {string} */ (suitFaction(state, card)) : t.lead ?? null;
+  return t.faction ?? null;
+}
 
 /** An option's number; a game saved before an option existed uses its default. @param {{ options: Options }} state @param {string} id */
 const num = (state, id) => Number(state.options[id] ?? variants.find((v) => v.id === id)?.default);
@@ -337,23 +353,27 @@ export function influenceLeaders(state, faction) {
 
 /**
  * Move tokens, placing 1 influence at the destination spent from the
- * player's standing with the faction moved, if they have any (3.7, CA2).
- * Returns the number moved (0 if it may not enter).
+ * player's standing with the faction moved (3.7, CA2); under IC1 (D15) a move
+ * it can't pay for doesn't happen. A faction other than the led one comes
+ * along free and places nothing (D15). Returns the number moved (0 if it may
+ * not enter, or can't be paid for).
  * @param {GameState} state @param {string} pid @param {string} faction
- * @param {string} from @param {string} to @param {number} count @param {Set<string>} placedAt
+ * @param {string} from @param {string} to @param {number} count @param {Placed} placedAt
  */
 function move(state, pid, faction, from, to, count, placedAt) {
   const n = Math.min(count, tokensOf(state, from, faction));
   if (n <= 0 || from === to) return 0;
   if (!canEnter(state, to, faction, state.pending?.blocked ?? [])) return 0;
+  // D15: only the led faction pays; the others come along free, placing nothing.
+  const free = !!placedAt.led && faction !== placedAt.led;
   // IC1: a move that places influence goes only as far as the player can pay for it.
   const cost = num(state, 'influencePerMove');
-  if (influenceRequired(state) && cost > 0 && !placedAt.has(`${to}:${faction}`) && (state.players[pid].standing[faction] ?? 0) < cost) return 0;
+  if (!free && influenceRequired(state) && cost > 0 && !placedAt.has(`${to}:${faction}`) && (state.players[pid].standing[faction] ?? 0) < cost) return 0;
   state.board[from].tokens[faction] -= n;
   if (state.board[from].tokens[faction] === 0) delete state.board[from].tokens[faction];
   state.board[to].tokens[faction] = tokensOf(state, to, faction) + n;
   const place = (/** @type {string} */ loc, /** @type {string} */ key, /** @type {number} */ amount) => {
-    if (placedAt.has(key)) return;
+    if (free || placedAt.has(key)) return;
     placedAt.add(key);
     const k = Math.min(amount, state.players[pid].standing[faction] ?? 0);
     if (k <= 0) return;
@@ -668,13 +688,32 @@ function tokenSpots(state, card, mode) {
     && (mode === 'location' ? suitLocations(card).includes(loc) : tokensOf(state, loc, /** @type {string} */ (sf)) > 0));
 }
 
+/** @typedef {Set<string> & { led: string | null }} Placed  where influence was placed this action, and the led faction (D15) */
+
+/**
+ * The factions a target would move, before IC1 (influence not required).
+ * @param {GameState} state @param {string} pid @param {Card} card @param {Target} t
+ */
+function movingFactions(state, pid, card, t) {
+  const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options: { ...state.options, influenceRequired: 'off' }, lastPlayed: state.lastPlayed ?? null, events: [], log: [] })));
+  act(copy, pid, card, t);
+  return state.factions.filter((f) => LOCATION_IDS.some((l) => (copy.board[l].tokens[f] ?? 0) > (state.board[l].tokens[f] ?? 0)));
+}
+
 /**
  * Check a target for a card's turn action. Returns an error, or null.
  * @param {GameState} state @param {string} pid @param {Card} card @param {Target | null | undefined} t
  */
 export function checkTarget(state, pid, card, t) {
   const reason = checkShape(state, pid, card, t);
-  if (reason || !t || !influenceRequired(state)) return reason;
+  if (reason || !t) return reason;
+  const lead = selectedPays(state) && LEADS.has(/** @type {string} */ (copied(state, card).action)) ? ledFaction(state, copied(state, card), t) : 'n/a';
+  if (lead === null) return 'Choose the faction you lead.';
+  if (lead !== 'n/a' && !movingFactions(state, pid, card, { ...t, lead: undefined }).includes(lead)) return 'That faction doesn\'t move with this card.';
+  if (!influenceRequired(state)) return null;
+  const cost = num(state, 'influencePerMove');
+  const led = selectedPays(state) ? ledFaction(state, copied(state, card), t) : null;
+  if (led && cost > 0 && (state.players[pid].standing[led] ?? 0) < cost && movingFactions(state, pid, card, t).includes(led)) return 'You need standing with the faction you lead to pay for the influence this move places (IC1).';
   // IC1: the card must be payable for at least one of its moves.
   const moved = (/** @type {Options} */ options) => {
     const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options, lastPlayed: state.lastPlayed ?? null, events: [], log: [] })));
@@ -917,8 +956,8 @@ function step(state, loc, dir) {
  */
 function act(state, pid, card, t) {
   card = copied(state, card);
-  /** @type {Set<string>} */
-  const placed = new Set();
+  /** @type {Placed} */
+  const placed = Object.assign(new Set(), { led: selectedPays(state) ? ledFaction(state, card, t) : null });
   const names = (/** @type {string} */ f) => factionById(f).name;
   const lname = (/** @type {string} */ l) => locationById(l).name;
   switch (card.action) {
@@ -1037,7 +1076,10 @@ function act(state, pid, card, t) {
     }
     case 'draw-adjacent': {
       const to = /** @type {string} */ (t.location);
-      const groups = MAP[to].adjacent.flatMap((from) => movable(state, card, t).map((f) => ({ from, f, n: tokensOf(state, from, f) }))).filter((g) => g.n > 0).sort((a, b) => b.n - a.n);
+      const led = placed.led;
+      // The led faction comes first, then the largest of the rest (D15 reading).
+      const groups = MAP[to].adjacent.flatMap((from) => movable(state, card, t).map((f) => ({ from, f, n: tokensOf(state, from, f) }))).filter((g) => g.n > 0)
+        .sort((a, b) => Number(b.f === led) - Number(a.f === led) || b.n - a.n);
       let n = 0;
       for (const g of groups) n += move(state, pid, g.f, g.from, to, g.n, placed);
       logLine(state, `${pid}: ${card.name} draws ${n} tokens into ${lname(to)}.`);
@@ -2032,12 +2074,23 @@ const finishWalk = (t) => t;
  * time, and the server still checks the finished target (checkTarget).
  * @typedef {{ kind: 'mode' } | { kind: 'location', key: 'location' | 'to' | 'bluff' | 'path' | 'from', options: string[], optional?: boolean, left?: number }
  *   | { kind: 'group', key: 'group' | 'move' | 'lure', options: { location: string, faction: string }[], optional?: boolean }
- *   | { kind: 'faction', key?: 'faction' | 'to', options: string[] } | { kind: 'direction', options: string[] }
+ *   | { kind: 'faction', key?: 'faction' | 'to' | 'lead', options: string[] } | { kind: 'direction', options: string[] }
  *   | { kind: 'split', options: string[], left: number } | { kind: 'done' }} Choice
  * @param {GameState} state @param {string} pid @param {string} cardId @param {Target} t
  * @returns {Choice}
  */
 export function nextChoice(state, pid, cardId, t) {
+  const c = nextShape(state, pid, cardId, t);
+  const card = copied(state, cardById(cardId));
+  if (c.kind !== 'done' || !selectedPays(state) || !LEADS.has(/** @type {string} */ (card.action)) || ledFaction(state, card, t) !== null) return c;
+  // D15: name the faction you lead, among those that would move (and, under IC1, that you can pay for).
+  const cost = num(state, 'influencePerMove');
+  const options = movingFactions(state, pid, card, t).filter((f) => !influenceRequired(state) || cost <= 0 || (state.players[pid].standing[f] ?? 0) >= cost);
+  return { kind: 'faction', key: 'lead', options };
+}
+
+/** nextChoice before the led faction (D15). @param {GameState} state @param {string} pid @param {string} cardId @param {Target} t @returns {Choice} */
+function nextShape(state, pid, cardId, t) {
   const card = copied(state, cardById(cardId));
   const mode = /** @type {'location' | 'faction'} */ (t.mode ?? 'location');
   if (card.suit && !t.mode) return { kind: 'mode' };

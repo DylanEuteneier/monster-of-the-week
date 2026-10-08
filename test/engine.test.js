@@ -404,7 +404,7 @@ test('Turn On the Tractor Beam carries both groups of a contest to an empty neig
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'scifi')?.id);
   const [to] = adj[loc].adjacent;
   s.board[loc].tokens = { [f]: 2, [g]: 4 };
-  const t = { mode: /** @type {const} */ ('location'), location: loc, to };
+  const t = { mode: /** @type {const} */ ('location'), location: loc, to, lead: f };
   assert.equal(checkTarget(s, 'ann', cardById('tractor-beam'), t), null);
   assert.deepEqual(previewTarget(s, 'ann', 'tractor-beam', t).board[to].tokens, { [f]: 2, [g]: 4 });
   s.board[to].tokens = { [f]: 1 };
@@ -622,4 +622,24 @@ test('IC1: a move goes only as far as the player can pay for the influence it pl
   assert.ok(checkTarget(s, 'ann', cardById('extra-c'), { moves: [{ location: from, faction: A, to: map[from].adjacent[0] }] }));
   const off = { ...s, options: { ...s.options, influenceRequired: 'off' } };
   assert.equal(checkTarget(off, 'ann', cardById('extra-c'), { moves: [{ location: from, faction: A, to: map[from].adjacent[0] }] }), null);
+});
+
+test('D15: each faction moved pays its own (whoPays=each, first draft); only the selected faction pays, the others free (whoPays=selected)', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const bell = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead' && map[l.id].adjacent.length >= 2)?.id);
+  const [x, y] = map[bell].adjacent;
+  s.board[x].tokens = { [A]: 2 };
+  s.board[y].tokens = { [B]: 4 };
+  s.players.ann.standing = { [A]: 1, [B]: 0, [C]: 0 };
+  s.options = { ...s.options, whoPays: 'selected' };
+  const c = nextChoice(s, 'ann', 'bell', { mode: 'location', location: bell });
+  assert.ok(c.kind === 'faction' && c.key === 'lead' && c.options.includes(A) && !c.options.includes(B));
+  const t = { mode: /** @type {const} */ ('location'), location: bell, lead: A };
+  assert.equal(checkTarget(s, 'ann', cardById('bell'), t), null);
+  const led = previewTarget(s, 'ann', 'bell', t);
+  assert.deepEqual([led.board[bell].tokens[A], led.board[bell].tokens[B], led.board[bell].influence.ann, led.players.ann.standing[A]], [2, 4, 1, 0]);
+  const each = { ...s, options: { ...s.options, whoPays: 'each' } };
+  const paid = previewTarget(each, 'ann', 'bell', { mode: 'location', location: bell });
+  assert.deepEqual([paid.board[bell].tokens[A], paid.board[bell].tokens[B]], [2, undefined]);
 });

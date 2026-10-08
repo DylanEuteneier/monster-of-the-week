@@ -963,7 +963,7 @@ function applyPick(t, action, el) {
     if (!t.mode) return false;
     choice = currentChoice(t);
   }
-  if (action === 'pick-faction') { if (choice?.kind === 'faction' && choice.key === 'to') t.to = el.dataset.faction; else t.faction = el.dataset.faction; }
+  if (action === 'pick-faction') t[choice?.kind === 'faction' ? choice.key ?? 'faction' : 'faction'] = el.dataset.faction;
   else if (action === 'pick-direction') t.direction = el.dataset.direction;
   else if (action === 'pick-group' && choice?.kind === 'group') {
     if (choice.key === 'lure') Object.assign(t, { faction: el.dataset.faction, from: [loc] });

@@ -106,6 +106,9 @@ render();
  * (each round's first play), written by scripts/roundplay.js out=...; a run
  * rewrites them after every state, so a reload shows results as they come in.
  */
+/** Scores are off the page until they can be trusted (designer, 2026-10-07); set true to show them again. */
+const SHOW_SCORES = false;
+
 async function cards() {
   /** @type {{ measured: string, states: number, players: number, bots: string, options: Record<string, string>, scores: Record<string, Record<string, number>> } | null} */
   let data = null;
@@ -138,11 +141,11 @@ async function cards() {
   const BANDS = /** @type {const} */ ([['battle', 'Battle', 5, 10], ['control', 'Control', 0.5, 1], ['moved', 'Moved', 3, 7], ['placed', 'Influence', 1, 2], ['playable', 'Playable', 50, 80]]);
   const tags = (/** @type {AnyCard} */ c, /** @type {string} */ status) => {
     const sc = data?.scores[c.id];
-    const measured = !c.action ? '' : !sc ? '<span class="review-tag">Not measured</span>' : BANDS.map(([m, label, mid, high]) => {
+    const measured = !SHOW_SCORES || !c.action ? '' : !sc ? '<span class="review-tag">Not measured</span>' : BANDS.map(([m, label, mid, high]) => {
       const v = sc[m] ?? 0;
       const band = v >= high ? 'high' : v >= mid ? 'mid' : 'low';
       return `<span class="review-tag is-${band}" title="${esc(label)}: ${v}${m === 'playable' ? '% of states' : ''} (${band})">${esc(label)} <b>${v}${m === 'playable' ? '%' : ''}</b></span>`;
-    }).join('') + benefitTag(round, roundBand, 'Round', c.id) + benefitTag(opening, openingBand, 'Opener', c.id);
+    }).join('') + (SHOW_SCORES ? benefitTag(round, roundBand, 'Round', c.id) + benefitTag(opening, openingBand, 'Opener', c.id) : '');
     return `<div class="review-tags"><span class="review-tag is-status">${esc(status)}</span><span class="review-tag is-status">${esc(typeOf(c.action))} · <span class="mono">${esc(c.action ?? 'none')}</span></span>${measured}</div>`;
   };
   const how = data
@@ -150,7 +153,7 @@ async function cards() {
     : 'Not measured yet: run <span class="mono">npm run cards:score</span>.';
   const roundHow = (/** @type {RoundData} */ d, /** @type {string} */ what) => (d ? ` <b>${what}</b>: ${d.partial ? `in progress, ${esc(d.partial)}` : `${d.states} states`}, ${esc(d.bots)} bots, ${d.playouts} playouts (${esc(d.measured)}).` : '');
   $('cards').innerHTML = `<div class="row-between"><h2>Cards</h2><span class="small muted">${all.length} cards: ${deck.length} in the deck, ${tests.length} out of the deal</span></div>
-    <p class="small muted">Every card the engine can play, for review, sorted by suit, then type, then action. Tags: green high, gold mid, grey low. <b>Battle</b> trophies changing hands plus fights flipped (mid ${BANDS[0][2]}, high ${BANDS[0][3]}); <b>Control</b> contested locations where you become sole top influence (${BANDS[1][2]} / ${BANDS[1][3]}); <b>Moved</b> pieces moved or placed (${BANDS[2][2]} / ${BANDS[2][3]}); <b>Influence</b> influence placed (${BANDS[3][2]} / ${BANDS[3][3]}); <b>Playable</b> states with a legal target (${BANDS[4][2]}% / ${BANDS[4][3]}%). Rule-breaking is judged from the text; hidden tokens are undercounted (one round ahead). ${how} <b>Round</b> and <b>Opener</b>: benefit to the player over a played-out round (every turn, and each round's first play), banded by rank; … marks a run still in progress.${roundHow(round, 'Round')}${roundHow(opening, 'Opener')}</p>
+    <p class="small muted">Every card the engine can play, for review, sorted by suit, then type, then action. ${SHOW_SCORES ? `Tags: green high, gold mid, grey low. <b>Battle</b> trophies changing hands plus fights flipped (mid ${BANDS[0][2]}, high ${BANDS[0][3]}); <b>Control</b> contested locations where you become sole top influence (${BANDS[1][2]} / ${BANDS[1][3]}); <b>Moved</b> pieces moved or placed (${BANDS[2][2]} / ${BANDS[2][3]}); <b>Influence</b> influence placed (${BANDS[3][2]} / ${BANDS[3][3]}); <b>Playable</b> states with a legal target (${BANDS[4][2]}% / ${BANDS[4][3]}%). Rule-breaking is judged from the text; hidden tokens are undercounted (one round ahead). ${how} <b>Round</b> and <b>Opener</b>: benefit to the player over a played-out round (every turn, and each round's first play), banded by rank; … marks a run still in progress.${roundHow(round, 'Round')}${roundHow(opening, 'Opener')}` : 'Strength scores are hidden until they can be trusted.'}</p>
     <div class="review-grid" id="review-grid"></div>`;
   const items = all.map(({ c, status }) => cardHtml(c.id, { extra: tags(c, status) }));
   // Masonry that reads left to right: each card, in order, goes to the shortest column.
