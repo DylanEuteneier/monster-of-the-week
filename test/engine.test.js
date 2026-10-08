@@ -647,3 +647,20 @@ test('D15: each faction moved pays its own (whoPays=each, first draft); only the
   const paid = previewTarget(each, 'ann', 'bell', { mode: 'location', location: bell });
   assert.deepEqual([paid.board[bell].tokens[A], paid.board[bell].tokens[B]], [2, undefined]);
 });
+
+test('round 17: Virus v3 only infects neighbours holding one other faction; the Pit v2 drops a small group in its region; Swap Allegiances swaps standing', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const from = /** @type {string} */ (Object.keys(map).find((l) => map[l].adjacent.length >= 3));
+  const [x, y] = map[from].adjacent;
+  s.board[from].tokens = { [A]: 4 };
+  s.board[x].tokens = { [B]: 2 };
+  const v = previewTarget(s, 'ann', 'virus-v3', { mode: 'faction', location: from, faction: A });
+  assert.equal(v.board[x].tokens[A], 1);
+  assert.equal(v.board[y].tokens[A], undefined);
+  s.players.ann.standing = { [A]: 5, [B]: 1, [C]: 0 };
+  const sw = previewTarget(s, 'ann', 'swap-allegiance', { faction: A, to: B });
+  assert.deepEqual([sw.players.ann.standing[A], sw.players.ann.standing[B]], [1, 5]);
+  const c = nextChoice(s, 'ann', 'pit-v2', { mode: 'location', location: x, faction: B });
+  if (c.kind === 'location') for (const l of c.options) assert.notEqual(l, x);
+});

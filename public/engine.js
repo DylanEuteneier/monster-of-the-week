@@ -633,6 +633,11 @@ function ringSteps(state, loc) {
 }
 /** Groups that would circle (round 12). @param {GameState} state @param {string} loc @param {string[]} factions */
 const circlers = (state, loc, factions) => ringSteps(state, loc).flatMap(([from, to]) => factionsAt(state, from).filter((f) => factions.includes(f) && !state.board[to].scorched).map((f) => ({ from, to, f })));
+/** Open the Pit (v2, round 17): where a small group can fall to, in its region. @param {GameState | PlayerView} state @param {string} loc @param {string} f */
+function pitFalls(state, loc, f) {
+  return LOCATION_IDS.filter((l) => l !== loc && regionOf(l) === regionOf(loc) && !state.board[l].scorched && canEnter(/** @type {GameState} */ (state), l, f));
+}
+
 /** Where Install the Cameras places influence, with the faction it spends standing from (round 12). @param {GameState | PlayerView} state @param {string} pid @param {string} loc */
 function cameraSpots(state, pid, loc) {
   const standing = { ...state.players[pid].standing };
@@ -761,7 +766,7 @@ function checkShape(state, pid, card, t) {
       if (!t.from || t.from.length < 1 || t.from.length > 2 || t.from.some((l) => tokensOf(state, l, /** @type {string} */ (t.faction)) <= 0 || l === t.location)) return 'Choose one or two locations holding that faction.';
       return null;
     }
-    case 'halve': case 'halve-far': case 'teleport': case 'spread': case 'infect': case 'split': {
+    case 'halve': case 'halve-far': case 'teleport': case 'spread': case 'infect': case 'split': case 'spread-contest': {
       const e = groupTarget(state, card, t);
       if (e) return e;
       const loc = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
@@ -929,6 +934,24 @@ function checkShape(state, pid, card, t) {
       if (!t.faction || (state.players[pid].standing[t.faction] ?? 0) <= 0) return 'Choose a faction you have standing with.';
       return t.to && t.to !== t.faction && state.factions.includes(t.to) ? null : 'Choose the faction your standing goes to.';
     }
+    case 'surveil-supply': {
+      if ((card.suit && t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode ?? 'location').includes(t.location)) return 'Choose the target location.';
+      return state.players[pid].supply > 0 ? null : 'You have no cubes in your supply.';
+    }
+    case 'pit-fall': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      if (tokensOf(state, /** @type {string} */ (t.location), /** @type {string} */ (t.faction)) > 3) return 'Only a group of 3 or fewer tokens.';
+      return t.to && pitFalls(state, /** @type {string} */ (t.location), /** @type {string} */ (t.faction)).includes(t.to) ? null : 'Choose a location in its region it can fall to.';
+    }
+    case 'wake': {
+      if ((t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode).includes(t.location)) return 'Choose the target location.';
+      const sf = /** @type {string} */ (suitFaction(state, card));
+      return tokensOf(state, t.location, sf) > 0 && (state.players[pid].standing[sf] ?? 0) > 0 ? null : 'Choose a location holding the faction, with standing to spend.';
+    }
+    case 'canvass-contest': return state.players[pid].supply > 0 && LOCATION_IDS.some((l) => contestAt(state, l)) ? null : 'No contested location, or no cubes in your supply.';
+    case 'raise-stakes': return t.location && contestAt(state, t.location) && state.players[pid].supply > 0 ? null : 'Choose a contested location (with cubes in your supply).';
+    case 'swap-standing': return t.faction && t.to && t.faction !== t.to && state.factions.includes(t.faction) && state.factions.includes(t.to) ? null : 'Choose two factions.';
     case 'claim': case 'truce': return t.location && state.board[t.location] && !state.board[t.location].scorched ? null : 'Choose a location.';
     case 'copy': return 'Nothing has been played to copy yet.';
     case 'trail': {
@@ -1050,6 +1073,62 @@ function act(state, pid, card, t) {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const n = move(state, pid, f, from, /** @type {string} */ (t.to), tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} lifts ${n} ${names(f)} from ${lname(from)} to ${lname(/** @type {string} */ (t.to))}.`);
+      break;
+    }
+    case 'spread-contest': {
+      // Virus (v3, round 17): only into neighbours holding exactly one other faction, so each token starts a fight.
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
+      const reached = [];
+      for (const to of MAP[from].adjacent) {
+        if (tokensOf(state, from, f) <= 0) break;
+        const there = factionsAt(state, to);
+        if (there.length !== 1 || there[0] === f) continue;
+        if (move(state, pid, f, from, to, 1, placed)) reached.push(to);
+      }
+      logLine(state, `${pid}: ${card.name} infects ${reached.map(lname).join(', ') || 'nowhere'}.`);
+      break;
+    }
+    case 'surveil-supply': {
+      const at = [/** @type {string} */ (t.location), ...MAP[/** @type {string} */ (t.location)].adjacent].filter((l) => !state.board[l].scorched && factionsAt(state, l).length > 0);
+      const n = Math.min(at.length, state.players[pid].supply);
+      for (const l of at.slice(0, n)) state.board[l].influence[pid] = (state.board[l].influence[pid] ?? 0) + 1;
+      state.players[pid].supply -= n;
+      logLine(state, `${pid}: ${card.name} places influence at ${at.slice(0, n).map(lname).join(', ')}.`);
+      break;
+    }
+    case 'pit-fall': {
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
+      logLine(state, `${pid}: ${card.name}: ${move(state, pid, f, from, to, tokensOf(state, from, f), placed)} ${names(f)} fall through to ${lname(to)}.`);
+      break;
+    }
+    case 'wake': {
+      const to = /** @type {string} */ (t.location), sf = /** @type {string} */ (suitFaction(state, card));
+      const n = Math.min(4, tokensOf(state, to, sf), state.players[pid].standing[sf] ?? 0);
+      state.players[pid].standing[sf] -= n;
+      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
+      for (let i = 0; i < n; i++) state.events.push({ type: 'influence-placed', player: pid, faction: sf, location: to });
+      logLine(state, `${pid}: ${card.name} places ${n} influence at ${lname(to)}.`);
+      break;
+    }
+    case 'canvass-contest': {
+      const at = LOCATION_IDS.filter((l) => contestAt(state, l)).slice(0, state.players[pid].supply);
+      for (const l of at) state.board[l].influence[pid] = (state.board[l].influence[pid] ?? 0) + 1;
+      state.players[pid].supply -= at.length;
+      logLine(state, `${pid}: ${card.name} places 1 influence at each contested location (${at.length}).`);
+      break;
+    }
+    case 'raise-stakes': {
+      const to = /** @type {string} */ (t.location);
+      const n = Math.min(5, Math.max(...factionsAt(state, to).map((f) => tokensOf(state, to, f))), state.players[pid].supply);
+      state.players[pid].supply -= n;
+      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
+      logLine(state, `${pid}: ${card.name} places ${n} influence at ${lname(to)}.`);
+      break;
+    }
+    case 'swap-standing': {
+      const a = /** @type {string} */ (t.faction), b = /** @type {string} */ (t.to), st = state.players[pid].standing;
+      [st[a], st[b]] = [st[b] ?? 0, st[a] ?? 0];
+      logLine(state, `${pid}: ${card.name} swaps their standing with ${names(a)} and ${names(b)}.`);
       break;
     }
     case 'spread': {
@@ -1410,7 +1489,8 @@ export function pendingDestinations(state, pend) {
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': return t.to ? [t.to] : [];
     case 'sow': return t.path ?? [];
     case 'split': return Object.keys(t.split ?? {});
-    case 'spread': case 'infect': return t.location ? MAP[t.location].adjacent : [];
+    case 'spread': case 'infect': case 'spread-contest': return t.location ? MAP[t.location].adjacent : [];
+    case 'pit-fall': return t.to ? [t.to] : [];
     case 'carry-fight': return t.to ? [t.to] : [];
     case 'slide': case 'chain': return LOCATION_IDS;
     case 'circle': return t.location ? MAP[t.location].adjacent : [];
@@ -1734,7 +1814,7 @@ function fight(state, loc) {
   const nl = place.tokens[loser];
   const loserLoss = nl; // the loser always loses everything (FR5)
   let winnerLoss = Math.max(1, Math.floor(nl / 2));
-  if (effect === 'silver-bullets') winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
+  if (effect === 'silver-bullets' || effect === 'silver-bullets-v2') winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
   if (effect === 'salt-burn') winnerLoss = place.tokens[winner];
   if (effect === 'force-field') winnerLoss = 0; // test card (round 8)
   winnerLoss = Math.min(winnerLoss, place.tokens[winner]);
@@ -1759,7 +1839,20 @@ function fight(state, loc) {
     } else state.supply[pile.faction] += pile.n;
   };
   if (effect === 'lay-to-rest') for (const pile of piles) give(pile, null); // test card (round 11): no one takes trophies
-  else if (place.claim) for (const pile of piles) give(pile, place.claim); // Claim the Spoils (test card, round 15)
+  else if (effect === 'lay-to-rest-v2' && token) { // round 17: the token's owner takes the smaller pile; the rest go back to their supplies
+    piles.forEach((pile, i) => give(pile, i === piles.length - 1 ? token.owner : null));
+  } else if (effect === 'sign-contract-v2' && token) { // round 17: the owner takes the bigger pile, the leader only the smaller; the owner pays 2 standing with the Demons
+    piles.forEach((pile, i) => give(pile, i === 0 ? token.owner : collectors[0] ?? null));
+    const demons = state.factions.find((f) => archetypeOf(f) === 'demonic');
+    if (demons) state.players[token.owner].standing[demons] = Math.max(0, (state.players[token.owner].standing[demons] ?? 0) - 2);
+  } else if (effect === 'silver-bullets-v2' && token) { // round 17: the extra casualties go to the token's owner as their own pile
+    const extra = piles.find((p) => p.faction === winner);
+    const owed = Math.min(2, extra?.n ?? 0);
+    if (extra && owed) { extra.n -= owed; give({ faction: winner, n: owed }, token.owner); }
+    const order = piles.filter((p) => p.n > 0).sort((x, y) => y.n - x.n);
+    if (ranking.involved === 1 && collectors[0]) for (const pile of order) give(pile, collectors[0]);
+    else order.forEach((pile, i) => give(pile, collectors[i] ?? null));
+  } else if (place.claim) for (const pile of piles) give(pile, place.claim); // Claim the Spoils (test card, round 15)
   else if (ranking.involved === 1 && collectors[0]) {
     for (const pile of piles) give(pile, collectors[0]); // UP1
   } else {
@@ -2244,7 +2337,26 @@ function nextShape(state, pid, cardId, t) {
     }
     case 'repel':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => pushes(state, loc, movers).length > 0) };
-    case 'spread': case 'infect':
+    case 'surveil-supply':
+      if (state.players[pid].supply <= 0) return { kind: 'location', key: 'location', options: [] };
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode) };
+    case 'pit-fall':
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => tokensOf(state, g.location, g.faction) <= 3 && pitFalls(state, g.location, g.faction).length > 0) };
+      return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: pitFalls(state, t.location, /** @type {string} */ (t.faction)) };
+    case 'wake': {
+      const wf = /** @type {string} */ (sf);
+      if ((state.players[pid].standing[wf] ?? 0) <= 0) return { kind: 'location', key: 'location', options: [] };
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((l) => tokensOf(state, l, wf) > 0) };
+    }
+    case 'canvass-contest':
+      return state.players[pid].supply > 0 && LOCATION_IDS.some((l) => contestAt(state, l)) ? { kind: 'done' } : { kind: 'location', key: 'location', options: [] };
+    case 'raise-stakes':
+      if (state.players[pid].supply <= 0) return { kind: 'location', key: 'location', options: [] };
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => contestAt(state, l)) };
+    case 'swap-standing':
+      if (!t.faction) return { kind: 'faction', options: state.factions.slice() };
+      return t.to ? { kind: 'done' } : { kind: 'faction', key: 'to', options: state.factions.filter((f) => f !== t.faction && (state.players[pid].standing[f] ?? 0) !== (state.players[pid].standing[/** @type {string} */ (t.faction)] ?? 0)) };
+    case 'spread': case 'infect': case 'spread-contest':
       return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => exits(g, MAP[g.location].adjacent).length > 0) };
     case 'split': {
       if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => tokensOf(state, g.location, g.faction) >= 2 && exits(g, MAP[g.location].adjacent).length >= 2) };
@@ -2352,7 +2464,10 @@ export function describeTarget(cardId, t) {
     case 'sow': return `${F(t.faction)} from ${L(t.location)} via ${(t.path ?? []).map(L).join(', ')}${how}`;
     case 'token': return `token at ${L(t.location)}${t.bluff ? `, bluff at ${L(t.bluff)}` : ''}${how}`;
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': return `${F(t.faction)} at ${L(t.location)} to ${L(t.to)}${how}`;
-    case 'spread': case 'infect': return `${F(t.faction)} at ${L(t.location)}${how}`;
+    case 'spread': case 'infect': case 'spread-contest': case 'pit-fall': return `${F(t.faction)} at ${L(t.location)}${t.to ? ` to ${L(t.to)}` : ''}${how}`;
+    case 'surveil-supply': case 'wake': case 'raise-stakes': return `at ${L(t.location)}${how}`;
+    case 'canvass-contest': return 'every contested location';
+    case 'swap-standing': return `${F(t.faction)} and ${F(t.to)}`;
     case 'split': return `${F(t.faction)} at ${L(t.location)} split ${Object.entries(t.split ?? {}).map(([l, n]) => `${n} to ${L(l)}`).join(', ')}${how}`;
     case 'bail-out': return `from ${L(t.location)} to ${L(t.to)}`;
     case 'backup': case 'fall-back': case 'stake': return `at ${L(t.location)}`;

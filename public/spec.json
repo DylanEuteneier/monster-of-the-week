@@ -1214,7 +1214,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 16 ideas (rounds 14 to 16: unsuited extras) under measurement by scripts/tournament.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
+    "notes": "Cards out of the fixed deck: rounds 8 to 17 ideas (rounds 14 to 17: unsuited extras; round 17: revisions of the weakest) under measurement by scripts/tournament.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
     "cards": [
       {
         "id": "force-field",
@@ -1731,6 +1731,134 @@
         "amount": 6,
         "round": 16,
         "text": "Place 6 influence from your supply on the target. Target: any location. (Stake Out with a larger amount, to see how strength grows with it.)"
+      },
+      {
+        "id": "cameras-v2",
+        "name": "Install the Cameras (v2)",
+        "suit": "sentients",
+        "slot": "signature",
+        "influence": 3,
+        "action": "surveil-supply",
+        "round": 17,
+        "text": "Place 1 influence from your supply at the target and at each location next to it that holds tokens. Target: the hub. (Round 17: from the supply, not standing.)",
+        "readings": {
+          "location": "a ⏏ location.",
+          "faction": "a location holding the Sentients."
+        }
+      },
+      {
+        "id": "virus-v3",
+        "name": "Spread a Virus (v3)",
+        "suit": "sentients",
+        "slot": "strike",
+        "influence": 2,
+        "action": "spread-contest",
+        "round": 17,
+        "text": "The target group puts 1 token into every adjacent location holding exactly one other faction, as far as its tokens go: each one starts a fight. Target: the infected group. (Round 17.)",
+        "readings": {
+          "location": "any group at a ⏏ location.",
+          "faction": "a Sentient group anywhere."
+        }
+      },
+      {
+        "id": "lay-to-rest-v2",
+        "name": "Lay Them to Rest (v2)",
+        "suit": "undead",
+        "slot": "signature",
+        "influence": 3,
+        "action": "token",
+        "round": 17,
+        "text": "Hidden: at its fight, the token’s owner takes the smaller pile; the rest go back to their supplies. (Round 17.)",
+        "readings": {
+          "location": "a ☾ location.",
+          "faction": "a location holding the Undead."
+        }
+      },
+      {
+        "id": "pit-v2",
+        "name": "Open the Pit (v2)",
+        "suit": "demonic",
+        "slot": "signature",
+        "influence": 3,
+        "action": "pit-fall",
+        "round": 17,
+        "text": "The target group, 3 tokens or fewer, falls through to any location in its region it can enter. Target: the group, then where it lands. (Round 17: a move, not a removal.)",
+        "readings": {
+          "location": "a small group at a ⎈ location.",
+          "faction": "a small group sharing a location with the Demons."
+        }
+      },
+      {
+        "id": "wake-v2",
+        "name": "Take Over the Wake (v2)",
+        "suit": "undead",
+        "slot": "signature",
+        "influence": 3,
+        "action": "wake",
+        "round": 17,
+        "text": "Place influence at the target equal to the Undead tokens there (up to 4), spent from your standing with the Undead. Target: the wake. (Round 17.)",
+        "readings": {
+          "location": "a ☾ location.",
+          "faction": "a location holding the Undead."
+        }
+      },
+      {
+        "id": "silver-bullets-v2",
+        "name": "Silver Bullets (v2)",
+        "suit": "nocturnals",
+        "slot": "signature",
+        "influence": 4,
+        "action": "token",
+        "round": 17,
+        "text": "Hidden: at its fight, each group loses 2 more tokens as casualties, and the token’s owner takes those as a pile of their own. (Round 17.)",
+        "readings": {
+          "location": "a ◐ location.",
+          "faction": "a location holding the Nocturnals."
+        }
+      },
+      {
+        "id": "sign-contract-v2",
+        "name": "Sign the Contract (v2)",
+        "suit": "demonic",
+        "slot": "signature",
+        "influence": 3,
+        "action": "token",
+        "round": 17,
+        "text": "Hidden: at its fight, the token’s owner takes the bigger pile and the leader only the smaller; the owner pays 2 standing with the Demons for the deal. (Round 17.)",
+        "readings": {
+          "location": "a ⎈ location.",
+          "faction": "a location holding the Demons."
+        }
+      },
+      {
+        "id": "canvass-v2",
+        "name": "Canvass the Town (v2)",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "canvass-contest",
+        "round": 17,
+        "text": "Place 1 influence from your supply at every contested location. (Round 17.)"
+      },
+      {
+        "id": "raise-stakes",
+        "name": "Raise the Stakes",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "raise-stakes",
+        "round": 17,
+        "text": "At a contested location, place influence from your supply equal to the larger group there (up to 5). Target: the contest. (Round 17.)"
+      },
+      {
+        "id": "swap-allegiance",
+        "name": "Swap Allegiances",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "swap-standing",
+        "round": 17,
+        "text": "Swap your standing with two factions. Target: the two factions. (Round 17.)"
       }
     ]
   }
