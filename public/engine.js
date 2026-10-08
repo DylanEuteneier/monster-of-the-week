@@ -15,7 +15,7 @@
  * Where this file and docs/motw-design.md disagree, the design document wins.
  */
 import spec from './spec.json' with { type: 'json' };
-// Measured card strength (scripts/balance.js, npm run cards:score): sets printed influence (D12).
+// Measured card strength: sets printed influence (D12). Every score was reset to 0 (designer, 2026-10-07), so the order is random until D12 takes a trusted measure from the tuning tournament (scripts/tournament.js).
 import cardScores from './card-scores.json' with { type: 'json' };
 
 export { spec };

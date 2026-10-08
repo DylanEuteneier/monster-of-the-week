@@ -7,7 +7,7 @@ import {
 } from '../public/engine.js';
 import { botMove } from '../public/bots.js';
 import scores from '../public/card-scores.json' with { type: 'json' };
-import { playOut } from '../scripts/simulate.js';
+import { playOut } from '../scripts/lib.js';
 
 /** @typedef {import('../public/engine.js').GameState} GameState */
 
@@ -324,7 +324,7 @@ test('Leave Out Fresh Meat asks which group comes when the largest are tied', ()
   assert.equal(nextChoice(s, 'ann', 'fresh-meat', { mode: 'location', location: bait, faction: s.factions[2], from: [y] }).kind, 'done');
 });
 
-// Round 8 test cards (spec.testCards): never dealt, measured by scripts/balance.js.
+// Round 8 test cards (spec.testCards): never dealt in a fixed deck, measured by scripts/tournament.js.
 
 test('a fixed deck never deals test cards', () => {
   const s = createGame({ seed: 1, players: PLAYERS, options: { deck: 'fixed' } });

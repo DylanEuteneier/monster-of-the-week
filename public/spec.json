@@ -1214,7 +1214,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 16 ideas (rounds 14 to 16: unsuited extras) under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
+    "notes": "Cards out of the fixed deck: rounds 8 to 16 ideas (rounds 14 to 16: unsuited extras) under measurement by scripts/tournament.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
     "cards": [
       {
         "id": "force-field",

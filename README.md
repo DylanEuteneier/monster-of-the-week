@@ -61,7 +61,8 @@ test/
   bots.test.js        bots only propose legal moves and finish games
   app.render.test.js  headless render of every phase
 scripts/
-  simulate.js     bot harness for summary figures
+  tournament.js   the tuning tournament: bot games, endings, economy, card plays and probes
+  lib.js          shared by the tournament and the tests
   smoke.js        end-to-end run against a live server
   admin.js        create a game / list magic links
 docs/
@@ -120,7 +121,8 @@ round 1 without new links.
 | `npm run typecheck` | Strict TypeScript over engine, client, scripts, and worker |
 | `npm run build` | Dry-run bundle of the worker into `dist/` |
 | `npm run check` | typecheck + test + build |
-| `npm run simulate -- [games] [seed] [players]` | Random-bot harness; prints summary figures |
+| `npm run tournament -- [games] [seed] [profiles=…] [log=…] [out=…] [probe=…]` | The tuning tournament: whole bot games; endings, economy, and per-card play figures and probes (see the script's header) |
+| `npm run cards:plays` | The card tuning run: 400 games with probes, resumable (`.tuning/games.jsonl`), summary to `public/card-play-stats.json` for the card review page |
 | `npm run smoke` | Plays a whole game through a running server over websockets |
 | `npm run deploy` | `wrangler deploy` |
 | `npm run secret` | Optionally lock the host page by setting `ADMIN_SECRET` on the deployed worker |
