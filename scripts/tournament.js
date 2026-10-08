@@ -25,10 +25,11 @@
  *   (scripts/lib.js measureState): a random probeSample= of the cards (or of
  *   probeCards=), each played in that moment against letting the turn go, the
  *   rest of the round played out. It covers cards nobody held, and gives cause
- *   where whole games give correlation.
+ *   where whole games give correlation. probeOpen=1 also probes every round's
+ *   first play (for the marked cards, which open rounds).
  *
  *   node scripts/tournament.js [games=50] [seed=1] [profiles=backer,backer,goal,goal,hunter]
- *     [log=games.jsonl] [out=summary.json] [strength=card-strength.json] [probe=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [option=value ...]
+ *     [log=games.jsonl] [out=summary.json] [strength=card-strength.json] [probe=0] [probeOpen=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [option=value ...]
  *
  * - log= appends one line per finished game; a run with the same log resumes,
  *   skipping games already in it. out= is rewritten after every game with the
@@ -220,8 +221,8 @@ function main() {
   const pairs = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
   const list = (pairs.profiles ?? 'backer,backer,goal,goal,hunter').split(pairs.profiles?.includes(';') ? ';' : ',');
   const logFile = pairs.log, outFile = pairs.out, strengthFile = pairs.strength;
-  const probe = { rate: Number(pairs.probe ?? 0), sample: Number(pairs.probeSample ?? 6), cards: pairs.probeCards?.split(','), playouts: Number(pairs.probePlayouts ?? 2), targets: Number(pairs.probeTargets ?? 2) };
-  for (const k of ['profiles', 'log', 'out', 'strength', 'probe', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets']) delete pairs[k];
+  const probe = { rate: Number(pairs.probe ?? 0), open: pairs.probeOpen === '1', sample: Number(pairs.probeSample ?? 6), cards: pairs.probeCards?.split(','), playouts: Number(pairs.probePlayouts ?? 2), targets: Number(pairs.probeTargets ?? 2) };
+  for (const k of ['profiles', 'log', 'out', 'strength', 'probe', 'probeOpen', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets']) delete pairs[k];
   for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:lean=0)`);
   const games = Number(gamesArg), seed = Number(seedArg);
   /** @type {GameRecord[]} */
@@ -314,7 +315,8 @@ else {
             const p = (playable[c] ??= [0, 0]);
             p[0] += 1; if (ok) p[1] += 1;
           }
-          if (d.probe.rate > 0 && side() < d.probe.rate) {
+          const opening = !s.opened && pid === s.first;
+          if ((d.probe.open && opening) || (d.probe.rate > 0 && side() < d.probe.rate)) { // probeOpen=1: every round's first play too (the marked cards' moment)
             const pick = probeCards.map((/** @type {string} */ c) => ({ c, k: side() })).sort((/** @type {{ k: number }} */ a, /** @type {{ k: number }} */ b) => a.k - b.k).slice(0, d.probe.sample).map((/** @type {{ c: string }} */ x) => x.c);
             probes.push({ r: s.round, opening: !s.opened && pid === s.first, profile: seats[pid], benefit: measureState(s, pick, { playouts: d.probe.playouts, targets: d.probe.targets, bots: seats, memories: memory, seed: d.seed * 100003 + g * 101 + n }) });
           }
