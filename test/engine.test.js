@@ -517,14 +517,6 @@ test('round 14 unsuited: Bail Out, Call for Backup, Fall Back and Stake Out move
   assert.ok(checkTarget(s, 'ann', cardById('stake-out'), { location: y }));
 });
 
-test('Seize the Moment gives its player another turn (round 14)', () => {
-  const s = draftAll(newGame());
-  s.opened = true;
-  const pid = s.seating[s.turn];
-  s.players[pid].hand.push('seize-moment');
-  const after = applyMove(s, { playerId: pid, move: { type: 'play', card: 'seize-moment', use: 'action', target: {} } });
-  assert.equal(after.seating[after.turn], pid);
-});
 
 test('previewTarget runs a move with the game options (influence placed at the destination)', () => {
   const s = clear(newGame());
@@ -571,4 +563,27 @@ test('with responses out (the first draft), a played action resolves at once and
   const holder = /** @type {string} */ (PLAYERS.find((pid) => pid !== actor));
   next.players[holder].hand.push('cancel');
   assert.equal(validate(next, { playerId: holder, move: { type: 'respond', card: 'cancel' } }).ok, false);
+});
+
+test('round 15 unsuited: Claim the Spoils takes every pile, Call a Truce stops the fight, Lay a Trail draws a group to your lead, Steal Their Playbook copies the last card', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
+  s.board[NEUTRAL].influence = { ann: 1, bob: 3, cat: 2 };
+  const claimed = previewTarget(s, 'ann', 'claim-spoils', { location: NEUTRAL });
+  const fought = resolveFight(/** @type {GameState} */ ({ ...s, board: claimed.board }), NEUTRAL);
+  assert.deepEqual([fought.players.ann.trophies[B], fought.players.ann.trophies[A], fought.players.bob.trophies[B]], [4, 2, 0]);
+  const truce = previewTarget(s, 'ann', 'call-truce', { location: NEUTRAL });
+  assert.deepEqual(resolveFight(/** @type {GameState} */ ({ ...s, board: truce.board }), NEUTRAL).board[NEUTRAL].tokens, { [A]: 6, [B]: 4 });
+  const near = map[NEUTRAL].adjacent[0];
+  s.board[NEUTRAL].tokens = {};
+  s.board[NEUTRAL].influence = { ann: 2, bob: 1 };
+  s.board[near].tokens = { [C]: 3 };
+  const t = { location: NEUTRAL, faction: C, from: [near] };
+  assert.equal(checkTarget(s, 'ann', cardById('lay-trail'), t), null);
+  assert.ok(checkTarget(s, 'bob', cardById('lay-trail'), t)); // bob doesn't lead there
+  assert.equal(previewTarget(s, 'ann', 'lay-trail', t).board[NEUTRAL].tokens[C], 3);
+  assert.ok(checkTarget(s, 'ann', cardById('steal-playbook'), {}));
+  s.lastPlayed = 'lay-trail';
+  assert.equal(previewTarget(s, 'ann', 'steal-playbook', t).board[NEUTRAL].tokens[C], 3);
 });

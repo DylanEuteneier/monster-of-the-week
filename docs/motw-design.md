@@ -2726,7 +2726,7 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 
 **Pivot cards (designer, 2026-10-07).** One or more of the unsuited extras are pivot cards: a "pivot" or "plan B" theme, moving the player's own influence (never another player's, D13). This replaces the ◐ idea Stake Out the Den (round 8) as the home of that move. Draft wording to measure (suggestion): *Switch to Plan B:* move up to 3 of your influence from other locations to one location. Measured as a test card (200 states, 5 players): battle 2.1, usable in 46% of states, control taken 0.4, influence moved 1.3; with `influenceToBoard=on`, 4.1, 73%, 0.7 and 2.4.
 
-**Round 14 test cards (2026-10-07; suggestions):** Stake Out (the designer's seed), Bail Out, Fall Back, Call for Backup, Seize the Moment. Measured in H.7, round 14; a mixed deck can deal them in the two unmarked slots.
+**Round 14 test cards (2026-10-07; suggestions):** Stake Out (the designer's seed), Bail Out, Fall Back, Call for Backup (Seize the Moment ruled out). Round 15: Steal Their Playbook, Claim the Spoils, Call a Truce, Lay a Trail. Measured in H.7, rounds 14 and 15; a mixed deck can deal them in the two unmarked slots.
 
 *Designer (2026-10-07):* the scaffold moves A to D are boring. They stay only as placeholders until unsuited designs replace them.
 
@@ -2795,10 +2795,22 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
   - Bail Out: move all your influence at one location to any other location. 1.9, 0.3, 1.0, 59%.
   - Fall Back: move all your influence from every location next to the target into it. 1.1, 0.2, 1.3, 59%.
   - Call for Backup: double your influence at the target, the extra from your supply. 0.2, 0.1, 0.8, 50%.
-  - Seize the Moment: take another turn right away. Scores 0: the measure looks at one card's own effect, so it can't see the extra turn.
+  - Seize the Moment: take another turn right away. Scores 0. (Ruled out by the designer; see below.)
   - For comparison: Switch to Plan B 2.0, 0.4, 1.3, 59%; scaffold A 23.5, 1.6; Broadcast a Signal 17.8, 0.8.
   - *Finding:* on the current measure, influence-only cards can't reach the strength of cards that move tokens. Battle counts trophies changing hands and fights whose winner flips; moving tokens changes the fights themselves, while influence only changes who collects. Influence cards also need influence already on the board (about 59% of states), except Stake Out, which draws on the supply. Measuring influence cards "very high" needs either bigger amounts or a measure that values control and influence placed more (the strength ranking is the designer's call).
   - *Prototype:* in a mixed deck, the two unmarked unsuited slots now draw at random from every unmarked unsuited card (the pivots and these test cards); A to D stay.
+  - *Designer (2026-10-07), on Seize the Moment:* a card that only gives another turn is the same as having played the other card. Ruled out and removed from the test cards.
+
+- *Designer (2026-10-07), on the marked cards A to D:* keep the idea that these cards set turn order (FP2); they just have to be more interesting. Their actions should make sense as a first move, thematically and mechanically: something with the potential to set a big gambit for the round, or shake up the meta. B, C and D won't always be played as opening moves; A, when it is dealt, always is.
+
+- Round 15 (2026-10-07; suggestions, driven by Claude): unsuited ideas aimed at the marked slots, each something no faction card does. Measured on every turn (200 states) and, with the new `opening=1` option of `scripts/balance.js`, on each round's first play only (100 states); battle score, all turns / opening:
+  - Steal Their Playbook: play the action of the last card played, as if it were yours. 11.1 / 5.3 (playable 83% / 60%; as an opener it copies the last card of the previous round).
+  - Claim the Spoils: at this round's fight at the target, you take every pile, whoever leads. 4.6 / 0.2.
+  - Call a Truce: no fight at the target this round; both groups stay. 3.1 / 0.1.
+  - Lay a Trail: move a whole group into a location where you alone have the most influence, from next door. 3.5 / 2.3 (playable 40% / 36%).
+  - Round 14's influence cards as openers: Stake Out 0.1 (it still places the most influence, 3.3); Plan B, Bail Out, Fall Back and Call for Backup 0.
+  - The scaffolds as openers: A 23.0, B 17.9, C 14.6, D 8.3.
+  - *Finding:* the measure can't see a gambit. It scores the board as if the round ended straight after the card, and at the round's first play few locations are contested yet, so anything that pays off later in the round (a claim, a truce, a stake) scores near 0 as an opener. Cards that move tokens score high because they make or change a fight at once. To judge openers, the measure would need a horizon: for example, bots play out the rest of the round after the card, compared with the same round without it (a measuring change for the designer to decide).
 
 ### H.8 Candidate sets
 

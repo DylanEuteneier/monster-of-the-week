@@ -12,7 +12,9 @@
  *   4. rule-breaking: from the card text, not measured
  * Also the old measure: presence after reckoning (fights, then growth).
  *
- *   node scripts/balance.js [states=300] [seed=1] [players=5] [bots=smart] [option=value ...] [only=card,card] [out=file.json]
+ *   node scripts/balance.js [states=300] [seed=1] [players=5] [bots=smart] [option=value ...] [only=card,card] [opening=1] [out=file.json]
+ *
+ * opening=1 samples only each round's first play (the marked cards' job, FP2).
  *
  * out= also writes the scores as JSON (npm run cards:score writes
  * public/card-scores.json, which the assets page shows).
@@ -150,14 +152,15 @@ function finish(t) {
 }
 
 /** Sample play-phase states from bot games. @param {number} n @param {number} seed @param {string[]} players @param {import('../public/bots.js').Profile} profile @param {Record<string, string>} options */
-function sampleStates(n, seed, players, profile, options) {
+function sampleStates(n, seed, players, profile, options, opening = false) {
   const rng = seededRng(seed);
   /** @type {GameState[]} */
   const states = [];
   for (let g = 0; states.length < n; g++) {
     let game = createGame({ seed: seed * 1000 + g, players, options });
     for (let moves = 0; moves < 20000 && game.phase !== 'ended'; moves++) {
-      if (game.phase === 'play' && !game.pending && rng() < 0.15) states.push(structuredClone(game));
+      const first = game.phase === 'play' && !game.opened && game.seating[game.turn] === game.first;
+      if (game.phase === 'play' && !game.pending && (opening ? first : rng() < 0.15)) states.push(structuredClone(game));
       let moved = false;
       for (const playerId of game.seating) {
         const move = botMove(game, { playerId, rng, profile });
@@ -179,11 +182,13 @@ function main() {
   const options = Object.fromEntries(process.argv.slice(2).filter((a) => a.includes('=')).map((a) => a.split('=')));
   const only = options.only?.split(','); // only=card,card scores just those cards
   const outFile = options.out;
+  const opening = options.opening === '1';
+  delete options.opening;
   delete options.only;
   delete options.out;
   const profile = /** @type {import('../public/bots.js').Profile} */ (profileArg);
   const players = ['ann', 'bob', 'cat', 'dan', 'eve'].slice(0, Number(playersArg));
-  const states = sampleStates(Number(nArg), Number(seedArg), players, profile, options);
+  const states = sampleStates(Number(nArg), Number(seedArg), players, profile, options, opening);
   const cards = /** @type {import('../public/engine.js').Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action && (!only || only.includes(c.id)));
   /** @type {Record<string, Record<typeof MEASURES[number], number[]> & { leaves: number, capped: number, playable: number }>} */
   const stats = /** @type {any} */ (Object.fromEntries(cards.map((c) => [c.id, { ...Object.fromEntries(MEASURES.map((m) => [m, []])), leaves: 0, capped: 0, playable: 0 }])));
@@ -207,7 +212,7 @@ function main() {
   const mean = (/** @type {number[]} */ xs) => xs.reduce((a, b) => a + b, 0) / (xs.length || 1);
   const often = (/** @type {number[]} */ xs) => `${(100 * xs.filter((x) => x > 0).length / (xs.length || 1)).toFixed(0)}%`;
   const col = (/** @type {number[]} */ xs) => `${mean(xs).toFixed(1).padStart(5)} ${often(xs).padStart(4)} ${String(Math.max(...xs)).padStart(3)}`;
-  console.log(`${states.length} states, ${players.length} players, ${profile} bots, ${JSON.stringify(options)}. Each column: mean of the card's best target per state, how often above 0, largest.`);
+  console.log(`${states.length} ${opening ? 'opening ' : ''}states, ${players.length} players, ${profile} bots, ${JSON.stringify(options)}. Each column: mean of the card's best target per state, how often above 0, largest.`);
   console.log(`${'card'.padEnd(30)} | playable | 1 battle (trophies+flips) | 2 control taken | 3 pieces moved | 3 influence placed | presence swing | targets`);
   const rows = cards.map((c) => ({ c, st: stats[c.id] })).sort((x, y) => mean(y.st.battle) - mean(x.st.battle));
   if (outFile) {

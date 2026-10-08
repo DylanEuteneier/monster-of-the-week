@@ -55,6 +55,8 @@ export { spec };
  * @property {Record<string, number>} influence  player → influence placed here
  * @property {Token | null} token
  * @property {boolean} scorched
+ * @property {string} [claim]      Claim the Spoils (test card, round 15): this player takes every pile at this round's fight
+ * @property {boolean} [truce]     Call a Truce (test card, round 15): no fight here this round
  */
 
 /**
@@ -113,6 +115,7 @@ export { spec };
  * @property {number} passesInRow
  * @property {boolean} opened      the first player has opened with their marked card
  * @property {Pending | null} pending
+ * @property {string | null} [lastPlayed]  the last card played for its action (Steal Their Playbook, test card, round 15)
  * @property {GameEvent[]} events  what the last resolved action did, for "after" responses
  * @property {{ faction: string, left: number, leaders: string[], next: number, due: Record<string, number> } | null} growing  growth phase when a supply runs short
  * @property {RoundLog[]} log
@@ -162,10 +165,11 @@ export { spec };
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, picked: boolean }>} players
  * @property {{ faction: string, leaders: string[], next: number, due: Record<string, number> } | null} growing
  * @property {string[]} factions
- * @property {Record<string, { tokens: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean }>} board
+ * @property {Record<string, { tokens: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean, claim?: string, truce?: boolean }>} board
  * @property {Record<string, number>} supply
  * @property {string[]} deck  this game's cards
  * @property {Record<string, number>} printed  this game's printed influence by card
+ * @property {string | null} lastPlayed  the last card played for its action
  * @property {string | null} first
  * @property {boolean} opened  the first player has opened with their marked card
  * @property {string | null} toAct
@@ -464,7 +468,7 @@ export function createGame(input) {
   const state = {
     version: spec.meta.version, options, rngState, phase: 'draft', round: 1, seating: input.players.slice(), players, factions,
     board, supply, leftOut: [], pass: 1, first: null, turn: 0, passesInRow: 0, opened: false, pending: null, events: [], growing: null,
-    log: [], result: null, deck, printed,
+    log: [], result: null, deck, printed, lastPlayed: null,
   };
   return deal(state);
 }
@@ -607,6 +611,16 @@ function howlStep(state, target, from, f) {
   const between = MAP[from].adjacent.filter((m) => MAP[target].adjacent.includes(m) && canEnter(state, m, f));
   return between.find((m) => tokensOf(state, m, f) > 0) ?? between[0] ?? null;
 }
+/** Lay a Trail: locations where the player alone has the most influence. @param {GameState | PlayerView} state @param {string} pid */
+const trailSpots = (state, pid) => LOCATION_IDS.filter((l) => {
+  const inf = state.board[l].influence, mine = inf[pid] ?? 0;
+  return !state.board[l].scorched && mine > 0 && Object.entries(inf).every(([p, n]) => p === pid || n < mine);
+});
+/**
+ * Steal Their Playbook (test card, round 15): the card it copies, the last one played for its action; otherwise the card itself.
+ * @param {GameState | PlayerView} state @param {Card} card @returns {Card}
+ */
+const copied = (state, card) => (card.action === 'copy' && 'lastPlayed' in state && state.lastPlayed ? cardById(state.lastPlayed) : card);
 /** Fall Back: the locations next to `to` holding the player's influence (`to` itself not scorched). @param {GameState | PlayerView} state @param {string} pid @param {string} to */
 const fallBackFrom = (state, pid, to) => (state.board[to].scorched ? [] : MAP[to].adjacent.filter((l) => (state.board[l].influence[pid] ?? 0) > 0));
 /** Groups a Howl draws in (round 13). @param {GameState} state @param {string} target @param {string} f */
@@ -654,6 +668,7 @@ function tokenSpots(state, card, mode) {
  * @param {GameState} state @param {string} pid @param {Card} card @param {Target | null | undefined} t
  */
 export function checkTarget(state, pid, card, t) {
+  card = copied(state, card);
   if (!card.action) return 'This card has no turn action.';
   if (!t) return null; // a card with no legal target may be played for no effect (partial actions)
   switch (card.action) {
@@ -829,7 +844,13 @@ export function checkTarget(state, pid, card, t) {
       return state.players[pid].supply > 0 ? null : 'You have no cubes in your supply.';
     }
     case 'fall-back': return t.location && fallBackFrom(state, pid, t.location).length ? null : 'Choose a location next to your influence.';
-    case 'seize': return null;
+    case 'claim': case 'truce': return t.location && state.board[t.location] && !state.board[t.location].scorched ? null : 'Choose a location.';
+    case 'copy': return 'Nothing has been played to copy yet.';
+    case 'trail': {
+      if (!t.location || !trailSpots(state, pid).includes(t.location)) return 'Choose a location where you have the most influence.';
+      const from = t.from?.[0];
+      return t.faction && from && MAP[t.location].adjacent.includes(from) && tokensOf(state, from, t.faction) > 0 && canEnter(state, t.location, t.faction) ? null : 'Choose a group next to it.';
+    }
     case 'stake': return t.location && state.board[t.location] && !state.board[t.location].scorched ? (state.players[pid].supply > 0 ? null : 'You have no cubes in your supply.') : 'Choose a location.';
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
       const moves = t.moves ?? [];
@@ -862,6 +883,7 @@ function step(state, loc, dir) {
  * @param {GameState} state @param {string} pid @param {Card} card @param {Target} t
  */
 function act(state, pid, card, t) {
+  card = copied(state, card);
   /** @type {Set<string>} */
   const placed = new Set();
   const names = (/** @type {string} */ f) => factionById(f).name;
@@ -1210,10 +1232,19 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} places ${n} influence at ${lname(to)}.`);
       break;
     }
-    case 'seize': {
-      // Another turn: step the turn back one, so the usual advance after an action returns it to this player.
-      if (state.seating) state.turn = (state.turn + state.seating.length - 1) % state.seating.length; // previews carry no seating
-      logLine(state, `${pid}: ${card.name}, and takes another turn.`);
+    case 'claim': {
+      state.board[/** @type {string} */ (t.location)].claim = pid;
+      logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}.`);
+      break;
+    }
+    case 'truce': {
+      state.board[/** @type {string} */ (t.location)].truce = true;
+      logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}: no fight there this round.`);
+      break;
+    }
+    case 'trail': {
+      const to = /** @type {string} */ (t.location), from = /** @type {string} */ (t.from?.[0]), f = /** @type {string} */ (t.faction);
+      logLine(state, `${pid}: ${card.name} draws ${move(state, pid, f, from, to, tokensOf(state, from, f), placed)} ${names(f)} into ${lname(to)}.`);
       break;
     }
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
@@ -1262,7 +1293,7 @@ function triggerMatches(state, pid, response, location) {
 export function pendingDestinations(state, pend) {
   const t = pend.target;
   if (!t) return [];
-  const card = cardById(pend.card);
+  const card = copied(state, cardById(pend.card));
   switch (card.action) {
     case 'lure': case 'broadcast': case 'gather-region': case 'gather-neighbours': case 'draw-adjacent': return t.location ? [t.location] : [];
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': return t.to ? [t.to] : [];
@@ -1411,7 +1442,8 @@ export function applyMove(state, submission) {
         next.turn = (next.turn + 1) % next.seating.length;
         return next;
       }
-      logLine(next, `${pid} plays ${card.name}.`);
+      logLine(next, `${pid} plays ${card.name}${card.action === 'copy' && next.lastPlayed ? `, copying ${cardById(next.lastPlayed).name}` : ''}.`);
+      if (card.action !== 'copy') next.lastPlayed = card.id;
       if (!responsesOn(next)) {
         // No responses (the first draft): the action resolves at once.
         if (m.target) act(next, pid, card, m.target);
@@ -1543,6 +1575,7 @@ function endOfPlay(state) {
   state.events = [];
   logLine(state, 'Everyone passed. Fights:');
   for (const loc of LOCATION_IDS) if (!state.board[loc].scorched && factionsAt(state, loc).length === 2) fight(state, loc);
+  for (const loc of LOCATION_IDS) { delete state.board[loc].claim; delete state.board[loc].truce; } // round 15 test cards last the round
   return beginGrowth(state);
 }
 
@@ -1561,6 +1594,7 @@ function fight(state, loc) {
   const place = state.board[loc];
   const [a, b] = factionsAt(state, loc);
   const name = locationById(loc).name;
+  if (place.truce) { logLine(state, `  ${name}: a truce; no fight this round.`); return; } // test card (round 15)
   // A hidden token flips and takes part (IN1); its marker cube returns to its owner (MC3) after the fight.
   const token = place.token;
   place.token = null;
@@ -1614,6 +1648,7 @@ function fight(state, loc) {
     } else state.supply[pile.faction] += pile.n;
   };
   if (effect === 'lay-to-rest') for (const pile of piles) give(pile, null); // test card (round 11): no one takes trophies
+  else if (place.claim) for (const pile of piles) give(pile, place.claim); // Claim the Spoils (test card, round 15)
   else if (ranking.involved === 1 && collectors[0]) {
     for (const pile of piles) give(pile, collectors[0]); // UP1
   } else {
@@ -1910,7 +1945,7 @@ const SAMPLED = new Set(['lure', 'draw-adjacent', 'gather-region', 'gather-neigh
 function walkTarget(state, pid, cardId, mode, rng) {
   const pick = (/** @type {any[]} */ xs) => xs[Math.floor(rng() * xs.length)];
   /** @type {Target} */
-  let t = cardById(cardId).suit ? { mode } : {};
+  let t = copied(state, cardById(cardId)).suit ? { mode } : {};
   for (let steps = 0; steps < 30; steps++) {
     const c = nextChoice(state, pid, cardId, t);
     if (c.kind === 'done') return finishWalk(t);
@@ -1947,7 +1982,7 @@ const finishWalk = (t) => t;
  * @returns {Choice}
  */
 export function nextChoice(state, pid, cardId, t) {
-  const card = cardById(cardId);
+  const card = copied(state, cardById(cardId));
   const mode = /** @type {'location' | 'faction'} */ (t.mode ?? 'location');
   if (card.suit && !t.mode) return { kind: 'mode' };
   const sf = suitFaction(state, card);
@@ -2111,7 +2146,14 @@ export function nextChoice(state, pid, cardId, t) {
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => (state.board[l].influence[pid] ?? 0) > 0) };
     case 'fall-back':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => fallBackFrom(state, pid, l).length > 0) };
-    case 'seize': return { kind: 'done' };
+    case 'claim': case 'truce':
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched) };
+    case 'copy': return { kind: 'location', key: 'location', options: [] };
+    case 'trail': {
+      const into = (/** @type {string} */ to) => MAP[to].adjacent.flatMap((from) => factionsAt(state, from).filter((f) => canEnter(state, to, f)).map((f) => ({ location: from, faction: f })));
+      if (!t.location) return { kind: 'location', key: 'location', options: trailSpots(state, pid).filter((l) => into(l).length > 0) };
+      return t.faction ? { kind: 'done' } : { kind: 'group', key: 'lure', options: into(t.location) };
+    }
     case 'stake':
       if (state.players[pid].supply <= 0) return { kind: 'location', key: 'location', options: [] };
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched) };
@@ -2153,7 +2195,7 @@ export function nextChoice(state, pid, cardId, t) {
  * @returns {{ board: GameState['board'], players: GameState['players'] }}
  */
 export function previewTarget(state, pid, cardId, t) {
-  const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options: state.options, events: [], log: [] })));
+  const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options: state.options, lastPlayed: 'lastPlayed' in state ? state.lastPlayed : null, events: [], log: [] })));
   act(copy, pid, cardById(cardId), t);
   return { board: copy.board, players: copy.players };
 }
@@ -2178,7 +2220,8 @@ export function describeTarget(cardId, t) {
     case 'split': return `${F(t.faction)} at ${L(t.location)} split ${Object.entries(t.split ?? {}).map(([l, n]) => `${n} to ${L(l)}`).join(', ')}${how}`;
     case 'bail-out': return `from ${L(t.location)} to ${L(t.to)}`;
     case 'backup': case 'fall-back': case 'stake': return `at ${L(t.location)}`;
-    case 'seize': return 'another turn';
+    case 'claim': case 'truce': return `at ${L(t.location)}`;
+    case 'trail': return `${F(t.faction)} from ${L(t.from?.[0])} into ${L(t.location)}`;
     case 'conveyor': return `${t.mode === 'location' ? `the ${regionOf(/** @type {string} */ (t.location))} region` : 'every Sentient group'} one hex ${t.direction}`;
     default: return (t.moves ?? []).map((m) => `${F(m.faction)} at ${L(m.location)} to ${L(m.to)}`).join('; ');
   }
@@ -2212,10 +2255,11 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched }];
+      return [loc, { tokens: { ...place.tokens }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched, ...(place.claim ? { claim: place.claim } : {}), ...(place.truce ? { truce: true } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),
+    lastPlayed: state.lastPlayed ?? null,
     printed: Object.fromEntries(deckOf(state).map((id) => [id, printedOf(state, id)])),
     growing: state.growing ? structuredClone(state.growing) : null,
     first: state.first,

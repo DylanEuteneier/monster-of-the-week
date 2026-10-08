@@ -1094,7 +1094,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 14 ideas (round 14: unsuited extras) under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
+    "notes": "Cards out of the fixed deck: rounds 8 to 15 ideas (rounds 14 and 15: unsuited extras) under measurement by scripts/balance.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
     "cards": [
       {
         "id": "force-field",
@@ -1521,16 +1521,6 @@
         "text": "Pivot: move all your influence from every location next to the target into it. Target: the rallying point."
       },
       {
-        "id": "seize-moment",
-        "name": "Seize the Moment",
-        "suit": null,
-        "slot": "extra",
-        "influence": 0,
-        "action": "seize",
-        "round": 14,
-        "text": "Take another turn right away."
-      },
-      {
         "id": "stake-out",
         "name": "Stake Out",
         "suit": null,
@@ -1540,6 +1530,46 @@
         "amount": 4,
         "round": 14,
         "text": "Place 4 influence from your supply on the target. Target: any location. (Designer seed, 2026-10-07.)"
+      },
+      {
+        "id": "claim-spoils",
+        "name": "Claim the Spoils",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "claim",
+        "round": 15,
+        "text": "At this round’s fight at the target, you take every pile, whoever leads. Target: any location."
+      },
+      {
+        "id": "call-truce",
+        "name": "Call a Truce",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "truce",
+        "round": 15,
+        "text": "There is no fight at the target this round; both groups stay. Target: any location."
+      },
+      {
+        "id": "steal-playbook",
+        "name": "Steal Their Playbook",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "copy",
+        "round": 15,
+        "text": "Play the action of the last card played this game, as if it were yours. Its own target rules apply."
+      },
+      {
+        "id": "lay-trail",
+        "name": "Lay a Trail",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "trail",
+        "round": 15,
+        "text": "Move a whole group into a location where you alone have the most influence, from a location next to it. Target: your location, then the group."
       }
     ]
   }
