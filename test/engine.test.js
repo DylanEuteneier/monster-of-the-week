@@ -632,7 +632,7 @@ test('D15: each faction moved pays its own (whoPays=each, first draft); only the
   assert.deepEqual([paid.board[bell].tokens[A], paid.board[bell].tokens[B]], [2, undefined]);
 });
 
-test('round 17: Virus v3 only infects neighbours holding one other faction; Open the Pit drops a small group in its region; Swap Allegiances swaps standing', () => {
+test('round 17: Virus v3 only infects neighbours holding one other faction; Open the Pit drops a small group in its region; Trade Secrets swaps standing', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const from = /** @type {string} */ (Object.keys(map).find((l) => map[l].adjacent.length >= 3));
