@@ -1,128 +1,270 @@
 {
-  "updated": "2026-10-08T14:59:12.107Z",
+  "updated": "2026-10-08T18:11:19.653Z",
   "games": 400,
   "players": 5,
   "profiles": [
+    "backer",
+    "backer",
     "goal",
-    "goal-deep",
-    "hunter",
     "goal",
-    "goal"
+    "hunter"
   ],
   "options": {},
   "sides": {
-    "island": 379,
-    "invaders": 21
+    "island": 246,
+    "invaders": 154
   },
-  "sharedWins": 5.3,
+  "sharedWins": 2,
   "byProfile": {
-    "goal": {
-      "share": 51.2,
-      "island": 196.7,
-      "invaders": 8
+    "backer": {
+      "share": 39.3,
+      "island": 37.2,
+      "invaders": 120
     },
-    "goal-deep": {
-      "share": 16.2,
-      "island": 61.8,
-      "invaders": 3
+    "goal": {
+      "share": 37.8,
+      "island": 125.3,
+      "invaders": 26
     },
     "hunter": {
-      "share": 32.6,
-      "island": 120.5,
-      "invaders": 10
+      "share": 22.9,
+      "island": 83.5,
+      "invaders": 8
     }
   },
   "bySeat": {
     "P2": 20.5,
-    "P5": 16.9,
-    "P4": 19.8,
-    "P3": 18.8,
-    "P1": 24
+    "P5": 20.7,
+    "P1": 21,
+    "P4": 17.8,
+    "P3": 20
   },
   "byGroup": {
-    "Slayerettes": 21.6,
-    "Kids on Bikes": 19.8,
-    "AV Club": 19.6,
-    "Neighbourhood Watch": 18.5,
-    "Father and the Flock": 20.5
+    "Slayerettes": 17.1,
+    "Kids on Bikes": 21,
+    "AV Club": 21,
+    "Neighbourhood Watch": 19.9,
+    "Father and the Flock": 21.1
   },
   "game": {
     "presenceByRound": [
       35,
-      20.65,
-      14.44,
-      11.32,
-      10.15,
-      10.56
+      33.1,
+      29.82,
+      26.39,
+      22.38,
+      19.69
     ],
-    "scorchedPerGame": 1.61,
-    "trophiesPerPlayer": 4.7
+    "scorchedPerGame": 0.9,
+    "trophiesPerPlayer": 6.17
+  },
+  "calibration": {
+    "1": [
+      {
+        "predicted": 20,
+        "won": 20,
+        "n": 2000
+      }
+    ],
+    "2": [
+      {
+        "predicted": 18,
+        "won": 20.2,
+        "n": 1087
+      },
+      {
+        "predicted": 22.4,
+        "won": 19.8,
+        "n": 913
+      }
+    ],
+    "3": [
+      {
+        "predicted": 8.9,
+        "won": 10.8,
+        "n": 37
+      },
+      {
+        "predicted": 15.3,
+        "won": 20.2,
+        "n": 1090
+      },
+      {
+        "predicted": 24.9,
+        "won": 18.5,
+        "n": 708
+      },
+      {
+        "predicted": 32.3,
+        "won": 27.3,
+        "n": 163
+      },
+      {
+        "predicted": 43.6,
+        "won": 0,
+        "n": 2
+      }
+    ],
+    "4": [
+      {
+        "predicted": 7.4,
+        "won": 12.8,
+        "n": 359
+      },
+      {
+        "predicted": 15,
+        "won": 19.5,
+        "n": 853
+      },
+      {
+        "predicted": 24.6,
+        "won": 20.3,
+        "n": 437
+      },
+      {
+        "predicted": 34.1,
+        "won": 24.1,
+        "n": 216
+      },
+      {
+        "predicted": 44.2,
+        "won": 37,
+        "n": 92
+      },
+      {
+        "predicted": 53.4,
+        "won": 32.4,
+        "n": 34
+      },
+      {
+        "predicted": 63.2,
+        "won": 25,
+        "n": 8
+      },
+      {
+        "predicted": 71.3,
+        "won": 0,
+        "n": 1
+      }
+    ],
+    "5": [
+      {
+        "predicted": 2.9,
+        "won": 10.8,
+        "n": 719
+      },
+      {
+        "predicted": 16.1,
+        "won": 8.5,
+        "n": 611
+      },
+      {
+        "predicted": 23.2,
+        "won": 36.8,
+        "n": 305
+      },
+      {
+        "predicted": 34.2,
+        "won": 47.2,
+        "n": 88
+      },
+      {
+        "predicted": 45.6,
+        "won": 28.2,
+        "n": 78
+      },
+      {
+        "predicted": 55,
+        "won": 33.3,
+        "n": 48
+      },
+      {
+        "predicted": 65,
+        "won": 55.2,
+        "n": 48
+      },
+      {
+        "predicted": 74.7,
+        "won": 38.5,
+        "n": 39
+      },
+      {
+        "predicted": 85.1,
+        "won": 60.6,
+        "n": 33
+      },
+      {
+        "predicted": 95.5,
+        "won": 54.8,
+        "n": 31
+      }
+    ]
   },
   "economy": [
     {
       "round": 1,
-      "fights": 5.4,
+      "fights": 3.75,
       "contests": [
-        0,
-        7.6,
-        51.5,
-        40.9
+        0.2,
+        21.1,
+        57.3,
+        21.5
       ],
-      "locationsWithInfluence": 14.78,
-      "onBoardPerPlayer": 7.03,
-      "standingPerPlayer": 6.69
+      "locationsWithInfluence": 14.69,
+      "onBoardPerPlayer": 6.05,
+      "standingPerPlayer": 11.07
     },
     {
       "round": 2,
-      "fights": 2.24,
+      "fights": 2.62,
       "contests": [
         0.1,
-        3.7,
-        30.4,
-        65.8
+        11.3,
+        46,
+        42.5
       ],
-      "locationsWithInfluence": 13.93,
-      "onBoardPerPlayer": 7.69,
-      "standingPerPlayer": 5.88
+      "locationsWithInfluence": 14.2,
+      "onBoardPerPlayer": 7.19,
+      "standingPerPlayer": 12.95
     },
     {
       "round": 3,
-      "fights": 1.2,
+      "fights": 1.93,
       "contests": [
         0,
-        1.9,
-        16.9,
-        81.2
+        6.5,
+        30.4,
+        63.1
       ],
-      "locationsWithInfluence": 13.37,
-      "onBoardPerPlayer": 8.23,
-      "standingPerPlayer": 5.5
+      "locationsWithInfluence": 13.99,
+      "onBoardPerPlayer": 8.45,
+      "standingPerPlayer": 12.95
     },
     {
       "round": 4,
-      "fights": 0.64,
+      "fights": 1.54,
       "contests": [
         0,
-        1.9,
-        17.5,
-        80.5
+        4.4,
+        26.3,
+        69.3
       ],
-      "locationsWithInfluence": 13.14,
-      "onBoardPerPlayer": 8.74,
-      "standingPerPlayer": 5.38
+      "locationsWithInfluence": 13.84,
+      "onBoardPerPlayer": 9.58,
+      "standingPerPlayer": 12.54
     },
     {
       "round": 5,
-      "fights": 0.28,
+      "fights": 1.07,
       "contests": [
         0,
-        2.7,
-        21.4,
-        75.9
+        2.1,
+        19.2,
+        78.7
       ],
-      "locationsWithInfluence": 13.03,
-      "onBoardPerPlayer": 9.17,
-      "standingPerPlayer": 5.52
+      "locationsWithInfluence": 13.71,
+      "onBoardPerPlayer": 10.54,
+      "standingPerPlayer": 12
     }
   ],
   "cards": {
@@ -130,495 +272,795 @@
       "name": "Leave Out Fresh Meat",
       "dealt": 181,
       "held": 858,
-      "action": 840,
-      "influence": 12,
-      "unplayed": 6,
+      "action": 657,
+      "influence": 198,
+      "unplayed": 3,
       "opener": 0,
-      "playedPct": 99.3,
-      "actionPct": 98.6,
-      "playablePct": 92,
-      "dWinAction": 0.05,
-      "dWinInfluence": 2.41,
-      "winAfterAction": 17.7,
-      "winAfterInfluence": 16.7,
-      "islandAfterAction": 96.2,
+      "playedPct": 99.7,
+      "actionPct": 76.8,
+      "playablePct": 93.6,
+      "dWinAction": 1.02,
+      "dWinInfluence": 1.44,
+      "winAfterAction": 22.1,
+      "winAfterInfluence": 25.5,
+      "islandAfterAction": 62.4,
       "perAction": {
-        "trophies": 0.74,
-        "flips": 0.78,
-        "control": 0.02,
-        "moved": 0.96,
-        "placed": 0.28,
-        "presence": -0.5
+        "trophies": 1.99,
+        "flips": 2.14,
+        "control": 0.05,
+        "moved": 2.04,
+        "placed": 0.43,
+        "presence": -0.29
       },
       "probe": {
-        "n": 296,
-        "benefit": 0.2,
-        "up": 15.5,
-        "opening": -0.06,
-        "openingN": 10,
+        "n": 261,
+        "benefit": 1.45,
+        "up": 24.5,
+        "opening": 1.74,
+        "openingN": 11,
         "noTarget": 0
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.23,
+          "probes": 111,
+          "dWinAction": 0.74,
+          "actions": 275
+        },
+        "hunter": {
+          "probe": 1.39,
+          "probes": 42,
+          "dWinAction": 0.1,
+          "actions": 134
+        },
+        "backer": {
+          "probe": 2.73,
+          "probes": 108,
+          "dWinAction": 1.82,
+          "actions": 248
+        }
       }
     },
     "track-snow": {
       "name": "Track Them in the Snow",
       "dealt": 194,
       "held": 923,
-      "action": 873,
-      "influence": 28,
-      "unplayed": 22,
+      "action": 695,
+      "influence": 203,
+      "unplayed": 25,
       "opener": 0,
-      "playedPct": 97.6,
-      "actionPct": 96.9,
-      "playablePct": 69.9,
-      "dWinAction": -0.08,
-      "dWinInfluence": 1.94,
-      "winAfterAction": 19.5,
-      "winAfterInfluence": 17.9,
-      "islandAfterAction": 95.3,
+      "playedPct": 97.3,
+      "actionPct": 77.4,
+      "playablePct": 84.5,
+      "dWinAction": 0.35,
+      "dWinInfluence": 2.48,
+      "winAfterAction": 18.1,
+      "winAfterInfluence": 23.2,
+      "islandAfterAction": 67.6,
       "perAction": {
-        "trophies": 0.9,
-        "flips": 0.88,
-        "control": 0.05,
-        "moved": 1.29,
-        "placed": 0.54,
-        "presence": -0.53
+        "trophies": 2.56,
+        "flips": 2.57,
+        "control": 0.09,
+        "moved": 2.61,
+        "placed": 0.92,
+        "presence": -1.04
       },
       "probe": {
-        "n": 233,
-        "benefit": 0.19,
-        "up": 22.3,
-        "opening": -0.12,
-        "openingN": 8,
-        "noTarget": 40
+        "n": 259,
+        "benefit": 0.95,
+        "up": 33.2,
+        "opening": 1.15,
+        "openingN": 9,
+        "noTarget": 23
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 1.48,
+          "probes": 99,
+          "dWinAction": 0.9,
+          "actions": 224
+        },
+        "hunter": {
+          "probe": 0.39,
+          "probes": 68,
+          "dWinAction": -0.29,
+          "actions": 136
+        },
+        "goal": {
+          "probe": 0.8,
+          "probes": 92,
+          "dWinAction": 0.25,
+          "actions": 335
+        }
       }
     },
     "silver-bullets": {
       "name": "Silver Bullets",
       "dealt": 131,
       "held": 619,
-      "action": 463,
-      "influence": 52,
-      "unplayed": 104,
+      "action": 420,
+      "influence": 138,
+      "unplayed": 61,
       "opener": 0,
-      "playedPct": 83.2,
-      "actionPct": 89.9,
-      "playablePct": 81.2,
-      "dWinAction": 0.09,
-      "dWinInfluence": 0.71,
+      "playedPct": 90.1,
+      "actionPct": 75.3,
+      "playablePct": 75.9,
+      "dWinAction": 0.14,
+      "dWinInfluence": 1.37,
       "winAfterAction": 22.9,
-      "winAfterInfluence": 13.5,
-      "islandAfterAction": 95,
+      "winAfterInfluence": 13.8,
+      "islandAfterAction": 69.8,
       "perAction": {
-        "trophies": 0.77,
-        "flips": 0.16,
-        "control": 0.1,
+        "trophies": 1.05,
+        "flips": 0.14,
+        "control": 0.08,
         "moved": 1.27,
         "placed": 1.27,
-        "presence": -0.44
+        "presence": -0.5
       },
       "probe": {
-        "n": 254,
-        "benefit": 0.31,
-        "up": 29.1,
-        "opening": 1.46,
-        "openingN": 6,
-        "noTarget": 22
+        "n": 187,
+        "benefit": 0.12,
+        "up": 36.4,
+        "opening": 0.53,
+        "openingN": 10,
+        "noTarget": 50
+      },
+      "byProfile": {
+        "hunter": {
+          "probe": 0.11,
+          "probes": 48,
+          "dWinAction": 0.32,
+          "actions": 118
+        },
+        "goal": {
+          "probe": 0.6,
+          "probes": 91,
+          "dWinAction": 0.06,
+          "actions": 219
+        },
+        "backer": {
+          "probe": -0.77,
+          "probes": 48,
+          "dWinAction": 0.09,
+          "actions": 83
+        }
       }
     },
     "saucer": {
       "name": "Crash-Land the Saucer",
       "dealt": 119,
       "held": 566,
-      "action": 459,
-      "influence": 45,
-      "unplayed": 62,
+      "action": 381,
+      "influence": 135,
+      "unplayed": 50,
       "opener": 0,
-      "playedPct": 89,
-      "actionPct": 91.1,
-      "playablePct": 47.7,
-      "dWinAction": -0.08,
-      "dWinInfluence": 0.91,
-      "winAfterAction": 22.9,
-      "winAfterInfluence": 17.8,
-      "islandAfterAction": 92.8,
+      "playedPct": 91.2,
+      "actionPct": 73.8,
+      "playablePct": 70.5,
+      "dWinAction": 1.02,
+      "dWinInfluence": 1.71,
+      "winAfterAction": 20.5,
+      "winAfterInfluence": 27.4,
+      "islandAfterAction": 54.9,
       "perAction": {
-        "trophies": 1.15,
-        "flips": 1.22,
-        "control": 0.08,
-        "moved": 2.01,
-        "placed": 0.71,
-        "presence": -0.48
+        "trophies": 2.71,
+        "flips": 2.89,
+        "control": 0.09,
+        "moved": 3.22,
+        "placed": 0.89,
+        "presence": -0.64
       },
       "probe": {
-        "n": 165,
-        "benefit": -0.06,
-        "up": 40.6,
-        "opening": -1.36,
-        "openingN": 6,
-        "noTarget": 130
+        "n": 230,
+        "benefit": 1.64,
+        "up": 49.6,
+        "opening": 3.76,
+        "openingN": 12,
+        "noTarget": 48
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 2.11,
+          "probes": 108,
+          "dWinAction": 2.48,
+          "actions": 125
+        },
+        "hunter": {
+          "probe": 1.1,
+          "probes": 53,
+          "dWinAction": 0.39,
+          "actions": 89
+        },
+        "goal": {
+          "probe": 1.33,
+          "probes": 69,
+          "dWinAction": 0.27,
+          "actions": 167
+        }
       }
     },
     "leak": {
       "name": "Leak the Documents",
       "dealt": 188,
       "held": 894,
-      "action": 736,
-      "influence": 60,
-      "unplayed": 98,
+      "action": 565,
+      "influence": 257,
+      "unplayed": 72,
       "opener": 0,
-      "playedPct": 89,
-      "actionPct": 92.5,
-      "playablePct": 41.7,
-      "dWinAction": -0.05,
-      "dWinInfluence": 0.98,
-      "winAfterAction": 17.7,
-      "winAfterInfluence": 11.7,
-      "islandAfterAction": 94.6,
+      "playedPct": 91.9,
+      "actionPct": 68.7,
+      "playablePct": 59.3,
+      "dWinAction": 0.94,
+      "dWinInfluence": 1.4,
+      "winAfterAction": 17,
+      "winAfterInfluence": 19,
+      "islandAfterAction": 62.3,
       "perAction": {
-        "trophies": 0.57,
-        "flips": 0.85,
-        "control": 0.04,
-        "moved": 0.66,
-        "placed": 0.3,
-        "presence": -0.23
+        "trophies": 1.38,
+        "flips": 1.71,
+        "control": 0.07,
+        "moved": 1.41,
+        "placed": 0.5,
+        "presence": -0.74
       },
       "probe": {
-        "n": 142,
-        "benefit": 0.17,
-        "up": 25.4,
-        "opening": 0,
-        "openingN": 1,
-        "noTarget": 141
+        "n": 202,
+        "benefit": 1.87,
+        "up": 42.1,
+        "opening": 1.35,
+        "openingN": 3,
+        "noTarget": 81
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.36,
+          "probes": 68,
+          "dWinAction": 0.49,
+          "actions": 245
+        },
+        "backer": {
+          "probe": 3.73,
+          "probes": 94,
+          "dWinAction": 1.94,
+          "actions": 206
+        },
+        "hunter": {
+          "probe": 0.05,
+          "probes": 40,
+          "dWinAction": 0.11,
+          "actions": 114
+        }
       }
     },
     "beam": {
       "name": "Beam Them Up",
       "dealt": 146,
       "held": 706,
-      "action": 653,
-      "influence": 19,
-      "unplayed": 34,
+      "action": 573,
+      "influence": 107,
+      "unplayed": 26,
       "opener": 0,
-      "playedPct": 95.2,
-      "actionPct": 97.2,
-      "playablePct": 53.2,
-      "dWinAction": 0.06,
-      "dWinInfluence": 0.63,
-      "winAfterAction": 18.6,
-      "winAfterInfluence": 21.1,
-      "islandAfterAction": 94.5,
+      "playedPct": 96.3,
+      "actionPct": 84.3,
+      "playablePct": 65.8,
+      "dWinAction": 0.7,
+      "dWinInfluence": 1.27,
+      "winAfterAction": 19,
+      "winAfterInfluence": 21.5,
+      "islandAfterAction": 66.8,
       "perAction": {
-        "trophies": 1.13,
-        "flips": 1.1,
-        "control": 0.05,
-        "moved": 1.36,
-        "placed": 0.45,
-        "presence": -0.61
+        "trophies": 2.66,
+        "flips": 2.82,
+        "control": 0.12,
+        "moved": 2.45,
+        "placed": 0.61,
+        "presence": -0.78
       },
       "probe": {
-        "n": 231,
-        "benefit": 0.83,
-        "up": 26.4,
-        "opening": 1.26,
+        "n": 246,
+        "benefit": 0.85,
+        "up": 39.4,
+        "opening": 2.99,
         "openingN": 7,
-        "noTarget": 43
+        "noTarget": 26
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.01,
+          "probes": 88,
+          "dWinAction": 0.31,
+          "actions": 305
+        },
+        "backer": {
+          "probe": 1.62,
+          "probes": 103,
+          "dWinAction": 1.38,
+          "actions": 125
+        },
+        "hunter": {
+          "probe": 0.72,
+          "probes": 55,
+          "dWinAction": 0.96,
+          "actions": 143
+        }
       }
     },
     "virus": {
       "name": "Spread a Virus",
       "dealt": 216,
       "held": 1039,
-      "action": 814,
-      "influence": 106,
-      "unplayed": 119,
+      "action": 618,
+      "influence": 306,
+      "unplayed": 115,
       "opener": 0,
-      "playedPct": 88.5,
-      "actionPct": 88.5,
-      "playablePct": 40.8,
-      "dWinAction": -0.26,
-      "dWinInfluence": 0.88,
-      "winAfterAction": 21,
-      "winAfterInfluence": 22.6,
-      "islandAfterAction": 94.7,
+      "playedPct": 88.9,
+      "actionPct": 66.9,
+      "playablePct": 68.6,
+      "dWinAction": 0.47,
+      "dWinInfluence": 1.48,
+      "winAfterAction": 17.9,
+      "winAfterInfluence": 22.7,
+      "islandAfterAction": 65.9,
       "perAction": {
-        "trophies": 0.84,
-        "flips": 0.71,
-        "control": 0.04,
-        "moved": 0.83,
-        "placed": 0.83,
-        "presence": -0.59
+        "trophies": 1.87,
+        "flips": 1.69,
+        "control": 0.1,
+        "moved": 1.56,
+        "placed": 1.56,
+        "presence": -0.64
       },
       "probe": {
-        "n": 124,
-        "benefit": -0.37,
-        "up": 33.1,
-        "opening": 0.19,
-        "openingN": 4,
-        "noTarget": 152
+        "n": 196,
+        "benefit": -0.28,
+        "up": 43.4,
+        "opening": 0.94,
+        "openingN": 7,
+        "noTarget": 73
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 0.34,
+          "probes": 95,
+          "dWinAction": 1.62,
+          "actions": 218
+        },
+        "hunter": {
+          "probe": -0.55,
+          "probes": 43,
+          "dWinAction": -0.69,
+          "actions": 151
+        },
+        "goal": {
+          "probe": -1.08,
+          "probes": 58,
+          "dWinAction": 0.17,
+          "actions": 249
+        }
       }
     },
     "cloud": {
       "name": "Back Up to the Cloud",
       "dealt": 211,
       "held": 1010,
-      "action": 781,
-      "influence": 100,
-      "unplayed": 129,
+      "action": 601,
+      "influence": 314,
+      "unplayed": 95,
       "opener": 0,
-      "playedPct": 87.2,
-      "actionPct": 88.6,
-      "playablePct": 38.2,
-      "dWinAction": 0.07,
-      "dWinInfluence": 1.41,
-      "winAfterAction": 18.4,
-      "winAfterInfluence": 15.8,
-      "islandAfterAction": 94.6,
+      "playedPct": 90.6,
+      "actionPct": 65.7,
+      "playablePct": 60.6,
+      "dWinAction": 1.23,
+      "dWinInfluence": 1.58,
+      "winAfterAction": 20.4,
+      "winAfterInfluence": 21.8,
+      "islandAfterAction": 63.4,
       "perAction": {
-        "trophies": 0.95,
-        "flips": 1.16,
-        "control": 0.06,
-        "moved": 1.19,
-        "placed": 0.43,
-        "presence": -0.22
+        "trophies": 2.43,
+        "flips": 2.47,
+        "control": 0.09,
+        "moved": 2.41,
+        "placed": 0.63,
+        "presence": -0.05
       },
       "probe": {
-        "n": 122,
-        "benefit": -0.4,
-        "up": 44.3,
-        "opening": 1.88,
-        "openingN": 4,
-        "noTarget": 144
+        "n": 171,
+        "benefit": 1.24,
+        "up": 51.5,
+        "opening": 3.86,
+        "openingN": 5,
+        "noTarget": 112
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 1.59,
+          "probes": 82,
+          "dWinAction": 2.29,
+          "actions": 197
+        },
+        "goal": {
+          "probe": 0.36,
+          "probes": 43,
+          "dWinAction": 0.54,
+          "actions": 259
+        },
+        "hunter": {
+          "probe": 1.42,
+          "probes": 46,
+          "dWinAction": 1.01,
+          "actions": 145
+        }
       }
     },
     "livestream": {
       "name": "Livestream the Fight",
       "dealt": 84,
       "held": 398,
-      "action": 307,
-      "influence": 36,
-      "unplayed": 55,
+      "action": 231,
+      "influence": 128,
+      "unplayed": 39,
       "opener": 0,
-      "playedPct": 86.2,
-      "actionPct": 89.5,
-      "playablePct": 77.9,
-      "dWinAction": 0.16,
-      "dWinInfluence": 1.74,
-      "winAfterAction": 23.8,
-      "winAfterInfluence": 23.6,
-      "islandAfterAction": 90.9,
+      "playedPct": 90.2,
+      "actionPct": 64.3,
+      "playablePct": 72.7,
+      "dWinAction": 0.2,
+      "dWinInfluence": 1.38,
+      "winAfterAction": 15.6,
+      "winAfterInfluence": 14.5,
+      "islandAfterAction": 63.2,
       "perAction": {
-        "trophies": 1.11,
+        "trophies": 1.32,
         "flips": 0,
         "control": 0.09,
-        "moved": 1.31,
-        "placed": 1.31,
-        "presence": 0
+        "moved": 1.14,
+        "placed": 1.14,
+        "presence": -0.01
       },
       "probe": {
-        "n": 266,
-        "benefit": 0.17,
-        "up": 30.8,
-        "opening": 0.03,
-        "openingN": 13,
-        "noTarget": 35
+        "n": 210,
+        "benefit": 0.59,
+        "up": 41,
+        "opening": 3.49,
+        "openingN": 12,
+        "noTarget": 68
+      },
+      "byProfile": {
+        "hunter": {
+          "probe": 0.39,
+          "probes": 57,
+          "dWinAction": 0.32,
+          "actions": 57
+        },
+        "backer": {
+          "probe": 0.09,
+          "probes": 54,
+          "dWinAction": 0.06,
+          "actions": 82
+        },
+        "goal": {
+          "probe": 0.97,
+          "probes": 99,
+          "dWinAction": 0.26,
+          "actions": 92
+        }
       }
     },
     "drag-under": {
       "name": "Drag Them Under",
       "dealt": 212,
       "held": 1013,
-      "action": 800,
-      "influence": 82,
-      "unplayed": 131,
+      "action": 634,
+      "influence": 276,
+      "unplayed": 103,
       "opener": 0,
-      "playedPct": 87.1,
-      "actionPct": 90.7,
-      "playablePct": 37,
-      "dWinAction": -0.01,
-      "dWinInfluence": 0.89,
-      "winAfterAction": 20.6,
-      "winAfterInfluence": 24.4,
-      "islandAfterAction": 92.5,
+      "playedPct": 89.8,
+      "actionPct": 69.7,
+      "playablePct": 60.3,
+      "dWinAction": 0.78,
+      "dWinInfluence": 1.17,
+      "winAfterAction": 20.7,
+      "winAfterInfluence": 26.6,
+      "islandAfterAction": 62.6,
       "perAction": {
-        "trophies": 1.23,
-        "flips": 1.24,
-        "control": 0.2,
-        "moved": 2.09,
-        "placed": 0.76,
-        "presence": -0.47
+        "trophies": 3.38,
+        "flips": 3.71,
+        "control": 0.29,
+        "moved": 4.72,
+        "placed": 1.15,
+        "presence": -0.66
       },
       "probe": {
-        "n": 136,
-        "benefit": -0.19,
-        "up": 40.4,
-        "opening": -1.3,
-        "openingN": 2,
-        "noTarget": 165
+        "n": 175,
+        "benefit": 0.96,
+        "up": 54.9,
+        "opening": -1.42,
+        "openingN": 4,
+        "noTarget": 95
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 2.59,
+          "probes": 73,
+          "dWinAction": 1.73,
+          "actions": 248
+        },
+        "goal": {
+          "probe": -0.46,
+          "probes": 70,
+          "dWinAction": 0.28,
+          "actions": 252
+        },
+        "hunter": {
+          "probe": 0.33,
+          "probes": 32,
+          "dWinAction": -0.03,
+          "actions": 134
+        }
       }
     },
     "board-up": {
       "name": "Board Up the Windows",
       "dealt": 144,
       "held": 691,
-      "action": 575,
-      "influence": 44,
-      "unplayed": 72,
+      "action": 446,
+      "influence": 172,
+      "unplayed": 73,
       "opener": 0,
-      "playedPct": 89.6,
-      "actionPct": 92.9,
-      "playablePct": 30.4,
-      "dWinAction": -0.05,
-      "dWinInfluence": 0.79,
-      "winAfterAction": 19.3,
-      "winAfterInfluence": 22.7,
-      "islandAfterAction": 95.1,
+      "playedPct": 89.4,
+      "actionPct": 72.2,
+      "playablePct": 55.4,
+      "dWinAction": 0.59,
+      "dWinInfluence": 1.23,
+      "winAfterAction": 20.2,
+      "winAfterInfluence": 19.2,
+      "islandAfterAction": 64.8,
       "perAction": {
-        "trophies": 1.06,
-        "flips": 1.34,
-        "control": 0.03,
-        "moved": 1.42,
-        "placed": 0.55,
-        "presence": -0.51
+        "trophies": 2.22,
+        "flips": 2.55,
+        "control": 0.11,
+        "moved": 2.69,
+        "placed": 0.94,
+        "presence": -0.96
       },
       "probe": {
-        "n": 122,
-        "benefit": 0.46,
-        "up": 39.3,
-        "opening": -0.62,
+        "n": 166,
+        "benefit": 1.12,
+        "up": 46.4,
+        "opening": -5,
         "openingN": 7,
-        "noTarget": 178
+        "noTarget": 79
+      },
+      "byProfile": {
+        "goal": {
+          "probe": -0.32,
+          "probes": 57,
+          "dWinAction": -0.02,
+          "actions": 205
+        },
+        "hunter": {
+          "probe": 0.3,
+          "probes": 28,
+          "dWinAction": 0.29,
+          "actions": 94
+        },
+        "backer": {
+          "probe": 2.42,
+          "probes": 81,
+          "dWinAction": 1.63,
+          "actions": 147
+        }
       }
     },
     "salt-burn": {
       "name": "Salt and Burn the Bones",
       "dealt": 119,
       "held": 571,
-      "action": 435,
-      "influence": 49,
-      "unplayed": 87,
+      "action": 381,
+      "influence": 133,
+      "unplayed": 57,
       "opener": 0,
-      "playedPct": 84.8,
-      "actionPct": 89.9,
-      "playablePct": 77.8,
-      "dWinAction": 0.08,
-      "dWinInfluence": 0.48,
-      "winAfterAction": 21.4,
-      "winAfterInfluence": 16.8,
-      "islandAfterAction": 97,
+      "playedPct": 90,
+      "actionPct": 74.1,
+      "playablePct": 77.1,
+      "dWinAction": 0.24,
+      "dWinInfluence": 0.9,
+      "winAfterAction": 21.8,
+      "winAfterInfluence": 12.8,
+      "islandAfterAction": 65.6,
       "perAction": {
-        "trophies": 0.94,
-        "flips": 1.26,
+        "trophies": 1.69,
+        "flips": 2.25,
         "control": 0.08,
         "moved": 1.28,
         "placed": 1.28,
-        "presence": -0.76
+        "presence": -1.49
       },
       "probe": {
-        "n": 223,
-        "benefit": 0.6,
-        "up": 37.7,
-        "opening": -2.46,
-        "openingN": 5,
-        "noTarget": 54
+        "n": 220,
+        "benefit": 0.44,
+        "up": 46.4,
+        "opening": -2.48,
+        "openingN": 9,
+        "noTarget": 65
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 0.15,
+          "probes": 57,
+          "dWinAction": 0.06,
+          "actions": 79
+        },
+        "goal": {
+          "probe": 0.45,
+          "probes": 104,
+          "dWinAction": 0.39,
+          "actions": 205
+        },
+        "hunter": {
+          "probe": 0.72,
+          "probes": 59,
+          "dWinAction": 0.06,
+          "actions": 97
+        }
       }
     },
     "book-leap": {
       "name": "Read from the Book",
       "dealt": 198,
       "held": 938,
-      "action": 739,
-      "influence": 91,
-      "unplayed": 108,
+      "action": 621,
+      "influence": 211,
+      "unplayed": 106,
       "opener": 0,
-      "playedPct": 88.5,
-      "actionPct": 89,
-      "playablePct": 42.1,
-      "dWinAction": 0.1,
-      "dWinInfluence": 0.77,
-      "winAfterAction": 22.2,
-      "winAfterInfluence": 19.5,
-      "islandAfterAction": 94.9,
+      "playedPct": 88.7,
+      "actionPct": 74.6,
+      "playablePct": 65.4,
+      "dWinAction": 0.9,
+      "dWinInfluence": 1.36,
+      "winAfterAction": 21.5,
+      "winAfterInfluence": 18.2,
+      "islandAfterAction": 63.4,
       "perAction": {
-        "trophies": 1.04,
-        "flips": 0.99,
-        "control": 0.04,
-        "moved": 1.63,
-        "placed": 0.51,
-        "presence": -0.67
+        "trophies": 2.87,
+        "flips": 2.88,
+        "control": 0.08,
+        "moved": 2.81,
+        "placed": 0.73,
+        "presence": -0.39
       },
       "probe": {
-        "n": 116,
-        "benefit": 0.64,
-        "up": 50,
-        "opening": -0.39,
-        "openingN": 5,
-        "noTarget": 136
+        "n": 195,
+        "benefit": 1.17,
+        "up": 55.9,
+        "opening": 1.81,
+        "openingN": 11,
+        "noTarget": 88
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 2.33,
+          "probes": 91,
+          "dWinAction": 2.12,
+          "actions": 194
+        },
+        "goal": {
+          "probe": 0.39,
+          "probes": 55,
+          "dWinAction": 0.2,
+          "actions": 286
+        },
+        "hunter": {
+          "probe": -0.12,
+          "probes": 49,
+          "dWinAction": 0.64,
+          "actions": 141
+        }
       }
     },
     "lamps": {
       "name": "Light Every Lamp",
       "dealt": 192,
       "held": 915,
-      "action": 747,
-      "influence": 60,
-      "unplayed": 108,
+      "action": 560,
+      "influence": 256,
+      "unplayed": 99,
       "opener": 0,
-      "playedPct": 88.2,
-      "actionPct": 92.6,
-      "playablePct": 32,
-      "dWinAction": 0.01,
-      "dWinInfluence": 0.82,
-      "winAfterAction": 17.1,
-      "winAfterInfluence": 25,
-      "islandAfterAction": 93.2,
+      "playedPct": 89.2,
+      "actionPct": 68.6,
+      "playablePct": 36.2,
+      "dWinAction": 0.82,
+      "dWinInfluence": 1.04,
+      "winAfterAction": 19.7,
+      "winAfterInfluence": 18.9,
+      "islandAfterAction": 58.4,
       "perAction": {
-        "trophies": 0.86,
-        "flips": 0.76,
-        "control": 0.03,
-        "moved": 0.64,
-        "placed": 0.24,
-        "presence": 0.28
+        "trophies": 2.14,
+        "flips": 2.38,
+        "control": 0.04,
+        "moved": 1.6,
+        "placed": 0.43,
+        "presence": 1.06
       },
       "probe": {
-        "n": 91,
-        "benefit": 0.07,
-        "up": 31.9,
+        "n": 128,
+        "benefit": 2.41,
+        "up": 48.4,
         "opening": null,
         "openingN": 0,
-        "noTarget": 180
+        "noTarget": 136
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 2.49,
+          "probes": 66,
+          "dWinAction": 1.83,
+          "actions": 214
+        },
+        "goal": {
+          "probe": 1.98,
+          "probes": 39,
+          "dWinAction": 0.12,
+          "actions": 225
+        },
+        "hunter": {
+          "probe": 2.91,
+          "probes": 23,
+          "dWinAction": 0.32,
+          "actions": 121
+        }
       }
     },
     "sign-contract": {
       "name": "Sign the Contract",
       "dealt": 84,
       "held": 394,
-      "action": 296,
-      "influence": 42,
-      "unplayed": 56,
+      "action": 227,
+      "influence": 127,
+      "unplayed": 40,
       "opener": 0,
-      "playedPct": 85.8,
-      "actionPct": 87.6,
-      "playablePct": 74.4,
-      "dWinAction": 0.11,
-      "dWinInfluence": 1.84,
-      "winAfterAction": 19.1,
-      "winAfterInfluence": 21.4,
-      "islandAfterAction": 93.2,
+      "playedPct": 89.8,
+      "actionPct": 64.1,
+      "playablePct": 71.6,
+      "dWinAction": 0.24,
+      "dWinInfluence": 1.1,
+      "winAfterAction": 21.1,
+      "winAfterInfluence": 19.3,
+      "islandAfterAction": 63.9,
       "perAction": {
-        "trophies": 0.55,
+        "trophies": 0.82,
         "flips": 0,
-        "control": 0.1,
-        "moved": 1.24,
-        "placed": 1.24,
+        "control": 0.07,
+        "moved": 1,
+        "placed": 1,
         "presence": 0
       },
       "probe": {
-        "n": 244,
-        "benefit": 0.4,
-        "up": 31.6,
-        "opening": 0.89,
+        "n": 219,
+        "benefit": 0.15,
+        "up": 35.6,
+        "opening": -0.92,
         "openingN": 11,
-        "noTarget": 48
+        "noTarget": 59
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.21,
+          "probes": 118,
+          "dWinAction": 0.58,
+          "actions": 81
+        },
+        "backer": {
+          "probe": -0.14,
+          "probes": 47,
+          "dWinAction": 0,
+          "actions": 88
+        },
+        "hunter": {
+          "probe": 0.29,
+          "probes": 54,
+          "dWinAction": 0.15,
+          "actions": 58
+        }
       }
     },
     "extra-a": {
@@ -631,969 +1073,383 @@
       "opener": 1887,
       "playedPct": 100,
       "actionPct": 100,
-      "playablePct": 90.1,
-      "dWinAction": 0.24,
+      "playablePct": 95.9,
+      "dWinAction": 0.63,
       "dWinInfluence": null,
-      "winAfterAction": 18.6,
+      "winAfterAction": 18.8,
       "winAfterInfluence": null,
-      "islandAfterAction": 94.6,
+      "islandAfterAction": 61.7,
       "perAction": {
-        "trophies": 1.64,
-        "flips": 1.72,
-        "control": 0.08,
-        "moved": 2.88,
-        "placed": 0.71,
-        "presence": -2.57
+        "trophies": 2.57,
+        "flips": 2.6,
+        "control": 0.15,
+        "moved": 3.9,
+        "placed": 0.89,
+        "presence": -3.66
       },
       "probe": {
-        "n": 265,
-        "benefit": 0.53,
-        "up": 32.5,
-        "opening": -0.14,
-        "openingN": 13,
-        "noTarget": 27
+        "n": 251,
+        "benefit": 1.53,
+        "up": 50.2,
+        "opening": 0.33,
+        "openingN": 10,
+        "noTarget": 9
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 1.36,
+          "probes": 104,
+          "dWinAction": 0.49,
+          "actions": 1019
+        },
+        "backer": {
+          "probe": 1.59,
+          "probes": 91,
+          "dWinAction": 0.94,
+          "actions": 484
+        },
+        "hunter": {
+          "probe": 1.74,
+          "probes": 56,
+          "dWinAction": 0.61,
+          "actions": 384
+        }
       }
     },
     "extra-b": {
       "name": "B (scaffold)",
       "dealt": 400,
       "held": 1918,
-      "action": 1877,
+      "action": 1881,
       "influence": 0,
-      "unplayed": 41,
+      "unplayed": 37,
       "opener": 113,
-      "playedPct": 97.9,
+      "playedPct": 98.1,
       "actionPct": 100,
-      "playablePct": 85.9,
-      "dWinAction": 0.18,
+      "playablePct": 87.8,
+      "dWinAction": 1.05,
       "dWinInfluence": null,
-      "winAfterAction": 19.8,
+      "winAfterAction": 20.1,
       "winAfterInfluence": null,
-      "islandAfterAction": 94.7,
+      "islandAfterAction": 61.7,
       "perAction": {
-        "trophies": 1.44,
-        "flips": 1.42,
-        "control": 0.06,
-        "moved": 2.13,
-        "placed": 0.65,
-        "presence": -0.92
+        "trophies": 3.21,
+        "flips": 3.38,
+        "control": 0.11,
+        "moved": 3.52,
+        "placed": 0.84,
+        "presence": -0.97
       },
       "probe": {
-        "n": 276,
-        "benefit": 0.81,
-        "up": 34.4,
-        "opening": 0.41,
-        "openingN": 6,
-        "noTarget": 10
+        "n": 253,
+        "benefit": 1.8,
+        "up": 56.1,
+        "opening": 1.54,
+        "openingN": 12,
+        "noTarget": 7
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 1,
+          "probes": 102,
+          "dWinAction": 0.76,
+          "actions": 1019
+        },
+        "hunter": {
+          "probe": 3.15,
+          "probes": 53,
+          "dWinAction": 0.16,
+          "actions": 386
+        },
+        "backer": {
+          "probe": 1.91,
+          "probes": 98,
+          "dWinAction": 2.38,
+          "actions": 476
+        }
       }
     },
     "extra-c": {
       "name": "C (scaffold)",
       "dealt": 400,
       "held": 1915,
-      "action": 1829,
+      "action": 1854,
       "influence": 0,
-      "unplayed": 86,
+      "unplayed": 61,
       "opener": 0,
-      "playedPct": 95.5,
+      "playedPct": 96.8,
       "actionPct": 100,
-      "playablePct": 81.4,
-      "dWinAction": 0.2,
+      "playablePct": 86.3,
+      "dWinAction": 0.81,
       "dWinInfluence": null,
-      "winAfterAction": 19.6,
+      "winAfterAction": 19.9,
       "winAfterInfluence": null,
-      "islandAfterAction": 94.8,
+      "islandAfterAction": 61.5,
       "perAction": {
-        "trophies": 1.31,
-        "flips": 1.3,
-        "control": 0.06,
-        "moved": 2.04,
-        "placed": 0.62,
-        "presence": -0.58
+        "trophies": 3.27,
+        "flips": 3.41,
+        "control": 0.12,
+        "moved": 3.51,
+        "placed": 0.83,
+        "presence": -0.88
       },
       "probe": {
-        "n": 238,
-        "benefit": 0.66,
-        "up": 29.4,
-        "opening": -0.62,
-        "openingN": 7,
-        "noTarget": 23
+        "n": 287,
+        "benefit": 2.7,
+        "up": 56.8,
+        "opening": 1.24,
+        "openingN": 13,
+        "noTarget": 9
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.94,
+          "probes": 109,
+          "dWinAction": 0.53,
+          "actions": 996
+        },
+        "hunter": {
+          "probe": 3.17,
+          "probes": 64,
+          "dWinAction": 0.07,
+          "actions": 397
+        },
+        "backer": {
+          "probe": 4.11,
+          "probes": 114,
+          "dWinAction": 2.05,
+          "actions": 461
+        }
       }
     },
     "extra-d": {
       "name": "D (scaffold)",
       "dealt": 400,
       "held": 1906,
-      "action": 1856,
+      "action": 1864,
       "influence": 0,
-      "unplayed": 50,
+      "unplayed": 42,
       "opener": 0,
-      "playedPct": 97.4,
+      "playedPct": 97.8,
       "actionPct": 100,
-      "playablePct": 89.1,
-      "dWinAction": 0.04,
+      "playablePct": 92.2,
+      "dWinAction": 0.35,
       "dWinInfluence": null,
-      "winAfterAction": 18.7,
+      "winAfterAction": 18.4,
       "winAfterInfluence": null,
-      "islandAfterAction": 94.8,
+      "islandAfterAction": 61.5,
       "perAction": {
-        "trophies": 0.57,
-        "flips": 0.78,
-        "control": 0.04,
-        "moved": 0.66,
-        "placed": 0.3,
-        "presence": -0.27
+        "trophies": 1.43,
+        "flips": 1.85,
+        "control": 0.06,
+        "moved": 1.39,
+        "placed": 0.51,
+        "presence": -0.54
       },
       "probe": {
-        "n": 257,
-        "benefit": 0.51,
-        "up": 16.7,
-        "opening": 0.16,
-        "openingN": 9,
-        "noTarget": 11
+        "n": 253,
+        "benefit": 1.44,
+        "up": 36.8,
+        "opening": 0.28,
+        "openingN": 10,
+        "noTarget": 2
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 2.11,
+          "probes": 108,
+          "dWinAction": 1.16,
+          "actions": 489
+        },
+        "hunter": {
+          "probe": 1.69,
+          "probes": 43,
+          "dWinAction": -0.08,
+          "actions": 430
+        },
+        "goal": {
+          "probe": 0.64,
+          "probes": 102,
+          "dWinAction": 0.13,
+          "actions": 945
+        }
       }
     },
     "stake-out-6": {
       "name": "Stake Out (6)",
       "dealt": 61,
       "held": 286,
-      "action": 153,
+      "action": 255,
       "influence": 0,
-      "unplayed": 133,
+      "unplayed": 31,
       "opener": 0,
-      "playedPct": 53.5,
+      "playedPct": 89.2,
       "actionPct": 100,
-      "playablePct": 95.3,
-      "dWinAction": 2.48,
+      "playablePct": 73.2,
+      "dWinAction": 1.56,
       "dWinInfluence": null,
-      "winAfterAction": 37.6,
+      "winAfterAction": 22.5,
       "winAfterInfluence": null,
-      "islandAfterAction": 96.7,
+      "islandAfterAction": 53.7,
       "perAction": {
-        "trophies": 2.7,
+        "trophies": 3.29,
         "flips": 0,
-        "control": 0.69,
+        "control": 0.65,
         "moved": 0,
-        "placed": 5.86,
+        "placed": 4.7,
         "presence": 0
       },
       "probe": {
-        "n": 266,
-        "benefit": 1.58,
-        "up": 53.8,
-        "opening": 0.34,
-        "openingN": 10,
-        "noTarget": 0
+        "n": 218,
+        "benefit": 0.46,
+        "up": 56.9,
+        "opening": 0.89,
+        "openingN": 17,
+        "noTarget": 63
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.44,
+          "probes": 101,
+          "dWinAction": 1.69,
+          "actions": 118
+        },
+        "backer": {
+          "probe": 0.55,
+          "probes": 62,
+          "dWinAction": 0.4,
+          "actions": 82
+        },
+        "hunter": {
+          "probe": 0.4,
+          "probes": 55,
+          "dWinAction": 3.01,
+          "actions": 55
+        }
       }
     },
     "canvass": {
       "name": "Canvass the Town",
       "dealt": 65,
       "held": 304,
-      "action": 275,
-      "influence": 0,
-      "unplayed": 29,
-      "opener": 0,
-      "playedPct": 90.5,
-      "actionPct": 100,
-      "playablePct": 95.8,
-      "dWinAction": 0.38,
-      "dWinInfluence": null,
-      "winAfterAction": 25.8,
-      "winAfterInfluence": null,
-      "islandAfterAction": 92.4,
-      "perAction": {
-        "trophies": 0.58,
-        "flips": 0,
-        "control": 0.09,
-        "moved": 0,
-        "placed": 1.73,
-        "presence": 0
-      },
-      "probe": {
-        "n": 287,
-        "benefit": 0.3,
-        "up": 29.6,
-        "opening": 0.44,
-        "openingN": 16,
-        "noTarget": 1
-      }
-    },
-    "bell": {
-      "name": "Ring the Church Bell",
-      "dealt": 188,
-      "held": 889,
-      "action": 875,
-      "influence": 10,
-      "unplayed": 4,
-      "opener": 0,
-      "playedPct": 99.6,
-      "actionPct": 98.9,
-      "playablePct": 91.1,
-      "dWinAction": 0,
-      "dWinInfluence": 2.14,
-      "winAfterAction": 17.1,
-      "winAfterInfluence": 20,
-      "islandAfterAction": 96.7,
-      "perAction": {
-        "trophies": 1.24,
-        "flips": 1.25,
-        "control": 0.09,
-        "moved": 1.53,
-        "placed": 0.4,
-        "presence": -0.6
-      },
-      "probe": {
-        "n": 287,
-        "benefit": 0.22,
-        "up": 14.6,
-        "opening": -0.48,
-        "openingN": 11,
-        "noTarget": 0
-      }
-    },
-    "house-fire": {
-      "name": "Set the House on Fire",
-      "dealt": 58,
-      "held": 277,
-      "action": 201,
-      "influence": 34,
-      "unplayed": 42,
-      "opener": 0,
-      "playedPct": 84.8,
-      "actionPct": 85.5,
-      "playablePct": 72.5,
-      "dWinAction": 0.07,
-      "dWinInfluence": 0.51,
-      "winAfterAction": 22.1,
-      "winAfterInfluence": 22.1,
-      "islandAfterAction": 93,
-      "perAction": {
-        "trophies": 0.99,
-        "flips": 1.3,
-        "control": 0.12,
-        "moved": 1.18,
-        "placed": 1.18,
-        "presence": -0.8
-      },
-      "probe": {
-        "n": 223,
-        "benefit": 0.81,
-        "up": 41.7,
-        "opening": -0.08,
-        "openingN": 8,
-        "noTarget": 45
-      }
-    },
-    "reroute": {
-      "name": "Reroute the Power Grid",
-      "dealt": 189,
-      "held": 902,
-      "action": 883,
-      "influence": 11,
-      "unplayed": 8,
-      "opener": 0,
-      "playedPct": 99.1,
-      "actionPct": 98.8,
-      "playablePct": 91.4,
-      "dWinAction": 0,
-      "dWinInfluence": 2.91,
-      "winAfterAction": 17,
-      "winAfterInfluence": 36.4,
-      "islandAfterAction": 94.6,
-      "perAction": {
-        "trophies": 0.48,
-        "flips": 0.4,
-        "control": 0.01,
-        "moved": 0.45,
-        "placed": 0.18,
-        "presence": -0.26
-      },
-      "probe": {
-        "n": 288,
-        "benefit": 0.11,
-        "up": 9.4,
-        "opening": 0.16,
-        "openingN": 15,
-        "noTarget": 0
-      }
-    },
-    "lay-trail": {
-      "name": "Lay a Trail",
-      "dealt": 65,
-      "held": 299,
-      "action": 240,
-      "influence": 0,
-      "unplayed": 59,
-      "opener": 0,
-      "playedPct": 80.3,
-      "actionPct": 100,
-      "playablePct": 39.2,
-      "dWinAction": -0.07,
-      "dWinInfluence": null,
-      "winAfterAction": 19.7,
-      "winAfterInfluence": null,
-      "islandAfterAction": 96.7,
-      "perAction": {
-        "trophies": 1.1,
-        "flips": 0.87,
-        "control": 0,
-        "moved": 1.4,
-        "placed": 0.47,
-        "presence": -0.32
-      },
-      "probe": {
-        "n": 124,
-        "benefit": 0.87,
-        "up": 50.8,
-        "opening": 2.23,
-        "openingN": 5,
-        "noTarget": 154
-      }
-    },
-    "claim-spoils": {
-      "name": "Claim the Spoils",
-      "dealt": 51,
-      "held": 243,
-      "action": 242,
-      "influence": 0,
-      "unplayed": 1,
-      "opener": 0,
-      "playedPct": 99.6,
-      "actionPct": 100,
-      "playablePct": 92.2,
-      "dWinAction": 0.7,
-      "dWinInfluence": null,
-      "winAfterAction": 27.7,
-      "winAfterInfluence": null,
-      "islandAfterAction": 92.1,
-      "perAction": {
-        "trophies": 3.17,
-        "flips": 0,
-        "control": 0,
-        "moved": 0,
-        "placed": 0,
-        "presence": 0
-      },
-      "probe": {
-        "n": 278,
-        "benefit": 1.03,
-        "up": 25.9,
-        "opening": -0.57,
-        "openingN": 12,
-        "noTarget": 0
-      }
-    },
-    "banshee": {
-      "name": "Hear the Banshee Wail",
-      "dealt": 132,
-      "held": 633,
-      "action": 490,
-      "influence": 59,
-      "unplayed": 84,
-      "opener": 0,
-      "playedPct": 86.7,
-      "actionPct": 89.3,
-      "playablePct": 40.9,
-      "dWinAction": 0.05,
-      "dWinInfluence": 1.06,
-      "winAfterAction": 21.1,
-      "winAfterInfluence": 18.6,
-      "islandAfterAction": 95.9,
-      "perAction": {
-        "trophies": 1.31,
-        "flips": 1.26,
-        "control": 0.09,
-        "moved": 1.82,
-        "placed": 0.6,
-        "presence": -0.48
-      },
-      "probe": {
-        "n": 126,
-        "benefit": -0.24,
-        "up": 43.7,
-        "opening": 0.47,
-        "openingN": 4,
-        "noTarget": 148
-      }
-    },
-    "trade-souls": {
-      "name": "Trade Souls",
-      "dealt": 63,
-      "held": 302,
-      "action": 267,
-      "influence": 22,
-      "unplayed": 13,
-      "opener": 0,
-      "playedPct": 95.7,
-      "actionPct": 92.4,
-      "playablePct": 48.2,
-      "dWinAction": 0.64,
-      "dWinInfluence": 0.4,
-      "winAfterAction": 21.2,
-      "winAfterInfluence": 33,
-      "islandAfterAction": 94.4,
-      "perAction": {
-        "trophies": 2.21,
-        "flips": 2.61,
-        "control": 0.17,
-        "moved": 2.72,
-        "placed": 0.79,
-        "presence": -1.57
-      },
-      "probe": {
-        "n": 185,
-        "benefit": 1.33,
-        "up": 56.8,
-        "opening": 0.38,
-        "openingN": 10,
-        "noTarget": 103
-      }
-    },
-    "full-moon": {
-      "name": "Wait for the Full Moon",
-      "dealt": 131,
-      "held": 628,
-      "action": 325,
-      "influence": 124,
-      "unplayed": 179,
-      "opener": 0,
-      "playedPct": 71.5,
-      "actionPct": 72.4,
-      "playablePct": 79.8,
-      "dWinAction": 0.49,
-      "dWinInfluence": 1.15,
-      "winAfterAction": 23.7,
-      "winAfterInfluence": 20.6,
-      "islandAfterAction": 91.1,
-      "perAction": {
-        "trophies": 1.03,
-        "flips": 1.19,
-        "control": 0,
-        "moved": 2.1,
-        "placed": 0,
-        "presence": 0.87
-      },
-      "probe": {
-        "n": 251,
-        "benefit": -0.15,
-        "up": 47.4,
-        "opening": -0.37,
-        "openingN": 8,
-        "noTarget": 56
-      }
-    },
-    "tractor-beam": {
-      "name": "Turn On the Tractor Beam",
-      "dealt": 123,
-      "held": 580,
-      "action": 405,
-      "influence": 75,
-      "unplayed": 100,
-      "opener": 0,
-      "playedPct": 82.8,
-      "actionPct": 84.4,
-      "playablePct": 36.4,
-      "dWinAction": -0.09,
-      "dWinInfluence": 1.78,
-      "winAfterAction": 23,
-      "winAfterInfluence": 17.3,
-      "islandAfterAction": 93.6,
-      "perAction": {
-        "trophies": 1.57,
-        "flips": 1.68,
-        "control": 0.18,
-        "moved": 2.02,
-        "placed": 0.61,
-        "presence": 0.32
-      },
-      "probe": {
-        "n": 109,
-        "benefit": -0.44,
-        "up": 39.4,
-        "opening": null,
-        "openingN": 0,
-        "noTarget": 181
-      }
-    },
-    "set-bait": {
-      "name": "Set the Bait",
-      "dealt": 47,
-      "held": 224,
-      "action": 190,
-      "influence": 0,
-      "unplayed": 34,
-      "opener": 0,
-      "playedPct": 84.8,
-      "actionPct": 100,
-      "playablePct": 66.2,
-      "dWinAction": 0.72,
-      "dWinInfluence": null,
-      "winAfterAction": 20.5,
-      "winAfterInfluence": null,
-      "islandAfterAction": 97.4,
-      "perAction": {
-        "trophies": 1.98,
-        "flips": 1.59,
-        "control": 0.43,
-        "moved": 2.37,
-        "placed": 2.23,
-        "presence": -1.47
-      },
-      "probe": {
-        "n": 187,
-        "benefit": 1.6,
-        "up": 63.6,
-        "opening": -0.22,
-        "openingN": 4,
-        "noTarget": 79
-      }
-    },
-    "circle-prey": {
-      "name": "Circle the Prey",
-      "dealt": 138,
-      "held": 663,
-      "action": 537,
-      "influence": 38,
-      "unplayed": 88,
-      "opener": 0,
-      "playedPct": 86.7,
-      "actionPct": 93.4,
-      "playablePct": 54.8,
-      "dWinAction": -0.03,
-      "dWinInfluence": 0.82,
-      "winAfterAction": 20.9,
-      "winAfterInfluence": 15.8,
-      "islandAfterAction": 96.5,
-      "perAction": {
-        "trophies": 1.57,
-        "flips": 1.42,
-        "control": 0.1,
-        "moved": 2.35,
-        "placed": 0.81,
-        "presence": -0.84
-      },
-      "probe": {
-        "n": 143,
-        "benefit": 0.32,
-        "up": 38.5,
-        "opening": 1.28,
-        "openingN": 5,
-        "noTarget": 114
-      }
-    },
-    "call-backup": {
-      "name": "Call for Backup",
-      "dealt": 46,
-      "held": 219,
-      "action": 210,
-      "influence": 0,
-      "unplayed": 9,
-      "opener": 0,
-      "playedPct": 95.9,
-      "actionPct": 100,
-      "playablePct": 93.8,
-      "dWinAction": 0.25,
-      "dWinInfluence": null,
-      "winAfterAction": 22.4,
-      "winAfterInfluence": null,
-      "islandAfterAction": 92.9,
-      "perAction": {
-        "trophies": 0.41,
-        "flips": 0,
-        "control": 0.15,
-        "moved": 0,
-        "placed": 1.17,
-        "presence": 0
-      },
-      "probe": {
-        "n": 335,
-        "benefit": 0.34,
-        "up": 31.3,
-        "opening": -0.08,
-        "openingN": 14,
-        "noTarget": 0
-      }
-    },
-    "ski-slope": {
-      "name": "Chase Them Down the Slope",
-      "dealt": 219,
-      "held": 1052,
-      "action": 863,
-      "influence": 76,
-      "unplayed": 113,
-      "opener": 0,
-      "playedPct": 89.3,
-      "actionPct": 91.9,
-      "playablePct": 37.9,
-      "dWinAction": 0.02,
-      "dWinInfluence": 1.46,
-      "winAfterAction": 20.6,
-      "winAfterInfluence": 18.8,
-      "islandAfterAction": 93.4,
-      "perAction": {
-        "trophies": 1.22,
-        "flips": 1.17,
-        "control": 0.06,
-        "moved": 1.62,
-        "placed": 0.51,
-        "presence": -0.61
-      },
-      "probe": {
-        "n": 130,
-        "benefit": 0.76,
-        "up": 50.8,
-        "opening": 1.63,
-        "openingN": 2,
-        "noTarget": 152
-      }
-    },
-    "mirror": {
-      "name": "Smash the Mirror",
-      "dealt": 54,
-      "held": 256,
-      "action": 188,
-      "influence": 26,
-      "unplayed": 42,
-      "opener": 0,
-      "playedPct": 83.6,
-      "actionPct": 87.9,
-      "playablePct": 42.7,
-      "dWinAction": -0.07,
-      "dWinInfluence": 0.84,
-      "winAfterAction": 19,
-      "winAfterInfluence": 10.6,
-      "islandAfterAction": 100,
-      "perAction": {
-        "trophies": 1.12,
-        "flips": 1.01,
-        "control": 0.05,
-        "moved": 1.43,
-        "placed": 0.44,
-        "presence": -0.39
-      },
-      "probe": {
-        "n": 127,
-        "benefit": -0.32,
-        "up": 37.8,
-        "opening": 1.12,
-        "openingN": 3,
-        "noTarget": 155
-      }
-    },
-    "take-wake": {
-      "name": "Take Over the Wake",
-      "dealt": 145,
-      "held": 688,
-      "action": 565,
-      "influence": 56,
-      "unplayed": 67,
-      "opener": 0,
-      "playedPct": 90.3,
-      "actionPct": 91,
-      "playablePct": 46.5,
-      "dWinAction": -0.3,
-      "dWinInfluence": 1.38,
-      "winAfterAction": 18.2,
-      "winAfterInfluence": 13.4,
-      "islandAfterAction": 92.4,
-      "perAction": {
-        "trophies": 0.7,
-        "flips": 0,
-        "control": 0.17,
-        "moved": 0,
-        "placed": 1.06,
-        "presence": 0
-      },
-      "probe": {
-        "n": 162,
-        "benefit": -0.26,
-        "up": 29.6,
-        "opening": -1.05,
-        "openingN": 3,
-        "noTarget": 125
-      }
-    },
-    "invert": {
-      "name": "Invert the Pentagram",
-      "dealt": 82,
-      "held": 386,
-      "action": 289,
-      "influence": 26,
-      "unplayed": 71,
-      "opener": 0,
-      "playedPct": 81.6,
-      "actionPct": 91.7,
-      "playablePct": 76.3,
-      "dWinAction": 0.08,
-      "dWinInfluence": 0.82,
-      "winAfterAction": 20.8,
-      "winAfterInfluence": 32.7,
-      "islandAfterAction": 96.5,
-      "perAction": {
-        "trophies": 0.92,
-        "flips": 1.13,
-        "control": 0.08,
-        "moved": 1.2,
-        "placed": 1.2,
-        "presence": -0.67
-      },
-      "probe": {
-        "n": 245,
-        "benefit": 0.6,
-        "up": 31.8,
-        "opening": -0.11,
-        "openingN": 12,
-        "noTarget": 56
-      }
-    },
-    "change-plan": {
-      "name": "Change the Plan",
-      "dealt": 53,
-      "held": 253,
-      "action": 250,
-      "influence": 0,
-      "unplayed": 3,
-      "opener": 0,
-      "playedPct": 98.8,
-      "actionPct": 100,
-      "playablePct": 91.1,
-      "dWinAction": 0.29,
-      "dWinInfluence": null,
-      "winAfterAction": 22,
-      "winAfterInfluence": null,
-      "islandAfterAction": 96.4,
-      "perAction": {
-        "trophies": 0.86,
-        "flips": 0,
-        "control": 0.14,
-        "moved": 0,
-        "placed": 1.81,
-        "presence": 0
-      },
-      "probe": {
-        "n": 261,
-        "benefit": 0.4,
-        "up": 35.6,
-        "opening": 0.68,
-        "openingN": 6,
-        "noTarget": 0
-      }
-    },
-    "drones": {
-      "name": "Reprogram the Drones",
-      "dealt": 83,
-      "held": 390,
-      "action": 235,
-      "influence": 51,
-      "unplayed": 104,
-      "opener": 0,
-      "playedPct": 73.3,
-      "actionPct": 82.2,
-      "playablePct": 50.3,
-      "dWinAction": 0.31,
-      "dWinInfluence": 1.36,
-      "winAfterAction": 21.3,
-      "winAfterInfluence": 16.2,
-      "islandAfterAction": 94.9,
-      "perAction": {
-        "trophies": 0.71,
-        "flips": 1.34,
-        "control": 0,
-        "moved": 1.07,
-        "placed": 0,
-        "presence": 0.25
-      },
-      "probe": {
-        "n": 123,
-        "benefit": 0.33,
-        "up": 53.7,
-        "opening": null,
-        "openingN": 0,
-        "noTarget": 147
-      }
-    },
-    "lamps-either": {
-      "name": "Light Every Lamp (either side)",
-      "dealt": 208,
-      "held": 994,
-      "action": 792,
-      "influence": 87,
-      "unplayed": 115,
-      "opener": 0,
-      "playedPct": 88.4,
-      "actionPct": 90.1,
-      "playablePct": 30.7,
-      "dWinAction": -0.01,
-      "dWinInfluence": 0.87,
-      "winAfterAction": 20.4,
-      "winAfterInfluence": 16.7,
-      "islandAfterAction": 97,
-      "perAction": {
-        "trophies": 1.03,
-        "flips": 1.01,
-        "control": 0.04,
-        "moved": 0.84,
-        "placed": 0.26,
-        "presence": 0.19
-      },
-      "probe": {
-        "n": 90,
-        "benefit": 0.16,
-        "up": 28.9,
-        "opening": null,
-        "openingN": 0,
-        "noTarget": 178
-      }
-    },
-    "broadcast": {
-      "name": "Broadcast a Signal",
-      "dealt": 140,
-      "held": 666,
-      "action": 613,
-      "influence": 27,
-      "unplayed": 26,
-      "opener": 0,
-      "playedPct": 96.1,
-      "actionPct": 95.8,
-      "playablePct": 50.1,
-      "dWinAction": 0.39,
-      "dWinInfluence": 0.56,
-      "winAfterAction": 22,
-      "winAfterInfluence": 18.5,
-      "islandAfterAction": 96.2,
-      "perAction": {
-        "trophies": 1.85,
-        "flips": 2.11,
-        "control": 0.07,
-        "moved": 2.88,
-        "placed": 0.69,
-        "presence": -1.27
-      },
-      "probe": {
-        "n": 199,
-        "benefit": 1.42,
-        "up": 41.2,
-        "opening": 0.54,
-        "openingN": 6,
-        "noTarget": 67
-      }
-    },
-    "steal-playbook": {
-      "name": "Steal Their Playbook",
-      "dealt": 51,
-      "held": 243,
-      "action": 226,
+      "action": 287,
       "influence": 0,
       "unplayed": 17,
       "opener": 0,
-      "playedPct": 93,
+      "playedPct": 94.4,
       "actionPct": 100,
-      "playablePct": 49,
-      "dWinAction": 0.3,
+      "playablePct": 76.4,
+      "dWinAction": 0.41,
       "dWinInfluence": null,
-      "winAfterAction": 22.7,
-      "winAfterInfluence": null,
-      "islandAfterAction": 93.8,
-      "perAction": {
-        "trophies": 1.39,
-        "flips": 1.38,
-        "control": 0.08,
-        "moved": 1.62,
-        "placed": 0.73,
-        "presence": -1.16
-      },
-      "probe": {
-        "n": 157,
-        "benefit": 0.48,
-        "up": 42,
-        "opening": -0.74,
-        "openingN": 4,
-        "noTarget": 139
-      }
-    },
-    "leak-press": {
-      "name": "Leak It to the Press",
-      "dealt": 212,
-      "held": 1008,
-      "action": 882,
-      "influence": 58,
-      "unplayed": 68,
-      "opener": 0,
-      "playedPct": 93.3,
-      "actionPct": 93.8,
-      "playablePct": 37.9,
-      "dWinAction": 0.12,
-      "dWinInfluence": 0.79,
-      "winAfterAction": 20.1,
-      "winAfterInfluence": 26.7,
-      "islandAfterAction": 94.7,
-      "perAction": {
-        "trophies": 0.74,
-        "flips": 0.98,
-        "control": 0.04,
-        "moved": 0.7,
-        "placed": 0.34,
-        "presence": -0.49
-      },
-      "probe": {
-        "n": 182,
-        "benefit": 0.12,
-        "up": 23.1,
-        "opening": -0.06,
-        "openingN": 4,
-        "noTarget": 109
-      }
-    },
-    "traffic": {
-      "name": "Reprogram the Traffic Lights",
-      "dealt": 86,
-      "held": 402,
-      "action": 397,
-      "influence": 4,
-      "unplayed": 1,
-      "opener": 0,
-      "playedPct": 99.8,
-      "actionPct": 99,
-      "playablePct": 94.6,
-      "dWinAction": 0.05,
-      "dWinInfluence": 2.15,
       "winAfterAction": 19.5,
-      "winAfterInfluence": 0,
-      "islandAfterAction": 96.7,
+      "winAfterInfluence": null,
+      "islandAfterAction": 58.5,
       "perAction": {
-        "trophies": 1.09,
-        "flips": 1.1,
-        "control": 0.06,
-        "moved": 1.31,
-        "placed": 0.44,
-        "presence": -0.56
+        "trophies": 1.18,
+        "flips": 0,
+        "control": 0.16,
+        "moved": 0,
+        "placed": 1.94,
+        "presence": -0.01
       },
       "probe": {
-        "n": 287,
-        "benefit": 0.14,
-        "up": 11.8,
-        "opening": 0.54,
+        "n": 217,
+        "benefit": 0.15,
+        "up": 39.6,
+        "opening": 0.77,
         "openingN": 7,
-        "noTarget": 0
+        "noTarget": 61
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.05,
+          "probes": 111,
+          "dWinAction": 0.65,
+          "actions": 136
+        },
+        "backer": {
+          "probe": -0.01,
+          "probes": 58,
+          "dWinAction": 0.04,
+          "actions": 89
+        },
+        "hunter": {
+          "probe": 0.56,
+          "probes": 48,
+          "dWinAction": 0.42,
+          "actions": 62
+        }
+      }
+    },
+    "stake-out": {
+      "name": "Stake Out",
+      "dealt": 65,
+      "held": 306,
+      "action": 279,
+      "influence": 0,
+      "unplayed": 27,
+      "opener": 0,
+      "playedPct": 91.2,
+      "actionPct": 100,
+      "playablePct": 74.3,
+      "dWinAction": 0.66,
+      "dWinInfluence": null,
+      "winAfterAction": 20.8,
+      "winAfterInfluence": null,
+      "islandAfterAction": 63.1,
+      "perAction": {
+        "trophies": 3.16,
+        "flips": 0,
+        "control": 0.6,
+        "moved": 0,
+        "placed": 3.2,
+        "presence": -0.01
+      },
+      "probe": {
+        "n": 219,
+        "benefit": 1.37,
+        "up": 59.8,
+        "opening": -0.5,
+        "openingN": 7,
+        "noTarget": 54
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 1.41,
+          "probes": 120,
+          "dWinAction": 0.84,
+          "actions": 124
+        },
+        "hunter": {
+          "probe": 2.75,
+          "probes": 53,
+          "dWinAction": 0.78,
+          "actions": 60
+        },
+        "backer": {
+          "probe": -0.32,
+          "probes": 46,
+          "dWinAction": 0.36,
+          "actions": 95
+        }
       }
     },
     "change-allegiance": {
       "name": "Change Allegiance",
       "dealt": 64,
       "held": 301,
-      "action": 296,
+      "action": 293,
       "influence": 0,
-      "unplayed": 5,
+      "unplayed": 8,
       "opener": 0,
-      "playedPct": 98.3,
+      "playedPct": 97.3,
       "actionPct": 100,
-      "playablePct": 89.4,
-      "dWinAction": 0.12,
+      "playablePct": 89.9,
+      "dWinAction": 1.65,
       "dWinInfluence": null,
-      "winAfterAction": 19.3,
+      "winAfterAction": 20.5,
       "winAfterInfluence": null,
-      "islandAfterAction": 90.9,
+      "islandAfterAction": 71.7,
       "perAction": {
         "trophies": 0,
         "flips": 0,
@@ -1603,507 +1459,1993 @@
         "presence": 0
       },
       "probe": {
-        "n": 266,
-        "benefit": 1.68,
-        "up": 75.6,
-        "opening": 0.38,
-        "openingN": 17,
+        "n": 250,
+        "benefit": 2.44,
+        "up": 81.6,
+        "opening": 5.25,
+        "openingN": 11,
         "noTarget": 8
-      }
-    },
-    "call-truce": {
-      "name": "Call a Truce",
-      "dealt": 56,
-      "held": 263,
-      "action": 263,
-      "influence": 0,
-      "unplayed": 0,
-      "opener": 0,
-      "playedPct": 100,
-      "actionPct": 100,
-      "playablePct": 90.7,
-      "dWinAction": 0.16,
-      "dWinInfluence": null,
-      "winAfterAction": 17.5,
-      "winAfterInfluence": null,
-      "islandAfterAction": 98.1,
-      "perAction": {
-        "trophies": 0.29,
-        "flips": 0.19,
-        "control": 0,
-        "moved": 0,
-        "placed": 0,
-        "presence": 0.27
       },
-      "probe": {
-        "n": 297,
-        "benefit": 0.42,
-        "up": 21.5,
-        "opening": 0.31,
-        "openingN": 13,
-        "noTarget": 0
+      "byProfile": {
+        "goal": {
+          "probe": 1.03,
+          "probes": 94,
+          "dWinAction": 0.58,
+          "actions": 86
+        },
+        "backer": {
+          "probe": 3.58,
+          "probes": 106,
+          "dWinAction": 2.66,
+          "actions": 143
+        },
+        "hunter": {
+          "probe": 2.65,
+          "probes": 50,
+          "dWinAction": 0.85,
+          "actions": 64
+        }
       }
     },
-    "bail-out": {
-      "name": "Bail Out",
-      "dealt": 68,
-      "held": 324,
-      "action": 324,
-      "influence": 0,
-      "unplayed": 0,
-      "opener": 0,
-      "playedPct": 100,
-      "actionPct": 100,
-      "playablePct": 92.7,
-      "dWinAction": 0.23,
-      "dWinInfluence": null,
-      "winAfterAction": 17,
-      "winAfterInfluence": null,
-      "islandAfterAction": 97.5,
-      "perAction": {
-        "trophies": 0.56,
-        "flips": 0,
-        "control": 0.06,
-        "moved": 0,
-        "placed": 1.34,
-        "presence": 0
-      },
-      "probe": {
-        "n": 275,
-        "benefit": 0.37,
-        "up": 28,
-        "opening": 0.65,
-        "openingN": 12,
-        "noTarget": 0
-      }
-    },
-    "hijack-feed": {
-      "name": "Hijack the Feed",
-      "dealt": 80,
-      "held": 384,
-      "action": 289,
-      "influence": 37,
-      "unplayed": 58,
-      "opener": 0,
-      "playedPct": 84.9,
-      "actionPct": 88.7,
-      "playablePct": 76.6,
-      "dWinAction": 0.03,
-      "dWinInfluence": 0.92,
-      "winAfterAction": 22.8,
-      "winAfterInfluence": 24.3,
-      "islandAfterAction": 92,
-      "perAction": {
-        "trophies": 0.84,
-        "flips": 0,
-        "control": 0.1,
-        "moved": 1.27,
-        "placed": 1.27,
-        "presence": 0
-      },
-      "probe": {
-        "n": 239,
-        "benefit": 0.18,
-        "up": 26.8,
-        "opening": 0.14,
-        "openingN": 9,
-        "noTarget": 42
-      }
-    },
-    "virus-infect": {
-      "name": "Spread a Virus (infectious)",
-      "dealt": 184,
-      "held": 875,
-      "action": 680,
-      "influence": 78,
-      "unplayed": 117,
-      "opener": 0,
-      "playedPct": 86.6,
-      "actionPct": 89.7,
-      "playablePct": 46.6,
-      "dWinAction": -0.17,
-      "dWinInfluence": 1.08,
-      "winAfterAction": 21.8,
-      "winAfterInfluence": 24.4,
-      "islandAfterAction": 95.1,
-      "perAction": {
-        "trophies": 0.54,
-        "flips": 0.79,
-        "control": 0.03,
-        "moved": 0.79,
-        "placed": 0.79,
-        "presence": -0.44
-      },
-      "probe": {
-        "n": 151,
-        "benefit": -0.41,
-        "up": 35.8,
-        "opening": -0.46,
-        "openingN": 11,
-        "noTarget": 156
-      }
-    },
-    "horde": {
-      "name": "Lead the Horde",
-      "dealt": 124,
-      "held": 583,
-      "action": 477,
-      "influence": 39,
-      "unplayed": 67,
-      "opener": 0,
-      "playedPct": 88.5,
-      "actionPct": 92.4,
-      "playablePct": 42.5,
-      "dWinAction": 0.14,
-      "dWinInfluence": 1.34,
-      "winAfterAction": 19.3,
-      "winAfterInfluence": 34.6,
-      "islandAfterAction": 92.2,
-      "perAction": {
-        "trophies": 1.37,
-        "flips": 1.34,
-        "control": 0.08,
-        "moved": 2.03,
-        "placed": 0.64,
-        "presence": -0.66
-      },
-      "probe": {
-        "n": 148,
-        "benefit": 0.57,
-        "up": 54.7,
-        "opening": -0.05,
-        "openingN": 5,
-        "noTarget": 134
-      }
-    },
-    "lay-to-rest": {
-      "name": "Lay Them to Rest",
-      "dealt": 136,
-      "held": 655,
-      "action": 475,
-      "influence": 78,
-      "unplayed": 102,
-      "opener": 0,
-      "playedPct": 84.4,
-      "actionPct": 85.9,
-      "playablePct": 77.6,
-      "dWinAction": 0.24,
-      "dWinInfluence": 0.88,
-      "winAfterAction": 22.3,
-      "winAfterInfluence": 23.7,
-      "islandAfterAction": 95.4,
-      "perAction": {
-        "trophies": 1.06,
-        "flips": 0,
-        "control": 0.1,
-        "moved": 1.26,
-        "placed": 1.26,
-        "presence": 0
-      },
-      "probe": {
-        "n": 251,
-        "benefit": 0.4,
-        "up": 32.7,
-        "opening": 0.37,
-        "openingN": 11,
-        "noTarget": 45
-      }
-    },
-    "summoning": {
-      "name": "Draw a Summoning Circle",
-      "dealt": 202,
-      "held": 964,
-      "action": 943,
-      "influence": 16,
-      "unplayed": 5,
-      "opener": 0,
-      "playedPct": 99.5,
-      "actionPct": 98.3,
-      "playablePct": 91.8,
-      "dWinAction": 0.14,
-      "dWinInfluence": 2.38,
-      "winAfterAction": 21.9,
-      "winAfterInfluence": 28.1,
-      "islandAfterAction": 94.5,
-      "perAction": {
-        "trophies": 0.99,
-        "flips": 1,
-        "control": 0.03,
-        "moved": 1.18,
-        "placed": 0.3,
-        "presence": -0.52
-      },
-      "probe": {
-        "n": 282,
-        "benefit": 0.55,
-        "up": 17,
-        "opening": -0.02,
-        "openingN": 12,
-        "noTarget": 0
-      }
-    },
-    "stake-out": {
-      "name": "Stake Out",
+    "lay-trail": {
+      "name": "Lay a Trail",
       "dealt": 65,
-      "held": 306,
-      "action": 228,
+      "held": 299,
+      "action": 231,
       "influence": 0,
-      "unplayed": 78,
+      "unplayed": 68,
       "opener": 0,
-      "playedPct": 74.5,
+      "playedPct": 77.3,
       "actionPct": 100,
-      "playablePct": 95.8,
-      "dWinAction": 1.03,
+      "playablePct": 56.4,
+      "dWinAction": 0.6,
       "dWinInfluence": null,
-      "winAfterAction": 27,
+      "winAfterAction": 18.6,
       "winAfterInfluence": null,
-      "islandAfterAction": 95.6,
+      "islandAfterAction": 62.8,
       "perAction": {
-        "trophies": 1.84,
-        "flips": 0,
-        "control": 0.46,
-        "moved": 0,
-        "placed": 4,
-        "presence": 0
+        "trophies": 2.9,
+        "flips": 2.78,
+        "control": 0,
+        "moved": 2.71,
+        "placed": 0.7,
+        "presence": -1.29
       },
       "probe": {
-        "n": 280,
-        "benefit": 0.74,
-        "up": 45,
-        "opening": -0.1,
-        "openingN": 8,
-        "noTarget": 0
+        "n": 169,
+        "benefit": 0.59,
+        "up": 55,
+        "opening": -1.34,
+        "openingN": 10,
+        "noTarget": 83
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 1.31,
+          "probes": 65,
+          "dWinAction": 0.25,
+          "actions": 135
+        },
+        "backer": {
+          "probe": 0.93,
+          "probes": 64,
+          "dWinAction": 1.39,
+          "actions": 65
+        },
+        "hunter": {
+          "probe": -1.13,
+          "probes": 40,
+          "dWinAction": 0.44,
+          "actions": 31
+        }
+      }
+    },
+    "traffic": {
+      "name": "Reprogram the Traffic Lights",
+      "dealt": 86,
+      "held": 402,
+      "action": 347,
+      "influence": 54,
+      "unplayed": 1,
+      "opener": 0,
+      "playedPct": 99.8,
+      "actionPct": 86.5,
+      "playablePct": 93,
+      "dWinAction": 0.12,
+      "dWinInfluence": 2.48,
+      "winAfterAction": 17,
+      "winAfterInfluence": 22.2,
+      "islandAfterAction": 62,
+      "perAction": {
+        "trophies": 2.29,
+        "flips": 2.33,
+        "control": 0.08,
+        "moved": 2.68,
+        "placed": 0.72,
+        "presence": -0.74
+      },
+      "probe": {
+        "n": 254,
+        "benefit": 1.82,
+        "up": 29.1,
+        "opening": -0.54,
+        "openingN": 11,
+        "noTarget": 1
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.54,
+          "probes": 104,
+          "dWinAction": 0.01,
+          "actions": 155
+        },
+        "backer": {
+          "probe": 3.38,
+          "probes": 100,
+          "dWinAction": 0.65,
+          "actions": 80
+        },
+        "hunter": {
+          "probe": 1.33,
+          "probes": 50,
+          "dWinAction": -0.12,
+          "actions": 112
+        }
       }
     },
     "cameras": {
       "name": "Install the Cameras",
       "dealt": 67,
       "held": 315,
-      "action": 266,
-      "influence": 21,
-      "unplayed": 28,
+      "action": 159,
+      "influence": 100,
+      "unplayed": 56,
       "opener": 0,
-      "playedPct": 91.1,
-      "actionPct": 92.7,
-      "playablePct": 53.9,
-      "dWinAction": -0.42,
-      "dWinInfluence": 0.79,
+      "playedPct": 82.2,
+      "actionPct": 61.4,
+      "playablePct": 82.7,
+      "dWinAction": -0.17,
+      "dWinInfluence": 1.09,
       "winAfterAction": 21.4,
-      "winAfterInfluence": 19,
-      "islandAfterAction": 97,
+      "winAfterInfluence": 15,
+      "islandAfterAction": 78.6,
       "perAction": {
-        "trophies": 0.89,
+        "trophies": 1.38,
         "flips": 0,
-        "control": 0.18,
+        "control": 0.16,
         "moved": 0,
-        "placed": 1.15,
+        "placed": 1.34,
         "presence": 0
       },
       "probe": {
-        "n": 189,
-        "benefit": -0.37,
-        "up": 21.2,
-        "opening": -0.66,
-        "openingN": 11,
-        "noTarget": 94
-      }
-    },
-    "fall-back": {
-      "name": "Fall Back",
-      "dealt": 60,
-      "held": 283,
-      "action": 281,
-      "influence": 0,
-      "unplayed": 2,
-      "opener": 0,
-      "playedPct": 99.3,
-      "actionPct": 100,
-      "playablePct": 91.7,
-      "dWinAction": 0.51,
-      "dWinInfluence": null,
-      "winAfterAction": 18.1,
-      "winAfterInfluence": null,
-      "islandAfterAction": 93.6,
-      "perAction": {
-        "trophies": 0.98,
-        "flips": 0,
-        "control": 0.14,
-        "moved": 0,
-        "placed": 2.14,
-        "presence": 0
-      },
-      "probe": {
-        "n": 262,
-        "benefit": 0.63,
-        "up": 34.7,
-        "opening": 0.12,
-        "openingN": 11,
-        "noTarget": 0
-      }
-    },
-    "pit": {
-      "name": "Open the Pit",
-      "dealt": 59,
-      "held": 279,
-      "action": 226,
-      "influence": 26,
-      "unplayed": 27,
-      "opener": 0,
-      "playedPct": 90.3,
-      "actionPct": 89.7,
-      "playablePct": 49,
-      "dWinAction": 0.45,
-      "dWinInfluence": 0.82,
-      "winAfterAction": 17.7,
-      "winAfterInfluence": 19.2,
-      "islandAfterAction": 90.7,
-      "perAction": {
-        "trophies": 0.37,
-        "flips": 0.27,
-        "control": 0,
-        "moved": 0,
-        "placed": 0,
-        "presence": -0.58
-      },
-      "probe": {
-        "n": 155,
-        "benefit": 0.51,
-        "up": 65.8,
-        "opening": -0.07,
-        "openingN": 8,
-        "noTarget": 115
-      }
-    },
-    "force-field": {
-      "name": "Raise the Force Field",
-      "dealt": 131,
-      "held": 624,
-      "action": 462,
-      "influence": 58,
-      "unplayed": 104,
-      "opener": 0,
-      "playedPct": 83.3,
-      "actionPct": 88.8,
-      "playablePct": 80.7,
-      "dWinAction": 0.15,
-      "dWinInfluence": 1.43,
-      "winAfterAction": 21.2,
-      "winAfterInfluence": 30.2,
-      "islandAfterAction": 97.2,
-      "perAction": {
-        "trophies": 0.62,
-        "flips": 0.12,
-        "control": 0.11,
-        "moved": 1.35,
-        "placed": 1.35,
-        "presence": 0.36
-      },
-      "probe": {
-        "n": 253,
-        "benefit": 0.06,
-        "up": 26.1,
-        "opening": -0.14,
-        "openingN": 11,
-        "noTarget": 29
-      }
-    },
-    "plan-b": {
-      "name": "Switch to Plan B",
-      "dealt": 48,
-      "held": 234,
-      "action": 232,
-      "influence": 0,
-      "unplayed": 2,
-      "opener": 0,
-      "playedPct": 99.1,
-      "actionPct": 100,
-      "playablePct": 91.6,
-      "dWinAction": 0.2,
-      "dWinInfluence": null,
-      "winAfterAction": 17.9,
-      "winAfterInfluence": null,
-      "islandAfterAction": 96.1,
-      "perAction": {
-        "trophies": 0.95,
-        "flips": 0,
-        "control": 0.13,
-        "moved": 0,
-        "placed": 1.84,
-        "presence": 0
-      },
-      "probe": {
-        "n": 286,
-        "benefit": 0.54,
-        "up": 33.6,
-        "opening": 0.9,
-        "openingN": 12,
-        "noTarget": 0
-      }
-    },
-    "follow-lights": {
-      "name": "Follow the Lights",
-      "dealt": 141,
-      "held": 680,
-      "action": 568,
-      "influence": 49,
-      "unplayed": 63,
-      "opener": 0,
-      "playedPct": 90.7,
-      "actionPct": 92.1,
-      "playablePct": 45.7,
-      "dWinAction": 0,
-      "dWinInfluence": 0.92,
-      "winAfterAction": 18,
-      "winAfterInfluence": 21.4,
-      "islandAfterAction": 94.2,
-      "perAction": {
-        "trophies": 1.91,
-        "flips": 1.91,
-        "control": 0.17,
-        "moved": 2.69,
-        "placed": 0.85,
-        "presence": -0.98
-      },
-      "probe": {
-        "n": 174,
-        "benefit": 0.8,
-        "up": 48.3,
-        "opening": 0.66,
+        "n": 234,
+        "benefit": -0.43,
+        "up": 25.6,
+        "opening": -1.94,
         "openingN": 6,
-        "noTarget": 114
+        "noTarget": 26
+      },
+      "byProfile": {
+        "goal": {
+          "probe": -0.13,
+          "probes": 90,
+          "dWinAction": 0.07,
+          "actions": 80
+        },
+        "backer": {
+          "probe": -0.46,
+          "probes": 96,
+          "dWinAction": 0.16,
+          "actions": 33
+        },
+        "hunter": {
+          "probe": -0.94,
+          "probes": 48,
+          "dWinAction": -0.81,
+          "actions": 46
+        }
+      }
+    },
+    "virus-infect": {
+      "name": "Spread a Virus (infectious)",
+      "dealt": 184,
+      "held": 875,
+      "action": 489,
+      "influence": 279,
+      "unplayed": 107,
+      "opener": 0,
+      "playedPct": 87.8,
+      "actionPct": 63.7,
+      "playablePct": 68.4,
+      "dWinAction": 0.65,
+      "dWinInfluence": 1.51,
+      "winAfterAction": 22.1,
+      "winAfterInfluence": 22.9,
+      "islandAfterAction": 61.6,
+      "perAction": {
+        "trophies": 1.34,
+        "flips": 1.67,
+        "control": 0.05,
+        "moved": 1.31,
+        "placed": 1.31,
+        "presence": -0.59
+      },
+      "probe": {
+        "n": 203,
+        "benefit": 1.03,
+        "up": 42.9,
+        "opening": 0.27,
+        "openingN": 10,
+        "noTarget": 71
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 2.21,
+          "probes": 95,
+          "dWinAction": 1.83,
+          "actions": 161
+        },
+        "hunter": {
+          "probe": -0.26,
+          "probes": 47,
+          "dWinAction": 0.17,
+          "actions": 108
+        },
+        "goal": {
+          "probe": 0.19,
+          "probes": 61,
+          "dWinAction": 0.03,
+          "actions": 220
+        }
+      }
+    },
+    "steal-playbook": {
+      "name": "Steal Their Playbook",
+      "dealt": 51,
+      "held": 243,
+      "action": 220,
+      "influence": 0,
+      "unplayed": 23,
+      "opener": 0,
+      "playedPct": 90.5,
+      "actionPct": 100,
+      "playablePct": 64.5,
+      "dWinAction": 0.29,
+      "dWinInfluence": null,
+      "winAfterAction": 20.5,
+      "winAfterInfluence": null,
+      "islandAfterAction": 73.2,
+      "perAction": {
+        "trophies": 2.37,
+        "flips": 2.38,
+        "control": 0.16,
+        "moved": 2.66,
+        "placed": 1.05,
+        "presence": -1.26
+      },
+      "probe": {
+        "n": 193,
+        "benefit": 0.57,
+        "up": 45.6,
+        "opening": 0.19,
+        "openingN": 6,
+        "noTarget": 101
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 0.73,
+          "probes": 75,
+          "dWinAction": 0.41,
+          "actions": 66
+        },
+        "goal": {
+          "probe": 0.62,
+          "probes": 84,
+          "dWinAction": 0.07,
+          "actions": 112
+        },
+        "hunter": {
+          "probe": 0.1,
+          "probes": 34,
+          "dWinAction": 0.72,
+          "actions": 42
+        }
+      }
+    },
+    "set-bait": {
+      "name": "Set the Bait",
+      "dealt": 47,
+      "held": 224,
+      "action": 208,
+      "influence": 0,
+      "unplayed": 16,
+      "opener": 0,
+      "playedPct": 92.9,
+      "actionPct": 100,
+      "playablePct": 83.1,
+      "dWinAction": 1.9,
+      "dWinInfluence": null,
+      "winAfterAction": 25.5,
+      "winAfterInfluence": null,
+      "islandAfterAction": 62,
+      "perAction": {
+        "trophies": 4.98,
+        "flips": 5.26,
+        "control": 0.44,
+        "moved": 4.45,
+        "placed": 2.43,
+        "presence": -1.65
+      },
+      "probe": {
+        "n": 231,
+        "benefit": 2.11,
+        "up": 68,
+        "opening": 4.38,
+        "openingN": 10,
+        "noTarget": 20
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 2.43,
+          "probes": 81,
+          "dWinAction": 1.24,
+          "actions": 104
+        },
+        "backer": {
+          "probe": 1.65,
+          "probes": 99,
+          "dWinAction": 2.89,
+          "actions": 75
+        },
+        "hunter": {
+          "probe": 2.5,
+          "probes": 51,
+          "dWinAction": 1.71,
+          "actions": 29
+        }
+      }
+    },
+    "ski-slope": {
+      "name": "Chase Them Down the Slope",
+      "dealt": 219,
+      "held": 1052,
+      "action": 710,
+      "influence": 249,
+      "unplayed": 93,
+      "opener": 0,
+      "playedPct": 91.2,
+      "actionPct": 74,
+      "playablePct": 62.5,
+      "dWinAction": 1.1,
+      "dWinInfluence": 1.71,
+      "winAfterAction": 21.6,
+      "winAfterInfluence": 23.3,
+      "islandAfterAction": 62.4,
+      "perAction": {
+        "trophies": 2.77,
+        "flips": 3.08,
+        "control": 0.07,
+        "moved": 3.07,
+        "placed": 0.74,
+        "presence": -0.78
+      },
+      "probe": {
+        "n": 173,
+        "benefit": 2.2,
+        "up": 56.6,
+        "opening": 5.27,
+        "openingN": 6,
+        "noTarget": 99
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 1.63,
+          "probes": 58,
+          "dWinAction": 0.48,
+          "actions": 308
+        },
+        "backer": {
+          "probe": 2.83,
+          "probes": 75,
+          "dWinAction": 2.08,
+          "actions": 251
+        },
+        "hunter": {
+          "probe": 1.84,
+          "probes": 40,
+          "dWinAction": 0.73,
+          "actions": 151
+        }
       }
     },
     "howl": {
       "name": "Howl at the Moon",
       "dealt": 206,
       "held": 982,
-      "action": 783,
-      "influence": 84,
-      "unplayed": 115,
+      "action": 622,
+      "influence": 250,
+      "unplayed": 110,
       "opener": 0,
-      "playedPct": 88.3,
-      "actionPct": 90.3,
-      "playablePct": 53.2,
-      "dWinAction": -0.02,
-      "dWinInfluence": 0.72,
-      "winAfterAction": 19.3,
-      "winAfterInfluence": 22.9,
-      "islandAfterAction": 94.3,
+      "playedPct": 88.8,
+      "actionPct": 71.3,
+      "playablePct": 82,
+      "dWinAction": 1.73,
+      "dWinInfluence": 1.74,
+      "winAfterAction": 20.9,
+      "winAfterInfluence": 25.8,
+      "islandAfterAction": 58.7,
       "perAction": {
-        "trophies": 1.48,
-        "flips": 1.48,
-        "control": 0.05,
-        "moved": 2.16,
-        "placed": 0.65,
-        "presence": -0.31
+        "trophies": 3.66,
+        "flips": 3.98,
+        "control": 0.11,
+        "moved": 4.27,
+        "placed": 0.95,
+        "presence": 0.29
       },
       "probe": {
-        "n": 169,
-        "benefit": 0.17,
-        "up": 49.7,
-        "opening": -0.09,
+        "n": 238,
+        "benefit": 1.86,
+        "up": 56.7,
+        "opening": 4.61,
+        "openingN": 8,
+        "noTarget": 34
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.63,
+          "probes": 78,
+          "dWinAction": 1.03,
+          "actions": 249
+        },
+        "backer": {
+          "probe": 2.84,
+          "probes": 111,
+          "dWinAction": 3.95,
+          "actions": 226
+        },
+        "hunter": {
+          "probe": 1.63,
+          "probes": 49,
+          "dWinAction": -0.49,
+          "actions": 147
+        }
+      }
+    },
+    "circle-prey": {
+      "name": "Circle the Prey",
+      "dealt": 138,
+      "held": 663,
+      "action": 434,
+      "influence": 151,
+      "unplayed": 78,
+      "opener": 0,
+      "playedPct": 88.2,
+      "actionPct": 74.2,
+      "playablePct": 78.6,
+      "dWinAction": 0.77,
+      "dWinInfluence": 1.64,
+      "winAfterAction": 24.5,
+      "winAfterInfluence": 19.9,
+      "islandAfterAction": 70.5,
+      "perAction": {
+        "trophies": 3.32,
+        "flips": 3.64,
+        "control": 0.21,
+        "moved": 4.13,
+        "placed": 1.15,
+        "presence": -0.43
+      },
+      "probe": {
+        "n": 215,
+        "benefit": 1.89,
+        "up": 43.7,
+        "opening": 1.77,
+        "openingN": 11,
+        "noTarget": 32
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.93,
+          "probes": 82,
+          "dWinAction": 0.58,
+          "actions": 199
+        },
+        "hunter": {
+          "probe": 3.8,
+          "probes": 29,
+          "dWinAction": -0.59,
+          "actions": 97
+        },
+        "backer": {
+          "probe": 2.12,
+          "probes": 104,
+          "dWinAction": 2,
+          "actions": 138
+        }
+      }
+    },
+    "follow-lights": {
+      "name": "Follow the Lights",
+      "dealt": 141,
+      "held": 680,
+      "action": 490,
+      "influence": 141,
+      "unplayed": 49,
+      "opener": 0,
+      "playedPct": 92.8,
+      "actionPct": 77.7,
+      "playablePct": 73.8,
+      "dWinAction": 1.18,
+      "dWinInfluence": 1.95,
+      "winAfterAction": 21.8,
+      "winAfterInfluence": 17.7,
+      "islandAfterAction": 65.3,
+      "perAction": {
+        "trophies": 4.17,
+        "flips": 4.49,
+        "control": 0.29,
+        "moved": 5.18,
+        "placed": 1.23,
+        "presence": -1.01
+      },
+      "probe": {
+        "n": 212,
+        "benefit": 1.76,
+        "up": 56.1,
+        "opening": -2.15,
+        "openingN": 6,
+        "noTarget": 60
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 2.17,
+          "probes": 97,
+          "dWinAction": 2.63,
+          "actions": 175
+        },
+        "goal": {
+          "probe": 0.77,
+          "probes": 64,
+          "dWinAction": 0.43,
+          "actions": 206
+        },
+        "hunter": {
+          "probe": 2.24,
+          "probes": 51,
+          "dWinAction": 0.29,
+          "actions": 109
+        }
+      }
+    },
+    "tractor-beam": {
+      "name": "Turn On the Tractor Beam",
+      "dealt": 123,
+      "held": 580,
+      "action": 306,
+      "influence": 194,
+      "unplayed": 80,
+      "opener": 0,
+      "playedPct": 86.2,
+      "actionPct": 61.2,
+      "playablePct": 46.5,
+      "dWinAction": 0.19,
+      "dWinInfluence": 1.67,
+      "winAfterAction": 14.9,
+      "winAfterInfluence": 21.1,
+      "islandAfterAction": 54.2,
+      "perAction": {
+        "trophies": 3.09,
+        "flips": 3.45,
+        "control": 0.21,
+        "moved": 3.87,
+        "placed": 0.88,
+        "presence": 1.05
+      },
+      "probe": {
+        "n": 126,
+        "benefit": 0.69,
+        "up": 38.1,
+        "opening": -2.39,
+        "openingN": 1,
+        "noTarget": 165
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 1.25,
+          "probes": 42,
+          "dWinAction": -0.02,
+          "actions": 128
+        },
+        "backer": {
+          "probe": 1.01,
+          "probes": 58,
+          "dWinAction": 0.83,
+          "actions": 88
+        },
+        "hunter": {
+          "probe": -0.95,
+          "probes": 26,
+          "dWinAction": -0.14,
+          "actions": 90
+        }
+      }
+    },
+    "hijack-feed": {
+      "name": "Hijack the Feed",
+      "dealt": 80,
+      "held": 384,
+      "action": 215,
+      "influence": 122,
+      "unplayed": 47,
+      "opener": 0,
+      "playedPct": 87.8,
+      "actionPct": 63.8,
+      "playablePct": 74.7,
+      "dWinAction": 0.18,
+      "dWinInfluence": 1.55,
+      "winAfterAction": 16.4,
+      "winAfterInfluence": 14.6,
+      "islandAfterAction": 61.9,
+      "perAction": {
+        "trophies": 1.27,
+        "flips": 0,
+        "control": 0.08,
+        "moved": 1.18,
+        "placed": 1.18,
+        "presence": 0
+      },
+      "probe": {
+        "n": 209,
+        "benefit": 0.33,
+        "up": 34.4,
+        "opening": 2.52,
         "openingN": 12,
-        "noTarget": 99
+        "noTarget": 69
+      },
+      "byProfile": {
+        "backer": {
+          "probe": -0.11,
+          "probes": 53,
+          "dWinAction": 0.23,
+          "actions": 68
+        },
+        "hunter": {
+          "probe": 0.1,
+          "probes": 41,
+          "dWinAction": 0.17,
+          "actions": 55
+        },
+        "goal": {
+          "probe": 0.62,
+          "probes": 115,
+          "dWinAction": 0.16,
+          "actions": 92
+        }
+      }
+    },
+    "bell": {
+      "name": "Ring the Church Bell",
+      "dealt": 188,
+      "held": 889,
+      "action": 683,
+      "influence": 198,
+      "unplayed": 8,
+      "opener": 0,
+      "playedPct": 99.1,
+      "actionPct": 77.5,
+      "playablePct": 93.8,
+      "dWinAction": 0.66,
+      "dWinInfluence": 2.27,
+      "winAfterAction": 19.5,
+      "winAfterInfluence": 24.2,
+      "islandAfterAction": 61.3,
+      "perAction": {
+        "trophies": 2.66,
+        "flips": 2.8,
+        "control": 0.12,
+        "moved": 3.01,
+        "placed": 0.61,
+        "presence": -0.8
+      },
+      "probe": {
+        "n": 255,
+        "benefit": 1.41,
+        "up": 26.7,
+        "opening": 1.76,
+        "openingN": 12,
+        "noTarget": 0
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.65,
+          "probes": 107,
+          "dWinAction": 0.57,
+          "actions": 272
+        },
+        "hunter": {
+          "probe": 0.57,
+          "probes": 52,
+          "dWinAction": 0.19,
+          "actions": 141
+        },
+        "backer": {
+          "probe": 2.7,
+          "probes": 96,
+          "dWinAction": 0.98,
+          "actions": 270
+        }
+      }
+    },
+    "take-wake": {
+      "name": "Take Over the Wake",
+      "dealt": 145,
+      "held": 688,
+      "action": 364,
+      "influence": 216,
+      "unplayed": 108,
+      "opener": 0,
+      "playedPct": 84.3,
+      "actionPct": 62.8,
+      "playablePct": 72.2,
+      "dWinAction": 0.23,
+      "dWinInfluence": 1.29,
+      "winAfterAction": 20.1,
+      "winAfterInfluence": 22.9,
+      "islandAfterAction": 64.3,
+      "perAction": {
+        "trophies": 1.95,
+        "flips": 0,
+        "control": 0.31,
+        "moved": 0,
+        "placed": 1.68,
+        "presence": 0
+      },
+      "probe": {
+        "n": 179,
+        "benefit": 0.01,
+        "up": 35.2,
+        "opening": -9.69,
+        "openingN": 4,
+        "noTarget": 96
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 0.84,
+          "probes": 76,
+          "dWinAction": 0.6,
+          "actions": 101
+        },
+        "hunter": {
+          "probe": -0.46,
+          "probes": 52,
+          "dWinAction": -0.1,
+          "actions": 99
+        },
+        "goal": {
+          "probe": -0.76,
+          "probes": 51,
+          "dWinAction": 0.2,
+          "actions": 164
+        }
+      }
+    },
+    "pit": {
+      "name": "Open the Pit",
+      "dealt": 59,
+      "held": 279,
+      "action": 166,
+      "influence": 93,
+      "unplayed": 20,
+      "opener": 0,
+      "playedPct": 92.8,
+      "actionPct": 64.1,
+      "playablePct": 63,
+      "dWinAction": 1.05,
+      "dWinInfluence": 2.17,
+      "winAfterAction": 19.9,
+      "winAfterInfluence": 19.4,
+      "islandAfterAction": 57.8,
+      "perAction": {
+        "trophies": 0.83,
+        "flips": 0.65,
+        "control": 0,
+        "moved": 0,
+        "placed": 0,
+        "presence": -0.15
+      },
+      "probe": {
+        "n": 178,
+        "benefit": -0.05,
+        "up": 55.6,
+        "opening": -0.8,
+        "openingN": 4,
+        "noTarget": 72
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.19,
+          "probes": 70,
+          "dWinAction": 0.24,
+          "actions": 72
+        },
+        "backer": {
+          "probe": -0.62,
+          "probes": 73,
+          "dWinAction": 2.25,
+          "actions": 64
+        },
+        "hunter": {
+          "probe": 0.64,
+          "probes": 35,
+          "dWinAction": 0.44,
+          "actions": 30
+        }
+      }
+    },
+    "change-plan": {
+      "name": "Change the Plan",
+      "dealt": 53,
+      "held": 253,
+      "action": 252,
+      "influence": 0,
+      "unplayed": 1,
+      "opener": 0,
+      "playedPct": 99.6,
+      "actionPct": 100,
+      "playablePct": 91.6,
+      "dWinAction": 0.51,
+      "dWinInfluence": null,
+      "winAfterAction": 22.6,
+      "winAfterInfluence": null,
+      "islandAfterAction": 53.6,
+      "perAction": {
+        "trophies": 1.56,
+        "flips": 0,
+        "control": 0.21,
+        "moved": 0,
+        "placed": 1.93,
+        "presence": -0.01
+      },
+      "probe": {
+        "n": 234,
+        "benefit": 0.32,
+        "up": 42.3,
+        "opening": -0.23,
+        "openingN": 9,
+        "noTarget": 4
+      },
+      "byProfile": {
+        "hunter": {
+          "probe": 0.58,
+          "probes": 48,
+          "dWinAction": 0.58,
+          "actions": 40
+        },
+        "goal": {
+          "probe": 0.45,
+          "probes": 95,
+          "dWinAction": 0.5,
+          "actions": 111
+        },
+        "backer": {
+          "probe": 0.05,
+          "probes": 91,
+          "dWinAction": 0.48,
+          "actions": 101
+        }
+      }
+    },
+    "lamps-either": {
+      "name": "Light Every Lamp (either side)",
+      "dealt": 208,
+      "held": 994,
+      "action": 637,
+      "influence": 284,
+      "unplayed": 73,
+      "opener": 0,
+      "playedPct": 92.7,
+      "actionPct": 69.2,
+      "playablePct": 40.2,
+      "dWinAction": 0.76,
+      "dWinInfluence": 1.16,
+      "winAfterAction": 20.3,
+      "winAfterInfluence": 19.7,
+      "islandAfterAction": 63,
+      "perAction": {
+        "trophies": 2.39,
+        "flips": 2.7,
+        "control": 0.05,
+        "moved": 2.05,
+        "placed": 0.49,
+        "presence": 1.24
+      },
+      "probe": {
+        "n": 139,
+        "benefit": 1.04,
+        "up": 43.2,
+        "opening": null,
+        "openingN": 0,
+        "noTarget": 140
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 0.59,
+          "probes": 63,
+          "dWinAction": 1.73,
+          "actions": 245
+        },
+        "goal": {
+          "probe": 2.28,
+          "probes": 47,
+          "dWinAction": 0.29,
+          "actions": 246
+        },
+        "hunter": {
+          "probe": 0,
+          "probes": 29,
+          "dWinAction": -0.07,
+          "actions": 146
+        }
+      }
+    },
+    "plan-b": {
+      "name": "Switch to Plan B",
+      "dealt": 48,
+      "held": 234,
+      "action": 231,
+      "influence": 0,
+      "unplayed": 3,
+      "opener": 0,
+      "playedPct": 98.7,
+      "actionPct": 100,
+      "playablePct": 92.9,
+      "dWinAction": 0.27,
+      "dWinInfluence": null,
+      "winAfterAction": 21.2,
+      "winAfterInfluence": null,
+      "islandAfterAction": 58.4,
+      "perAction": {
+        "trophies": 1.79,
+        "flips": 0,
+        "control": 0.24,
+        "moved": 0,
+        "placed": 1.91,
+        "presence": 0
+      },
+      "probe": {
+        "n": 255,
+        "benefit": 0.67,
+        "up": 48.2,
+        "opening": 0.13,
+        "openingN": 7,
+        "noTarget": 1
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 0.79,
+          "probes": 105,
+          "dWinAction": 0.33,
+          "actions": 98
+        },
+        "goal": {
+          "probe": 0.56,
+          "probes": 102,
+          "dWinAction": 0.34,
+          "actions": 94
+        },
+        "hunter": {
+          "probe": 0.62,
+          "probes": 48,
+          "dWinAction": -0.08,
+          "actions": 39
+        }
+      }
+    },
+    "mirror": {
+      "name": "Smash the Mirror",
+      "dealt": 54,
+      "held": 256,
+      "action": 144,
+      "influence": 75,
+      "unplayed": 37,
+      "opener": 0,
+      "playedPct": 85.5,
+      "actionPct": 65.8,
+      "playablePct": 65.9,
+      "dWinAction": 1.08,
+      "dWinInfluence": 1.02,
+      "winAfterAction": 20.1,
+      "winAfterInfluence": 24,
+      "islandAfterAction": 45.8,
+      "perAction": {
+        "trophies": 2.44,
+        "flips": 2.54,
+        "control": 0.06,
+        "moved": 2.88,
+        "placed": 0.67,
+        "presence": -0.19
+      },
+      "probe": {
+        "n": 180,
+        "benefit": 1.16,
+        "up": 49.4,
+        "opening": -3.67,
+        "openingN": 6,
+        "noTarget": 95
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 2.78,
+          "probes": 86,
+          "dWinAction": 2.54,
+          "actions": 54
+        },
+        "goal": {
+          "probe": -0.71,
+          "probes": 55,
+          "dWinAction": 0.2,
+          "actions": 75
+        },
+        "hunter": {
+          "probe": 0.22,
+          "probes": 39,
+          "dWinAction": 0.19,
+          "actions": 15
+        }
+      }
+    },
+    "reroute": {
+      "name": "Reroute the Power Grid",
+      "dealt": 189,
+      "held": 902,
+      "action": 666,
+      "influence": 233,
+      "unplayed": 3,
+      "opener": 0,
+      "playedPct": 99.7,
+      "actionPct": 74.1,
+      "playablePct": 93.8,
+      "dWinAction": 0.71,
+      "dWinInfluence": 2.01,
+      "winAfterAction": 19.9,
+      "winAfterInfluence": 20.2,
+      "islandAfterAction": 63.5,
+      "perAction": {
+        "trophies": 1.18,
+        "flips": 1.27,
+        "control": 0.02,
+        "moved": 1.23,
+        "placed": 0.31,
+        "presence": 0.29
+      },
+      "probe": {
+        "n": 304,
+        "benefit": 0.72,
+        "up": 15.8,
+        "opening": 0.58,
+        "openingN": 15,
+        "noTarget": 0
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 1.44,
+          "probes": 126,
+          "dWinAction": 1.6,
+          "actions": 252
+        },
+        "goal": {
+          "probe": 0.38,
+          "probes": 123,
+          "dWinAction": 0.05,
+          "actions": 261
+        },
+        "hunter": {
+          "probe": -0.18,
+          "probes": 55,
+          "dWinAction": 0.36,
+          "actions": 153
+        }
+      }
+    },
+    "fall-back": {
+      "name": "Fall Back",
+      "dealt": 60,
+      "held": 283,
+      "action": 280,
+      "influence": 0,
+      "unplayed": 3,
+      "opener": 0,
+      "playedPct": 98.9,
+      "actionPct": 100,
+      "playablePct": 91.7,
+      "dWinAction": 0.61,
+      "dWinInfluence": null,
+      "winAfterAction": 17.1,
+      "winAfterInfluence": null,
+      "islandAfterAction": 71.8,
+      "perAction": {
+        "trophies": 2.14,
+        "flips": 0,
+        "control": 0.34,
+        "moved": 0,
+        "placed": 2.42,
+        "presence": -0.01
+      },
+      "probe": {
+        "n": 248,
+        "benefit": 0.59,
+        "up": 48.4,
+        "opening": -0.66,
+        "openingN": 12,
+        "noTarget": 1
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 0.26,
+          "probes": 114,
+          "dWinAction": 0.65,
+          "actions": 115
+        },
+        "hunter": {
+          "probe": 1.38,
+          "probes": 48,
+          "dWinAction": 0.69,
+          "actions": 45
+        },
+        "goal": {
+          "probe": 0.59,
+          "probes": 86,
+          "dWinAction": 0.54,
+          "actions": 120
+        }
+      }
+    },
+    "call-truce": {
+      "name": "Call a Truce",
+      "dealt": 56,
+      "held": 263,
+      "action": 262,
+      "influence": 0,
+      "unplayed": 1,
+      "opener": 0,
+      "playedPct": 99.6,
+      "actionPct": 100,
+      "playablePct": 92.3,
+      "dWinAction": 0.44,
+      "dWinInfluence": null,
+      "winAfterAction": 16,
+      "winAfterInfluence": null,
+      "islandAfterAction": 55.3,
+      "perAction": {
+        "trophies": 1.82,
+        "flips": 1.29,
+        "control": 0,
+        "moved": 0,
+        "placed": 0,
+        "presence": 1.55
+      },
+      "probe": {
+        "n": 277,
+        "benefit": 0.43,
+        "up": 29.2,
+        "opening": 2.43,
+        "openingN": 9,
+        "noTarget": 0
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 0.84,
+          "probes": 108,
+          "dWinAction": 1.18,
+          "actions": 103
+        },
+        "hunter": {
+          "probe": 0.12,
+          "probes": 57,
+          "dWinAction": -0.12,
+          "actions": 41
+        },
+        "goal": {
+          "probe": 0.19,
+          "probes": 112,
+          "dWinAction": -0.01,
+          "actions": 118
+        }
+      }
+    },
+    "force-field": {
+      "name": "Raise the Force Field",
+      "dealt": 131,
+      "held": 624,
+      "action": 358,
+      "influence": 207,
+      "unplayed": 59,
+      "opener": 0,
+      "playedPct": 90.5,
+      "actionPct": 63.4,
+      "playablePct": 73.2,
+      "dWinAction": 0.16,
+      "dWinInfluence": 1.18,
+      "winAfterAction": 23.7,
+      "winAfterInfluence": 20,
+      "islandAfterAction": 62.8,
+      "perAction": {
+        "trophies": 0.81,
+        "flips": 0.07,
+        "control": 0.08,
+        "moved": 1.08,
+        "placed": 1.08,
+        "presence": 0.39
+      },
+      "probe": {
+        "n": 209,
+        "benefit": 0.38,
+        "up": 38.8,
+        "opening": 0,
+        "openingN": 6,
+        "noTarget": 54
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.14,
+          "probes": 107,
+          "dWinAction": 0.23,
+          "actions": 145
+        },
+        "backer": {
+          "probe": -0.31,
+          "probes": 50,
+          "dWinAction": 0.04,
+          "actions": 112
+        },
+        "hunter": {
+          "probe": 1.54,
+          "probes": 52,
+          "dWinAction": 0.21,
+          "actions": 101
+        }
+      }
+    },
+    "bail-out": {
+      "name": "Bail Out",
+      "dealt": 68,
+      "held": 324,
+      "action": 320,
+      "influence": 0,
+      "unplayed": 4,
+      "opener": 0,
+      "playedPct": 98.8,
+      "actionPct": 100,
+      "playablePct": 93.2,
+      "dWinAction": 0.27,
+      "dWinInfluence": null,
+      "winAfterAction": 17.2,
+      "winAfterInfluence": null,
+      "islandAfterAction": 65,
+      "perAction": {
+        "trophies": 1.14,
+        "flips": 0,
+        "control": 0.12,
+        "moved": 0,
+        "placed": 1.37,
+        "presence": 0
+      },
+      "probe": {
+        "n": 265,
+        "benefit": 0.84,
+        "up": 40.4,
+        "opening": -0.23,
+        "openingN": 9,
+        "noTarget": 0
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 1.07,
+          "probes": 112,
+          "dWinAction": 0.31,
+          "actions": 132
+        },
+        "backer": {
+          "probe": 0.68,
+          "probes": 101,
+          "dWinAction": 0.19,
+          "actions": 146
+        },
+        "hunter": {
+          "probe": 0.64,
+          "probes": 52,
+          "dWinAction": 0.41,
+          "actions": 42
+        }
+      }
+    },
+    "drones": {
+      "name": "Reprogram the Drones",
+      "dealt": 83,
+      "held": 390,
+      "action": 230,
+      "influence": 113,
+      "unplayed": 47,
+      "opener": 0,
+      "playedPct": 87.9,
+      "actionPct": 67.1,
+      "playablePct": 56.4,
+      "dWinAction": 2.93,
+      "dWinInfluence": 1.5,
+      "winAfterAction": 20.9,
+      "winAfterInfluence": 23.9,
+      "islandAfterAction": 50,
+      "perAction": {
+        "trophies": 1.61,
+        "flips": 2.39,
+        "control": 0,
+        "moved": 1.8,
+        "placed": 0,
+        "presence": 0.97
+      },
+      "probe": {
+        "n": 152,
+        "benefit": 1.01,
+        "up": 61.8,
+        "opening": -44.88,
+        "openingN": 1,
+        "noTarget": 118
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 1.14,
+          "probes": 53,
+          "dWinAction": 1.97,
+          "actions": 83
+        },
+        "hunter": {
+          "probe": 0.17,
+          "probes": 33,
+          "dWinAction": 1.51,
+          "actions": 57
+        },
+        "backer": {
+          "probe": 1.33,
+          "probes": 66,
+          "dWinAction": 4.7,
+          "actions": 90
+        }
+      }
+    },
+    "leak-press": {
+      "name": "Leak It to the Press",
+      "dealt": 212,
+      "held": 1008,
+      "action": 745,
+      "influence": 224,
+      "unplayed": 39,
+      "opener": 0,
+      "playedPct": 96.1,
+      "actionPct": 76.9,
+      "playablePct": 59.1,
+      "dWinAction": 0.69,
+      "dWinInfluence": 1.08,
+      "winAfterAction": 18.6,
+      "winAfterInfluence": 17.2,
+      "islandAfterAction": 61.3,
+      "perAction": {
+        "trophies": 1.64,
+        "flips": 2.01,
+        "control": 0.09,
+        "moved": 1.46,
+        "placed": 0.58,
+        "presence": -0.96
+      },
+      "probe": {
+        "n": 207,
+        "benefit": 1.38,
+        "up": 43,
+        "opening": 1.37,
+        "openingN": 4,
+        "noTarget": 45
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.52,
+          "probes": 84,
+          "dWinAction": 0.19,
+          "actions": 320
+        },
+        "hunter": {
+          "probe": 1.24,
+          "probes": 34,
+          "dWinAction": 0.75,
+          "actions": 152
+        },
+        "backer": {
+          "probe": 2.25,
+          "probes": 89,
+          "dWinAction": 1.25,
+          "actions": 273
+        }
+      }
+    },
+    "horde": {
+      "name": "Lead the Horde",
+      "dealt": 124,
+      "held": 583,
+      "action": 383,
+      "influence": 153,
+      "unplayed": 47,
+      "opener": 0,
+      "playedPct": 91.9,
+      "actionPct": 71.5,
+      "playablePct": 66.4,
+      "dWinAction": 1.15,
+      "dWinInfluence": 1.23,
+      "winAfterAction": 21.3,
+      "winAfterInfluence": 21.6,
+      "islandAfterAction": 56.9,
+      "perAction": {
+        "trophies": 3.3,
+        "flips": 3.55,
+        "control": 0.1,
+        "moved": 3.67,
+        "placed": 0.86,
+        "presence": -0.71
+      },
+      "probe": {
+        "n": 201,
+        "benefit": 1.98,
+        "up": 60.2,
+        "opening": 3.55,
+        "openingN": 4,
+        "noTarget": 62
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 2.43,
+          "probes": 102,
+          "dWinAction": 2.73,
+          "actions": 142
+        },
+        "goal": {
+          "probe": 1.71,
+          "probes": 61,
+          "dWinAction": 0.31,
+          "actions": 160
+        },
+        "hunter": {
+          "probe": 1.2,
+          "probes": 38,
+          "dWinAction": 0.04,
+          "actions": 81
+        }
+      }
+    },
+    "lay-to-rest": {
+      "name": "Lay Them to Rest",
+      "dealt": 136,
+      "held": 655,
+      "action": 352,
+      "influence": 224,
+      "unplayed": 79,
+      "opener": 0,
+      "playedPct": 87.9,
+      "actionPct": 61.1,
+      "playablePct": 72.3,
+      "dWinAction": 0.14,
+      "dWinInfluence": 1.21,
+      "winAfterAction": 19.2,
+      "winAfterInfluence": 16.7,
+      "islandAfterAction": 58.8,
+      "perAction": {
+        "trophies": 1.21,
+        "flips": 0,
+        "control": 0.08,
+        "moved": 1.15,
+        "placed": 1.15,
+        "presence": 0
+      },
+      "probe": {
+        "n": 208,
+        "benefit": -0.24,
+        "up": 36.5,
+        "opening": -5.95,
+        "openingN": 5,
+        "noTarget": 69
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.07,
+          "probes": 108,
+          "dWinAction": 0.06,
+          "actions": 158
+        },
+        "backer": {
+          "probe": -1.04,
+          "probes": 48,
+          "dWinAction": 0.03,
+          "actions": 123
+        },
+        "hunter": {
+          "probe": -0.15,
+          "probes": 52,
+          "dWinAction": 0.5,
+          "actions": 71
+        }
+      }
+    },
+    "summoning": {
+      "name": "Draw a Summoning Circle",
+      "dealt": 202,
+      "held": 964,
+      "action": 783,
+      "influence": 175,
+      "unplayed": 6,
+      "opener": 0,
+      "playedPct": 99.4,
+      "actionPct": 81.7,
+      "playablePct": 94.1,
+      "dWinAction": 1.18,
+      "dWinInfluence": 1.26,
+      "winAfterAction": 22.3,
+      "winAfterInfluence": 13,
+      "islandAfterAction": 60.5,
+      "perAction": {
+        "trophies": 2.31,
+        "flips": 2.72,
+        "control": 0.05,
+        "moved": 2.5,
+        "placed": 0.49,
+        "presence": -0.06
+      },
+      "probe": {
+        "n": 280,
+        "benefit": 1.03,
+        "up": 33.2,
+        "opening": 1.08,
+        "openingN": 6,
+        "noTarget": 0
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.31,
+          "probes": 117,
+          "dWinAction": 0.09,
+          "actions": 309
+        },
+        "hunter": {
+          "probe": 0.5,
+          "probes": 57,
+          "dWinAction": 0.05,
+          "actions": 171
+        },
+        "backer": {
+          "probe": 2.09,
+          "probes": 106,
+          "dWinAction": 2.93,
+          "actions": 303
+        }
+      }
+    },
+    "trade-souls": {
+      "name": "Trade Souls",
+      "dealt": 63,
+      "held": 302,
+      "action": 231,
+      "influence": 54,
+      "unplayed": 17,
+      "opener": 0,
+      "playedPct": 94.4,
+      "actionPct": 81.1,
+      "playablePct": 77.1,
+      "dWinAction": 2.16,
+      "dWinInfluence": 1.7,
+      "winAfterAction": 21.1,
+      "winAfterInfluence": 26.5,
+      "islandAfterAction": 64.9,
+      "perAction": {
+        "trophies": 4.39,
+        "flips": 5.2,
+        "control": 0.16,
+        "moved": 5.5,
+        "placed": 1.11,
+        "presence": -2.36
+      },
+      "probe": {
+        "n": 229,
+        "benefit": 3.23,
+        "up": 65.9,
+        "opening": -2.04,
+        "openingN": 10,
+        "noTarget": 35
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 2.03,
+          "probes": 104,
+          "dWinAction": 1.91,
+          "actions": 122
+        },
+        "hunter": {
+          "probe": 1.59,
+          "probes": 43,
+          "dWinAction": 1.37,
+          "actions": 38
+        },
+        "backer": {
+          "probe": 5.61,
+          "probes": 82,
+          "dWinAction": 3.02,
+          "actions": 71
+        }
+      }
+    },
+    "invert": {
+      "name": "Invert the Pentagram",
+      "dealt": 82,
+      "held": 386,
+      "action": 240,
+      "influence": 100,
+      "unplayed": 46,
+      "opener": 0,
+      "playedPct": 88.1,
+      "actionPct": 70.6,
+      "playablePct": 69.3,
+      "dWinAction": 0.12,
+      "dWinInfluence": 0.84,
+      "winAfterAction": 21.9,
+      "winAfterInfluence": 14.5,
+      "islandAfterAction": 71.7,
+      "perAction": {
+        "trophies": 1.37,
+        "flips": 1.84,
+        "control": 0.05,
+        "moved": 1.15,
+        "placed": 1.15,
+        "presence": -1.03
+      },
+      "probe": {
+        "n": 191,
+        "benefit": 0.41,
+        "up": 46.6,
+        "opening": -0.17,
+        "openingN": 14,
+        "noTarget": 75
+      },
+      "byProfile": {
+        "backer": {
+          "probe": -1.07,
+          "probes": 44,
+          "dWinAction": 0.01,
+          "actions": 68
+        },
+        "goal": {
+          "probe": 1.46,
+          "probes": 95,
+          "dWinAction": 0.18,
+          "actions": 117
+        },
+        "hunter": {
+          "probe": -0.27,
+          "probes": 52,
+          "dWinAction": 0.13,
+          "actions": 55
+        }
+      }
+    },
+    "full-moon": {
+      "name": "Wait for the Full Moon",
+      "dealt": 131,
+      "held": 628,
+      "action": 389,
+      "influence": 186,
+      "unplayed": 53,
+      "opener": 0,
+      "playedPct": 91.6,
+      "actionPct": 67.7,
+      "playablePct": 86.7,
+      "dWinAction": 2.66,
+      "dWinInfluence": 2.2,
+      "winAfterAction": 20.2,
+      "winAfterInfluence": 24.5,
+      "islandAfterAction": 43.2,
+      "perAction": {
+        "trophies": 0.83,
+        "flips": 1.58,
+        "control": 0,
+        "moved": 2.7,
+        "placed": 0,
+        "presence": 2.04
+      },
+      "probe": {
+        "n": 231,
+        "benefit": 1.7,
+        "up": 59.7,
+        "opening": 5.11,
+        "openingN": 9,
+        "noTarget": 34
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 2.81,
+          "probes": 96,
+          "dWinAction": 4.02,
+          "actions": 194
+        },
+        "goal": {
+          "probe": 1.61,
+          "probes": 84,
+          "dWinAction": 0.96,
+          "actions": 96
+        },
+        "hunter": {
+          "probe": -0.25,
+          "probes": 51,
+          "dWinAction": 1.64,
+          "actions": 99
+        }
+      }
+    },
+    "broadcast": {
+      "name": "Broadcast a Signal",
+      "dealt": 140,
+      "held": 666,
+      "action": 548,
+      "influence": 102,
+      "unplayed": 16,
+      "opener": 0,
+      "playedPct": 97.6,
+      "actionPct": 84.3,
+      "playablePct": 78.3,
+      "dWinAction": 1.91,
+      "dWinInfluence": 1.3,
+      "winAfterAction": 19,
+      "winAfterInfluence": 17.6,
+      "islandAfterAction": 66.2,
+      "perAction": {
+        "trophies": 4.07,
+        "flips": 4.73,
+        "control": 0.09,
+        "moved": 4.7,
+        "placed": 0.83,
+        "presence": -1.15
+      },
+      "probe": {
+        "n": 230,
+        "benefit": 2.04,
+        "up": 50,
+        "opening": 2.01,
+        "openingN": 4,
+        "noTarget": 10
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 3.42,
+          "probes": 89,
+          "dWinAction": 3.61,
+          "actions": 185
+        },
+        "hunter": {
+          "probe": 2.24,
+          "probes": 63,
+          "dWinAction": 0.58,
+          "actions": 111
+        },
+        "goal": {
+          "probe": 0.3,
+          "probes": 78,
+          "dWinAction": 1.25,
+          "actions": 252
+        }
+      }
+    },
+    "claim-spoils": {
+      "name": "Claim the Spoils",
+      "dealt": 51,
+      "held": 243,
+      "action": 243,
+      "influence": 0,
+      "unplayed": 0,
+      "opener": 0,
+      "playedPct": 100,
+      "actionPct": 100,
+      "playablePct": 89.2,
+      "dWinAction": 0.61,
+      "dWinInfluence": null,
+      "winAfterAction": 23.7,
+      "winAfterInfluence": null,
+      "islandAfterAction": 46.9,
+      "perAction": {
+        "trophies": 3.71,
+        "flips": 0,
+        "control": 0,
+        "moved": 0,
+        "placed": 0,
+        "presence": 0
+      },
+      "probe": {
+        "n": 278,
+        "benefit": 1.34,
+        "up": 34.5,
+        "opening": 0.45,
+        "openingN": 11,
+        "noTarget": 0
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 1.57,
+          "probes": 123,
+          "dWinAction": 0.28,
+          "actions": 98
+        },
+        "goal": {
+          "probe": 1.07,
+          "probes": 97,
+          "dWinAction": 0.8,
+          "actions": 105
+        },
+        "hunter": {
+          "probe": 1.32,
+          "probes": 58,
+          "dWinAction": 0.95,
+          "actions": 40
+        }
+      }
+    },
+    "house-fire": {
+      "name": "Set the House on Fire",
+      "dealt": 58,
+      "held": 277,
+      "action": 187,
+      "influence": 65,
+      "unplayed": 25,
+      "opener": 0,
+      "playedPct": 91,
+      "actionPct": 74.2,
+      "playablePct": 71,
+      "dWinAction": 0.08,
+      "dWinInfluence": 1.1,
+      "winAfterAction": 19.8,
+      "winAfterInfluence": 11.5,
+      "islandAfterAction": 64.7,
+      "perAction": {
+        "trophies": 1.18,
+        "flips": 2.18,
+        "control": 0.08,
+        "moved": 1.14,
+        "placed": 1.14,
+        "presence": -1.41
+      },
+      "probe": {
+        "n": 200,
+        "benefit": 0.32,
+        "up": 44.5,
+        "opening": -6.96,
+        "openingN": 7,
+        "noTarget": 75
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.55,
+          "probes": 100,
+          "dWinAction": 0.06,
+          "actions": 97
+        },
+        "backer": {
+          "probe": -0.35,
+          "probes": 50,
+          "dWinAction": 0,
+          "actions": 37
+        },
+        "hunter": {
+          "probe": 0.55,
+          "probes": 50,
+          "dWinAction": 0.17,
+          "actions": 53
+        }
+      }
+    },
+    "call-backup": {
+      "name": "Call for Backup",
+      "dealt": 46,
+      "held": 219,
+      "action": 184,
+      "influence": 0,
+      "unplayed": 35,
+      "opener": 0,
+      "playedPct": 84,
+      "actionPct": 100,
+      "playablePct": 76.1,
+      "dWinAction": 0.31,
+      "dWinInfluence": null,
+      "winAfterAction": 17.9,
+      "winAfterInfluence": null,
+      "islandAfterAction": 56,
+      "perAction": {
+        "trophies": 0.68,
+        "flips": 0,
+        "control": 0.19,
+        "moved": 0,
+        "placed": 1.01,
+        "presence": 0
+      },
+      "probe": {
+        "n": 224,
+        "benefit": 0.68,
+        "up": 39.3,
+        "opening": 0.43,
+        "openingN": 13,
+        "noTarget": 43
+      },
+      "byProfile": {
+        "goal": {
+          "probe": 0.67,
+          "probes": 117,
+          "dWinAction": 0.46,
+          "actions": 77
+        },
+        "backer": {
+          "probe": 0.19,
+          "probes": 51,
+          "dWinAction": 0.14,
+          "actions": 70
+        },
+        "hunter": {
+          "probe": 1.15,
+          "probes": 56,
+          "dWinAction": 0.32,
+          "actions": 37
+        }
+      }
+    },
+    "banshee": {
+      "name": "Hear the Banshee Wail",
+      "dealt": 132,
+      "held": 633,
+      "action": 393,
+      "influence": 164,
+      "unplayed": 76,
+      "opener": 0,
+      "playedPct": 88,
+      "actionPct": 70.6,
+      "playablePct": 63.3,
+      "dWinAction": 1.09,
+      "dWinInfluence": 1.24,
+      "winAfterAction": 18.7,
+      "winAfterInfluence": 18.3,
+      "islandAfterAction": 61.6,
+      "perAction": {
+        "trophies": 3.11,
+        "flips": 3.28,
+        "control": 0.12,
+        "moved": 3.68,
+        "placed": 0.9,
+        "presence": -0.8
+      },
+      "probe": {
+        "n": 201,
+        "benefit": 0.38,
+        "up": 49.8,
+        "opening": 0.96,
+        "openingN": 6,
+        "noTarget": 85
+      },
+      "byProfile": {
+        "backer": {
+          "probe": 0.95,
+          "probes": 81,
+          "dWinAction": 2.11,
+          "actions": 125
+        },
+        "hunter": {
+          "probe": -0.45,
+          "probes": 54,
+          "dWinAction": 0.42,
+          "actions": 76
+        },
+        "goal": {
+          "probe": 0.36,
+          "probes": 66,
+          "dWinAction": 0.69,
+          "actions": 192
+        }
       }
     }
   }
