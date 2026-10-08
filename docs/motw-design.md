@@ -976,6 +976,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 #### D15. Influence is a requirement (IC1)
 
 - **Decided:** in the first draft, the card dictates how influence is placed, and that is treated as a requirement: paid from standing with the faction moved, and a move goes only as far as the player can pay. Example (designer): a card lets a single group spread to several locations and places 1 influence on each location spread to, however many tokens move there; a player with 1 influence with that faction can move to only one location.
+- **Which faction pays (designer):** cards that give the flexibility to select a faction at a location use the selected faction's influence to do the action. *Rejected:* the card's suit faction (unless a hand holds two cards of a suit, it is hard to take an action and gain influence in the same round). *Considered:* the faction with the most tokens in the group moving.
 - **Follow-up (designer):** review every card for places where the location or amount of influence placed is vague or unspecified, and specify it.
 - **Affects:** 3.7 (IC1), 3.14, Appendix G (G.2, G.8), every card's text; the prototype (variant `influenceRequired`).
 - **Date:** 2026-10-07
@@ -2943,6 +2944,7 @@ Fits best with the rules as they stand: fight modifiers, growth modifiers, align
 
 **Questions for the designer, raised by IC1:**
 - *Pattern D:* when a card moves several factions, should each moved group need its own faction's influence (as suggested), or only the target faction, with the others carried along free? Ring the Church Bell, for example, today draws only the factions the player can pay for.
+  - *Designer (2026-10-07):* a card that lets you select a faction at a location uses the selected faction's influence (D15). Still open: whether the other factions it moves come along free, and whether the selected faction always gets in first.
 - *Knock-ons:* groups pushed or shoved as a side effect (the Saucer's line, the Horde's shove, the Banshee's wail): paid like any other move, or free?
 - *Pattern E:* size-change and fight-rule cards place no influence, so IC1 never limits them. Is that intended, or should they place (and require) influence too?
 
