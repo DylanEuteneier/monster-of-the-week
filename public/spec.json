@@ -1214,7 +1214,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 18 ideas (rounds 14 to 18: unsuited extras, round 18 marked-card candidates (Set a Trap adopted as A); rounds 17 and 18: revisions of the weakest) under measurement by scripts/tournament.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
+    "notes": "Cards out of the fixed deck: rounds 8 to 19 ideas (rounds 14 to 19: unsuited extras, rounds 18 and 19 marked-card candidates (Set a Trap adopted as A); rounds 17 to 19: revisions of the weakest) under measurement by scripts/tournament.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
     "cards": [
       {
         "id": "force-field",
@@ -1843,6 +1843,40 @@
         "action": "virus-network",
         "round": 18,
         "text": "The target group sends 1 token to every other location holding its faction, anywhere on the island, as far as its tokens go. Target: the infected group.",
+        "readings": {
+          "location": "any group at a ⏏ location.",
+          "faction": "a Sentient group anywhere."
+        }
+      },
+      {
+        "id": "bounty",
+        "name": "Put a Bounty On It",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "bounty",
+        "round": 19,
+        "text": "Opening gambit (marked-card candidate for B to D): name a faction; at every fight this round, its group loses 1 more token when it wins, into the trophy piles. Target: the faction."
+      },
+      {
+        "id": "lockdown",
+        "name": "Lock Down the Town",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "lockdown",
+        "round": 19,
+        "text": "Opening gambit (marked-card candidate for B to D): name a region; this round, no group moves into or out of it. Target: a location in the region."
+      },
+      {
+        "id": "virus-reach",
+        "name": "Network the Virus v2",
+        "suit": "sentients",
+        "slot": "strike",
+        "influence": 2,
+        "action": "virus-reach",
+        "round": 19,
+        "text": "The target group sends 1 token to every location within two hexes it can enter, nearest first, as far as its tokens go. Target: the infected group.",
         "readings": {
           "location": "any group at a ⏏ location.",
           "faction": "a Sentient group anywhere."

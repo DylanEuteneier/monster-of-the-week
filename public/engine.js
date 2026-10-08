@@ -60,6 +60,7 @@ export { spec };
  * @property {string[]} [double]   Split Up, Gang! (test card, round 18): players whose influence here counts twice at this round's fight
  * @property {string} [trap]       Set a Trap (test card, round 18): its owner; the first group to move in loses half to them
  * @property {boolean} [wake]      Wake the Dead (test card, round 18): this round's fight can't scorch, and the loser's casualties rise as Undead
+ * @property {boolean} [lock]      Lock Down the Town (test card, round 19): this round, no group moves into or out of this location's region
  */
 
 /**
@@ -119,6 +120,7 @@ export { spec };
  * @property {boolean} opened      the first player has opened with their marked card
  * @property {Pending | null} pending
  * @property {{ pid: string, faction: string }[]} [tips]  Tip Off the Sheriff (test card, round 18): this round, whoever moves the faction, the tipper places 1 influence where it lands
+ * @property {string[]} [bounties]  Put a Bounty On It (test card, round 19): factions whose winning group loses 1 more token at each fight this round
  * @property {string | null} [lastPlayed]  the last card played for its action (Steal Their Playbook, test card, round 15)
  * @property {GameEvent[]} events  what the last resolved action did, for "after" responses
  * @property {{ faction: string, left: number, leaders: string[], next: number, due: Record<string, number> } | null} growing  growth phase when a supply runs short
@@ -178,6 +180,7 @@ export { spec };
  * @property {Record<string, number>} printed  this game's printed influence by card
  * @property {string | null} lastPlayed  the last card played for its action
  * @property {{ pid: string, faction: string }[]} tips  Tip Off the Sheriff this round (round 18)
+ * @property {string[]} bounties  Put a Bounty On It this round (round 19)
  * @property {string | null} first
  * @property {boolean} opened  the first player has opened with their marked card
  * @property {string | null} toAct
@@ -371,6 +374,7 @@ function move(state, pid, faction, from, to, count, placedAt) {
   const n = Math.min(count, tokensOf(state, from, faction));
   if (n <= 0 || from === to) return 0;
   if (!canEnter(state, to, faction, state.pending?.blocked ?? [])) return 0;
+  if ((state.board[from].lock || state.board[to].lock) && regionOf(from) !== regionOf(to)) return 0; // Lock Down the Town (test card, round 19)
   // D15: only the led faction pays; the others come along free, placing nothing.
   const free = !!placedAt.led && faction !== placedAt.led;
   // IC1: a move that places influence goes only as far as the player can pay for it.
@@ -657,6 +661,8 @@ function ringSteps(state, loc) {
 const circlers = (state, loc, factions) => ringSteps(state, loc).flatMap(([from, to]) => factionsAt(state, from).filter((f) => factions.includes(f) && !state.board[to].scorched).map((f) => ({ from, to, f })));
 /** The left-out cards this player can see (Research Montage's holder has done the research). @param {GameState | PlayerView} state */
 const leftOutSeen = (state) => ('leftOut' in state ? state.leftOut : state.me.leftOut ?? []);
+/** Network the Virus v2 (round 19): every location within two hexes the group's faction can enter, nearest first. @param {GameState | PlayerView} state @param {string} loc @param {string} f */
+const reachOf = (state, loc, f) => twoHex(loc).filter((l) => !state.board[l].scorched && canEnter(/** @type {GameState} */ (state), l, f)).sort((a, b) => Number(!MAP[loc].adjacent.includes(a)) - Number(!MAP[loc].adjacent.includes(b)));
 /** Network the Virus (round 18): every other location holding the group's faction. @param {GameState | PlayerView} state @param {string} loc @param {string} f */
 const networkOf = (state, loc, f) => LOCATION_IDS.filter((l) => l !== loc && !state.board[l].scorched && tokensOf(/** @type {GameState} */ (state), l, f) > 0);
 /** Hold the Wake (round 18): neighbours where the player has influence. @param {GameState | PlayerView} state @param {string} pid @param {string} loc */
@@ -987,7 +993,13 @@ function checkShape(state, pid, card, t) {
     }
     case 'research': return t.take && leftOutSeen(state).includes(t.take) && t.give && state.players[pid].hand.includes(t.give) && t.give !== card.id ? null : 'Choose a left-out card to take and one of yours to put back.';
     case 'trap': return t.location && state.board[t.location] && !state.board[t.location].scorched && !state.board[t.location].trap ? null : 'Choose a location without a trap.';
-    case 'tipoff': return t.faction && state.factions.includes(t.faction) ? null : 'Choose a faction.';
+    case 'tipoff': case 'bounty': return t.faction && state.factions.includes(t.faction) ? null : 'Choose a faction.';
+    case 'lockdown': return t.location && state.board[t.location] && !state.board[t.location].lock ? null : 'Choose a location in a region not already locked down.';
+    case 'virus-reach': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      return reachOf(state, /** @type {string} */ (t.location), /** @type {string} */ (t.faction)).length ? null : 'The group has nowhere to go.';
+    }
     case 'wake-dead': return (t.mode === 'location' || t.mode === 'faction') && t.location && holdingSpots(state, card, t.mode).includes(t.location) ? null : 'Choose the target location.';
     case 'hold-wake': {
       if ((t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode).includes(t.location)) return 'Choose the target location.';
@@ -1498,6 +1510,27 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name}: whoever moves ${names(/** @type {string} */ (t.faction))} this round, ${pid} gets a share.`);
       break;
     }
+    case 'bounty': {
+      state.bounties = [...(state.bounties ?? []), /** @type {string} */ (t.faction)];
+      logLine(state, `${pid}: ${card.name}: a bounty on ${names(/** @type {string} */ (t.faction))} this round.`);
+      break;
+    }
+    case 'lockdown': {
+      const region = regionOf(/** @type {string} */ (t.location));
+      for (const l of LOCATION_IDS) if (regionOf(l) === region) state.board[l].lock = true;
+      logLine(state, `${pid}: ${card.name}: ${region} is locked down this round.`);
+      break;
+    }
+    case 'virus-reach': {
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
+      const reached = [];
+      for (const to of reachOf(state, from, f)) {
+        if (tokensOf(state, from, f) <= 0) break;
+        if (move(state, pid, f, from, to, 1, placed)) reached.push(to);
+      }
+      logLine(state, `${pid}: ${card.name} sends ${names(f)} out to ${reached.map(lname).join(', ') || 'nowhere'}.`);
+      break;
+    }
     case 'wake-dead': {
       state.board[/** @type {string} */ (t.location)].wake = true;
       logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}.`);
@@ -1865,8 +1898,9 @@ function endOfPlay(state) {
   state.events = [];
   logLine(state, 'Everyone passed. Fights:');
   for (const loc of LOCATION_IDS) if (!state.board[loc].scorched && factionsAt(state, loc).length === 2) fight(state, loc);
-  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.claim; delete p.truce; delete p.double; delete p.trap; delete p.wake; } // round 15 and 18 test cards last the round
+  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.claim; delete p.truce; delete p.double; delete p.trap; delete p.wake; delete p.lock; } // round 15, 18 and 19 test cards last the round
   state.tips = [];
+  state.bounties = [];
   return beginGrowth(state);
 }
 
@@ -1927,6 +1961,7 @@ function fight(state, loc) {
   if (effect === 'silver-bullets') winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
   if (effect === 'salt-burn') winnerLoss = place.tokens[winner];
   if (effect === 'force-field') winnerLoss = 0; // test card (round 8)
+  winnerLoss += (('bounties' in state && state.bounties) || []).filter((f) => f === winner).length; // Put a Bounty On It (test card, round 19): 1 more for each bounty
   winnerLoss = Math.min(winnerLoss, place.tokens[winner]);
   place.tokens[loser] -= loserLoss;
   place.tokens[winner] -= winnerLoss;
@@ -2527,8 +2562,12 @@ function nextShape(state, pid, cardId, t) {
     }
     case 'trap':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched && !state.board[l].trap) };
-    case 'tipoff':
+    case 'tipoff': case 'bounty':
       return t.faction ? { kind: 'done' } : { kind: 'faction', options: state.factions.slice() };
+    case 'lockdown':
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].lock) };
+    case 'virus-reach':
+      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => reachOf(state, g.location, g.faction).length > 0) };
     case 'wake-dead':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode) };
     case 'hold-wake': {
@@ -2616,7 +2655,9 @@ export function describeTarget(cardId, t) {
     case 'split-up': return `at ${(t.from ?? []).map(L).join(', ')}`;
     case 'research': return `take ${t.take ? cardById(t.take).name : '?'}, put back ${t.give ? cardById(t.give).name : '?'}`;
     case 'trap': case 'wake-dead': return `at ${L(t.location)}${how}`;
-    case 'tipoff': return `on ${F(t.faction)}`;
+    case 'tipoff': case 'bounty': return `on ${F(t.faction)}`;
+    case 'lockdown': return `the region of ${L(t.location)}`;
+    case 'virus-reach': return `${F(t.faction)} at ${L(t.location)}${how}`;
     case 'hold-wake': return `into ${L(t.location)} from ${(t.from ?? []).map(L).join(', ')}${how}`;
     case 'virus-network': return `${F(t.faction)} at ${L(t.location)}${how}`;
     case 'swap-standing': return `${F(t.faction)} and ${F(t.to)}`;
@@ -2661,12 +2702,13 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched, ...(place.claim ? { claim: place.claim } : {}), ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.trap ? { trap: place.trap } : {}), ...(place.wake ? { wake: true } : {}) }];
+      return [loc, { tokens: { ...place.tokens }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched, ...(place.claim ? { claim: place.claim } : {}), ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.trap ? { trap: place.trap } : {}), ...(place.wake ? { wake: true } : {}), ...(place.lock ? { lock: true } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),
     lastPlayed: state.lastPlayed ?? null,
     tips: (state.tips ?? []).map((x) => ({ ...x })),
+    bounties: (state.bounties ?? []).slice(),
     printed: Object.fromEntries(deckOf(state).map((id) => [id, printedOf(state, id)])),
     growing: state.growing ? structuredClone(state.growing) : null,
     first: state.first,

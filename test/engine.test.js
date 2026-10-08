@@ -701,3 +701,30 @@ test('round 18: Research Montage swaps a hand card with a left-out one; Network 
   const net = previewTarget(s, 'ann', 'virus-network', { mode: 'location', location: NEUTRAL, faction: A });
   assert.equal(net.board[far].tokens[A], 2);
 });
+
+test('round 19: Lock Down the Town stops moves across its region\'s border; Put a Bounty On It costs the winner 1 more; Network the Virus v2 reaches within two hexes', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[], region: string }>} */ (spec.map.locations);
+  const inside = /** @type {string} */ (Object.keys(map).find((l) => map[l].adjacent.some((x) => map[x].region !== map[l].region)));
+  const out = /** @type {string} */ (map[inside].adjacent.find((l) => map[l].region !== map[inside].region));
+  s.board[out].tokens = { [A]: 2 };
+  const locked = previewTarget(s, 'ann', 'lockdown', { location: inside });
+  assert.ok(Object.keys(map).filter((l) => map[l].region === map[inside].region).every((l) => locked.board[l].lock));
+  for (const l of Object.keys(map)) if (locked.board[l].lock) s.board[l].lock = true;
+  const blocked = previewTarget(s, 'ann', 'extra-c', { moves: [{ location: out, faction: A, to: inside }] });
+  assert.equal(blocked.board[inside].tokens[A], undefined);
+  s.board[out].tokens = {};
+  for (const l of Object.keys(map)) delete s.board[l].lock;
+  s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
+  const plain = resolveFight(s, NEUTRAL);
+  s.bounties = [A];
+  const hunted = resolveFight(s, NEUTRAL);
+  assert.equal((plain.board[NEUTRAL].tokens[A] ?? 0) - (hunted.board[NEUTRAL].tokens[A] ?? 0), 1);
+  s.bounties = [];
+  s.board[NEUTRAL].tokens = { [A]: 3 };
+  const net = previewTarget(s, 'ann', 'virus-reach', { mode: 'location', location: NEUTRAL, faction: A });
+  const reached = Object.keys(map).filter((l) => (net.board[l].tokens[A] ?? 0) > 0 && l !== NEUTRAL);
+  assert.equal(reached.length, 3); // 1 token to each, nearest first, until none are left
+  const near = map[NEUTRAL].adjacent.filter((l) => canEnter(s, l, A));
+  assert.ok(reached.filter((l) => near.includes(l)).length === Math.min(3, near.length)); // nearest first
+});
