@@ -21,7 +21,7 @@ function rng(seed) {
 /** An empty board to stage a fight on. @param {GameState} state */
 function clear(state) {
   const next = structuredClone(state);
-  for (const place of Object.values(next.board)) Object.assign(place, { cubes: {}, influence: {}, token: null, scorched: false });
+  for (const place of Object.values(next.board)) Object.assign(place, { tokens: {}, influence: {}, token: null, scorched: false });
   return next;
 }
 const [A, B, C] = newGame().factions;
@@ -75,7 +75,7 @@ test('seeding puts 5 + 1 + 1 of each faction on its own locations (SD1)', () => 
     assert.equal(presenceOf(s, f), 7);
     assert.equal(s.supply[f], 13);
     const arch = spec.factions.find((x) => x.id === f)?.archetype;
-    for (const [loc, place] of Object.entries(s.board)) if (place.cubes[f]) assert.equal(spec.locations.find((l) => l.id === loc)?.archetype, arch);
+    for (const [loc, place] of Object.entries(s.board)) if (place.tokens[f]) assert.equal(spec.locations.find((l) => l.id === loc)?.archetype, arch);
   }
 });
 
@@ -146,23 +146,23 @@ test('the earliest marked card dealt sets the first player, who must open with i
 
 // Fights -------------------------------------------------------------------
 
-test('the winner loses half the loser\'s cubes, rounded down, minimum 1 (FR5)', () => {
+test('the winner loses half the loser\'s tokens, rounded down, minimum 1 (FR5)', () => {
   let s = clear(newGame());
-  s.board[NEUTRAL].cubes = { [A]: 6, [B]: 4 };
+  s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
   let r = resolveFight(s, NEUTRAL);
-  assert.deepEqual(r.board[NEUTRAL].cubes, { [A]: 4 });
-  s.board[NEUTRAL].cubes = { [A]: 3, [B]: 1 };
+  assert.deepEqual(r.board[NEUTRAL].tokens, { [A]: 4 });
+  s.board[NEUTRAL].tokens = { [A]: 3, [B]: 1 };
   r = resolveFight(s, NEUTRAL);
-  assert.deepEqual(r.board[NEUTRAL].cubes, { [A]: 2 });
+  assert.deepEqual(r.board[NEUTRAL].tokens, { [A]: 2 });
 });
 
 test('a true tie wipes both sides, scorches the location and rewards no one (TF1, TM1)', () => {
   const s = clear(newGame());
-  s.board[NEUTRAL].cubes = { [A]: 3, [B]: 3 };
+  s.board[NEUTRAL].tokens = { [A]: 3, [B]: 3 };
   s.board[NEUTRAL].influence = { ann: 2 };
   const r = resolveFight(s, NEUTRAL);
   assert.equal(r.board[NEUTRAL].scorched, true);
-  assert.deepEqual(r.board[NEUTRAL].cubes, {});
+  assert.deepEqual(r.board[NEUTRAL].tokens, {});
   assert.equal(r.players.ann.supply, s.players.ann.supply + 2);
   assert.equal(r.players.ann.trophies[A] + r.players.ann.trophies[B], 0);
   assert.equal(canEnter(r, NEUTRAL, C), false);
@@ -171,15 +171,15 @@ test('a true tie wipes both sides, scorches the location and rewards no one (TF1
 test('on aligned ground the aligned faction wins a tie (AL2)', () => {
   const s = clear(newGame());
   const home = spec.locations.find((l) => l.archetype === spec.factions.find((f) => f.id === A)?.archetype)?.id ?? '';
-  s.board[home].cubes = { [A]: 3, [B]: 3 };
+  s.board[home].tokens = { [A]: 3, [B]: 3 };
   const r = resolveFight(s, home);
-  assert.deepEqual(r.board[home].cubes, { [A]: 2 });
+  assert.deepEqual(r.board[home].tokens, { [A]: 2 });
   assert.equal(r.board[home].scorched, false);
 });
 
 test('trophies: the leader takes the bigger pile, the runner-up the smaller (TD1); half the leader\'s influence goes to the winner (AF3)', () => {
   const s = clear(newGame());
-  s.board[NEUTRAL].cubes = { [A]: 6, [B]: 4 };
+  s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
   s.board[NEUTRAL].influence = { ann: 4, bob: 1 };
   const r = resolveFight(s, NEUTRAL);
   assert.equal(r.players.ann.trophies[B], 4);
@@ -192,7 +192,7 @@ test('trophies: the leader takes the bigger pile, the runner-up the smaller (TD1
 test('tied leaders collect nothing and both piles go back (PT2, ST1, AS1); a lone player takes both piles (UP1)', () => {
   const s = clear(newGame());
   for (const pid of PLAYERS) s.players[pid].group = 'slayerettes';
-  s.board[NEUTRAL].cubes = { [A]: 6, [B]: 4 };
+  s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
   s.board[NEUTRAL].influence = { ann: 2, bob: 2 };
   const tied = resolveFight(s, NEUTRAL);
   assert.equal(tied.players.ann.trophies[B] + tied.players.bob.trophies[B], 0);
@@ -205,11 +205,11 @@ test('tied leaders collect nothing and both piles go back (PT2, ST1, AS1); a lon
 
 // Growth and the end -------------------------------------------------------
 
-test('a lone faction with 2 or more cubes grows, aligned locations one extra (GR1, AL3)', () => {
+test('a lone faction with 2 or more tokens grows, aligned locations one extra (GR1, AL3)', () => {
   const s = clear(newGame());
   const home = spec.locations.find((l) => l.archetype === spec.factions.find((f) => f.id === A)?.archetype)?.id ?? '';
-  s.board[home].cubes = { [A]: 2 };
-  s.board[NEUTRAL].cubes = { [A]: 3 };
+  s.board[home].tokens = { [A]: 2 };
+  s.board[NEUTRAL].tokens = { [A]: 3 };
   assert.deepEqual(growthDue(s, A), { [home]: 2, [NEUTRAL]: 1 });
 });
 
@@ -263,7 +263,7 @@ test('Track Them in the Snow lights only groups you can chase, and counts the st
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[0]); // the Nocturnal faction
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals')?.id);
-  s.board[loc].cubes[f] = 3;
+  s.board[loc].tokens[f] = 3;
   s.players.ann.standing[f] = 0;
   const groups = (/** @type {any} */ c) => c.kind === 'group' ? c.options : [];
   assert.deepEqual(groups(nextChoice(s, 'ann', 'track-snow', { mode: 'faction' })), []);
@@ -273,11 +273,11 @@ test('Track Them in the Snow lights only groups you can chase, and counts the st
   assert.equal(step.kind === 'location' && step.left, 2);
 });
 
-test('Board Up the Windows never lets the last cube make a one-location split', () => {
+test('Board Up the Windows never lets the last token make a one-location split', () => {
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[3]); // the Undead faction
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
-  s.board[loc].cubes[f] = 2;
+  s.board[loc].tokens[f] = 2;
   const first = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations)[loc].adjacent[0];
   const c = nextChoice(s, 'ann', 'board-up', { mode: 'faction', location: loc, faction: f, split: { [first]: 1 } });
   assert.ok(c.kind === 'split' && !c.options.includes(first));
@@ -287,9 +287,9 @@ test('Broadcast a Signal offers only factions that can enter the target', () => 
   const s = clear(newGame());
   const [x, y, z] = s.factions;
   const to = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'scifi')?.id);
-  s.board[to].cubes = { [/** @type {string} */ (x)]: 1, [/** @type {string} */ (y)]: 1 };
+  s.board[to].tokens = { [/** @type {string} */ (x)]: 1, [/** @type {string} */ (y)]: 1 };
   const far = /** @type {string} */ (spec.locations.find((l) => l.id !== to)?.id);
-  s.board[far].cubes[/** @type {string} */ (z)] = 2;
+  s.board[far].tokens[/** @type {string} */ (z)] = 2;
   const c = nextChoice(s, 'ann', 'broadcast', { mode: 'location', location: to });
   assert.ok(c.kind === 'faction' && !c.options.includes(/** @type {string} */ (z)));
 });
@@ -299,7 +299,7 @@ test('Track Them in the Snow never enters a location twice', () => {
   const f = /** @type {string} */ (s.factions[0]);
   const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals')?.id);
-  s.board[loc].cubes[f] = 4;
+  s.board[loc].tokens[f] = 4;
   s.players.ann.standing[f] = 4;
   const a = adj[loc].adjacent[0];
   const c = nextChoice(s, 'ann', 'track-snow', { mode: 'faction', location: loc, faction: f, path: [a] });
@@ -311,8 +311,8 @@ test('Leave Out Fresh Meat asks which group comes when the largest are tied', ()
   const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const bait = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals' && adj[l.id].adjacent.length >= 2)?.id);
   const [x, y] = adj[bait].adjacent;
-  s.board[x].cubes[/** @type {string} */ (s.factions[1])] = 3;
-  s.board[y].cubes[/** @type {string} */ (s.factions[2])] = 3;
+  s.board[x].tokens[/** @type {string} */ (s.factions[1])] = 3;
+  s.board[y].tokens[/** @type {string} */ (s.factions[2])] = 3;
   const c = nextChoice(s, 'ann', 'fresh-meat', { mode: 'location', location: bait });
   assert.ok(c.kind === 'group' && c.key === 'lure' && c.options.length === 2);
   assert.equal(nextChoice(s, 'ann', 'fresh-meat', { mode: 'location', location: bait, faction: s.factions[2], from: [y] }).kind, 'done');
@@ -348,7 +348,7 @@ test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence we
 test('bots can target every test card that has a target (a walk through the table\'s choices)', () => {
   const s = clear(newGame());
   const [f, g] = /** @type {string[]} */ (s.factions);
-  for (const loc of spec.locations.map((l) => l.id)) s.board[loc].cubes = { [loc.length % 2 ? f : g]: 3 };
+  for (const loc of spec.locations.map((l) => l.id)) s.board[loc].tokens = { [loc.length % 2 ? f : g]: 3 };
   for (const card of spec.testCards.cards.filter((c) => c.action && c.action !== 'token' && c.action !== 'cash-in' && c.action !== 'surveil')) {
     const t = sampleTarget(s, 'ann', card.id, rng(7));
     if (t) assert.equal(checkTarget(s, 'ann', cardById(card.id), t), null, card.id);
@@ -359,25 +359,25 @@ test('Take Over the Wake places up to 3 influence from standing with a faction t
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[3]);
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
-  s.board[loc].cubes[f] = 2;
+  s.board[loc].tokens[f] = 2;
   s.players.ann.standing[f] = 5;
   const after = previewTarget(s, 'ann', 'take-wake', { mode: 'location', location: loc, faction: f });
   assert.equal(after.board[loc].influence.ann, 3);
   assert.equal(after.players.ann.standing[f], 2);
 });
 
-test('Spread a Virus (infectious): each cube that joins another faction costs it 1 cube to its supply (round 9)', () => {
+test('Spread a Virus (infectious): each token that joins another faction costs it 1 token to its supply (round 9)', () => {
   const s = clear(newGame());
   const [f, g] = /** @type {string[]} */ (s.factions);
   const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'sentients')?.id);
   const [to] = adj[loc].adjacent;
-  s.board[loc].cubes[f] = 1;
-  s.board[to].cubes[g] = 3;
+  s.board[loc].tokens[f] = 1;
+  s.board[to].tokens[g] = 3;
   const supply = s.supply[g];
   const after = previewTarget(s, 'ann', 'virus-infect', { mode: 'location', location: loc, faction: f });
-  assert.equal(after.board[to].cubes[f], 1);
-  assert.equal(after.board[to].cubes[g], 2);
+  assert.equal(after.board[to].tokens[f], 1);
+  assert.equal(after.board[to].tokens[g], 2);
   assert.ok(!checkTarget(s, 'ann', cardById('virus-infect'), { mode: 'location', location: loc, faction: f }));
   assert.equal(supply, s.supply[g]); // the preview leaves the game untouched
 });
@@ -387,10 +387,10 @@ test('Leak It to the Press sends half the group anywhere (round 9)', () => {
   const f = /** @type {string} */ (s.factions[0]);
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'scifi')?.id);
   const far = /** @type {string} */ (spec.locations.find((l) => l.id !== loc && !(/** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations))[loc].adjacent.includes(l.id))?.id);
-  s.board[loc].cubes[f] = 5;
+  s.board[loc].tokens[f] = 5;
   const t = { mode: /** @type {const} */ ('location'), location: loc, faction: f, to: far };
   assert.equal(checkTarget(s, 'ann', cardById('leak-press'), t), null);
-  assert.equal(previewTarget(s, 'ann', 'leak-press', t).board[far].cubes[f], 2);
+  assert.equal(previewTarget(s, 'ann', 'leak-press', t).board[far].tokens[f], 2);
 });
 
 test('Turn On the Tractor Beam carries both groups of a contest to an empty neighbour (round 10)', () => {
@@ -399,12 +399,12 @@ test('Turn On the Tractor Beam carries both groups of a contest to an empty neig
   const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'scifi')?.id);
   const [to] = adj[loc].adjacent;
-  s.board[loc].cubes = { [f]: 2, [g]: 4 };
+  s.board[loc].tokens = { [f]: 2, [g]: 4 };
   const t = { mode: /** @type {const} */ ('location'), location: loc, to };
   assert.equal(checkTarget(s, 'ann', cardById('tractor-beam'), t), null);
-  assert.deepEqual(previewTarget(s, 'ann', 'tractor-beam', t).board[to].cubes, { [f]: 2, [g]: 4 });
-  s.board[to].cubes = { [f]: 1 };
-  assert.ok(checkTarget(s, 'ann', cardById('tractor-beam'), t)); // only into a location with no cubes
+  assert.deepEqual(previewTarget(s, 'ann', 'tractor-beam', t).board[to].tokens, { [f]: 2, [g]: 4 });
+  s.board[to].tokens = { [f]: 1 };
+  assert.ok(checkTarget(s, 'ann', cardById('tractor-beam'), t)); // only into a location with no tokens
 });
 
 test('Hear the Banshee Wail drives each neighbouring group one hex straight on, away (round 10)', () => {
@@ -416,10 +416,10 @@ test('Hear the Banshee Wail drives each neighbouring group one hex straight on, 
   const undead = spec.locations.filter((l) => l.archetype === 'undead').map((l) => l.id);
   const line = undead.flatMap((c) => map[c].adjacent.map((n) => [c, n, at(2 * map[n].q - map[c].q, 2 * map[n].r - map[c].r)])).find((x) => x[2]);
   const [centre, near, beyond] = /** @type {string[]} */ (line);
-  s.board[near].cubes[f] = 3;
+  s.board[near].tokens[f] = 3;
   const after = previewTarget(s, 'ann', 'banshee', { mode: 'location', location: centre });
-  assert.equal(after.board[beyond].cubes[f], 3);
-  assert.equal(after.board[near].cubes[f], undefined);
+  assert.equal(after.board[beyond].tokens[f], 3);
+  assert.equal(after.board[near].tokens[f], undefined);
 });
 
 test('Trade Souls swaps two groups of different factions anywhere (round 11)', () => {
@@ -427,14 +427,14 @@ test('Trade Souls swaps two groups of different factions anywhere (round 11)', (
   const [f, g, h] = /** @type {string[]} */ (s.factions);
   const demonic = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'demonic')?.id);
   const far = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals')?.id);
-  s.board[demonic].cubes = { [f]: 2 };
-  s.board[far].cubes = { [g]: 5, [h]: 1 };
+  s.board[demonic].tokens = { [f]: 2 };
+  s.board[far].tokens = { [g]: 5, [h]: 1 };
   const t = { mode: /** @type {const} */ ('location'), location: demonic, faction: f, moves: [{ location: far, faction: g, to: '' }] };
   assert.equal(checkTarget(s, 'ann', cardById('trade-souls'), t), null);
   const after = previewTarget(s, 'ann', 'trade-souls', t);
-  assert.deepEqual(after.board[demonic].cubes, { [g]: 5 });
-  assert.deepEqual(after.board[far].cubes, { [h]: 1, [f]: 2 });
-  s.board[far].cubes = { [f]: 5 };
+  assert.deepEqual(after.board[demonic].tokens, { [g]: 5 });
+  assert.deepEqual(after.board[far].tokens, { [h]: 1, [f]: 2 });
+  s.board[far].tokens = { [f]: 5 };
   assert.ok(checkTarget(s, 'ann', cardById('trade-souls'), { ...t, moves: [{ location: far, faction: f, to: '' }] })); // a group of the same faction: nothing to trade
 });
 
@@ -442,7 +442,7 @@ test('Lay Them to Rest: no one takes trophies at its fight (round 11)', () => {
   const s = clear(newGame());
   const [f, g] = /** @type {string[]} */ (s.factions);
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
-  s.board[loc].cubes = { [f]: 2, [g]: 5 };
+  s.board[loc].tokens = { [f]: 2, [g]: 5 };
   s.board[loc].influence = { ann: 2 };
   s.board[loc].token = { owner: 'ann', card: 'lay-to-rest' };
   const before = s.supply[f];
@@ -458,12 +458,12 @@ test('Follow the Lights: the leader moves next door and a group of another facti
   const from = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'scifi')?.id);
   const to = map[from].adjacent[0];
   const near = /** @type {string} */ (map[to].adjacent.find((l) => l !== from));
-  s.board[from].cubes = { [f]: 3 };
-  s.board[near].cubes = { [g]: 4 };
+  s.board[from].tokens = { [f]: 3 };
+  s.board[near].tokens = { [g]: 4 };
   assert.equal(nextChoice(s, 'ann', 'follow-lights', { mode: 'location', location: from, faction: f, to }).kind, 'group');
   const t = { mode: /** @type {const} */ ('location'), location: from, faction: f, to, moves: [{ location: near, faction: g, to: '' }] };
   assert.equal(checkTarget(s, 'ann', cardById('follow-lights'), t), null);
-  assert.deepEqual(previewTarget(s, 'ann', 'follow-lights', t).board[to].cubes, { [f]: 3, [g]: 4 });
+  assert.deepEqual(previewTarget(s, 'ann', 'follow-lights', t).board[to].tokens, { [f]: 3, [g]: 4 });
 });
 
 test('Circle the Prey: the groups round the target each move one location on, all at once (round 12)', () => {
@@ -472,10 +472,10 @@ test('Circle the Prey: the groups round the target each move one location on, al
   const map = /** @type {Record<string, { q: number, r: number, adjacent: string[] }>} */ (spec.map.locations);
   // A ◐ location with a full ring of six neighbours, if the board has one; otherwise any with two in a row.
   const centre = /** @type {string} */ (spec.locations.filter((l) => l.archetype === 'nocturnals').map((l) => l.id).sort((a, b) => map[b].adjacent.length - map[a].adjacent.length)[0]);
-  for (const l of map[centre].adjacent) s.board[l].cubes = { [f]: 1 };
-  const before = map[centre].adjacent.reduce((n, l) => n + (s.board[l].cubes[f] ?? 0), 0);
+  for (const l of map[centre].adjacent) s.board[l].tokens = { [f]: 1 };
+  const before = map[centre].adjacent.reduce((n, l) => n + (s.board[l].tokens[f] ?? 0), 0);
   const after = previewTarget(s, 'ann', 'circle-prey', { mode: 'location', location: centre });
-  assert.equal(map[centre].adjacent.reduce((n, l) => n + (after.board[l].cubes[f] ?? 0), 0), before); // no cube lost
+  assert.equal(map[centre].adjacent.reduce((n, l) => n + (after.board[l].tokens[f] ?? 0), 0), before); // no token lost
 });
 
 test('Lead the Horde shoves the smaller group on when it would make three factions (round 13)', () => {
@@ -485,15 +485,15 @@ test('Lead the Horde shoves the smaller group on when it would make three factio
   const from = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
   const to = map[from].adjacent[0];
   const away = /** @type {string} */ (map[to].adjacent.find((l) => l !== from));
-  s.board[from].cubes = { [f]: 4 };
-  s.board[to].cubes = { [g]: 1, [h]: 3 };
+  s.board[from].tokens = { [f]: 4 };
+  s.board[to].tokens = { [g]: 1, [h]: 3 };
   const c = nextChoice(s, 'ann', 'horde', { mode: 'location', location: from, faction: f, to });
   assert.ok(c.kind === 'group' && c.options.length === 1 && c.options[0].faction === g);
   const t = { mode: /** @type {const} */ ('location'), location: from, faction: f, to, moves: [{ location: to, faction: g, to: away }] };
   assert.equal(checkTarget(s, 'ann', cardById('horde'), t), null);
   const after = previewTarget(s, 'ann', 'horde', t);
-  assert.deepEqual(after.board[to].cubes, { [h]: 3, [f]: 4 });
-  assert.equal(after.board[away].cubes[g], 1);
+  assert.deepEqual(after.board[to].tokens, { [h]: 3, [f]: 4 });
+  assert.equal(after.board[away].tokens[g], 1);
 });
 
 test('previewTarget runs a move with the game options (influence placed at the destination)', () => {
@@ -501,7 +501,7 @@ test('previewTarget runs a move with the game options (influence placed at the d
   const f = /** @type {string} */ (s.factions[3]);
   const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
-  s.board[loc].cubes[f] = 3;
+  s.board[loc].tokens[f] = 3;
   s.players.ann.standing[f] = 2;
   const to = adj[loc].adjacent[0];
   const after = previewTarget(s, 'ann', 'board-up', { mode: 'faction', location: loc, faction: f, split: { [to]: 2, [adj[loc].adjacent[1]]: 1 } });

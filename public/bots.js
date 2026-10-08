@@ -116,7 +116,7 @@ function randomMove(state, pid, rng) {
 
 /** @param {GameState} state */
 function contested(state) {
-  return Object.keys(state.board).filter((loc) => !state.board[loc].scorched && Object.values(state.board[loc].cubes).filter((n) => n > 0).length === 2);
+  return Object.keys(state.board).filter((loc) => !state.board[loc].scorched && Object.values(state.board[loc].tokens).filter((n) => n > 0).length === 2);
 }
 
 /** The board after this round's fights, as they stand now (tokens unknown to the bot are ignored). @param {GameState} state */

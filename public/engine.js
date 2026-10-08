@@ -51,7 +51,7 @@ export { spec };
 
 /**
  * @typedef {object} Place
- * @property {Record<string, number>} cubes      faction → cubes
+ * @property {Record<string, number>} tokens      faction → tokens
  * @property {Record<string, number>} influence  player → influence placed here
  * @property {Token | null} token
  * @property {boolean} scorched
@@ -103,7 +103,7 @@ export { spec };
  * @property {Record<string, PlayerState>} players
  * @property {string[]} factions   the faction in play for each archetype, spec.archetypes order (3.4)
  * @property {Record<string, Place>} board
- * @property {Record<string, number>} supply  faction → cubes in its supply
+ * @property {Record<string, number>} supply  faction → tokens in its supply
  * @property {string[]} leftOut    cards not dealt this round (DR5)
  * @property {string[]} [deck]     this game's 21 cards (variant deck=mixed); absent: spec.cards
  * @property {Record<string, number>} [printed]  this game's printed influence by card (variant deck=mixed); absent: each card's own
@@ -162,7 +162,7 @@ export { spec };
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, picked: boolean }>} players
  * @property {{ faction: string, leaders: string[], next: number, due: Record<string, number> } | null} growing
  * @property {string[]} factions
- * @property {Record<string, { cubes: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean }>} board
+ * @property {Record<string, { tokens: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean }>} board
  * @property {Record<string, number>} supply
  * @property {string[]} deck  this game's cards
  * @property {Record<string, number>} printed  this game's printed influence by card
@@ -271,13 +271,13 @@ export function shuffle(items, rngState) {
 // ---------------------------------------------------------------------------
 
 /** @param {GameState} state @param {string} loc */
-const factionsAt = (state, loc) => Object.keys(state.board[loc].cubes).filter((f) => state.board[loc].cubes[f] > 0);
+const factionsAt = (state, loc) => Object.keys(state.board[loc].tokens).filter((f) => state.board[loc].tokens[f] > 0);
 /** @param {GameState} state @param {string} loc @param {string} faction */
-const cubesOf = (state, loc, faction) => state.board[loc].cubes[faction] ?? 0;
+const tokensOf = (state, loc, faction) => state.board[loc].tokens[faction] ?? 0;
 /** @param {string} loc */
 const regionOf = (loc) => MAP[loc].region;
 /** @param {GameState} state @param {string} faction */
-export const presenceOf = (state, faction) => LOCATION_IDS.reduce((n, loc) => n + cubesOf(state, loc, faction), 0);
+export const presenceOf = (state, faction) => LOCATION_IDS.reduce((n, loc) => n + tokensOf(state, loc, faction), 0);
 /** @param {GameState} state */
 export const totalPresence = (state) => state.factions.reduce((n, f) => n + presenceOf(state, f), 0);
 /** The faction in play for an archetype. @param {GameState | PlayerView} state @param {string} archetype */
@@ -291,7 +291,7 @@ const alignmentOf = (loc) => locationById(loc).archetype;
 const regionOpen = (state, region) => LOCATION_IDS.some((loc) => regionOf(loc) === region && !state.board[loc].scorched);
 
 /**
- * May a faction's cubes be moved into this location? Not scorched, its region
+ * May a faction's tokens be moved into this location? Not scorched, its region
  * still passable, and never a third faction (LL1).
  * @param {GameState} state @param {string} loc @param {string} faction @param {string[]} [blocked]
  */
@@ -302,11 +302,11 @@ export function canEnter(state, loc, faction, blocked = []) {
   return here.includes(faction) || here.length < 2;
 }
 
-/** Who controls a location (LC2): the faction with most cubes; a tie goes to the aligned faction, else no one. @param {GameState} state @param {string} loc */
+/** Who controls a location (LC2): the faction with most tokens; a tie goes to the aligned faction, else no one. @param {GameState} state @param {string} loc */
 export function controllerOf(state, loc) {
-  const here = factionsAt(state, loc).sort((a, b) => cubesOf(state, loc, b) - cubesOf(state, loc, a));
+  const here = factionsAt(state, loc).sort((a, b) => tokensOf(state, loc, b) - tokensOf(state, loc, a));
   if (here.length === 0) return null;
-  if (here.length === 1 || cubesOf(state, loc, here[0]) > cubesOf(state, loc, here[1])) return here[0];
+  if (here.length === 1 || tokensOf(state, loc, here[0]) > tokensOf(state, loc, here[1])) return here[0];
   const aligned = here.find((f) => archetypeOf(f) === alignmentOf(loc));
   return aligned ?? null;
 }
@@ -330,19 +330,19 @@ export function influenceLeaders(state, faction) {
 }
 
 /**
- * Move cubes, placing 1 influence at the destination spent from the
+ * Move tokens, placing 1 influence at the destination spent from the
  * player's standing with the faction moved, if they have any (3.7, CA2).
  * Returns the number moved (0 if it may not enter).
  * @param {GameState} state @param {string} pid @param {string} faction
  * @param {string} from @param {string} to @param {number} count @param {Set<string>} placedAt
  */
 function move(state, pid, faction, from, to, count, placedAt) {
-  const n = Math.min(count, cubesOf(state, from, faction));
+  const n = Math.min(count, tokensOf(state, from, faction));
   if (n <= 0 || from === to) return 0;
   if (!canEnter(state, to, faction, state.pending?.blocked ?? [])) return 0;
-  state.board[from].cubes[faction] -= n;
-  if (state.board[from].cubes[faction] === 0) delete state.board[from].cubes[faction];
-  state.board[to].cubes[faction] = cubesOf(state, to, faction) + n;
+  state.board[from].tokens[faction] -= n;
+  if (state.board[from].tokens[faction] === 0) delete state.board[from].tokens[faction];
+  state.board[to].tokens[faction] = tokensOf(state, to, faction) + n;
   const place = (/** @type {string} */ loc, /** @type {string} */ key, /** @type {number} */ amount) => {
     if (placedAt.has(key)) return;
     placedAt.add(key);
@@ -392,7 +392,7 @@ export function createGame(input) {
     return s.items[0].id;
   });
   /** @type {Record<string, Place>} */
-  const board = Object.fromEntries(LOCATION_IDS.map((loc) => [loc, { cubes: {}, influence: {}, token: null, scorched: false }]));
+  const board = Object.fromEntries(LOCATION_IDS.map((loc) => [loc, { tokens: {}, influence: {}, token: null, scorched: false }]));
   /** @type {Record<string, number>} */
   const supply = {};
   for (const faction of factions) {
@@ -403,10 +403,10 @@ export function createGame(input) {
     let placed = 0;
     for (const loc of s.items) {
       const n = loc === s.items[0] ? spec.constants.seeding.home : spec.constants.seeding.other;
-      board[loc].cubes[faction] = n;
+      board[loc].tokens[faction] = n;
       placed += n;
     }
-    supply[faction] = num({ options }, 'factionCubes') - placed;
+    supply[faction] = num({ options }, 'factionTokens') - placed;
   }
   let groups = spec.slayerGroups.map((g) => g.id);
   if (options.groups === 'random') {
@@ -515,7 +515,7 @@ const suitLocations = (card) => spec.locations.filter((l) => l.archetype === car
  * @param {GameState} state @param {Card} card @param {Target} t
  */
 function groupTarget(state, card, t) {
-  if (!t.location || !t.faction || cubesOf(state, t.location, t.faction) <= 0) return 'Choose a group on the board.';
+  if (!t.location || !t.faction || tokensOf(state, t.location, t.faction) <= 0) return 'Choose a group on the board.';
   if (!card.suit) return null;
   if (t.mode === 'location') return suitLocations(card).includes(t.location) ? null : 'That location is not one of the suit\'s.';
   if (t.mode === 'faction') return t.faction === suitFaction(state, card) ? null : 'That group is not the suit\'s faction.';
@@ -542,7 +542,7 @@ const movable = (state, card, t) => (card.suit && t.mode === 'faction' ? [/** @t
 function holdingSpots(state, card, mode) {
   if (!card.suit) return LOCATION_IDS.filter((loc) => !state.board[loc].scorched); // unsuited: any location
   const sf = suitFaction(state, card);
-  return LOCATION_IDS.filter((loc) => !state.board[loc].scorched && (mode === 'location' ? suitLocations(card).includes(loc) : cubesOf(state, loc, /** @type {string} */ (sf)) > 0));
+  return LOCATION_IDS.filter((loc) => !state.board[loc].scorched && (mode === 'location' ? suitLocations(card).includes(loc) : tokensOf(state, loc, /** @type {string} */ (sf)) > 0));
 }
 
 /** Round 10 test cards. @param {GameState | PlayerView} state @param {string} loc */
@@ -572,7 +572,7 @@ function canSwap(state, a, b) {
     const left = factionsAt(state, loc).filter((f) => f !== out);
     return left.includes(inn) || left.length < 2;
   };
-  return cubesOf(state, a.location, a.faction) > 0 && cubesOf(state, b.location, b.faction) > 0 && after(a.location, a.faction, b.faction) && after(b.location, b.faction, a.faction);
+  return tokensOf(state, a.location, a.faction) > 0 && tokensOf(state, b.location, b.faction) > 0 && after(a.location, a.faction, b.faction) && after(b.location, b.faction, a.faction);
 }
 
 /** The ring round a location, clockwise: [from, to] for each neighbour with a next neighbour (round 12). @param {GameState} state @param {string} loc */
@@ -600,20 +600,20 @@ function cameraSpots(state, pid, loc) {
 /** Where a Howl draws a group two hexes out: a location next to both, already holding that faction if one does, else the first it can enter (round 13). @param {GameState} state @param {string} target @param {string} from @param {string} f */
 function howlStep(state, target, from, f) {
   const between = MAP[from].adjacent.filter((m) => MAP[target].adjacent.includes(m) && canEnter(state, m, f));
-  return between.find((m) => cubesOf(state, m, f) > 0) ?? between[0] ?? null;
+  return between.find((m) => tokensOf(state, m, f) > 0) ?? between[0] ?? null;
 }
 /** Groups a Howl draws in (round 13). @param {GameState} state @param {string} target @param {string} f */
-const howlers = (state, target, f) => LOCATION_IDS.filter((l) => l !== target && !MAP[target].adjacent.includes(l) && twoHex(target).includes(l) && cubesOf(state, l, f) > 0)
+const howlers = (state, target, f) => LOCATION_IDS.filter((l) => l !== target && !MAP[target].adjacent.includes(l) && twoHex(target).includes(l) && tokensOf(state, l, f) > 0)
   .flatMap((from) => { const to = howlStep(state, target, from, f); return to ? [{ from, to }] : []; });
 /** Network jump destinations (round 13). @param {GameState} state @param {Card} card @param {Target} t */
-const networkSpots = (state, card, t) => (t.mode === 'location' ? suitLocations(card) : LOCATION_IDS.filter((l) => cubesOf(state, l, /** @type {string} */ (suitFaction(state, card))) > 0))
+const networkSpots = (state, card, t) => (t.mode === 'location' ? suitLocations(card) : LOCATION_IDS.filter((l) => tokensOf(state, l, /** @type {string} */ (suitFaction(state, card))) > 0))
   .filter((l) => l !== t.location && canEnter(state, l, /** @type {string} */ (t.faction)));
 /** Would a shove be needed, and who could be shoved (round 13)? The smaller group already there; ties are the player's choice. @param {GameState} state @param {string} to @param {string} f */
 function shoveable(state, to, f) {
   const there = factionsAt(state, to);
   if (there.includes(f) || there.length < 2) return null;
-  const least = Math.min(...there.map((x) => cubesOf(state, to, x)));
-  return there.filter((x) => cubesOf(state, to, x) === least);
+  const least = Math.min(...there.map((x) => tokensOf(state, to, x)));
+  return there.filter((x) => tokensOf(state, to, x) === least);
 }
 
 /** Can a group join `to` after `mover` has entered it? @param {GameState} state @param {string} to @param {string} mover @param {string} f */
@@ -639,7 +639,7 @@ export function influenceSpots(state, cardId) {
 function tokenSpots(state, card, mode) {
   const sf = suitFaction(state, card);
   return LOCATION_IDS.filter((loc) => !state.board[loc].token && !state.board[loc].scorched
-    && (mode === 'location' ? suitLocations(card).includes(loc) : cubesOf(state, loc, /** @type {string} */ (sf)) > 0));
+    && (mode === 'location' ? suitLocations(card).includes(loc) : tokensOf(state, loc, /** @type {string} */ (sf)) > 0));
 }
 
 /**
@@ -665,21 +665,21 @@ export function checkTarget(state, pid, card, t) {
       const e = placeTarget(state, card, t);
       if (e) return e;
       if (!t.faction || !movable(state, card, t).includes(t.faction)) return 'Choose which faction answers.';
-      if (!t.from || t.from.length < 1 || t.from.length > 2 || t.from.some((l) => cubesOf(state, l, /** @type {string} */ (t.faction)) <= 0 || l === t.location)) return 'Choose one or two locations holding that faction.';
+      if (!t.from || t.from.length < 1 || t.from.length > 2 || t.from.some((l) => tokensOf(state, l, /** @type {string} */ (t.faction)) <= 0 || l === t.location)) return 'Choose one or two locations holding that faction.';
       return null;
     }
     case 'halve': case 'halve-far': case 'teleport': case 'spread': case 'infect': case 'split': {
       const e = groupTarget(state, card, t);
       if (e) return e;
       const loc = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
-      if (card.action === 'halve') return cubesOf(state, loc, f) >= 2 && t.to && MAP[loc].adjacent.includes(t.to) ? null : 'Half needs a group of 2 or more and an adjacent destination.';
-      if (card.action === 'halve-far') return cubesOf(state, loc, f) >= 2 && t.to && t.to !== loc && state.board[t.to] ? null : 'Half needs a group of 2 or more and a destination.';
+      if (card.action === 'halve') return tokensOf(state, loc, f) >= 2 && t.to && MAP[loc].adjacent.includes(t.to) ? null : 'Half needs a group of 2 or more and an adjacent destination.';
+      if (card.action === 'halve-far') return tokensOf(state, loc, f) >= 2 && t.to && t.to !== loc && state.board[t.to] ? null : 'Half needs a group of 2 or more and a destination.';
       if (card.action === 'teleport') return t.to && t.to !== loc && state.board[t.to] ? null : 'Choose where to set it down.';
       if (card.action === 'split') {
         const split = t.split ?? {};
         const dests = Object.keys(split).filter((d) => split[d] > 0);
         if (dests.length < 2 || dests.some((d) => !MAP[loc].adjacent.includes(d))) return 'Split across at least two adjacent locations.';
-        if (dests.reduce((n, d) => n + split[d], 0) !== cubesOf(state, loc, f)) return 'Every cube must go somewhere.';
+        if (dests.reduce((n, d) => n + split[d], 0) !== tokensOf(state, loc, f)) return 'Every token must go somewhere.';
       }
       return null;
     }
@@ -695,12 +695,12 @@ export function checkTarget(state, pid, card, t) {
       return t.mode === 'faction' ? null : 'Choose a location target or a faction target.';
     }
     case 'drive-out': case 'drive-out-either': {
-      if (!t.location || factionsAt(state, t.location).length !== 2 || !t.faction || cubesOf(state, t.location, t.faction) <= 0) return 'Choose a faction at a contested location.';
+      if (!t.location || factionsAt(state, t.location).length !== 2 || !t.faction || tokensOf(state, t.location, t.faction) <= 0) return 'Choose a faction at a contested location.';
       if (t.mode === 'location') {
         if (!suitLocations(card).includes(t.location)) return 'That location is not one of the suit\'s.';
         const [a, b] = factionsAt(state, t.location);
-        const smaller = cubesOf(state, t.location, a) <= cubesOf(state, t.location, b) ? a : b;
-        if (card.action === 'drive-out' && cubesOf(state, t.location, t.faction) > cubesOf(state, t.location, smaller)) return 'Only the smaller faction can be driven out.';
+        const smaller = tokensOf(state, t.location, a) <= tokensOf(state, t.location, b) ? a : b;
+        if (card.action === 'drive-out' && tokensOf(state, t.location, t.faction) > tokensOf(state, t.location, smaller)) return 'Only the smaller faction can be driven out.';
       } else if (t.mode === 'faction') {
         if (t.faction !== suitFaction(state, card)) return 'Only the suit\'s faction.';
       } else return 'Choose a location target or a faction target.';
@@ -709,19 +709,19 @@ export function checkTarget(state, pid, card, t) {
     case 'reinforce': {
       const e = groupTarget(state, card, t);
       if (e) return e;
-      return state.supply[/** @type {string} */ (t.faction)] > 0 ? null : 'That faction has no cubes in its supply.';
+      return state.supply[/** @type {string} */ (t.faction)] > 0 ? null : 'That faction has no tokens in its supply.';
     }
     case 'carry-fight': {
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
       if (!t.location || !contestAt(state, t.location)) return 'Choose a contested location.';
-      if (t.mode === 'location' ? !suitLocations(card).includes(t.location) : cubesOf(state, t.location, /** @type {string} */ (suitFaction(state, card))) <= 0) return 'That contest is not the suit\'s.';
-      return t.to && MAP[t.location].adjacent.includes(t.to) && factionsAt(state, t.to).length === 0 && canEnter(state, t.to, factionsAt(state, t.location)[0]) ? null : 'Choose an adjacent location with no cubes.';
+      if (t.mode === 'location' ? !suitLocations(card).includes(t.location) : tokensOf(state, t.location, /** @type {string} */ (suitFaction(state, card))) <= 0) return 'That contest is not the suit\'s.';
+      return t.to && MAP[t.location].adjacent.includes(t.to) && factionsAt(state, t.to).length === 0 && canEnter(state, t.to, factionsAt(state, t.location)[0]) ? null : 'Choose an adjacent location with no tokens.';
     }
     case 'defect': case 'pit': {
-      if (!t.location || !t.faction || cubesOf(state, t.location, t.faction) <= 0) return 'Choose a group on the board.';
+      if (!t.location || !t.faction || tokensOf(state, t.location, t.faction) <= 0) return 'Choose a group on the board.';
       const other = factionsAt(state, t.location).find((f) => f !== t.faction);
       if (card.action === 'defect' && !contestAt(state, t.location)) return 'Choose a group in a contest.';
-      if (card.action === 'pit' && cubesOf(state, t.location, t.faction) > 3) return 'Only a group of 3 or fewer cubes.';
+      if (card.action === 'pit' && tokensOf(state, t.location, t.faction) > 3) return 'Only a group of 3 or fewer tokens.';
       if (t.mode === 'location') return suitLocations(card).includes(t.location) ? null : 'That location is not one of the suit\'s.';
       if (t.mode === 'faction') return other && other === suitFaction(state, card) ? null : 'The group must share its location with the suit\'s faction.';
       return 'Choose a location target or a faction target.';
@@ -751,14 +751,14 @@ export function checkTarget(state, pid, card, t) {
       const from = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
       if (!t.to || !MAP[from].adjacent.includes(t.to) || !canEnter(state, t.to, f)) return 'Choose an adjacent location it can enter.';
       const g = t.moves?.[0];
-      if (g && (g.faction === f || !MAP[t.to].adjacent.includes(g.location) || g.location === t.to || cubesOf(state, g.location, g.faction) <= 0 || !canFollow(state, t.to, f, g.faction))) return 'That group can\'t follow it in.';
+      if (g && (g.faction === f || !MAP[t.to].adjacent.includes(g.location) || g.location === t.to || tokensOf(state, g.location, g.faction) <= 0 || !canFollow(state, t.to, f, g.faction))) return 'That group can\'t follow it in.';
       return null;
     }
     case 'meet': {
       const e = groupTarget(state, card, t);
       if (e) return e;
       const a = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction), b = t.moves?.[0];
-      if (!b || b.faction === f || cubesOf(state, b.location, b.faction) <= 0 || !MAP[a].adjacent.includes(b.location)) return 'Choose a neighbouring group of another faction.';
+      if (!b || b.faction === f || tokensOf(state, b.location, b.faction) <= 0 || !MAP[a].adjacent.includes(b.location)) return 'Choose a neighbouring group of another faction.';
       const m = b.to;
       if (!m || m === a || m === b.location || !MAP[a].adjacent.includes(m) || !MAP[b.location].adjacent.includes(m) || !canEnter(state, m, f) || !canFollow(state, m, f, b.faction)) return 'Choose a location next to both that both can enter.';
       return null;
@@ -771,7 +771,7 @@ export function checkTarget(state, pid, card, t) {
       return land && canEnter(state, land, /** @type {string} */ (t.faction)) ? null : 'Nothing to land on that way.';
     }
     case 'mirror': {
-      if (!t.location || !t.faction || cubesOf(state, t.location, t.faction) <= 0) return 'Choose a group on the board.';
+      if (!t.location || !t.faction || tokensOf(state, t.location, t.faction) <= 0) return 'Choose a group on the board.';
       const to = MAP[t.location].mirror;
       if (!to || !canEnter(state, to, t.faction)) return 'It has no reflection it can enter.';
       if (t.mode === 'location') return suitLocations(card).includes(t.location) || suitLocations(card).includes(to) ? null : 'Neither it nor its reflection is one of the suit\'s.';
@@ -810,7 +810,7 @@ export function checkTarget(state, pid, card, t) {
     }
     case 'cash-in': {
       if ((t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode).includes(t.location)) return 'Choose the target location.';
-      if (!t.faction || cubesOf(state, t.location, t.faction) <= 0 || (state.players[pid].standing[t.faction] ?? 0) <= 0) return 'Choose a faction there you have standing with.';
+      if (!t.faction || tokensOf(state, t.location, t.faction) <= 0 || (state.players[pid].standing[t.faction] ?? 0) <= 0) return 'Choose a faction there you have standing with.';
       return null;
     }
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
@@ -818,7 +818,7 @@ export function checkTarget(state, pid, card, t) {
       const max = card.action === 'move-two' ? 2 : 1;
       if (moves.length < 1 || moves.length > max) return `Choose ${max === 2 ? 'one or two groups' : 'a group'} to move.`;
       for (const m of moves) {
-        if (cubesOf(state, m.location, m.faction) <= 0) return 'Choose a group on the board.';
+        if (tokensOf(state, m.location, m.faction) <= 0) return 'Choose a group on the board.';
         const reach = card.action === 'move-far' ? twoHex(m.location) : MAP[m.location].adjacent;
         if (!reach.includes(m.to)) return 'That is too far.';
       }
@@ -851,25 +851,25 @@ function act(state, pid, card, t) {
   switch (card.action) {
     case 'lure': {
       const to = /** @type {string} */ (t.location);
-      const groups = MAP[to].adjacent.flatMap((from) => movable(state, card, t).map((f) => ({ from, f, n: cubesOf(state, from, f) })))
+      const groups = MAP[to].adjacent.flatMap((from) => movable(state, card, t).map((f) => ({ from, f, n: tokensOf(state, from, f) })))
         .filter((g) => g.n > 0 && canEnter(state, to, g.f, state.pending?.blocked)).sort((a, b) => b.n - a.n);
       const pick = (t.faction && t.from?.[0] ? groups.find((g) => g.f === t.faction && g.from === t.from?.[0] && g.n === groups[0].n) : null) ?? groups[0];
       if (pick) logLine(state, `${pid}: ${card.name} draws ${move(state, pid, pick.f, pick.from, to, pick.n, placed)} ${names(pick.f)} into ${lname(to)}.`);
       break;
     }
     case 'sow': {
-      // The whole group sets off; each location entered gets 1 cube and 1 of
+      // The whole group sets off; each location entered gets 1 token and 1 of
       // the player's influence; the chase stops at a location it can't enter
       // or when the player's influence with that faction runs out; leftover
-      // cubes stay together at the last location entered.
+      // tokens stay together at the last location entered.
       const f = /** @type {string} */ (t.faction), start = /** @type {string} */ (t.location);
-      let left = cubesOf(state, start, f);
-      delete state.board[start].cubes[f];
+      let left = tokensOf(state, start, f);
+      delete state.board[start].tokens[f];
       let at = start;
       const visited = /** @type {string[]} */ ([]);
       for (const next of t.path ?? []) {
         if (left <= 0 || next === start || visited.includes(next) || !MAP[at].adjacent.includes(next) || !canEnter(state, next, f, state.pending?.blocked) || (state.players[pid].standing[f] ?? 0) <= 0) break;
-        state.board[next].cubes[f] = cubesOf(state, next, f) + 1;
+        state.board[next].tokens[f] = tokensOf(state, next, f) + 1;
         state.players[pid].standing[f] -= 1;
         state.board[next].influence[pid] = (state.board[next].influence[pid] ?? 0) + 1;
         state.events.push({ type: 'influence-placed', player: pid, faction: f, location: next });
@@ -877,7 +877,7 @@ function act(state, pid, card, t) {
         visited.push(next);
         at = next;
       }
-      if (left > 0) state.board[at].cubes[f] = cubesOf(state, at, f) + left;
+      if (left > 0) state.board[at].tokens[f] = tokensOf(state, at, f) + left;
       logLine(state, visited.length ? `${pid}: ${card.name} chases ${names(f)} through ${visited.map(lname).join(', ')}.` : `${pid}: ${card.name} finds no trail.`);
       break;
     }
@@ -905,25 +905,25 @@ function act(state, pid, card, t) {
     case 'broadcast': {
       const f = /** @type {string} */ (t.faction);
       let n = 0;
-      for (const from of t.from ?? []) n += move(state, pid, f, from, /** @type {string} */ (t.location), cubesOf(state, from, f), placed);
+      for (const from of t.from ?? []) n += move(state, pid, f, from, /** @type {string} */ (t.location), tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} calls ${n} ${names(f)} into ${lname(/** @type {string} */ (t.location))}.`);
       break;
     }
     case 'halve': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
-      const n = move(state, pid, f, from, /** @type {string} */ (t.to), Math.floor(cubesOf(state, from, f) / 2), placed);
+      const n = move(state, pid, f, from, /** @type {string} */ (t.to), Math.floor(tokensOf(state, from, f) / 2), placed);
       logLine(state, `${pid}: ${card.name} sends ${n} ${names(f)} from ${lname(from)} to ${lname(/** @type {string} */ (t.to))}.`);
       break;
     }
     case 'halve-far': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
-      const n = move(state, pid, f, from, /** @type {string} */ (t.to), Math.floor(cubesOf(state, from, f) / 2), placed);
+      const n = move(state, pid, f, from, /** @type {string} */ (t.to), Math.floor(tokensOf(state, from, f) / 2), placed);
       logLine(state, `${pid}: ${card.name} sends ${n} ${names(f)} from ${lname(from)} to ${lname(/** @type {string} */ (t.to))}.`);
       break;
     }
     case 'teleport': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
-      const n = move(state, pid, f, from, /** @type {string} */ (t.to), cubesOf(state, from, f), placed);
+      const n = move(state, pid, f, from, /** @type {string} */ (t.to), tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} lifts ${n} ${names(f)} from ${lname(from)} to ${lname(/** @type {string} */ (t.to))}.`);
       break;
     }
@@ -931,23 +931,23 @@ function act(state, pid, card, t) {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const reached = [];
       for (const to of MAP[from].adjacent) {
-        if (cubesOf(state, from, f) <= 0) break;
+        if (tokensOf(state, from, f) <= 0) break;
         if (move(state, pid, f, from, to, 1, placed)) reached.push(to);
       }
       logLine(state, `${pid}: ${card.name} spreads ${names(f)} into ${reached.map(lname).join(', ') || 'nowhere'}.`);
       break;
     }
     case 'infect': {
-      // As spread; where a cube enters a location holding another faction, that faction loses 1 cube to its supply.
+      // As spread; where a token enters a location holding another faction, that faction loses 1 token to its supply.
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const reached = [];
       for (const to of MAP[from].adjacent) {
-        if (cubesOf(state, from, f) <= 0) break;
+        if (tokensOf(state, from, f) <= 0) break;
         if (!move(state, pid, f, from, to, 1, placed)) continue;
         reached.push(to);
         for (const other of factionsAt(state, to).filter((o) => o !== f)) {
-          state.board[to].cubes[other] -= 1;
-          if (state.board[to].cubes[other] <= 0) delete state.board[to].cubes[other];
+          state.board[to].tokens[other] -= 1;
+          if (state.board[to].tokens[other] <= 0) delete state.board[to].tokens[other];
           state.supply[other] += 1;
         }
       }
@@ -958,16 +958,16 @@ function act(state, pid, card, t) {
       const f = /** @type {string} */ (t.faction), to = /** @type {string} */ (t.location);
       const regions = card.action === 'gather-region' ? [regionOf(to)] : REGIONS[regionOf(to)].neighbours;
       let n = 0;
-      for (const from of LOCATION_IDS.filter((l) => regions.includes(regionOf(l)) && l !== to)) n += move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      for (const from of LOCATION_IDS.filter((l) => regions.includes(regionOf(l)) && l !== to)) n += move(state, pid, f, from, to, tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} gathers ${n} ${names(f)} into ${lname(to)}.`);
       break;
     }
     case 'draw-adjacent': {
       const to = /** @type {string} */ (t.location);
-      const groups = MAP[to].adjacent.flatMap((from) => movable(state, card, t).map((f) => ({ from, f, n: cubesOf(state, from, f) }))).filter((g) => g.n > 0).sort((a, b) => b.n - a.n);
+      const groups = MAP[to].adjacent.flatMap((from) => movable(state, card, t).map((f) => ({ from, f, n: tokensOf(state, from, f) }))).filter((g) => g.n > 0).sort((a, b) => b.n - a.n);
       let n = 0;
       for (const g of groups) n += move(state, pid, g.f, g.from, to, g.n, placed);
-      logLine(state, `${pid}: ${card.name} draws ${n} cubes into ${lname(to)}.`);
+      logLine(state, `${pid}: ${card.name} draws ${n} tokens into ${lname(to)}.`);
       break;
     }
     case 'split': {
@@ -984,14 +984,14 @@ function act(state, pid, card, t) {
       let moved = 0;
       for (const g of groups) {
         const to = step(state, g.loc, /** @type {string} */ (t.direction));
-        if (to) moved += move(state, pid, g.f, g.loc, to, cubesOf(state, g.loc, g.f), placed) ? 1 : 0;
+        if (to) moved += move(state, pid, g.f, g.loc, to, tokensOf(state, g.loc, g.f), placed) ? 1 : 0;
       }
       logLine(state, `${pid}: ${card.name} shifts ${moved} group${moved === 1 ? '' : 's'} ${t.direction}.`);
       break;
     }
     case 'drive-out': case 'drive-out-either': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
-      const n = move(state, pid, f, from, /** @type {string} */ (t.to), cubesOf(state, from, f), placed);
+      const n = move(state, pid, f, from, /** @type {string} */ (t.to), tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} drives ${n} ${names(f)} out of ${lname(from)}.`);
       break;
     }
@@ -999,32 +999,32 @@ function act(state, pid, card, t) {
       const f = /** @type {string} */ (t.faction), loc = /** @type {string} */ (t.location);
       const n = Math.min(3, state.supply[f]);
       state.supply[f] -= n;
-      state.board[loc].cubes[f] = cubesOf(state, loc, f) + n;
+      state.board[loc].tokens[f] = tokensOf(state, loc, f) + n;
       logLine(state, `${pid}: ${card.name} adds ${n} ${names(f)} at ${lname(loc)} from the supply.`);
       break;
     }
     case 'carry-fight': {
       const from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
-      for (const f of factionsAt(state, from)) move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      for (const f of factionsAt(state, from)) move(state, pid, f, from, to, tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} carries the fight at ${lname(from)} to ${lname(to)}.`);
       break;
     }
     case 'defect': {
       const f = /** @type {string} */ (t.faction), loc = /** @type {string} */ (t.location);
       const other = /** @type {string} */ (factionsAt(state, loc).find((x) => x !== f));
-      const n = Math.min(3, cubesOf(state, loc, f), state.supply[other]);
-      state.board[loc].cubes[f] -= n;
-      if (state.board[loc].cubes[f] <= 0) delete state.board[loc].cubes[f];
+      const n = Math.min(3, tokensOf(state, loc, f), state.supply[other]);
+      state.board[loc].tokens[f] -= n;
+      if (state.board[loc].tokens[f] <= 0) delete state.board[loc].tokens[f];
       state.supply[f] += n;
       state.supply[other] -= n;
-      state.board[loc].cubes[other] += n;
+      state.board[loc].tokens[other] += n;
       logLine(state, `${pid}: ${card.name} turns ${n} ${names(f)} to the ${names(other)} at ${lname(loc)}.`);
       break;
     }
     case 'pit': {
       const f = /** @type {string} */ (t.faction), loc = /** @type {string} */ (t.location);
-      const n = cubesOf(state, loc, f);
-      delete state.board[loc].cubes[f];
+      const n = tokensOf(state, loc, f);
+      delete state.board[loc].tokens[f];
       state.supply[f] += n;
       logLine(state, `${pid}: ${card.name} swallows ${n} ${names(f)} at ${lname(loc)}.`);
       break;
@@ -1032,7 +1032,7 @@ function act(state, pid, card, t) {
     case 'slide': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const to = slideEnd(state, from, f, /** @type {string} */ (t.direction));
-      const n = move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      const n = move(state, pid, f, from, to, tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} sends ${n} ${names(f)} sliding from ${lname(from)} to ${lname(to)}.`);
       break;
     }
@@ -1044,34 +1044,34 @@ function act(state, pid, card, t) {
         if (!next || depth > 12) return;
         for (const g of factionsAt(state, loc).filter((x) => x !== incoming)) {
           knock(next, g, depth + 1);
-          move(state, pid, g, loc, next, cubesOf(state, loc, g), placed);
+          move(state, pid, g, loc, next, tokensOf(state, loc, g), placed);
         }
       };
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const to = step(state, from, dir);
       if (to) {
         knock(to, f, 0);
-        move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+        move(state, pid, f, from, to, tokensOf(state, from, f), placed);
       }
       logLine(state, `${pid}: ${card.name} crashes ${names(f)} ${dir} from ${lname(from)}.`);
       break;
     }
     case 'swap-far': {
       const a = { location: /** @type {string} */ (t.location), faction: /** @type {string} */ (t.faction) }, b = /** @type {{ location: string, faction: string }} */ (t.moves?.[0]);
-      const nb = cubesOf(state, b.location, b.faction);
-      delete state.board[b.location].cubes[b.faction];
-      move(state, pid, a.faction, a.location, b.location, cubesOf(state, a.location, a.faction), placed);
-      state.board[b.location].cubes[b.faction] = nb;
+      const nb = tokensOf(state, b.location, b.faction);
+      delete state.board[b.location].tokens[b.faction];
+      move(state, pid, a.faction, a.location, b.location, tokensOf(state, a.location, a.faction), placed);
+      state.board[b.location].tokens[b.faction] = nb;
       move(state, pid, b.faction, b.location, a.location, nb, placed);
       logLine(state, `${pid}: ${card.name}: ${names(a.faction)} at ${lname(a.location)} and ${names(b.faction)} at ${lname(b.location)} trade places.`);
       break;
     }
     case 'circle': {
-      const moves = circlers(state, /** @type {string} */ (t.location), movable(state, card, t)).map((g) => ({ ...g, n: cubesOf(state, g.from, g.f) }));
-      for (const g of moves) { delete state.board[g.from].cubes[g.f]; } // all lift at once
+      const moves = circlers(state, /** @type {string} */ (t.location), movable(state, card, t)).map((g) => ({ ...g, n: tokensOf(state, g.from, g.f) }));
+      for (const g of moves) { delete state.board[g.from].tokens[g.f]; } // all lift at once
       let n = 0;
       for (const g of moves) {
-        state.board[g.from].cubes[g.f] = cubesOf(state, g.from, g.f) + g.n;
+        state.board[g.from].tokens[g.f] = tokensOf(state, g.from, g.f) + g.n;
         n += move(state, pid, g.f, g.from, g.to, g.n, placed) ? 1 : 0; // a group that can't enter stays
       }
       logLine(state, `${pid}: ${card.name}: ${n} group${n === 1 ? '' : 's'} circle ${lname(/** @type {string} */ (t.location))}.`);
@@ -1089,38 +1089,38 @@ function act(state, pid, card, t) {
     }
     case 'follow': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
-      move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      move(state, pid, f, from, to, tokensOf(state, from, f), placed);
       const g = t.moves?.[0];
-      if (g) move(state, pid, g.faction, g.location, to, cubesOf(state, g.location, g.faction), placed);
+      if (g) move(state, pid, g.faction, g.location, to, tokensOf(state, g.location, g.faction), placed);
       logLine(state, `${pid}: ${card.name} leads ${names(f)} into ${lname(to)}${g ? `; ${names(g.faction)} follow` : ''}.`);
       break;
     }
     case 'meet': {
       const f = /** @type {string} */ (t.faction), a = /** @type {string} */ (t.location), b = /** @type {{ location: string, faction: string, to: string }} */ (t.moves?.[0]);
-      move(state, pid, f, a, b.to, cubesOf(state, a, f), placed);
-      move(state, pid, b.faction, b.location, b.to, cubesOf(state, b.location, b.faction), placed);
+      move(state, pid, f, a, b.to, tokensOf(state, a, f), placed);
+      move(state, pid, b.faction, b.location, b.to, tokensOf(state, b.location, b.faction), placed);
       logLine(state, `${pid}: ${card.name} drags ${names(f)} and ${names(b.faction)} into ${lname(b.to)}.`);
       break;
     }
     case 'leap': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const land = /** @type {string} */ (step(state, /** @type {string} */ (step(state, from, /** @type {string} */ (t.direction))), /** @type {string} */ (t.direction)));
-      const n = move(state, pid, f, from, land, cubesOf(state, from, f), placed);
+      const n = move(state, pid, f, from, land, tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name}: ${n} ${names(f)} leap from ${lname(from)} to ${lname(land)}.`);
       break;
     }
     case 'mirror': case 'network': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const to = /** @type {string} */ (card.action === 'mirror' ? MAP[from].mirror : t.to);
-      const n = move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      const n = move(state, pid, f, from, to, tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} sends ${n} ${names(f)} from ${lname(from)} to ${lname(to)}.`);
       break;
     }
     case 'shove': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
       const g = t.moves?.[0];
-      if (g && shoveable(state, to, f)) move(state, pid, g.faction, to, g.to, cubesOf(state, to, g.faction), placed);
-      const n = move(state, pid, f, from, to, cubesOf(state, from, f), placed);
+      if (g && shoveable(state, to, f)) move(state, pid, g.faction, to, g.to, tokensOf(state, to, g.faction), placed);
+      const n = move(state, pid, f, from, to, tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} leads ${n} ${names(f)} into ${lname(to)}${g ? `, shoving ${names(g.faction)} on to ${lname(g.to)}` : ''}.`);
       break;
     }
@@ -1129,14 +1129,14 @@ function act(state, pid, card, t) {
       let n = 0;
       for (const { from } of howlers(state, target, f)) {
         const to = howlStep(state, target, from, f); // re-checked: an earlier group may have changed what can enter
-        if (to) n += move(state, pid, f, from, to, cubesOf(state, from, f), placed) ? 1 : 0;
+        if (to) n += move(state, pid, f, from, to, tokensOf(state, from, f), placed) ? 1 : 0;
       }
       logLine(state, `${pid}: ${card.name} draws ${n} ${names(f)} group${n === 1 ? '' : 's'} closer to ${lname(target)}.`);
       break;
     }
     case 'repel': {
       let n = 0;
-      for (const g of pushes(state, /** @type {string} */ (t.location), movable(state, card, t))) n += move(state, pid, g.f, g.from, /** @type {string} */ (g.to), cubesOf(state, g.from, g.f), placed) ? 1 : 0;
+      for (const g of pushes(state, /** @type {string} */ (t.location), movable(state, card, t))) n += move(state, pid, g.f, g.from, /** @type {string} */ (g.to), tokensOf(state, g.from, g.f), placed) ? 1 : 0;
       logLine(state, `${pid}: ${card.name} drives ${n} group${n === 1 ? '' : 's'} away from ${lname(/** @type {string} */ (t.location))}.`);
       break;
     }
@@ -1162,7 +1162,7 @@ function act(state, pid, card, t) {
     }
     case 'move-two': case 'move-one': case 'move-half': case 'move-far': {
       for (const m of t.moves ?? []) {
-        const n = card.action === 'move-half' ? Math.floor(cubesOf(state, m.location, m.faction) / 2) : cubesOf(state, m.location, m.faction);
+        const n = card.action === 'move-half' ? Math.floor(tokensOf(state, m.location, m.faction) / 2) : tokensOf(state, m.location, m.faction);
         const got = move(state, pid, m.faction, m.location, m.to, n, placed);
         if (got) logLine(state, `${pid}: ${card.name} moves ${got} ${names(m.faction)} to ${lname(m.to)}.`);
       }
@@ -1202,7 +1202,7 @@ function triggerMatches(state, pid, response, location) {
   }
 }
 
-/** Where a pending action would move cubes into (for blocks). @param {GameState | PlayerView} state @param {{ card: string, target: Target | null }} pend */
+/** Where a pending action would move tokens into (for blocks). @param {GameState | PlayerView} state @param {{ card: string, target: Target | null }} pend */
 export function pendingDestinations(state, pend) {
   const t = pend.target;
   if (!t) return [];
@@ -1260,7 +1260,7 @@ export function validate(state, submission) {
   }
   if (state.phase === 'growth') {
     if (m.type !== 'grow' || !state.growing) return no('Choose where the faction grows.');
-    if (state.growing.leaders[state.growing.next % state.growing.leaders.length] !== pid) return no('Another influence leader places this cube.');
+    if (state.growing.leaders[state.growing.next % state.growing.leaders.length] !== pid) return no('Another influence leader places this token.');
     return (state.growing.due[m.location] ?? 0) > 0 ? OK : no('That location doesn\'t grow.');
   }
   if (state.phase !== 'play') return no('That move does not belong in this phase.');
@@ -1510,7 +1510,7 @@ function fight(state, loc) {
   place.token = null;
   const effect = token?.card ?? null;
   if (token) logLine(state, `  ${name}: ${token.owner}'s token flips: ${effect ? cardById(effect).name : 'a bluff'}.`);
-  const na = place.cubes[a], nb = place.cubes[b];
+  const na = place.tokens[a], nb = place.tokens[b];
   const aligned = [a, b].find((f) => archetypeOf(f) === alignmentOf(loc));
   const trueTie = effect === 'house-fire' || (na === nb && !aligned);
   if (trueTie) {
@@ -1518,7 +1518,7 @@ function fight(state, loc) {
     state.supply[a] += na;
     state.supply[b] += nb;
     for (const [pid, n] of Object.entries(place.influence)) state.players[pid].supply += n;
-    place.cubes = {};
+    place.tokens = {};
     place.influence = {};
     place.scorched = true;
     logLine(state, `  ${name}: a true tie. Both sides are wiped out and ${name} is scorched.`);
@@ -1530,16 +1530,16 @@ function fight(state, loc) {
     loser = winner === a ? b : a;
   } else [winner, loser] = na > nb ? [a, b] : [b, a];
   if (effect === 'invert' && na !== nb) [winner, loser] = [loser, winner]; // test card (round 12): the smaller group wins
-  const nl = place.cubes[loser];
+  const nl = place.tokens[loser];
   const loserLoss = nl; // the loser always loses everything (FR5)
   let winnerLoss = Math.max(1, Math.floor(nl / 2));
   if (effect === 'silver-bullets') winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
-  if (effect === 'salt-burn') winnerLoss = place.cubes[winner];
+  if (effect === 'salt-burn') winnerLoss = place.tokens[winner];
   if (effect === 'force-field') winnerLoss = 0; // test card (round 8)
-  winnerLoss = Math.min(winnerLoss, place.cubes[winner]);
-  place.cubes[loser] -= loserLoss;
-  place.cubes[winner] -= winnerLoss;
-  for (const f of [winner, loser]) if (place.cubes[f] <= 0) delete place.cubes[f];
+  winnerLoss = Math.min(winnerLoss, place.tokens[winner]);
+  place.tokens[loser] -= loserLoss;
+  place.tokens[winner] -= winnerLoss;
+  for (const f of [winner, loser]) if (place.tokens[f] <= 0) delete place.tokens[f];
   logLine(state, `  ${name}: ${factionById(winner).name} beat ${factionById(loser).name}; casualties ${loserLoss} and ${winnerLoss}.`);
   // Trophies (TD1): bigger pile to the leader, smaller to the runner-up.
   const piles = [{ faction: loser, n: loserLoss }, { faction: winner, n: winnerLoss }].filter((x) => x.n > 0).sort((x, y) => y.n - x.n);
@@ -1621,7 +1621,7 @@ function rankAt(state, loc, twice) {
 /** Where a faction grows this round (GR1, AL3). @param {GameState} state @param {string} faction */
 function growthSpots(state, faction) {
   const threshold = num(state, 'growth');
-  return LOCATION_IDS.filter((loc) => !state.board[loc].scorched && factionsAt(state, loc).length === 1 && cubesOf(state, loc, faction) >= threshold);
+  return LOCATION_IDS.filter((loc) => !state.board[loc].scorched && factionsAt(state, loc).length === 1 && tokensOf(state, loc, faction) >= threshold);
 }
 
 /** What each growth location is due: 1, plus 1 if the faction is aligned with it (AL3). @param {GameState} state @param {string} faction */
@@ -1631,7 +1631,7 @@ export function growthDue(state, faction) {
 
 /**
  * Growth for each faction in turn, from `from`. A faction with enough supply
- * grows everywhere it is due; one short of cubes grows as far as its supply
+ * grows everywhere it is due; one short of tokens grows as far as its supply
  * allows, its influence leaders taking turns to choose (3.5).
  * @param {GameState} state @param {number} [from]
  */
@@ -1641,7 +1641,7 @@ function beginGrowth(state, from = 0) {
     const wants = Object.values(due).reduce((n, x) => n + x, 0);
     if (wants === 0) continue;
     if (wants <= state.supply[faction]) {
-      for (const [loc, n] of Object.entries(due)) state.board[loc].cubes[faction] += n;
+      for (const [loc, n] of Object.entries(due)) state.board[loc].tokens[faction] += n;
       state.supply[faction] -= wants;
       logLine(state, `${factionById(faction).name} grows at ${Object.keys(due).length} location${Object.keys(due).length === 1 ? '' : 's'}.`);
     } else if (state.supply[faction] > 0) {
@@ -1653,10 +1653,10 @@ function beginGrowth(state, from = 0) {
   return endRound(state);
 }
 
-/** One cube placed by an influence leader during a short-supply growth. @param {GameState} state @param {string} loc */
+/** One token placed by an influence leader during a short-supply growth. @param {GameState} state @param {string} loc */
 function growOne(state, loc) {
   const g = /** @type {NonNullable<GameState['growing']>} */ (state.growing);
-  state.board[loc].cubes[g.faction] += 1;
+  state.board[loc].tokens[g.faction] += 1;
   state.supply[g.faction] -= 1;
   g.due[loc] -= 1;
   if (g.due[loc] <= 0) delete g.due[loc];
@@ -1789,7 +1789,7 @@ export function sampleTarget(state, pid, cardId, rng) {
       case 'gather-region': case 'gather-neighbours': t = { mode, location: pick(LOCATION_IDS), faction: pick(state.factions) }; break;
       case 'broadcast': {
         const f = pick(state.factions);
-        const holds = LOCATION_IDS.filter((l) => cubesOf(state, l, f) > 0);
+        const holds = LOCATION_IDS.filter((l) => tokensOf(state, l, f) > 0);
         t = { mode, location: pick(LOCATION_IDS), faction: f, from: [pick(holds), pick(holds)].filter((x, i, a) => x && a.indexOf(x) === i) };
         break;
       }
@@ -1823,7 +1823,7 @@ export function sampleTarget(state, pid, cardId, rng) {
       }
       case 'split': {
         if (!g) break;
-        const n = cubesOf(state, g.loc, g.f);
+        const n = tokensOf(state, g.loc, g.f);
         const dests = MAP[g.loc].adjacent.slice();
         if (n < 2 || dests.length < 2) break;
         const a = pick(dests), b = pick(dests.filter((d) => d !== a));
@@ -1906,12 +1906,12 @@ export function nextChoice(state, pid, cardId, t) {
   switch (card.action) {
     case 'lure': case 'draw-adjacent': {
       // Only where it would do something: a group of a faction that may come is adjacent and can enter.
-      const comes = (/** @type {string} */ loc) => MAP[loc].adjacent.some((from) => movers.some((f) => cubesOf(state, from, f) > 0 && canEnter(state, loc, f)));
+      const comes = (/** @type {string} */ loc) => MAP[loc].adjacent.some((from) => movers.some((f) => tokensOf(state, from, f) > 0 && canEnter(state, loc, f)));
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter(comes) };
       if (card.action === 'lure' && !t.faction) {
         // Fresh Meat: a tie for the largest group goes to the player's choice (G.8).
         const to = t.location;
-        const near = MAP[to].adjacent.flatMap((from) => movers.map((f) => ({ location: from, faction: f, n: cubesOf(state, from, f) }))).filter((g) => g.n > 0 && canEnter(state, to, g.faction));
+        const near = MAP[to].adjacent.flatMap((from) => movers.map((f) => ({ location: from, faction: f, n: tokensOf(state, from, f) }))).filter((g) => g.n > 0 && canEnter(state, to, g.faction));
         const most = Math.max(0, ...near.map((g) => g.n));
         const tied = near.filter((g) => g.n === most).map(({ location, faction }) => ({ location, faction }));
         if (tied.length > 1) return { kind: 'group', key: 'lure', options: tied };
@@ -1920,17 +1920,17 @@ export function nextChoice(state, pid, cardId, t) {
     }
     case 'gather-region': case 'gather-neighbours': {
       const sources = (/** @type {string} */ loc) => LOCATION_IDS.filter((l) => l !== loc && (card.action === 'gather-region' ? regionOf(l) === regionOf(loc) : REGIONS[regionOf(loc)].neighbours.includes(regionOf(l))));
-      const gathers = (/** @type {string} */ loc, /** @type {string} */ f) => canEnter(state, loc, f) && sources(loc).some((l) => cubesOf(state, l, f) > 0);
+      const gathers = (/** @type {string} */ loc, /** @type {string} */ f) => canEnter(state, loc, f) && sources(loc).some((l) => tokensOf(state, l, f) > 0);
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => movers.some((f) => gathers(loc, f))) };
       if (!t.faction) return { kind: 'faction', options: movers.filter((f) => gathers(/** @type {string} */ (t.location), f)) };
       return { kind: 'done' };
     }
     case 'broadcast':
-      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => movers.some((f) => canEnter(state, loc, f) && LOCATION_IDS.some((l) => l !== loc && cubesOf(state, l, f) > 0))) };
-      if (!t.faction) return { kind: 'faction', options: movers.filter((f) => canEnter(state, /** @type {string} */ (t.location), f) && LOCATION_IDS.some((l) => l !== t.location && cubesOf(state, l, f) > 0)) };
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => movers.some((f) => canEnter(state, loc, f) && LOCATION_IDS.some((l) => l !== loc && tokensOf(state, l, f) > 0))) };
+      if (!t.faction) return { kind: 'faction', options: movers.filter((f) => canEnter(state, /** @type {string} */ (t.location), f) && LOCATION_IDS.some((l) => l !== t.location && tokensOf(state, l, f) > 0)) };
       if ((t.from ?? []).includes('__stop')) return { kind: 'done' };
       if ((t.from ?? []).length < 2) {
-        const opts = LOCATION_IDS.filter((l) => l !== t.location && !(t.from ?? []).includes(l) && cubesOf(state, l, /** @type {string} */ (t.faction)) > 0);
+        const opts = LOCATION_IDS.filter((l) => l !== t.location && !(t.from ?? []).includes(l) && tokensOf(state, l, /** @type {string} */ (t.faction)) > 0);
         return opts.length ? { kind: 'location', key: 'from', options: opts, optional: (t.from ?? []).length === 1 } : { kind: 'done' };
       }
       return { kind: 'done' };
@@ -1947,8 +1947,8 @@ export function nextChoice(state, pid, cardId, t) {
       if (path.includes('__stop')) return { kind: 'done' };
       const at = path.length ? path[path.length - 1] : t.location;
       const f = /** @type {string} */ (t.faction);
-      // Steps left: one cube and one influence per location entered.
-      const left = Math.min(cubesOf(state, t.location, f), state.players[pid].standing[f] ?? 0) - path.length;
+      // Steps left: one token and one influence per location entered.
+      const left = Math.min(tokensOf(state, t.location, f), state.players[pid].standing[f] ?? 0) - path.length;
       // The chase never enters a location twice, nor goes back to its start (G.8).
       const opts = left > 0 ? MAP[at].adjacent.filter((l) => canEnter(state, l, f) && l !== t.location && !path.includes(l)) : [];
       return opts.length ? { kind: 'location', key: 'path', options: opts, optional: path.length > 0, left } : { kind: 'done' };
@@ -1956,7 +1956,7 @@ export function nextChoice(state, pid, cardId, t) {
     case 'halve': case 'halve-far': case 'drive-out': case 'drive-out-either': case 'teleport': {
       const far = card.action === 'teleport' || card.action === 'halve-far';
       if (!t.location) {
-        const gs = groups.filter(groupOk).filter((g) => (!card.action.startsWith('halve') || cubesOf(state, g.location, g.faction) >= 2)
+        const gs = groups.filter(groupOk).filter((g) => (!card.action.startsWith('halve') || tokensOf(state, g.location, g.faction) >= 2)
           && exits(g, far ? LOCATION_IDS : MAP[g.location].adjacent).length > 0);
         return { kind: 'group', key: 'group', options: card.action.startsWith('drive-out') ? gs.filter((g) => MAP[g.location].adjacent.some((to) => ok({ ...t, location: g.location, faction: g.faction, to }))) : gs };
       }
@@ -2034,11 +2034,11 @@ export function nextChoice(state, pid, cardId, t) {
     case 'spread': case 'infect':
       return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => exits(g, MAP[g.location].adjacent).length > 0) };
     case 'split': {
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => cubesOf(state, g.location, g.faction) >= 2 && exits(g, MAP[g.location].adjacent).length >= 2) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => tokensOf(state, g.location, g.faction) >= 2 && exits(g, MAP[g.location].adjacent).length >= 2) };
       const placedN = Object.values(t.split ?? {}).reduce((a, b) => a + b, 0);
-      const left = cubesOf(state, t.location, /** @type {string} */ (t.faction)) - placedN;
+      const left = tokensOf(state, t.location, /** @type {string} */ (t.faction)) - placedN;
       const dests = MAP[t.location].adjacent.filter((l) => canEnter(state, l, /** @type {string} */ (t.faction)));
-      // At least two locations: the last cube can't join the only one used so far.
+      // At least two locations: the last token can't join the only one used so far.
       const used = Object.keys(t.split ?? {}).filter((d) => (t.split?.[d] ?? 0) > 0);
       return left > 0 ? { kind: 'split', options: left === 1 && used.length === 1 ? dests.filter((d) => d !== used[0]) : dests, left } : { kind: 'done' };
     }
@@ -2139,7 +2139,7 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { cubes: { ...place.cubes }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched }];
+      return [loc, { tokens: { ...place.tokens }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),

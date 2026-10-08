@@ -255,7 +255,7 @@
       "slot": "shift",
       "influence": 3,
       "action": "sow",
-      "text": "Drive the target group hex by bordering hex, leaving 1 cube and 1 of your influence in each location entered, while your influence with that faction lasts. A location it can't enter ends the chase; leftover cubes stay together at the last location. Target: the group chased.",
+      "text": "Drive the target group hex by bordering hex, leaving 1 token and 1 of your influence in each location entered, while your influence with that faction lasts. A location it can't enter ends the chase; leftover tokens stay together at the last location. Target: the group chased.",
       "readings": {
         "location": "any group at a ◐ location.",
         "faction": "a Nocturnal group anywhere."
@@ -268,7 +268,7 @@
       "slot": "signature",
       "influence": 4,
       "action": "token",
-      "text": "Hidden: at its fight, each group loses 2 more cubes as casualties.",
+      "text": "Hidden: at its fight, each group loses 2 more tokens as casualties.",
       "readings": {
         "location": "a ◐ location.",
         "faction": "a location holding the Nocturnals."
@@ -278,7 +278,7 @@
         "name": "Never Invite Them In",
         "timing": "before",
         "trigger": "move-into-your-location",
-        "text": "When a player is about to move cubes into a location where you have influence, block it; the cubes stay where they are."
+        "text": "When a player is about to move tokens into a location where you have influence, block it; the tokens stay where they are."
       }
     },
     {
@@ -334,7 +334,7 @@
       "slot": "strike",
       "influence": 2,
       "action": "spread",
-      "text": "The target group puts 1 cube into every adjacent location it can enter, as far as its cubes go. Target: the infected group.",
+      "text": "The target group puts 1 token into every adjacent location it can enter, as far as its tokens go. Target: the infected group.",
       "readings": {
         "location": "any group at a ⏏ location.",
         "faction": "a Sentient group anywhere."
@@ -347,7 +347,7 @@
       "slot": "shift",
       "influence": 3,
       "action": "gather-region",
-      "text": "Move one faction's cubes from every location in the target's region into the target. Target: the destination.",
+      "text": "Move one faction's tokens from every location in the target's region into the target. Target: the destination.",
       "readings": {
         "location": "any faction, into a ⏏ location.",
         "faction": "the Sentients, into any location."
@@ -380,10 +380,10 @@
       "slot": "strike",
       "influence": 2,
       "action": "draw-adjacent",
-      "text": "Every cube in adjacent locations is drawn into the target. Target: where the bell rings.",
+      "text": "Every token in adjacent locations is drawn into the target. Target: where the bell rings.",
       "readings": {
         "location": "a ☾ location, any faction comes.",
-        "faction": "anywhere, only Undead cubes come."
+        "faction": "anywhere, only Undead tokens come."
       }
     },
     {
@@ -406,7 +406,7 @@
       "slot": "signature",
       "influence": 4,
       "action": "token",
-      "text": "Hidden: at its fight, both groups lose all their cubes; trophies are handed out as normal and the location is not scorched.",
+      "text": "Hidden: at its fight, both groups lose all their tokens; trophies are handed out as normal and the location is not scorched.",
       "readings": {
         "location": "a ☾ location.",
         "faction": "a location holding the Undead."
@@ -599,7 +599,7 @@
     {
       "id": "growth",
       "label": "Growth threshold",
-      "description": "A lone faction with at least this many cubes at a location grows (GR1).",
+      "description": "A lone faction with at least this many tokens at a location grows (GR1).",
       "default": "2",
       "choices": [
         {
@@ -615,9 +615,9 @@
       ]
     },
     {
-      "id": "factionCubes",
-      "label": "Cubes per faction",
-      "description": "Each faction's cubes, board and supply together (G.7).",
+      "id": "factionTokens",
+      "label": "Tokens per faction",
+      "description": "Each faction's tokens, board and supply together (G.7).",
       "default": "20",
       "choices": [
         {
@@ -797,8 +797,8 @@
     },
     {
       "id": "influenceAtOrigin",
-      "label": "Influence where cubes leave",
-      "description": "Test lever (influence economy, 2026-10-07): a move also places 1 influence where the cubes left from.",
+      "label": "Influence where tokens leave",
+      "description": "Test lever (influence economy, 2026-10-07): a move also places 1 influence where the tokens left from.",
       "default": "off",
       "choices": [
         {
@@ -1103,7 +1103,7 @@
         "slot": "signature",
         "influence": 3,
         "action": "token",
-        "text": "Hidden: at its fight, the winner loses no cubes.",
+        "text": "Hidden: at its fight, the winner loses no tokens.",
         "readings": {
           "location": "an ↂ location.",
           "faction": "a location holding the Sci-Fi faction."
@@ -1187,7 +1187,7 @@
         "slot": "strike",
         "influence": 2,
         "action": "infect",
-        "text": "The target group puts 1 cube into every adjacent location it can enter, as far as its cubes go. Where a cube joins another faction, that faction loses 1 cube to its supply. Target: the infected group.",
+        "text": "The target group puts 1 token into every adjacent location it can enter, as far as its tokens go. Where a token joins another faction, that faction loses 1 token to its supply. Target: the infected group.",
         "readings": {
           "location": "any group at a ⏏ location.",
           "faction": "a Sentient group anywhere."
@@ -1201,7 +1201,7 @@
         "slot": "signature",
         "influence": 3,
         "action": "reinforce",
-        "text": "Up to 3 cubes from the faction’s supply join the target group. Target: the group.",
+        "text": "Up to 3 tokens from the faction’s supply join the target group. Target: the group.",
         "readings": {
           "location": "any group at a ◐ location.",
           "faction": "a Nocturnal group anywhere."
@@ -1215,7 +1215,7 @@
         "slot": "signature",
         "influence": 3,
         "action": "carry-fight",
-        "text": "Both groups at the target are lifted together into an adjacent location with no cubes; the fight happens there. Target: the contest.",
+        "text": "Both groups at the target are lifted together into an adjacent location with no tokens; the fight happens there. Target: the contest.",
         "readings": {
           "location": "a contest at an ↂ location.",
           "faction": "a contest the Sci-Fi faction is in."
@@ -1229,10 +1229,10 @@
         "slot": "signature",
         "influence": 3,
         "action": "defect",
-        "text": "Up to 3 cubes of the target group change sides: they join the other faction at that location (swapped through the supplies). Target: the group that defects.",
+        "text": "Up to 3 tokens of the target group change sides: they join the other faction at that location (swapped through the supplies). Target: the group that defects.",
         "readings": {
           "location": "a group in a contest at a ⏏ location.",
-          "faction": "a group fighting the Sentients; its cubes become Sentients."
+          "faction": "a group fighting the Sentients; its tokens become Sentients."
         },
         "round": 10
       },
@@ -1257,7 +1257,7 @@
         "slot": "signature",
         "influence": 3,
         "action": "pit",
-        "text": "The target group, 3 cubes or fewer, falls in: its cubes go back to its supply. Target: the group.",
+        "text": "The target group, 3 tokens or fewer, falls in: its tokens go back to its supply. Target: the group.",
         "readings": {
           "location": "a small group at a ⎈ location.",
           "faction": "a small group sharing a location with the Demons."
@@ -1314,7 +1314,7 @@
         "influence": 3,
         "action": "token",
         "round": 11,
-        "text": "Hidden: at its fight, no one takes trophies; the cubes lost go back to their supplies.",
+        "text": "Hidden: at its fight, no one takes trophies; the tokens lost go back to their supplies.",
         "readings": {
           "location": "a ☾ location.",
           "faction": "a location holding the Undead."
@@ -1370,7 +1370,7 @@
         "influence": 3,
         "action": "surveil",
         "round": 12,
-        "text": "Place 1 influence at the target and at each location next to it that holds cubes, each spent from your standing with a faction there (the one you hold most). Target: the hub.",
+        "text": "Place 1 influence at the target and at each location next to it that holds tokens, each spent from your standing with a faction there (the one you hold most). Target: the hub.",
         "readings": {
           "location": "a ⏏ location.",
           "faction": "a location holding the Sentients."

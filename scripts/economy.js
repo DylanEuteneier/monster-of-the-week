@@ -47,7 +47,7 @@ function main() {
           const who = Object.values(place.influence).filter((n) => n > 0).length;
           if (who > 0) r.influenced += 1;
           r.onBoard += Object.values(place.influence).reduce((a, b) => a + b, 0);
-          if (place.scorched || Object.values(place.cubes).filter((n) => n > 0).length !== 2) continue;
+          if (place.scorched || Object.values(place.tokens).filter((n) => n > 0).length !== 2) continue;
           r.fights += 1;
           r.by[Math.min(3, who)] += 1;
         }

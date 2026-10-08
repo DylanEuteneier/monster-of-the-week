@@ -284,7 +284,7 @@ function renderPlayers() {
     const row = (/** @type {string} */ label, /** @type {string} */ value) => `<span class="player-row"><span class="field-label">${label}</span><span class="field-value">${value}</span></span>`;
     const rows = [
       row('Group', `${suitIcon(group?.archetype)} ${esc(group?.name ?? '')}`),
-      row('Supply', `<span class="supply-row cubes" title="${p.supply} in supply">${pile(p.supply, () => cubeHtml(colourOf(id), 8))}</span>`),
+      row('Supply', `<span class="supply-row tokens" title="${p.supply} in supply">${pile(p.supply, () => cubeHtml(colourOf(id), 8))}</span>`),
       row('Hand', miniCards(p.handSize) || '<span class="muted">empty</span>'),
       id === view.you ? row('Trophies', `<span class="trophies" title="Secret: only you see these (IN2)">${trophies || '<span class="muted">none yet</span>'}</span>`) : '',
     ].join('');
@@ -351,7 +351,7 @@ function picks() {
 function piecesAt(loc, lit, board = /** @type {PlayerView} */ (ui.view).board) {
   const view = /** @type {PlayerView} */ (ui.view);
   const place = board[loc];
-  const rows = Object.entries(place.cubes).filter(([, n]) => n > 0).map(([f, n]) => {
+  const rows = Object.entries(place.tokens).filter(([, n]) => n > 0).map(([f, n]) => {
     // A group step lights the group; a faction step lights every group of that faction, and picking one picks the faction.
     const group = lit.groups.some((g) => g.location === loc && g.faction === f);
     const faction = !group && lit.factions.includes(f);
@@ -403,7 +403,7 @@ function renderBoard() {
     const state = on ? 'candidate' : ui.choosing && chosen.has(t.loc) ? 'hovered' : '';
     return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}" data-tile="${esc(t.loc)}"${on ? ` data-action="pick-location" data-location="${esc(t.loc)}"` : ''} title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? '<b>scorched</b>' : piecesAt(t.loc, lit, shown), /** @type {import('./pieces.js').TargetState} */ (state))}<div class="hex-preview" aria-hidden="true"></div></div>`;
   });
-  const total = Object.values(view.board).reduce((n, pl) => n + Object.values(pl.cubes).reduce((a, b) => a + b, 0), 0);
+  const total = Object.values(view.board).reduce((n, pl) => n + Object.values(pl.tokens).reduce((a, b) => a + b, 0), 0);
   // Display tables are never narrower than the map (they may be wider).
   if (board) document.documentElement.style.setProperty('--map-width', `${board.width * S}px`);
   // Phones: start the map window centred on the island, once.
@@ -516,7 +516,7 @@ function renderMine() {
   const me = view.players[view.you];
   const standing = view.factions.filter((f) => (me.standing[f] ?? 0) > 0).sort((a, b) => me.standing[b] - me.standing[a])
     .map((f) => `<span class="side-row">${tokenHtml(f, 1)}<b>${me.standing[f]}</b><span class="side-name">${esc(fname(f))}</span></span>`).join('');
-  setHtml('mine', `${chip(cubeHtml(colourOf(view.you), 9), me.supply, `Supply: ${me.supply} influence cubes`)}${chip('<span class="bluff"></span>', me.bluffs, `Bluff tokens: ${me.bluffs}`)}`);
+  setHtml('mine', `${chip(cubeHtml(colourOf(view.you), 9), me.supply, `Supply: ${me.supply} influence tokens`)}${chip('<span class="bluff"></span>', me.bluffs, `Bluff tokens: ${me.bluffs}`)}`);
   setHtml('influence', `<span class="side-head" data-action="toggle-side" data-side="influence">Influence</span>${standing || '<span class="side-row is-zero"><span class="muted">—</span></span>'}`);
   $('influence').classList.toggle('is-open', ui.sideOpen === 'influence');
 }
@@ -612,7 +612,7 @@ function renderTargeting(cardId) {
     from: 'Pick where they come from', group: 'Pick a group', faction: 'Pick a faction', direction: 'Pick a direction', done: 'Ready',
   });
   const key = choice.kind === 'location' || (choice.kind === 'group' && choice.key === 'lure') ? choice.key : choice.kind;
-  const words = choice.kind === 'split' ? `Send cubes: ${choice.left} left`
+  const words = choice.kind === 'split' ? `Send tokens: ${choice.left} left`
     : choice.kind === 'location' && choice.key === 'from' && card.action === 'move-influence' ? `Pick your influence to move · ${3 - (ui.target.from ?? []).filter((l) => l !== '__stop').length} left`
     : choice.kind === 'location' && choice.key === 'path' ? `Pick the next step · ${choice.left} left` : WORDS[key] ?? '';
   const arrows = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';
@@ -893,7 +893,7 @@ const STEPWISE = ['sow', 'split', 'broadcast', 'move-two', 'move-influence'];
 /**
  * The view as the table shows it: the real one, or, while a step-by-step
  * card's target is being built, with the steps picked so far already carried
- * out on the board and in standing (Track leaves its cube and influence at
+ * out on the board and in standing (Track leaves its token and influence at
  * each step). Nothing is sent until the target is finished, so Back still
  * undoes a step.
  * @returns {PlayerView}
@@ -916,7 +916,7 @@ function shownView() {
 /**
  * Outcome preview: hovering a lit choice that would finish the target (or
  * extend a path or a list of sources) shows on each hex what the play would
- * change: +n / -n cubes per faction, and your influence placed.
+ * change: +n / -n tokens per faction, and your influence placed.
  * @param {PointerEvent} event
  */
 function onPreview(event) {
@@ -934,7 +934,7 @@ function onPreview(event) {
   const now = shownView().board;
   for (const [loc, place] of Object.entries(after)) {
     const was = now[loc];
-    const chips = view.factions.map((f) => [f, (place.cubes[f] ?? 0) - (was.cubes[f] ?? 0)]).filter(([, n]) => n)
+    const chips = view.factions.map((f) => [f, (place.tokens[f] ?? 0) - (was.tokens[f] ?? 0)]).filter(([, n]) => n)
       .map(([f, n]) => `<span class="preview-chip ${Number(n) > 0 ? 'is-up' : 'is-down'}">${tokenHtml(String(f), 1)}${Number(n) > 0 ? '+' : '−'}${Math.abs(Number(n))}</span>`);
     const mine = (place.influence[view.you] ?? 0) - (was.influence[view.you] ?? 0);
     if (mine) chips.push(`<span class="preview-chip ${mine > 0 ? 'is-up' : 'is-down'}">${cubeHtml(colourOf(view.you), 8)}${mine > 0 ? '+' : '−'}${Math.abs(mine)}</span>`);

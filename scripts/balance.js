@@ -4,7 +4,7 @@
  * ranking (Current focus 4):
  *   1. battles: altering the outcome of a large, high-trophy fight; the
  *      trophies that change hands at this round's fights, plus fights whose
- *      winner flips, weighted by the cubes lost there
+ *      winner flips, weighted by the tokens lost there
  *   2. control: contested locations (two factions) where the player becomes
  *      the sole top-influence player
  *   3. movement: pieces moved or placed (faction tokens, hidden tokens) and
@@ -51,13 +51,13 @@ function reckon(state) {
   const fights = {};
   for (const loc of Object.keys(s.board)) {
     const place = s.board[loc];
-    const here = Object.keys(place.cubes).filter((f) => place.cubes[f] > 0);
+    const here = Object.keys(place.tokens).filter((f) => place.tokens[f] > 0);
     if (place.scorched || here.length !== 2) continue;
-    const before = here.reduce((n, f) => n + place.cubes[f], 0);
+    const before = here.reduce((n, f) => n + place.tokens[f], 0);
     s = resolveFight(s, loc);
     const after = s.board[loc];
-    const winner = here.find((f) => (after.cubes[f] ?? 0) > 0) ?? '';
-    fights[loc] = { winner, lost: before - here.reduce((n, f) => n + (after.cubes[f] ?? 0), 0) };
+    const winner = here.find((f) => (after.tokens[f] ?? 0) > 0) ?? '';
+    fights[loc] = { winner, lost: before - here.reduce((n, f) => n + (after.tokens[f] ?? 0), 0) };
   }
   let grown = 0;
   for (const f of s.factions) grown += Math.min(s.supply[f], Object.values(growthDue(s, f)).reduce((a, b) => a + b, 0));
@@ -72,7 +72,7 @@ function topOf(place) {
 }
 
 /** @param {GameState['board'][string]} place */
-const contested = (place) => !place.scorched && Object.values(place.cubes).filter((n) => n > 0).length === 2;
+const contested = (place) => !place.scorched && Object.values(place.tokens).filter((n) => n > 0).length === 2;
 
 /**
  * Score one target against the untouched board.
@@ -91,7 +91,7 @@ function score(state, pid, base, after) {
   for (const loc of Object.keys(state.board)) {
     const was = state.board[loc], now = after.board[loc];
     if (contested(now) && topOf(now) === pid && topOf(was) !== pid) control += 1;
-    for (const f of new Set([...Object.keys(was.cubes), ...Object.keys(now.cubes)])) moved += Math.max(0, (now.cubes[f] ?? 0) - (was.cubes[f] ?? 0));
+    for (const f of new Set([...Object.keys(was.tokens), ...Object.keys(now.tokens)])) moved += Math.max(0, (now.tokens[f] ?? 0) - (was.tokens[f] ?? 0));
     if (now.token && !was.token) moved += 1;
     placed += Math.max(0, (now.influence[pid] ?? 0) - (was.influence[pid] ?? 0));
   }
