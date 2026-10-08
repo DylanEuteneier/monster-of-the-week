@@ -246,9 +246,11 @@ export function winChances(state, pid) {
 /** A goal bot's value: its win chance, weighted toward its goal, plus its margins. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
 function goalValue(state, pid, goal, persona) {
   const c = winChances(state, pid);
-  const inv = c.pInvaders * (10 * c.asInvaders + persona.margin * c.marginInvaders);
-  const islandWorth = persona.linear ? persona.linear * 10 * c.linearIsland : 10 * c.asIsland + persona.margin * c.marginIsland;
-  const isl = (persona.flat && goal === 'island' ? 1 : 1 - c.pInvaders) * islandWorth;
+  // Margins are added on their own, never scaled by an ending's chance: a margin can be negative, and scaling it would
+  // reward a bot that is behind for making that ending less likely (2026-10-08 fix).
+  const inv = c.pInvaders * 10 * c.asInvaders + persona.margin * c.marginInvaders;
+  const islandMargin = persona.linear ? persona.linear * 10 * c.linearIsland : persona.margin * c.marginIsland;
+  const isl = (persona.flat && goal === 'island' ? 1 : 1 - c.pInvaders) * 10 * c.asIsland + islandMargin;
   return (goal === 'invaders' ? inv + persona.other * isl : isl + persona.other * inv) + 0.02 * state.players[pid].supply;
 }
 
