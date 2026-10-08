@@ -15,6 +15,10 @@
  * - goal-deep: goal, plus a reply lookahead: for its best moves it also plays
  *              the next player's best reply and keeps the move that is still
  *              best for it afterwards. Slower.
+ * - backer:    goal, but quick to back a faction for the invaders (proof
+ *              −0.3): the faction-ally player. Two of them at a table of five
+ *              bring the invaders' ending about 40% of the time (the
+ *              designer's target), so tuning tables seat two.
  * - hunter:    a trophy chaser with a plain value: trophy sets for the island
  *              and standing less trophies for the invaders, blended by how
  *              likely each ending looks, read as 30 tokens of presence nearer
@@ -41,12 +45,12 @@ function spend(state, cardId, at = (spots) => spots[0]) {
   const spots = influenceSpots(state, cardId);
   return spots.length ? { type: 'play', card: cardId, use: 'influence', location: at(spots) } : { type: 'play', card: cardId, use: 'influence' };
 }
-/** @typedef {'goal' | 'goal-deep' | 'hunter'} Profile */
+/** @typedef {'goal' | 'goal-deep' | 'backer' | 'hunter'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory }} BotOptions */
 /** What a bot remembers between its turns: its goal. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
 
-export const PROFILES = /** @type {Profile[]} */ (['goal', 'goal-deep', 'hunter']);
+export const PROFILES = /** @type {Profile[]} */ (['goal', 'goal-deep', 'backer', 'hunter']);
 
 /** Tuning for the bots, not rules. */
 const SEARCH = {
@@ -150,16 +154,27 @@ function hunterValue(state, pid) {
  * - hold: hysteresis, how far the case must turn before it switches back.
  * - push: tokens of presence per remaining round it reckons one player can
  *   move the game toward the ending it wants.
+ * - early: extra proof needed to back a faction per round left (designer,
+ *   2026-10-08: players are less likely to commit to a faction in early
+ *   rounds, and more likely in later rounds if they read the table as going
+ *   that way); it fades to nothing by the last round.
+ * - open: the chance it opens the game backing a faction (designer,
+ *   2026-10-08: at the start a bot decides what to pursue somewhat
+ *   arbitrarily, from its profile and play style; the board decides after).
+ *   Early caution applies only to joining a faction, not to keeping one.
+ * - inertia: how firmly it keeps the plan it holds, per round left (early
+ *   on the board says little, so a plan is kept unless the case turns hard).
  * - other: how much the goal it isn't pursuing still counts (0 to 1).
  * - margin: how much the raw margins count beside the win chance (trophies
  *   and standing against the best rival), so a bot far ahead or behind still
  *   reaches for one more (a probability flattens there).
- * @typedef {{ proof: number, hold: number, push: number, other: number, margin: number }} Persona
+ * @typedef {{ proof: number, hold: number, push: number, other: number, margin: number, early?: number, open?: number, inertia?: number }} Persona
  */
-/** @type {Record<'goal' | 'goal-deep', Persona>} */
+/** @type {Record<'goal' | 'goal-deep' | 'backer', Persona>} */
 const PERSONAS = {
   goal: { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3 },
   'goal-deep': { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3 },
+  backer: { proof: -0.3, hold: 0.05, push: 2, other: 0, margin: 3 },
 };
 
 /**
@@ -170,14 +185,20 @@ const PERSONAS = {
  */
 export function personaOf(profile) {
   const [base, overrides] = profile.split(':');
-  const p = PERSONAS[/** @type {'goal' | 'goal-deep'} */ (base)];
+  const p = PERSONAS[/** @type {'goal' | 'goal-deep' | 'backer'} */ (base)];
   if (!p || !overrides) return p;
   return { ...p, ...Object.fromEntries(overrides.split(',').map((kv) => { const [k, v] = kv.split('='); return [k, Number(v)]; })) };
 }
 
+/** Reading the table (tuning, not rules): a rival with this much standing less trophies with one faction is seen as backing it; each one seen moves the prior for the invaders' ending by `step` from `base`. */
+const TABLE = { backing: 8, base: 0.3, step: 0.15 };
+
 /**
- * The chance of winning, by ending. `pInvaders`: the projected presence (this
- * round's fights and growth) against the threshold. `asInvaders`: each
+ * The chance of winning, by ending. `pInvaders` (designer, 2026-10-08: games
+ * always start with presence over the threshold, so first-round presence says
+ * nothing about the ending): a prior from reading the table (how many rivals
+ * are seen backing a faction) in round 1, moving to the projected presence
+ * (this round's fights and growth) against the threshold by the last round. `asInvaders`: each
  * faction's chance of being the winner (from presence) times my chance of
  * leading it (standing less trophies against the best rival). `asIsland`: my
  * weakest colour, then the next, against the best rival (TS2, WT1). Margins
@@ -207,7 +228,12 @@ export function winChances(state, pid) {
   };
   const marginIsland = isl(pid) - Math.max(...others.map(isl));
   const asIsland = sigmoid(marginIsland / (0.6 + 0.8 * roundsLeft));
-  return { pInvaders: sigmoid((projected - threshold - 0.5) / spreadP), asInvaders, asIsland, marginInvaders, marginIsland, projected, threshold, spreadP, roundsLeft };
+  const backers = others.filter((o) => Math.max(...s.factions.map((f) => net(o, f))) >= TABLE.backing).length;
+  const prior = Math.min(0.9, Math.max(0.1, TABLE.base + TABLE.step * backers));
+  const rounds = Number(s.options.rounds);
+  const known = rounds > 1 ? Math.min(1, (s.round - 1) / (rounds - 1)) : 1; // how much presence says by now
+  const pInvaders = (1 - known) * prior + known * sigmoid((projected - threshold - 0.5) / spreadP);
+  return { pInvaders, prior, known, backers, asInvaders, asIsland, marginInvaders, marginIsland, projected, threshold, spreadP, roundsLeft };
 }
 
 /** A goal bot's value: its win chance, weighted toward its goal, plus its margins. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
@@ -222,17 +248,20 @@ function goalValue(state, pid, goal, persona) {
  * Which goal to pursue now: the ending where its chance of winning, if it
  * pushes the game that way, is best. Backing a faction needs `proof` more;
  * a goal already held is kept until the case turns by `hold`.
- * @param {GameState} state @param {string} pid @param {Persona} persona @param {BotMemory} [memory] @returns {Goal}
+ * @param {GameState} state @param {string} pid @param {Persona} persona @param {BotMemory} [memory] @param {() => number} [rng] @returns {Goal}
  */
-export function chooseGoal(state, pid, persona, memory) {
+export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
+  if (memory && !memory.goal) memory.goal = rng() < (persona.open ?? 0) ? 'invaders' : 'island'; // the opening plan, from its profile
   const c = winChances(state, pid);
   const push = persona.push * (c.roundsLeft + 1);
-  const reachInv = sigmoid((c.projected - c.threshold - 0.5 + push) / c.spreadP);
-  const reachIsl = 1 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spreadP);
+  const reachInv = (1 - c.known) * Math.min(1, c.prior + 0.15) + c.known * sigmoid((c.projected - c.threshold - 0.5 + push) / c.spreadP);
+  const reachIsl = (1 - c.known) * Math.min(1, 1 - c.prior + 0.15) + c.known * (1 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spreadP));
   const edge = reachInv * c.asInvaders - reachIsl * c.asIsland;
   const held = memory?.goal;
+  const keep = persona.hold + (persona.inertia ?? 0) * c.roundsLeft;
   /** @type {Goal} */
-  const goal = held === 'invaders' ? (edge > persona.proof - persona.hold ? 'invaders' : 'island') : (edge > persona.proof + (held ? persona.hold : 0) ? 'invaders' : 'island');
+  const goal = held === 'invaders' ? (edge > persona.proof - keep ? 'invaders' : 'island') // keeping a faction
+    : (edge > persona.proof + (persona.early ?? 0) * c.roundsLeft + (held ? keep : 0) ? 'invaders' : 'island'); // joining one: early caution
   if (memory) memory.goal = goal;
   return goal;
 }
@@ -280,7 +309,7 @@ function after(state, pid, move) {
 function playMove(state, pid, rng, profile, memory) {
   const p = state.players[pid];
   const persona = personaOf(profile);
-  const goal = persona ? chooseGoal(state, pid, persona, memory) : undefined;
+  const goal = persona ? chooseGoal(state, pid, persona, memory, rng) : undefined;
   /** This bot's value of a position (others, in its lookahead, as standard goal bots). @type {Ev} */
   const ev = (s, id = pid) => (id === pid ? evaluate(s, pid, profile, goal) : evaluate(s, id));
   const value = (/** @type {GameState} */ s) => ev(s) + (rng() - 0.5) * SEARCH.noise;

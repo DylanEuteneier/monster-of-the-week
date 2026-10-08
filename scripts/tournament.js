@@ -24,7 +24,7 @@
  *   rest of the round played out. It covers cards nobody held, and gives cause
  *   where whole games give correlation.
  *
- *   node scripts/tournament.js [games=50] [seed=1] [profiles=goal,goal-deep,hunter,goal,goal]
+ *   node scripts/tournament.js [games=50] [seed=1] [profiles=backer,backer,goal,goal,hunter]
  *     [log=games.jsonl] [out=summary.json] [probe=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [option=value ...]
  *
  * - log= appends one line per finished game; a run with the same log resumes,
@@ -32,6 +32,10 @@
  *   summary so far (public/card-play-stats.json is what the card review page
  *   reads). Runs across every core.
  * - One seat per profile, so the profile count is the player count (3 to 5).
+ *   The standard tuning table (designer, 2026-10-08: both halves of the game)
+ *   seats two faction backers, two goal trophy chasers and hunter, so the
+ *   invaders' ending comes about 40% of the time. Card figures are also split
+ *   by the profile that played them.
  *   Goal profiles take persona overrides: goal:proof=0.4,other=0.6; separate
  *   profiles with semicolons when overrides use commas.
  * A measuring tool, not a rule; bot figures are a guide (Appendix F.9).
@@ -48,7 +52,7 @@ import { seededRng, chance, measureState, MAX_MOVES } from './lib.js';
 /** @typedef {{ trophies: number, flips: number, control: number, moved: number, placed: number, presence: number }} Effect */
 /** @typedef {{ r: number, seat: string, card: string, use: 'action' | 'influence', dWin: number, opener: boolean, fx?: Effect }} Play */
 /** @typedef {{ r: number, fights: number, by: number[], influenced: number, onBoard: number, standing: number }} Economy */
-/** @typedef {{ r: number, opening: boolean, benefit: Record<string, number | null> }} Probe */
+/** @typedef {{ r: number, opening: boolean, profile: string, benefit: Record<string, number | null> }} Probe */
 /**
  * @typedef {{ g: number, side: 'island' | 'invaders', seats: Record<string, string>, groups: Record<string, string>, winners: string[], deck: string[],
  *   presence: number[], scorched: number, trophies: Record<string, number>, economy: Economy[], plays: Play[], held: string[], unplayed: string[],
@@ -127,10 +131,10 @@ function summarise(records, list, options) {
   let scorched = 0, trophySum = 0, trophyN = 0, shared = 0;
   /** @type {Record<number, Economy & { rounds: number }>} */
   const economy = {};
-  /** @typedef {{ dealt: number, held: number, unplayed: number, action: number, influence: number, opener: number, dAction: number, dInfluence: number, winAction: number, winInfluence: number, endsIsland: number, fx: Effect, turns: number, playable: number, probes: number[], openingProbes: number[], probeNull: number }} Acc */
+  /** @typedef {{ dealt: number, held: number, unplayed: number, action: number, influence: number, opener: number, dAction: number, dInfluence: number, winAction: number, winInfluence: number, endsIsland: number, fx: Effect, turns: number, playable: number, probes: number[], openingProbes: number[], probeNull: number, byProfile: Record<string, { probes: number[], dWin: number, plays: number }> }} Acc */
   /** @type {Record<string, Acc>} */
   const cards = {};
-  const acc = (/** @type {string} */ id) => (cards[id] ??= { dealt: 0, held: 0, unplayed: 0, action: 0, influence: 0, opener: 0, dAction: 0, dInfluence: 0, winAction: 0, winInfluence: 0, endsIsland: 0, fx: { trophies: 0, flips: 0, control: 0, moved: 0, placed: 0, presence: 0 }, turns: 0, playable: 0, probes: [], openingProbes: [], probeNull: 0 });
+  const acc = (/** @type {string} */ id) => (cards[id] ??= { dealt: 0, held: 0, unplayed: 0, action: 0, influence: 0, opener: 0, dAction: 0, dInfluence: 0, winAction: 0, winInfluence: 0, endsIsland: 0, fx: { trophies: 0, flips: 0, control: 0, moved: 0, placed: 0, presence: 0 }, turns: 0, playable: 0, probes: [], openingProbes: [], probeNull: 0, byProfile: {} });
   for (const r of records) {
     sides[r.side] += 1;
     if (r.winners.length > 1) shared += 1;
@@ -161,11 +165,13 @@ function summarise(records, list, options) {
         if (p.fx) for (const k of /** @type {(keyof Effect)[]} */ (Object.keys(a.fx))) a.fx[k] += p.fx[k];
       } else { a.influence += 1; a.dInfluence += p.dWin; a.winInfluence += won; }
       if (p.opener) a.opener += 1;
+      if (p.use === 'action') { const bp = (a.byProfile[r.seats[p.seat]] ??= { probes: [], dWin: 0, plays: 0 }); bp.dWin += p.dWin; bp.plays += 1; }
     }
     for (const pr of r.probes) for (const [id, v] of Object.entries(pr.benefit)) {
       if (v === null) { acc(id).probeNull += 1; continue; }
       acc(id).probes.push(v);
       if (pr.opening) acc(id).openingProbes.push(v);
+      if (pr.profile) (acc(id).byProfile[pr.profile] ??= { probes: [], dWin: 0, plays: 0 }).probes.push(v);
     }
   }
   const players = list.length;
@@ -187,6 +193,7 @@ function summarise(records, list, options) {
       winAfterAction: pct(a.winAction, a.action), winAfterInfluence: pct(a.winInfluence, a.influence), islandAfterAction: pct(a.endsIsland, a.action),
       perAction: Object.fromEntries(Object.entries(a.fx).map(([k, v]) => [k, avg(v, a.action)])),
       probe: { n: a.probes.length, benefit: mean(a.probes), up: pct(a.probes.filter((v) => v > 0).length, a.probes.length), opening: mean(a.openingProbes), openingN: a.openingProbes.length, noTarget: a.probeNull },
+      byProfile: Object.fromEntries(Object.entries(a.byProfile).map(([p, b]) => [p, { probe: mean(b.probes), probes: b.probes.length, dWinAction: avg(b.dWin, b.plays), actions: b.plays }])),
     }])),
   };
 }
@@ -199,7 +206,7 @@ function main() {
   const args = process.argv.slice(2);
   const [gamesArg = '50', seedArg = '1'] = args.filter((a) => !a.includes('='));
   const pairs = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
-  const list = (pairs.profiles ?? 'goal,goal-deep,hunter,goal,goal').split(pairs.profiles?.includes(';') ? ';' : ',');
+  const list = (pairs.profiles ?? 'backer,backer,goal,goal,hunter').split(pairs.profiles?.includes(';') ? ';' : ',');
   const logFile = pairs.log, outFile = pairs.out;
   const probe = { rate: Number(pairs.probe ?? 0), sample: Number(pairs.probeSample ?? 6), cards: pairs.probeCards?.split(','), playouts: Number(pairs.probePlayouts ?? 2), targets: Number(pairs.probeTargets ?? 2) };
   for (const k of ['profiles', 'log', 'out', 'probe', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets']) delete pairs[k];
@@ -240,9 +247,9 @@ function main() {
     const probing = Object.values(s.cards).some((c) => c.probe.n);
     const rows = Object.entries(s.cards).filter(([, c]) => c.held > 0 || c.probe.n > 0).sort((a, b) => (probing ? (b[1].probe.benefit ?? -99) - (a[1].probe.benefit ?? -99) : (b[1].dWinAction ?? -99) - (a[1].dWinAction ?? -99)));
     const f = (/** @type {number | null} */ x, /** @type {string} */ u = '') => (x === null ? '–' : `${u === 'pp' && x > 0 ? '+' : ''}${x}${u === '%' ? '%' : ''}`);
-    console.log(`\n${'card'.padEnd(30)} | held | played | action | playable | Δwin act | Δwin infl | won after | trophies | flips | moved | ${probing ? 'probe | opener probe' : 'opener'}`);
+    console.log(`\n${'card'.padEnd(30)} | held | played | action | playable | Δwin act | Δwin infl | won after | trophies | flips | moved | ${probing ? 'probe | opener probe | probe by profile' : 'opener'}`);
     for (const [, c] of rows) {
-      console.log(`${c.name.padEnd(30)} | ${String(c.held).padStart(4)} | ${f(c.playedPct, '%').padStart(6)} | ${f(c.actionPct, '%').padStart(6)} | ${f(c.playablePct, '%').padStart(8)} | ${f(c.dWinAction, 'pp').padStart(8)} | ${f(c.dWinInfluence, 'pp').padStart(9)} | ${f(c.winAfterAction, '%').padStart(9)} | ${f(c.perAction.trophies).padStart(8)} | ${f(c.perAction.flips).padStart(5)} | ${f(c.perAction.moved).padStart(5)} | ${probing ? `${f(c.probe.benefit, 'pp').padStart(5)} | ${f(c.probe.opening, 'pp').padStart(12)}` : String(c.opener).padStart(6)}`);
+      console.log(`${c.name.padEnd(30)} | ${String(c.held).padStart(4)} | ${f(c.playedPct, '%').padStart(6)} | ${f(c.actionPct, '%').padStart(6)} | ${f(c.playablePct, '%').padStart(8)} | ${f(c.dWinAction, 'pp').padStart(8)} | ${f(c.dWinInfluence, 'pp').padStart(9)} | ${f(c.winAfterAction, '%').padStart(9)} | ${f(c.perAction.trophies).padStart(8)} | ${f(c.perAction.flips).padStart(5)} | ${f(c.perAction.moved).padStart(5)} | ${probing ? `${f(c.probe.benefit, 'pp').padStart(5)} | ${f(c.probe.opening, 'pp').padStart(12)} | ${Object.entries(c.byProfile).filter(([, b]) => b.probes).map(([p, b]) => `${p} ${f(b.probe, 'pp')}`).join(', ')}` : String(c.opener).padStart(6)}`);
     }
   }
 }
@@ -290,7 +297,7 @@ else {
           }
           if (d.probe.rate > 0 && side() < d.probe.rate) {
             const pick = probeCards.map((/** @type {string} */ c) => ({ c, k: side() })).sort((/** @type {{ k: number }} */ a, /** @type {{ k: number }} */ b) => a.k - b.k).slice(0, d.probe.sample).map((/** @type {{ c: string }} */ x) => x.c);
-            probes.push({ r: s.round, opening: !s.opened && pid === s.first, benefit: measureState(s, pick, { playouts: d.probe.playouts, targets: d.probe.targets, bots: 'goal', seed: d.seed * 100003 + g * 101 + n }) });
+            probes.push({ r: s.round, opening: !s.opened && pid === s.first, profile: seats[pid], benefit: measureState(s, pick, { playouts: d.probe.playouts, targets: d.probe.targets, bots: 'goal', seed: d.seed * 100003 + g * 101 + n }) });
           }
         }
         const prev = s;
