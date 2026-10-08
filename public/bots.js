@@ -52,7 +52,7 @@ function spend(state, cardId, at = (spots) => spots[0]) {
 }
 /** @typedef {'random' | 'smart' | 'goal' | 'goal-deep' | 'goal-bold' | 'goal-island' | 'goal-focused' | 'goal-loose' | 'trophy' | 'hunter' | 'invader' | 'island' | 'deep' | 'deep-bold' | 'deep-balanced' | 'deep-cautious'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory }} BotOptions */
-/** What a bot remembers between its turns (its goal). The caller keeps one per seat; a bot without it simply has no hysteresis. @typedef {{ goal?: Goal }} BotMemory */
+/** What a bot remembers between its turns: its goal, and total presence seen at each round's start (for the trend). The caller keeps one per seat; a bot without it has no hysteresis and no trend. @typedef {{ goal?: Goal, seen?: Record<number, number> }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
 
 export const PROFILES = /** @type {Profile[]} */ (['random', 'smart', 'goal', 'goal-deep', 'goal-bold', 'goal-island', 'goal-focused', 'goal-loose', 'trophy', 'hunter', 'invader', 'island', 'deep', 'deep-bold', 'deep-balanced', 'deep-cautious']);
@@ -236,11 +236,11 @@ function projectFights(state) {
 
 /**
  * How good a position is for `pid`, between the two ways the game ends.
- * @param {GameState} state @param {string} pid @param {Profile} profile @param {Goal} [goal]  a goal bot's current goal
+ * @param {GameState} state @param {string} pid @param {Profile} profile @param {Goal} [goal]  a goal bot's current goal @param {number} [drift]  its presence trend
  */
-export function evaluate(state, pid, profile = 'smart', goal = undefined) {
+export function evaluate(state, pid, profile = 'smart', goal = undefined, drift = 0) {
   const persona = personaOf(profile);
-  if (persona) return goalValue(state, pid, goal ?? 'island', persona);
+  if (persona) return goalValue(state, pid, goal ?? 'island', persona, drift);
   const s = projectFights(state);
   const roundsLeft = Number(s.options.rounds) - s.round;
   const threshold = Number(s.options.threshold);
@@ -292,10 +292,12 @@ export function evaluate(state, pid, profile = 'smart', goal = undefined) {
  * - push: tokens of presence per remaining round it reckons one player can
  *   move the game toward the ending it wants.
  * - other: how much the goal it isn't pursuing still counts (0 to 1).
+ * - trend: how much the presence trend (change per round, from memory) is
+ *   projected forward over the rounds left (0: the board as it is).
  * - margin: how much the raw margins count beside the win chance (trophies
  *   and standing against the best rival), so a bot far ahead or behind still
  *   reaches for one more (a probability flattens there).
- * @typedef {{ proof: number, hold: number, push: number, other: number, margin?: number }} Persona
+ * @typedef {{ proof: number, hold: number, push: number, other: number, margin?: number, trend?: number }} Persona
  */
 /** @type {Partial<Record<Profile, Persona>>} */
 const PERSONAS = {
@@ -329,15 +331,15 @@ export function personaOf(profile) {
  * leading it (standing less trophies against the best rival). `asIsland`: my
  * weakest colour, then the next, against the best rival (TS2, WT1), with
  * influence on the board as trophies to come. Margins sharpen as rounds run out.
- * @param {GameState} state @param {string} pid
+ * @param {GameState} state @param {string} pid @param {number} [drift]  expected presence change per round left (the trend)
  */
-export function winChances(state, pid) {
+export function winChances(state, pid, drift = 0) {
   const s = projectFights(state);
   const roundsLeft = Math.max(0, Number(s.options.rounds) - s.round);
   const threshold = Number(s.options.threshold);
   let grow = 0;
   for (const f of s.factions) grow += Math.min(s.supply[f], Object.values(growthDue(s, f)).reduce((a, b) => a + b, 0));
-  const projected = totalPresence(s) + (s.phase === 'play' ? grow : 0);
+  const projected = totalPresence(s) + (s.phase === 'play' ? grow : 0) + drift * roundsLeft;
   const spreadP = 2 + 3 * roundsLeft;
   const others = s.seating.filter((id) => id !== pid);
   const presence = s.factions.map((f) => presenceOf(s, f));
@@ -358,9 +360,9 @@ export function winChances(state, pid) {
   return { pInvaders: sigmoid((projected - threshold - 0.5) / spreadP), asInvaders, asIsland, marginInvaders, marginIsland, projected, threshold, spreadP, roundsLeft };
 }
 
-/** A goal bot's value: its win chance, weighted toward its goal. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
-function goalValue(state, pid, goal, persona) {
-  const c = winChances(state, pid);
+/** A goal bot's value: its win chance, weighted toward its goal. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona @param {number} [drift] */
+function goalValue(state, pid, goal, persona, drift = 0) {
+  const c = winChances(state, pid, drift);
   const m = persona.margin ?? 0;
   const inv = c.pInvaders * (10 * c.asInvaders + m * c.marginInvaders), isl = (1 - c.pInvaders) * (10 * c.asIsland + m * c.marginIsland);
   return (goal === 'invaders' ? inv + persona.other * isl : isl + persona.other * inv) + 0.02 * state.players[pid].supply;
@@ -373,7 +375,7 @@ function goalValue(state, pid, goal, persona) {
  * @param {GameState} state @param {string} pid @param {Persona} persona @param {BotMemory} [memory] @returns {Goal}
  */
 export function chooseGoal(state, pid, persona, memory) {
-  const c = winChances(state, pid);
+  const c = winChances(state, pid, driftOf(state, persona, memory));
   const push = persona.push * (c.roundsLeft + 1);
   const reachInv = sigmoid((c.projected - c.threshold - 0.5 + push) / c.spreadP);
   const reachIsl = 1 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spreadP);
@@ -383,6 +385,22 @@ export function chooseGoal(state, pid, persona, memory) {
   const goal = held === 'invaders' ? (edge > persona.proof - persona.hold ? 'invaders' : 'island') : (edge > persona.proof + (held ? persona.hold : 0) ? 'invaders' : 'island');
   if (memory) memory.goal = goal;
   return goal;
+}
+
+/**
+ * The presence trend a goal bot projects: the change per round between the
+ * rounds it has seen start, times its persona's `trend`. Records this
+ * round's start in its memory.
+ * @param {GameState} state @param {Persona} persona @param {BotMemory} [memory]
+ */
+function driftOf(state, persona, memory) {
+  if (!memory || !persona.trend) return 0;
+  memory.seen ??= {};
+  memory.seen[state.round] ??= totalPresence(state);
+  const rounds = Object.keys(memory.seen).map(Number).sort((a, b) => a - b);
+  if (rounds.length < 2) return 0;
+  const first = rounds[0], last = rounds[rounds.length - 1];
+  return (persona.trend * (memory.seen[last] - memory.seen[first])) / (last - first);
 }
 
 /** Every move worth considering on this bot's turn. @param {GameState} state @param {string} pid @param {() => number} rng */
@@ -422,9 +440,10 @@ function after(state, pid, move) {
 function smartMove(state, pid, rng, profile, memory) {
   const p = state.players[pid];
   const persona = personaOf(profile);
+  const drift = persona ? driftOf(state, persona, memory) : 0;
   const goal = persona ? chooseGoal(state, pid, persona, memory) : undefined;
   /** This bot's value of a position (others, in its lookahead, as smart). @type {Ev} */
-  const ev = (s, id = pid) => (id === pid ? evaluate(s, pid, profile, goal) : evaluate(s, id));
+  const ev = (s, id = pid) => (id === pid ? evaluate(s, pid, profile, goal, drift) : evaluate(s, id));
   const value = (/** @type {GameState} */ s) => ev(s) + (rng() - 0.5) * SMART.noise;
 
   if (state.phase === 'draft') {

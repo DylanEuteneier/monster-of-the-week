@@ -2330,6 +2330,8 @@ Where a game is started. The host page holds no game rules. Everything it does i
     - *Against the proof 0.3 field:* the island won 99–100% of games and **no bot backed a faction any more**. Hunter won 40%; every goal personality 19–23% (goal-deep 23%; extra margin weight 20%). The goal bot plays the island game worse than hunter's plain trophy count.
     - *Thresholds, five goal bots:* the island won 100% at 20, 99.5% at 15 and 92% at 10. When every player pushes fights, presence falls through any threshold: fights remove the whole losing group and half as many from the winner.
     - *Designer (2026-10-08):* tune back toward the invader-ally ending so it does happen and can win. *Finding so far:* the invaders' ending happens only when some players back a faction; whether backing pays for the one who does it is the question (a game balance question, not only a bot one).
+    - *More challengers against the proof 0.3 field (2026-10-08, 400 games each):* weighting raw margins made goal bots worse (margin 2: 15%, margin 5: 18%); projecting the presence trend changed nothing (20–21%; a whole table of them: the island 98%). Why hunter wins 40% is not yet found.
+    - *The invader niche:* a lone eager faction backer (proof −0.3) forced the invaders' ending in 43 of 400 games and won 31 of them, 18% overall against an even 20%: backing is close to break-even, not hopeless.
 - **Bots read the full state.** A bot that plays to win would have to be limited to its own player view for a fair game against people; for measuring cards, full state is used. *Open:* whether to limit them.
 
 ### F.10 Single game
