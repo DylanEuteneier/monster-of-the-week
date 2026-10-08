@@ -19,8 +19,19 @@ export function seededRng(seed) {
   return () => { const r = nextRandom(s); s = r.state; return r.value; };
 }
 
-/** The player's chance of winning, in percentage points (the bots' own estimate). @param {GameState} s @param {string} pid */
-export const chance = (s, pid) => { const c = winChances(s, pid); return 100 * (c.pInvaders * c.asInvaders + (1 - c.pInvaders) * c.asIsland); };
+/**
+ * The player's chance of winning, in percentage points: the bots' own
+ * estimate for every seat, normalised so the table's chances add up to 100
+ * (2026-10-08: unnormalised, each seat rated itself near 47% in round 1, and
+ * high predictions came true about half as often as claimed).
+ * @param {GameState} s @param {string} pid
+ */
+export const chance = (s, pid) => {
+  const raw = (/** @type {string} */ id) => { const c = winChances(s, id); return c.pInvaders * c.asInvaders + (1 - c.pInvaders) * c.asIsland; };
+  const all = s.seating.map((id) => ({ id, v: raw(id) }));
+  const sum = all.reduce((n, x) => n + x.v, 0);
+  return sum > 0 ? (100 * (all.find((x) => x.id === pid)?.v ?? 0)) / sum : 100 / s.seating.length;
+};
 
 /**
  * Play to the end. Each step offers every seat, in seat order, the chance to
