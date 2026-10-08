@@ -2332,6 +2332,7 @@ Where a game is started. The host page holds no game rules. Everything it does i
     - *Designer (2026-10-08):* tune back toward the invader-ally ending so it does happen and can win. *Finding so far:* the invaders' ending happens only when some players back a faction; whether backing pays for the one who does it is the question (a game balance question, not only a bot one).
     - *More challengers against the proof 0.3 field (2026-10-08, 400 games each):* weighting raw margins made goal bots worse (margin 2: 15%, margin 5: 18%); projecting the presence trend changed nothing (20–21%; a whole table of them: the island 98%). Why hunter wins 40% is not yet found.
     - *The invader niche:* a lone eager faction backer (proof −0.3) forced the invaders' ending in 43 of 400 games and won 31 of them, 18% overall against an even 20%: backing is close to break-even, not hopeless.
+    - **Designer (2026-10-08):** it should be very, very difficult for a single player backing a faction to force the invaders' ending alone. Invader endings should generally happen only when more than one player is going for them, because players going for trophies should be working to bring presence under the threshold so they can win. So the measure is the ending split by how many players back factions, not one backer's win share.
 - **Bots read the full state.** A bot that plays to win would have to be limited to its own player view for a fair game against people; for measuring cards, full state is used. *Open:* whether to limit them.
 
 ### F.10 Single game
