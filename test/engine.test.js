@@ -665,3 +665,50 @@ test('round 17: Virus v3 only infects neighbours holding one other faction; Open
   const c = nextChoice(s, 'ann', 'pit', { mode: 'location', location: x, faction: B });
   if (c.kind === 'location') for (const l of c.options) assert.notEqual(l, x);
 });
+
+test('round 18: Set a Trap springs on the first group in; Tip Off the Sheriff pays its tipper; Split Up doubles influence at the fight; Wake the Dead raises the fallen as Undead', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const [x] = map[NEUTRAL].adjacent;
+  // Trap: 4 tokens move in, 2 are lost to the trap's owner.
+  s.board[x].tokens = { [A]: 4 };
+  s.board[NEUTRAL].trap = 'bob';
+  const trapped = previewTarget(s, 'ann', 'extra-c', { moves: [{ location: x, faction: A, to: NEUTRAL }] });
+  assert.deepEqual([trapped.board[NEUTRAL].tokens[A], trapped.players.bob.trophies[A], trapped.board[NEUTRAL].trap], [2, 2, undefined]);
+  delete s.board[NEUTRAL].trap;
+  // Tip-off: bob tipped A, so ann's move of A gives bob 1 influence where it lands.
+  s.tips = [{ pid: 'bob', faction: A }];
+  const tipped = previewTarget(s, 'ann', 'extra-c', { moves: [{ location: x, faction: A, to: NEUTRAL }] });
+  assert.equal(tipped.board[NEUTRAL].influence.bob, 1);
+  s.tips = [];
+  // Split Up: ann 2 doubled beats bob 3.
+  s.board[x].tokens = {};
+  s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
+  s.board[NEUTRAL].influence = { ann: 2, bob: 3 };
+  s.board[NEUTRAL].double = ['ann'];
+  const split = resolveFight(s, NEUTRAL);
+  assert.ok(split.players.ann.trophies[B] > 0);
+  // Wake the Dead: the loser's casualties rise as Undead.
+  delete s.board[NEUTRAL].double;
+  s.board[NEUTRAL].wake = true;
+  const undead = /** @type {string} */ (s.factions.find((f) => spec.factions.find((y) => y.id === f)?.archetype === 'undead'));
+  const woke = resolveFight(s, NEUTRAL);
+  assert.ok((woke.board[NEUTRAL].tokens[undead] ?? 0) >= (s.board[NEUTRAL].tokens[undead] ?? 0));
+  assert.equal(woke.players.bob.trophies[B], 0);
+});
+
+test('round 18: Research Montage swaps a hand card with a left-out one; Network the Virus reaches every location of its faction', () => {
+  const s = clear(newGame());
+  s.leftOut = ['broadcast'];
+  s.players.ann.hand = ['research', 'bell'];
+  const t = { take: 'broadcast', give: 'bell' };
+  assert.equal(checkTarget(s, 'ann', cardById('research'), t), null);
+  const after = previewTarget(s, 'ann', 'research', t);
+  assert.ok(after.players.ann.hand.includes('broadcast') && !after.players.ann.hand.includes('bell'));
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const far = /** @type {string} */ (Object.keys(map).find((l) => l !== NEUTRAL && !map[NEUTRAL].adjacent.includes(l)));
+  s.board[NEUTRAL].tokens = { [A]: 3 };
+  s.board[far].tokens = { [A]: 1 };
+  const net = previewTarget(s, 'ann', 'virus-network', { mode: 'location', location: NEUTRAL, faction: A });
+  assert.equal(net.board[far].tokens[A], 2);
+});

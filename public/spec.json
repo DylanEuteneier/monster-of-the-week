@@ -1214,7 +1214,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 17 ideas (rounds 14 to 17: unsuited extras; round 17: revisions of the weakest) under measurement by scripts/tournament.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
+    "notes": "Cards out of the fixed deck: rounds 8 to 18 ideas (rounds 14 to 18: unsuited extras, round 18 marked-card candidates; rounds 17 and 18: revisions of the weakest) under measurement by scripts/tournament.js, and the Cancel (held out with responses, first draft). A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
     "cards": [
       {
         "id": "force-field",
@@ -1789,6 +1789,88 @@
         "action": "swap-standing",
         "round": 17,
         "text": "Swap your standing with two factions. Target: the two factions. (Round 17.)"
+      },
+      {
+        "id": "split-up",
+        "name": "Split Up, Gang!",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "split-up",
+        "round": 18,
+        "text": "Opening gambit (marked-card candidate): place 1 influence from your supply at up to three locations in different regions; this round, your influence at each counts double at its fight. Target: the locations."
+      },
+      {
+        "id": "research",
+        "name": "Research Montage",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "research",
+        "round": 18,
+        "text": "Opening gambit (marked-card candidate): you have seen the cards left out this round; take one into your hand and put one of yours back in its place. Target: the card to take, then the one to put back."
+      },
+      {
+        "id": "set-trap",
+        "name": "Set a Trap",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "trap",
+        "round": 18,
+        "text": "Opening gambit (marked-card candidate): name a location; the first group to move into it this round loses half (rounded down), as your trophies. Target: the location."
+      },
+      {
+        "id": "tip-off",
+        "name": "Tip Off the Sheriff",
+        "suit": null,
+        "slot": "extra",
+        "influence": 0,
+        "action": "tipoff",
+        "round": 18,
+        "text": "Opening gambit (marked-card candidate): name a faction; for the rest of the round, whenever anyone moves it, place 1 influence from your supply where it lands. Target: the faction."
+      },
+      {
+        "id": "wake-dead",
+        "name": "Wake the Dead",
+        "suit": "undead",
+        "slot": "signature",
+        "influence": 3,
+        "action": "wake-dead",
+        "round": 18,
+        "text": "This round, the fight at the target can’t scorch it, and the losing faction’s casualties rise there as Undead instead of becoming trophies. Target: the graveyard.",
+        "readings": {
+          "location": "a ☾ location.",
+          "faction": "a location holding the Undead."
+        }
+      },
+      {
+        "id": "hold-wake",
+        "name": "Hold the Wake",
+        "suit": "undead",
+        "slot": "signature",
+        "influence": 3,
+        "action": "hold-wake",
+        "round": 18,
+        "text": "Move all your influence from one or two locations next to the target into it, paying 1 standing with the Undead for each. Target: the wake, then where the mourners come from.",
+        "readings": {
+          "location": "a ☾ location.",
+          "faction": "a location holding the Undead."
+        }
+      },
+      {
+        "id": "virus-network",
+        "name": "Network the Virus",
+        "suit": "sentients",
+        "slot": "strike",
+        "influence": 2,
+        "action": "virus-network",
+        "round": 18,
+        "text": "The target group sends 1 token to every other location holding its faction, anywhere on the island, as far as its tokens go. Target: the infected group.",
+        "readings": {
+          "location": "any group at a ⏏ location.",
+          "faction": "a Sentient group anywhere."
+        }
       }
     ]
   }
