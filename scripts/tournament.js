@@ -297,7 +297,7 @@ else {
           }
           if (d.probe.rate > 0 && side() < d.probe.rate) {
             const pick = probeCards.map((/** @type {string} */ c) => ({ c, k: side() })).sort((/** @type {{ k: number }} */ a, /** @type {{ k: number }} */ b) => a.k - b.k).slice(0, d.probe.sample).map((/** @type {{ c: string }} */ x) => x.c);
-            probes.push({ r: s.round, opening: !s.opened && pid === s.first, profile: seats[pid], benefit: measureState(s, pick, { playouts: d.probe.playouts, targets: d.probe.targets, bots: 'goal', seed: d.seed * 100003 + g * 101 + n }) });
+            probes.push({ r: s.round, opening: !s.opened && pid === s.first, profile: seats[pid], benefit: measureState(s, pick, { playouts: d.probe.playouts, targets: d.probe.targets, bots: seats, memories: memory, seed: d.seed * 100003 + g * 101 + n }) });
           }
         }
         const prev = s;

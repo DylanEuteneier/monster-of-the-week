@@ -164,11 +164,15 @@ function hunterValue(state, pid) {
  *   Early caution applies only to joining a faction, not to keeping one.
  * - inertia: how firmly it keeps the plan it holds, per round left (early
  *   on the board says little, so a plan is kept unless the case turns hard).
+ * - linear: counts the island margin as hunter does (trophy sets plus a
+ *   little for every trophy, against the best rival) instead of as a chance.
+ * - flat: 1 to value its island goal without scaling it by the chance the
+ *   island ending happens (it collects trophies rather than chasing presence).
  * - other: how much the goal it isn't pursuing still counts (0 to 1).
  * - margin: how much the raw margins count beside the win chance (trophies
  *   and standing against the best rival), so a bot far ahead or behind still
  *   reaches for one more (a probability flattens there).
- * @typedef {{ proof: number, hold: number, push: number, other: number, margin: number, early?: number, open?: number, inertia?: number }} Persona
+ * @typedef {{ proof: number, hold: number, push: number, other: number, margin: number, early?: number, open?: number, inertia?: number, linear?: number, flat?: number }} Persona
  */
 /** @type {Record<'goal' | 'goal-deep' | 'backer', Persona>} */
 const PERSONAS = {
@@ -227,20 +231,23 @@ export function winChances(state, pid) {
     return t[0] + 0.35 * t[1] + 0.12 * t[2];
   };
   const marginIsland = isl(pid) - Math.max(...others.map(isl));
+  const islAll = (/** @type {string} */ id) => isl(id) + 0.02 * s.factions.reduce((n, f) => n + s.players[id].trophies[f], 0);
+  const linearIsland = islAll(pid) - Math.max(...others.map(islAll)); // hunter's island margin
   const asIsland = sigmoid(marginIsland / (0.6 + 0.8 * roundsLeft));
   const backers = others.filter((o) => Math.max(...s.factions.map((f) => net(o, f))) >= TABLE.backing).length;
   const prior = Math.min(0.9, Math.max(0.1, TABLE.base + TABLE.step * backers));
   const rounds = Number(s.options.rounds);
   const known = rounds > 1 ? Math.min(1, (s.round - 1) / (rounds - 1)) : 1; // how much presence says by now
   const pInvaders = (1 - known) * prior + known * sigmoid((projected - threshold - 0.5) / spreadP);
-  return { pInvaders, prior, known, backers, asInvaders, asIsland, marginInvaders, marginIsland, projected, threshold, spreadP, roundsLeft };
+  return { pInvaders, prior, known, backers, linearIsland, asInvaders, asIsland, marginInvaders, marginIsland, projected, threshold, spreadP, roundsLeft };
 }
 
 /** A goal bot's value: its win chance, weighted toward its goal, plus its margins. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
 function goalValue(state, pid, goal, persona) {
   const c = winChances(state, pid);
   const inv = c.pInvaders * (10 * c.asInvaders + persona.margin * c.marginInvaders);
-  const isl = (1 - c.pInvaders) * (10 * c.asIsland + persona.margin * c.marginIsland);
+  const islandWorth = persona.linear ? persona.linear * 10 * c.linearIsland : 10 * c.asIsland + persona.margin * c.marginIsland;
+  const isl = (persona.flat && goal === 'island' ? 1 : 1 - c.pInvaders) * islandWorth;
   return (goal === 'invaders' ? inv + persona.other * isl : isl + persona.other * inv) + 0.02 * state.players[pid].supply;
 }
 

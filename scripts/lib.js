@@ -53,17 +53,17 @@ export function playOut(state, rng, onRound, profiles = {}) {
   throw new Error(`game did not end within ${MAX_MOVES} moves`);
 }
 
-/** Bots play from here to the end of the round's play (its fights). @param {GameState} state @param {number} seed @param {Profile} bots */
-export function playRest(state, seed, bots) {
+/** Bots play from here to the end of the round's play (its fights). @param {GameState} state @param {number} seed @param {Profile | Record<string, string>} bots  one profile for every seat, or each seat's @param {Record<string, import('../public/bots.js').BotMemory>} [memories]  each bot's memory now (copied; its plan carries on) */
+export function playRest(state, seed, bots, memories = undefined) {
   const rng = seededRng(seed);
   let s = state;
   const round = s.round;
   /** @type {Record<string, import('../public/bots.js').BotMemory>} */
-  const memory = Object.fromEntries(s.seating.map((id) => [id, {}]));
+  const memory = Object.fromEntries(s.seating.map((id) => [id, structuredClone(memories?.[id] ?? {})]));
   for (let n = 0; n < MAX_MOVES && s.phase === 'play' && s.round === round; n++) {
     let moved = false;
     for (const playerId of s.seating) {
-      const move = botMove(s, { playerId, rng, profile: bots, memory: memory[playerId] });
+      const move = botMove(s, { playerId, rng, profile: /** @type {Profile} */ (typeof bots === 'string' ? bots : bots[playerId] ?? 'goal'), memory: memory[playerId] });
       if (!move) continue;
       s = applyMove(s, { playerId, move });
       moved = true;
@@ -90,14 +90,16 @@ const SAMPLED_TARGETS = 12;
  * each played out), and bots play the rest of the round; its benefit is the
  * change in the player's chance of winning against letting the turn go, in
  * percentage points. Each playout seed is shared between the card and the
- * baseline. null: no legal target.
- * @param {GameState} state @param {string[]} cardIds @param {{ playouts: number, targets: number, bots: Profile, seed: number }} o
+ * baseline. The rest of the round is played by `bots`: the table's own seats
+ * and profiles, so the imagined future has the same players as the game.
+ * null: no legal target.
+ * @param {GameState} state @param {string[]} cardIds @param {{ playouts: number, targets: number, bots: Profile | Record<string, string>, seed: number, memories?: Record<string, import('../public/bots.js').BotMemory> }} o
  * @returns {Record<string, number | null>}
  */
 export function measureState(state, cardIds, o) {
   const pid = state.seating[state.turn];
   const seeds = Array.from({ length: o.playouts }, (_, i) => o.seed * 7919 + i);
-  const mean = (/** @type {GameState} */ s) => seeds.reduce((n, seed) => n + chance(playRest(s, seed, o.bots), pid), 0) / seeds.length;
+  const mean = (/** @type {GameState} */ s) => seeds.reduce((n, seed) => n + chance(playRest(s, seed, o.bots, o.memories), pid), 0) / seeds.length;
   // Baseline: the turn goes by with nothing played (a measuring device, not a move in the game).
   const skip = structuredClone(state);
   skip.opened = true;
