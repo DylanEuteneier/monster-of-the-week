@@ -296,8 +296,9 @@ export function evaluate(state, pid, profile = 'smart', goal = undefined) {
  */
 /** @type {Partial<Record<Profile, Persona>>} */
 const PERSONAS = {
-  goal: { proof: 0.1, hold: 0.05, push: 2, other: 0.35 },
-  'goal-deep': { proof: 0.1, hold: 0.05, push: 2, other: 0.35 },
+  // proof 0.3: the field-tested setting (challengers needing 0.25–0.6 beat 0.1 by 27% to 20%, 2026-10-08).
+  goal: { proof: 0.3, hold: 0.05, push: 2, other: 0.35 },
+  'goal-deep': { proof: 0.3, hold: 0.05, push: 2, other: 0.35 },
   // Personalities under test (tournaments), not rules.
   'goal-bold': { proof: 0, hold: 0.05, push: 3, other: 0.35 },
   'goal-island': { proof: 0.25, hold: 0.05, push: 2, other: 0.35 },
