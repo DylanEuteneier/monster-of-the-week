@@ -2728,6 +2728,8 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 
 **Round 14 test cards (2026-10-07; suggestions):** Stake Out (the designer's seed), Bail Out, Fall Back, Call for Backup, Seize the Moment. Measured in H.7, round 14; a mixed deck can deal them in the two unmarked slots.
 
+*Designer (2026-10-07):* the scaffold moves A to D are boring. They stay only as placeholders until unsuited designs replace them.
+
 ### H.7 Notes from the revision rounds
 
 - Round 1: the three scattering Shift cards (Hang Garlic, Board Up the Windows, Perform an Exorcism) are near twins.
