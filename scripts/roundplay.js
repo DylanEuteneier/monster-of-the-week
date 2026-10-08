@@ -20,6 +20,8 @@
  *   bots meet the same luck in both.
  * - opening=1 samples only each round's first play (the marked cards, FP2).
  * - Runs across every core (worker threads).
+ * - out= is rewritten after every state, with the table so far (a long run
+ *   always has its latest results on disk; `partial` says how far it got).
  *
  * A measuring tool, not a rule: bots are not real players, and the horizon
  * is one round.
@@ -119,23 +121,29 @@ function main() {
       for (const [id, v] of Object.entries(r)) results[id].push(v);
       done += 1;
       process.stderr.write(`\r${done}/${n} states, ${Math.round((Date.now() - t0) / 1000)}s`);
+      if (outFile) write(table(), true);
     });
     worker.on('exit', () => { running -= 1; if (!running) report(); });
   }
-  function report() {
-    process.stderr.write('\n');
-    const stats = cardIds.map((id) => {
+  function table() {
+    return cardIds.map((id) => {
       const vs = /** @type {number[]} */ (results[id].filter((v) => v !== null));
       const m = vs.reduce((a, b) => a + b, 0) / (vs.length || 1);
       return { id, playable: (100 * vs.length) / done, mean: m, up: vs.length ? (100 * vs.filter((v) => v > 0).length) / vs.length : 0, max: vs.length ? Math.max(...vs) : 0 };
     }).sort((a, b) => b.mean - a.mean);
+  }
+  /** @param {ReturnType<typeof table>} stats @param {boolean} partial */
+  function write(stats, partial) {
+    const r2 = (/** @type {number} */ x) => Math.round(x * 100) / 100;
+    writeFileSync(/** @type {string} */ (outFile), `${JSON.stringify({ measured: new Date().toISOString().slice(0, 10), partial: partial ? `${done}/${n} states` : false, states: done, players: players.length, bots: job.bots, playouts: job.playouts, targets: job.targets, opening, options, scores: Object.fromEntries(stats.map((s) => [s.id, { name: cardById(s.id).name, playable: Math.round(s.playable), benefit: r2(s.mean), up: Math.round(s.up) }])) }, null, 2)}\n`);
+  }
+  function report() {
+    process.stderr.write('\n');
+    const stats = table();
+    if (outFile) write(stats, false);
     console.log(`${done} ${opening ? 'opening ' : ''}states, ${players.length} players, ${job.bots} bots, ${job.playouts} playouts, best of ${job.targets} targets, ${JSON.stringify(options)}. Benefit: the player's position after the round's fights, against letting the turn go (mean, how often above 0, largest).`);
     console.log(`${'card'.padEnd(30)} | playable | benefit`);
     for (const s of stats) console.log(`${cardById(s.id).name.padEnd(30)} | ${`${s.playable.toFixed(0)}%`.padStart(8)} | ${s.mean.toFixed(2).padStart(6)} ${`${s.up.toFixed(0)}%`.padStart(4)} ${s.max.toFixed(2).padStart(6)}`);
-    if (outFile) {
-      const r2 = (/** @type {number} */ x) => Math.round(x * 100) / 100;
-      writeFileSync(outFile, `${JSON.stringify({ measured: new Date().toISOString().slice(0, 10), states: done, players: players.length, bots: job.bots, playouts: job.playouts, targets: job.targets, opening, options, scores: Object.fromEntries(stats.map((s) => [s.id, { playable: Math.round(s.playable), benefit: r2(s.mean) }])) }, null, 2)}\n`);
-    }
   }
 }
 

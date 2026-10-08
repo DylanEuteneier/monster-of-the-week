@@ -101,11 +101,29 @@ render();
  * action. Tags on each card place it on the balance review's measures
  * (Current focus 4), from public/card-scores.json, written by
  * `npm run cards:score`. The tag bands are a reading aid, not rules.
+ * The played-out round measure (designer, 2026-10-07) comes from
+ * public/card-round-scores.json (every turn) and card-opening-scores.json
+ * (each round's first play), written by scripts/roundplay.js out=...; a run
+ * rewrites them after every state, so a reload shows results as they come in.
  */
 async function cards() {
   /** @type {{ measured: string, states: number, players: number, bots: string, options: Record<string, string>, scores: Record<string, Record<string, number>> } | null} */
   let data = null;
   try { data = await (await fetch('/card-scores.json')).json(); } catch { /* not measured yet */ }
+  /** @typedef {{ measured: string, partial: string | false, states: number, bots: string, playouts: number, scores: Record<string, { benefit: number, playable: number }> } | null} RoundData */
+  const load = async (/** @type {string} */ url) => { try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? /** @type {RoundData} */ (await r.json()) : null; } catch { return null; } };
+  const [round, opening] = await Promise.all([load('/card-round-scores.json'), load('/card-opening-scores.json')]);
+  // Benefit bands by rank within each run: top third high, middle third mid.
+  const rankBand = (/** @type {RoundData} */ d) => {
+    const ids = d ? Object.keys(d.scores).sort((a, b) => d.scores[b].benefit - d.scores[a].benefit) : [];
+    return (/** @type {string} */ id) => { const i = ids.indexOf(id); return i < 0 ? 'low' : i < ids.length / 3 ? 'high' : i < (2 * ids.length) / 3 ? 'mid' : 'low'; };
+  };
+  const roundBand = rankBand(round), openingBand = rankBand(opening);
+  const benefitTag = (/** @type {RoundData} */ d, /** @type {(id: string) => string} */ band, /** @type {string} */ label, /** @type {string} */ id) => {
+    const v = d?.scores[id];
+    if (!v) return '';
+    return `<span class="review-tag is-${band(id)}" title="${esc(label)}: benefit to the player over a played-out round, ${v.benefit} (${v.playable}% playable${d?.partial ? `; partial, ${d.partial}` : ''})">${esc(label)} <b>${v.benefit > 0 ? '+' : ''}${v.benefit}</b>${d?.partial ? '…' : ''}</span>`;
+  };
   /** @typedef {{ id: string, suit: string | null, action: string | null, name: string, round?: number, marked?: string }} AnyCard */
   const deck = /** @type {AnyCard[]} */ (/** @type {unknown} */ (spec.cards));
   const tests = /** @type {AnyCard[]} */ (/** @type {unknown} */ (spec.testCards.cards));
@@ -124,14 +142,15 @@ async function cards() {
       const v = sc[m] ?? 0;
       const band = v >= high ? 'high' : v >= mid ? 'mid' : 'low';
       return `<span class="review-tag is-${band}" title="${esc(label)}: ${v}${m === 'playable' ? '% of states' : ''} (${band})">${esc(label)} <b>${v}${m === 'playable' ? '%' : ''}</b></span>`;
-    }).join('');
+    }).join('') + benefitTag(round, roundBand, 'Round', c.id) + benefitTag(opening, openingBand, 'Opener', c.id);
     return `<div class="review-tags"><span class="review-tag is-status">${esc(status)}</span><span class="review-tag is-status">${esc(typeOf(c.action))} · <span class="mono">${esc(c.action ?? 'none')}</span></span>${measured}</div>`;
   };
   const how = data
     ? `Measured ${esc(data.measured)}: ${data.states} states from ${esc(data.bots)} bot games at ${data.players} players${Object.keys(data.options).length ? `, ${esc(JSON.stringify(data.options))}` : ''}; each number is the mean of the card's best play per state (<span class="mono">npm run cards:score</span>).`
     : 'Not measured yet: run <span class="mono">npm run cards:score</span>.';
+  const roundHow = (/** @type {RoundData} */ d, /** @type {string} */ what) => (d ? ` <b>${what}</b>: ${d.partial ? `in progress, ${esc(d.partial)}` : `${d.states} states`}, ${esc(d.bots)} bots, ${d.playouts} playouts (${esc(d.measured)}).` : '');
   $('cards').innerHTML = `<div class="row-between"><h2>Cards</h2><span class="small muted">${all.length} cards: ${deck.length} in the deck, ${tests.length} out of the deal</span></div>
-    <p class="small muted">Every card the engine can play, for review, sorted by suit, then type, then action. Tags: green high, gold mid, grey low. <b>Battle</b> trophies changing hands plus fights flipped (mid ${BANDS[0][2]}, high ${BANDS[0][3]}); <b>Control</b> contested locations where you become sole top influence (${BANDS[1][2]} / ${BANDS[1][3]}); <b>Moved</b> pieces moved or placed (${BANDS[2][2]} / ${BANDS[2][3]}); <b>Influence</b> influence placed (${BANDS[3][2]} / ${BANDS[3][3]}); <b>Playable</b> states with a legal target (${BANDS[4][2]}% / ${BANDS[4][3]}%). Rule-breaking is judged from the text; hidden tokens are undercounted (one round ahead). ${how}</p>
+    <p class="small muted">Every card the engine can play, for review, sorted by suit, then type, then action. Tags: green high, gold mid, grey low. <b>Battle</b> trophies changing hands plus fights flipped (mid ${BANDS[0][2]}, high ${BANDS[0][3]}); <b>Control</b> contested locations where you become sole top influence (${BANDS[1][2]} / ${BANDS[1][3]}); <b>Moved</b> pieces moved or placed (${BANDS[2][2]} / ${BANDS[2][3]}); <b>Influence</b> influence placed (${BANDS[3][2]} / ${BANDS[3][3]}); <b>Playable</b> states with a legal target (${BANDS[4][2]}% / ${BANDS[4][3]}%). Rule-breaking is judged from the text; hidden tokens are undercounted (one round ahead). ${how} <b>Round</b> and <b>Opener</b>: benefit to the player over a played-out round (every turn, and each round's first play), banded by rank; … marks a run still in progress.${roundHow(round, 'Round')}${roundHow(opening, 'Opener')}</p>
     <div class="review-grid" id="review-grid"></div>`;
   const items = all.map(({ c, status }) => cardHtml(c.id, { extra: tags(c, status) }));
   // Masonry that reads left to right: each card, in order, goes to the shortest column.
