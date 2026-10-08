@@ -363,17 +363,6 @@ test('bots can target every test card that has a target (a walk through the tabl
   }
 });
 
-test('Take Over the Wake places up to 3 influence from standing with a faction there', () => {
-  const s = clear(newGame());
-  const f = /** @type {string} */ (s.factions[3]);
-  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
-  s.board[loc].tokens[f] = 2;
-  s.players.ann.standing[f] = 5;
-  const after = previewTarget(s, 'ann', 'take-wake', { mode: 'location', location: loc, faction: f });
-  assert.equal(after.board[loc].influence.ann, 3);
-  assert.equal(after.players.ann.standing[f], 2);
-});
-
 test('Spread a Virus (infectious): each token that joins another faction costs it 1 token to its supply (round 9)', () => {
   const s = clear(newGame());
   const [f, g] = /** @type {string[]} */ (s.factions);

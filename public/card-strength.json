@@ -1,6 +1,6 @@
 {
   "measured": "2026-10-08",
-  "source": "scripts/tournament.js: probe results, 400 games (backer, backer, goal, goal, hunter); Silver Bullets, Lay Them to Rest, Sign the Contract, Install the Cameras and Open the Pit from their round 17 revisions (focused tournament, 200 games)",
+  "source": "scripts/tournament.js: probe results, 400 games (backer, backer, goal, goal, hunter); Silver Bullets, Lay Them to Rest, Sign the Contract, Install the Cameras and Open the Pit from their round 17 revisions (focused tournament, 200 games); Set a Trap and Wake the Dead from round 18 (focused tournament, 200 games)",
   "strength": {
     "fresh-meat": 1.45,
     "track-snow": 0.95,
@@ -17,8 +17,6 @@
     "book-leap": 1.17,
     "lamps": 2.41,
     "sign-contract": 0.49,
-    "extra-a": 1.53,
-    "extra-b": 1.8,
     "extra-c": 2.7,
     "extra-d": 1.44,
     "stake-out-6": 0.46,
@@ -38,7 +36,6 @@
     "tractor-beam": 0.69,
     "hijack-feed": 0.33,
     "bell": 1.41,
-    "take-wake": 0.01,
     "pit": 0.44,
     "change-plan": 0.32,
     "lamps-either": 1.04,
@@ -61,6 +58,9 @@
     "claim-spoils": 1.34,
     "house-fire": 0.32,
     "call-backup": 0.68,
-    "banshee": 0.38
+    "banshee": 0.38,
+    "set-trap": 0.93,
+    "wake-dead": 0.78,
+    "extra-b": 1.8
   }
 }
