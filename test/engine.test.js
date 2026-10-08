@@ -81,14 +81,18 @@ test('seeding puts 5 + 1 + 1 of each faction on its own locations (SD1)', () => 
   }
 });
 
-test('each slayer group starts with influence with its linked faction (G.7)', () => {
+test('starting setup: more standing with the affinity faction, 1 with each other, 1 influence on each affinity location (designer)', () => {
   const s = newGame(2);
+  const def = (/** @type {string} */ id) => Number(spec.variants.find((v) => v.id === id)?.default);
   for (const pid of PLAYERS) {
     const p = s.players[pid];
     const arch = spec.slayerGroups.find((g) => g.id === p.group)?.archetype;
     const linked = s.factions.find((f) => spec.factions.find((x) => x.id === f)?.archetype === arch) ?? '';
-    assert.equal(p.standing[linked], 3);
-    assert.equal(p.supply, Number(spec.variants.find((v) => v.id === 'playerCubes')?.default) - 3);
+    assert.equal(p.standing[linked], def('startInfluence'));
+    for (const f of s.factions.filter((x) => x !== linked)) assert.equal(p.standing[f], def('startOthers'));
+    const mine = spec.locations.filter((l) => l.archetype === arch).map((l) => s.board[l.id].influence[pid] ?? 0);
+    assert.deepEqual(mine, [1, 1, 1].map(() => def('startBoard')));
+    assert.equal(p.supply, def('playerCubes') - def('startInfluence') - 4 * def('startOthers') - 3 * def('startBoard'));
   }
 });
 

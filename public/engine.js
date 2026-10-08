@@ -445,15 +445,26 @@ export function createGame(input) {
   }
   /** @type {Record<string, PlayerState>} */
   const players = {};
+  const onBoard = num({ options }, 'startBoard');
   input.players.forEach((pid, i) => {
     const group = groups[i];
     const linked = factions.find((f) => archetypeOf(f) === spec.slayerGroups.find((g) => g.id === group)?.archetype) ?? factions[0];
     const start = num({ options }, 'startInfluence');
+    // Starting setup (designer, 2026-10-07): more with the affinity faction, startOthers with every other faction.
+    const others = num({ options }, 'startOthers');
+    const standing = Object.fromEntries(factions.map((f) => [f, f === linked ? start : others]));
+    const held = Object.values(standing).reduce((a, b) => a + b, 0);
     players[pid] = {
-      group, supply: num({ options }, 'playerCubes') - start, standing: Object.fromEntries(factions.map((f) => [f, f === linked ? start : 0])),
+      group, supply: num({ options }, 'playerCubes') - held, standing,
       trophies: Object.fromEntries(factions.map((f) => [f, 0])), bluffs: num({ options }, 'bluffs'),
       hand: [], kept: [], batch: [], picked: false, known: [],
     };
+    // Each slayer group starts with influence on the board at each of its affinity locations (designer, 2026-10-07), from its supply.
+    const arch = spec.slayerGroups.find((g) => g.id === group)?.archetype;
+    for (const loc of LOCATION_IDS.filter((l) => alignmentOf(l) === arch)) {
+      const n = Math.min(onBoard, players[pid].supply);
+      if (n > 0) { board[loc].influence[pid] = (board[loc].influence[pid] ?? 0) + n; players[pid].supply -= n; }
+    }
   });
   // The deck. Mixed (prototype test plumbing, not a rule): each suit draws
   // one Strike, Shift and Signature from the deck and the test cards; the
@@ -501,7 +512,8 @@ export function createGame(input) {
 /** This game's cards: its mixed deck, or the fixed pool. @param {GameState | PlayerView} state */
 export const deckOf = (state) => ('deck' in state && state.deck ? state.deck.slice() : spec.cards.map((card) => card.id));
 /** A card's printed influence in this game. @param {GameState | PlayerView} state @param {string} cardId */
-export const printedOf = (state, cardId) => ('printed' in state && state.printed?.[cardId]) || cardById(cardId).influence;
+export const printedOf = (state, cardId) => (('printed' in state && state.printed?.[cardId]) || cardById(cardId).influence)
+  + (cardById(cardId).suit ? num(state, 'influenceBonus') : 0); // test lever: more influence from cards (designer, 2026-10-07)
 
 /** Start a round's draft: shuffle all 21 cards, deal hands, leave the rest out (PS1, DR4, DR5). @param {GameState} state */
 function deal(state) {

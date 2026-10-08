@@ -673,8 +673,8 @@
     {
       "id": "startInfluence",
       "label": "Starting influence",
-      "description": "Influence each slayer group starts with, with its linked faction (G.7).",
-      "default": "3",
+      "description": "Influence each slayer group starts with, with its linked faction (G.7). Designer (2026-10-07): start with more influence on the affinity faction; 5 is Claude’s suggested starting number (was 3), to measure.",
+      "default": "5",
       "choices": [
         {
           "id": "0",
@@ -704,6 +704,62 @@
         {
           "id": "5",
           "label": "5",
+          "description": ""
+        },
+        {
+          "id": "6",
+          "label": "6",
+          "description": ""
+        },
+        {
+          "id": "7",
+          "label": "7",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "id": "startOthers",
+      "label": "Starting standing with other factions",
+      "description": "Designer (2026-10-07): each player starts with 1 influence with every faction other than their affinity faction. 0 was the first draft before.",
+      "default": "1",
+      "choices": [
+        {
+          "id": "0",
+          "label": "0",
+          "description": ""
+        },
+        {
+          "id": "1",
+          "label": "1",
+          "description": ""
+        },
+        {
+          "id": "2",
+          "label": "2",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "id": "startBoard",
+      "label": "Starting influence on affinity locations",
+      "description": "Designer (2026-10-07): each slayer group starts with 1 influence on the board at each of its affinity locations (its archetype’s three), from its supply.",
+      "default": "1",
+      "choices": [
+        {
+          "id": "0",
+          "label": "0",
+          "description": ""
+        },
+        {
+          "id": "1",
+          "label": "1",
+          "description": ""
+        },
+        {
+          "id": "2",
+          "label": "2",
           "description": ""
         }
       ]
@@ -828,6 +884,34 @@
           "id": "selected",
           "label": "Selected faction",
           "description": "Alternative: only the faction you select (or lead) pays; the other factions come along free and place nothing. It moves first."
+        }
+      ]
+    },
+    {
+      "id": "influenceBonus",
+      "label": "Extra influence from cards",
+      "description": "Test lever (designer, 2026-10-07: bump the influence cards provide): added to every suited card’s printed influence when it is spent for influence. 0 is the first draft.",
+      "default": "0",
+      "choices": [
+        {
+          "id": "0",
+          "label": "+0",
+          "description": ""
+        },
+        {
+          "id": "1",
+          "label": "+1",
+          "description": ""
+        },
+        {
+          "id": "2",
+          "label": "+2",
+          "description": ""
+        },
+        {
+          "id": "3",
+          "label": "+3",
+          "description": ""
         }
       ]
     },
