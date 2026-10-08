@@ -16,6 +16,9 @@
  *   whose winner flips weighted by the tokens lost there), control taken
  *   (contested locations where its player became sole top influence), pieces
  *   moved or placed, influence placed, and presence after the reckoning;
+ * - calibration: at the start of each round's play, each seat's predicted
+ *   chance of winning (the bots' own estimate), against who did win: how
+ *   far the bots' judgement can be trusted;
  * - per card in hand, each turn its player acts, whether it had a legal target
  *   (playable);
  * - probes: on a share of turns (probe=0.05), the controlled card test
@@ -56,7 +59,7 @@ import { seededRng, chance, measureState, MAX_MOVES } from './lib.js';
 /**
  * @typedef {{ g: number, side: 'island' | 'invaders', seats: Record<string, string>, groups: Record<string, string>, winners: string[], deck: string[],
  *   presence: number[], scorched: number, trophies: Record<string, number>, economy: Economy[], plays: Play[], held: string[], unplayed: string[],
- *   playable: Record<string, [number, number]>, probes: Probe[] }} GameRecord
+ *   playable: Record<string, [number, number]>, probes: Probe[], forecasts: { r: number, seat: string, p: number }[] }} GameRecord
  */
 
 // ---------------------------------------------------------------------------
@@ -126,6 +129,8 @@ function summarise(records, list, options) {
   /** @type {Record<string, { wins: number, island: number, invaders: number }>} */
   const profiles = Object.fromEntries(list.map((p) => [p, { wins: 0, island: 0, invaders: 0 }]));
   /** @type {Record<string, number>} */ const seatWins = {};
+  /** @type {Record<number, { n: number, p: number, won: number }[]>} predicted chance in tenths, by round */
+  const calib = {};
   /** @type {Record<string, number>} */ const groupWins = {};
   /** @type {number[][]} */ const presence = [];
   let scorched = 0, trophySum = 0, trophyN = 0, shared = 0;
@@ -146,6 +151,10 @@ function summarise(records, list, options) {
       groupWins[r.groups[pid]] = (groupWins[r.groups[pid]] ?? 0) + share;
     }
     r.presence.forEach((x, i) => (presence[i] ??= []).push(x));
+    for (const fc of r.forecasts ?? []) {
+      const bin = ((calib[fc.r] ??= Array.from({ length: 10 }, () => ({ n: 0, p: 0, won: 0 }))))[Math.min(9, Math.floor(fc.p / 10))];
+      bin.n += 1; bin.p += fc.p; bin.won += r.winners.includes(fc.seat) ? 100 / r.winners.length : 0;
+    }
     scorched += r.scorched;
     for (const t of Object.values(r.trophies)) { trophySum += t; trophyN += 1; }
     for (const e of r.economy) {
@@ -182,6 +191,7 @@ function summarise(records, list, options) {
     bySeat: Object.fromEntries(Object.entries(seatWins).map(([s, w]) => [s, pct(w, n)])),
     byGroup: Object.fromEntries(spec.slayerGroups.map((g) => [g.name, pct(groupWins[g.id] ?? 0, n)])),
     game: { presenceByRound: presence.map((xs) => mean(xs)), scorchedPerGame: avg(scorched, n), trophiesPerPlayer: avg(trophySum, trophyN) },
+    calibration: Object.fromEntries(Object.entries(calib).map(([round, bins]) => [round, bins.filter((b) => b.n).map((b) => ({ predicted: r1(b.p / b.n), won: r1(b.won / b.n), n: b.n }))])),
     economy: Object.values(economy).map((e) => ({
       round: e.r, fights: avg(e.fights, e.rounds), contests: e.by.map((v) => pct(v, e.fights)), locationsWithInfluence: avg(e.influenced, e.rounds),
       onBoardPerPlayer: avg(e.onBoard, e.rounds * players), standingPerPlayer: avg(e.standing, e.rounds * players),
@@ -240,6 +250,7 @@ function main() {
     console.log(`${'profile'.padEnd(16)} | share | won as island | won as invaders`);
     for (const [p, t] of Object.entries(s.byProfile).sort((a, b) => (b[1].share ?? 0) - (a[1].share ?? 0))) console.log(`${p.padEnd(16)} | ${`${t.share}%`.padStart(5)} | ${String(t.island).padStart(13)} | ${String(t.invaders).padStart(15)}`);
     console.log(`\nPresence after each round: ${s.game.presenceByRound.join(' · ')}; scorched per game ${s.game.scorchedPerGame}; trophies per player ${s.game.trophiesPerPlayer}`);
+    console.log(`Calibration (predicted chance of winning → how often it happened, by round): ${Object.entries(s.calibration).map(([round, bins]) => `r${round} ${bins.map((b) => `${b.predicted}→${b.won}`).join(' ')}`).join(' | ')}`);
     console.log(`Wins by seat: ${Object.entries(s.bySeat).map(([k, v]) => `${k} ${v}%`).join(' · ')}`);
     console.log(`Wins by slayer group: ${Object.entries(s.byGroup).map(([k, v]) => `${k} ${v}%`).join(' · ')}`);
     console.log('\nround | fights | by players with influence there: 0 / 1 / 2 / 3+ | locations with influence | influence on board per player | standing per player');
@@ -271,6 +282,7 @@ else {
     /** @type {string[]} */ const held = [], unplayed = [];
     /** @type {Economy[]} */ const economy = [];
     /** @type {Probe[]} */ const probes = [];
+    /** @type {{ r: number, seat: string, p: number }[]} */ const forecasts = [];
     /** @type {Record<string, [number, number]>} */ const playable = {};
     const presence = [totalPresence(s)];
     /** @type {Record<string, string[]> | null} */
@@ -279,6 +291,7 @@ else {
     for (let n = 0; n < MAX_MOVES && s.phase !== 'ended'; n++) {
       if (s.phase === 'play' && !hands) {
         hands = Object.fromEntries(s.seating.map((pid) => [pid, s.players[pid].hand.slice()]));
+        for (const pid of s.seating) forecasts.push({ r: s.round, seat: pid, p: Math.round(chance(s, pid) * 10) / 10 });
         for (const h of Object.values(hands)) held.push(...h);
       }
       // The player to act: playable checks, and a probe on a share of turns.
@@ -336,7 +349,7 @@ else {
     parentPort?.postMessage(/** @type {GameRecord} */ ({
       g, side: result.side, seats, groups: Object.fromEntries(s.seating.map((p) => [p, s.players[p].group])), winners: result.players, deck: s.deck ?? [],
       presence, scorched: Object.values(s.board).filter((p) => p.scorched).length, trophies: Object.fromEntries(s.seating.map((p) => [p, Object.values(s.players[p].trophies).reduce((a, b) => a + b, 0)])),
-      economy, plays, held, unplayed, playable, probes,
+      economy, plays, held, unplayed, playable, probes, forecasts,
     }));
   }
 }

@@ -168,18 +168,23 @@ function hunterValue(state, pid) {
  *   little for every trophy, against the best rival) instead of as a chance.
  * - flat: 1 to value its island goal without scaling it by the chance the
  *   island ending happens (it collects trophies rather than chasing presence).
+ * - threat: how much it counts the best rival's chance of winning through
+ *   the invaders (designer, 2026-10-08: a player with no hope there works to
+ *   prevent the invaders' ending), so it acts against a rival pulling ahead
+ *   with a faction.
  * - other: how much the goal it isn't pursuing still counts (0 to 1).
  * - margin: how much the raw margins count beside the win chance (trophies
  *   and standing against the best rival), so a bot far ahead or behind still
  *   reaches for one more (a probability flattens there).
- * @typedef {{ proof: number, hold: number, push: number, other: number, margin: number, early?: number, open?: number, inertia?: number, linear?: number, flat?: number }} Persona
+ * @typedef {{ proof: number, hold: number, push: number, other: number, margin: number, early?: number, open?: number, inertia?: number, linear?: number, flat?: number, threat?: number }} Persona
  */
 /** @type {Record<'goal' | 'goal-deep' | 'backer', Persona>} */
 const PERSONAS = {
   // linear 1: counting island trophies as hunter does closed hunter's lead (challenger 32% against 20%, 2026-10-08).
-  goal: { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1 },
-  'goal-deep': { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1 },
-  backer: { proof: -0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1 },
+  // threat 1: trophy players act against a rival pulling ahead with a faction (designer); hunter fell from 41% to 20% against it (2026-10-08).
+  goal: { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1, threat: 1 },
+  'goal-deep': { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1, threat: 1 },
+  backer: { proof: -0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1, threat: 1 },
 };
 
 /**
@@ -227,6 +232,8 @@ export function winChances(state, pid) {
   const lead = (/** @type {string} */ f) => net(pid, f) - Math.max(...others.map((o) => net(o, f)));
   const asInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid(lead(f) / (1 + roundsLeft)), 0);
   const marginInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * lead(f), 0);
+  // The best rival's chance of leading the winning faction (each rival against everyone else).
+  const rivalInvaders = Math.max(0, ...others.map((o) => s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid((net(o, f) - Math.max(...s.seating.filter((x) => x !== o).map((x) => net(x, f)))) / (1 + roundsLeft)), 0)));
   const isl = (/** @type {string} */ id) => {
     const t = s.factions.map((f) => s.players[id].trophies[f]).sort((a, b) => a - b);
     return t[0] + 0.35 * t[1] + 0.12 * t[2];
@@ -240,7 +247,7 @@ export function winChances(state, pid) {
   const rounds = Number(s.options.rounds);
   const known = rounds > 1 ? Math.min(1, (s.round - 1) / (rounds - 1)) : 1; // how much presence says by now
   const pInvaders = (1 - known) * prior + known * sigmoid((projected - threshold - 0.5) / spreadP);
-  return { pInvaders, prior, known, backers, linearIsland, asInvaders, asIsland, marginInvaders, marginIsland, projected, threshold, spreadP, roundsLeft };
+  return { pInvaders, prior, known, backers, linearIsland, rivalInvaders, asInvaders, asIsland, marginInvaders, marginIsland, projected, threshold, spreadP, roundsLeft };
 }
 
 /** A goal bot's value: its win chance, weighted toward its goal, plus its margins. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
@@ -251,7 +258,8 @@ function goalValue(state, pid, goal, persona) {
   const inv = c.pInvaders * 10 * c.asInvaders + persona.margin * c.marginInvaders;
   const islandMargin = persona.linear ? persona.linear * 10 * c.linearIsland : persona.margin * c.marginIsland;
   const isl = (persona.flat && goal === 'island' ? 1 : 1 - c.pInvaders) * 10 * c.asIsland + islandMargin;
-  return (goal === 'invaders' ? inv + persona.other * isl : isl + persona.other * inv) + 0.02 * state.players[pid].supply;
+  const threat = (persona.threat ?? 0) * 10 * c.pInvaders * c.rivalInvaders;
+  return (goal === 'invaders' ? inv + persona.other * isl : isl + persona.other * inv) - threat + 0.02 * state.players[pid].supply;
 }
 
 /**
