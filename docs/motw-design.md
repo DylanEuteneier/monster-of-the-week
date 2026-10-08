@@ -2320,12 +2320,16 @@ Where a game is started. The host page holds no game rules. Everything it does i
   - **Designer (2026-10-07):** bots in general require more proof to aim for a faction win than a trophy-set win: they are more easily swayed to go for the trophy-set win and maximise trophies. (An asymmetric breakpoint: backing a faction needs a clearly better win chance than the island.)
   - *Why it should help the target:* in a 5-player game only one or two players can lead the winning faction, so for most players the best chance is the island; bots reasoning about their own chances should pull tables there.
   - *Open:* trophies are secret (IN2) but bots read the full state; fair bots would estimate rivals' trophies from the fights they saw.
-  - *First runs (2026-10-07, built as profiles \`goal\` and \`goal-deep\`; current first draft: IC1, each faction pays, the new starting setup):*
-    - Five \`goal\` bots: the island won 51% of 200 games, from the bots' own reasoning (plain smart bots: 14%).
+  - *First runs (2026-10-07, built as profiles `goal` and `goal-deep`; current first draft: IC1, each faction pays, the new starting setup):*
+    - Five `goal` bots: the island won 51% of 200 games, from the bots' own reasoning (plain smart bots: 14%).
     - Mixed table (200 games, one seat each): goal-deep 25%, goal 20%, hunter 20%, smart 19%, trophy 17% (an even share is 20%). The goal bots won mostly as invaders, the trophy-priority bots as the island.
-    - Personalities of \`goal\` (400 games, one seat each): needing more proof to back a faction did best (23%); needing none did worst (17%). This agrees with the designer's rule.
-    - A table where every bot leans hard to the island ends at the island 99.5% of the time: nobody plays for the invaders, so presence collapses. Which ending wins depends on who sits at the table, so personalities are now judged as one challenger against a field of four standard \`goal\` bots.
-    - Tuning tool: a tournament profile can carry persona numbers, e.g. \`goal:proof=0.4,other=0.6\`.
+    - Personalities of `goal` (400 games, one seat each): needing more proof to back a faction did best (23%); needing none did worst (17%). This agrees with the designer's rule.
+    - A table where every bot leans hard to the island ends at the island 99.5% of the time: nobody plays for the invaders, so presence collapses. Which ending wins depends on who sits at the table, so personalities are now judged as one challenger against a field of four standard `goal` bots.
+    - Tuning tool: a tournament profile can carry persona numbers, e.g. `goal:proof=0.4,other=0.6`.
+    - *Challengers against four `goal` bots (2026-10-08, 400 games each; even share 20%):* with the field at proof 0.1, challengers needing more proof won 27% (proof 0.25, 0.6) and hunter 27%; proof 0 and smart 20% and 17%. The field moved to proof 0.3.
+    - *Against the proof 0.3 field:* the island won 99–100% of games and **no bot backed a faction any more**. Hunter won 40%; every goal personality 19–23% (goal-deep 23%; extra margin weight 20%). The goal bot plays the island game worse than hunter's plain trophy count.
+    - *Thresholds, five goal bots:* the island won 100% at 20, 99.5% at 15 and 92% at 10. When every player pushes fights, presence falls through any threshold: fights remove the whole losing group and half as many from the winner.
+    - *Designer (2026-10-08):* tune back toward the invader-ally ending so it does happen and can win. *Finding so far:* the invaders' ending happens only when some players back a faction; whether backing pays for the one who does it is the question (a game balance question, not only a bot one).
 - **Bots read the full state.** A bot that plays to win would have to be limited to its own player view for a fair game against people; for measuring cards, full state is used. *Open:* whether to limit them.
 
 ### F.10 Single game

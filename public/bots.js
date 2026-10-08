@@ -292,7 +292,10 @@ export function evaluate(state, pid, profile = 'smart', goal = undefined) {
  * - push: tokens of presence per remaining round it reckons one player can
  *   move the game toward the ending it wants.
  * - other: how much the goal it isn't pursuing still counts (0 to 1).
- * @typedef {{ proof: number, hold: number, push: number, other: number }} Persona
+ * - margin: how much the raw margins count beside the win chance (trophies
+ *   and standing against the best rival), so a bot far ahead or behind still
+ *   reaches for one more (a probability flattens there).
+ * @typedef {{ proof: number, hold: number, push: number, other: number, margin?: number }} Persona
  */
 /** @type {Partial<Record<Profile, Persona>>} */
 const PERSONAS = {
@@ -342,21 +345,25 @@ export function winChances(state, pid) {
   const w = presence.map((n) => Math.exp((n - top) / (1.5 + 1.5 * roundsLeft)));
   const wSum = w.reduce((a, b) => a + b, 0);
   const net = (/** @type {string} */ id, /** @type {string} */ f) => (s.players[id].standing[f] ?? 0) - s.players[id].trophies[f];
-  const asInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid((net(pid, f) - Math.max(...others.map((o) => net(o, f)))) / (1 + roundsLeft)), 0);
+  const lead = (/** @type {string} */ f) => net(pid, f) - Math.max(...others.map((o) => net(o, f)));
+  const asInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid(lead(f) / (1 + roundsLeft)), 0);
+  const marginInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * lead(f), 0);
   const isl = (/** @type {string} */ id) => {
     const t = s.factions.map((f) => s.players[id].trophies[f]).sort((a, b) => a - b);
     const board = Object.values(s.board).reduce((n, place) => n + (place.influence[id] ?? 0), 0);
     return t[0] + 0.35 * t[1] + 0.12 * t[2] + 0.1 * board * Math.min(1, roundsLeft);
   };
-  const asIsland = sigmoid((isl(pid) - Math.max(...others.map(isl))) / (0.6 + 0.8 * roundsLeft));
-  return { pInvaders: sigmoid((projected - threshold - 0.5) / spreadP), asInvaders, asIsland, projected, threshold, spreadP, roundsLeft };
+  const marginIsland = isl(pid) - Math.max(...others.map(isl));
+  const asIsland = sigmoid(marginIsland / (0.6 + 0.8 * roundsLeft));
+  return { pInvaders: sigmoid((projected - threshold - 0.5) / spreadP), asInvaders, asIsland, marginInvaders, marginIsland, projected, threshold, spreadP, roundsLeft };
 }
 
 /** A goal bot's value: its win chance, weighted toward its goal. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
 function goalValue(state, pid, goal, persona) {
   const c = winChances(state, pid);
-  const inv = c.pInvaders * c.asInvaders, isl = (1 - c.pInvaders) * c.asIsland;
-  return (goal === 'invaders' ? inv + persona.other * isl : isl + persona.other * inv) * 10 + 0.02 * state.players[pid].supply;
+  const m = persona.margin ?? 0;
+  const inv = c.pInvaders * (10 * c.asInvaders + m * c.marginInvaders), isl = (1 - c.pInvaders) * (10 * c.asIsland + m * c.marginIsland);
+  return (goal === 'invaders' ? inv + persona.other * isl : isl + persona.other * inv) + 0.02 * state.players[pid].supply;
 }
 
 /**
