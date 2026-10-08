@@ -268,7 +268,7 @@
       "slot": "signature",
       "influence": 4,
       "action": "token",
-      "text": "Hidden: at its fight, each group loses 2 more tokens as casualties.",
+      "text": "Hidden: at its fight, each group loses 2 more tokens as casualties, and the token’s owner takes those as a pile of their own. (Revised in round 17.)",
       "readings": {
         "location": "a ◐ location.",
         "faction": "a location holding the Nocturnals."
@@ -1265,7 +1265,7 @@
         "slot": "signature",
         "influence": 3,
         "action": "token",
-        "text": "Hidden: at its fight, the bigger trophy pile goes to the runner-up and the smaller to the leader.",
+        "text": "Hidden: at its fight, the token’s owner takes the bigger pile and the leader only the smaller; the owner pays 2 standing with the Demons for the deal. (Revised in round 17.)",
         "readings": {
           "location": "a ⎈ location.",
           "faction": "a location holding the Demons."
@@ -1376,8 +1376,8 @@
         "suit": "demonic",
         "slot": "signature",
         "influence": 3,
-        "action": "pit",
-        "text": "The target group, 3 tokens or fewer, falls in: its tokens go back to its supply. Target: the group.",
+        "action": "pit-fall",
+        "text": "The target group, 3 tokens or fewer, falls through to any location in its region it can enter. Target: the group, then where it lands. (Revised in round 17.)",
         "readings": {
           "location": "a small group at a ⎈ location.",
           "faction": "a small group sharing a location with the Demons."
@@ -1434,7 +1434,7 @@
         "influence": 3,
         "action": "token",
         "round": 11,
-        "text": "Hidden: at its fight, no one takes trophies; the tokens lost go back to their supplies.",
+        "text": "Hidden: at its fight, the token’s owner takes the smaller pile; the rest go back to their supplies. (Revised in round 17.)",
         "readings": {
           "location": "a ☾ location.",
           "faction": "a location holding the Undead."
@@ -1488,9 +1488,9 @@
         "suit": "sentients",
         "slot": "signature",
         "influence": 3,
-        "action": "surveil",
+        "action": "surveil-supply",
         "round": 12,
-        "text": "Place 1 influence at the target and at each location next to it that holds tokens, each spent from your standing with a faction there (the one you hold most). Target: the hub.",
+        "text": "Place 1 influence from your supply at the target and at each location next to it that holds tokens. Target: the hub. (Revised in round 17.)",
         "readings": {
           "location": "a ⏏ location.",
           "faction": "a location holding the Sentients."
@@ -1733,20 +1733,6 @@
         "text": "Place 6 influence from your supply on the target. Target: any location. (Stake Out with a larger amount, to see how strength grows with it.)"
       },
       {
-        "id": "cameras-v2",
-        "name": "Install the Cameras (v2)",
-        "suit": "sentients",
-        "slot": "signature",
-        "influence": 3,
-        "action": "surveil-supply",
-        "round": 17,
-        "text": "Place 1 influence from your supply at the target and at each location next to it that holds tokens. Target: the hub. (Round 17: from the supply, not standing.)",
-        "readings": {
-          "location": "a ⏏ location.",
-          "faction": "a location holding the Sentients."
-        }
-      },
-      {
         "id": "virus-v3",
         "name": "Spread a Virus (v3)",
         "suit": "sentients",
@@ -1761,34 +1747,6 @@
         }
       },
       {
-        "id": "lay-to-rest-v2",
-        "name": "Lay Them to Rest (v2)",
-        "suit": "undead",
-        "slot": "signature",
-        "influence": 3,
-        "action": "token",
-        "round": 17,
-        "text": "Hidden: at its fight, the token’s owner takes the smaller pile; the rest go back to their supplies. (Round 17.)",
-        "readings": {
-          "location": "a ☾ location.",
-          "faction": "a location holding the Undead."
-        }
-      },
-      {
-        "id": "pit-v2",
-        "name": "Open the Pit (v2)",
-        "suit": "demonic",
-        "slot": "signature",
-        "influence": 3,
-        "action": "pit-fall",
-        "round": 17,
-        "text": "The target group, 3 tokens or fewer, falls through to any location in its region it can enter. Target: the group, then where it lands. (Round 17: a move, not a removal.)",
-        "readings": {
-          "location": "a small group at a ⎈ location.",
-          "faction": "a small group sharing a location with the Demons."
-        }
-      },
-      {
         "id": "wake-v2",
         "name": "Take Over the Wake (v2)",
         "suit": "undead",
@@ -1800,34 +1758,6 @@
         "readings": {
           "location": "a ☾ location.",
           "faction": "a location holding the Undead."
-        }
-      },
-      {
-        "id": "silver-bullets-v2",
-        "name": "Silver Bullets (v2)",
-        "suit": "nocturnals",
-        "slot": "signature",
-        "influence": 4,
-        "action": "token",
-        "round": 17,
-        "text": "Hidden: at its fight, each group loses 2 more tokens as casualties, and the token’s owner takes those as a pile of their own. (Round 17.)",
-        "readings": {
-          "location": "a ◐ location.",
-          "faction": "a location holding the Nocturnals."
-        }
-      },
-      {
-        "id": "sign-contract-v2",
-        "name": "Sign the Contract (v2)",
-        "suit": "demonic",
-        "slot": "signature",
-        "influence": 3,
-        "action": "token",
-        "round": 17,
-        "text": "Hidden: at its fight, the token’s owner takes the bigger pile and the leader only the smaller; the owner pays 2 standing with the Demons for the deal. (Round 17.)",
-        "readings": {
-          "location": "a ⎈ location.",
-          "faction": "a location holding the Demons."
         }
       },
       {

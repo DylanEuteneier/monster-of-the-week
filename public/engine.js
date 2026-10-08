@@ -1814,7 +1814,7 @@ function fight(state, loc) {
   const nl = place.tokens[loser];
   const loserLoss = nl; // the loser always loses everything (FR5)
   let winnerLoss = Math.max(1, Math.floor(nl / 2));
-  if (effect === 'silver-bullets' || effect === 'silver-bullets-v2') winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
+  if (effect === 'silver-bullets') winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
   if (effect === 'salt-burn') winnerLoss = place.tokens[winner];
   if (effect === 'force-field') winnerLoss = 0; // test card (round 8)
   winnerLoss = Math.min(winnerLoss, place.tokens[winner]);
@@ -1838,14 +1838,13 @@ function fight(state, loc) {
       logLine(state, `  ${pid} takes a pile of ${pile.n} ${factionById(pile.faction).name}.`);
     } else state.supply[pile.faction] += pile.n;
   };
-  if (effect === 'lay-to-rest') for (const pile of piles) give(pile, null); // test card (round 11): no one takes trophies
-  else if (effect === 'lay-to-rest-v2' && token) { // round 17: the token's owner takes the smaller pile; the rest go back to their supplies
+  if (effect === 'lay-to-rest' && token) { // test card (round 17 revision): the token's owner takes the smaller pile; the rest go back to their supplies
     piles.forEach((pile, i) => give(pile, i === piles.length - 1 ? token.owner : null));
-  } else if (effect === 'sign-contract-v2' && token) { // round 17: the owner takes the bigger pile, the leader only the smaller; the owner pays 2 standing with the Demons
+  } else if (effect === 'sign-contract' && token) { // test card (round 17 revision): the owner takes the bigger pile, the leader only the smaller; the owner pays 2 standing with the Demons
     piles.forEach((pile, i) => give(pile, i === 0 ? token.owner : collectors[0] ?? null));
     const demons = state.factions.find((f) => archetypeOf(f) === 'demonic');
     if (demons) state.players[token.owner].standing[demons] = Math.max(0, (state.players[token.owner].standing[demons] ?? 0) - 2);
-  } else if (effect === 'silver-bullets-v2' && token) { // round 17: the extra casualties go to the token's owner as their own pile
+  } else if (effect === 'silver-bullets' && token) { // round 17 revision (designer): the extra casualties go to the token's owner as their own pile
     const extra = piles.find((p) => p.faction === winner);
     const owed = Math.min(2, extra?.n ?? 0);
     if (extra && owed) { extra.n -= owed; give({ faction: winner, n: owed }, token.owner); }
@@ -1856,9 +1855,7 @@ function fight(state, loc) {
   else if (ranking.involved === 1 && collectors[0]) {
     for (const pile of piles) give(pile, collectors[0]); // UP1
   } else {
-    // sign-contract (test card, round 8): the bigger pile to the runner-up, the smaller to the leader.
-    const order = effect === 'sign-contract' ? piles.slice().reverse() : piles;
-    order.forEach((pile, i) => give(pile, collectors[i] ?? null));
+    piles.forEach((pile, i) => give(pile, collectors[i] ?? null));
   }
   // Influence after the fight (AF3 adjusted, AS1).
   const leader = collectors[0];

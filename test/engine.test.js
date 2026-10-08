@@ -446,7 +446,7 @@ test('Trade Souls swaps two groups of different factions anywhere (round 11)', (
   assert.ok(checkTarget(s, 'ann', cardById('trade-souls'), { ...t, moves: [{ location: far, faction: f, to: '' }] })); // a group of the same faction: nothing to trade
 });
 
-test('Lay Them to Rest: no one takes trophies at its fight (round 11)', () => {
+test('Lay Them to Rest: the token\'s owner takes the smaller pile; the rest go back to their supplies (round 17 revision)', () => {
   const s = clear(newGame());
   const [f, g] = /** @type {string[]} */ (s.factions);
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
@@ -457,6 +457,7 @@ test('Lay Them to Rest: no one takes trophies at its fight (round 11)', () => {
   const after = resolveFight(s, loc);
   assert.equal(after.players.ann.trophies[f], 0);
   assert.equal(after.supply[f], before + 2);
+  assert.equal(after.players.ann.trophies[g], 1); // the smaller pile, the winner's single casualty
 });
 
 test('Follow the Lights: the leader moves next door and a group of another faction follows it in (round 12)', () => {
@@ -648,7 +649,7 @@ test('D15: each faction moved pays its own (whoPays=each, first draft); only the
   assert.deepEqual([paid.board[bell].tokens[A], paid.board[bell].tokens[B]], [2, undefined]);
 });
 
-test('round 17: Virus v3 only infects neighbours holding one other faction; the Pit v2 drops a small group in its region; Swap Allegiances swaps standing', () => {
+test('round 17: Virus v3 only infects neighbours holding one other faction; Open the Pit drops a small group in its region; Swap Allegiances swaps standing', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const from = /** @type {string} */ (Object.keys(map).find((l) => map[l].adjacent.length >= 3));
@@ -661,6 +662,6 @@ test('round 17: Virus v3 only infects neighbours holding one other faction; the 
   s.players.ann.standing = { [A]: 5, [B]: 1, [C]: 0 };
   const sw = previewTarget(s, 'ann', 'swap-allegiance', { faction: A, to: B });
   assert.deepEqual([sw.players.ann.standing[A], sw.players.ann.standing[B]], [1, 5]);
-  const c = nextChoice(s, 'ann', 'pit-v2', { mode: 'location', location: x, faction: B });
+  const c = nextChoice(s, 'ann', 'pit', { mode: 'location', location: x, faction: B });
   if (c.kind === 'location') for (const l of c.options) assert.notEqual(l, x);
 });
