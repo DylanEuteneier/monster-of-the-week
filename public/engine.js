@@ -230,6 +230,8 @@ export function cardById(id) {
 
 /** Are responses in play? Out of the first draft unless the variant turns them on. @param {{ options: Options }} state */
 export const responsesOn = (state) => (state.options.responses ?? 'off') === 'on';
+/** IC1 (designer, 2026-10-07): the influence a card places is a requirement. @param {{ options: Options }} state */
+export const influenceRequired = (state) => (state.options.influenceRequired ?? 'on') === 'on';
 
 /** An option's number; a game saved before an option existed uses its default. @param {{ options: Options }} state @param {string} id */
 const num = (state, id) => Number(state.options[id] ?? variants.find((v) => v.id === id)?.default);
@@ -344,6 +346,9 @@ function move(state, pid, faction, from, to, count, placedAt) {
   const n = Math.min(count, tokensOf(state, from, faction));
   if (n <= 0 || from === to) return 0;
   if (!canEnter(state, to, faction, state.pending?.blocked ?? [])) return 0;
+  // IC1: a move that places influence goes only as far as the player can pay for it.
+  const cost = num(state, 'influencePerMove');
+  if (influenceRequired(state) && cost > 0 && !placedAt.has(`${to}:${faction}`) && (state.players[pid].standing[faction] ?? 0) < cost) return 0;
   state.board[from].tokens[faction] -= n;
   if (state.board[from].tokens[faction] === 0) delete state.board[from].tokens[faction];
   state.board[to].tokens[faction] = tokensOf(state, to, faction) + n;
@@ -668,6 +673,20 @@ function tokenSpots(state, card, mode) {
  * @param {GameState} state @param {string} pid @param {Card} card @param {Target | null | undefined} t
  */
 export function checkTarget(state, pid, card, t) {
+  const reason = checkShape(state, pid, card, t);
+  if (reason || !t || !influenceRequired(state)) return reason;
+  // IC1: the card must be payable for at least one of its moves.
+  const moved = (/** @type {Options} */ options) => {
+    const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options, lastPlayed: state.lastPlayed ?? null, events: [], log: [] })));
+    act(copy, pid, card, t);
+    return LOCATION_IDS.some((l) => JSON.stringify(copy.board[l].tokens) !== JSON.stringify(state.board[l].tokens));
+  };
+  if (!moved(state.options) && moved({ ...state.options, influenceRequired: 'off' })) return 'You need standing with the faction to pay for the influence this move places (IC1).';
+  return null;
+}
+
+/** The target's shape, before IC1. @param {GameState} state @param {string} pid @param {Card} card @param {Target | null | undefined} t @returns {string | null} */
+function checkShape(state, pid, card, t) {
   card = copied(state, card);
   if (!card.action) return 'This card has no turn action.';
   if (!t) return null; // a card with no legal target may be played for no effect (partial actions)

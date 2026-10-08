@@ -796,6 +796,24 @@
       ]
     },
     {
+      "id": "influenceRequired",
+      "label": "Influence as a requirement",
+      "description": "IC1 (designer, 2026-10-07, first draft): the card says how much influence a move places, and that is a requirement, paid from standing with the faction moved. A move goes only as far as the player can pay: with 1 standing, a card that places 1 per location spread to spreads to one location. Cards that place no influence have no requirement.",
+      "default": "on",
+      "choices": [
+        {
+          "id": "on",
+          "label": "On",
+          "description": "The first draft (IC1)."
+        },
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "Before IC1: any move is allowed; influence is placed only as far as standing goes."
+        }
+      ]
+    },
+    {
       "id": "influenceAtOrigin",
       "label": "Influence where tokens leave",
       "description": "Test lever (influence economy, 2026-10-07): a move also places 1 influence where the tokens left from.",

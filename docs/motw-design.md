@@ -576,7 +576,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - `CU2` *Applied together (ruled out of the first draft):* every play does both.
   - `CU3` *Intertwined (first draft, as single-purpose cards):* cards are single use and do one thing (increase influence, alter or modify board presence, and so on), but board actions require spending an influence cube.
 - *Intertwined option, ideas:*
-  - `IC1` A board action costs influence with the faction being moved.
+  - `IC1` A board action costs influence with the faction being moved. **First draft (designer, 2026-10-07; D15):** the card dictates how influence is placed, and that placement is a requirement, paid from standing with the faction moved. A move goes only as far as the player can pay. Example: a card spreads one group to several locations and places 1 influence at each location spread to, however many tokens go there; a player with 1 standing with that faction can spread to only one location. A card that places no influence has no requirement.
   - `IC2` The cost depends on the card. Indirect cards (such as a "bait" card) cost no influence but have a smaller effect: fewer tokens or locations. Direct cards cost influence but make a bigger move; thematically, the player is cashing in some of their sway with the faction's leader.
   - *Open:* what a board action affecting more than one faction costs.
   - *Open:* whether players start with any influence, since costly cards are unusable without it.
@@ -973,6 +973,24 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** 3.7 (cards), 3.11.
 - **Date:** 2026-10-07
 
+#### D15. Influence is a requirement (IC1)
+
+- **Decided:** in the first draft, the card dictates how influence is placed, and that is treated as a requirement: paid from standing with the faction moved, and a move goes only as far as the player can pay. Example (designer): a card lets a single group spread to several locations and places 1 influence on each location spread to, however many tokens move there; a player with 1 influence with that faction can move to only one location.
+- **Follow-up (designer):** review every card for places where the location or amount of influence placed is vague or unspecified, and specify it.
+- **Affects:** 3.7 (IC1), 3.14, Appendix G (G.2, G.8), every card's text; the prototype (variant `influenceRequired`).
+- **Date:** 2026-10-07
+
+#### D16. The core loop
+
+- **Decided (designer):** the core loop:
+  1. Players gain trophies by having the most influence at locations with big conflicts.
+  2. To get influence on the board, players place it from factions by taking a card action that affects the board presence of that faction (or other ways to place influence on the board).
+  3. To get influence with a faction, players discard a suited card for that influence, sacrificing its action.
+  4. Repeat.
+- **The invaders' ending (designer):** if the invaders win, influence with a faction is most valuable, but players will likely need influence with other factions too, to keep their favoured faction from being wiped out.
+- **Affects:** 2 (core tension), 3.7, 3.13, 3.14; bot strategy (F.9).
+- **Date:** 2026-10-07
+
 #### D14. Tokens and cubes
 
 - **Decided:** faction presence on the board is made of **tokens**; **cubes** are always players' influence. A faction never has cubes, and a player never has tokens (apart from hidden and bluff tokens, which are separate pieces).
@@ -1004,6 +1022,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-07 | Printed influence: the same total per suit, split card by card, not fixed by slot (D12). Card action balance review opened | Starting split stays 2/3/4 per suit (9 each) until the review changes it |
 | 2026-10-07 | Terms (D14): faction presence is tokens, player influence is cubes; every faction "cube" in the document, the card text and the prototype renamed to "token" | Reference-game appendices (C, I) keep their own games' terms |
 | 2026-10-07 | Mixed decks (prototype): the two unmarked unsuited slots draw at random from every unmarked unsuited card; A to D stay | Round 14 unsuited test cards can be dealt |
+| 2026-10-07 | IC1 in the first draft: the influence a card places is a requirement (D15). The core loop recorded (D16) | Bot games after IC1: fewer fights (1.4 a round) and the invaders win 97% (30 games); presence climbs to about 50 against a threshold of 20 |
 | 2026-10-07 | Card strength measured over a played-out round, as benefit to the player (designer); deep bots with a reply lookahead and strategy breakpoints on two axes (the ending; influence or trophies mid-game); bot tournament | Prototype tooling, not rules; the breakpoint numbers are suggestions to tune |
 
 ---
@@ -2462,7 +2481,7 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
 - **A player's cubes** are always in one of three places: their supply, their standing with a faction (public influence), or on a location (influence there).
 - **Two-faction limit (LL1):** a location holds at most two factions. No action may bring a third faction into a location.
 - **Control (LC1, LC2):** factions control locations; players never do. A faction controls a location when it has the most tokens there. If two factions are tied there, the one aligned with the location controls it; otherwise no one does.
-- **Moving factions:** any player can take an action that affects any faction's presence. Influence placed by such an action is spent from the player's standing with the faction being affected, so a player with no standing with it places none. (Variant: only a faction's influence leader can affect it, IL1.)
+- **Moving factions:** any player can take an action that affects any faction's presence. Influence placed by such an action is spent from the player's standing with the faction being affected. **IC1 (D15):** that placement is a requirement: a move goes only as far as the player can pay for it, so a player with no standing with a faction can't move it with a card that places influence. (Variant: only a faction's influence leader can affect it, IL1.)
 - **Influence leader:** the player with the most influence with a faction. Affinity breaks a tie for the most (AB1); otherwise all tied players are influence leaders. It decides where a short-supplied faction grows.
 - **Affinity (AB1):** a slayer group has affinity for its archetype's faction and for that archetype's three locations. Affinity only breaks ties between players: affinity for a location in fights there, affinity for a faction in influence with it.
 - **Hidden information:** hands are hidden. Influence with factions is public. Collected trophies are secret: everyone sees which pile a player takes, but not their running total (IN2).
@@ -2587,7 +2606,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 **Shared wording**
 
 - **Any faction:** a presence action can move any faction, with no token limit (3.7, principles 10 and 12; IL1 is out of the first draft).
-- **Influence:** a presence action places 1 influence at each destination, spent from the player's standing with the faction moved. A player with no standing with it places none.
+- **Influence:** a presence action places 1 influence at each destination, spent from the player's standing with the faction moved. Under IC1 (D15) this is a requirement: each destination's move happens only if the player can pay its influence (variant `influenceRequired`, on by default; off is the old reading, where a player with no standing still moves and places none).
 - **Infl.:** the influence a suit card gives with its suit's affinity faction when spent for influence instead (principle 7).
 - **Kind:** concentrate (gather into one location; feeds growth), scatter (break into single tokens; stops growth), merge (force a fight), split (prevent a fight), pin (nothing enters or leaves), swap (two groups trade places), far push, relocate, fight math, timing, standing effect (lasts the round), block, influence, information, catch-up, rule-bend, sow (mancala), lure (the largest group comes), teleport, halve, conveyor, network jump, shove, mirror, leap.
 - **Group:** all of one faction's tokens at one location.

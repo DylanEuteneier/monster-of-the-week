@@ -22,6 +22,8 @@ function rng(seed) {
 function clear(state) {
   const next = structuredClone(state);
   for (const place of Object.values(next.board)) Object.assign(place, { tokens: {}, influence: {}, token: null, scorched: false });
+  // Standing with every faction, so moves can pay for the influence they place (IC1); tests of IC1 set it themselves.
+  for (const p of Object.values(next.players)) p.standing = Object.fromEntries(next.factions.map((f) => [f, 10]));
   return next;
 }
 const [A, B, C] = newGame().factions;
@@ -606,4 +608,18 @@ test('round 16 unsuited: Canvass the Town, Set the Bait, Change Allegiance, Stak
   const moved = previewTarget(s, 'ann', 'change-allegiance', { faction: A, to: B });
   assert.deepEqual([moved.players.ann.standing[A], moved.players.ann.standing[B]], [1, 4]);
   assert.equal(previewTarget(s, 'ann', 'stake-out-6', { location: y }).board[y].influence.ann, 6);
+});
+
+test('IC1: a move goes only as far as the player can pay for the influence it places', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const from = /** @type {string} */ (Object.keys(map).find((l) => map[l].adjacent.length >= 3));
+  s.board[from].tokens = { [A]: 5 };
+  s.players.ann.standing[A] = 1;
+  const one = previewTarget(s, 'ann', 'virus', { mode: 'faction', location: from, faction: A });
+  assert.equal(map[from].adjacent.filter((l) => one.board[l].tokens[A]).length, 1); // 1 standing: one location
+  s.players.ann.standing[A] = 0;
+  assert.ok(checkTarget(s, 'ann', cardById('extra-c'), { moves: [{ location: from, faction: A, to: map[from].adjacent[0] }] }));
+  const off = { ...s, options: { ...s.options, influenceRequired: 'off' } };
+  assert.equal(checkTarget(off, 'ann', cardById('extra-c'), { moves: [{ location: from, faction: A, to: map[from].adjacent[0] }] }), null);
 });
