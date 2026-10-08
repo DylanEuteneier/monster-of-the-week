@@ -176,9 +176,10 @@ function hunterValue(state, pid) {
  */
 /** @type {Record<'goal' | 'goal-deep' | 'backer', Persona>} */
 const PERSONAS = {
-  goal: { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3 },
-  'goal-deep': { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3 },
-  backer: { proof: -0.3, hold: 0.05, push: 2, other: 0, margin: 3 },
+  // linear 1: counting island trophies as hunter does closed hunter's lead (challenger 32% against 20%, 2026-10-08).
+  goal: { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1 },
+  'goal-deep': { proof: 0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1 },
+  backer: { proof: -0.3, hold: 0.05, push: 2, other: 0, margin: 3, linear: 1 },
 };
 
 /**
