@@ -1055,6 +1055,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-08 | Round 18 adopted (designer): Set a Trap is marked card A; Wake the Dead replaces Take Over the Wake | B to D stay scaffolds; Research Montage returned to the test cards (no board effect, a blind draft pick) |
 | 2026-10-08 | Round 19 adopted (designer): Lock Down the Town is C, Put a Bounty On It is D. Switch to Plan B and Change the Plan merged into one card, Plan B. The Cancel removed entirely. Every scaffold card removed | B and one unmarked slot are open; the prototype fills them from the unmarked unsuited cards so the pool stays 21 |
 | 2026-10-08 | Research Montage removed outright (designer): a useless card | The table's card-choice step, used only by it, removed from the prototype |
+| 2026-10-08 | Claim the Spoils can't be played as your last card in hand (designer) | Card flag `notLast` in the spec; the engine refuses the play |
 | 2026-10-07 | Card scores reset to 0 and not to be trusted until cards are measured over whole rounds with strategic bots (designer). Tuning process: tournaments to tune the bots, then card tuning passes, repeat | D12's weighting falls back to random 2/3/4 per suit while every score is 0 |
 | 2026-10-07 | D15 starting place: each faction moved to a new location pays 1 of its influence there, regardless of group size (variant `whoPays`, each by default). Card scores taken off the card review page until they can be trusted (designer) | Economy, 100 bot games: with IC1, fights with 2+ players bidding rise from 1% to about 40% in round 1 (fewer fights, 0.6 a round against 3.2); each-pays slightly ahead of selected-pays |
 | 2026-10-07 | IC1 in the first draft: the influence a card places is a requirement (D15). The core loop recorded (D16) | Bot games after IC1: fewer fights (1.4 a round) and the invaders win 97% (30 games); presence climbs to about 50 against a threshold of 20 |
@@ -2906,7 +2907,7 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 
 - Round 15 (2026-10-07; suggestions, driven by Claude): unsuited ideas aimed at the marked slots, each something no faction card does. Measured on every turn (200 states) and, with the new `opening=1` option of `scripts/balance.js`, on each round's first play only (100 states); battle score, all turns / opening:
   - Steal Their Playbook: play the action of the last card played, as if it were yours. 11.1 / 5.3 (playable 83% / 60%; as an opener it copies the last card of the previous round).
-  - Claim the Spoils: at this round's fight at the target, you take every pile, whoever leads. 4.6 / 0.2.
+  - Claim the Spoils: at this round's fight at the target, you take every pile, whoever leads. 4.6 / 0.2. *Designer (2026-10-08): it can't be played as your last card in hand. It is open information (the claim is visible).*
   - Call a Truce: no fight at the target this round; both groups stay. 3.1 / 0.1.
   - Lay a Trail: move a whole group into a location where you alone have the most influence, from next door. 3.5 / 2.3 (playable 40% / 36%).
   - Round 14's influence cards as openers: Stake Out 0.1 (it still places the most influence, 3.3); Plan B, Bail Out, Fall Back and Call for Backup 0.

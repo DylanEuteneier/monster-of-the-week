@@ -716,3 +716,14 @@ test('round 19: Lock Down the Town stops moves across its region\'s border; Put 
   const near = map[NEUTRAL].adjacent.filter((l) => canEnter(s, l, A));
   assert.ok(reached.filter((l) => near.includes(l)).length === Math.min(3, near.length)); // nearest first
 });
+
+test('Claim the Spoils can\'t be played as your last card in hand (designer)', () => {
+  const s = draftAll(newGame());
+  s.opened = true;
+  const pid = s.seating[s.turn];
+  const move = /** @type {import('../public/engine.js').Move} */ ({ type: 'play', card: 'claim-spoils', use: 'action', target: { location: NEUTRAL } });
+  s.players[pid].hand = ['claim-spoils'];
+  assert.equal(validate(s, { playerId: pid, move }).ok, false);
+  s.players[pid].hand = ['claim-spoils', 'bell'];
+  assert.equal(validate(s, { playerId: pid, move }).ok, true);
+});

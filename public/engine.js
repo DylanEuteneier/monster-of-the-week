@@ -1662,6 +1662,7 @@ export function validate(state, submission) {
   if (m.type !== 'play') return no('Play a card or pass.');
   if (!p.hand.includes(m.card)) return no('That card is not in your hand.');
   const card = cardById(m.card);
+  if ('notLast' in card && card.notLast && p.hand.length === 1) return no(`${card.name} can't be your last card in hand.`);
   if (!state.opened && pid === state.first) {
     const mine = p.hand.filter((c) => cardById(c).marked).sort((a, b) => MARKS.indexOf(cardById(a).marked ?? '') - MARKS.indexOf(cardById(b).marked ?? ''));
     if (mine.length && m.card !== mine[0]) return no('The first player opens with their marked card.');

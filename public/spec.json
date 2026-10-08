@@ -1611,7 +1611,8 @@
         "influence": 0,
         "action": "claim",
         "round": 15,
-        "text": "At this round’s fight at the target, you take every pile, whoever leads. Target: any location."
+        "text": "At this round’s fight at the target, you take every pile, whoever leads. You can’t play it as your last card in hand. Target: any location.",
+        "notLast": true
       },
       {
         "id": "call-truce",
