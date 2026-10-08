@@ -38,11 +38,13 @@ function seededRng(seed) {
 export function playOut(state, rng, onRound, profiles = {}) {
   let game = state;
   let round = game.round;
+  /** @type {Record<string, import('../public/bots.js').BotMemory>} one memory per seat (goal bots) */
+  const memory = Object.fromEntries(game.seating.map((id) => [id, {}]));
   for (let moves = 0; moves < MAX_MOVES_PER_GAME; moves++) {
     if (game.phase === 'ended') return game;
     let moved = false;
     for (const playerId of game.seating) {
-      const move = botMove(game, { playerId, rng, profile: profiles[playerId] ?? 'random' });
+      const move = botMove(game, { playerId, rng, profile: profiles[playerId] ?? 'random', memory: memory[playerId] });
       if (!move) continue;
       game = applyMove(game, { playerId, move });
       moved = true;

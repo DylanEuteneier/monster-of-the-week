@@ -8,6 +8,9 @@
  *   node scripts/tournament.js [games=50] [seed=1] [profiles=smart,deep,deep-bold,deep-balanced,deep-cautious] [option=value ...]
  *
  * One seat per profile, so the profile count is the player count (3 to 5).
+ * Goal profiles take persona overrides for tuning: goal:proof=0.4,other=0.6.
+ * Profiles are separated by semicolons when overrides use commas:
+ * profiles="goal;goal:proof=0.4,other=0.6;smart".
  * A shared win counts as a fraction for each winner. Runs across every core.
  */
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
@@ -23,10 +26,10 @@ import { seededRng } from './balance.js';
 function main() {
   const args = process.argv.slice(2);
   const [gamesArg = '50', seedArg = '1'] = args.filter((a) => !a.includes('='));
-  const pairs = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => a.split('=')));
-  const list = /** @type {Profile[]} */ ((pairs.profiles ?? 'smart,deep,deep-bold,deep-balanced,deep-cautious').split(','));
+  const pairs = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
+  const list = /** @type {Profile[]} */ ((pairs.profiles ?? 'smart,deep,deep-bold,deep-balanced,deep-cautious').split(pairs.profiles?.includes(';') ? ';' : ','));
   delete pairs.profiles;
-  for (const p of list) if (!PROFILES.includes(p)) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')}`);
+  for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:proof=0.4)`);
   const games = Number(gamesArg), seed = Number(seedArg);
   const workers = Math.min(availableParallelism(), games);
   /** @type {Record<string, { wins: number, island: number, invaders: number }>} */

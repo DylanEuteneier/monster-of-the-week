@@ -44,10 +44,12 @@ function playRest(state, seed, bots) {
   const rng = seededRng(seed);
   let s = state;
   const round = s.round;
+  /** @type {Record<string, import('../public/bots.js').BotMemory>} */
+  const memory = Object.fromEntries(s.seating.map((id) => [id, {}]));
   for (let n = 0; n < MAX_MOVES && s.phase === 'play' && s.round === round; n++) {
     let moved = false;
     for (const playerId of s.seating) {
-      const move = botMove(s, { playerId, rng, profile: bots });
+      const move = botMove(s, { playerId, rng, profile: bots, memory: memory[playerId] });
       if (!move) continue;
       s = applyMove(s, { playerId, move });
       moved = true;

@@ -17,6 +17,12 @@
  *            plays the next player's best reply (as smart) and keeps the move
  *            that is still best for it afterwards. Slower; used to play out
  *            rounds when measuring cards (designer, 2026-10-07).
+ * - goal, goal-deep: goal-driven (designer, 2026-10-07). They score
+ *            positions by their chance of winning: P(each ending) × P(I win
+ *            under it), and keep a goal (win the island, or back a faction for
+ *            the invaders) that they switch only past a margin. Backing a
+ *            faction needs more proof than going for trophy sets (designer).
+ *            goal searches one move ahead, goal-deep with the reply lookahead.
  * - trophy, hunter: smart, but prioritising trophies (designer, 2026-10-07:
  *            players prioritising trophies is what makes the invaders win
  *            less). They read the island's ending as nearer than the board
@@ -28,7 +34,7 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, sampleTarget, playableResponses, validate, applyMove, resolveFight, totalPresence, presenceOf, spec, influenceSpots,
+  cardById, sampleTarget, playableResponses, validate, applyMove, resolveFight, totalPresence, presenceOf, spec, influenceSpots, growthDue,
 } from './engine.js';
 
 /** @typedef {import('./engine.js').GameState} GameState */
@@ -44,10 +50,12 @@ function spend(state, cardId, at = (spots) => spots[0]) {
   const spots = influenceSpots(state, cardId);
   return spots.length ? { type: 'play', card: cardId, use: 'influence', location: at(spots) } : { type: 'play', card: cardId, use: 'influence' };
 }
-/** @typedef {'random' | 'smart' | 'trophy' | 'hunter' | 'invader' | 'island' | 'deep' | 'deep-bold' | 'deep-balanced' | 'deep-cautious'} Profile */
-/** @typedef {{ rng: () => number, profile?: Profile }} BotOptions */
+/** @typedef {'random' | 'smart' | 'goal' | 'goal-deep' | 'goal-bold' | 'goal-island' | 'goal-focused' | 'goal-loose' | 'trophy' | 'hunter' | 'invader' | 'island' | 'deep' | 'deep-bold' | 'deep-balanced' | 'deep-cautious'} Profile */
+/** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory }} BotOptions */
+/** What a bot remembers between its turns (its goal). The caller keeps one per seat; a bot without it simply has no hysteresis. @typedef {{ goal?: Goal }} BotMemory */
+/** @typedef {'island' | 'invaders'} Goal */
 
-export const PROFILES = /** @type {Profile[]} */ (['random', 'smart', 'trophy', 'hunter', 'invader', 'island', 'deep', 'deep-bold', 'deep-balanced', 'deep-cautious']);
+export const PROFILES = /** @type {Profile[]} */ (['random', 'smart', 'goal', 'goal-deep', 'goal-bold', 'goal-island', 'goal-focused', 'goal-loose', 'trophy', 'hunter', 'invader', 'island', 'deep', 'deep-bold', 'deep-balanced', 'deep-cautious']);
 
 /** Tuning for the bots, not rules. */
 const RANDOM_ODDS = { respond: 0.35, pass: 0.15, action: 0.6 };
@@ -151,7 +159,7 @@ const DEEP = {
 export function botMove(state, input) {
   const p = state.players[input.playerId];
   if (!p || state.phase === 'ended') return null;
-  return (input.profile ?? 'smart') === 'random' ? randomMove(state, input.playerId, input.rng) : smartMove(state, input.playerId, input.rng, input.profile ?? 'smart');
+  return (input.profile ?? 'smart') === 'random' ? randomMove(state, input.playerId, input.rng) : smartMove(state, input.playerId, input.rng, input.profile ?? 'smart', input.memory);
 }
 
 // ---------------------------------------------------------------------------
@@ -228,9 +236,11 @@ function projectFights(state) {
 
 /**
  * How good a position is for `pid`, between the two ways the game ends.
- * @param {GameState} state @param {string} pid @param {Profile} profile
+ * @param {GameState} state @param {string} pid @param {Profile} profile @param {Goal} [goal]  a goal bot's current goal
  */
-export function evaluate(state, pid, profile = 'smart') {
+export function evaluate(state, pid, profile = 'smart', goal = undefined) {
+  const persona = personaOf(profile);
+  if (persona) return goalValue(state, pid, goal ?? 'island', persona);
   const s = projectFights(state);
   const roundsLeft = Number(s.options.rounds) - s.round;
   const threshold = Number(s.options.threshold);
@@ -270,6 +280,103 @@ export function evaluate(state, pid, profile = 'smart') {
   return pInvaders * (vsBest(invaderScore) + guard) + (1 - pInvaders) * vsBest(islandScore) + 0.02 * s.players[pid].supply;
 }
 
+// ---------------------------------------------------------------------------
+// Goal bots: the chance of winning, and goals that shift (designer, 2026-10-07)
+// ---------------------------------------------------------------------------
+
+/**
+ * A goal bot's personality (tuning, not rules).
+ * - proof: how much better backing a faction must look than the island before
+ *   it goes for it (designer: more proof to aim for a faction win).
+ * - hold: hysteresis, how far the case must turn before it switches back.
+ * - push: tokens of presence per remaining round it reckons one player can
+ *   move the game toward the ending it wants.
+ * - other: how much the goal it isn't pursuing still counts (0 to 1).
+ * @typedef {{ proof: number, hold: number, push: number, other: number }} Persona
+ */
+/** @type {Partial<Record<Profile, Persona>>} */
+const PERSONAS = {
+  goal: { proof: 0.1, hold: 0.05, push: 2, other: 0.35 },
+  'goal-deep': { proof: 0.1, hold: 0.05, push: 2, other: 0.35 },
+  // Personalities under test (tournaments), not rules.
+  'goal-bold': { proof: 0, hold: 0.05, push: 3, other: 0.35 },
+  'goal-island': { proof: 0.25, hold: 0.05, push: 2, other: 0.35 },
+  'goal-focused': { proof: 0.1, hold: 0.05, push: 2, other: 0.15 },
+  'goal-loose': { proof: 0.1, hold: 0.05, push: 2, other: 0.6 },
+};
+const sigmoid = (/** @type {number} */ x) => 1 / (1 + Math.exp(-x));
+/**
+ * A profile's persona. For tuning, a profile can also be written
+ * "goal:proof=0.4,other=0.6" (or "goal-deep:..."): the base persona with those
+ * numbers changed.
+ * @param {string} profile @returns {Persona | undefined}
+ */
+export function personaOf(profile) {
+  const [base, overrides] = profile.split(':');
+  const p = PERSONAS[/** @type {Profile} */ (base)];
+  if (!p || !overrides) return p;
+  return { ...p, ...Object.fromEntries(overrides.split(',').map((kv) => { const [k, v] = kv.split('='); return [k, Number(v)]; })) };
+}
+
+/**
+ * The chance of winning, by ending. `pInvaders`: the projected presence (this
+ * round's fights and growth) against the threshold. `asInvaders`: each
+ * faction's chance of being the winner (from presence) times my chance of
+ * leading it (standing less trophies against the best rival). `asIsland`: my
+ * weakest colour, then the next, against the best rival (TS2, WT1), with
+ * influence on the board as trophies to come. Margins sharpen as rounds run out.
+ * @param {GameState} state @param {string} pid
+ */
+export function winChances(state, pid) {
+  const s = projectFights(state);
+  const roundsLeft = Math.max(0, Number(s.options.rounds) - s.round);
+  const threshold = Number(s.options.threshold);
+  let grow = 0;
+  for (const f of s.factions) grow += Math.min(s.supply[f], Object.values(growthDue(s, f)).reduce((a, b) => a + b, 0));
+  const projected = totalPresence(s) + (s.phase === 'play' ? grow : 0);
+  const spreadP = 2 + 3 * roundsLeft;
+  const others = s.seating.filter((id) => id !== pid);
+  const presence = s.factions.map((f) => presenceOf(s, f));
+  const top = Math.max(...presence);
+  const w = presence.map((n) => Math.exp((n - top) / (1.5 + 1.5 * roundsLeft)));
+  const wSum = w.reduce((a, b) => a + b, 0);
+  const net = (/** @type {string} */ id, /** @type {string} */ f) => (s.players[id].standing[f] ?? 0) - s.players[id].trophies[f];
+  const asInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid((net(pid, f) - Math.max(...others.map((o) => net(o, f)))) / (1 + roundsLeft)), 0);
+  const isl = (/** @type {string} */ id) => {
+    const t = s.factions.map((f) => s.players[id].trophies[f]).sort((a, b) => a - b);
+    const board = Object.values(s.board).reduce((n, place) => n + (place.influence[id] ?? 0), 0);
+    return t[0] + 0.35 * t[1] + 0.12 * t[2] + 0.1 * board * Math.min(1, roundsLeft);
+  };
+  const asIsland = sigmoid((isl(pid) - Math.max(...others.map(isl))) / (0.6 + 0.8 * roundsLeft));
+  return { pInvaders: sigmoid((projected - threshold - 0.5) / spreadP), asInvaders, asIsland, projected, threshold, spreadP, roundsLeft };
+}
+
+/** A goal bot's value: its win chance, weighted toward its goal. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
+function goalValue(state, pid, goal, persona) {
+  const c = winChances(state, pid);
+  const inv = c.pInvaders * c.asInvaders, isl = (1 - c.pInvaders) * c.asIsland;
+  return (goal === 'invaders' ? inv + persona.other * isl : isl + persona.other * inv) * 10 + 0.02 * state.players[pid].supply;
+}
+
+/**
+ * Which goal to pursue now: the ending where its chance of winning, if it
+ * pushes the game that way, is best. Backing a faction needs `proof` more;
+ * a goal already held is kept until the case turns by `hold`.
+ * @param {GameState} state @param {string} pid @param {Persona} persona @param {BotMemory} [memory] @returns {Goal}
+ */
+export function chooseGoal(state, pid, persona, memory) {
+  const c = winChances(state, pid);
+  const push = persona.push * (c.roundsLeft + 1);
+  const reachInv = sigmoid((c.projected - c.threshold - 0.5 + push) / c.spreadP);
+  const reachIsl = 1 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spreadP);
+  const edge = reachInv * c.asInvaders - reachIsl * c.asIsland;
+  const held = memory?.goal;
+  /** @type {Goal} */
+  const goal = held === 'invaders' ? (edge > persona.proof - persona.hold ? 'invaders' : 'island') : (edge > persona.proof + (held ? persona.hold : 0) ? 'invaders' : 'island');
+  if (memory) memory.goal = goal;
+  return goal;
+}
+
 /** Every move worth considering on this bot's turn. @param {GameState} state @param {string} pid @param {() => number} rng */
 function candidates(state, pid, rng, targets = SMART.targets) {
   const p = state.players[pid];
@@ -303,17 +410,21 @@ function after(state, pid, move) {
   return s;
 }
 
-/** @param {GameState} state @param {string} pid @param {() => number} rng @param {Profile} profile @returns {Move | null} */
-function smartMove(state, pid, rng, profile) {
+/** @param {GameState} state @param {string} pid @param {() => number} rng @param {Profile} profile @param {BotMemory} [memory] @returns {Move | null} */
+function smartMove(state, pid, rng, profile, memory) {
   const p = state.players[pid];
-  const value = (/** @type {GameState} */ s) => evaluate(s, pid, profile) + (rng() - 0.5) * SMART.noise;
+  const persona = personaOf(profile);
+  const goal = persona ? chooseGoal(state, pid, persona, memory) : undefined;
+  /** This bot's value of a position (others, in its lookahead, as smart). @type {Ev} */
+  const ev = (s, id = pid) => (id === pid ? evaluate(s, pid, profile, goal) : evaluate(s, id));
+  const value = (/** @type {GameState} */ s) => ev(s) + (rng() - 0.5) * SMART.noise;
 
   if (state.phase === 'draft') {
     if (p.picked) return null;
     // Keep the cards whose best play, now, is worth the most.
     const pool = [...p.kept, ...p.batch];
-    const base = evaluate(state, pid, profile);
-    const worth = pool.map((cardId) => ({ cardId, v: cardWorth(state, pid, cardId, rng, profile, base) + (rng() - 0.5) * SMART.noise }));
+    const base = ev(state);
+    const worth = pool.map((cardId) => ({ cardId, v: cardWorth(state, pid, cardId, rng, ev, base) + (rng() - 0.5) * SMART.noise }));
     worth.sort((a, b) => b.v - a.v);
     return legal(state, pid, { type: 'pick', keep: worth.slice(0, p.kept.length + 1).map((w) => w.cardId) });
   }
@@ -333,11 +444,11 @@ function smartMove(state, pid, rng, profile) {
   if (responses.length) {
     const actor = state.pending?.player;
     const finish = (/** @type {GameState} */ s) => (s.pending && actor ? applyMove(s, { playerId: actor, move: { type: 'confirm' } }) : s);
-    const baseline = evaluate(finish(state), pid, profile);
+    const baseline = ev(finish(state));
     let best = null, bestV = baseline + SMART.respondMargin;
     for (const r of responses) {
       const move = /** @type {Move} */ ({ type: 'respond', card: r.card, location: r.location });
-      const v = evaluate(finish(applyMove(state, { playerId: pid, move })), pid, profile);
+      const v = ev(finish(applyMove(state, { playerId: pid, move })));
       if (v > bestV) {
         best = move;
         bestV = v;
@@ -350,9 +461,9 @@ function smartMove(state, pid, rng, profile) {
   if (state.seating[state.turn] !== pid) return null;
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
-  const deep = profile.startsWith('deep');
+  const deep = profile.startsWith('deep') || profile.split(':')[0].endsWith('-deep');
   const moves = candidates(state, pid, rng, deep ? DEEP.targets : SMART.targets);
-  if (deep) return deepPick(state, pid, rng, moves, profile);
+  if (deep) return deepPick(state, pid, rng, moves, ev);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
     const v = value(after(state, pid, move));
@@ -367,11 +478,11 @@ function smartMove(state, pid, rng, profile) {
 /**
  * The deep bot's choice: its few best moves one move ahead, each followed by
  * the next player's best reply (one move ahead, as smart), scored for this bot.
- * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Profile} profile
+ * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev
  */
-function deepPick(state, pid, rng, moves, profile) {
+function deepPick(state, pid, rng, moves, ev) {
   const noise = () => (rng() - 0.5) * SMART.noise;
-  const first = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: evaluate(s, pid, profile) + noise() }; })
+  const first = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) + noise() }; })
     .sort((a, b) => b.v - a.v).slice(0, DEEP.keep);
   let best = first[0]?.move ?? null, bestV = -Infinity;
   for (const { move, s } of first) {
@@ -381,19 +492,21 @@ function deepPick(state, pid, rng, moves, profile) {
       let reply = null, replyV = -Infinity;
       for (const m of candidates(s, q, rng, DEEP.replyTargets)) {
         const r = after(s, q, m);
-        const v = evaluate(r, q) + noise();
+        const v = ev(r, q) + noise();
         if (v > replyV) { reply = r; replyV = v; }
       }
       if (reply) end = reply;
     }
-    const v = evaluate(end, pid, profile) + noise();
+    const v = ev(end) + noise();
     if (v > bestV) { best = move; bestV = v; }
   }
   return best;
 }
 
-/** How much a card adds, played as well as the bot can find right now. @param {GameState} state @param {string} pid @param {string} cardId @param {() => number} rng @param {Profile} profile @param {number} base */
-function cardWorth(state, pid, cardId, rng, profile, base) {
+/** @typedef {(s: GameState, id?: string) => number} Ev  a bot's value of a position, for itself or (in its lookahead) another seat */
+
+/** How much a card adds, played as well as the bot can find right now. @param {GameState} state @param {string} pid @param {string} cardId @param {() => number} rng @param {Ev} ev @param {number} base */
+function cardWorth(state, pid, cardId, rng, ev, base) {
   const card = cardById(cardId);
   // A rough worth in the draft, where it isn't this bot's turn: score the
   // card's best play as if it were.
@@ -405,14 +518,14 @@ function cardWorth(state, pid, cardId, rng, profile, base) {
   s.players[pid].hand = [cardId];
   let best = card.response ? 0.5 : 0;
   const infl = spend(s, cardId);
-  if (card.suit && validate(s, { playerId: pid, move: infl }).ok) best = Math.max(best, evaluate(after(s, pid, infl), pid, profile) - base);
+  if (card.suit && validate(s, { playerId: pid, move: infl }).ok) best = Math.max(best, ev(after(s, pid, infl)) - base);
   if (card.action) {
     for (let i = 0; i < 4; i++) {
       const target = sampleTarget(s, pid, cardId, rng);
       if (!target) continue;
       const move = /** @type {Move} */ ({ type: 'play', card: cardId, use: 'action', target });
       if (!validate(s, { playerId: pid, move }).ok) continue;
-      best = Math.max(best, evaluate(after(s, pid, move), pid, profile) - base);
+      best = Math.max(best, ev(after(s, pid, move)) - base);
     }
   }
   return best + (card.marked ? 0.2 : 0);
