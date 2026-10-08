@@ -306,8 +306,9 @@ export function evaluate(state, pid, profile = 'smart', goal = undefined, drift 
 const PERSONAS = {
   // proof 0.3: the field-tested setting (challengers needing 0.25–0.6 beat 0.1 by 27% to 20%, 2026-10-08).
   // board 0: valuing loose board influence spread it thin and cost trophies (challenger 29% against 20%, 2026-10-08).
-  goal: { proof: 0.3, hold: 0.05, push: 2, other: 0.35, board: 0 },
-  'goal-deep': { proof: 0.3, hold: 0.05, push: 2, other: 0.35, board: 0 },
+  // other 0, margin 3: challengers 28% against 20% once board was 0 (2026-10-08).
+  goal: { proof: 0.3, hold: 0.05, push: 2, other: 0, board: 0, margin: 3 },
+  'goal-deep': { proof: 0.3, hold: 0.05, push: 2, other: 0, board: 0, margin: 3 },
   // Personalities under test (tournaments), not rules.
   'goal-bold': { proof: 0, hold: 0.05, push: 3, other: 0.35 },
   'goal-island': { proof: 0.25, hold: 0.05, push: 2, other: 0.35 },
