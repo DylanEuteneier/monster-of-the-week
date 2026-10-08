@@ -292,18 +292,22 @@ export function evaluate(state, pid, profile = 'smart', goal = undefined, drift 
  * - push: tokens of presence per remaining round it reckons one player can
  *   move the game toward the ending it wants.
  * - other: how much the goal it isn't pursuing still counts (0 to 1).
+ * - board: how much each of its influence on the board counts toward the
+ *   island, as trophies to come (it pays only where it leads a fight, so a
+ *   high value spreads influence thin).
  * - trend: how much the presence trend (change per round, from memory) is
  *   projected forward over the rounds left (0: the board as it is).
  * - margin: how much the raw margins count beside the win chance (trophies
  *   and standing against the best rival), so a bot far ahead or behind still
  *   reaches for one more (a probability flattens there).
- * @typedef {{ proof: number, hold: number, push: number, other: number, margin?: number, trend?: number }} Persona
+ * @typedef {{ proof: number, hold: number, push: number, other: number, margin?: number, trend?: number, board?: number }} Persona
  */
 /** @type {Partial<Record<Profile, Persona>>} */
 const PERSONAS = {
   // proof 0.3: the field-tested setting (challengers needing 0.25–0.6 beat 0.1 by 27% to 20%, 2026-10-08).
-  goal: { proof: 0.3, hold: 0.05, push: 2, other: 0.35 },
-  'goal-deep': { proof: 0.3, hold: 0.05, push: 2, other: 0.35 },
+  // board 0: valuing loose board influence spread it thin and cost trophies (challenger 29% against 20%, 2026-10-08).
+  goal: { proof: 0.3, hold: 0.05, push: 2, other: 0.35, board: 0 },
+  'goal-deep': { proof: 0.3, hold: 0.05, push: 2, other: 0.35, board: 0 },
   // Personalities under test (tournaments), not rules.
   'goal-bold': { proof: 0, hold: 0.05, push: 3, other: 0.35 },
   'goal-island': { proof: 0.25, hold: 0.05, push: 2, other: 0.35 },
@@ -331,9 +335,9 @@ export function personaOf(profile) {
  * leading it (standing less trophies against the best rival). `asIsland`: my
  * weakest colour, then the next, against the best rival (TS2, WT1), with
  * influence on the board as trophies to come. Margins sharpen as rounds run out.
- * @param {GameState} state @param {string} pid @param {number} [drift]  expected presence change per round left (the trend)
+ * @param {GameState} state @param {string} pid @param {number} [drift]  expected presence change per round left (the trend) @param {number} [boardWorth]  each influence on the board, as trophies to come
  */
-export function winChances(state, pid, drift = 0) {
+export function winChances(state, pid, drift = 0, boardWorth = 0.1) {
   const s = projectFights(state);
   const roundsLeft = Math.max(0, Number(s.options.rounds) - s.round);
   const threshold = Number(s.options.threshold);
@@ -353,7 +357,7 @@ export function winChances(state, pid, drift = 0) {
   const isl = (/** @type {string} */ id) => {
     const t = s.factions.map((f) => s.players[id].trophies[f]).sort((a, b) => a - b);
     const board = Object.values(s.board).reduce((n, place) => n + (place.influence[id] ?? 0), 0);
-    return t[0] + 0.35 * t[1] + 0.12 * t[2] + 0.1 * board * Math.min(1, roundsLeft);
+    return t[0] + 0.35 * t[1] + 0.12 * t[2] + boardWorth * board * Math.min(1, roundsLeft);
   };
   const marginIsland = isl(pid) - Math.max(...others.map(isl));
   const asIsland = sigmoid(marginIsland / (0.6 + 0.8 * roundsLeft));
@@ -362,7 +366,7 @@ export function winChances(state, pid, drift = 0) {
 
 /** A goal bot's value: its win chance, weighted toward its goal. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona @param {number} [drift] */
 function goalValue(state, pid, goal, persona, drift = 0) {
-  const c = winChances(state, pid, drift);
+  const c = winChances(state, pid, drift, persona.board ?? 0.1);
   const m = persona.margin ?? 0;
   const inv = c.pInvaders * (10 * c.asInvaders + m * c.marginInvaders), isl = (1 - c.pInvaders) * (10 * c.asIsland + m * c.marginIsland);
   return (goal === 'invaders' ? inv + persona.other * isl : isl + persona.other * inv) + 0.02 * state.players[pid].supply;
@@ -375,7 +379,7 @@ function goalValue(state, pid, goal, persona, drift = 0) {
  * @param {GameState} state @param {string} pid @param {Persona} persona @param {BotMemory} [memory] @returns {Goal}
  */
 export function chooseGoal(state, pid, persona, memory) {
-  const c = winChances(state, pid, driftOf(state, persona, memory));
+  const c = winChances(state, pid, driftOf(state, persona, memory), persona.board ?? 0.1);
   const push = persona.push * (c.roundsLeft + 1);
   const reachInv = sigmoid((c.projected - c.threshold - 0.5 + push) / c.spreadP);
   const reachIsl = 1 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spreadP);
