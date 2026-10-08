@@ -28,12 +28,14 @@
  *   where whole games give correlation.
  *
  *   node scripts/tournament.js [games=50] [seed=1] [profiles=backer,backer,goal,goal,hunter]
- *     [log=games.jsonl] [out=summary.json] [probe=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [option=value ...]
+ *     [log=games.jsonl] [out=summary.json] [strength=card-strength.json] [probe=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [option=value ...]
  *
  * - log= appends one line per finished game; a run with the same log resumes,
  *   skipping games already in it. out= is rewritten after every game with the
  *   summary so far (public/card-play-stats.json is what the card review page
  *   reads). Runs across every core.
+ * - strength= also writes each card's probe result as its strength, for
+ *   printed influence (D12: public/card-strength.json, read by the engine).
  * - One seat per profile, so the profile count is the player count (3 to 5).
  *   The standard tuning table (designer, 2026-10-08: both halves of the game)
  *   seats two faction backers, two goal trophy chasers and hunter, so the
@@ -217,9 +219,9 @@ function main() {
   const [gamesArg = '50', seedArg = '1'] = args.filter((a) => !a.includes('='));
   const pairs = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
   const list = (pairs.profiles ?? 'backer,backer,goal,goal,hunter').split(pairs.profiles?.includes(';') ? ';' : ',');
-  const logFile = pairs.log, outFile = pairs.out;
+  const logFile = pairs.log, outFile = pairs.out, strengthFile = pairs.strength;
   const probe = { rate: Number(pairs.probe ?? 0), sample: Number(pairs.probeSample ?? 6), cards: pairs.probeCards?.split(','), playouts: Number(pairs.probePlayouts ?? 2), targets: Number(pairs.probeTargets ?? 2) };
-  for (const k of ['profiles', 'log', 'out', 'probe', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets']) delete pairs[k];
+  for (const k of ['profiles', 'log', 'out', 'strength', 'probe', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets']) delete pairs[k];
   for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:lean=0)`);
   const games = Number(gamesArg), seed = Number(seedArg);
   /** @type {GameRecord[]} */
@@ -246,6 +248,10 @@ function main() {
   function report() {
     process.stderr.write('\n');
     const s = summarise(records, list, pairs);
+    if (strengthFile) {
+      const strength = Object.fromEntries(Object.entries(s.cards).filter(([, c]) => c.probe.benefit !== null).map(([id, c]) => [id, c.probe.benefit]));
+      writeFileSync(strengthFile, `${JSON.stringify({ measured: s.updated.slice(0, 10), source: `scripts/tournament.js: probe results, ${s.games} games (${list.join(', ')})`, strength }, null, 2)}\n`);
+    }
     console.log(`${s.games} games, ${list.length} players, ${JSON.stringify(pairs)}. Island won ${s.sides.island}, invaders ${s.sides.invaders}; shared wins ${s.sharedWins}%. An even share is ${(100 / list.length).toFixed(0)}%.`);
     console.log(`${'profile'.padEnd(16)} | share | won as island | won as invaders`);
     for (const [p, t] of Object.entries(s.byProfile).sort((a, b) => (b[1].share ?? 0) - (a[1].share ?? 0))) console.log(`${p.padEnd(16)} | ${`${t.share}%`.padStart(5)} | ${String(t.island).padStart(13)} | ${String(t.invaders).padStart(15)}`);

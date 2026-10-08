@@ -985,6 +985,8 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** 3.7 (suit structure), Appendix H (Set v2 influence values).
 - **Date:** 2026-10-07
 
+- **Decided (designer, 2026-10-08):** the strength that orders printed influence is the probe result from the tuning tournament (the change in a player's chance of winning when the card is played, against letting the turn go, the rest of the round played out by the standard table), written to `public/card-strength.json` by `npm run cards:plays`. A card not yet measured counts as weakest. Set v2 under the second card tuning pass: Fresh Meat 2, Track 3, Silver Bullets 4; Broadcast 2, Leak 3, Beam 4 (Broadcast and Leak within noise); Traffic Lights 2, Reroute 3, Virus 4; Bell 2, Board Up 3, Salt and Burn 4; Light Every Lamp 2, Summoning Circle 3, House on Fire 4.
+
 #### D13. No one moves another player's influence
 
 - **Decided:** no card or rule ever moves another player's influence. A card may move the player's own influence.
@@ -1047,6 +1049,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-07 | Printed influence: the same total per suit, split card by card, not fixed by slot (D12). Card action balance review opened | Starting split stays 2/3/4 per suit (9 each) until the review changes it |
 | 2026-10-07 | Terms (D14): faction presence is tokens, player influence is cubes; every faction "cube" in the document, the card text and the prototype renamed to "token" | Reference-game appendices (C, I) keep their own games' terms |
 | 2026-10-07 | Mixed decks (prototype): the two unmarked unsuited slots draw at random from every unmarked unsuited card; A to D stay | Round 14 unsuited test cards can be dealt |
+| 2026-10-08 | Printed influence ordered by probe strength (D12, designer); the one-move scores file retired | Set v2 changes: Traffic Lights 4→2, Virus 2→4, Light Every Lamp 3→2, Summoning Circle 2→3 |
 | 2026-10-08 | One tuning tool (designer): simulate, economy, balance and roundplay merged into the tournament, with per-card play figures and controlled probes; `npm run cards:plays` | The engine still reads `card-scores.json` for D12's order (all 0, so random) until D12 takes a trusted measure |
 | 2026-10-08 | Bots pruned to the strongest (designer): goal (standard), goal-deep, hunter | Goal bots tuned by challenger tournaments; two backers force the invaders' ending 40% of the time |
 | 2026-10-07 | Card scores reset to 0 and not to be trusted until cards are measured over whole rounds with strategic bots (designer). Tuning process: tournaments to tune the bots, then card tuning passes, repeat | D12's weighting falls back to random 2/3/4 per suit while every score is 0 |

@@ -15,8 +15,8 @@
  * Where this file and docs/motw-design.md disagree, the design document wins.
  */
 import spec from './spec.json' with { type: 'json' };
-// Measured card strength: sets printed influence (D12). Every score was reset to 0 (designer, 2026-10-07), so the order is random until D12 takes a trusted measure from the tuning tournament (scripts/tournament.js).
-import cardScores from './card-scores.json' with { type: 'json' };
+// Measured card strength (D12, designer 2026-10-08: the probe result from the tuning tournament, scripts/tournament.js strength=): sets printed influence.
+import cardStrength from './card-strength.json' with { type: 'json' };
 
 export { spec };
 
@@ -489,15 +489,16 @@ export function createGame(input) {
     deck.push(...extras.items.slice(0, spec.cards.filter(unmarked).length));
   }
   // Printed influence (D12): each suit prints 2, 3 and 4 (9 in all), weighted
-  // to strength: the weakest action gets the most. Strength is the measured
-  // battle score; ties fall at random.
+  // to strength: the weakest action gets the most. Strength is the probe
+  // result (the change in a player's chance of winning when the card is
+  // played); a card not yet measured counts as weakest; ties fall at random.
   /** @type {Record<string, number>} */
   const printed = {};
-  const scores = /** @type {Record<string, { battle?: number }>} */ (cardScores.scores);
+  const strength = (/** @type {string} */ id) => /** @type {Record<string, number>} */ (cardStrength.strength)[id] ?? -Infinity;
   for (const arch of spec.archetypes) {
     const s = shuffle(deck.filter((id) => cardById(id).suit === arch.id), rngState);
     rngState = s.rngState;
-    const byStrength = s.items.slice().sort((a, b) => (scores[b]?.battle ?? 0) - (scores[a]?.battle ?? 0));
+    const byStrength = s.items.slice().sort((a, b) => strength(b) - strength(a));
     byStrength.forEach((id, i) => { printed[id] = [2, 3, 4][i] ?? 3; });
   }
   /** @type {GameState} */
