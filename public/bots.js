@@ -71,18 +71,21 @@ const SMART = {
  *      the actions it wants to take: the faction of most of the suit cards in
  *      its hand (presence actions spend standing with the faction moved).
  *      Standing with it counts `setup` per point, up to 3 per such card.
+ *    Backing a faction for the invaders' ending (designer's loop, D16): build
+ *    influence with it, avoid its trophies, and keep its tokens on the board;
+ *    its presence lead over the next faction counts `protect` per token.
  * 2. Mid-game, influence on a faction (spending cards for standing) or
  *    actions that produce trophies. It builds influence through round
  *    `buildRounds` while its standing with the faction it would back is
  *    under `standingGoal`, then hunts trophies. `weight` is how much more the
  *    current focus counts (standing while building; trophies and influence at
  *    fights while hunting).
- * @typedef {{ commit: number, lastRound: boolean, backLead: number, setup: number, buildRounds: number, standingGoal: number, weight: number }} Strategy
+ * @typedef {{ commit: number, lastRound: boolean, backLead: number, setup: number, protect: number, buildRounds: number, standingGoal: number, weight: number }} Strategy
  */
 export const STRATEGIES = /** @type {const} */ ({
-  bold:     { commit: 2, lastRound: true, backLead: 2, setup: 0.3, buildRounds: 1, standingGoal: 4, weight: 0.6 },
-  balanced: { commit: 5, lastRound: true, backLead: 4, setup: 0.25, buildRounds: 2, standingGoal: 7, weight: 0.4 },
-  cautious: { commit: 9, lastRound: true, backLead: 6, setup: 0.2, buildRounds: 3, standingGoal: 10, weight: 0.25 },
+  bold:     { commit: 2, lastRound: true, backLead: 2, setup: 0.3, protect: 0.3, buildRounds: 1, standingGoal: 4, weight: 0.6 },
+  balanced: { commit: 5, lastRound: true, backLead: 4, setup: 0.25, protect: 0.25, buildRounds: 2, standingGoal: 7, weight: 0.4 },
+  cautious: { commit: 9, lastRound: true, backLead: 6, setup: 0.2, protect: 0.2, buildRounds: 3, standingGoal: 10, weight: 0.25 },
 });
 /** @type {Partial<Record<Profile, Strategy>>} */
 const STRATEGY_OF = { 'deep-bold': STRATEGIES.bold, 'deep-balanced': STRATEGIES.balanced, 'deep-cautious': STRATEGIES.cautious };
@@ -252,9 +255,12 @@ export function evaluate(state, pid, profile = 'smart') {
     const fuel = pl?.setup && st ? st.setup * Math.min(s.players[id].standing[pl.setup.faction] ?? 0, 3 * pl.setup.cards) : 0;
     return trophyW * (t[0] + 0.35 * t[1] + 0.12 * t[2] + 0.02 * t.reduce((a, b) => a + b, 0)) + (id === pid ? fuel : 0);
   };
+  // Keeping the backed faction on top (D16, invaders' loop step 2).
+  const guard = pl?.backs && st && pl.ending !== 'island'
+    ? st.protect * (presenceOf(s, pl.backs) - Math.max(...s.factions.filter((f) => f !== pl.backs).map((f) => presenceOf(s, f)))) : 0;
   const others = s.seating.filter((id) => id !== pid);
   const vsBest = (/** @type {(id: string) => number} */ score) => score(pid) - Math.max(...others.map(score));
-  return pInvaders * vsBest(invaderScore) + (1 - pInvaders) * vsBest(islandScore) + 0.02 * s.players[pid].supply;
+  return pInvaders * (vsBest(invaderScore) + guard) + (1 - pInvaders) * vsBest(islandScore) + 0.02 * s.players[pid].supply;
 }
 
 /** Every move worth considering on this bot's turn. @param {GameState} state @param {string} pid @param {() => number} rng */

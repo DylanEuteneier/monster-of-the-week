@@ -988,6 +988,10 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   3. To get influence with a faction, players discard a suited card for that influence, sacrificing its action.
   4. Repeat.
 - **The invaders' ending (designer):** if the invaders win, influence with a faction is most valuable, but players will likely need influence with other factions too, to keep their favoured faction from being wiped out.
+- **The core loop when the invaders win (designer):**
+  1. Increase influence with the faction you want to have the most presence, and avoid taking that faction's trophies.
+  2. Keep that faction's tokens from being removed from the board in fights: affect that faction's presence, or take actions on other factions so they can't wipe the chosen faction out.
+  3. Repeat.
 - **Affects:** 2 (core tension), 3.7, 3.13, 3.14; bot strategy (F.9).
 - **Date:** 2026-10-07
 
