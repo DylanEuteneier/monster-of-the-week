@@ -1032,6 +1032,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-07 | Printed influence: the same total per suit, split card by card, not fixed by slot (D12). Card action balance review opened | Starting split stays 2/3/4 per suit (9 each) until the review changes it |
 | 2026-10-07 | Terms (D14): faction presence is tokens, player influence is cubes; every faction "cube" in the document, the card text and the prototype renamed to "token" | Reference-game appendices (C, I) keep their own games' terms |
 | 2026-10-07 | Mixed decks (prototype): the two unmarked unsuited slots draw at random from every unmarked unsuited card; A to D stay | Round 14 unsuited test cards can be dealt |
+| 2026-10-08 | Bots pruned to the strongest (designer): goal (standard), goal-deep, hunter | Goal bots tuned by challenger tournaments; two backers force the invaders' ending 40% of the time |
 | 2026-10-07 | Card scores reset to 0 and not to be trusted until cards are measured over whole rounds with strategic bots (designer). Tuning process: tournaments to tune the bots, then card tuning passes, repeat | D12's weighting falls back to random 2/3/4 per suit while every score is 0 |
 | 2026-10-07 | D15 starting place: each faction moved to a new location pays 1 of its influence there, regardless of group size (variant `whoPays`, each by default). Card scores taken off the card review page until they can be trusted (designer) | Economy, 100 bot games: with IC1, fights with 2+ players bidding rise from 1% to about 40% in round 1 (fewer fights, 0.6 a round against 3.2); each-pays slightly ahead of selected-pays |
 | 2026-10-07 | IC1 in the first draft: the influence a card places is a requirement (D15). The core loop recorded (D16) | Bot games after IC1: fewer fights (1.4 a round) and the invaders win 97% (30 games); presence climbs to about 50 against a threshold of 20 |
@@ -2292,27 +2293,27 @@ Where a game is started. The host page holds no game rules. Everything it does i
   - pick from one of the engine's lists of legal options;
   - make a random choice, then trim it back until the engine's check passes;
   - try a few random choices against the engine's check, and fall back to a move that is always legal.
-- **Profiles.** A bot can be given a named profile that leans its random choices one way, such as cautious or aggressive. The server uses one profile; the simulation can run several and compare them.
-- **Bots read the full state.** Random bots don't use what they can see, so this gives them no advantage. A bot that plays to win would have to be limited to its own player view.
+- **Profiles.** A bot can be given a named profile (below, under "Bots that play to win"). The server uses the standard one; the simulation can run several and compare them.
+- **Bots read the full state.** A bot that plays to win would have to be limited to its own player view for a fair game against people (open, below).
 
 #### Simulation
 
 - **One bot module.** The same module drives the bots in a live game and in the simulation.
 - **Thousands of games.** A script plays whole games with bots and prints summary figures.
-- **What random bots are good for:** checking that the rules run from start to finish, exercising every phase, and testing the table. They don't read the board or follow each other, so they understate how real players behave.
-- **A limit for balancing.** Figures from random bots are a rough guide and not a prediction. Setting the balancing numbers in the current focus will need bots that play with some purpose, or the figures checked against human play.
+- **Checking the rules.** Whole bot games check that the rules run from start to finish and exercise every phase (random bots did this until they were pruned, 2026-10-08).
+- **A limit for balancing.** Bot figures are a guide, not a prediction; they are checked against human play.
 
 #### Bots that play to win (designer, 2026-10-07)
 
 - **Purpose.** Bots play out rounds to measure cards and play whole games to test the systems. *Designer:* bot speed is not a concern; bots should play as tactically and strategically as we can make them, and their reactions should be designed carefully.
-- **Profiles** (`public/bots.js`; tuning, not rules):
-  - *smart:* one move ahead. Tries each card in hand with sampled targets, and passing; projects this round's fights; keeps the best by its position value (the two endings weighed by how likely each looks).
-  - *deep (designer's pick):* smart plus a reply lookahead. For its ten best moves it also plays the next player's best reply, and keeps the move that is still best for it afterwards. About 4–8 times slower than smart.
-  - *deep-bold, deep-balanced, deep-cautious:* deep with strategy breakpoints, below.
-- **Strategy breakpoints (designer, 2026-10-07).** Points at which a bot shifts focus, with different numbers per bot to give each its own play profile. Two axes:
+- **Profiles** (`public/bots.js`; tuning, not rules). *Pruned (designer, 2026-10-08): every dumb or weak bot was removed; three remain.*
+  - *goal:* the standard bot (server, scripts, tests). Goal-driven, below; one move ahead.
+  - *goal-deep:* goal plus a reply lookahead: for its ten best moves it also plays the next player's best reply, and keeps the move that is still best for it afterwards. Slower.
+  - *hunter:* a trophy chaser with a plain value (trophy sets, standing less trophies), reading the island's ending as nearer than the board says. The strongest island player so far.
+  - *Removed:* random, smart, invader, island, trophy, deep, deep-bold, deep-balanced, deep-cautious, and the goal personalities under test (any can be rebuilt as overrides, e.g. `goal:proof=0.6`). The presence trend and loose board influence settings were removed too: neither helped.
+- **Strategy breakpoints (designer, 2026-10-07; the first build, deep-bold/balanced/cautious, lost every tournament and was removed; the goal bots carry the idea).** Points at which a bot shifts focus, with different numbers per bot to give each its own play profile. Two axes:
   1. *The ending:* a trophy mix (the island wins) or faction influence (the invaders win). A bot commits when the projected presence is far enough from the threshold, or in the last round; otherwise it hedges. Which faction to back is two-sided (designer): if the invaders look like winning, the faction it has the best shot at leading; mid-game, if they look like losing, the faction that sets up the actions it wants to take with its cards.
   2. *Mid-game:* influence on a faction (spending cards for standing) or actions that produce trophies, switching by round and by how much standing it already holds.
-  - Starting numbers are Claude's suggestions, in `STRATEGIES`, to be tuned with the designer.
 - **Tournament** (`scripts/tournament.js`): whole games with one profile per seat, rotated through the seats, counting wins and how each profile's games end.
 - **Goal-driven bots (designer approved the approach, 2026-10-07; built as `goal` and `goal-deep`).** Bots with goals that can shift and adapt while prioritising the best chance at victory. Next session's build order: (1) the win-chance evaluator, (2) goals with switch margins, (3) tournaments against the current bots.
   - *Win chance:* P(invaders win) × P(I win as invaders) + P(island wins) × P(I win as island). Each "I win" is a probability from my margin against the best rival (standing less trophies with the likely top faction; weakest trophy colour, then the next), sharpening as rounds run out. P(invaders win) comes from projected end-of-game presence (the board now plus the recent trend) against the threshold. Every move is scored by how much it raises the win chance; the deep bot's lookahead stays as the tactical layer.

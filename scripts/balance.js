@@ -12,7 +12,7 @@
  *   4. rule-breaking: from the card text, not measured
  * Also the old measure: presence after reckoning (fights, then growth).
  *
- *   node scripts/balance.js [states=300] [seed=1] [players=5] [bots=smart] [option=value ...] [only=card,card] [opening=1] [out=file.json]
+ *   node scripts/balance.js [states=300] [seed=1] [players=5] [bots=goal] [option=value ...] [only=card,card] [opening=1] [out=file.json]
  *
  * opening=1 samples only each round's first play (the marked cards' job, FP2).
  *
@@ -179,7 +179,7 @@ function sampleStates(n, seed, players, profile, options, opening = false) {
 const MEASURES = /** @type {const} */ (['battle', 'control', 'moved', 'placed', 'presence']);
 
 function main() {
-  const [nArg = '300', seedArg = '1', playersArg = '5', profileArg = 'smart'] = process.argv.slice(2).filter((a) => !a.includes('='));
+  const [nArg = '300', seedArg = '1', playersArg = '5', profileArg = 'goal'] = process.argv.slice(2).filter((a) => !a.includes('='));
   const options = Object.fromEntries(process.argv.slice(2).filter((a) => a.includes('=')).map((a) => a.split('=')));
   const only = options.only?.split(','); // only=card,card scores just those cards
   const outFile = options.out;

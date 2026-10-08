@@ -2,7 +2,7 @@
 /**
  * Influence economy study: how many fights are influence contests.
  *
- *   node scripts/economy.js [games=200] [seed=1] [players=5] [bots=smart] [option=value ...]
+ *   node scripts/economy.js [games=200] [seed=1] [players=5] [bots=goal] [option=value ...]
  *
  * Plays bot games and, at the end of each round's play phase (just before the
  * fights), looks at every contested location: how many players have
@@ -21,7 +21,7 @@ function seededRng(seed) {
 }
 
 function main() {
-  const [gamesArg = '200', seedArg = '1', playersArg = '5', profileArg = 'smart'] = process.argv.slice(2).filter((a) => !a.includes('='));
+  const [gamesArg = '200', seedArg = '1', playersArg = '5', profileArg = 'goal'] = process.argv.slice(2).filter((a) => !a.includes('='));
   const options = Object.fromEntries(process.argv.slice(2).filter((a) => a.includes('=')).map((a) => a.split('=')));
   const profile = /** @type {import('../public/bots.js').Profile} */ (profileArg);
   const players = ['ann', 'bob', 'cat', 'dan', 'eve'].slice(0, Number(playersArg));

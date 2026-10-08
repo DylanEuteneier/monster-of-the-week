@@ -553,7 +553,7 @@ test('Switch to Plan B moves only your own influence, up to 3, to one location',
 test('a game saved before an option existed plays on with its default', () => {
   const s = newGame(7);
   delete (/** @type {Record<string, string>} */ (s.options)).influencePerMove;
-  const end = playOut(s, rng(7), undefined, Object.fromEntries(s.seating.map((pid) => [pid, 'smart'])));
+  const end = playOut(s, rng(7), undefined, Object.fromEntries(s.seating.map((pid) => [pid, 'goal'])));
   assert.equal(end.phase, 'ended');
   for (const pid of end.seating) for (const n of Object.values(end.players[pid].standing)) assert.ok(Number.isFinite(n));
 });

@@ -5,12 +5,12 @@
  * profile wins most, and how each one's games end. For tuning the bots
  * (their strategy breakpoints, public/bots.js), not the rules.
  *
- *   node scripts/tournament.js [games=50] [seed=1] [profiles=smart,deep,deep-bold,deep-balanced,deep-cautious] [option=value ...]
+ *   node scripts/tournament.js [games=50] [seed=1] [profiles=goal,goal-deep,hunter,goal,goal] [option=value ...]
  *
  * One seat per profile, so the profile count is the player count (3 to 5).
  * Goal profiles take persona overrides for tuning: goal:proof=0.4,other=0.6.
  * Profiles are separated by semicolons when overrides use commas:
- * profiles="goal;goal:proof=0.4,other=0.6;smart".
+ * profiles="goal;goal:proof=0.4,other=0.6;hunter".
  * A shared win counts as a fraction for each winner. Runs across every core.
  */
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
@@ -27,7 +27,7 @@ function main() {
   const args = process.argv.slice(2);
   const [gamesArg = '50', seedArg = '1'] = args.filter((a) => !a.includes('='));
   const pairs = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
-  const list = /** @type {Profile[]} */ ((pairs.profiles ?? 'smart,deep,deep-bold,deep-balanced,deep-cautious').split(pairs.profiles?.includes(';') ? ';' : ','));
+  const list = /** @type {Profile[]} */ ((pairs.profiles ?? 'goal,goal-deep,hunter,goal,goal').split(pairs.profiles?.includes(';') ? ';' : ','));
   delete pairs.profiles;
   for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:proof=0.4)`);
   const games = Number(gamesArg), seed = Number(seedArg);

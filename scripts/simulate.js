@@ -1,15 +1,14 @@
 // @ts-check
 /**
- * Random-bot harness: plays whole games with bots and prints summary figures.
+ * Bot harness: plays whole games with bots and prints summary figures.
  *
- *   node scripts/simulate.js [games=1000] [seed=1] [players=5] [option=value ...] [bots=smart,random,...]
+ *   node scripts/simulate.js [games=1000] [seed=1] [players=5] [option=value ...] [bots=goal,hunter,...]
  *
- * e.g. node scripts/simulate.js 500 1 4 threshold=25 rounds=6 bots=smart,smart,island,invader
+ * e.g. node scripts/simulate.js 500 1 4 threshold=25 rounds=6 bots=goal,goal,hunter,goal-deep
  * Bot profiles are listed in public/bots.js; one profile repeats for every seat.
  *
- * Random bots are good for checking that the rules run start to finish and
- * that every phase is exercised. Their figures are a rough guide, not a
- * prediction (Appendix F.9).
+ * Whole games check that the rules run start to finish and exercise every
+ * phase. Bot figures are a guide, not a prediction (Appendix F.9).
  */
 import { createGame, applyMove, nextRandom, spec, totalPresence, presenceOf } from '../public/engine.js';
 import { botMove, PROFILES } from '../public/bots.js';
@@ -33,7 +32,7 @@ function seededRng(seed) {
  * move; the first that has a move makes it.
  * @param {GameState} state @param {() => number} rng
  * @param {(game: GameState) => void} [onRound]
- * @param {Record<string, import('../public/bots.js').Profile>} [profiles]  seat → bot profile (default random)
+ * @param {Record<string, import('../public/bots.js').Profile>} [profiles]  seat → bot profile (default goal)
  */
 export function playOut(state, rng, onRound, profiles = {}) {
   let game = state;
@@ -44,7 +43,7 @@ export function playOut(state, rng, onRound, profiles = {}) {
     if (game.phase === 'ended') return game;
     let moved = false;
     for (const playerId of game.seating) {
-      const move = botMove(game, { playerId, rng, profile: profiles[playerId] ?? 'random', memory: memory[playerId] });
+      const move = botMove(game, { playerId, rng, profile: profiles[playerId] ?? 'goal', memory: memory[playerId] });
       if (!move) continue;
       game = applyMove(game, { playerId, move });
       moved = true;
@@ -62,7 +61,7 @@ export function playOut(state, rng, onRound, profiles = {}) {
 function main() {
   const [games = 1000, seed = 1, playerCount = spec.meta.players.tunedFor] = process.argv.slice(2, 5).map(Number);
   const pairs = process.argv.slice(5).map((arg) => arg.split('='));
-  const botArg = pairs.find(([k]) => k === 'bots')?.[1] ?? 'random';
+  const botArg = pairs.find(([k]) => k === 'bots')?.[1] ?? 'goal';
   const options = Object.fromEntries(pairs.filter(([k]) => k !== 'bots'));
   const players = Array.from({ length: playerCount }, (_, i) => `P${i + 1}`);
   const list = /** @type {import('../public/bots.js').Profile[]} */ (botArg.split(','));

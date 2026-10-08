@@ -51,7 +51,7 @@ public/
   assets.html/js  assets page: example location card, tokens, cubes, every sprite, the palette
   pieces.js       presence tokens and influence cubes as HTML (CSS pieces)
   assets/         built art: sprites.json, sprite PNGs, token outlines (SVG); static files
-  bots.js         random legal-move bots, shared by the server and the harness
+  bots.js         bots (goal, goal-deep, hunter), shared by the server and the scripts
   engine.js       pure game logic — createGame, validate, applyMove, resolve, playerView
   spec.json       all constants and content as data
 src/
@@ -61,7 +61,7 @@ test/
   bots.test.js        bots only propose legal moves and finish games
   app.render.test.js  headless render of every phase
 scripts/
-  simulate.js     random-bot harness for summary figures
+  simulate.js     bot harness for summary figures
   smoke.js        end-to-end run against a live server
   admin.js        create a game / list magic links
 docs/
