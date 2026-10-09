@@ -338,6 +338,7 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false) {
     if (list) {
       const l = listTargets(state, pid, cardId, LIST.cap);
       for (const target of l.targets) { seen.add(JSON.stringify(target)); moves.push({ type: 'play', card: cardId, use: 'action', target }); }
+      if (l.complete && !l.targets.length) moves.push({ type: 'play', card: cardId, use: 'action', target: null }); // no legal target: played for no effect
       if (l.complete) continue;
       targets += seen.size;
     }
