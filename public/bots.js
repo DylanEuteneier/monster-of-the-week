@@ -153,6 +153,10 @@ export function evaluate(state, pid, profile = 'goal', goal = undefined) {
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
  * - combo: in the draft, value a card with the cards already kept.
+ * - commit: once backing a faction, switch to the island only for an island
+ *   chance at least this many times the invader chance (a large number: never).
+ * - allies: count the push of rivals seen backing when judging whether the
+ *   invaders' ending can still be reached (1: each counts as much as itself).
  * - table: in its play-outs, every seat plays its own profile (fast), itself
  *   included, instead of all as trophy-leaning goal bots. Needs the table's
  *   profiles (BotOptions.table; a little cheating, fine for now).
@@ -161,7 +165,7 @@ export function evaluate(state, pid, profile = 'goal', goal = undefined) {
  * - sets: for the island, value standing (and influence on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, table?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, table?: number, commit?: number, allies?: number }} Persona
  */
 /** @type {Record<'goal' | 'goal-deep' | 'backer', Persona>} */
 const PERSONAS = {
@@ -286,14 +290,18 @@ function setAccess(state, pid) {
 export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
   const c = winChances(state, pid, !!persona.hidden);
   const push = persona.push * (c.roundsLeft + 1);
-  const reachInv = (1 - c.known) * Math.min(1, c.prior + 0.15) + c.known * sigmoid((c.projected - c.threshold - 0.5 + push) / c.spreadP);
+  // allies: the rivals seen backing a faction push presence up too, so the invaders' ending is more reachable than one player's push.
+  const pushInv = push * (1 + (persona.allies ?? 0) * c.backers);
+  const reachInv = (1 - c.known) * Math.min(1, c.prior + 0.15) + c.known * sigmoid((c.projected - c.threshold - 0.5 + pushInv) / c.spreadP);
   const reachIsl = (1 - c.known) * Math.min(1, 1 - c.prior + 0.15) + c.known * (1 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spreadP));
   const evidence = reachInv * c.asInvaders - reachIsl * c.asIsland;
   if (memory && memory.jitter === undefined) memory.jitter = (rng() * 2 - 1) * persona.jitter; // this game's play style
   const score = evidence + (persona.lean + (memory?.jitter ?? 0)) * (1 - c.known);
   const held = memory?.goal;
   /** @type {Goal} */
-  const goal = score > (held === 'invaders' ? -persona.hold : held === 'island' ? persona.hold : 0) ? 'invaders' : 'island';
+  let goal = score > (held === 'invaders' ? -persona.hold : held === 'island' ? persona.hold : 0) ? 'invaders' : 'island';
+  // commit: a bot backing a faction abandons it only for an island chance at least `commit` times its invader chance.
+  if (held === 'invaders' && goal === 'island' && persona.commit && reachIsl * c.asIsland < persona.commit * reachInv * c.asInvaders) goal = 'invaders';
   if (memory) memory.goal = goal;
   return goal;
 }
