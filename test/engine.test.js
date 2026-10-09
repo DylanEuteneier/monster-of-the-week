@@ -552,12 +552,12 @@ test('with responses out (the first draft), a played action resolves at once and
   assert.equal(validate(next, { playerId: holder, move: { type: 'respond', card: 'cancel' } }).ok, false);
 });
 
-test('round 15 unsuited: Claim the Spoils takes every pile, Call a Truce stops the fight, Lay a Trail draws a group to your lead, Steal Their Playbook copies the last card', () => {
+test('round 15 unsuited: Set a Trap takes every pile, Call a Truce stops the fight, Lay a Trail draws a group to your lead, Steal Their Playbook copies the last card', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
   s.board[NEUTRAL].influence = { ann: 1, bob: 3, cat: 2 };
-  const claimed = previewTarget(s, 'ann', 'claim-spoils', { location: NEUTRAL });
+  const claimed = previewTarget(s, 'ann', 'set-trap', { location: NEUTRAL });
   const fought = resolveFight(/** @type {GameState} */ ({ ...s, board: claimed.board }), NEUTRAL);
   assert.deepEqual([fought.players.ann.trophies[B], fought.players.ann.trophies[A], fought.players.bob.trophies[B]], [4, 2, 0]);
   const truce = previewTarget(s, 'ann', 'call-truce', { location: NEUTRAL });
@@ -645,16 +645,11 @@ test('round 17: Open the Pit drops a small group in its region; Trade Secrets sw
   if (c.kind === 'location') for (const l of c.options) assert.notEqual(l, x);
 });
 
-test('round 18: Set a Trap springs on the first group in; Tip Off the Sheriff pays its tipper; Split Up doubles influence at the fight; Wake the Dead raises the fallen as Undead', () => {
+test('round 18: Tip Off the Sheriff pays its tipper; Split Up doubles influence at the fight; Wake the Dead raises the fallen as Undead', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const [x] = map[NEUTRAL].adjacent;
-  // Trap: 4 tokens move in, 2 are lost to the trap's owner.
   s.board[x].tokens = { [A]: 4 };
-  s.board[NEUTRAL].trap = 'bob';
-  const trapped = previewTarget(s, 'ann', 'lamps', { mode: 'location', location: x, faction: A, to: NEUTRAL });
-  assert.deepEqual([trapped.board[NEUTRAL].tokens[A], trapped.players.bob.trophies[A], trapped.board[NEUTRAL].trap], [2, 2, undefined]);
-  delete s.board[NEUTRAL].trap;
   // Tip-off: bob tipped A, so ann's move of A gives bob 1 influence where it lands.
   s.tips = [{ pid: 'bob', faction: A }];
   const tipped = previewTarget(s, 'ann', 'lamps', { mode: 'location', location: x, faction: A, to: NEUTRAL });
@@ -705,15 +700,4 @@ test('round 19: Lock Down the Town stops moves across its region\'s border; Put 
   const hunted = resolveFight(s, NEUTRAL);
   assert.equal((plain.board[NEUTRAL].tokens[A] ?? 0) - (hunted.board[NEUTRAL].tokens[A] ?? 0), 1);
   s.bounties = [];
-});
-
-test('Claim the Spoils can\'t be played as your last card in hand (designer)', () => {
-  const s = draftAll(newGame());
-  s.opened = true;
-  const pid = s.seating[s.turn];
-  const move = /** @type {import('../public/engine.js').Move} */ ({ type: 'play', card: 'claim-spoils', use: 'action', target: { location: NEUTRAL } });
-  s.players[pid].hand = ['claim-spoils'];
-  assert.equal(validate(s, { playerId: pid, move }).ok, false);
-  s.players[pid].hand = ['claim-spoils', 'bell'];
-  assert.equal(validate(s, { playerId: pid, move }).ok, true);
 });

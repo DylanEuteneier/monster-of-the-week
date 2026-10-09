@@ -1061,6 +1061,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-08 | Beaten test versions retired (designer): Take Over the Wake v2, Spread a Virus v3, Canvass the Town v2, Network the Virus v2, Hold the Wake | Each measured weaker than the card it was meant to replace; mixed decks no longer deal them |
 | 2026-10-08 | Host page: each seat is a human or a bot, with a chosen profile (goal, goal, deep, backer, hunter) or a random one picked at the deal (designer). Bots keep their memory between turns on the server | Prototype tooling, not rules |
 | 2026-10-08 | Stake Out (6) retired; Stake Out places 4 (designer) | The 6 copy was a measurement of how strength grows with the amount |
+| 2026-10-08 | Set a Trap (round 18) removed; Claim the Spoils renamed Set a Trap and made marked card A, without the last-card rule (designer) | The old trap fell flat as an opener: sprung cheaply by a rival's small group or by its owner's big one |
 | 2026-10-07 | Card scores reset to 0 and not to be trusted until cards are measured over whole rounds with strategic bots (designer). Tuning process: tournaments to tune the bots, then card tuning passes, repeat | D12's weighting falls back to random 2/3/4 per suit while every score is 0 |
 | 2026-10-07 | D15 starting place: each faction moved to a new location pays 1 of its influence there, regardless of group size (variant `whoPays`, each by default). Card scores taken off the card review page until they can be trusted (designer) | Economy, 100 bot games: with IC1, fights with 2+ players bidding rise from 1% to about 40% in round 1 (fewer fights, 0.6 a round against 3.2); each-pays slightly ahead of selected-pays |
 | 2026-10-07 | IC1 in the first draft: the influence a card places is a requirement (D15). The core loop recorded (D16) | Bot games after IC1: fewer fights (1.4 a round) and the invaders win 97% (30 games); presence climbs to about 50 against a threshold of 20 |
@@ -2820,7 +2821,7 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 
 | Card | Effect |
 |---|---|
-| Set a Trap (A; round 18, designer adopted 2026-10-08) | Name a location; the first group to move into it this round loses half (rounded down), as your trophies. **Target:** the location. |
+| Set a Trap (A; designer, 2026-10-08) | At this round's fight at the target, you take every pile, whoever leads. **Target:** any location. Claim the Spoils (round 15) renamed and made A. The first Set a Trap (round 18: the first group to move into a named location lost half to you) was removed: a rival could spring it with a small group, or its owner with a big one, so it fell flat as the round's opening play. |
 | B | Open: no card yet. |
 | Lock Down the Town (C; round 19, designer adopted 2026-10-08) | Name a region; this round, no group moves into or out of it. **Target:** a location in the region. |
 | Put a Bounty On It (D; round 19, designer adopted 2026-10-08) | Name a faction; at every fight this round, its group loses 1 more token when it wins, into the trophy piles. **Target:** the faction. |
@@ -2912,7 +2913,7 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 
 - Round 15 (2026-10-07; suggestions, driven by Claude): unsuited ideas aimed at the marked slots, each something no faction card does. Measured on every turn (200 states) and, with the new `opening=1` option of `scripts/balance.js`, on each round's first play only (100 states); battle score, all turns / opening:
   - Steal Their Playbook: play the action of the last card played, as if it were yours. 11.1 / 5.3 (playable 83% / 60%; as an opener it copies the last card of the previous round).
-  - Claim the Spoils: at this round's fight at the target, you take every pile, whoever leads. 4.6 / 0.2. *Designer (2026-10-08): it can't be played as your last card in hand. It is open information (the claim is visible).*
+  - Claim the Spoils: at this round's fight at the target, you take every pile, whoever leads. 4.6 / 0.2. *Designer (2026-10-08): it can't be played as your last card in hand. It is open information (the claim is visible). Later the same day: renamed Set a Trap and made marked card A, without the last-card rule.*
   - Call a Truce: no fight at the target this round; both groups stay. 3.1 / 0.1.
   - Lay a Trail: move a whole group into a location where you alone have the most influence, from next door. 3.5 / 2.3 (playable 40% / 36%).
   - Round 14's influence cards as openers: Stake Out 0.1 (it still places the most influence, 3.3); Plan B, Bail Out, Fall Back and Call for Backup 0.

@@ -472,8 +472,8 @@
       "suit": null,
       "slot": "extra",
       "influence": 0,
-      "action": "trap",
-      "text": "Name a location; the first group to move into it this round loses half (rounded down), as your trophies. Target: the location.",
+      "action": "claim",
+      "text": "At this round’s fight at the target, you take every pile, whoever leads. Target: any location.",
       "marked": "A"
     },
     {
@@ -1196,7 +1196,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 19 ideas (rounds 14 to 19: unsuited extras, rounds 18 and 19 marked-card candidates (Set a Trap, Lock Down the Town and Put a Bounty On It adopted as A, C and D); rounds 17 to 19: revisions of the weakest) under measurement by scripts/tournament.js. A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
+    "notes": "Cards out of the fixed deck: rounds 8 to 19 ideas (rounds 14 to 19: unsuited extras, rounds 18 and 19 marked-card candidates (Lock Down the Town and Put a Bounty On It adopted as C and D; Set a Trap, with Claim the Spoils’ rules, is A); rounds 17 to 19: revisions of the weakest) under measurement by scripts/tournament.js. A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
     "cards": [
       {
         "id": "force-field",
@@ -1602,17 +1602,6 @@
         "amount": 4,
         "round": 14,
         "text": "Place 4 influence from your supply on the target. Target: any location. (Designer seed, 2026-10-07.)"
-      },
-      {
-        "id": "claim-spoils",
-        "name": "Claim the Spoils",
-        "suit": null,
-        "slot": "extra",
-        "influence": 0,
-        "action": "claim",
-        "round": 15,
-        "text": "At this round’s fight at the target, you take every pile, whoever leads. You can’t play it as your last card in hand. Target: any location.",
-        "notLast": true
       },
       {
         "id": "call-truce",
