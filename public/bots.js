@@ -179,7 +179,10 @@ function hunterValue(state, pid) {
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
  * - combo: in the draft, value a card with the cards already kept.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number }} Persona
+ * - sets: for the island, value standing (and influence on the board) with the
+ *   factions of its weakest colours: the access to the fights that bring them
+ *   (IC1), so it builds toward complete sets instead of piling up one colour.
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number }} Persona
  */
 /** @type {Record<'goal' | 'goal-deep' | 'backer', Persona>} */
 const PERSONAS = {
@@ -270,7 +273,25 @@ function goalValue(state, pid, goal, persona) {
   const islandMargin = persona.linear * 10 * c.linearIsland;
   const isl = (1 - c.pInvaders) * 10 * c.asIsland + islandMargin;
   const threat = (persona.threat ?? 0) * 10 * c.pInvaders * c.rivalInvaders;
-  return (goal === 'invaders' ? inv : isl) - threat + 0.02 * state.players[pid].supply;
+  return (goal === 'invaders' ? inv : isl + (persona.sets ? persona.sets * (1 - c.pInvaders) * setAccess(state, pid) : 0)) - threat + 0.02 * state.players[pid].supply;
+}
+
+/**
+ * Access to the colours a player is short of (persona sets): for each faction,
+ * how much its colour is needed (the weakest counts most, as the island
+ * ending does, TS2/WT1) times the standing and board influence the player
+ * could use to contest its fights, with diminishing returns. Fades to nothing
+ * in the last round, when only trophies in hand count.
+ * @param {GameState} state @param {string} pid
+ */
+function setAccess(state, pid) {
+  const p = state.players[pid];
+  const roundsLeft = Math.max(0, Number(state.options.rounds) - state.round);
+  if (!roundsLeft) return 0;
+  const order = state.factions.slice().sort((a, b) => p.trophies[a] - p.trophies[b]);
+  const need = [1, 0.35, 0.12, 0, 0];
+  const onBoard = (/** @type {string} */ f) => Object.values(state.board).reduce((n, place) => n + ((place.tokens[f] ?? 0) > 0 ? place.influence[pid] ?? 0 : 0), 0);
+  return order.reduce((acc, f, i) => acc + need[i] * Math.sqrt((p.standing[f] ?? 0) + onBoard(f)), 0) * Math.min(1, roundsLeft / 2);
 }
 
 /**

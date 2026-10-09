@@ -61,7 +61,7 @@ import { seededRng, chance, measureState, MAX_MOVES } from './lib.js';
 /** @typedef {{ r: number, opening: boolean, profile: string, benefit: Record<string, number | null> }} Probe */
 /**
  * @typedef {{ g: number, side: 'island' | 'invaders', seats: Record<string, string>, groups: Record<string, string>, winners: string[], deck: string[],
- *   presence: number[], scorched: number, trophies: Record<string, number>, economy: Economy[], plays: Play[], held: string[], unplayed: string[],
+ *   presence: number[], scorched: number, trophies: Record<string, number>, trophiesByColour?: Record<string, Record<string, number>>, scores?: Record<string, number>, economy: Economy[], plays: Play[], held: string[], unplayed: string[],
  *   playable: Record<string, [number, number]>, probes: Probe[], forecasts: { r: number, seat: string, p: number }[] }} GameRecord
  */
 
@@ -357,6 +357,7 @@ else {
     parentPort?.postMessage(/** @type {GameRecord} */ ({
       g, side: result.side, seats, groups: Object.fromEntries(s.seating.map((p) => [p, s.players[p].group])), winners: result.players, deck: s.deck ?? [],
       presence, scorched: Object.values(s.board).filter((p) => p.scorched).length, trophies: Object.fromEntries(s.seating.map((p) => [p, Object.values(s.players[p].trophies).reduce((a, b) => a + b, 0)])),
+      trophiesByColour: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].trophies }])), scores: s.result?.scores ?? {},
       economy, plays, held, unplayed, playable, probes, forecasts,
     }));
   }
