@@ -17,7 +17,6 @@ const PROFILE_LABELS = /** @type {Record<string, string>} */ ({
   goal: 'goal (adapts; leans to trophies)',
   'goal-deep': 'goal, deep (looks a reply ahead)',
   backer: 'backer (adapts; leans to backing a faction)',
-  hunter: 'hunter (trophies only)',
 });
 /** What can sit in a seat: a human, a bot with a random profile, or a bot with a chosen one. */
 const SEAT_KINDS = [['', 'Human'], ['random', 'Bot: random profile'], ...PROFILES.map((p) => [p, `Bot: ${PROFILE_LABELS[p] ?? p}`])];

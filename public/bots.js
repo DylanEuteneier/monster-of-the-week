@@ -19,11 +19,8 @@
  *              +0.3 against goal's −0.3): the faction-ally player. Two of them at a table of five
  *              bring the invaders' ending about 40% of the time (the
  *              designer's target), so tuning tables seat two.
- * - hunter:    a trophy chaser with a plain value: trophy sets for the island
- *              and standing less trophies for the invaders, blended by how
- *              likely each ending looks, read as 30 tokens of presence nearer
- *              the island than the board says. The strongest island player in
- *              tournaments so far.
+ * - (hunter, a trophy chaser with a plain value, was removed 2026-10-09:
+ *   against the smarter goal bots it took 6.6% of wins from its seat.)
  *
  * Bots are a tool for checking the rules and rough figures, not a model of
  * real players. Their tuning numbers below are not rules.
@@ -45,12 +42,12 @@ function spend(state, cardId, at = (spots) => spots[0]) {
   const spots = influenceSpots(state, cardId);
   return spots.length ? { type: 'play', card: cardId, use: 'influence', location: at(spots) } : { type: 'play', card: cardId, use: 'influence' };
 }
-/** @typedef {'goal' | 'goal-deep' | 'backer' | 'hunter'} Profile */
+/** @typedef {'goal' | 'goal-deep' | 'backer'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory }} BotOptions */
 /** What a bot remembers between its turns: its goal, and this game's variation in its lean. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal, jitter?: number }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
 
-export const PROFILES = /** @type {Profile[]} */ (['goal', 'goal-deep', 'backer', 'hunter']);
+export const PROFILES = /** @type {Profile[]} */ (['goal', 'goal-deep', 'backer']);
 
 /** A profile with the slow search switched off (play-outs, probes' imagined futures, tests): the same persona, one move ahead, sampled targets. @param {string} profile */
 export const fast = (profile) => (personaOf(profile) ? `${profile}${profile.includes(':') ? ',' : ':'}sim=0,enum=0,combo=0` : profile);
@@ -72,8 +69,6 @@ const DEEP = {
   keep: 10,          // its best moves (one move ahead) checked against a reply
   replyTargets: 8,   // targets sampled per card for the reply
 };
-/** Hunter: how many tokens of presence nearer the island it reads the ending, and how sharply presence picks the likely winning faction. */
-const HUNTER = { lean: 30, spread: 3 };
 
 /**
  * The move this bot should make right now, or null if it has nothing to do.
@@ -122,39 +117,13 @@ function projectFights(state, pid = undefined, rivals = false) {
 const sigmoid = (/** @type {number} */ x) => 1 / (1 + Math.exp(-x));
 
 /**
- * How good a position is for `pid`: a goal bot's goal-weighted win chance, or
- * hunter's plain value.
+ * How good a position is for `pid`: a goal bot's goal-weighted win chance (an
+ * unknown profile, such as one saved before a bot was removed, plays as goal).
  * @param {GameState} state @param {string} pid @param {Profile | string} [profile] @param {Goal} [goal]  a goal bot's current goal
  */
 export function evaluate(state, pid, profile = 'goal', goal = undefined) {
   const persona = personaOf(profile);
-  return persona ? goalValue(state, pid, goal ?? 'island', persona) : hunterValue(state, pid);
-}
-
-/** Hunter's value: trophy sets and standing less trophies, against the best rival, blended by the ending it reads as likely. @param {GameState} state @param {string} pid */
-function hunterValue(state, pid) {
-  const s = projectFights(state);
-  const roundsLeft = Number(s.options.rounds) - s.round;
-  const pInvaders = sigmoid((totalPresence(s) - Number(s.options.threshold) - HUNTER.lean) / (3 + 3 * roundsLeft));
-  const presence = s.factions.map((f) => presenceOf(s, f));
-  const top = Math.max(...presence);
-  const weights = presence.map((n) => Math.exp((n - top) / HUNTER.spread));
-  const sum = weights.reduce((a, b) => a + b, 0);
-  /** @param {string} id */
-  const invaderScore = (id) => s.factions.reduce((acc, f, i) => {
-    const p = s.players[id];
-    const onBoard = Object.values(s.board).reduce((n, place) => n + (place.influence[id] ?? 0), 0) * 0.15;
-    return acc + (weights[i] / sum) * ((p.standing[f] ?? 0) - p.trophies[f]) + onBoard / s.factions.length;
-  }, 0);
-  // Island: weakest colour first, then the next (TS2, WT1).
-  /** @param {string} id */
-  const islandScore = (id) => {
-    const t = s.factions.map((f) => s.players[id].trophies[f]).sort((a, b) => a - b);
-    return t[0] + 0.35 * t[1] + 0.12 * t[2] + 0.02 * t.reduce((a, b) => a + b, 0);
-  };
-  const others = s.seating.filter((id) => id !== pid);
-  const vsBest = (/** @type {(id: string) => number} */ score) => score(pid) - Math.max(...others.map(score));
-  return pInvaders * vsBest(invaderScore) + (1 - pInvaders) * vsBest(islandScore) + 0.02 * s.players[pid].supply;
+  return goalValue(state, pid, goal ?? 'island', persona ?? PERSONAS.goal);
 }
 
 // ---------------------------------------------------------------------------
@@ -174,7 +143,7 @@ function hunterValue(state, pid) {
  *   move the game toward the ending it wants.
  * - margin: how much its standing margin with the likely winning faction
  *   counts beside the win chance.
- * - linear: how much its island margin (trophy sets, as hunter counts them)
+ * - linear: how much its island margin (trophy sets counted directly)
  *   counts.
  * - threat: how much the best rival's chance of winning through the invaders
  *   counts against it (designer: trophy players block a lone backer).
@@ -183,10 +152,12 @@ function hunterValue(state, pid) {
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
  * - combo: in the draft, value a card with the cards already kept.
+ * - keep, playouts: the play-out search's size (default SIM.keep, SIM.playouts);
+ *   tune these down for faster tuning runs rather than using a weaker bot.
  * - sets: for the island, value standing (and influence on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number }} Persona
  */
 /** @type {Record<'goal' | 'goal-deep' | 'backer', Persona>} */
 const PERSONAS = {
@@ -260,7 +231,7 @@ function chancesAfter(s, pid) {
   };
   const marginIsland = isl(pid) - Math.max(...others.map(isl));
   const islAll = (/** @type {string} */ id) => isl(id) + 0.02 * s.factions.reduce((n, f) => n + s.players[id].trophies[f], 0);
-  const linearIsland = islAll(pid) - Math.max(...others.map(islAll)); // hunter's island margin
+  const linearIsland = islAll(pid) - Math.max(...others.map(islAll)); // the island margin, counted directly
   const asIsland = sigmoid(marginIsland / (0.6 + 0.8 * roundsLeft));
   const backers = others.filter((o) => Math.max(...s.factions.map((f) => net(o, f))) >= TABLE.backing).length;
   const prior = Math.min(0.9, Math.max(0.1, TABLE.base + TABLE.step * backers));
@@ -422,7 +393,7 @@ function playMove(state, pid, rng, profile, memory) {
   const deep = profile.split(':')[0] === 'goal-deep';
   const moves = candidates(state, pid, rng, deep ? DEEP.targets : SEARCH.targets, !!persona?.enum);
   if (deep) return deepPick(state, pid, rng, moves, ev);
-  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory);
+  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
     const v = value(after(state, pid, move));
@@ -468,14 +439,14 @@ function deepPick(state, pid, rng, moves, ev) {
  * standard goal bots several times, scored for this bot at the end. Each
  * playout's randomness is shared across the moves, so they meet the same
  * futures. Passing and holding a card are judged like any other move.
- * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory} [memory]
+ * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory} [memory] @param {number} [keep] @param {number} [playouts]
  */
-function simPick(state, pid, rng, moves, ev, memory) {
+function simPick(state, pid, rng, moves, ev, memory, keep = SIM.keep, playouts = SIM.playouts) {
   const ranked = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) }; }).sort((a, b) => b.v - a.v);
-  const short = ranked.slice(0, SIM.keep);
+  const short = ranked.slice(0, keep);
   const pass = ranked.find((r) => r.move.type === 'pass');
   if (pass && !short.includes(pass)) short.push(pass);
-  const seeds = Array.from({ length: SIM.playouts }, () => Math.floor(rng() * 2 ** 31));
+  const seeds = Array.from({ length: playouts }, () => Math.floor(rng() * 2 ** 31));
   let best = short[0]?.move ?? null, bestV = -Infinity;
   for (const { move, s } of short) {
     let total = 0;
