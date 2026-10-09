@@ -148,6 +148,8 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
  * - combo: in the draft, value a card with the cards already kept.
+ * - race: with protect, value its lead in its backed faction's net standing,
+ *   weighted by how safe presence is (once it is safe, the lead decides).
  * - top: with protect, also value its backed faction having the most
  *   presence (the faction that wins the invaders' ending, TH1).
  * - protect: while backing, value total presence over the threshold and its
@@ -164,7 +166,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - sets: for the island, value standing (and influence on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -173,7 +175,8 @@ const PERSONAS = {
   // Search switches standard from 2026-10-09 (challengers, 200 games each, seat 5 against backer, backer, goal, goal; an even share 20%):
   // sim 49.9%, sets=2 29.3% (sets=1 26.0%, sets=4 21.0%), enum 24.8%, combo 24.3%, hidden 21.5%; all together 57.9%.
   // table (2026-10-09): a bug fix, not a heuristic: play-outs had every seat, the bot itself included, play as a trophy-leaning goal bot.
-  trophy: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1 },
+  // threat 3 (2026-10-09, 10 games against top=2 backers): trophy 30% a seat (13% at threat 1); they take the lead of the backed faction.
+  trophy: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 3, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1 },
   // protect 4 (2026-10-09, 10 games): presence held at or over the threshold through round 4 (21 against 14).
   // commit 2 with protect: the invaders' ending 5 in 10 (1 in 10 before), final presence 20.3 (10.9).
   // top 2: backers 30% a seat against goal 13% (15% against 23% before), mostly from island wins (10 games).
@@ -281,7 +284,10 @@ function presenceGuard(state, pid, c, persona) {
   // top: the invaders' ending is won by the faction with the most presence (TH1), so its backed faction must be that one.
   const rivalTop = Math.max(...state.factions.filter((f) => f !== backed).map((f) => presenceOf(state, f)));
   const ahead = Math.max(-2, Math.min(2, (presenceOf(state, backed) - rivalTop) / 3));
-  return margin + 0.1 * presenceOf(state, backed) + (persona.top ?? 0) * ahead;
+  // race: once presence is safe, everything rides on leading the faction's standing; weight that lead by how safe presence is.
+  const safe = sigmoid((c.projected - c.threshold - 3) / 2);
+  const race = (persona.race ?? 0) * safe * Math.max(-3, Math.min(3, lead(backed) / 2));
+  return margin + 0.1 * presenceOf(state, backed) + (persona.top ?? 0) * ahead + race;
 }
 
 /**
