@@ -148,6 +148,8 @@ export function evaluate(state, pid, profile = 'goal', goal = undefined) {
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
  * - combo: in the draft, value a card with the cards already kept.
+ * - protect: while backing, value total presence over the threshold and its
+ *   backed faction's presence (presenceGuard), from round 1.
  * - commit: once backing a faction, switch to the island only for an island
  *   chance at least this many times the invader chance (a large number: never).
  * - allies: count the push of rivals seen backing when judging whether the
@@ -160,7 +162,7 @@ export function evaluate(state, pid, profile = 'goal', goal = undefined) {
  * - sets: for the island, value standing (and influence on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, table?: number, commit?: number, allies?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, table?: number, commit?: number, allies?: number, protect?: number }} Persona
  */
 /** @type {Record<'goal' | 'backer', Persona>} */
 const PERSONAS = {
@@ -253,7 +255,25 @@ function goalValue(state, pid, goal, persona) {
   const islandMargin = persona.linear * 10 * c.linearIsland;
   const isl = (1 - c.pInvaders) * 10 * c.asIsland + islandMargin;
   const threat = (persona.threat ?? 0) * 10 * c.pInvaders * c.rivalInvaders;
-  return (goal === 'invaders' ? inv : isl + (persona.sets ? persona.sets * (1 - c.pInvaders) * setAccess(state, pid) : 0)) - threat + 0.02 * state.players[pid].supply;
+  const guard = persona.protect && goal === 'invaders' ? persona.protect * presenceGuard(state, pid, c) : 0;
+  return (goal === 'invaders' ? inv + guard : isl + (persona.sets ? persona.sets * (1 - c.pInvaders) * setAccess(state, pid) : 0)) - threat + 0.02 * state.players[pid].supply;
+}
+
+/**
+ * Guarding presence (persona protect), for a bot backing a faction: the
+ * projected presence's margin over the threshold (this round's fights and
+ * growth counted), in units of 5 tokens and capped at ±3, plus its backed
+ * faction's own presence (the faction it leads by the most). Counted at full
+ * weight from round 1: the early rounds are when presence is lost.
+ * @param {GameState} state @param {string} pid @param {ReturnType<typeof winChances>} c
+ */
+function presenceGuard(state, pid, c) {
+  const p = state.players[pid];
+  const others = state.seating.filter((id) => id !== pid);
+  const lead = (/** @type {string} */ f) => ((p.standing[f] ?? 0) - p.trophies[f]) - Math.max(...others.map((o) => (state.players[o].standing[f] ?? 0) - state.players[o].trophies[f]));
+  const backed = state.factions.slice().sort((a, b) => lead(b) - lead(a))[0];
+  const margin = Math.max(-3, Math.min(3, (c.projected - c.threshold) / 5));
+  return margin + 0.1 * presenceOf(state, backed);
 }
 
 /**
