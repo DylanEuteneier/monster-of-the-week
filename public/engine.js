@@ -55,7 +55,6 @@ export { spec };
  * @property {Record<string, number>} influence  player → influence placed here
  * @property {Token | null} token
  * @property {boolean} scorched
- * @property {string} [claim]      Set a Trap (A; Claim the Spoils' rules, round 15): this player takes every pile at this round's fight
  * @property {boolean} [truce]     Call a Truce (test card, round 15): no fight here this round
  * @property {string[]} [double]   Split Up, Gang! (test card, round 18): players whose influence here counts twice at this round's fight
  * @property {boolean} [wake]      Wake the Dead (test card, round 18): this round's fight can't scorch, and the loser's casualties rise as Undead
@@ -171,7 +170,7 @@ export { spec };
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, picked: boolean }>} players
  * @property {{ faction: string, leaders: string[], next: number, due: Record<string, number> } | null} growing
  * @property {string[]} factions
- * @property {Record<string, { tokens: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean, claim?: string, truce?: boolean, double?: string[], wake?: boolean, lock?: boolean }>} board
+ * @property {Record<string, { tokens: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean, truce?: boolean, double?: string[], wake?: boolean, lock?: boolean }>} board
  * @property {Record<string, number>} supply
  * @property {string[]} deck  this game's cards
  * @property {Record<string, number>} printed  this game's printed influence by card
@@ -722,6 +721,7 @@ export function influenceSpots(state, cardId) {
 
 /** Free locations for a hidden token under the two-target rule (3.11). @param {GameState} state @param {Card} card @param {'location' | 'faction'} mode */
 function tokenSpots(state, card, mode) {
+  if (!card.suit) return LOCATION_IDS.filter((loc) => !state.board[loc].token && !state.board[loc].scorched); // Set a Trap: any location
   const sf = suitFaction(state, card);
   return LOCATION_IDS.filter((loc) => !state.board[loc].token && !state.board[loc].scorched
     && (mode === 'location' ? suitLocations(card).includes(loc) : tokensOf(state, loc, /** @type {string} */ (sf)) > 0));
@@ -772,8 +772,8 @@ function checkShape(state, pid, card, t) {
     case 'lure': return placeTarget(state, card, t);
     case 'sow': return groupTarget(state, card, t) ?? (t.path === undefined || Array.isArray(t.path) ? null : 'Choose a path.');
     case 'token': {
-      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
-      const spots = tokenSpots(state, card, t.mode);
+      if (card.suit && t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      const spots = tokenSpots(state, card, t.mode ?? 'location');
       if (!t.location || !spots.includes(t.location)) return 'That location can\'t take a token.';
       if (t.bluff && (!spots.includes(t.bluff) || t.bluff === t.location)) return 'The bluff can\'t go there.';
       if (t.bluff && state.players[pid].bluffs <= 0) return 'You have no bluff tokens left.';
@@ -980,7 +980,7 @@ function checkShape(state, pid, card, t) {
       if (e) return e;
       return networkOf(state, /** @type {string} */ (t.location), /** @type {string} */ (t.faction)).length ? null : 'The faction holds no other location.';
     }
-    case 'claim': case 'truce': return t.location && state.board[t.location] && !state.board[t.location].scorched ? null : 'Choose a location.';
+    case 'truce': return t.location && state.board[t.location] && !state.board[t.location].scorched ? null : 'Choose a location.';
     case 'copy': return 'Nothing has been played to copy yet.';
     case 'trail': {
       if (!t.location || !trailSpots(state, pid).includes(t.location)) return 'Choose a location where you have the most influence.';
@@ -1451,11 +1451,6 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} sends ${names(f)} across the network to ${reached.map(lname).join(', ') || 'nowhere'}.`);
       break;
     }
-    case 'claim': {
-      state.board[/** @type {string} */ (t.location)].claim = pid;
-      logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}.`);
-      break;
-    }
     case 'truce': {
       state.board[/** @type {string} */ (t.location)].truce = true;
       logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}: no fight there this round.`);
@@ -1785,7 +1780,7 @@ function endOfPlay(state) {
   state.events = [];
   logLine(state, 'Everyone passed. Fights:');
   for (const loc of LOCATION_IDS) if (!state.board[loc].scorched && factionsAt(state, loc).length === 2) fight(state, loc);
-  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.claim; delete p.truce; delete p.double; delete p.wake; delete p.lock; } // round 15, 18 and 19 test cards last the round
+  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.truce; delete p.double; delete p.wake; delete p.lock; } // round 15, 18 and 19 test cards last the round
   state.tips = [];
   state.bounties = [];
   return beginGrowth(state);
@@ -1896,7 +1891,7 @@ function fight(state, loc) {
     const order = piles.filter((p) => p.n > 0).sort((x, y) => y.n - x.n);
     if (ranking.involved === 1 && collectors[0]) for (const pile of order) give(pile, collectors[0]);
     else order.forEach((pile, i) => give(pile, collectors[i] ?? null));
-  } else if (place.claim) for (const pile of piles) give(pile, place.claim); // Set a Trap (A; Claim the Spoils' rules)
+  } else if (effect === 'set-trap' && token) for (const pile of piles) give(pile, token.owner); // Set a Trap (A, designer): the trap's owner takes every pile
   else if (ranking.involved === 1 && collectors[0]) {
     for (const pile of piles) give(pile, collectors[0]); // UP1
   } else {
@@ -2437,7 +2432,7 @@ function nextShape(state, pid, cardId, t) {
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode) };
     case 'virus-network':
       return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => networkOf(state, g.location, g.faction).length > 0) };
-    case 'claim': case 'truce':
+    case 'truce':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched) };
     case 'copy': return { kind: 'location', key: 'location', options: [] };
     case 'trail': {
@@ -2505,7 +2500,7 @@ export function describeTarget(cardId, t) {
     case 'split': return `${F(t.faction)} at ${L(t.location)} split ${Object.entries(t.split ?? {}).map(([l, n]) => `${n} to ${L(l)}`).join(', ')}${how}`;
     case 'bail-out': return `from ${L(t.location)} to ${L(t.to)}`;
     case 'backup': case 'fall-back': case 'stake': return `at ${L(t.location)}`;
-    case 'claim': case 'truce': return `at ${L(t.location)}`;
+    case 'truce': return `at ${L(t.location)}`;
     case 'canvass': return `at ${(t.from ?? []).map(L).join(', ')}`;
     case 'bait': return `at ${L(t.location)}, drawing ${F(t.faction)} from ${L(t.from?.[0])}`;
     case 'allegiance': return `${F(t.faction)} to ${F(t.to)}`;
@@ -2543,7 +2538,7 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched, ...(place.claim ? { claim: place.claim } : {}), ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.lock ? { lock: true } : {}) }];
+      return [loc, { tokens: { ...place.tokens }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.lock ? { lock: true } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),

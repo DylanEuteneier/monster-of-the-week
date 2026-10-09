@@ -472,8 +472,8 @@
       "suit": null,
       "slot": "extra",
       "influence": 0,
-      "action": "claim",
-      "text": "At this round’s fight at the target, you take every pile, whoever leads. Target: any location.",
+      "action": "token",
+      "text": "Hidden: place a face-down token (and a bluff) on the target. At its fight, the token’s owner takes every pile, whoever leads. Target: any location.",
       "marked": "A"
     },
     {

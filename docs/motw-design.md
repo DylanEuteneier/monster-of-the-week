@@ -1062,6 +1062,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-08 | Host page: each seat is a human or a bot, with a chosen profile (goal, goal, deep, backer, hunter) or a random one picked at the deal (designer). Bots keep their memory between turns on the server | Prototype tooling, not rules |
 | 2026-10-08 | Stake Out (6) retired; Stake Out places 4 (designer) | The 6 copy was a measurement of how strength grows with the amount |
 | 2026-10-08 | Set a Trap (round 18) removed; Claim the Spoils renamed Set a Trap and made marked card A, without the last-card rule (designer) | The old trap fell flat as an opener: sprung cheaply by a rival's small group or by its owner's big one |
+| 2026-10-08 | Set a Trap is hidden (designer): a face-down token and a bluff; at its fight the token's owner takes every pile | Uses the face-down token rules (IN1, BT1); the open claim is gone |
 | 2026-10-07 | Card scores reset to 0 and not to be trusted until cards are measured over whole rounds with strategic bots (designer). Tuning process: tournaments to tune the bots, then card tuning passes, repeat | D12's weighting falls back to random 2/3/4 per suit while every score is 0 |
 | 2026-10-07 | D15 starting place: each faction moved to a new location pays 1 of its influence there, regardless of group size (variant `whoPays`, each by default). Card scores taken off the card review page until they can be trusted (designer) | Economy, 100 bot games: with IC1, fights with 2+ players bidding rise from 1% to about 40% in round 1 (fewer fights, 0.6 a round against 3.2); each-pays slightly ahead of selected-pays |
 | 2026-10-07 | IC1 in the first draft: the influence a card places is a requirement (D15). The core loop recorded (D16) | Bot games after IC1: fewer fights (1.4 a round) and the invaders win 97% (30 games); presence climbs to about 50 against a threshold of 20 |
@@ -2821,7 +2822,7 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 
 | Card | Effect |
 |---|---|
-| Set a Trap (A; designer, 2026-10-08) | At this round's fight at the target, you take every pile, whoever leads. **Target:** any location. Claim the Spoils (round 15) renamed and made A. The first Set a Trap (round 18: the first group to move into a named location lost half to you) was removed: a rival could spring it with a small group, or its owner with a big one, so it fell flat as the round's opening play. |
+| Set a Trap (A; designer, 2026-10-08) | Hidden: place a face-down token (and a bluff) on the target. At its fight, the token's owner takes every pile, whoever leads. **Target:** any location. Claim the Spoils (round 15) renamed and made A, then made hidden with a bluff (designer). The first Set a Trap (round 18: the first group to move into a named location lost half to you) was removed: a rival could spring it with a small group, or its owner with a big one, so it fell flat as the round's opening play. |
 | B | Open: no card yet. |
 | Lock Down the Town (C; round 19, designer adopted 2026-10-08) | Name a region; this round, no group moves into or out of it. **Target:** a location in the region. |
 | Put a Bounty On It (D; round 19, designer adopted 2026-10-08) | Name a faction; at every fight this round, its group loses 1 more token when it wins, into the trophy piles. **Target:** the faction. |

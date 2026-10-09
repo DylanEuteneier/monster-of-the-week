@@ -552,13 +552,14 @@ test('with responses out (the first draft), a played action resolves at once and
   assert.equal(validate(next, { playerId: holder, move: { type: 'respond', card: 'cancel' } }).ok, false);
 });
 
-test('round 15 unsuited: Set a Trap takes every pile, Call a Truce stops the fight, Lay a Trail draws a group to your lead, Steal Their Playbook copies the last card', () => {
+test('Set a Trap (A) hides its trap among bluffs and takes every pile; round 15 unsuited: Call a Truce stops the fight, Lay a Trail draws a group to your lead, Steal Their Playbook copies the last card', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
   s.board[NEUTRAL].influence = { ann: 1, bob: 3, cat: 2 };
-  const claimed = previewTarget(s, 'ann', 'set-trap', { location: NEUTRAL });
-  const fought = resolveFight(/** @type {GameState} */ ({ ...s, board: claimed.board }), NEUTRAL);
+  const trapped = previewTarget(s, 'ann', 'set-trap', { location: NEUTRAL, bluff: map[NEUTRAL].adjacent[0] });
+  assert.ok(trapped.board[NEUTRAL].token && trapped.board[map[NEUTRAL].adjacent[0]].token); // the trap and a bluff, face down
+  const fought = resolveFight(/** @type {GameState} */ ({ ...s, board: trapped.board }), NEUTRAL);
   assert.deepEqual([fought.players.ann.trophies[B], fought.players.ann.trophies[A], fought.players.bob.trophies[B]], [4, 2, 0]);
   const truce = previewTarget(s, 'ann', 'call-truce', { location: NEUTRAL });
   assert.deepEqual(resolveFight(/** @type {GameState} */ ({ ...s, board: truce.board }), NEUTRAL).board[NEUTRAL].tokens, { [A]: 6, [B]: 4 });
