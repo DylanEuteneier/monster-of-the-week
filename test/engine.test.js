@@ -355,22 +355,6 @@ test('bots can target every test card that has a target (a walk through the tabl
   }
 });
 
-test('Spread a Virus (infectious): each token that joins another faction costs it 1 token to its supply (round 9)', () => {
-  const s = clear(newGame());
-  const [f, g] = /** @type {string[]} */ (s.factions);
-  const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
-  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'sentients')?.id);
-  const [to] = adj[loc].adjacent;
-  s.board[loc].tokens[f] = 1;
-  s.board[to].tokens[g] = 3;
-  const supply = s.supply[g];
-  const after = previewTarget(s, 'ann', 'virus-infect', { mode: 'location', location: loc, faction: f });
-  assert.equal(after.board[to].tokens[f], 1);
-  assert.equal(after.board[to].tokens[g], 2);
-  assert.ok(!checkTarget(s, 'ann', cardById('virus-infect'), { mode: 'location', location: loc, faction: f }));
-  assert.equal(supply, s.supply[g]); // the preview leaves the game untouched
-});
-
 test('Leak It to the Press sends half the group anywhere (round 9)', () => {
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[0]);
@@ -602,8 +586,9 @@ test('IC1: a move goes only as far as the player can pay for the influence it pl
   const from = /** @type {string} */ (Object.keys(map).find((l) => map[l].adjacent.length >= 3));
   s.board[from].tokens = { [A]: 5 };
   s.players.ann.standing[A] = 1;
-  const one = previewTarget(s, 'ann', 'virus', { mode: 'faction', location: from, faction: A });
-  assert.equal(map[from].adjacent.filter((l) => one.board[l].tokens[A]).length, 1); // 1 standing: one location
+  const [p, q] = map[from].adjacent;
+  const one = previewTarget(s, 'ann', 'board-up', { mode: 'faction', location: from, faction: A, split: { [p]: 2, [q]: 3 } });
+  assert.equal([p, q].filter((l) => one.board[l].tokens[A]).length, 1); // 1 standing: one location
   const sci = /** @type {string} */ (factionOfArchetype(s, 'scifi'));
   s.board[from].tokens = { [sci]: 5 };
   s.players.ann.standing[sci] = 0;
@@ -673,16 +658,6 @@ test('round 18: Tip Off the Sheriff pays its tipper; Split Up doubles influence 
   assert.equal(woke.players.bob.trophies[B], 0);
 });
 
-test('round 18: Network the Virus reaches every location of its faction', () => {
-  const s = clear(newGame());
-  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
-  const far = /** @type {string} */ (Object.keys(map).find((l) => l !== NEUTRAL && !map[NEUTRAL].adjacent.includes(l)));
-  s.board[NEUTRAL].tokens = { [A]: 3 };
-  s.board[far].tokens = { [A]: 1 };
-  const net = previewTarget(s, 'ann', 'virus-network', { mode: 'location', location: NEUTRAL, faction: A });
-  assert.equal(net.board[far].tokens[A], 2);
-});
-
 test('round 19: Lock Down the Town stops moves across its region\'s border; Put a Bounty On It costs the winner 1 more', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[], region: string }>} */ (spec.map.locations);
@@ -704,16 +679,13 @@ test('round 19: Lock Down the Town stops moves across its region\'s border; Put 
   s.bounties = [];
 });
 
-test('round 20 Sentients: Go Viral seeds lone rivals next door from the supply; Hack the Network jumps to a lone rival anywhere; Link the Swarm counts next-door Sentients for who wins', () => {
+test('round 20 Sentients: Hack the Network jumps to a lone rival anywhere; Link the Swarm counts next-door Sentients for who wins', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const sent = /** @type {string} */ (factionOfArchetype(s, 'sentients'));
   const [x, y] = map[NEUTRAL].adjacent;
   s.board[NEUTRAL].tokens = { [sent]: 3 };
   s.board[x].tokens = { [A === sent ? B : A]: 2 };
-  const viral = previewTarget(s, 'ann', 'go-viral', { mode: 'faction', location: NEUTRAL, faction: sent });
-  assert.deepEqual([viral.board[x].tokens[sent], viral.board[NEUTRAL].tokens[sent], viral.board[x].influence.ann], [1, 3, 1]);
-  assert.equal(viral.board[y].tokens[sent], undefined); // y holds no one: not a lone rival
   const far = /** @type {string} */ (Object.keys(map).find((l) => l !== NEUTRAL && !map[NEUTRAL].adjacent.includes(l)));
   s.board[far].tokens = { [A === sent ? B : A]: 1 };
   const t = { mode: /** @type {const} */ ('faction'), location: NEUTRAL, faction: sent, to: far };

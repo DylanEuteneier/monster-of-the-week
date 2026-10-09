@@ -653,8 +653,6 @@ function ringSteps(state, loc) {
 }
 /** Groups that would circle (round 12). @param {GameState} state @param {string} loc @param {string[]} factions */
 const circlers = (state, loc, factions) => ringSteps(state, loc).flatMap(([from, to]) => factionsAt(state, from).filter((f) => factions.includes(f) && !state.board[to].scorched).map((f) => ({ from, to, f })));
-/** Network the Virus (round 18): every other location holding the group's faction. @param {GameState | PlayerView} state @param {string} loc @param {string} f */
-const networkOf = (state, loc, f) => LOCATION_IDS.filter((l) => l !== loc && !state.board[l].scorched && tokensOf(/** @type {GameState} */ (state), l, f) > 0);
 /** Go Viral and Hack the Network (round 20): locations holding exactly one faction other than f, which f can enter. @param {GameState | PlayerView} state @param {string} f @param {string[]} from */
 const loneRivals = (state, f, from) => from.filter((l) => !state.board[l].scorched && canEnter(/** @type {GameState} */ (state), l, f) && factionsAt(/** @type {GameState} */ (state), l).filter((o) => o !== f).length === 1 && tokensOf(/** @type {GameState} */ (state), l, f) === 0);
 /** Open the Pit (v2, round 17): where a small group can fall to, in its region. @param {GameState | PlayerView} state @param {string} loc @param {string} f */
@@ -791,7 +789,7 @@ function checkShape(state, pid, card, t) {
       if (!t.from || t.from.length < 1 || t.from.length > 2 || t.from.some((l) => tokensOf(state, l, /** @type {string} */ (t.faction)) <= 0 || l === t.location)) return 'Choose one or two locations holding that faction.';
       return null;
     }
-    case 'halve': case 'halve-far': case 'teleport': case 'spread': case 'infect': case 'split': {
+    case 'halve': case 'halve-far': case 'teleport': case 'split': {
       const e = groupTarget(state, card, t);
       if (e) return e;
       const loc = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
@@ -877,29 +875,12 @@ function checkShape(state, pid, card, t) {
       if (g && (g.faction === f || !MAP[t.to].adjacent.includes(g.location) || g.location === t.to || tokensOf(state, g.location, g.faction) <= 0 || !canFollow(state, t.to, f, g.faction))) return 'That group can\'t follow it in.';
       return null;
     }
-    case 'meet': {
-      const e = groupTarget(state, card, t);
-      if (e) return e;
-      const a = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction), b = t.moves?.[0];
-      if (!b || b.faction === f || tokensOf(state, b.location, b.faction) <= 0 || !MAP[a].adjacent.includes(b.location)) return 'Choose a neighbouring group of another faction.';
-      const m = b.to;
-      if (!m || m === a || m === b.location || !MAP[a].adjacent.includes(m) || !MAP[b.location].adjacent.includes(m) || !canEnter(state, m, f) || !canFollow(state, m, f, b.faction)) return 'Choose a location next to both that both can enter.';
-      return null;
-    }
     case 'leap': {
       const e = groupTarget(state, card, t);
       if (e) return e;
       const over = t.direction ? step(state, /** @type {string} */ (t.location), t.direction) : null;
       const land = over ? step(state, over, /** @type {string} */ (t.direction)) : null;
       return land && canEnter(state, land, /** @type {string} */ (t.faction)) ? null : 'Nothing to land on that way.';
-    }
-    case 'mirror': {
-      if (!t.location || !t.faction || tokensOf(state, t.location, t.faction) <= 0) return 'Choose a group on the board.';
-      const to = MAP[t.location].mirror;
-      if (!to || !canEnter(state, to, t.faction)) return 'It has no reflection it can enter.';
-      if (t.mode === 'location') return suitLocations(card).includes(t.location) || suitLocations(card).includes(to) ? null : 'Neither it nor its reflection is one of the suit\'s.';
-      if (t.mode === 'faction') return t.faction === suitFaction(state, card) ? null : 'That group is not the suit\'s faction.';
-      return 'Choose a location target or a faction target.';
     }
     case 'network': {
       const e = groupTarget(state, card, t);
@@ -979,20 +960,10 @@ function checkShape(state, pid, card, t) {
     case 'tipoff': case 'bounty': return t.faction && state.factions.includes(t.faction) ? null : 'Choose a faction.';
     case 'lockdown': return t.location && state.board[t.location] && !state.board[t.location].lock ? null : 'Choose a location in a region not already locked down.';
     case 'wake-dead': case 'swarm': case 'backdoor': return (t.mode === 'location' || t.mode === 'faction') && t.location && holdingSpots(state, card, t.mode).includes(t.location) ? null : 'Choose the target location.';
-    case 'viral': {
-      const e = groupTarget(state, card, t);
-      if (e) return e;
-      return loneRivals(state, /** @type {string} */ (t.faction), MAP[/** @type {string} */ (t.location)].adjacent).length && state.supply[/** @type {string} */ (t.faction)] > 0 ? null : 'No neighbour holds a lone rival faction, or its supply is empty.';
-    }
     case 'hack': {
       const e = groupTarget(state, card, t);
       if (e) return e;
       return t.to && t.to !== t.location && loneRivals(state, /** @type {string} */ (t.faction), LOCATION_IDS).includes(t.to) ? null : 'Choose a location holding one other faction.';
-    }
-    case 'virus-network': {
-      const e = groupTarget(state, card, t);
-      if (e) return e;
-      return networkOf(state, /** @type {string} */ (t.location), /** @type {string} */ (t.faction)).length ? null : 'The faction holds no other location.';
     }
     case 'truce': return t.location && state.board[t.location] && !state.board[t.location].scorched ? null : 'Choose a location.';
     case 'copy': return 'Nothing has been played to copy yet.';
@@ -1131,33 +1102,6 @@ function act(state, pid, card, t) {
       const a = /** @type {string} */ (t.faction), b = /** @type {string} */ (t.to), st = state.players[pid].standing;
       [st[a], st[b]] = [st[b] ?? 0, st[a] ?? 0];
       logLine(state, `${pid}: ${card.name} swaps their standing with ${names(a)} and ${names(b)}.`);
-      break;
-    }
-    case 'spread': {
-      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
-      const reached = [];
-      for (const to of MAP[from].adjacent) {
-        if (tokensOf(state, from, f) <= 0) break;
-        if (move(state, pid, f, from, to, 1, placed)) reached.push(to);
-      }
-      logLine(state, `${pid}: ${card.name} spreads ${names(f)} into ${reached.map(lname).join(', ') || 'nowhere'}.`);
-      break;
-    }
-    case 'infect': {
-      // As spread; where a token enters a location holding another faction, that faction loses 1 token to its supply.
-      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
-      const reached = [];
-      for (const to of MAP[from].adjacent) {
-        if (tokensOf(state, from, f) <= 0) break;
-        if (!move(state, pid, f, from, to, 1, placed)) continue;
-        reached.push(to);
-        for (const other of factionsAt(state, to).filter((o) => o !== f)) {
-          state.board[to].tokens[other] -= 1;
-          if (state.board[to].tokens[other] <= 0) delete state.board[to].tokens[other];
-          state.supply[other] += 1;
-        }
-      }
-      logLine(state, `${pid}: ${card.name} infects ${reached.map(lname).join(', ') || 'nowhere'} with ${names(f)}.`);
       break;
     }
     case 'gather-region': case 'gather-neighbours': {
@@ -1318,13 +1262,6 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} leads ${names(f)} into ${lname(to)}${g ? `; ${names(g.faction)} follow` : ''}.`);
       break;
     }
-    case 'meet': {
-      const f = /** @type {string} */ (t.faction), a = /** @type {string} */ (t.location), b = /** @type {{ location: string, faction: string, to: string }} */ (t.moves?.[0]);
-      move(state, pid, f, a, b.to, tokensOf(state, a, f), placed);
-      move(state, pid, b.faction, b.location, b.to, tokensOf(state, b.location, b.faction), placed);
-      logLine(state, `${pid}: ${card.name} drags ${names(f)} and ${names(b.faction)} into ${lname(b.to)}.`);
-      break;
-    }
     case 'leap': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const land = /** @type {string} */ (step(state, /** @type {string} */ (step(state, from, /** @type {string} */ (t.direction))), /** @type {string} */ (t.direction)));
@@ -1332,9 +1269,9 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name}: ${n} ${names(f)} leap from ${lname(from)} to ${lname(land)}.`);
       break;
     }
-    case 'mirror': case 'network': {
+    case 'network': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
-      const to = /** @type {string} */ (card.action === 'mirror' ? MAP[from].mirror : t.to);
+      const to = /** @type {string} */ (t.to);
       const n = move(state, pid, f, from, to, tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} sends ${n} ${names(f)} from ${lname(from)} to ${lname(to)}.`);
       break;
@@ -1474,41 +1411,10 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}.`);
       break;
     }
-    case 'viral': {
-      // Go Viral (round 20): 1 token from the faction's supply into each neighbour holding a lone rival; each costs 1 influence from that faction, placed there (IC1).
-      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
-      const cost = num(state, 'influencePerMove');
-      const reached = [];
-      for (const to of loneRivals(state, f, MAP[from].adjacent)) {
-        if (state.supply[f] <= 0) break;
-        if (influenceRequired(state) && cost > 0 && (state.players[pid].standing[f] ?? 0) < cost) break;
-        state.supply[f] -= 1;
-        state.board[to].tokens[f] = 1;
-        const k = Math.min(cost, state.players[pid].standing[f] ?? 0);
-        if (k > 0) {
-          state.players[pid].standing[f] -= k;
-          state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + k;
-          for (let i = 0; i < k; i++) state.events.push({ type: 'influence-placed', player: pid, faction: f, location: to });
-        }
-        reached.push(to);
-      }
-      logLine(state, `${pid}: ${card.name}: ${names(f)} appear at ${reached.map(lname).join(', ') || 'nowhere'}.`);
-      break;
-    }
     case 'hack': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const n = move(state, pid, f, from, /** @type {string} */ (t.to), tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} sends ${n} ${names(f)} from ${lname(from)} to ${lname(/** @type {string} */ (t.to))}.`);
-      break;
-    }
-    case 'virus-network': {
-      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
-      const reached = [];
-      for (const to of networkOf(state, from, f)) {
-        if (tokensOf(state, from, f) <= 0) break;
-        if (move(state, pid, f, from, to, 1, placed)) reached.push(to);
-      }
-      logLine(state, `${pid}: ${card.name} sends ${names(f)} across the network to ${reached.map(lname).join(', ') || 'nowhere'}.`);
       break;
     }
     case 'truce': {
@@ -1565,16 +1471,13 @@ export function pendingDestinations(state, pend) {
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': case 'hack': return t.to ? [t.to] : [];
     case 'sow': return t.path ?? [];
     case 'split': return Object.keys(t.split ?? {});
-    case 'spread': case 'infect': case 'viral': return t.location ? MAP[t.location].adjacent : [];
     case 'pit-fall': return t.to ? [t.to] : [];
     case 'carry-fight': return t.to ? [t.to] : [];
     case 'slide': case 'chain': return LOCATION_IDS;
     case 'circle': return t.location ? MAP[t.location].adjacent : [];
     case 'leap': case 'howl': return LOCATION_IDS;
-    case 'mirror': return t.location && MAP[t.location].mirror ? [/** @type {string} */ (MAP[t.location].mirror)] : [];
     case 'network': case 'shove': return [t.to ?? '', t.moves?.[0]?.to ?? ''].filter(Boolean);
     case 'follow': return t.to ? [t.to] : [];
-    case 'meet': return t.moves?.[0]?.to ? [t.moves[0].to] : [];
     case 'swap-far': return [t.location ?? '', t.moves?.[0]?.location ?? ''].filter(Boolean);
     case 'repel': return t.location ? MAP[t.location].adjacent.flatMap((a) => MAP[a].adjacent) : [];
     case 'conveyor': return LOCATION_IDS;
@@ -1935,7 +1838,7 @@ function fight(state, loc) {
       logLine(state, `  ${name}: ${rise} of the fallen rise as ${factionById(undead).name}.`);
     }
   }
-  const ranking = rankAt(state, loc, effect === 'hijack-feed' ? token?.owner : undefined, hacked); // hijack-feed: test card (round 8)
+  const ranking = rankAt(state, loc, hacked);
   const collectors = ranking.places;
   /** @param {{ faction: string, n: number }} pile @param {string | null} pid */
   const give = (pile, pid) => {
@@ -1982,14 +1885,14 @@ function fight(state, loc) {
  * Rank players by influence at a location, with affinity breaking ties (AB1)
  * and standing ties using up their places (PT2, ST1). `places` lists who
  * collects first and second place (null where a tie used the place up).
- * @param {GameState} state @param {string} loc @param {string} [twice]  a player whose influence counts twice (test card hijack-feed) @param {number} [hacked]  Sentient tokens at the fight's start, for Install a Backdoor
+ * @param {GameState} state @param {string} loc @param {number} [hacked]  Sentient tokens at the fight's start, for Install a Backdoor
  */
-function rankAt(state, loc, twice, hacked = 0) {
+function rankAt(state, loc, hacked = 0) {
   const place = state.board[loc];
   // Install a Backdoor (test card, round 20): 1 more per Sentient token here as the fight started, even with no influence placed.
   const influence = { ...place.influence };
   for (const pid of place.backdoor ?? []) influence[pid] = (influence[pid] ?? 0) + hacked;
-  const entries = Object.entries(influence).filter(([, n]) => n > 0).map(([pid, n]) => /** @type {[string, number]} */ ([pid, pid === twice || place.double?.includes(pid) ? 2 * n : n]));
+  const entries = Object.entries(influence).filter(([, n]) => n > 0).map(([pid, n]) => /** @type {[string, number]} */ ([pid, place.double?.includes(pid) ? 2 * n : n]));
   const involved = entries.length;
   const byAmount = new Map();
   for (const [pid, n] of entries) byAmount.set(n, [...(byAmount.get(n) ?? []), pid]);
@@ -2214,7 +2117,6 @@ export function sampleTarget(state, pid, cardId, rng) {
       }
       case 'halve': case 'drive-out': case 'drive-out-either': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(MAP[g.loc].adjacent) }; break;
       case 'teleport': case 'halve-far': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(LOCATION_IDS) }; break;
-      case 'spread': case 'infect': if (g) t = { mode, location: g.loc, faction: g.f }; break;
       case 'move-influence': {
         const mine = LOCATION_IDS.filter((l) => (state.board[l].influence[pid] ?? 0) > 0);
         const to = pick(holdingSpots(state, card, mode));
@@ -2240,7 +2142,7 @@ export function sampleTarget(state, pid, cardId, rng) {
   return null;
 }
 /** Actions sampleTarget guesses directly; any other walks the table's choices. */
-const SAMPLED = new Set(['lure', 'draw-adjacent', 'gather-region', 'gather-neighbours', 'broadcast', 'sow', 'token', 'halve', 'drive-out', 'drive-out-either', 'teleport', 'halve-far', 'spread', 'infect', 'move-influence', 'split', 'conveyor']);
+const SAMPLED = new Set(['lure', 'draw-adjacent', 'gather-region', 'gather-neighbours', 'broadcast', 'sow', 'token', 'halve', 'drive-out', 'drive-out-either', 'teleport', 'halve-far', 'move-influence', 'split', 'conveyor']);
 
 /**
  * A random target built one choice at a time, as the table offers them (for bots).
@@ -2427,8 +2329,6 @@ function nextShape(state, pid, cardId, t) {
       if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => dirs(g.location, g.faction).length > 0) };
       return t.direction ? { kind: 'done' } : { kind: 'direction', options: dirs(t.location, /** @type {string} */ (t.faction)) };
     }
-    case 'mirror':
-      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter((g) => ok({ mode, location: g.location, faction: g.faction })) };
     case 'network': {
       if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => networkSpots(state, card, { mode, location: g.location, faction: g.faction }).length > 0) };
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: networkSpots(state, card, t) };
@@ -2460,15 +2360,6 @@ function nextShape(state, pid, cardId, t) {
       const followers = groups.filter((g) => g.faction !== f && g.location !== to && MAP[to].adjacent.includes(g.location) && canFollow(state, to, f, g.faction));
       return followers.length ? { kind: 'group', key: 'move', options: followers, optional: true } : { kind: 'done' };
     }
-    case 'meet': {
-      const f = /** @type {string} */ (t.faction);
-      const places = (/** @type {string} */ a, /** @type {{ location: string, faction: string }} */ b) => MAP[a].adjacent.filter((m) => m !== b.location && MAP[b.location].adjacent.includes(m) && ok({ mode, location: a, faction: f, moves: [{ ...b, to: m }] }));
-      const partners = (/** @type {string} */ a, /** @type {string} */ af) => groups.filter((b) => b.faction !== af && MAP[a].adjacent.includes(b.location) && MAP[a].adjacent.some((m) => m !== b.location && MAP[b.location].adjacent.includes(m) && !checkTarget(state, pid, card, { mode, location: a, faction: af, moves: [{ ...b, to: m }] })));
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => partners(g.location, g.faction).length > 0) };
-      const b = t.moves?.[0];
-      if (!b) return { kind: 'group', key: 'move', options: partners(t.location, f) };
-      return b.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: places(t.location, b) };
-    }
     case 'repel':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => pushes(state, loc, movers).length > 0) };
     case 'surveil-supply':
@@ -2483,8 +2374,6 @@ function nextShape(state, pid, cardId, t) {
     case 'swap-standing':
       if (!t.faction) return { kind: 'faction', options: state.factions.slice() };
       return t.to ? { kind: 'done' } : { kind: 'faction', key: 'to', options: state.factions.filter((f) => f !== t.faction && (state.players[pid].standing[f] ?? 0) !== (state.players[pid].standing[/** @type {string} */ (t.faction)] ?? 0)) };
-    case 'spread': case 'infect':
-      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => exits(g, MAP[g.location].adjacent).length > 0) };
     case 'split': {
       if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => tokensOf(state, g.location, g.faction) >= 2 && exits(g, MAP[g.location].adjacent).length >= 2) };
       const placedN = Object.values(t.split ?? {}).reduce((a, b) => a + b, 0);
@@ -2533,13 +2422,9 @@ function nextShape(state, pid, cardId, t) {
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].lock) };
     case 'wake-dead': case 'swarm': case 'backdoor':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode) };
-    case 'viral':
-      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => state.supply[g.faction] > 0 && loneRivals(state, g.faction, MAP[g.location].adjacent).length > 0) };
     case 'hack':
       if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => loneRivals(state, g.faction, LOCATION_IDS).some((l) => l !== g.location)) };
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: loneRivals(state, /** @type {string} */ (t.faction), LOCATION_IDS).filter((l) => l !== t.location) };
-    case 'virus-network':
-      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => networkOf(state, g.location, g.faction).length > 0) };
     case 'truce':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched) };
     case 'copy': return { kind: 'location', key: 'location', options: [] };
@@ -2598,15 +2483,13 @@ export function describeTarget(cardId, t) {
     case 'sow': return `${F(t.faction)} from ${L(t.location)} via ${(t.path ?? []).map(L).join(', ')}${how}`;
     case 'token': return `token at ${L(t.location)}${t.bluff ? `, bluff at ${L(t.bluff)}` : ''}${how}`;
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': return `${F(t.faction)} at ${L(t.location)} to ${L(t.to)}${how}`;
-    case 'spread': case 'infect': case 'pit-fall': return `${F(t.faction)} at ${L(t.location)}${t.to ? ` to ${L(t.to)}` : ''}${how}`;
+    case 'pit-fall': return `${F(t.faction)} at ${L(t.location)}${t.to ? ` to ${L(t.to)}` : ''}${how}`;
     case 'surveil-supply': case 'raise-stakes': return `at ${L(t.location)}${how}`;
     case 'split-up': return `at ${(t.from ?? []).map(L).join(', ')}`;
     case 'wake-dead': case 'swarm': return `at ${L(t.location)}${how}`;
-    case 'viral': return `${F(t.faction)} at ${L(t.location)}${how}`;
     case 'hack': return `${F(t.faction)} at ${L(t.location)} to ${L(t.to)}${how}`;
     case 'tipoff': case 'bounty': return `on ${F(t.faction)}`;
     case 'lockdown': return `the region of ${L(t.location)}`;
-    case 'virus-network': return `${F(t.faction)} at ${L(t.location)}${how}`;
     case 'swap-standing': return `${F(t.faction)} and ${F(t.to)}`;
     case 'split': return `${F(t.faction)} at ${L(t.location)} split ${Object.entries(t.split ?? {}).map(([l, n]) => `${n} to ${L(l)}`).join(', ')}${how}`;
     case 'bail-out': return `from ${L(t.location)} to ${L(t.to)}`;

@@ -329,13 +329,13 @@
       }
     },
     {
-      "id": "virus",
-      "name": "Spread a Virus",
+      "id": "hack-network",
+      "name": "Hack the Network",
       "suit": "sentients",
       "slot": "strike",
       "influence": 2,
-      "action": "spread",
-      "text": "The target group puts 1 token into every adjacent location it can enter, as far as its tokens go. Target: the infected group.",
+      "action": "hack",
+      "text": "Move the target group to any location on the island that holds one other faction, so it fights there at the round’s end. Target: the group, then where it goes.",
       "readings": {
         "location": "any group at a ⏏ location.",
         "faction": "a Sentient group anywhere."
@@ -1213,20 +1213,6 @@
         "round": 8
       },
       {
-        "id": "hijack-feed",
-        "name": "Hijack the Feed",
-        "suit": "sentients",
-        "slot": "signature",
-        "influence": 3,
-        "action": "token",
-        "text": "Hidden: at its fight, the token's owner counts their influence there twice when the trophies are handed out.",
-        "readings": {
-          "location": "a ⏏ location.",
-          "faction": "a location holding the Sentients."
-        },
-        "round": 8
-      },
-      {
         "id": "sign-contract",
         "name": "Sign the Contract",
         "suit": "demonic",
@@ -1265,20 +1251,6 @@
         "readings": {
           "location": "either faction at a contested ⎈ location.",
           "faction": "the Demons, wherever they are contested."
-        },
-        "round": 9
-      },
-      {
-        "id": "virus-infect",
-        "name": "Spread a Virus (infectious)",
-        "suit": "sentients",
-        "slot": "strike",
-        "influence": 2,
-        "action": "infect",
-        "text": "The target group puts 1 token into every adjacent location it can enter, as far as its tokens go. Where a token joins another faction, that faction loses 1 token to its supply. Target: the infected group.",
-        "readings": {
-          "location": "any group at a ⏏ location.",
-          "faction": "a Sentient group anywhere."
         },
         "round": 9
       },
@@ -1465,20 +1437,6 @@
         }
       },
       {
-        "id": "drag-under",
-        "name": "Drag Them Under",
-        "suit": "undead",
-        "slot": "strike",
-        "influence": 3,
-        "action": "meet",
-        "round": 12,
-        "text": "The target group and a neighbouring group of another faction are both dragged into a location next to them both. Target: the first group.",
-        "readings": {
-          "location": "any group at a ☾ location.",
-          "faction": "an Undead group anywhere."
-        }
-      },
-      {
         "id": "invert",
         "name": "Invert the Pentagram",
         "suit": "demonic",
@@ -1546,20 +1504,6 @@
         "readings": {
           "location": "any group at a ⎈ location.",
           "faction": "a Demon group anywhere."
-        }
-      },
-      {
-        "id": "mirror",
-        "name": "Smash the Mirror",
-        "suit": "demonic",
-        "slot": "signature",
-        "influence": 3,
-        "action": "mirror",
-        "round": 13,
-        "text": "Move the target group to its reflection across the lake. Target: the group. (Round 6 idea, first built in round 13; readings added.)",
-        "readings": {
-          "location": "a group at a ⎈ location or its reflection.",
-          "faction": "a Demon group with a reflection."
         }
       },
       {
@@ -1715,48 +1659,6 @@
         "readings": {
           "location": "a ☾ location.",
           "faction": "a location holding the Undead."
-        }
-      },
-      {
-        "id": "virus-network",
-        "name": "Network the Virus",
-        "suit": "sentients",
-        "slot": "strike",
-        "influence": 2,
-        "action": "virus-network",
-        "round": 18,
-        "text": "The target group sends 1 token to every other location holding its faction, anywhere on the island, as far as its tokens go. Target: the infected group.",
-        "readings": {
-          "location": "any group at a ⏏ location.",
-          "faction": "a Sentient group anywhere."
-        }
-      },
-      {
-        "id": "go-viral",
-        "name": "Go Viral",
-        "suit": "sentients",
-        "slot": "strike",
-        "influence": 2,
-        "action": "viral",
-        "round": 20,
-        "text": "The target faction puts 1 token from its supply into each location next to the target that holds one other faction, so each holds two factions and fights at the round’s end; for each, place 1 influence there from your standing with that faction, as far as it goes. Target: the group gone viral.",
-        "readings": {
-          "location": "any group at a ⏏ location.",
-          "faction": "a Sentient group anywhere."
-        }
-      },
-      {
-        "id": "hack-network",
-        "name": "Hack the Network",
-        "suit": "sentients",
-        "slot": "strike",
-        "influence": 2,
-        "action": "hack",
-        "round": 20,
-        "text": "Move the target group to any location on the island that holds one other faction, so it fights there at the round’s end. Target: the group, then where it goes.",
-        "readings": {
-          "location": "any group at a ⏏ location.",
-          "faction": "a Sentient group anywhere."
         }
       },
       {
