@@ -8,7 +8,7 @@
  *   GET  /hotseat            the table UI, playing every human seat from one tab
  *   GET  /assets             the assets page (assets.html): every sprite and the palette
  *   GET  /assets/…           sprite PNGs, token outlines (SVG), and sprites.json, served straight from public/assets/
- *   POST /admin/new-game     { players?, seed?, force?, options?: Record<string,string>, bots?: string[] }  → magic links
+ *   POST /admin/new-game     { players?, seed?, force?, options?: Record<string,string>, bots?: string[], botProfiles?: Record<seat, profile | 'random'> }  → magic links
  *   GET  /admin/links        re-list the magic links for the current game
  *   GET  /admin/status       phase, round, options, and seats of the current game
  *   *                        static assets from public/
@@ -22,7 +22,8 @@
  */
 import { DurableObject } from 'cloudflare:workers';
 import { applyMove, createGame, playerView, IllegalMoveError, spec } from '../public/engine.js';
-import { botMove } from '../public/bots.js';
+import { botMove, PROFILES } from '../public/bots.js';
+import type { BotMemory, Profile } from '../public/bots.js';
 import type { GameState, Move, Options, PlayerView } from '../public/engine.js';
 
 export interface Env {
@@ -55,6 +56,7 @@ interface NewGameRequest {
   force?: unknown;
   options?: unknown;
   bots?: unknown;
+  botProfiles?: unknown;
 }
 
 const GAME_NAME = 'the-game';
@@ -62,6 +64,8 @@ const STORAGE_GAME = 'game';
 const STORAGE_TOKENS = 'tokens';
 const STORAGE_CHAT = 'chat';
 const STORAGE_BOTS = 'bots';
+const STORAGE_BOT_PROFILES = 'botProfiles';
+const STORAGE_BOT_MEMORY = 'botMemory';
 const MAX_BOT_MOVES_PER_TICK = 60;
 const CHAT_HISTORY = 100;
 const CHAT_MAX_CHARS = 280;
@@ -132,6 +136,18 @@ function parseBots(raw: unknown, players: string[]): string[] {
   return [...new Set(bots)];
 }
 
+/** Each bot seat's profile: a core profile, or 'random' (one picked at the deal). Unnamed seats play goal. */
+function parseBotProfiles(raw: unknown, bots: string[]): Record<string, Profile> {
+  if (raw !== undefined && (typeof raw !== 'object' || raw === null || Array.isArray(raw))) throw new Error('botProfiles must be an object of seat name → profile');
+  const given = (raw ?? {}) as Record<string, unknown>;
+  return Object.fromEntries(bots.map((id) => {
+    const p = given[id] ?? 'goal';
+    if (p === 'random') return [id, PROFILES[Math.floor(Math.random() * PROFILES.length)]];
+    if (typeof p !== 'string' || !PROFILES.includes(p as Profile)) throw new Error(`unknown bot profile ${String(p)} (one of ${PROFILES.join(', ')}, or random)`);
+    return [id, p as Profile];
+  }));
+}
+
 function parseSeed(raw: unknown): number {
   if (raw === undefined) return Math.floor(Math.random() * 2 ** 31);
   if (typeof raw !== 'number' || !Number.isInteger(raw)) throw new Error('seed must be an integer');
@@ -163,17 +179,23 @@ export class Game extends DurableObject<Env> {
   private tokens: TokenMap | undefined;
   private chat: ChatLine[] | undefined;
   private bots: string[] | undefined;
+  private botProfiles: Record<string, Profile> = {};
+  private botMemory: Record<string, BotMemory> = {};
   private limiter = new RateLimiter();
 
   // Hibernation drops in-memory fields between messages; reload lazily on every wake.
   private async load(): Promise<void> {
     if (this.game !== undefined && this.tokens !== undefined && this.chat !== undefined && this.bots !== undefined) return;
-    const [game, tokens, chat, bots] = await Promise.all([
+    const [game, tokens, chat, bots, botProfiles, botMemory] = await Promise.all([
       this.ctx.storage.get<GameState>(STORAGE_GAME),
       this.ctx.storage.get<TokenMap>(STORAGE_TOKENS),
       this.ctx.storage.get<ChatLine[]>(STORAGE_CHAT),
       this.ctx.storage.get<string[]>(STORAGE_BOTS),
+      this.ctx.storage.get<Record<string, Profile>>(STORAGE_BOT_PROFILES),
+      this.ctx.storage.get<Record<string, BotMemory>>(STORAGE_BOT_MEMORY),
     ]);
+    this.botProfiles = botProfiles ?? {};
+    this.botMemory = botMemory ?? {};
     // A game saved by an older engine can't be read by this one; set it aside so the host deals a new game.
     this.game = game && game.version === spec.meta.version ? game : null;
     this.tokens = tokens ?? {};
@@ -205,8 +227,9 @@ export class Game extends DurableObject<Env> {
       const players = parsePlayerNames(body.players);
       const seed = parseSeed(body.seed);
       const game = createGame({ seed, players, options: parseOptions(body.options) });
-      await this.replaceGame({ game, tokens: this.tokensFor(players), bots: parseBots(body.bots, players) });
-      return json({ seed, options: game.options, bots: this.bots, links: this.links(new URL(request.url)) }, 201);
+      const bots = parseBots(body.bots, players);
+      await this.replaceGame({ game, tokens: this.tokensFor(players), bots, botProfiles: parseBotProfiles(body.botProfiles, bots) });
+      return json({ seed, options: game.options, bots: this.bots, botProfiles: this.botProfiles, links: this.links(new URL(request.url)) }, 201);
     } catch (error) {
       if (error instanceof Error) return json({ error: error.message }, 400);
       throw error;
@@ -219,12 +242,14 @@ export class Game extends DurableObject<Env> {
     return Object.fromEntries(playerIds.map((id) => [existing.get(id) ?? randomToken(), id]));
   }
 
-  private async replaceGame(next: { game: GameState; tokens: TokenMap; bots: string[] }): Promise<void> {
+  private async replaceGame(next: { game: GameState; tokens: TokenMap; bots: string[]; botProfiles: Record<string, Profile> }): Promise<void> {
     this.game = next.game;
     this.tokens = next.tokens;
     this.chat = [];
     this.bots = next.bots;
-    await this.ctx.storage.put({ [STORAGE_GAME]: next.game, [STORAGE_TOKENS]: next.tokens, [STORAGE_CHAT]: [], [STORAGE_BOTS]: next.bots });
+    this.botProfiles = next.botProfiles;
+    this.botMemory = Object.fromEntries(next.bots.map((id) => [id, {}]));
+    await this.ctx.storage.put({ [STORAGE_GAME]: next.game, [STORAGE_TOKENS]: next.tokens, [STORAGE_CHAT]: [], [STORAGE_BOTS]: next.bots, [STORAGE_BOT_PROFILES]: this.botProfiles, [STORAGE_BOT_MEMORY]: this.botMemory });
     await this.runBots();
     // Seats that survived the redeal flip straight to round 1; anyone else is cut loose.
     for (const ws of this.ctx.getWebSockets()) {
@@ -247,7 +272,8 @@ export class Game extends DurableObject<Env> {
       phase: this.game.phase,
       round: this.game.round,
       bots: this.bots ?? [],
-      players: this.game.seating.map((id) => ({ id, online: online.includes(id), bot: this.bots?.includes(id) ?? false })),
+      botProfiles: this.botProfiles,
+      players: this.game.seating.map((id) => ({ id, online: online.includes(id), bot: this.bots?.includes(id) ?? false, profile: this.botProfiles[id] })),
     });
   }
 
@@ -329,14 +355,14 @@ export class Game extends DurableObject<Env> {
       moved += 1;
     }
     if (moved === 0) return;
-    await this.ctx.storage.put(STORAGE_GAME, this.game);
+    await this.ctx.storage.put({ [STORAGE_GAME]: this.game, [STORAGE_BOT_MEMORY]: this.botMemory });
     this.broadcastState();
   }
 
   private tryBotMove(playerId: string): boolean {
     if (!this.game) return false;
     try {
-      const move = botMove(this.game, { playerId, rng: Math.random });
+      const move = botMove(this.game, { playerId, rng: Math.random, profile: this.botProfiles[playerId] ?? 'goal', memory: (this.botMemory[playerId] ??= {}) });
       if (!move) return false;
       this.game = applyMove(this.game, { playerId, move });
       return true;

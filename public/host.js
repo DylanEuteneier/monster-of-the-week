@@ -5,15 +5,25 @@
  * game rules. The option pickers are built from the variants in spec.json.
  */
 import { spec, variants } from './engine.js';
+import { PROFILES } from './bots.js';
 
 const KEY_STORAGE = 'motw-host-key';
 const MIN_SEATS = spec.meta.players.min;
 const MAX_SEATS = spec.meta.players.max;
 const DEFAULT_SEATS = ['Ann', 'Bob', 'Cat', 'Dan', 'Eve'];
 const TOAST_MS = 3000;
+/** The bot profiles (public/bots.js), as the host sees them. */
+const PROFILE_LABELS = /** @type {Record<string, string>} */ ({
+  goal: 'goal (adapts; leans to trophies)',
+  'goal-deep': 'goal, deep (looks a reply ahead)',
+  backer: 'backer (adapts; leans to backing a faction)',
+  hunter: 'hunter (trophies only)',
+});
+/** What can sit in a seat: a human, a bot with a random profile, or a bot with a chosen one. */
+const SEAT_KINDS = [['', 'Human'], ['random', 'Bot: random profile'], ...PROFILES.map((p) => [p, `Bot: ${PROFILE_LABELS[p] ?? p}`])];
 
 /** @typedef {{ player: string, url: string }} Link */
-/** @typedef {{ hasGame: boolean, options?: Record<string, string>, phase?: string, round?: number, bots?: string[], players?: { id: string, online: boolean, bot?: boolean }[] }} Status */
+/** @typedef {{ hasGame: boolean, options?: Record<string, string>, phase?: string, round?: number, bots?: string[], botProfiles?: Record<string, string>, players?: { id: string, online: boolean, bot?: boolean, profile?: string }[] }} Status */
 
 const host = {
   key: sessionStorage.getItem(KEY_STORAGE) ?? '',
@@ -25,8 +35,8 @@ const host = {
   links: [],
   /** @type {string[]} */
   seats: DEFAULT_SEATS.slice(),
-  /** @type {boolean[]} */
-  botFlags: DEFAULT_SEATS.map(() => false),
+  /** Each seat: '' for a human, else a bot profile or 'random'. @type {string[]} */
+  botSeats: DEFAULT_SEATS.map(() => ''),
 };
 
 /** @param {Record<string, string> | undefined} options */
@@ -95,7 +105,7 @@ function renderStatus() {
     <div class="player">
       <span class="swatch" style="background:var(--color-border)"></span>
       <span class="player-name"><span class="presence ${player.online ? 'presence-on' : ''}"></span>${esc(player.id)}</span>
-      <span class="player-status">${player.bot ? 'bot' : player.online ? 'connected' : 'away'}</span>
+      <span class="player-status">${player.bot ? `bot · ${esc(PROFILE_LABELS[player.profile ?? ''] ?? player.profile ?? 'goal')}` : player.online ? 'connected' : 'away'}</span>
     </div>`);
   $('status').innerHTML = `<p>Round <b>${status.round}</b> — <b>${esc(status.phase)}</b> · ${esc(optionsLabel(status.options))}</p><div class="player-list">${players.join('')}</div>`;
 }
@@ -104,7 +114,7 @@ function renderSeats() {
   $('seats').innerHTML = host.seats.map((name, idx) => `
     <div class="inline">
       <input type="text" class="grow" data-seat="${idx}" value="${esc(name)}" maxlength="20" placeholder="Seat ${idx + 1}" aria-label="Seat ${idx + 1} name">
-      <label class="inline small"><input type="checkbox" data-bot="${idx}" ${host.botFlags[idx] ? 'checked' : ''}> bot</label>
+      <select data-bot="${idx}" aria-label="Seat ${idx + 1} player">${SEAT_KINDS.map(([id, label]) => `<option value="${id}" ${host.botSeats[idx] === id ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select>
       <button class="btn" type="button" data-action="remove-seat" data-seat="${idx}" ${host.seats.length <= MIN_SEATS ? 'disabled' : ''}>Remove</button>
     </div>`).join('');
   $('deal-note').textContent = host.status?.hasGame && host.status.phase !== 'ended' ? 'A game is in progress; dealing replaces it.' : '';
@@ -148,7 +158,7 @@ async function refresh() {
     if (host.status?.hasGame) {
       host.links = (await call({ path: '/admin/links' })).links;
       host.seats = host.links.map((link) => link.player);
-      host.botFlags = host.seats.map((seat) => host.status?.bots?.includes(seat) ?? false);
+      host.botSeats = host.seats.map((seat) => (host.status?.bots?.includes(seat) ? host.status.botProfiles?.[seat] ?? 'goal' : ''));
     }
     render();
   } catch (error) {
@@ -179,9 +189,9 @@ function readSeatNames() {
   return inputs.map((input) => input.value.trim());
 }
 
-function readBotFlags() {
-  const inputs = /** @type {HTMLInputElement[]} */ ([...document.querySelectorAll('input[data-bot]')]);
-  return inputs.map((input) => input.checked);
+function readBotSeats() {
+  const inputs = /** @type {HTMLSelectElement[]} */ ([...document.querySelectorAll('select[data-bot]')]);
+  return inputs.map((input) => input.value);
 }
 
 function readOptions() {
@@ -199,9 +209,11 @@ async function onDeal(event) {
   if (new Set(players).size !== players.length) return toast('Seat names must be unique');
   if (players.length < MIN_SEATS || players.length > MAX_SEATS) return toast(`A game seats ${MIN_SEATS}–${MAX_SEATS}`);
   const seedRaw = /** @type {HTMLInputElement} */ ($('seed-input')).value.trim();
-  const bots = players.filter((_, idx) => readBotFlags()[idx]);
+  const kinds = readBotSeats();
+  const bots = players.filter((_, idx) => kinds[idx]);
   if (bots.length >= players.length) return toast('At least one seat must be human');
-  const body = { players, bots, force: true, options: readOptions(), ...(seedRaw ? { seed: Number(seedRaw) } : {}) };
+  const botProfiles = Object.fromEntries(players.map((id, idx) => [id, kinds[idx]]).filter(([, kind]) => kind));
+  const body = { players, bots, botProfiles, force: true, options: readOptions(), ...(seedRaw ? { seed: Number(seedRaw) } : {}) };
   const button = /** @type {HTMLButtonElement} */ ($('deal-button'));
   button.disabled = true;
   try {
@@ -236,13 +248,13 @@ function onClick(event) {
   if (action === 'copy-all') return void copy(host.links.map((link) => `${link.player}: ${link.url}`).join('\n'));
   if (action === 'add-seat' && host.seats.length < MAX_SEATS) {
     host.seats = [...readSeatNames(), ''];
-    host.botFlags = [...readBotFlags(), false];
+    host.botSeats = [...readBotSeats(), ''];
     return renderSeats();
   }
   if (action === 'remove-seat') {
     const removed = Number(target.dataset.seat);
     host.seats = readSeatNames().filter((_, idx) => idx !== removed);
-    host.botFlags = readBotFlags().filter((_, idx) => idx !== removed);
+    host.botSeats = readBotSeats().filter((_, idx) => idx !== removed);
     return renderSeats();
   }
 }
