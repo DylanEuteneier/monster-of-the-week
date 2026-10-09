@@ -52,7 +52,7 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { createGame, applyMove, cardById, spec, totalPresence, resolveFight, growthDue, sampleTarget, validate } from '../public/engine.js';
+import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, validate } from '../public/engine.js';
 import { PROFILES, botMove, fast } from '../public/bots.js';
 import { seededRng, chance, measureState, MAX_MOVES } from './lib.js';
 
@@ -63,7 +63,7 @@ import { seededRng, chance, measureState, MAX_MOVES } from './lib.js';
 /** @typedef {{ r: number, opening: boolean, profile: string, benefit: Record<string, number | null> }} Probe */
 /**
  * @typedef {{ g: number, side: 'island' | 'invaders', seats: Record<string, string>, groups: Record<string, string>, winners: string[], deck: string[],
- *   presence: number[], scorched: number, trophies: Record<string, number>, trophiesByColour?: Record<string, Record<string, number>>, scores?: Record<string, number>, goals?: Record<string, string>[], economy: Economy[], plays: Play[], held: string[], unplayed: string[],
+ *   presence: number[], scorched: number, trophies: Record<string, number>, trophiesByColour?: Record<string, Record<string, number>>, scores?: Record<string, number>, goals?: Record<string, string>[], wonBy?: string[], standing?: Record<string, Record<string, number>>, presenceBy?: Record<string, number>, economy: Economy[], plays: Play[], held: string[], unplayed: string[],
  *   playable: Record<string, [number, number]>, probes: Probe[], forecasts: { r: number, seat: string, p: number }[] }} GameRecord
  */
 
@@ -360,7 +360,7 @@ else {
     parentPort?.postMessage(/** @type {GameRecord} */ ({
       g, side: result.side, seats, groups: Object.fromEntries(s.seating.map((p) => [p, s.players[p].group])), winners: result.players, deck: s.deck ?? [],
       presence, scorched: Object.values(s.board).filter((p) => p.scorched).length, trophies: Object.fromEntries(s.seating.map((p) => [p, Object.values(s.players[p].trophies).reduce((a, b) => a + b, 0)])),
-      trophiesByColour: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].trophies }])), scores: s.result?.scores ?? {}, goals,
+      trophiesByColour: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].trophies }])), scores: s.result?.scores ?? {}, goals, wonBy: s.result?.factions ?? [], standing: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].standing }])), presenceBy: Object.fromEntries(s.factions.map((f) => [f, presenceOf(s, f)])),
       economy, plays, held, unplayed, playable, probes, forecasts,
     }));
   }
