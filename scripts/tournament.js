@@ -53,7 +53,7 @@ import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createGame, applyMove, cardById, spec, totalPresence, resolveFight, growthDue, sampleTarget, validate } from '../public/engine.js';
-import { PROFILES, botMove } from '../public/bots.js';
+import { PROFILES, botMove, fast } from '../public/bots.js';
 import { seededRng, chance, measureState, MAX_MOVES } from './lib.js';
 
 /** @typedef {import('../public/bots.js').Profile} Profile @typedef {import('../public/engine.js').GameState} GameState */
@@ -320,7 +320,7 @@ else {
           const opening = !s.opened && pid === s.first;
           if ((d.probe.open && opening) || (d.probe.rate > 0 && side() < d.probe.rate)) { // probeOpen=1: every round's first play too (the marked cards' moment)
             const pick = probeCards.map((/** @type {string} */ c) => ({ c, k: side() })).sort((/** @type {{ k: number }} */ a, /** @type {{ k: number }} */ b) => a.k - b.k).slice(0, d.probe.sample).map((/** @type {{ c: string }} */ x) => x.c);
-            probes.push({ r: s.round, opening: !s.opened && pid === s.first, profile: seats[pid], benefit: measureState(s, pick, { playouts: d.probe.playouts, targets: d.probe.targets, bots: d.probe.lite ? Object.fromEntries(Object.entries(seats).map(([k, v]) => [k, String(v).replace(/sim=\d+/, 'sim=0')])) : seats, memories: memory, seed: d.seed * 100003 + g * 101 + n }) });
+            probes.push({ r: s.round, opening: !s.opened && pid === s.first, profile: seats[pid], benefit: measureState(s, pick, { playouts: d.probe.playouts, targets: d.probe.targets, bots: d.probe.lite ? Object.fromEntries(Object.entries(seats).map(([k, v]) => [k, fast(String(v))])) : seats, memories: memory, seed: d.seed * 100003 + g * 101 + n }) });
           }
         }
         const prev = s;

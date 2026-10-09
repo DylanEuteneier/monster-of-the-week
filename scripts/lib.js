@@ -38,7 +38,7 @@ export const chance = (s, pid) => {
  * move; the first that has a move makes it.
  * @param {GameState} state @param {() => number} rng
  * @param {(game: GameState) => void} [onRound]
- * @param {Record<string, Profile>} [profiles]  seat → bot profile (default goal)
+ * @param {Record<string, string>} [profiles]  seat → bot profile (default goal; persona overrides allowed)
  */
 export function playOut(state, rng, onRound, profiles = {}) {
   let game = state;
@@ -49,7 +49,7 @@ export function playOut(state, rng, onRound, profiles = {}) {
     if (game.phase === 'ended') return game;
     let moved = false;
     for (const playerId of game.seating) {
-      const move = botMove(game, { playerId, rng, profile: profiles[playerId] ?? 'goal', memory: memory[playerId] });
+      const move = botMove(game, { playerId, rng, profile: /** @type {Profile} */ (profiles[playerId] ?? 'goal'), memory: memory[playerId] });
       if (!move) continue;
       game = applyMove(game, { playerId, move });
       moved = true;

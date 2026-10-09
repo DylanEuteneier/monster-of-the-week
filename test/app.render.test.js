@@ -7,7 +7,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, applyMove, playerView, factionById } from '../public/engine.js';
-import { botMove } from '../public/bots.js';
+import { botMove, fast } from '../public/bots.js';
 
 /** @typedef {import('../public/engine.js').GameState} GameState */
 
@@ -90,9 +90,9 @@ const html = (id) => elements.get(id)?.innerHTML ?? '';
 function playUntil(state, stop) {
   let s = state;
   for (let i = 0; i < 20000 && !stop(s); i++) {
-    const pid = s.seating.find((id) => botMove(s, { playerId: id, rng: Math.random }));
+    const pid = s.seating.find((id) => botMove(s, { playerId: id, rng: Math.random, profile: /** @type {import('../public/bots.js').Profile} */ (fast('goal')) }));
     if (!pid) break;
-    const move = botMove(s, { playerId: pid, rng: Math.random });
+    const move = botMove(s, { playerId: pid, rng: Math.random, profile: /** @type {import('../public/bots.js').Profile} */ (fast('goal')) });
     if (move) s = applyMove(s, { playerId: pid, move });
   }
   return s;

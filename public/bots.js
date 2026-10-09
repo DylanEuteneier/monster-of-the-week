@@ -52,6 +52,9 @@ function spend(state, cardId, at = (spots) => spots[0]) {
 
 export const PROFILES = /** @type {Profile[]} */ (['goal', 'goal-deep', 'backer', 'hunter']);
 
+/** A profile with the slow search switched off (play-outs, probes' imagined futures, tests): the same persona, one move ahead, sampled targets. @param {string} profile */
+export const fast = (profile) => (personaOf(profile) ? `${profile}${profile.includes(':') ? ',' : ':'}sim=0,enum=0,combo=0` : profile);
+
 /** Tuning for the bots, not rules. */
 const SEARCH = {
   targets: 8,         // targets sampled per card
@@ -60,8 +63,9 @@ const SEARCH = {
 };
 /** Listing targets (persona enum): up to this many per card; past it, sampling fills in. */
 const LIST = { cap: 40 };
-/** The play-out search (persona sim): its best moves one move ahead, each played to the round's end this many times. */
+/** The play-out search (persona sim): its best moves one move ahead, each played to the round's end this many times, by fast goal bots. */
 const SIM = { keep: 6, playouts: 4, maxMoves: 400 };
+const ROLLOUT = 'goal:sim=0,enum=0,combo=0';
 /** The reply lookahead (goal-deep). */
 const DEEP = {
   targets: 12,       // targets sampled per card for its own move
@@ -188,9 +192,11 @@ function hunterValue(state, pid) {
 const PERSONAS = {
   // linear 1: counting island trophies as hunter does closed hunter's lead (challenger 32% against 20%, 2026-10-08).
   // threat 1: trophy players act against a rival pulling ahead with a faction (designer); hunter fell from 41% to 20% against it (2026-10-08).
-  goal: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1 },
-  'goal-deep': { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1 },
-  backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1 },
+  // Search switches standard from 2026-10-09 (challengers, 200 games each, seat 5 against backer, backer, goal, goal; an even share 20%):
+  // sim 49.9%, sets=2 29.3% (sets=1 26.0%, sets=4 21.0%), enum 24.8%, combo 24.3%, hidden 21.5%; all together 57.9%.
+  goal: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2 },
+  'goal-deep': { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2 },
+  backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2 },
 };
 
 /**
@@ -480,7 +486,7 @@ function simPick(state, pid, rng, moves, ev, memory) {
   return best;
 }
 
-/** Standard goal bots play from here to the end of this round's play. @param {GameState} state @param {number} seed @param {string} pid @param {BotMemory} [memory] */
+/** Fast goal bots (ROLLOUT) play from here to the end of this round's play. @param {GameState} state @param {number} seed @param {string} pid @param {BotMemory} [memory] */
 function playOutRound(state, seed, pid, memory) {
   let x = seed | 0;
   const r = () => { x = (Math.imul(x, 1664525) + 1013904223) | 0; return (x >>> 0) / 2 ** 32; };
@@ -491,7 +497,7 @@ function playOutRound(state, seed, pid, memory) {
   for (let n = 0; n < SIM.maxMoves && s.phase === 'play' && s.round === round; n++) {
     let moved = false;
     for (const id of s.seating) {
-      const m = playMove(s, id, r, 'goal', mem[id]);
+      const m = playMove(s, id, r, ROLLOUT, mem[id]);
       if (!m) continue;
       s = applyMove(s, { playerId: id, move: m });
       moved = true;
