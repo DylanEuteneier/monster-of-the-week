@@ -31,7 +31,7 @@
  *   search (sim) off, which would otherwise nest play-outs inside play-outs.
  *
  *   node scripts/tournament.js [games=50] [seed=1] [profiles=backer,backer,goal,goal,goal]
- *     [log=games.jsonl] [out=summary.json] [strength=card-strength.json] [probe=0] [probeOpen=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [probeLite=0] [option=value ...]
+ *     [log=games.jsonl] [out=summary.json] [strength=card-strength.json] [probe=0] [probeOpen=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [probeLite=0] [workers=cores] [option=value ...]
  *
  * - log= appends one line per finished game; a run with the same log resumes,
  *   skipping games already in it. out= is rewritten after every game with the
@@ -222,9 +222,9 @@ function main() {
   const [gamesArg = '50', seedArg = '1'] = args.filter((a) => !a.includes('='));
   const pairs = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
   const list = (pairs.profiles ?? 'backer,backer,goal,goal,goal').split(pairs.profiles?.includes(';') ? ';' : ',');
-  const logFile = pairs.log, outFile = pairs.out, strengthFile = pairs.strength;
+  const logFile = pairs.log, outFile = pairs.out, strengthFile = pairs.strength, workerCap = Number(pairs.workers ?? 0);
   const probe = { rate: Number(pairs.probe ?? 0), open: pairs.probeOpen === '1', sample: Number(pairs.probeSample ?? 6), cards: pairs.probeCards?.split(','), playouts: Number(pairs.probePlayouts ?? 2), targets: Number(pairs.probeTargets ?? 2), lite: pairs.probeLite === '1' };
-  for (const k of ['profiles', 'log', 'out', 'strength', 'probe', 'probeOpen', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets', 'probeLite']) delete pairs[k];
+  for (const k of ['profiles', 'log', 'out', 'strength', 'probe', 'probeOpen', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets', 'probeLite', 'workers']) delete pairs[k];
   for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:lean=0)`);
   const games = Number(gamesArg), seed = Number(seedArg);
   /** @type {GameRecord[]} */
@@ -234,7 +234,7 @@ function main() {
   if (records.length) process.stderr.write(`resuming: ${records.length} games already in ${logFile}\n`);
   const write = () => { if (outFile) writeFileSync(outFile, `${JSON.stringify(summarise(records, list, pairs), null, 2)}\n`); };
   if (!todo.length) { write(); report(); return; }
-  const workers = Math.min(availableParallelism(), todo.length);
+  const workers = Math.min(workerCap || availableParallelism(), todo.length); // workers=N: fewer, so several small runs can share the cores
   let running = workers;
   const t0 = Date.now();
   for (let w = 0; w < workers; w++) {
