@@ -29,7 +29,7 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, sampleTarget, playableResponses, validate, applyMove, resolveFight, totalPresence, presenceOf, influenceSpots, growthDue,
+  cardById, sampleTarget, listTargets, playableResponses, validate, applyMove, resolveFight, totalPresence, presenceOf, influenceSpots, growthDue,
 } from './engine.js';
 
 /** @typedef {import('./engine.js').GameState} GameState */
@@ -58,6 +58,10 @@ const SEARCH = {
   noise: 0.15,        // random jitter on each move's value, so bots vary
   respondMargin: 0.4, // a response must beat holding the card by this much
 };
+/** Listing targets (persona enum): up to this many per card; past it, sampling fills in. */
+const LIST = { cap: 40 };
+/** The play-out search (persona sim): its best moves one move ahead, each played to the round's end this many times. */
+const SIM = { keep: 6, playouts: 4, maxMoves: 400 };
 /** The reply lookahead (goal-deep). */
 const DEEP = {
   targets: 12,       // targets sampled per card for its own move
@@ -91,11 +95,18 @@ function contested(state) {
   return Object.keys(state.board).filter((loc) => !state.board[loc].scorched && Object.values(state.board[loc].tokens).filter((n) => n > 0).length === 2);
 }
 
-/** The board after this round's fights, as they stand now (tokens unknown to the bot are ignored). @param {GameState} state */
-function projectFights(state) {
+/**
+ * The board after this round's fights, as they stand now. Face-down tokens:
+ * by default every one is ignored. For `pid` (persona hidden), its own count
+ * as they are, and rivals' as they are (`rivals` true) or ignored (false); the
+ * caller averages the two, a rival's token being as likely a bluff as not.
+ * @param {GameState} state @param {string} [pid] @param {boolean} [rivals]
+ */
+function projectFights(state, pid = undefined, rivals = false) {
   let s = state;
   for (const loc of contested(state)) {
-    if (s.board[loc].token) {
+    const tok = s.board[loc].token;
+    if (tok && !(pid !== undefined && (tok.owner === pid || rivals))) {
       s = structuredClone(s);
       s.board[loc].token = null;
     }
@@ -163,7 +174,12 @@ function hunterValue(state, pid) {
  *   counts.
  * - threat: how much the best rival's chance of winning through the invaders
  *   counts against it (designer: trophy players block a lone backer).
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number }} Persona
+ * Search (switches, 0 or 1, tested as challengers before they become standard):
+ * - hidden: count face-down tokens, its own as they are, a rival's as even odds.
+ * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
+ * - sim: choose by playing each of its best moves out to the round's end.
+ * - combo: in the draft, value a card with the cards already kept.
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number }} Persona
  */
 /** @type {Record<'goal' | 'goal-deep' | 'backer', Persona>} */
 const PERSONAS = {
@@ -200,10 +216,18 @@ const TABLE = { backing: 8, base: 0.3, step: 0.15 };
  * leading it (standing less trophies against the best rival). `asIsland`: my
  * weakest colour, then the next, against the best rival (TS2, WT1). Margins
  * sharpen as rounds run out.
- * @param {GameState} state @param {string} pid
+ * @param {GameState} state @param {string} pid @param {boolean} [hidden]  persona hidden: count face-down tokens (see projectFights)
  */
-export function winChances(state, pid) {
-  const s = projectFights(state);
+export function winChances(state, pid, hidden = false) {
+  if (!hidden) return chancesAfter(projectFights(state), pid);
+  const mine = chancesAfter(projectFights(state, pid, false), pid);
+  if (!Object.values(state.board).some((place) => place.token && place.token.owner !== pid)) return mine;
+  const theirs = chancesAfter(projectFights(state, pid, true), pid);
+  return /** @type {typeof mine} */ (Object.fromEntries(Object.entries(mine).map(([k, v]) => [k, (v + /** @type {Record<string, number>} */ (/** @type {unknown} */ (theirs))[k]) / 2])));
+}
+
+/** winChances on a board whose fights are already projected. @param {GameState} s @param {string} pid */
+function chancesAfter(s, pid) {
   const roundsLeft = Math.max(0, Number(s.options.rounds) - s.round);
   const threshold = Number(s.options.threshold);
   let grow = 0;
@@ -239,7 +263,7 @@ export function winChances(state, pid) {
 
 /** A goal bot's value: its win chance, weighted toward its goal, plus its margins. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
 function goalValue(state, pid, goal, persona) {
-  const c = winChances(state, pid);
+  const c = winChances(state, pid, !!persona.hidden);
   // Margins are added on their own, never scaled by an ending's chance: a margin can be negative, and scaling it would
   // reward a bot that is behind for making that ending less likely (2026-10-08 fix).
   const inv = c.pInvaders * 10 * c.asInvaders + persona.margin * c.marginInvaders;
@@ -257,7 +281,7 @@ function goalValue(state, pid, goal, persona) {
  * @param {GameState} state @param {string} pid @param {Persona} persona @param {BotMemory} [memory] @param {() => number} [rng] @returns {Goal}
  */
 export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
-  const c = winChances(state, pid);
+  const c = winChances(state, pid, !!persona.hidden);
   const push = persona.push * (c.roundsLeft + 1);
   const reachInv = (1 - c.known) * Math.min(1, c.prior + 0.15) + c.known * sigmoid((c.projected - c.threshold - 0.5 + push) / c.spreadP);
   const reachIsl = (1 - c.known) * Math.min(1, 1 - c.prior + 0.15) + c.known * (1 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spreadP));
@@ -276,7 +300,7 @@ export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
 // ---------------------------------------------------------------------------
 
 /** Every move worth considering on this bot's turn. @param {GameState} state @param {string} pid @param {() => number} rng */
-function candidates(state, pid, rng, targets = SEARCH.targets) {
+function candidates(state, pid, rng, targets = SEARCH.targets, list = false) {
   const p = state.players[pid];
   /** @type {Move[]} */
   const moves = [{ type: 'pass' }];
@@ -290,6 +314,12 @@ function candidates(state, pid, rng, targets = SEARCH.targets) {
     if (!card.action) continue;
     /** @type {Set<string>} */
     const seen = new Set();
+    if (list) {
+      const l = listTargets(state, pid, cardId, LIST.cap);
+      for (const target of l.targets) { seen.add(JSON.stringify(target)); moves.push({ type: 'play', card: cardId, use: 'action', target }); }
+      if (l.complete) continue;
+      targets += seen.size;
+    }
     for (let i = 0; i < targets * 2 && seen.size < targets; i++) {
       const target = sampleTarget(state, pid, cardId, rng);
       const key = JSON.stringify(target);
@@ -324,7 +354,7 @@ function playMove(state, pid, rng, profile, memory) {
     // Keep the cards whose best play, now, is worth the most.
     const pool = [...p.kept, ...p.batch];
     const base = ev(state);
-    const worth = pool.map((cardId) => ({ cardId, v: cardWorth(state, pid, cardId, rng, ev, base) + (rng() - 0.5) * SEARCH.noise }));
+    const worth = pool.map((cardId) => ({ cardId, v: (persona?.combo ? comboWorth(state, pid, cardId, p.kept, rng, ev, base) : cardWorth(state, pid, cardId, rng, ev, base)) + (rng() - 0.5) * SEARCH.noise }));
     worth.sort((a, b) => b.v - a.v);
     return legal(state, pid, { type: 'pick', keep: worth.slice(0, p.kept.length + 1).map((w) => w.cardId) });
   }
@@ -362,8 +392,9 @@ function playMove(state, pid, rng, profile, memory) {
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
   const deep = profile.split(':')[0] === 'goal-deep';
-  const moves = candidates(state, pid, rng, deep ? DEEP.targets : SEARCH.targets);
+  const moves = candidates(state, pid, rng, deep ? DEEP.targets : SEARCH.targets, !!persona?.enum);
   if (deep) return deepPick(state, pid, rng, moves, ev);
+  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
     const v = value(after(state, pid, move));
@@ -403,6 +434,52 @@ function deepPick(state, pid, rng, moves, ev) {
   return best;
 }
 
+/**
+ * The play-out search (persona sim): its best moves one move ahead (passing
+ * always among them), each played out to the end of the round's play by
+ * standard goal bots several times, scored for this bot at the end. Each
+ * playout's randomness is shared across the moves, so they meet the same
+ * futures. Passing and holding a card are judged like any other move.
+ * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory} [memory]
+ */
+function simPick(state, pid, rng, moves, ev, memory) {
+  const ranked = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) }; }).sort((a, b) => b.v - a.v);
+  const short = ranked.slice(0, SIM.keep);
+  const pass = ranked.find((r) => r.move.type === 'pass');
+  if (pass && !short.includes(pass)) short.push(pass);
+  const seeds = Array.from({ length: SIM.playouts }, () => Math.floor(rng() * 2 ** 31));
+  let best = short[0]?.move ?? null, bestV = -Infinity;
+  for (const { move, s } of short) {
+    let total = 0;
+    for (const seed of seeds) total += ev(playOutRound(s, seed, pid, memory));
+    const v = total / seeds.length;
+    if (v > bestV) { best = move; bestV = v; }
+  }
+  return best;
+}
+
+/** Standard goal bots play from here to the end of this round's play. @param {GameState} state @param {number} seed @param {string} pid @param {BotMemory} [memory] */
+function playOutRound(state, seed, pid, memory) {
+  let x = seed | 0;
+  const r = () => { x = (Math.imul(x, 1664525) + 1013904223) | 0; return (x >>> 0) / 2 ** 32; };
+  /** @type {Record<string, BotMemory>} */
+  const mem = Object.fromEntries(state.seating.map((id) => [id, id === pid && memory ? { ...memory } : {}]));
+  let s = state;
+  const round = s.round;
+  for (let n = 0; n < SIM.maxMoves && s.phase === 'play' && s.round === round; n++) {
+    let moved = false;
+    for (const id of s.seating) {
+      const m = playMove(s, id, r, 'goal', mem[id]);
+      if (!m) continue;
+      s = applyMove(s, { playerId: id, move: m });
+      moved = true;
+      break;
+    }
+    if (!moved) break;
+  }
+  return s;
+}
+
 /** How much a card adds, played as well as the bot can find right now. @param {GameState} state @param {string} pid @param {string} cardId @param {() => number} rng @param {Ev} ev @param {number} base */
 function cardWorth(state, pid, cardId, rng, ev, base) {
   const card = cardById(cardId);
@@ -427,4 +504,50 @@ function cardWorth(state, pid, cardId, rng, ev, base) {
     }
   }
   return best + (card.marked ? 0.2 : 0);
+}
+
+/**
+ * In the draft (persona combo): a card's worth with the cards already kept.
+ * Its best play alone, or after the best play of a kept card (whichever adds
+ * more over that kept card's play on its own), so pairs that work together
+ * (bait and a trap, a gather and a claim) count.
+ * @param {GameState} state @param {string} pid @param {string} cardId @param {string[]} kept @param {() => number} rng @param {Ev} ev @param {number} base
+ */
+function comboWorth(state, pid, cardId, kept, rng, ev, base) {
+  let best = cardWorth(state, pid, cardId, rng, ev, base);
+  for (const k of kept.filter((id) => id !== cardId)) {
+    const s = structuredClone(state);
+    s.phase = 'play';
+    s.turn = s.seating.indexOf(pid);
+    s.opened = true;
+    s.pending = null;
+    s.players[pid].hand = [k, cardId];
+    const firsts = bestPlays(s, pid, k, rng, ev);
+    if (!firsts.length) continue;
+    const alone = firsts[0].v;
+    for (const f of firsts.slice(0, 2)) {
+      const s2 = structuredClone(f.s);
+      s2.phase = 'play';
+      s2.turn = s2.seating.indexOf(pid);
+      s2.pending = null;
+      const seconds = bestPlays(s2, pid, cardId, rng, ev);
+      if (seconds.length) best = Math.max(best, seconds[0].v - alone);
+    }
+  }
+  return best + (cardById(cardId).marked ? 0.2 : 0);
+}
+
+/** A card's best few plays for its action, best first. @param {GameState} s @param {string} pid @param {string} cardId @param {() => number} rng @param {Ev} ev */
+function bestPlays(s, pid, cardId, rng, ev) {
+  if (!cardById(cardId).action) return [];
+  const out = [];
+  for (let i = 0; i < 4; i++) {
+    const target = sampleTarget(s, pid, cardId, rng);
+    if (!target) continue;
+    const move = /** @type {Move} */ ({ type: 'play', card: cardId, use: 'action', target });
+    if (!validate(s, { playerId: pid, move }).ok) continue;
+    const after2 = after(s, pid, move);
+    out.push({ s: after2, v: ev(after2) });
+  }
+  return out.sort((a, b) => b.v - a.v);
 }

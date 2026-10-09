@@ -2256,20 +2256,54 @@ function walkTarget(state, pid, cardId, mode, rng) {
     if (c.kind === 'mode') { t = { mode }; continue; }
     if ('optional' in c && c.optional && rng() < 0.3) return finishWalk(t);
     if (!('options' in c) || !c.options.length) return null;
-    const o = pick(/** @type {any[]} */ (c.options));
-    if (c.kind === 'faction') t = { ...t, [c.key ?? 'faction']: o };
-    else if (c.kind === 'direction') t = { ...t, direction: o };
-    else if (c.kind === 'split') t = { ...t, split: { ...(t.split ?? {}), [o]: (t.split?.[o] ?? 0) + 1 } };
-    else if (c.kind === 'group') {
-      if (c.key === 'lure') t = { ...t, faction: o.faction, from: [o.location] };
-      else if (c.key === 'move') t = { ...t, moves: [...(t.moves ?? []), { location: o.location, faction: o.faction, to: '' }] };
-      else t = { ...t, location: o.location, faction: o.faction };
-    } else if (c.key === 'path') t = { ...t, path: [...(t.path ?? []), o] };
-    else if (c.key === 'from') t = { ...t, from: [...(t.from ?? []), o] };
-    else if (c.key === 'to' && t.moves?.length && !t.moves[t.moves.length - 1].to) t = { ...t, moves: t.moves.map((m, i, a) => (i === a.length - 1 ? { ...m, to: o } : m)) };
-    else t = { ...t, [c.key]: o };
+    t = chooseStep(t, c, pick(/** @type {any[]} */ (c.options)));
   }
   return null;
+}
+
+/** A target with one more choice made. @param {Target} t @param {Choice} c @param {any} o @returns {Target} */
+function chooseStep(t, c, o) {
+  if (c.kind === 'faction') return { ...t, [c.key ?? 'faction']: o };
+  if (c.kind === 'direction') return { ...t, direction: o };
+  if (c.kind === 'split') return { ...t, split: { ...(t.split ?? {}), [o]: (t.split?.[o] ?? 0) + 1 } };
+  if (c.kind === 'group') {
+    if (c.key === 'lure') return { ...t, faction: o.faction, from: [o.location] };
+    if (c.key === 'move') return { ...t, moves: [...(t.moves ?? []), { location: o.location, faction: o.faction, to: '' }] };
+    return { ...t, location: o.location, faction: o.faction };
+  }
+  if (!('key' in c)) return t;
+  if (c.key === 'path') return { ...t, path: [...(t.path ?? []), o] };
+  if (c.key === 'from') return { ...t, from: [...(t.from ?? []), o] };
+  if (c.key === 'to' && t.moves?.length && !t.moves[t.moves.length - 1].to) return { ...t, moves: t.moves.map((m, i, a) => (i === a.length - 1 ? { ...m, to: o } : m)) };
+  return { ...t, [c.key]: o };
+}
+
+/**
+ * For bots: the legal targets of a card, listed by walking every choice the
+ * table offers, up to `cap`. `complete` is false when the list was cut short
+ * (then a bot should sample more besides). Not a rule.
+ * @param {GameState} state @param {string} pid @param {string} cardId @param {number} cap
+ * @returns {{ targets: Target[], complete: boolean }}
+ */
+export function listTargets(state, pid, cardId, cap) {
+  const card = cardById(cardId);
+  /** @type {Target[]} */
+  const stack = copied(state, card).suit ? [{ mode: 'faction' }, { mode: 'location' }] : [{}];
+  /** @type {Map<string, Target>} */
+  const found = new Map();
+  let visits = 0;
+  const keep = (/** @type {Target} */ t) => { const k = JSON.stringify(t); if (!found.has(k) && !checkTarget(state, pid, card, t)) found.set(k, t); };
+  while (stack.length && found.size < cap) {
+    if (++visits > cap * 40) return { targets: [...found.values()], complete: false };
+    const t = /** @type {Target} */ (stack.pop());
+    const c = nextChoice(state, pid, cardId, t);
+    if (c.kind === 'done') { keep(t); continue; }
+    if (c.kind === 'mode') continue;
+    if ('optional' in c && c.optional) keep(t);
+    if (!('options' in c)) continue;
+    for (const o of /** @type {any[]} */ (c.options)) stack.push(chooseStep(t, c, o));
+  }
+  return { targets: [...found.values()], complete: stack.length === 0 };
 }
 /** @param {Target} t */
 const finishWalk = (t) => t;
