@@ -141,7 +141,7 @@ function parseBotProfiles(raw: unknown, bots: string[]): Record<string, Profile>
   if (raw !== undefined && (typeof raw !== 'object' || raw === null || Array.isArray(raw))) throw new Error('botProfiles must be an object of seat name → profile');
   const given = (raw ?? {}) as Record<string, unknown>;
   return Object.fromEntries(bots.map((id) => {
-    const p = given[id] ?? 'goal';
+    const p = given[id] ?? 'trophy';
     if (p === 'random') return [id, PROFILES[Math.floor(Math.random() * PROFILES.length)]];
     if (typeof p !== 'string' || !PROFILES.includes(p as Profile)) throw new Error(`unknown bot profile ${String(p)} (one of ${PROFILES.join(', ')}, or random)`);
     return [id, p as Profile];
@@ -362,7 +362,7 @@ export class Game extends DurableObject<Env> {
   private tryBotMove(playerId: string): boolean {
     if (!this.game) return false;
     try {
-      const move = botMove(this.game, { playerId, rng: Math.random, profile: this.botProfiles[playerId] ?? 'goal', memory: (this.botMemory[playerId] ??= {}), table: Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'goal'])), memories: this.botMemory });
+      const move = botMove(this.game, { playerId, rng: Math.random, profile: this.botProfiles[playerId] ?? 'trophy', memory: (this.botMemory[playerId] ??= {}), table: Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'trophy'])), memories: this.botMemory });
       if (!move) return false;
       this.game = applyMove(this.game, { playerId, move });
       return true;

@@ -90,9 +90,9 @@ const html = (id) => elements.get(id)?.innerHTML ?? '';
 function playUntil(state, stop) {
   let s = state;
   for (let i = 0; i < 20000 && !stop(s); i++) {
-    const pid = s.seating.find((id) => botMove(s, { playerId: id, rng: Math.random, profile: /** @type {import('../public/bots.js').Profile} */ (fast('goal')) }));
+    const pid = s.seating.find((id) => botMove(s, { playerId: id, rng: Math.random, profile: /** @type {import('../public/bots.js').Profile} */ (fast('trophy')) }));
     if (!pid) break;
-    const move = botMove(s, { playerId: pid, rng: Math.random, profile: /** @type {import('../public/bots.js').Profile} */ (fast('goal')) });
+    const move = botMove(s, { playerId: pid, rng: Math.random, profile: /** @type {import('../public/bots.js').Profile} */ (fast('trophy')) });
     if (move) s = applyMove(s, { playerId: pid, move });
   }
   return s;

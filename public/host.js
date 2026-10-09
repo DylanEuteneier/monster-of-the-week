@@ -14,7 +14,7 @@ const DEFAULT_SEATS = ['Ann', 'Bob', 'Cat', 'Dan', 'Eve'];
 const TOAST_MS = 3000;
 /** The bot profiles (public/bots.js), as the host sees them. */
 const PROFILE_LABELS = /** @type {Record<string, string>} */ ({
-  goal: 'goal (adapts; leans to trophies)',
+  trophy: 'trophy (adapts; plays for trophy sets)',
   backer: 'backer (adapts; leans to backing a faction)',
 });
 /** What can sit in a seat: a human, a bot with a random profile, or a bot with a chosen one. */
@@ -103,7 +103,7 @@ function renderStatus() {
     <div class="player">
       <span class="swatch" style="background:var(--color-border)"></span>
       <span class="player-name"><span class="presence ${player.online ? 'presence-on' : ''}"></span>${esc(player.id)}</span>
-      <span class="player-status">${player.bot ? `bot · ${esc(PROFILE_LABELS[player.profile ?? ''] ?? player.profile ?? 'goal')}` : player.online ? 'connected' : 'away'}</span>
+      <span class="player-status">${player.bot ? `bot · ${esc(PROFILE_LABELS[player.profile ?? ''] ?? player.profile ?? 'trophy')}` : player.online ? 'connected' : 'away'}</span>
     </div>`);
   $('status').innerHTML = `<p>Round <b>${status.round}</b> — <b>${esc(status.phase)}</b> · ${esc(optionsLabel(status.options))}</p><div class="player-list">${players.join('')}</div>`;
 }
@@ -156,7 +156,7 @@ async function refresh() {
     if (host.status?.hasGame) {
       host.links = (await call({ path: '/admin/links' })).links;
       host.seats = host.links.map((link) => link.player);
-      host.botSeats = host.seats.map((seat) => (host.status?.bots?.includes(seat) ? host.status.botProfiles?.[seat] ?? 'goal' : ''));
+      host.botSeats = host.seats.map((seat) => (host.status?.bots?.includes(seat) ? host.status.botProfiles?.[seat] ?? 'trophy' : ''));
     }
     render();
   } catch (error) {

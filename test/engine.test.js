@@ -226,7 +226,7 @@ test('a lone faction with 2 or more tokens grows, aligned locations one extra (G
 test('bots play whole games of legal moves at every player count, and a winner is named', () => {
   for (const n of [3, 4, 5]) {
     const g = newGame(n * 7, PLAYERS.slice(0, n));
-    const end = playOut(g, rng(n), undefined, Object.fromEntries(g.seating.map((pid) => [pid, fast('goal')])));
+    const end = playOut(g, rng(n), undefined, Object.fromEntries(g.seating.map((pid) => [pid, fast('trophy')])));
     assert.equal(end.phase, 'ended');
     assert.ok(end.result && end.result.players.length >= 1);
   }
@@ -519,7 +519,7 @@ test('Plan B moves only your own influence, up to 3, to one location', () => {
 test('a game saved before an option existed plays on with its default', () => {
   const s = newGame(7);
   delete (/** @type {Record<string, string>} */ (s.options)).influencePerMove;
-  const end = playOut(s, rng(7), undefined, Object.fromEntries(s.seating.map((pid) => [pid, fast('goal')])));
+  const end = playOut(s, rng(7), undefined, Object.fromEntries(s.seating.map((pid) => [pid, fast('trophy')])));
   assert.equal(end.phase, 'ended');
   for (const pid of end.seating) for (const n of Object.values(end.players[pid].standing)) assert.ok(Number.isFinite(n));
 });

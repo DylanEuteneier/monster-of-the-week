@@ -30,7 +30,7 @@
  *   probes' imagined futures are played by the same bots with the play-out
  *   search (sim) off, which would otherwise nest play-outs inside play-outs.
  *
- *   node scripts/tournament.js [games=50] [seed=1] [profiles=backer,backer,goal,goal,goal]
+ *   node scripts/tournament.js [games=50] [seed=1] [profiles=backer,backer,trophy,trophy,trophy]
  *     [log=games.jsonl] [out=summary.json] [strength=card-strength.json] [probe=0] [probeOpen=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [probeLite=0] [workers=cores] [option=value ...]
  *
  * - log= appends one line per finished game; a run with the same log resumes,
@@ -44,7 +44,7 @@
  *   seats two faction backers and three goal trophy chasers (hunter removed 2026-10-09), so the
  *   invaders' ending comes about 40% of the time. Card figures are also split
  *   by the profile that played them.
- *   Goal profiles take persona overrides: goal:lean=0,hold=0.1; separate
+ *   Profiles take persona overrides: trophy:lean=0,hold=0.1; separate
  *   profiles with semicolons when overrides use commas.
  * A measuring tool, not a rule; bot figures are a guide (Appendix F.9).
  */
@@ -221,7 +221,7 @@ function main() {
   const args = process.argv.slice(2);
   const [gamesArg = '50', seedArg = '1'] = args.filter((a) => !a.includes('='));
   const pairs = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
-  const list = (pairs.profiles ?? 'backer,backer,goal,goal,goal').split(pairs.profiles?.includes(';') ? ';' : ',');
+  const list = (pairs.profiles ?? 'backer,backer,trophy,trophy,trophy').split(pairs.profiles?.includes(';') ? ';' : ',');
   const logFile = pairs.log, outFile = pairs.out, strengthFile = pairs.strength, workerCap = Number(pairs.workers ?? 0);
   const probe = { rate: Number(pairs.probe ?? 0), open: pairs.probeOpen === '1', sample: Number(pairs.probeSample ?? 6), cards: pairs.probeCards?.split(','), playouts: Number(pairs.probePlayouts ?? 2), targets: Number(pairs.probeTargets ?? 2), lite: pairs.probeLite === '1' };
   for (const k of ['profiles', 'log', 'out', 'strength', 'probe', 'probeOpen', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets', 'probeLite', 'workers']) delete pairs[k];

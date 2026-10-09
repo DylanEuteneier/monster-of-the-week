@@ -23,7 +23,7 @@ test('bots only ever propose legal moves and play games to the end', () => {
     for (let moves = 0; state.phase !== 'ended' && moves < 20000; moves++) {
       let moved = false;
       for (const playerId of state.seating) {
-        const move = botMove(state, { playerId, rng: random, profile: /** @type {import('../public/bots.js').Profile} */ (fast('goal')) });
+        const move = botMove(state, { playerId, rng: random, profile: /** @type {import('../public/bots.js').Profile} */ (fast('trophy')) });
         if (!move) continue;
         assert.deepEqual(validate(state, { playerId, move }), { ok: true }, JSON.stringify(move));
         state = applyMove(state, { playerId, move });

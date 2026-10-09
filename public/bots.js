@@ -5,7 +5,7 @@
  * table against bots.
  *
  * Profiles (Appendix F.9), pruned to the strongest (designer, 2026-10-08):
- * - goal:      goal-driven, the standard bot. It scores positions by its
+ * - trophy:    the trophy player (named goal until 2026-10-09). Goal-driven, the standard bot. It scores positions by its
  *              chance of winning, P(each ending) × P(it wins under it), plus
  *              its raw margins, and keeps a goal (win the island, or back a
  *              faction for the invaders) that it switches only past a margin.
@@ -16,7 +16,7 @@
  *              of the round.
  * - (goal-deep, goal with a reply lookahead, was removed 2026-10-09: its
  *   lookahead bypassed the play-out search, and it won 5% against 42.5%.)
- * - backer:    goal, leaning toward backing a faction for the invaders (lean
+ * - backer:    trophy, leaning toward backing a faction for the invaders (lean
  *              +0.3 against goal's −0.3): the faction-ally player. Two of them at a table of five
  *              bring the invaders' ending about 40% of the time (the
  *              designer's target), so tuning tables seat two.
@@ -43,13 +43,13 @@ function spend(state, cardId, at = (spots) => spots[0]) {
   const spots = influenceSpots(state, cardId);
   return spots.length ? { type: 'play', card: cardId, use: 'influence', location: at(spots) } : { type: 'play', card: cardId, use: 'influence' };
 }
-/** @typedef {'goal' | 'backer'} Profile */
+/** @typedef {'trophy' | 'backer'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory, table?: Record<string, string>, memories?: Record<string, BotMemory> }} BotOptions  table, memories: every seat's profile and memory, for play-outs (persona table) */
 /** @typedef {{ profiles?: Record<string, string>, memories?: Record<string, BotMemory> }} Seats  the table as a play-out sees it */
 /** What a bot remembers between its turns: its goal, and this game's variation in its lean. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal, jitter?: number }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
 
-export const PROFILES = /** @type {Profile[]} */ (['goal', 'backer']);
+export const PROFILES = /** @type {Profile[]} */ (['trophy', 'backer']);
 
 /** A profile with the slow search switched off (play-outs, probes' imagined futures, tests): the same persona, one move ahead, sampled targets. @param {string} profile */
 export const fast = (profile) => (personaOf(profile) ? `${profile}${profile.includes(':') ? ',' : ':'}sim=0,enum=0,combo=0` : profile);
@@ -64,7 +64,7 @@ const SEARCH = {
 const LIST = { cap: 40 };
 /** The play-out search (persona sim): its best moves one move ahead, each played to the round's end this many times, by fast goal bots. */
 const SIM = { keep: 6, playouts: 4, maxMoves: 400 };
-const ROLLOUT = 'goal:sim=0,enum=0,combo=0';
+const ROLLOUT = 'trophy:sim=0,enum=0,combo=0';
 
 /**
  * The move this bot should make right now, or null if it has nothing to do.
@@ -75,7 +75,7 @@ const ROLLOUT = 'goal:sim=0,enum=0,combo=0';
 export function botMove(state, input) {
   const p = state.players[input.playerId];
   if (!p || state.phase === 'ended') return null;
-  return playMove(state, input.playerId, input.rng, input.profile ?? 'goal', input.memory, { profiles: input.table, memories: input.memories });
+  return playMove(state, input.playerId, input.rng, input.profile ?? 'trophy', input.memory, { profiles: input.table, memories: input.memories });
 }
 
 /** @param {GameState} state @param {string} pid @param {Move} move */
@@ -117,9 +117,9 @@ const sigmoid = (/** @type {number} */ x) => 1 / (1 + Math.exp(-x));
  * unknown profile, such as one saved before a bot was removed, plays as goal).
  * @param {GameState} state @param {string} pid @param {Profile | string} [profile] @param {Goal} [goal]  a goal bot's current goal
  */
-export function evaluate(state, pid, profile = 'goal', goal = undefined) {
+export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
   const persona = personaOf(profile);
-  return goalValue(state, pid, goal ?? 'island', persona ?? PERSONAS.goal);
+  return goalValue(state, pid, goal ?? 'island', persona ?? PERSONAS.trophy);
 }
 
 // ---------------------------------------------------------------------------
@@ -166,14 +166,14 @@ export function evaluate(state, pid, profile = 'goal', goal = undefined) {
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
  * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number }} Persona
  */
-/** @type {Record<'goal' | 'backer', Persona>} */
+/** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
   // linear 1: counting island trophies as hunter does closed hunter's lead (challenger 32% against 20%, 2026-10-08).
   // threat 1: trophy players act against a rival pulling ahead with a faction (designer); hunter fell from 41% to 20% against it (2026-10-08).
   // Search switches standard from 2026-10-09 (challengers, 200 games each, seat 5 against backer, backer, goal, goal; an even share 20%):
   // sim 49.9%, sets=2 29.3% (sets=1 26.0%, sets=4 21.0%), enum 24.8%, combo 24.3%, hidden 21.5%; all together 57.9%.
   // table (2026-10-09): a bug fix, not a heuristic: play-outs had every seat, the bot itself included, play as a trophy-leaning goal bot.
-  goal: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1 },
+  trophy: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1 },
   // protect 4 (2026-10-09, 10 games): presence held at or over the threshold through round 4 (21 against 14).
   // commit 2 with protect: the invaders' ending 5 in 10 (1 in 10 before), final presence 20.3 (10.9).
   // top 2: backers 30% a seat against goal 13% (15% against 23% before), mostly from island wins (10 games).
@@ -182,13 +182,13 @@ const PERSONAS = {
 
 /**
  * A profile's persona. For tuning, a profile can also be written
- * "goal:lean=0,hold=0.1" (or "backer:..."): the base persona with those
+ * "trophy:lean=0,hold=0.1" (or "backer:..."): the base persona with those
  * numbers changed.
  * @param {string} profile @returns {Persona | undefined}
  */
 export function personaOf(profile) {
   const [base, overrides] = profile.split(':');
-  const p = PERSONAS[/** @type {'goal' | 'backer'} */ (base)];
+  const p = PERSONAS[/** @type {'trophy' | 'backer'} */ (base === 'goal' ? 'trophy' : base)]; // goal: the old name, for saved games
   if (!p || !overrides) return p;
   return { ...p, ...Object.fromEntries(overrides.split(',').map((kv) => { const [k, v] = kv.split('='); return [k, Number(v)]; })) };
 }
