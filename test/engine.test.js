@@ -632,16 +632,13 @@ test('D15: each faction moved pays its own (whoPays=each, first draft); only the
   assert.deepEqual([paid.board[bell].tokens[A], paid.board[bell].tokens[B]], [2, undefined]);
 });
 
-test('round 17: Virus v3 only infects neighbours holding one other faction; Open the Pit drops a small group in its region; Trade Secrets swaps standing', () => {
+test('round 17: Open the Pit drops a small group in its region; Trade Secrets swaps standing', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const from = /** @type {string} */ (Object.keys(map).find((l) => map[l].adjacent.length >= 3));
   const [x, y] = map[from].adjacent;
   s.board[from].tokens = { [A]: 4 };
   s.board[x].tokens = { [B]: 2 };
-  const v = previewTarget(s, 'ann', 'virus-v3', { mode: 'faction', location: from, faction: A });
-  assert.equal(v.board[x].tokens[A], 1);
-  assert.equal(v.board[y].tokens[A], undefined);
   s.players.ann.standing = { [A]: 5, [B]: 1, [C]: 0 };
   const sw = previewTarget(s, 'ann', 'swap-allegiance', { faction: A, to: B });
   assert.deepEqual([sw.players.ann.standing[A], sw.players.ann.standing[B]], [1, 5]);
@@ -690,7 +687,7 @@ test('round 18: Network the Virus reaches every location of its faction', () => 
   assert.equal(net.board[far].tokens[A], 2);
 });
 
-test('round 19: Lock Down the Town stops moves across its region\'s border; Put a Bounty On It costs the winner 1 more; Network the Virus v2 reaches within two hexes', () => {
+test('round 19: Lock Down the Town stops moves across its region\'s border; Put a Bounty On It costs the winner 1 more', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[], region: string }>} */ (spec.map.locations);
   const inside = /** @type {string} */ (Object.keys(map).find((l) => map[l].adjacent.some((x) => map[x].region !== map[l].region)));
@@ -709,12 +706,6 @@ test('round 19: Lock Down the Town stops moves across its region\'s border; Put 
   const hunted = resolveFight(s, NEUTRAL);
   assert.equal((plain.board[NEUTRAL].tokens[A] ?? 0) - (hunted.board[NEUTRAL].tokens[A] ?? 0), 1);
   s.bounties = [];
-  s.board[NEUTRAL].tokens = { [A]: 3 };
-  const net = previewTarget(s, 'ann', 'virus-reach', { mode: 'location', location: NEUTRAL, faction: A });
-  const reached = Object.keys(map).filter((l) => (net.board[l].tokens[A] ?? 0) > 0 && l !== NEUTRAL);
-  assert.equal(reached.length, 3); // 1 token to each, nearest first, until none are left
-  const near = map[NEUTRAL].adjacent.filter((l) => canEnter(s, l, A));
-  assert.ok(reached.filter((l) => near.includes(l)).length === Math.min(3, near.length)); // nearest first
 });
 
 test('Claim the Spoils can\'t be played as your last card in hand (designer)', () => {

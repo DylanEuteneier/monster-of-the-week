@@ -1686,44 +1686,6 @@
         "text": "Place 6 influence from your supply on the target. Target: any location. (Stake Out with a larger amount, to see how strength grows with it.)"
       },
       {
-        "id": "virus-v3",
-        "name": "Spread a Virus (v3)",
-        "suit": "sentients",
-        "slot": "strike",
-        "influence": 2,
-        "action": "spread-contest",
-        "round": 17,
-        "text": "The target group puts 1 token into every adjacent location holding exactly one other faction, as far as its tokens go: each one starts a fight. Target: the infected group. (Round 17.)",
-        "readings": {
-          "location": "any group at a ⏏ location.",
-          "faction": "a Sentient group anywhere."
-        }
-      },
-      {
-        "id": "wake-v2",
-        "name": "Take Over the Wake (v2)",
-        "suit": "undead",
-        "slot": "signature",
-        "influence": 3,
-        "action": "wake",
-        "round": 17,
-        "text": "Place influence at the target equal to the Undead tokens there (up to 4), spent from your standing with the Undead. Target: the wake. (Round 17.)",
-        "readings": {
-          "location": "a ☾ location.",
-          "faction": "a location holding the Undead."
-        }
-      },
-      {
-        "id": "canvass-v2",
-        "name": "Canvass the Town (v2)",
-        "suit": null,
-        "slot": "extra",
-        "influence": 0,
-        "action": "canvass-contest",
-        "round": 17,
-        "text": "Place 1 influence from your supply at every contested location. (Round 17.)"
-      },
-      {
         "id": "raise-stakes",
         "name": "Raise the Stakes",
         "suit": null,
@@ -1778,20 +1740,6 @@
         }
       },
       {
-        "id": "hold-wake",
-        "name": "Hold the Wake",
-        "suit": "undead",
-        "slot": "signature",
-        "influence": 3,
-        "action": "hold-wake",
-        "round": 18,
-        "text": "Move all your influence from one or two locations next to the target into it, paying 1 standing with the Undead for each. Target: the wake, then where the mourners come from.",
-        "readings": {
-          "location": "a ☾ location.",
-          "faction": "a location holding the Undead."
-        }
-      },
-      {
         "id": "virus-network",
         "name": "Network the Virus",
         "suit": "sentients",
@@ -1800,20 +1748,6 @@
         "action": "virus-network",
         "round": 18,
         "text": "The target group sends 1 token to every other location holding its faction, anywhere on the island, as far as its tokens go. Target: the infected group.",
-        "readings": {
-          "location": "any group at a ⏏ location.",
-          "faction": "a Sentient group anywhere."
-        }
-      },
-      {
-        "id": "virus-reach",
-        "name": "Network the Virus v2",
-        "suit": "sentients",
-        "slot": "strike",
-        "influence": 2,
-        "action": "virus-reach",
-        "round": 19,
-        "text": "The target group sends 1 token to every location within two hexes it can enter, nearest first, as far as its tokens go. Target: the infected group.",
         "readings": {
           "location": "any group at a ⏏ location.",
           "faction": "a Sentient group anywhere."
