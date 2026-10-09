@@ -58,6 +58,8 @@ export { spec };
  * @property {boolean} [truce]     Call a Truce (test card, round 15): no fight here this round
  * @property {string[]} [double]   Split Up, Gang! (test card, round 18): players whose influence here counts twice at this round's fight
  * @property {boolean} [wake]      Wake the Dead (test card, round 18): this round's fight can't scorch, and the loser's casualties rise as Undead
+ * @property {string[]} [backdoor] Install a Backdoor (test card, round 20): players whose influence here counts 1 more per Sentient token at this round's fight
+ * @property {boolean} [swarm]     Link the Swarm (test card, round 20): at this round's fight, the Sentients here count their tokens next door too
  * @property {boolean} [lock]      Lock Down the Town (test card, round 19): this round, no group moves into or out of this location's region
  */
 
@@ -170,7 +172,7 @@ export { spec };
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, picked: boolean }>} players
  * @property {{ faction: string, leaders: string[], next: number, due: Record<string, number> } | null} growing
  * @property {string[]} factions
- * @property {Record<string, { tokens: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean, truce?: boolean, double?: string[], wake?: boolean, lock?: boolean }>} board
+ * @property {Record<string, { tokens: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean, truce?: boolean, double?: string[], wake?: boolean, swarm?: boolean, backdoor?: string[], lock?: boolean }>} board
  * @property {Record<string, number>} supply
  * @property {string[]} deck  this game's cards
  * @property {Record<string, number>} printed  this game's printed influence by card
@@ -653,6 +655,8 @@ function ringSteps(state, loc) {
 const circlers = (state, loc, factions) => ringSteps(state, loc).flatMap(([from, to]) => factionsAt(state, from).filter((f) => factions.includes(f) && !state.board[to].scorched).map((f) => ({ from, to, f })));
 /** Network the Virus (round 18): every other location holding the group's faction. @param {GameState | PlayerView} state @param {string} loc @param {string} f */
 const networkOf = (state, loc, f) => LOCATION_IDS.filter((l) => l !== loc && !state.board[l].scorched && tokensOf(/** @type {GameState} */ (state), l, f) > 0);
+/** Go Viral and Hack the Network (round 20): locations holding exactly one faction other than f, which f can enter. @param {GameState | PlayerView} state @param {string} f @param {string[]} from */
+const loneRivals = (state, f, from) => from.filter((l) => !state.board[l].scorched && canEnter(/** @type {GameState} */ (state), l, f) && factionsAt(/** @type {GameState} */ (state), l).filter((o) => o !== f).length === 1 && tokensOf(/** @type {GameState} */ (state), l, f) === 0);
 /** Open the Pit (v2, round 17): where a small group can fall to, in its region. @param {GameState | PlayerView} state @param {string} loc @param {string} f */
 function pitFalls(state, loc, f) {
   return LOCATION_IDS.filter((l) => l !== loc && regionOf(l) === regionOf(loc) && !state.board[l].scorched && canEnter(/** @type {GameState} */ (state), l, f));
@@ -802,7 +806,7 @@ function checkShape(state, pid, card, t) {
       }
       return null;
     }
-    case 'gather-region': case 'gather-neighbours': case 'draw-adjacent': {
+    case 'gather-region': case 'gather-neighbours': case 'call-home': case 'draw-adjacent': {
       const e = placeTarget(state, card, t);
       if (e) return e;
       if (card.action !== 'draw-adjacent' && (!t.faction || !movable(state, card, t).includes(t.faction))) return 'Choose which faction moves.';
@@ -974,7 +978,17 @@ function checkShape(state, pid, card, t) {
     }
     case 'tipoff': case 'bounty': return t.faction && state.factions.includes(t.faction) ? null : 'Choose a faction.';
     case 'lockdown': return t.location && state.board[t.location] && !state.board[t.location].lock ? null : 'Choose a location in a region not already locked down.';
-    case 'wake-dead': return (t.mode === 'location' || t.mode === 'faction') && t.location && holdingSpots(state, card, t.mode).includes(t.location) ? null : 'Choose the target location.';
+    case 'wake-dead': case 'swarm': case 'backdoor': return (t.mode === 'location' || t.mode === 'faction') && t.location && holdingSpots(state, card, t.mode).includes(t.location) ? null : 'Choose the target location.';
+    case 'viral': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      return loneRivals(state, /** @type {string} */ (t.faction), MAP[/** @type {string} */ (t.location)].adjacent).length && state.supply[/** @type {string} */ (t.faction)] > 0 ? null : 'No neighbour holds a lone rival faction, or its supply is empty.';
+    }
+    case 'hack': {
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      return t.to && t.to !== t.location && loneRivals(state, /** @type {string} */ (t.faction), LOCATION_IDS).includes(t.to) ? null : 'Choose a location holding one other faction.';
+    }
     case 'virus-network': {
       const e = groupTarget(state, card, t);
       if (e) return e;
@@ -1152,6 +1166,20 @@ function act(state, pid, card, t) {
       let n = 0;
       for (const from of LOCATION_IDS.filter((l) => regions.includes(regionOf(l)) && l !== to)) n += move(state, pid, f, from, to, tokensOf(state, from, f), placed);
       logLine(state, `${pid}: ${card.name} gathers ${n} ${names(f)} into ${lname(to)}.`);
+      break;
+    }
+    case 'call-home': {
+      // Call Home (round 20): 1 token from every other location holding the faction, anywhere.
+      const f = /** @type {string} */ (t.faction), to = /** @type {string} */ (t.location);
+      let n = 0;
+      for (const from of LOCATION_IDS.filter((l) => l !== to && tokensOf(state, l, f) > 0)) n += move(state, pid, f, from, to, 1, placed);
+      logLine(state, `${pid}: ${card.name} calls ${n} ${names(f)} home to ${lname(to)}.`);
+      break;
+    }
+    case 'backdoor': {
+      const place = state.board[/** @type {string} */ (t.location)];
+      place.backdoor = [...(place.backdoor ?? []), pid];
+      logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}.`);
       break;
     }
     case 'draw-adjacent': {
@@ -1441,6 +1469,38 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}.`);
       break;
     }
+    case 'swarm': {
+      state.board[/** @type {string} */ (t.location)].swarm = true;
+      logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}.`);
+      break;
+    }
+    case 'viral': {
+      // Go Viral (round 20): 1 token from the faction's supply into each neighbour holding a lone rival; each costs 1 influence from that faction, placed there (IC1).
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
+      const cost = num(state, 'influencePerMove');
+      const reached = [];
+      for (const to of loneRivals(state, f, MAP[from].adjacent)) {
+        if (state.supply[f] <= 0) break;
+        if (influenceRequired(state) && cost > 0 && (state.players[pid].standing[f] ?? 0) < cost) break;
+        state.supply[f] -= 1;
+        state.board[to].tokens[f] = 1;
+        const k = Math.min(cost, state.players[pid].standing[f] ?? 0);
+        if (k > 0) {
+          state.players[pid].standing[f] -= k;
+          state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + k;
+          for (let i = 0; i < k; i++) state.events.push({ type: 'influence-placed', player: pid, faction: f, location: to });
+        }
+        reached.push(to);
+      }
+      logLine(state, `${pid}: ${card.name}: ${names(f)} appear at ${reached.map(lname).join(', ') || 'nowhere'}.`);
+      break;
+    }
+    case 'hack': {
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
+      const n = move(state, pid, f, from, /** @type {string} */ (t.to), tokensOf(state, from, f), placed);
+      logLine(state, `${pid}: ${card.name} sends ${n} ${names(f)} from ${lname(from)} to ${lname(/** @type {string} */ (t.to))}.`);
+      break;
+    }
     case 'virus-network': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       const reached = [];
@@ -1501,11 +1561,11 @@ export function pendingDestinations(state, pend) {
   if (!t) return [];
   const card = copied(state, cardById(pend.card));
   switch (card.action) {
-    case 'lure': case 'broadcast': case 'gather-region': case 'gather-neighbours': case 'draw-adjacent': return t.location ? [t.location] : [];
-    case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': return t.to ? [t.to] : [];
+    case 'lure': case 'broadcast': case 'gather-region': case 'gather-neighbours': case 'call-home': case 'draw-adjacent': return t.location ? [t.location] : [];
+    case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': case 'hack': return t.to ? [t.to] : [];
     case 'sow': return t.path ?? [];
     case 'split': return Object.keys(t.split ?? {});
-    case 'spread': case 'infect': return t.location ? MAP[t.location].adjacent : [];
+    case 'spread': case 'infect': case 'viral': return t.location ? MAP[t.location].adjacent : [];
     case 'pit-fall': return t.to ? [t.to] : [];
     case 'carry-fight': return t.to ? [t.to] : [];
     case 'slide': case 'chain': return LOCATION_IDS;
@@ -1780,7 +1840,7 @@ function endOfPlay(state) {
   state.events = [];
   logLine(state, 'Everyone passed. Fights:');
   for (const loc of LOCATION_IDS) if (!state.board[loc].scorched && factionsAt(state, loc).length === 2) fight(state, loc);
-  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.truce; delete p.double; delete p.wake; delete p.lock; } // round 15, 18 and 19 test cards last the round
+  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.truce; delete p.double; delete p.wake; delete p.swarm; delete p.backdoor; delete p.lock; } // round 15, 18 and 19 test cards last the round
   state.tips = [];
   state.bounties = [];
   return beginGrowth(state);
@@ -1808,8 +1868,14 @@ function fight(state, loc) {
   const effect = token?.card ?? null;
   if (token) logLine(state, `  ${name}: ${token.owner}'s token flips: ${effect ? cardById(effect).name : 'a bluff'}.`);
   const na = place.tokens[a], nb = place.tokens[b];
+  // Link the Swarm (test card, round 20): the Sentients count their tokens next door too, for who wins.
+  const swarm = place.swarm ? factionOfArchetype(state, 'sentients') : null;
+  const next = (/** @type {string} */ f) => (f === swarm ? MAP[loc].adjacent.reduce((n, l) => n + tokensOf(state, l, f), 0) : 0);
+  const sa = na + next(a), sb = nb + next(b);
+  // Install a Backdoor (test card, round 20): counted on the Sentients here as the fight starts.
+  const hacked = place.backdoor?.length ? tokensOf(state, loc, /** @type {string} */ (factionOfArchetype(state, 'sentients'))) : 0;
   const aligned = [a, b].find((f) => archetypeOf(f) === alignmentOf(loc));
-  const trueTie = effect === 'house-fire' || (na === nb && !aligned);
+  const trueTie = effect === 'house-fire' || (sa === sb && !aligned);
   if (trueTie && place.wake) {
     // Wake the Dead (test card, round 18): no scorching; both sides go back to their supplies.
     state.supply[a] += na;
@@ -1832,11 +1898,11 @@ function fight(state, loc) {
     return;
   }
   let winner, loser;
-  if (na === nb) {
+  if (sa === sb) {
     winner = /** @type {string} */ (aligned);
     loser = winner === a ? b : a;
-  } else [winner, loser] = na > nb ? [a, b] : [b, a];
-  if (effect === 'invert' && na !== nb) [winner, loser] = [loser, winner]; // test card (round 12): the smaller group wins
+  } else [winner, loser] = sa > sb ? [a, b] : [b, a];
+  if (effect === 'invert' && sa !== sb) [winner, loser] = [loser, winner]; // test card (round 12): the smaller group wins
   const nl = place.tokens[loser];
   const loserLoss = nl; // the loser always loses everything (FR5)
   let winnerLoss = Math.max(1, Math.floor(nl / 2));
@@ -1869,7 +1935,7 @@ function fight(state, loc) {
       logLine(state, `  ${name}: ${rise} of the fallen rise as ${factionById(undead).name}.`);
     }
   }
-  const ranking = rankAt(state, loc, effect === 'hijack-feed' ? token?.owner : undefined); // hijack-feed: test card (round 8)
+  const ranking = rankAt(state, loc, effect === 'hijack-feed' ? token?.owner : undefined, hacked); // hijack-feed: test card (round 8)
   const collectors = ranking.places;
   /** @param {{ faction: string, n: number }} pile @param {string | null} pid */
   const give = (pile, pid) => {
@@ -1916,11 +1982,14 @@ function fight(state, loc) {
  * Rank players by influence at a location, with affinity breaking ties (AB1)
  * and standing ties using up their places (PT2, ST1). `places` lists who
  * collects first and second place (null where a tie used the place up).
- * @param {GameState} state @param {string} loc @param {string} [twice]  a player whose influence counts twice (test card hijack-feed)
+ * @param {GameState} state @param {string} loc @param {string} [twice]  a player whose influence counts twice (test card hijack-feed) @param {number} [hacked]  Sentient tokens at the fight's start, for Install a Backdoor
  */
-function rankAt(state, loc, twice) {
+function rankAt(state, loc, twice, hacked = 0) {
   const place = state.board[loc];
-  const entries = Object.entries(place.influence).filter(([, n]) => n > 0).map(([pid, n]) => /** @type {[string, number]} */ ([pid, pid === twice || place.double?.includes(pid) ? 2 * n : n]));
+  // Install a Backdoor (test card, round 20): 1 more per Sentient token here as the fight started, even with no influence placed.
+  const influence = { ...place.influence };
+  for (const pid of place.backdoor ?? []) influence[pid] = (influence[pid] ?? 0) + hacked;
+  const entries = Object.entries(influence).filter(([, n]) => n > 0).map(([pid, n]) => /** @type {[string, number]} */ ([pid, pid === twice || place.double?.includes(pid) ? 2 * n : n]));
   const involved = entries.length;
   const byAmount = new Map();
   for (const [pid, n] of entries) byAmount.set(n, [...(byAmount.get(n) ?? []), pid]);
@@ -2255,8 +2324,8 @@ function nextShape(state, pid, cardId, t) {
       }
       return { kind: 'done' };
     }
-    case 'gather-region': case 'gather-neighbours': {
-      const sources = (/** @type {string} */ loc) => LOCATION_IDS.filter((l) => l !== loc && (card.action === 'gather-region' ? regionOf(l) === regionOf(loc) : REGIONS[regionOf(loc)].neighbours.includes(regionOf(l))));
+    case 'gather-region': case 'gather-neighbours': case 'call-home': {
+      const sources = (/** @type {string} */ loc) => LOCATION_IDS.filter((l) => l !== loc && (card.action === 'call-home' || card.action === 'gather-region' ? regionOf(l) === regionOf(loc) : REGIONS[regionOf(loc)].neighbours.includes(regionOf(l))));
       const gathers = (/** @type {string} */ loc, /** @type {string} */ f) => canEnter(state, loc, f) && sources(loc).some((l) => tokensOf(state, l, f) > 0);
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => movers.some((f) => gathers(loc, f))) };
       if (!t.faction) return { kind: 'faction', options: movers.filter((f) => gathers(/** @type {string} */ (t.location), f)) };
@@ -2428,8 +2497,13 @@ function nextShape(state, pid, cardId, t) {
       return t.faction ? { kind: 'done' } : { kind: 'faction', options: state.factions.slice() };
     case 'lockdown':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].lock) };
-    case 'wake-dead':
+    case 'wake-dead': case 'swarm': case 'backdoor':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode) };
+    case 'viral':
+      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => state.supply[g.faction] > 0 && loneRivals(state, g.faction, MAP[g.location].adjacent).length > 0) };
+    case 'hack':
+      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => loneRivals(state, g.faction, LOCATION_IDS).some((l) => l !== g.location)) };
+      return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: loneRivals(state, /** @type {string} */ (t.faction), LOCATION_IDS).filter((l) => l !== t.location) };
     case 'virus-network':
       return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => networkOf(state, g.location, g.faction).length > 0) };
     case 'truce':
@@ -2484,7 +2558,8 @@ export function describeTarget(cardId, t) {
   const how = t.mode === 'faction' ? ' (faction target)' : t.mode === 'location' ? ' (location target)' : '';
   switch (card.action) {
     case 'lure': case 'draw-adjacent': return `at ${L(t.location)}${how}`;
-    case 'gather-region': case 'gather-neighbours': return `${F(t.faction)} into ${L(t.location)}${how}`;
+    case 'gather-region': case 'gather-neighbours': case 'call-home': return `${F(t.faction)} into ${L(t.location)}${how}`;
+    case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
     case 'sow': return `${F(t.faction)} from ${L(t.location)} via ${(t.path ?? []).map(L).join(', ')}${how}`;
     case 'token': return `token at ${L(t.location)}${t.bluff ? `, bluff at ${L(t.bluff)}` : ''}${how}`;
@@ -2492,7 +2567,9 @@ export function describeTarget(cardId, t) {
     case 'spread': case 'infect': case 'pit-fall': return `${F(t.faction)} at ${L(t.location)}${t.to ? ` to ${L(t.to)}` : ''}${how}`;
     case 'surveil-supply': case 'raise-stakes': return `at ${L(t.location)}${how}`;
     case 'split-up': return `at ${(t.from ?? []).map(L).join(', ')}`;
-    case 'wake-dead': return `at ${L(t.location)}${how}`;
+    case 'wake-dead': case 'swarm': return `at ${L(t.location)}${how}`;
+    case 'viral': return `${F(t.faction)} at ${L(t.location)}${how}`;
+    case 'hack': return `${F(t.faction)} at ${L(t.location)} to ${L(t.to)}${how}`;
     case 'tipoff': case 'bounty': return `on ${F(t.faction)}`;
     case 'lockdown': return `the region of ${L(t.location)}`;
     case 'virus-network': return `${F(t.faction)} at ${L(t.location)}${how}`;
@@ -2538,7 +2615,7 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.lock ? { lock: true } : {}) }];
+      return [loc, { tokens: { ...place.tokens }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: true } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),

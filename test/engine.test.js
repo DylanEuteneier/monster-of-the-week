@@ -702,3 +702,47 @@ test('round 19: Lock Down the Town stops moves across its region\'s border; Put 
   assert.equal((plain.board[NEUTRAL].tokens[A] ?? 0) - (hunted.board[NEUTRAL].tokens[A] ?? 0), 1);
   s.bounties = [];
 });
+
+test('round 20 Sentients: Go Viral seeds lone rivals next door from the supply; Hack the Network jumps to a lone rival anywhere; Link the Swarm counts next-door Sentients for who wins', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const sent = /** @type {string} */ (factionOfArchetype(s, 'sentients'));
+  const [x, y] = map[NEUTRAL].adjacent;
+  s.board[NEUTRAL].tokens = { [sent]: 3 };
+  s.board[x].tokens = { [A === sent ? B : A]: 2 };
+  const viral = previewTarget(s, 'ann', 'go-viral', { mode: 'faction', location: NEUTRAL, faction: sent });
+  assert.deepEqual([viral.board[x].tokens[sent], viral.board[NEUTRAL].tokens[sent], viral.board[x].influence.ann], [1, 3, 1]);
+  assert.equal(viral.board[y].tokens[sent], undefined); // y holds no one: not a lone rival
+  const far = /** @type {string} */ (Object.keys(map).find((l) => l !== NEUTRAL && !map[NEUTRAL].adjacent.includes(l)));
+  s.board[far].tokens = { [A === sent ? B : A]: 1 };
+  const t = { mode: /** @type {const} */ ('faction'), location: NEUTRAL, faction: sent, to: far };
+  assert.equal(checkTarget(s, 'ann', cardById('hack-network'), t), null);
+  assert.equal(previewTarget(s, 'ann', 'hack-network', t).board[far].tokens[sent], 3);
+  // Swarm: 2 Sentients here against 3 rivals, with 2 more Sentients next door: the Sentients win.
+  const rival = A === sent ? B : A;
+  s.board[NEUTRAL].tokens = { [sent]: 2, [rival]: 3 };
+  s.board[x].tokens = { [sent]: 2 };
+  s.board[far].tokens = {};
+  s.board[NEUTRAL].swarm = true;
+  const fought = resolveFight(s, NEUTRAL);
+  assert.equal(fought.board[NEUTRAL].tokens[rival], undefined);
+});
+
+test('round 20 Sentients: Call Home pulls 1 token from every location holding the faction; Install a Backdoor counts the Sentients there as your influence', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const sent = /** @type {string} */ (factionOfArchetype(s, 'sentients'));
+  const rival = A === sent ? B : A;
+  const others = Object.keys(map).filter((l) => l !== NEUTRAL).slice(0, 3);
+  for (const l of others) s.board[l].tokens = { [sent]: 2 };
+  const home = previewTarget(s, 'ann', 'call-home', { mode: 'faction', location: NEUTRAL, faction: sent });
+  assert.equal(home.board[NEUTRAL].tokens[sent], 3);
+  assert.ok(others.every((l) => home.board[l].tokens[sent] === 1));
+  for (const l of others) s.board[l].tokens = {};
+  s.board[NEUTRAL].tokens = { [sent]: 4, [rival]: 2 };
+  s.board[NEUTRAL].influence = { bob: 3 };
+  s.board[NEUTRAL].backdoor = ['ann'];
+  const fought = resolveFight(s, NEUTRAL);
+  assert.ok(Object.values(fought.players.ann.trophies).reduce((a, b) => a + b, 0) > 0); // ann's 4 beats bob's 3
+  assert.equal(Object.values(fought.players.bob.trophies).reduce((a, b) => a + b, 0) > 0, true); // bob runner-up takes the smaller pile
+});

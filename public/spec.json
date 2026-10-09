@@ -1196,7 +1196,7 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 19 ideas (rounds 14 to 19: unsuited extras, rounds 18 and 19 marked-card candidates (Lock Down the Town and Put a Bounty On It adopted as C and D; Set a Trap, with Claim the Spoils’ rules, is A); rounds 17 to 19: revisions of the weakest) under measurement by scripts/tournament.js. A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
+    "notes": "Cards out of the fixed deck: rounds 8 to 20 ideas (rounds 14 to 19: unsuited extras, rounds 18 and 19 marked-card candidates (Lock Down the Town and Put a Bounty On It adopted as C and D; Set a Trap, with Claim the Spoils’ rules, is A); rounds 17 to 19: revisions of the weakest) under measurement by scripts/tournament.js. A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
     "cards": [
       {
         "id": "force-field",
@@ -1729,6 +1729,76 @@
         "readings": {
           "location": "any group at a ⏏ location.",
           "faction": "a Sentient group anywhere."
+        }
+      },
+      {
+        "id": "go-viral",
+        "name": "Go Viral",
+        "suit": "sentients",
+        "slot": "strike",
+        "influence": 2,
+        "action": "viral",
+        "round": 20,
+        "text": "The target faction puts 1 token from its supply into each location next to the target that holds one other faction, so each holds two factions and fights at the round’s end; for each, place 1 influence there from your standing with that faction, as far as it goes. Target: the group gone viral.",
+        "readings": {
+          "location": "any group at a ⏏ location.",
+          "faction": "a Sentient group anywhere."
+        }
+      },
+      {
+        "id": "hack-network",
+        "name": "Hack the Network",
+        "suit": "sentients",
+        "slot": "strike",
+        "influence": 2,
+        "action": "hack",
+        "round": 20,
+        "text": "Move the target group to any location on the island that holds one other faction, so it fights there at the round’s end. Target: the group, then where it goes.",
+        "readings": {
+          "location": "any group at a ⏏ location.",
+          "faction": "a Sentient group anywhere."
+        }
+      },
+      {
+        "id": "link-swarm",
+        "name": "Link the Swarm",
+        "suit": "sentients",
+        "slot": "signature",
+        "influence": 3,
+        "action": "swarm",
+        "round": 20,
+        "text": "At this round’s fight at the target, the Sentients count their tokens in every location next to it too, for who wins (casualties and trophies as usual). Target: the hub.",
+        "readings": {
+          "location": "a ⏏ location.",
+          "faction": "a location holding the Sentients."
+        }
+      },
+      {
+        "id": "call-home",
+        "name": "Call Home",
+        "suit": "sentients",
+        "slot": "shift",
+        "influence": 3,
+        "action": "call-home",
+        "round": 20,
+        "text": "1 token of the target faction moves to the target from every other location holding it, anywhere on the island. Target: the destination, then the faction.",
+        "readings": {
+          "location": "any faction, into a ⏏ location.",
+          "faction": "the Sentients, into any location."
+        }
+      },
+      {
+        "id": "backdoor",
+        "name": "Install a Backdoor",
+        "suit": "sentients",
+        "slot": "signature",
+        "influence": 3,
+        "action": "backdoor",
+        "round": 20,
+        "text": "At this round’s fight at the target, your influence there counts 1 more for each Sentient token there, even if you placed none. Target: the hacked location.",
+        "readings": {
+          "location": "a ⏏ location.",
+          "faction": "a location holding the Sentients."
         }
       }
     ]
