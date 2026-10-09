@@ -168,9 +168,10 @@ const PERSONAS = {
   // threat 1: trophy players act against a rival pulling ahead with a faction (designer); hunter fell from 41% to 20% against it (2026-10-08).
   // Search switches standard from 2026-10-09 (challengers, 200 games each, seat 5 against backer, backer, goal, goal; an even share 20%):
   // sim 49.9%, sets=2 29.3% (sets=1 26.0%, sets=4 21.0%), enum 24.8%, combo 24.3%, hidden 21.5%; all together 57.9%.
-  goal: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2 },
-  'goal-deep': { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2 },
-  backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2 },
+  // table (2026-10-09): a bug fix, not a heuristic: play-outs had every seat, the bot itself included, play as a trophy-leaning goal bot.
+  goal: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1 },
+  'goal-deep': { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1 },
+  backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1 },
 };
 
 /**
