@@ -15,7 +15,6 @@ const TOAST_MS = 3000;
 /** The bot profiles (public/bots.js), as the host sees them. */
 const PROFILE_LABELS = /** @type {Record<string, string>} */ ({
   goal: 'goal (adapts; leans to trophies)',
-  'goal-deep': 'goal, deep (looks a reply ahead)',
   backer: 'backer (adapts; leans to backing a faction)',
 });
 /** What can sit in a seat: a human, a bot with a random profile, or a bot with a chosen one. */

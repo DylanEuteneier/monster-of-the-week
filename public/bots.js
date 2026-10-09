@@ -11,10 +11,11 @@
  *              faction for the invaders) that it switches only past a margin.
  *              Its style is a lean toward factions or trophy sets that fades by
  *              round (designer: more proof to back a faction early on). It searches one move ahead: each card in hand with
- *              sampled targets, its influence, and passing.
- * - goal-deep: goal, plus a reply lookahead: for its best moves it also plays
- *              the next player's best reply and keeps the move that is still
- *              best for it afterwards. Slower.
+ *              sampled targets, its influence, and passing; with the
+ *              search switches below it plays its best moves out to the end
+ *              of the round.
+ * - (goal-deep, goal with a reply lookahead, was removed 2026-10-09: its
+ *   lookahead bypassed the play-out search, and it won 5% against 42.5%.)
  * - backer:    goal, leaning toward backing a faction for the invaders (lean
  *              +0.3 against goal's −0.3): the faction-ally player. Two of them at a table of five
  *              bring the invaders' ending about 40% of the time (the
@@ -42,13 +43,13 @@ function spend(state, cardId, at = (spots) => spots[0]) {
   const spots = influenceSpots(state, cardId);
   return spots.length ? { type: 'play', card: cardId, use: 'influence', location: at(spots) } : { type: 'play', card: cardId, use: 'influence' };
 }
-/** @typedef {'goal' | 'goal-deep' | 'backer'} Profile */
+/** @typedef {'goal' | 'backer'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory, table?: Record<string, string>, memories?: Record<string, BotMemory> }} BotOptions  table, memories: every seat's profile and memory, for play-outs (persona table) */
 /** @typedef {{ profiles?: Record<string, string>, memories?: Record<string, BotMemory> }} Seats  the table as a play-out sees it */
 /** What a bot remembers between its turns: its goal, and this game's variation in its lean. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal, jitter?: number }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
 
-export const PROFILES = /** @type {Profile[]} */ (['goal', 'goal-deep', 'backer']);
+export const PROFILES = /** @type {Profile[]} */ (['goal', 'backer']);
 
 /** A profile with the slow search switched off (play-outs, probes' imagined futures, tests): the same persona, one move ahead, sampled targets. @param {string} profile */
 export const fast = (profile) => (personaOf(profile) ? `${profile}${profile.includes(':') ? ',' : ':'}sim=0,enum=0,combo=0` : profile);
@@ -64,12 +65,6 @@ const LIST = { cap: 40 };
 /** The play-out search (persona sim): its best moves one move ahead, each played to the round's end this many times, by fast goal bots. */
 const SIM = { keep: 6, playouts: 4, maxMoves: 400 };
 const ROLLOUT = 'goal:sim=0,enum=0,combo=0';
-/** The reply lookahead (goal-deep). */
-const DEEP = {
-  targets: 12,       // targets sampled per card for its own move
-  keep: 10,          // its best moves (one move ahead) checked against a reply
-  replyTargets: 8,   // targets sampled per card for the reply
-};
 
 /**
  * The move this bot should make right now, or null if it has nothing to do.
@@ -167,7 +162,7 @@ export function evaluate(state, pid, profile = 'goal', goal = undefined) {
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
  * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, table?: number, commit?: number, allies?: number }} Persona
  */
-/** @type {Record<'goal' | 'goal-deep' | 'backer', Persona>} */
+/** @type {Record<'goal' | 'backer', Persona>} */
 const PERSONAS = {
   // linear 1: counting island trophies as hunter does closed hunter's lead (challenger 32% against 20%, 2026-10-08).
   // threat 1: trophy players act against a rival pulling ahead with a faction (designer); hunter fell from 41% to 20% against it (2026-10-08).
@@ -175,19 +170,18 @@ const PERSONAS = {
   // sim 49.9%, sets=2 29.3% (sets=1 26.0%, sets=4 21.0%), enum 24.8%, combo 24.3%, hidden 21.5%; all together 57.9%.
   // table (2026-10-09): a bug fix, not a heuristic: play-outs had every seat, the bot itself included, play as a trophy-leaning goal bot.
   goal: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1 },
-  'goal-deep': { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1 },
   backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1 },
 };
 
 /**
  * A profile's persona. For tuning, a profile can also be written
- * "goal:lean=0,hold=0.1" (or "goal-deep:..."): the base persona with those
+ * "goal:lean=0,hold=0.1" (or "backer:..."): the base persona with those
  * numbers changed.
  * @param {string} profile @returns {Persona | undefined}
  */
 export function personaOf(profile) {
   const [base, overrides] = profile.split(':');
-  const p = PERSONAS[/** @type {'goal' | 'goal-deep' | 'backer'} */ (base)];
+  const p = PERSONAS[/** @type {'goal' | 'backer'} */ (base)];
   if (!p || !overrides) return p;
   return { ...p, ...Object.fromEntries(overrides.split(',').map((kv) => { const [k, v] = kv.split('='); return [k, Number(v)]; })) };
 }
@@ -403,9 +397,7 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
   if (state.seating[state.turn] !== pid) return null;
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
-  const deep = profile.split(':')[0] === 'goal-deep';
-  const moves = candidates(state, pid, rng, deep ? DEEP.targets : SEARCH.targets, !!persona?.enum);
-  if (deep) return deepPick(state, pid, rng, moves, ev);
+  const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum);
   if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories } : undefined);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
@@ -414,34 +406,6 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
       best = move;
       bestV = v;
     }
-  }
-  return best;
-}
-
-/**
- * goal-deep's choice: its best moves one move ahead, each followed by the next
- * player's best reply (one move ahead), scored for this bot.
- * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev
- */
-function deepPick(state, pid, rng, moves, ev) {
-  const noise = () => (rng() - 0.5) * SEARCH.noise;
-  const first = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) + noise() }; })
-    .sort((a, b) => b.v - a.v).slice(0, DEEP.keep);
-  let best = first[0]?.move ?? null, bestV = -Infinity;
-  for (const { move, s } of first) {
-    let end = s;
-    const q = s.phase === 'play' && !s.pending ? s.seating[s.turn] : null;
-    if (q && q !== pid) {
-      let reply = null, replyV = -Infinity;
-      for (const m of candidates(s, q, rng, DEEP.replyTargets)) {
-        const r = after(s, q, m);
-        const v = ev(r, q) + noise();
-        if (v > replyV) { reply = r; replyV = v; }
-      }
-      if (reply) end = reply;
-    }
-    const v = ev(end) + noise();
-    if (v > bestV) { best = move; bestV = v; }
   }
   return best;
 }
