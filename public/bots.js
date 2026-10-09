@@ -43,7 +43,8 @@ function spend(state, cardId, at = (spots) => spots[0]) {
   return spots.length ? { type: 'play', card: cardId, use: 'influence', location: at(spots) } : { type: 'play', card: cardId, use: 'influence' };
 }
 /** @typedef {'goal' | 'goal-deep' | 'backer'} Profile */
-/** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory, table?: Record<string, string> }} BotOptions  table: every seat's profile, for play-outs (persona table) */
+/** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory, table?: Record<string, string>, memories?: Record<string, BotMemory> }} BotOptions  table, memories: every seat's profile and memory, for play-outs (persona table) */
+/** @typedef {{ profiles?: Record<string, string>, memories?: Record<string, BotMemory> }} Seats  the table as a play-out sees it */
 /** What a bot remembers between its turns: its goal, and this game's variation in its lean. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal, jitter?: number }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
 
@@ -79,7 +80,7 @@ const DEEP = {
 export function botMove(state, input) {
   const p = state.players[input.playerId];
   if (!p || state.phase === 'ended') return null;
-  return playMove(state, input.playerId, input.rng, input.profile ?? 'goal', input.memory, input.table);
+  return playMove(state, input.playerId, input.rng, input.profile ?? 'goal', input.memory, { profiles: input.table, memories: input.memories });
 }
 
 /** @param {GameState} state @param {string} pid @param {Move} move */
@@ -343,8 +344,8 @@ function after(state, pid, move) {
 
 /** @typedef {(s: GameState, id?: string) => number} Ev  a bot's value of a position, for itself or (in its lookahead) another seat */
 
-/** @param {GameState} state @param {string} pid @param {() => number} rng @param {Profile | string} profile @param {BotMemory} [memory] @param {Record<string, string>} [table] @returns {Move | null} */
-function playMove(state, pid, rng, profile, memory, table = undefined) {
+/** @param {GameState} state @param {string} pid @param {() => number} rng @param {Profile | string} profile @param {BotMemory} [memory] @param {Seats} [seats] @returns {Move | null} */
+function playMove(state, pid, rng, profile, memory, seats = {}) {
   const p = state.players[pid];
   const persona = personaOf(profile);
   const goal = persona ? chooseGoal(state, pid, persona, memory, rng) : undefined;
@@ -397,7 +398,7 @@ function playMove(state, pid, rng, profile, memory, table = undefined) {
   const deep = profile.split(':')[0] === 'goal-deep';
   const moves = candidates(state, pid, rng, deep ? DEEP.targets : SEARCH.targets, !!persona?.enum);
   if (deep) return deepPick(state, pid, rng, moves, ev);
-  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { ...table, [pid]: String(profile) } : undefined);
+  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories } : undefined);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
     const v = value(after(state, pid, move));
@@ -443,7 +444,7 @@ function deepPick(state, pid, rng, moves, ev) {
  * standard goal bots several times, scored for this bot at the end. Each
  * playout's randomness is shared across the moves, so they meet the same
  * futures. Passing and holding a card are judged like any other move.
- * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory} [memory] @param {number} [keep] @param {number} [playouts] @param {Record<string, string>} [table]  persona table: each seat's profile, played fast in the play-outs
+ * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory} [memory] @param {number} [keep] @param {number} [playouts] @param {Seats} [table]  persona table: each seat's profile (played fast) and memory, in the play-outs
  */
 function simPick(state, pid, rng, moves, ev, memory, keep = SIM.keep, playouts = SIM.playouts, table = undefined) {
   const ranked = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) }; }).sort((a, b) => b.v - a.v);
@@ -461,18 +462,19 @@ function simPick(state, pid, rng, moves, ev, memory, keep = SIM.keep, playouts =
   return best;
 }
 
-/** Fast bots play from here to the end of this round's play: each seat's own profile (persona table) or ROLLOUT. @param {GameState} state @param {number} seed @param {string} pid @param {BotMemory} [memory] @param {Record<string, string>} [table] */
+/** Fast bots play from here to the end of this round's play: each seat's own profile (persona table) or ROLLOUT. @param {GameState} state @param {number} seed @param {string} pid @param {BotMemory} [memory] @param {Seats} [table] */
 function playOutRound(state, seed, pid, memory, table = undefined) {
   let x = seed | 0;
   const r = () => { x = (Math.imul(x, 1664525) + 1013904223) | 0; return (x >>> 0) / 2 ** 32; };
   /** @type {Record<string, BotMemory>} */
-  const mem = Object.fromEntries(state.seating.map((id) => [id, id === pid && memory ? { ...memory } : {}]));
+  // Each seat keeps the plan it holds (persona table: every seat's memory; otherwise only this bot's own).
+  const mem = Object.fromEntries(state.seating.map((id) => [id, id === pid && memory ? { ...memory } : { ...(table?.memories?.[id] ?? {}) }]));
   let s = state;
   const round = s.round;
   for (let n = 0; n < SIM.maxMoves && s.phase === 'play' && s.round === round; n++) {
     let moved = false;
     for (const id of s.seating) {
-      const m = playMove(s, id, r, table?.[id] ? fast(table[id]) : ROLLOUT, mem[id]);
+      const m = playMove(s, id, r, table?.profiles?.[id] ? fast(table.profiles[id]) : ROLLOUT, mem[id]);
       if (!m) continue;
       s = applyMove(s, { playerId: id, move: m });
       moved = true;

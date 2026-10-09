@@ -308,7 +308,7 @@ else {
       const actor = s.phase === 'play' && !s.pending ? s.seating[s.turn] : null;
       let moved = false;
       for (const pid of s.seating) {
-        const move = botMove(s, { playerId: pid, rng, profile: /** @type {Profile} */ (seats[pid]), memory: memory[pid], table: seats });
+        const move = botMove(s, { playerId: pid, rng, profile: /** @type {Profile} */ (seats[pid]), memory: memory[pid], table: seats, memories: memory });
         if (!move) continue;
         if (pid === actor) {
           for (const c of new Set(s.players[pid].hand)) {

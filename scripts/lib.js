@@ -49,7 +49,7 @@ export function playOut(state, rng, onRound, profiles = {}) {
     if (game.phase === 'ended') return game;
     let moved = false;
     for (const playerId of game.seating) {
-      const move = botMove(game, { playerId, rng, profile: /** @type {Profile} */ (profiles[playerId] ?? 'goal'), memory: memory[playerId], table: profiles });
+      const move = botMove(game, { playerId, rng, profile: /** @type {Profile} */ (profiles[playerId] ?? 'goal'), memory: memory[playerId], table: profiles, memories: memory });
       if (!move) continue;
       game = applyMove(game, { playerId, move });
       moved = true;
@@ -74,7 +74,7 @@ export function playRest(state, seed, bots, memories = undefined) {
   for (let n = 0; n < MAX_MOVES && s.phase === 'play' && s.round === round; n++) {
     let moved = false;
     for (const playerId of s.seating) {
-      const move = botMove(s, { playerId, rng, profile: /** @type {Profile} */ (typeof bots === 'string' ? bots : bots[playerId] ?? 'goal'), memory: memory[playerId], table: typeof bots === 'string' ? undefined : bots });
+      const move = botMove(s, { playerId, rng, profile: /** @type {Profile} */ (typeof bots === 'string' ? bots : bots[playerId] ?? 'goal'), memory: memory[playerId], table: typeof bots === 'string' ? undefined : bots, memories: memory });
       if (!move) continue;
       s = applyMove(s, { playerId, move });
       moved = true;

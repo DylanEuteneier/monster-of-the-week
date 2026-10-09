@@ -362,7 +362,7 @@ export class Game extends DurableObject<Env> {
   private tryBotMove(playerId: string): boolean {
     if (!this.game) return false;
     try {
-      const move = botMove(this.game, { playerId, rng: Math.random, profile: this.botProfiles[playerId] ?? 'goal', memory: (this.botMemory[playerId] ??= {}), table: Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'goal'])) });
+      const move = botMove(this.game, { playerId, rng: Math.random, profile: this.botProfiles[playerId] ?? 'goal', memory: (this.botMemory[playerId] ??= {}), table: Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'goal'])), memories: this.botMemory });
       if (!move) return false;
       this.game = applyMove(this.game, { playerId, move });
       return true;
