@@ -575,7 +575,7 @@ test('round 15 unsuited: Claim the Spoils takes every pile, Call a Truce stops t
   assert.equal(previewTarget(s, 'ann', 'steal-playbook', t).board[NEUTRAL].tokens[C], 3);
 });
 
-test('round 16 unsuited: Canvass the Town, Set the Bait, Defect, Stake Out (6)', () => {
+test('round 16 unsuited: Canvass the Town, Set the Bait, Defect', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const [x, y] = map[NEUTRAL].adjacent;
@@ -592,7 +592,6 @@ test('round 16 unsuited: Canvass the Town, Set the Bait, Defect, Stake Out (6)',
   assert.ok(c.kind === 'faction' && c.key === 'to' && !c.options.includes(A));
   const moved = previewTarget(s, 'ann', 'change-allegiance', { faction: A, to: B });
   assert.deepEqual([moved.players.ann.standing[A], moved.players.ann.standing[B]], [1, 4]);
-  assert.equal(previewTarget(s, 'ann', 'stake-out-6', { location: y }).board[y].influence.ann, 6);
 });
 
 test('IC1: a move goes only as far as the player can pay for the influence it places', () => {

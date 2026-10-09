@@ -1675,17 +1675,6 @@
         "text": "Move up to 4 of your standing from one faction to another. Target: the faction you leave, then the one you join."
       },
       {
-        "id": "stake-out-6",
-        "name": "Stake Out (6)",
-        "suit": null,
-        "slot": "extra",
-        "influence": 0,
-        "action": "stake",
-        "amount": 6,
-        "round": 16,
-        "text": "Place 6 influence from your supply on the target. Target: any location. (Stake Out with a larger amount, to see how strength grows with it.)"
-      },
-      {
         "id": "raise-stakes",
         "name": "Raise the Stakes",
         "suit": null,
