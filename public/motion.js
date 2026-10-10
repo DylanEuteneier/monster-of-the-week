@@ -144,7 +144,9 @@ export function motionOn() {
 
 /**
  * Fly the pieces over the page (drawn as it was before the change), then
- * resolve. Destinations get a short landing pulse.
+ * resolve. Both ends are measured again on every frame, so a page that
+ * scrolls or shifts mid-flight still lands each piece on its place.
+ * Destinations get a short landing pulse.
  * @param {Flight[]} flights @param {string} you @param {{ speed?: number }} [o]  speed > 1 is faster
  * @returns {Promise<void>}
  */
@@ -155,8 +157,8 @@ export function fly(flights, you, o = {}) {
   const layer = document.createElement('div');
   layer.className = 'flight-layer';
   document.body.appendChild(layer);
-  /** @type {Promise<unknown>[]} */
-  const done = [];
+  /** @type {{ el: HTMLElement, from: Element, to: Element, delay: number, jitter: number, last: { a: { x: number, y: number }, b: { x: number, y: number } } }[]} */
+  const pieces = [];
   /** @type {Set<Element>} */
   const landing = new Set();
   let i = 0;
@@ -164,36 +166,53 @@ export function fly(flights, you, o = {}) {
     const from = elementOf(f.from, f.owner, you, f.faction);
     const to = elementOf(f.to, f.owner, you, f.faction);
     if (!from || !to) continue;
-    const a = centre(from), b = centre(to);
     landing.add(to);
-    const lift = Math.min(80, 24 + Math.hypot(b.x - a.x, b.y - a.y) * 0.15);
-    for (let k = 0; k < Math.min(f.n, MAX_PER_PATH); k++) {
+    const n = Math.min(f.n, MAX_PER_PATH);
+    for (let k = 0; k < n; k++) {
       const el = document.createElement('div');
       el.className = 'flight';
       el.innerHTML = f.piece;
+      el.style.opacity = '0';
       layer.appendChild(el);
-      const jitter = (k - (Math.min(f.n, MAX_PER_PATH) - 1) / 2) * 6;
-      const anim = el.animate([
-        { transform: `translate(${a.x + jitter}px, ${a.y}px) translate(-50%, -50%) scale(0.9)`, opacity: 0 },
-        { transform: `translate(${a.x + jitter}px, ${a.y}px) translate(-50%, -50%) scale(1.1)`, opacity: 1, offset: 0.12 },
-        { transform: `translate(${(a.x + b.x) / 2 + jitter}px, ${Math.min(a.y, b.y) - lift}px) translate(-50%, -50%) scale(1.2)`, opacity: 1, offset: 0.55 },
-        { transform: `translate(${b.x + jitter}px, ${b.y}px) translate(-50%, -50%) scale(1)`, opacity: 1, offset: 0.92 },
-        { transform: `translate(${b.x + jitter}px, ${b.y}px) translate(-50%, -50%) scale(0.8)`, opacity: 0 },
-      ], { duration, delay: (i++ * STAGGER_MS) / speed, easing: 'cubic-bezier(.45,.05,.35,1)', fill: 'both' });
-      done.push(anim.finished.catch(() => undefined));
+      pieces.push({ el, from, to, delay: (i++ * STAGGER_MS) / speed, jitter: (k - (n - 1) / 2) * 6, last: { a: centre(from), b: centre(to) } });
     }
   }
-  if (!done.length) {
+  if (!pieces.length) {
     layer.remove();
     return Promise.resolve();
   }
-  return Promise.all(done).then(() => {
-    layer.remove();
-    for (const el of landing) {
-      el.classList.remove('is-landing');
-      void (/** @type {HTMLElement} */ (el)).offsetWidth;
-      el.classList.add('is-landing');
-      setTimeout(() => el.classList.remove('is-landing'), 500);
-    }
+  const ease = (/** @type {number} */ t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+  return new Promise((done) => {
+    const start = performance.now();
+    const frame = (/** @type {number} */ now) => {
+      let busy = false;
+      for (const p of pieces) {
+        const t = Math.min(1, Math.max(0, (now - start - p.delay) / duration));
+        if (t < 1) busy = true;
+        // Re-measure both ends (an element replaced mid-flight keeps its last place).
+        if (p.from.isConnected) p.last.a = centre(p.from);
+        if (p.to.isConnected) p.last.b = centre(p.to);
+        const { a, b } = p.last;
+        const e = ease(t);
+        const lift = Math.min(80, 24 + Math.hypot(b.x - a.x, b.y - a.y) * 0.15);
+        const x = a.x + (b.x - a.x) * e + p.jitter;
+        const y = a.y + (b.y - a.y) * e - lift * 4 * e * (1 - e);
+        const scale = 0.9 + 0.3 * Math.sin(Math.PI * e);
+        p.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${scale.toFixed(3)})`;
+        p.el.style.opacity = String(t <= 0 ? 0 : t < 0.1 ? t * 10 : t > 0.92 ? (1 - t) / 0.08 : 1);
+      }
+      if (busy) requestAnimationFrame(frame);
+      else {
+        layer.remove();
+        for (const el of landing) {
+          el.classList.remove('is-landing');
+          void (/** @type {HTMLElement} */ (el)).offsetWidth;
+          el.classList.add('is-landing');
+          setTimeout(() => el.classList.remove('is-landing'), 500);
+        }
+        done();
+      }
+    };
+    requestAnimationFrame(frame);
   });
 }

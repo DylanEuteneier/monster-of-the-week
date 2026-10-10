@@ -108,7 +108,7 @@ test('the draft renders the island, the seats and the cards to keep', () => {
   assert.match(html('header'), /MONSTER OF THE WEEK/);
   for (const id of state.factions) assert.ok(html('factions').includes(factionById(id).name.replace("'", '&#39;')), id);
   assert.match(html('board'), /src="\/assets\/hexes\/lighthouse.png"/);
-  assert.match(html('factions'), /Total presence <b>35<\/b>/);
+  assert.match(html('board'), /class="gauge-value"><b>35<\/b>/);
   for (const id of PLAYERS) assert.ok(html('players').includes(id));
   assert.match(html('hand'), /data-card-mode="keep"/);
   for (const c of state.players[ME].batch) assert.ok(html('hand').includes(`data-card="${c}"`));

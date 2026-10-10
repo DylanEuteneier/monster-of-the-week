@@ -42,6 +42,8 @@ const ui = {
   note: null,
   /** raise the whole hand, as in the draft (the tutorial shows a card) */
   raise: false,
+  /** collapse the hand out of the way (the tutorial points at the board or elsewhere) */
+  tuck: false,
   /** Hotseat: one tab plays every human seat. Tokens come from the admin API with the host key. */
   hotseat: {
     enabled: location.pathname === '/hotseat',
@@ -431,6 +433,23 @@ function factionTable(lit) {
     ${rows.join('')}</div>`;
 }
 
+/**
+ * Total presence as a gauge at the top of the island: the bar is the
+ * invaders' tokens on the board, the mark the threshold (TH1). Red past the
+ * mark: as things stand, the invaders would win.
+ * @param {number} total @param {number} threshold @param {number} rounds
+ */
+function presenceGauge(total, threshold, rounds) {
+  const top = Math.max(total, threshold * 2, 1);
+  const over = total > threshold;
+  return `<div class="gauge${over ? ' is-over' : ''}" style="--now:${(100 * total) / top}%;--mark:${(100 * threshold) / top}%" title="Total presence ${total}: the invaders win if it is more than ${threshold} at the end of round ${rounds}.">
+      <span class="gauge-label">Presence</span>
+      <span class="gauge-track"><span class="gauge-fill"></span><span class="gauge-mark"><b>${threshold}</b></span></span>
+      <span class="gauge-value"><b>${total}</b></span>
+    </div>
+    <p class="small muted gauge-note">More than ${threshold} at the end of round ${rounds}: the invaders win. ${threshold} or fewer: the island wins.</p>`;
+}
+
 function renderBoard() {
   const view = ui.view;
   if (!view) return;
@@ -456,10 +475,10 @@ function renderBoard() {
     ui.boardCentred = true;
   });
   setHtml('factions', `<h2>Factions</h2>
-    <p class="small presence-line">Total presence <b>${total}</b> · the invaders win if it is more than <b>${esc(view.options.threshold)}</b> at the end of round ${view.rounds}.</p>
     ${factionTable(lit)}`);
   setHtml('board', `
     <h2>The island</h2>
+    ${presenceGauge(total, Number(view.options.threshold), view.rounds)}
     ${board ? `<div class="map-window"><div class="board" style="width:${board.width * S}px;height:${board.height * S}px"><img class="sprite" src="${esc(board.src)}" width="${board.width * S}" height="${board.height * S}" alt="The island" style="position:absolute;left:0;top:0">${tiles.join('')}</div></div>` : ''}`);
 }
 
@@ -544,7 +563,8 @@ function renderHand() {
   const fanned = cards.map((html, i) => html.replace('<div class="card', `<div style="--i:${i};--off:${i - (n - 1) / 2}" class="card`)).join('');
   setHtml('hand', n ? `<div class="fan">${fanned}</div>` : '');
   const el = $('hand');
-  el.classList.toggle('is-open', open || ui.raise);
+  el.classList.toggle('is-open', (open || ui.raise) && !ui.tuck);
+  el.classList.toggle('is-tucked', ui.tuck && !ui.raise);
   el.classList.toggle('is-locked', !!ui.choosing || !!ui.responding);
   el.style.setProperty('--n', String(n));
 }
@@ -1144,6 +1164,8 @@ const tableHooks = {
   toast,
   /** @param {PlayerView} view @param {string[]} [bots] @param {{ instant?: boolean, speed?: number }} [o] */
   present: (view, bots = ui.bots, o = {}) => { ui.bots = bots; return receiveState(view, view.seating, !!o.instant, o.speed); },
+  /** How the hand sits: collapsed out of the way, raised to be read, or at rest. @param {'tuck' | 'raise' | 'rest'} mode */
+  hand: (mode) => { if (ui.tuck !== (mode === 'tuck') || ui.raise !== (mode === 'raise')) { ui.tuck = mode === 'tuck'; ui.raise = mode === 'raise'; renderHand(); } },
   /** Tick the cards to keep in the draft. @param {string[]} keep */
   setKeep: (keep) => { ui.keep = keep.slice(); ui.keepFor = ui.view?.me.kept.length ?? -1; renderPhase(); },
   /** Select a card with a finished target (shown as chosen), or put it down. @param {string | null} card @param {import('./engine.js').Target} [target] */
