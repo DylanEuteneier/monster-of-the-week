@@ -14,6 +14,7 @@ import { spec, factionById, locationById, cardById, waitingOn, describeTarget, n
 import art from './assets/sprites.json' with { type: 'json' };
 import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml } from './pieces.js';
 import { cardHtml as baseCardHtml, suitIcon } from './cards.js';
+import { planFlights, fly } from './motion.js';
 
 /** @typedef {import('./engine.js').PlayerView} PlayerView */
 /** @typedef {import('./engine.js').Move} Move */
@@ -32,6 +33,15 @@ const HOST_KEY_STORAGE = 'motw-host-key';
 
 const ui = {
   token: location.pathname.startsWith('/p/') ? location.pathname.slice(3) : '',
+  /** The tutorial (/tutorial): a game held in this tab, driven by tutorial.js; moves go to `local`. */
+  tutorial: location.pathname === '/tutorial',
+  /** @type {((move: Move) => void) | null} where moves go instead of the server (the tutorial) */
+  local: null,
+  /** words for the bar and header in place of the phase's own (the tutorial's resolve steps) */
+  /** @type {string | null} */
+  note: null,
+  /** raise the whole hand, as in the draft (the tutorial shows a card) */
+  raise: false,
   /** Hotseat: one tab plays every human seat. Tokens come from the admin API with the host key. */
   hotseat: {
     enabled: location.pathname === '/hotseat',
@@ -51,7 +61,7 @@ const ui = {
   chat: [],
   /** @type {WebSocket | null} */
   socket: null,
-  connectionNote: 'Connecting…',
+  connectionNote: location.pathname === '/tutorial' ? 'Setting up the tutorial…' : 'Connecting…',
   /** round:phase; unsent choices reset when it changes */
   phaseKey: '',
   /** @type {{ text: string, kind: 'error' | 'info' } | null} */
@@ -176,7 +186,7 @@ function handleServerMessage(raw) {
   const message = JSON.parse(raw);
   if (message.type === 'state') {
     ui.bots = message.bots ?? [];
-    return receiveState(message.view, message.online);
+    return void receiveState(message.view, message.online);
   }
   if (message.type === 'presence') {
     ui.online = message.online;
@@ -186,8 +196,39 @@ function handleServerMessage(raw) {
   if (message.type === 'error') return toast(message.reason);
 }
 
+/**
+ * Views waiting to be shown. Each new view is shown in turn, after the pieces
+ * that moved since the last one have flown there (motion.js), so every move,
+ * bot turns included, is seen in order. A long queue flies faster.
+ * @type {{ view: PlayerView, online: string[], instant: boolean, speed?: number, done: () => void }[]}
+ */
+const incoming = [];
+let animating = false;
+
+/** @param {PlayerView} view @param {string[]} online @param {boolean} [instant] skip the flight @param {number} [speed] how fast pieces fly (default: faster as the queue grows) @returns {Promise<void>} once shown */
+function receiveState(view, online, instant = false, speed = undefined) {
+  return new Promise((done) => {
+    incoming.push({ view, online, instant, speed, done });
+    if (!animating) void showNext();
+  });
+}
+
+/** Show queued views one after another. Runs synchronously when nothing moves. */
+async function showNext() {
+  animating = true;
+  while (incoming.length) {
+    const item = /** @type {(typeof incoming)[number]} */ (incoming.shift());
+    const before = ui.view;
+    const flights = before && !item.instant ? planFlights(before, item.view, colourOf) : [];
+    if (flights.length) await fly(flights, item.view.you, { speed: item.speed ?? 1 + incoming.length * 0.75 });
+    showState(item.view, item.online);
+    item.done();
+  }
+  animating = false;
+}
+
 /** @param {PlayerView} view @param {string[]} online */
-function receiveState(view, online) {
+function showState(view, online) {
   ui.view = view;
   ui.online = online;
   const phaseKey = `${view.round}:${view.phase}`;
@@ -226,6 +267,7 @@ function renderUnread() {
 
 /** @param {Move} move */
 function sendMove(move) {
+  if (ui.local) return ui.local(move);
   if (!ui.socket || ui.socket.readyState !== WebSocket.OPEN) return toast('Not connected');
   ui.socket.send(JSON.stringify({ type: 'move', move }));
 }
@@ -248,7 +290,7 @@ const fname = (f) => factionById(f).name;
 
 function renderHeader() {
   const view = ui.view;
-  const status = view ? `Round ${view.round} of ${view.rounds} — ${PHASE_LABELS[view.phase]}` : ui.connectionNote;
+  const status = view ? `${ui.tutorial ? 'Tutorial · ' : ''}Round ${view.round} of ${view.rounds} — ${ui.note ?? PHASE_LABELS[view.phase]}` : ui.connectionNote;
   const you = view ? `<span class="row"><span class="swatch" style="height:12px;background:${colourOf(view.you)}"></span> ${esc(view.you)}</span>` : '';
   setHtml('header', `
     <h1>MONSTER OF THE WEEK</h1>
@@ -378,7 +420,7 @@ function factionTable(lit) {
       return `<span class="standing-group${n === best ? ' is-leading' : ''}" title="${esc(pid)}: ${n}">${Array.from({ length: n }, () => cubeHtml(colourOf(pid), 8)).join('')}</span>`;
     }).join('');
     const on = lit.factions.includes(f);
-    return `<div class="faction-row${on ? ' is-candidate' : ''}"${on ? ` data-action="pick-faction" data-faction="${esc(f)}"` : ''}>
+    return `<div class="faction-row${on ? ' is-candidate' : ''}" data-faction="${esc(f)}"${on ? ' data-action="pick-faction"' : ''}>
       <span class="faction-id cell-id">${tokenHtml(f, 2, on ? 'candidate' : '')}<span><b>${esc(faction.name)}</b><span class="small muted suit-line">${suitIcon(arch?.id)} ${esc(arch?.name ?? '')}</span></span></span>
       <span class="faction-cell cell-supply" data-label="Supply"><span class="supply-row" title="${view.supply[f]} in supply">${pile(view.supply[f], () => tokenHtml(f, 1))}</span></span>
       <span class="faction-cell cell-influence" data-label="Influence"><span class="standing-row">${influence || '<span class="small muted">—</span>'}</span></span>
@@ -414,7 +456,7 @@ function renderBoard() {
     ui.boardCentred = true;
   });
   setHtml('factions', `<h2>Factions</h2>
-    <p class="small">Total presence <b>${total}</b> · the invaders win if it is more than <b>${esc(view.options.threshold)}</b> at the end of round ${view.rounds}.</p>
+    <p class="small presence-line">Total presence <b>${total}</b> · the invaders win if it is more than <b>${esc(view.options.threshold)}</b> at the end of round ${view.rounds}.</p>
     ${factionTable(lit)}`);
   setHtml('board', `
     <h2>The island</h2>
@@ -502,7 +544,7 @@ function renderHand() {
   const fanned = cards.map((html, i) => html.replace('<div class="card', `<div style="--i:${i};--off:${i - (n - 1) / 2}" class="card`)).join('');
   setHtml('hand', n ? `<div class="fan">${fanned}</div>` : '');
   const el = $('hand');
-  el.classList.toggle('is-open', open);
+  el.classList.toggle('is-open', open || ui.raise);
   el.classList.toggle('is-locked', !!ui.choosing || !!ui.responding);
   el.style.setProperty('--n', String(n));
 }
@@ -539,6 +581,7 @@ function renderPhase() {
   }
   const renderers = { draft: renderDraft, play: renderPlay, growth: renderGrowth, ended: renderEnded };
   renderers[view.phase]();
+  if (ui.note) handNext = { ...handNext, actions: [], state: 'wait', text: esc(ui.note) };
   setHtml('phase', `<span class="bar-text">${handNext.text}</span>${handNext.extra}<span class="bar-actions">${handNext.actions.join('')}</span>`);
   const dock = $('dock');
   for (const s of ['turn', 'respond', 'wait', 'end']) dock.classList.toggle(`is-${s}`, handNext.state === s);
@@ -778,7 +821,7 @@ function renderSeatbar() {
 function onClick(event) {
   // Clicking away from a selected card (on nothing you can choose) unselects it.
   if ((ui.choosing || ui.responding) && event.target instanceof HTMLElement
-    && !event.target.closest('[data-action], .card-selected, #dock, .side-stack, .overlay, .overlay-buttons')) {
+    && !event.target.closest('[data-action], .card-selected, #dock, .side-stack, .overlay, .overlay-buttons, .tut')) {
     ui.choosing = null;
     ui.responding = null;
     ui.target = {};
@@ -1090,6 +1133,23 @@ function watchHand() {
   }, { passive: true });
 }
 
+/**
+ * What the tutorial (tutorial.js) may do with the table: show views (animated,
+ * in order), take the player's moves, and set the few display flags above.
+ * @typedef {typeof tableHooks} TableHooks
+ */
+const tableHooks = {
+  ui,
+  render,
+  toast,
+  /** @param {PlayerView} view @param {string[]} [bots] @param {{ instant?: boolean, speed?: number }} [o] */
+  present: (view, bots = ui.bots, o = {}) => { ui.bots = bots; return receiveState(view, view.seating, !!o.instant, o.speed); },
+  /** Tick the cards to keep in the draft. @param {string[]} keep */
+  setKeep: (keep) => { ui.keep = keep.slice(); ui.keepFor = ui.view?.me.kept.length ?? -1; renderPhase(); },
+  /** Select a card with a finished target (shown as chosen), or put it down. @param {string | null} card @param {import('./engine.js').Target} [target] */
+  choose: (card, target = {}) => { ui.choosing = card; ui.target = structuredClone(target); ui.undo = []; render(); },
+};
+
 function main() {
   watchHand();
   document.addEventListener('click', onClick);
@@ -1097,6 +1157,7 @@ function main() {
   document.addEventListener('click', onCardClick);
   $('chat-form').addEventListener('submit', onChatSubmit);
   render();
+  if (ui.tutorial) return void import('./tutorial.js').then((m) => m.start(tableHooks));
   if (ui.hotseat.enabled) return void loadHotseat();
   if (ui.token) connect();
 }

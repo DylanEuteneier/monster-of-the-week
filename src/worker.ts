@@ -6,6 +6,7 @@
  *   GET  /ws/<token>         websocket upgrade, handled by the Durable Object
  *   GET  /host               the host page (host.html): deal games, copy links
  *   GET  /hotseat            the table UI, playing every human seat from one tab
+ *   GET  /tutorial           the table UI with a guided walkthrough, played in the browser against bots
  *   GET  /assets             the assets page (assets.html): every sprite and the palette
  *   GET  /assets/…           sprite PNGs, token outlines (SVG), and sprites.json, served straight from public/assets/
  *   POST /admin/new-game     { players?, seed?, force?, options?: Record<string,string>, bots?: string[], botProfiles?: Record<seat, profile | 'random'> }  → magic links
@@ -345,18 +346,19 @@ export class Game extends DurableObject<Env> {
     await this.runBots();
   }
 
-  /** Let every bot seat act until none can (their turn has passed or they are waiting on a human). */
+  /**
+   * Let every bot seat act until none can (their turn has passed or they are
+   * waiting on a human). Each move is saved and sent on its own, so tables
+   * can animate every bot turn in order.
+   */
   private async runBots(): Promise<void> {
     if (!this.game || !this.bots?.length) return;
-    let moved = 0;
     for (let tick = 0; tick < MAX_BOT_MOVES_PER_TICK; tick++) {
       const acted = this.bots.some((playerId) => this.tryBotMove(playerId));
       if (!acted) break;
-      moved += 1;
+      await this.ctx.storage.put({ [STORAGE_GAME]: this.game, [STORAGE_BOT_MEMORY]: this.botMemory });
+      this.broadcastState();
     }
-    if (moved === 0) return;
-    await this.ctx.storage.put({ [STORAGE_GAME]: this.game, [STORAGE_BOT_MEMORY]: this.botMemory });
-    this.broadcastState();
   }
 
   private tryBotMove(playerId: string): boolean {
@@ -443,7 +445,7 @@ export default {
     if (url.pathname.startsWith('/ws/') || url.pathname.startsWith('/admin/')) {
       return env.GAME.get(env.GAME.idFromName(GAME_NAME)).fetch(request);
     }
-    if (url.pathname.startsWith('/p/') || url.pathname === '/hotseat') {
+    if (url.pathname.startsWith('/p/') || url.pathname === '/hotseat' || url.pathname === '/tutorial') {
       return env.ASSETS.fetch(new Request(new URL('/', url), request));
     }
     if (url.pathname === '/host') {

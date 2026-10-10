@@ -1033,6 +1033,14 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** 2 (core tension), 3.7, 3.13, 3.14; bot strategy (F.9).
 - **Date:** 2026-10-07
 
+#### D17. Tutorial and moving pieces in the prototype
+
+- **Decided:** the prototype has a tutorial mode: a fully guided walkthrough of the rules, end game states, scoring, the draft, play and resolution, built from overlay modals with forward and back, a spotlight with a narrating tooltip and auto-scroll, and animated moves (opponents' turns, and the learner's own turns played on Next). Teaching order: how to win; the influence economy from factions to the board to trophies; the overall structure; each round and how to take actions. It covers each main kind of card action and its uses, then fast-forwards; it needn't play out every card or every round.
+- **Decided:** every game animates token and cube movement, including bot turns when a player is playing for real.
+- **Scope:** prototype only; not a rule of the game.
+- **Affects:** Appendix F (F.2, F.6, F.12, F.18).
+- **Date:** 2026-10-10
+
 #### D14. Tokens and cubes
 
 - **Decided:** faction presence on the board is made of **tokens**; **cubes** are always players' influence. A faction never has cubes, and a player never has tokens (apart from hidden and bluff tokens, which are separate pieces).
@@ -1089,6 +1097,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-09 | The tuned table confirmed over 40 games | Backers 18.1% a seat, trophy 21.3%; the invaders' ending 15 in 40 |
 | 2026-10-10 | Unattended experiment runner (designer: a repeatable script for several machines that jitters the tuned values, runs, judges and commits its results): `scripts/experiment.js`, one game pool per machine fed by several experiments at once, shared baselines, a testing log entry per attempt (`experiments/`); last night's 48 attempts backfilled. The play-outs-into-the-next-round switch (`deep`) removed: clearly worse | Standard bots unchanged (identical play checked) |
 | 2026-10-10 | Overnight bot tuning (designer: implement the research's best candidates and keep testing on short runs): bot games about 5× faster with identical play; tools for duplicate deals, placings and fitting the evaluation; about 30 variants tested | None adopted: no change measurably beats the standard profiles; 20-game runs only find large effects (F.9, Tuning method) |
+| 2026-10-10 | Tutorial mode at `/tutorial` and moving pieces in every game (D17, designer). The server sends a view after each bot move so bot turns animate one by one. The smoke test's opener fixed for the current marked cards | Prototype tooling, not rules. A "watch every round" mode was dropped for skipping ahead (designer: no need to play out every card) |
 | 2026-10-10 | Card strengths from the fourth card tuning pass (48 games, tuned table, play-out fix) adopted (designer) | Set v2 printed influence: Track 4, Silver Bullets 3; Broadcast 2, Beam 3; Salt and Burn 2, Board Up 4; House on Fire 3, Light Every Lamp 4 |
 | 2026-10-07 | Card scores reset to 0 and not to be trusted until cards are measured over whole rounds with strategic bots (designer). Tuning process: tournaments to tune the bots, then card tuning passes, repeat | D12's weighting falls back to random 2/3/4 per suit while every score is 0 |
 | 2026-10-07 | D15 starting place: each faction moved to a new location pays 1 of its influence there, regardless of group size (variant `whoPays`, each by default). Card scores taken off the card review page until they can be trusted (designer) | Economy, 100 bot games: with IC1, fights with 2+ players bidding rise from 1% to about 40% in round 1 (fewer fights, 0.6 a round against 3.2); each-pays slightly ahead of selected-pays |
@@ -1151,6 +1160,7 @@ Actual changes to mechanisms and game structure.
 | **Token** | The physical piece representing invaders on the board: faction presence. Always represents a specific faction. Cubes are the players' pieces (influence); tokens are the factions'. Hidden tokens and bluff tokens are separate pieces. |
 | **True tie** | *(First draft.)* A tied fight at a location aligned with neither faction. Both groups are wiped out, nobody is rewarded, and the location is scorched. |
 | **Trophy** | *(Idea.)* A token removed in a fight as a casualty and kept by a player. |
+| **Tutorial** | The prototype page (`/tutorial`) that teaches the game by walking through a guided game against bots, held in the browser. |
 | **Two-faction limit** | *(Idea.)* The rule that a location can hold at most two factions. |
 | **Volatility** | *(Idea.)* The number of tokens present at a location. When it reaches a threshold, the location boils over. |
 
@@ -2145,6 +2155,7 @@ Browser, one per seat  ──websocket──▶  Worker  ──▶  Durable Obje
 | `GET /ws/<token>` | Opens the websocket for that seat. Handled by the Durable Object. |
 | `GET /host` | Serves the host page. |
 | `GET /hotseat` | Serves the table page in hotseat mode. |
+| `GET /tutorial` | Serves the table page in tutorial mode: a guided game held in the browser against bots (F.18). |
 | `POST /admin/new-game` | Deals a new game from the seat names, an optional seed, the options chosen, and the list of bot seats. Returns the magic links. |
 | `GET /admin/links` | Lists the magic links for the current game again. |
 | `GET /admin/status` | Reports the phase, the round, and each seat, including whether it is online and whether it is a bot. |
@@ -2289,6 +2300,12 @@ The page a player sees. It is one script with no framework and no build step.
 
 - **Step by step.** When a round resolves, the page walks through the newest entry in the public log one step at a time, with controls for the next step, showing everything, and closing.
 - **The replay position is local.** Each player steps through at their own pace, and it has no effect on the game.
+
+#### Moving pieces
+
+- **Every move is seen.** When a new view arrives, every token and cube that changed place flies from where it was to where it went, then the view is drawn (`public/motion.js`). It applies to every game: your own moves, other players', bots' turns, fights (casualties fly to the trophy tab or the taker's seat, from the public "takes a pile" line) and growth (from the faction's supply).
+- **One view at a time.** Views queue and are shown in order; a long queue flies faster. The server saves and sends a view after each bot move, so bot turns animate one by one.
+- **Light only.** A landing place brightens briefly; nothing changes borders or draws outside the art. Reduced-motion settings switch the flights off.
 
 #### For this game
 
@@ -2480,6 +2497,9 @@ public/
   app.css         styles
   app.js          client: draws one player view, sends moves, previews with the engine
   host.html, host.js   host page: deal games, choose options and bots, copy links
+  motion.js       moving pieces: every token and cube that changes place flies there (F.6)
+  tutorial.js     the tutorial's walkthrough: steps, spotlight, tooltip, modals (F.18)
+  tutorial-game.js the tutorial's game, held in the browser with bots (pure)
   assets.html, assets.js   assets page: every token, token, and sprite, and the palette
   pieces.js       presence tokens and influence cubes, drawn in CSS
   assets/         built art: sprites, token outlines, and their data file
@@ -2493,6 +2513,7 @@ scripts/
   tournament.js   the tuning tournament: bot games, endings, economy, card plays and probes
   lib.js          shared by the tournament and the tests
   smoke.js        plays a whole game against a running server
+  tutorial-seed.js finds the tutorial's deal (a first round that shows every part of a round)
   admin.js        create a game, list the magic links
 assets/           art source: the palette and sprites as data, the build script, the art guide
 docs/             this document, then the rules and implementation spec
@@ -2570,6 +2591,18 @@ How the prototype looks. The working detail, the asset list, and the art tools a
 - *Open:* the asset list: which assets the prototype needs, at what sizes.
 - *Open:* whether a location shows one token per unit, or one with a number.
 - *Open:* how influence cubes are used on locations, which follows the influence rules (3.7, 3.13, 3.14).
+
+### F.18 Tutorial
+
+A guided walkthrough at `/tutorial`, for learning the first draft (Appendix G). Prototype tooling: it teaches the rules as the engine plays them and adds none.
+
+- **A real game in the tab.** The engine and three bots (one backer, two trophy players, fast search) run in the browser from a fixed deal and the fixed deck; nothing goes to the server. The deal (`SEED` in `public/tutorial-game.js`) is chosen by `scripts/tutorial-seed.js` so round 1 shows both uses of a card, fights with piles for the learner, and growth. A new engine or deck may want a new seed; the narration is written from the game itself either way, and names no card in advance.
+- **Teaching order (designer):** 1. how to win (the two endings, both scores, ties, the bet); 2. the influence economy, from the supply to standing to the board to trophies; 3. the shape of the game (rounds, the three phases, the island); 4. round 1 played out.
+- **How each part is shown (Claude's judgement, per the designer's brief):** modals with Next and Back for ideas off the board (the endings, scoring, the economy's flow, the round's phases); a spotlight (everything else dimmed, scrolled into view) with a narrating tooltip for pointing at the table; moves played out with the table's own animation (F.6).
+- **Cover each kind once, then fast-forward (designer).** In round 1 the draft's first pass is taught and the rest fast-forwarded. In play, the walkthrough stops the first time each kind of card play comes up (the learner's first turn; spending for influence; a move paid from standing; a face-down token and its bluff; an unsuited card; a pass) and fast-forwards every other turn. The first fight is shown before and after, the others summed up in one step, then growth.
+- **Then jump ahead.** The learner skips to the last round's fights (the bots play the rounds between, unseen), or plays the rest themselves against the bots. Either way the end is explained from the real result: the count against the threshold, each score, and any tie.
+- **Back** restores the game as it was before each step (the walkthrough keeps a copy of the game, the bots' memory and their seeded randomness at every shown step).
+- **Phones:** the tooltip becomes a sheet along the bottom, and the subject scrolls to the top.
 
 ---
 

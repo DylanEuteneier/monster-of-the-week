@@ -8,6 +8,7 @@
  *   npm run smoke            (reads ADMIN_SECRET from the env or .dev.vars)
  */
 import { readFileSync } from 'node:fs';
+import { cardById } from '../public/engine.js';
 
 /** @typedef {import('../public/engine.js').PlayerView} PlayerView */
 
@@ -102,7 +103,8 @@ async function main() {
     if (v.phase !== 'play') return null;
     if (v.pending) return v.pending.player === v.you ? { type: 'confirm' } : null;
     if (v.toAct !== v.you) return null;
-    const marked = v.first === v.you && !v.opened ? v.me.hand.find((c) => /^extra-[a-d]$/.test(c)) : null;
+    const mark = (/** @type {string} */ c) => ('marked' in cardById(c) && cardById(c).marked) || '';
+    const marked = v.first === v.you && !v.opened ? v.me.hand.filter(mark).sort((a, b) => mark(a).localeCompare(mark(b)))[0] : null;
     return marked ? { type: 'play', card: marked, use: 'action', target: null } : { type: 'pass' };
   };
   for (let step = 0; step < 2000; step++) {

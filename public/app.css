@@ -18,6 +18,8 @@
         .overlay       the log and table talk, top right                        z: --z-overlay
         .overlay-buttons  their buttons, top right                              z: --z-overlay-buttons
         .toast         messages, centred just above the resting hand            z: --z-toast
+        .flight-layer  pieces flying between places (motion.js)                 z: --z-flight
+        .tut           the tutorial: blocker, spotlight, tooltip, modal         z: --z-tut
       On phones the hand, bar and tabs drop back into normal flow (1), after
       the island.
 
@@ -36,6 +38,8 @@
         hand's baseline), --r (tilt), --nudge (shuffle aside for a raised
         neighbour). Each hand state below sets only these.
       Hover lifts on hexes and tokens are translateY.
+      Flying pieces (.flight) are placed and moved only by their animation's
+      transform, from the page's coordinates (motion.js).
 
    5. Scroll containers: on phones only — the slayer-group strip, the faction
       strip and the island (sideways). On desktop nothing scrolls inside the
@@ -105,6 +109,8 @@
   --z-overlay: 20;
   --z-overlay-buttons: 21;
   --z-toast: 30;
+  --z-flight: 40;
+  --z-tut: 50;
 }
 
 /* ---------------------------------------------------------------------------
@@ -715,6 +721,68 @@ button.card-opt:hover { background: #f6cca1; }
 }
 .toast.info { background: var(--color-lake); }
 
+/* ---------------------------------------------------------------------------
+   Moving pieces (motion.js, catalogue 2 and 4): every token and cube that
+   changes place flies there, in every game. Landing is a light change only.
+--------------------------------------------------------------------------- */
+.flight-layer { position: fixed; inset: 0; z-index: var(--z-flight); pointer-events: none; overflow: hidden; }
+.flight { position: absolute; left: 0; top: 0; filter: drop-shadow(2px 3px 0 var(--ink)); will-change: transform; }
+.flight .token, .flight .cube { position: relative; }
+.is-landing { animation: landing 450ms ease-out; }
+@keyframes landing { 0% { filter: brightness(1.45); } 100% { filter: brightness(1); } }
+
+/* ---------------------------------------------------------------------------
+   The tutorial (/tutorial, tutorial.js; catalogue 2). The blocker stops
+   clicks on the table while a step is shown; the spotlight is a clear box
+   whose huge shadow dims everything else; the tooltip sits beside it
+   (placed by script); the modal centres over a dimmed page.
+--------------------------------------------------------------------------- */
+.tut { position: relative; z-index: var(--z-tut); }
+.tut-block { position: fixed; inset: 0; z-index: var(--z-tut); }
+.tut-spot {
+  position: fixed; z-index: var(--z-tut); pointer-events: none;
+  box-shadow: 0 0 0 200vmax rgba(48, 43, 45, 0.78);
+  transition: left 300ms ease, top 300ms ease, width 300ms ease, height 300ms ease;
+}
+.tut-tip {
+  position: fixed; z-index: var(--z-tut); width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto;
+  padding: var(--space-3) var(--space-4); border: var(--border); background: var(--color-panel); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: var(--space-2);
+  transition: left 250ms ease, top 250ms ease;
+}
+.tut-tip h3 { color: var(--color-accent); }
+.tut-tip.is-caption { left: 50%; top: 56px; transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); pointer-events: none; }
+.tut-wrap { position: fixed; inset: 0; z-index: var(--z-tut); display: grid; place-items: center; padding: var(--space-4); background: rgba(48, 43, 45, 0.78); }
+.tut-modal { width: min(560px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); box-shadow: var(--shadow); }
+.tut-body > * + * { margin-top: var(--space-2); }
+.tut-body .token, .tut-body .cube { vertical-align: middle; }
+.tut-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--color-cell); }
+.tut-nav-btns { display: flex; gap: var(--space-2); }
+.tut-chapter { font-family: var(--font-display); font-size: 12px; text-transform: uppercase; color: var(--color-muted); }
+.tut-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.tut-cols > div { padding: var(--space-2) var(--space-3); background: var(--color-panel-2); border: var(--border); display: flex; flex-direction: column; gap: var(--space-1); }
+.tut-list { margin: 0; padding-left: var(--space-6); display: flex; flex-direction: column; gap: var(--space-1); }
+.tut-example { display: flex; flex-direction: column; gap: var(--space-1); }
+.tut-pieces { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; vertical-align: middle; }
+.tut-trophies { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.tut-trophies > span { display: inline-flex; align-items: center; gap: 2px; }
+.tut-meter { position: relative; height: 18px; margin: var(--space-4) 0 var(--space-3); background: var(--color-cell); border: var(--border); }
+.tut-meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: var(--now); background: var(--color-danger); }
+.tut-meter-mark { position: absolute; left: var(--mark); top: -18px; bottom: -4px; border-left: 2px solid var(--color-accent); padding-left: 4px; font-family: var(--font-display); font-size: 12px; color: var(--color-accent); }
+.tut-meter-now { position: absolute; left: var(--space-2); top: 1px; font-size: 11px; color: var(--color-text); }
+.tut-flow { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+.tut-node { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--space-2); background: var(--color-panel-2); border: var(--border); min-width: 72px; }
+.tut-arrow { font-size: 11px; color: var(--color-muted); text-align: center; }
+.tut-arrow::after { content: "→"; display: block; font-size: 16px; color: var(--color-accent); }
+.tut-phases { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.tut-phases > div { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); background: var(--color-panel-2); border: var(--border); }
+.tut-phases b { font-family: var(--font-display); font-weight: 400; color: var(--color-accent); text-transform: uppercase; }
+.tut-phases span { font-size: 12px; }
+.tut-changes { margin: 0; padding-left: var(--space-4); font-size: 12px; display: flex; flex-direction: column; gap: 2px; }
+.tut-card { display: flex; justify-content: center; }
+.tut-card .card { position: relative; width: var(--card-w); }
+.tut-scores { list-style: decimal; }
+
 /* ===========================================================================
    Phones and touch-only screens: one column that fits the screen. Sections
    run edge to edge; the bar, hand and side sections are ordinary sections
@@ -771,4 +839,9 @@ button.card-opt:hover { background: #f6cca1; }
   .side-name { display: inline; }
   .side-row.is-zero { display: flex; opacity: 0.6; }
   .side-right .side-row { flex-direction: row-reverse; justify-content: flex-end; }
+
+  /* The tutorial's tooltip: a sheet along the bottom; the subject scrolls to the top. */
+  .tut-tip:not(.is-caption) { left: var(--space-2); right: var(--space-2); top: auto; bottom: var(--space-2); width: auto; max-height: 45vh; }
+  .tut-card { display: none; }
+  .tut-cols, .tut-phases { grid-template-columns: 1fr; }
 }
