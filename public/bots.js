@@ -172,6 +172,8 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  *   profiles (BotOptions.table; a little cheating, fine for now).
  * - halve: spend the play-outs (keep × playouts) by successive halving: each
  *   round drops the worse half of the moves, so the best get the most.
+ * - draft: in the draft, play out the keeps of its this-many best cards (the
+ *   rest of the draft, then the round's play) and keep the best. Needs table.
  * - deep: play-outs go on this many rounds past this one (drafts included;
  *   the next deals drawn at random per play-out), so the value at
  *   their end is read later, or from the game's result. Needs table.
@@ -191,7 +193,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - sets: for the island, value standing (and influence on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, deep?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, deep?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -497,7 +499,9 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
     const base = ev(state);
     const worth = pool.map((cardId) => ({ cardId, v: (persona?.combo ? comboWorth(state, pid, cardId, p.kept, rng, ev, base) : cardWorth(state, pid, cardId, rng, ev, base)) + (rng() - 0.5) * SEARCH.noise }));
     worth.sort((a, b) => b.v - a.v);
-    return legal(state, pid, { type: 'pick', keep: worth.slice(0, p.kept.length + 1).map((w) => w.cardId) });
+    const n = p.kept.length + 1;
+    if (persona?.draft && persona.table && worth.length > n) return draftPick(state, pid, rng, worth.map((w) => w.cardId), n, ev, memory, persona, { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories });
+    return legal(state, pid, { type: 'pick', keep: worth.slice(0, n).map((w) => w.cardId) });
   }
 
   if (state.phase === 'growth') {
@@ -594,8 +598,34 @@ function halvingPick(arms, pid, rng, ev, memory, budget, table) {
   return alive[0].move;
 }
 
-/** Fast bots play from here to the end of this round's play: each seat's own profile (persona table) or ROLLOUT. @param {GameState} state @param {number} seed @param {string} pid @param {BotMemory} [memory] @param {Seats} [table] */
-function playOutRound(state, seed, pid, memory, table = undefined) {
+/**
+ * The draft's play-out search (persona draft): the `draft` best cards by their
+ * worth now, each kept with the best others, and each keep played out by the
+ * table (the rest of the draft, then the round's play), scored for this bot
+ * at the end. Shared seeds, as in the play's search. Tuning, not rules.
+ * @param {GameState} state @param {string} pid @param {() => number} rng @param {string[]} ranked  the pool, best first @param {number} n  cards to keep
+ * @param {Ev} ev @param {BotMemory | undefined} memory @param {Persona} persona @param {Seats} table
+ */
+function draftPick(state, pid, rng, ranked, n, ev, memory, persona, table) {
+  /** @type {Map<string, string[]>} */
+  const keeps = new Map();
+  for (const c of ranked.slice(0, persona.draft ?? 3)) {
+    const keep = [c, ...ranked.filter((x) => x !== c).slice(0, n - 1)];
+    keeps.set([...keep].sort().join(','), keep);
+  }
+  const seeds = Array.from({ length: persona.playouts ?? SIM.playouts }, () => Math.floor(rng() * 2 ** 31));
+  let best = ranked.slice(0, n), bestV = -Infinity;
+  for (const keep of keeps.values()) {
+    const s = applyMove(state, { playerId: pid, move: { type: 'pick', keep } });
+    let total = 0;
+    for (const seed of seeds) total += ev(playOutRound(s, seed, pid, memory, table, true));
+    if (total > bestV) { best = keep; bestV = total; }
+  }
+  return legal(state, pid, { type: 'pick', keep: best });
+}
+
+/** Fast bots play from here to the end of this round's play: each seat's own profile (persona table) or ROLLOUT. @param {GameState} state @param {number} seed @param {string} pid @param {BotMemory} [memory] @param {Seats} [table] @param {boolean} [through]  from the draft, on through the round's play */
+function playOutRound(state, seed, pid, memory, table = undefined, through = false) {
   let x = seed | 0;
   const r = () => { x = (Math.imul(x, 1664525) + 1013904223) | 0; return (x >>> 0) / 2 ** 32; };
   /** @type {Record<string, BotMemory>} */
@@ -606,7 +636,8 @@ function playOutRound(state, seed, pid, memory, table = undefined) {
   let s = deep ? { ...state, rngState: (seed ^ 0x5bd1e995) >>> 0 } : state;
   const round = s.round;
   // deep: on through the next rounds' drafts and play, until `deep` rounds after this one have been played (or the game ends).
-  const going = deep ? () => s.phase !== 'ended' && s.round <= round + deep : () => s.phase === 'play' && s.round === round;
+  // through (the draft's search): from the draft on, through this round's play.
+  const going = deep || through ? () => s.phase !== 'ended' && s.round <= round + deep : () => s.phase === 'play' && s.round === round;
   for (let n = 0; n < SIM.maxMoves * (deep + 1) && going(); n++) {
     let moved = false;
     for (const id of s.seating) {
