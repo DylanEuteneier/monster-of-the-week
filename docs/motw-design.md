@@ -2420,6 +2420,8 @@ Where a game is started. The host page holds no game rules. Everything it does i
     - *The bots' judgement against outcomes (`scripts/calibrate.mjs`, `scripts/fit.mjs`):* the bots' win chances in rounds 2–3 predict slightly *against* the winner (Platt slopes below 0), so rescaling them cannot help; the evaluation itself needs refitting. Each seat's position features are now logged each round for that fit.
     - *Successive halving (`halve`):* the same play-outs, spent in rounds that drop the worse half of the moves.
     - *Search size (40 games each, duplicate, against the standard table; points a seat, ± error):* backers with 8 play-outs −3.8 ±4.2; backers keeping 10 moves −6.9 ±3.5 (worse); trophy with 8 play-outs +3.3 ±2.7. None adopted: within noise, and the larger searches cost 30–60% more time.
+    - *Halving and spread (20 games each unless noted):* backers halving 12 moves at 2 play-outs +5.0 ±2.9 on 20 games, −1.3 ±3.9 on 40 (the early lead was noise); trophy halving 12 moves −1.7 ±1.7, halving the standard 6 moves +1.7 ±3.2, 6 play-outs +1.7 ±4.2. Wider win-chance spreads (`soft`): trophy at 1.5 −6.7 ±4.7, at 2 +3.3 ±4.3, backers at 1.5 0.0 ±4.1. None adopted. Reading: the play-out search is not what limits the bots now; the evaluation is.
+    - *Fitted evaluation (`fit`, weights in `public/eval-fit.json`):* fitted by Newton's method on 88 games' features, five folds by deal. Cross-validated log-loss (an even split 1.609): rounds 2–5 fitted 1.555, 1.485, 1.541, 1.434 against the bots' own 1.624, 1.625, 1.675, 1.725. The bots' forecasts are worse than an even split; the fit is better. It weighs total trophies and the third-weakest colour more than the bots do.
 
 ### F.10 Single game
 
