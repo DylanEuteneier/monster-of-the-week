@@ -255,17 +255,17 @@ function endingSteps() {
   const theirScore = bp.standing[backs] - bp.trophies[backs];
 
   return [
-    spot(SEL.presence, 'The final count', `${eq(`after round ${rounds()}`, op('→'), 'count every monster on the board')}<p>The mark is <b>${t}</b>. Now: ${total(s0)}.</p>`),
+    spot(SEL.presence, 'Count the monsters', `${eq(...v.factions.map((f) => tokenHtml(f, 1)), op('on the island now'), op('='), `<b>${total(s0)}</b>`)}<p>After round ${rounds()}, count the monster tokens left on the board:</p>${eq(`more than <b>${t}</b>`, op('→'), 'the invaders win')}${eq(`<b>${t}</b> or fewer`, op('→'), 'the slayers win')}`),
     demo(() => s0, () => A, () => ({ type: 'spot', target: [SEL.hex(g1.loc), SEL.hex(g2.loc), SEL.presence, SEL.trophyTab], title: 'Fights kill monsters',
-      html: `${eq(chip('fight'), op('→'), tokens(g1.f, 3), op('→'), 'trophies', op('·'), `presence <b>${total(A)}</b>`)}<p>The dead leave the board. Some become your trophies.</p>` })),
+      html: `${eq(chip('fight'), op('→'), tokens(g1.f, 3), op('→'), 'trophies', op('·'), `<b>${total(A)}</b> monsters left`)}<p>The dead leave the board. Some become your trophies.</p>` })),
     demo(() => A, () => B, () => ({ type: 'spot', target: [...grew.map(SEL.hex), SEL.presence], title: 'Growth breeds more',
-      html: `${eq(chip('round end'), op('→'), 'groups grow', op('·'), `presence <b>${total(B)}</b>`)}<p>Left alone, monsters multiply.</p>` })),
+      html: `${eq(chip('round end'), op('→'), 'groups grow', op('·'), `<b>${total(B)}</b> monsters`)}<p>Left alone, monsters multiply.</p>` })),
     demo(() => B, () => C, () => ({ type: 'spot', target: [SEL.presence, SEL.trophyTab], title: `${t} or fewer: the slayers win`,
       html: `<p>The slayers did their job. Now the slayer with the most <b>complete sets</b> of trophies wins: you score your fewest colour.</p>${trophyRow(v.factions, lopsided)}${eq('no', tokenHtml(missing, 1), op('='), 'no complete set', op('='), '<b>0</b>')}<p class="small muted">Influence counts for nothing.</p>` })),
     demo(() => C, () => D, () => ({ type: 'spot', target: [SEL.trophyTab], title: 'Hunt every kind',
       html: `${trophyRow(v.factions, even)}${eq('2 of every colour', op('='), '2 complete sets', op('='), '<b>2</b>')}${more('Ties', 'Compare the next-fewest colour, then the next.')}` })),
     demo(() => D, () => E, () => ({ type: 'spot', target: [...homes.map(SEL.hex), SEL.presence, SEL.faction(backs)], title: `More than ${t}: the invaders win`,
-      html: `${eq(tokens(backs, 3), op('most presence'), op('→'), `<b>${F(backs)}</b> decide the winner`)}<p>The faction with the most tokens on the board takes the island, and picks its winner by influence.</p>${more('Ties', 'Factions tied on tokens: the one controlling more locations wins; still tied, they win together and scores add up.')}` })),
+      html: `${eq(tokens(backs, 3), op('most monsters'), op('→'), `<b>${F(backs)}</b> decide the winner`)}<p>The faction with the most monsters on the board takes the island, and picks its winner by influence.</p>${more('Ties', 'Factions tied on tokens: the one controlling more locations wins; still tied, they win together and scores add up.')}` })),
     demo(() => E, () => F_, () => ({ type: 'spot', target: [SEL.faction(backs), SEL.trophyTab], title: 'Its backers score',
       html: `${eq(cubes(backer, want), op('−'), '0', op('='), `<b>${theirScore}</b>`, `<span class="small">${who(backer)}</span>`)}${eq(cubes(YOU, F_.players[YOU].standing[backs]), op('−'), tokens(backs, F_.players[YOU].trophies[backs]), op('='), `<b>${yourScore}</b>`, '<span class="small">you</span>')}<p>Most influence with them, minus their trophies, wins. ${who(backer)} backed them and never hunted them. Your sets count for nothing.</p>${more('Ties', 'Fewest trophies of the winner, then affinity, then the next faction down.')}` })),
     restore,

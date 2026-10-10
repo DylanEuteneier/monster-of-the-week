@@ -2312,7 +2312,7 @@ The page a player sees. It is one script with no framework and no build step.
 
 #### The presence gauge and the trophy tab
 
-- **Presence as a gauge (designer):** total presence is a bar at the top of the island, with the threshold marked; the bar turns red when presence is past the mark. It replaces the line of text above the factions.
+- **Presence as a gauge (designer):** total presence is a bar at the top of the island, labelled as the monsters on the island, with the threshold marked; the bar turns red when presence is past the mark. It replaces the line of text above the factions. The table and the tutorial speak of presence as monster tokens on the board (designer).
 - **Every trophy colour shown (designer):** your trophy tab lists every faction, a 0 included, as a reminder of what you're missing.
 
 #### For this game

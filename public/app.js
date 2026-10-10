@@ -442,12 +442,12 @@ function factionTable(lit) {
 function presenceGauge(total, threshold, rounds) {
   const top = Math.max(total, threshold * 2, 1);
   const over = total > threshold;
-  return `<div class="gauge${over ? ' is-over' : ''}" style="--now:${(100 * total) / top}%;--mark:${(100 * threshold) / top}%" title="Total presence ${total}: the invaders win if it is more than ${threshold} at the end of round ${rounds}.">
-      <span class="gauge-label">Presence</span>
+  return `<div class="gauge${over ? ' is-over' : ''}" style="--now:${(100 * total) / top}%;--mark:${(100 * threshold) / top}%" title="${total} monster tokens on the island: the invaders win if more than ${threshold} are left at the end of round ${rounds}.">
+      <span class="gauge-label">Monsters on the island</span>
       <span class="gauge-track"><span class="gauge-fill"></span><span class="gauge-mark"><b>${threshold}</b></span></span>
       <span class="gauge-value"><b>${total}</b></span>
     </div>
-    <p class="small muted gauge-note">More than ${threshold} at the end of round ${rounds}: the invaders win. ${threshold} or fewer: the island wins.</p>`;
+    <p class="small muted gauge-note">After round ${rounds}: more than ${threshold} left, the invaders win; ${threshold} or fewer, the slayers win.</p>`;
 }
 
 function renderBoard() {
