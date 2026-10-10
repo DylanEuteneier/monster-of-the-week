@@ -125,7 +125,7 @@ export { spec };
  * @property {GameEvent[]} events  what the last resolved action did, for "after" responses
  * @property {{ faction: string, left: number, leaders: string[], next: number, due: Record<string, number> } | null} growing  growth phase when a supply runs short
  * @property {RoundLog[]} log
- * @property {{ side: 'island' | 'invaders', factions: string[], players: string[], scores: Record<string, number> } | null} result
+ * @property {{ side: 'island' | 'invaders', factions: string[], players: string[], scores: Record<string, number>, placings?: string[] } | null} result
  */
 
 /**
@@ -2052,6 +2052,16 @@ function endRound(state) {
 // The end of the game (G.5)
 // ---------------------------------------------------------------------------
 
+/**
+ * Every seat in order, by the same score and tiebreaks as the winners (for
+ * measuring how bots place; not a rule: only the winners count).
+ * @param {GameState} state @param {Record<string, number>} scores @param {string[]} winners @param {(a: string, b: string) => number} tiebreak
+ */
+function placings(state, scores, winners, tiebreak) {
+  const rest = state.seating.filter((pid) => !winners.includes(pid)).sort((a, b) => scores[b] - scores[a] || tiebreak(a, b));
+  return [...winners, ...rest];
+}
+
 /** @param {GameState} state */
 function endGame(state) {
   state.phase = 'ended';
@@ -2066,7 +2076,7 @@ function endGame(state) {
     const top = ranked.filter((x) => x.p === ranked[0].p && x.c === ranked[0].c).map((x) => x.f);
     for (const pid of state.seating) scores[pid] = top.reduce((n, f) => n + (state.players[pid].standing[f] ?? 0) - state.players[pid].trophies[f], 0);
     const order = ranked.map((x) => x.f);
-    const winners = rankPlayers(state, scores, (a, b) => {
+    const tiebreak = (/** @type {string} */ a, /** @type {string} */ b) => {
       // ET4: fewest trophies of the winning faction(s), then affinity, then the next faction (ET1).
       const ta = top.reduce((n, f) => n + state.players[a].trophies[f], 0), tb = top.reduce((n, f) => n + state.players[b].trophies[f], 0);
       if (ta !== tb) return ta - tb;
@@ -2077,19 +2087,21 @@ function endGame(state) {
         if (sa !== sb) return sb - sa;
       }
       return 0;
-    });
-    state.result = { side: 'invaders', factions: top, players: winners, scores };
+    };
+    const winners = rankPlayers(state, scores, tiebreak);
+    state.result = { side: 'invaders', factions: top, players: winners, scores, placings: placings(state, scores, winners, tiebreak) };
     logLine(state, `Total presence ${total} is more than ${threshold}: the invaders win. ${top.map((f) => factionById(f).name).join(' and ')} take the island. Winner: ${winners.join(', ')}.`);
   } else {
     // TS2: the count of the colour held fewest of; WT1 compares the next weakest.
     const sorted = (/** @type {string} */ pid) => state.factions.map((f) => state.players[pid].trophies[f]).sort((x, y) => x - y);
     for (const pid of state.seating) scores[pid] = sorted(pid)[0];
-    const winners = rankPlayers(state, scores, (a, b) => {
+    const tiebreak = (/** @type {string} */ a, /** @type {string} */ b) => {
       const sa = sorted(a), sb = sorted(b);
       for (let i = 1; i < sa.length; i++) if (sa[i] !== sb[i]) return sb[i] - sa[i];
       return 0;
-    });
-    state.result = { side: 'island', factions: [], players: winners, scores };
+    };
+    const winners = rankPlayers(state, scores, tiebreak);
+    state.result = { side: 'island', factions: [], players: winners, scores, placings: placings(state, scores, winners, tiebreak) };
     logLine(state, `Total presence ${total} is not more than ${threshold}: the island wins. Winner: ${winners.join(', ')}.`);
   }
   return state;

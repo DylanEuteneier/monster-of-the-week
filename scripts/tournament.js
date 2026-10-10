@@ -62,7 +62,7 @@ import { seededRng, chance, measureState, MAX_MOVES } from './lib.js';
 /** @typedef {{ r: number, fights: number, by: number[], influenced: number, onBoard: number, standing: number }} Economy */
 /** @typedef {{ r: number, opening: boolean, profile: string, benefit: Record<string, number | null> }} Probe */
 /**
- * @typedef {{ g: number, side: 'island' | 'invaders', seats: Record<string, string>, groups: Record<string, string>, winners: string[], deck: string[],
+ * @typedef {{ g: number, side: 'island' | 'invaders', seats: Record<string, string>, groups: Record<string, string>, winners: string[], placings: string[], deck: string[],
  *   presence: number[], scorched: number, trophies: Record<string, number>, trophiesByColour?: Record<string, Record<string, number>>, scores?: Record<string, number>, goals?: Record<string, string>[], wonBy?: string[], standing?: Record<string, Record<string, number>>, presenceBy?: Record<string, number>, economy: Economy[], plays: Play[], held: string[], unplayed: string[],
  *   playable: Record<string, [number, number]>, probes: Probe[], forecasts: { r: number, seat: string, p: number, f?: Record<string, number> }[] }} GameRecord
  */
@@ -365,7 +365,7 @@ else {
     }
     const result = /** @type {NonNullable<GameState['result']>} */ (s.result);
     parentPort?.postMessage(/** @type {GameRecord} */ ({
-      g, side: result.side, seats, groups: Object.fromEntries(s.seating.map((p) => [p, s.players[p].group])), winners: result.players, deck: s.deck ?? [],
+      g, side: result.side, seats, groups: Object.fromEntries(s.seating.map((p) => [p, s.players[p].group])), winners: result.players, placings: result.placings ?? [], deck: s.deck ?? [],
       presence, scorched: Object.values(s.board).filter((p) => p.scorched).length, trophies: Object.fromEntries(s.seating.map((p) => [p, Object.values(s.players[p].trophies).reduce((a, b) => a + b, 0)])),
       trophiesByColour: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].trophies }])), scores: s.result?.scores ?? {}, goals, wonBy: s.result?.factions ?? [], standing: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].standing }])), presenceBy: Object.fromEntries(s.factions.map((f) => [f, presenceOf(s, f)])),
       economy, plays, held, unplayed, playable, probes, forecasts,
