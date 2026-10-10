@@ -936,18 +936,18 @@
     {
       "id": "deck",
       "label": "Deck",
-      "description": "Prototype test plumbing, not a rule. Mixed: when the game is created, each suit draws one Strike, one Shift and one Signature at random from the deck and the test cards, printed 2, 3 and 4 influence in random order (9 per suit, D12); the unsuited extras stay. Fixed: the 21-card Set v2.",
+      "description": "Prototype test plumbing, not a rule. Mixed: when the game is created, each suit draws one Strike, one Shift and one Signature at random from the deck and the test cards, printed 2, 3 and 4 influence by measured strength, the strongest 2 and the weakest 4 (9 per suit, D12); the marked unsuited cards (A, C, D) stay and the other three unsuited slots draw at random from the unmarked unsuited cards. Fixed: Set v2, its unsuited slots filled at random to six.",
       "default": "mixed",
       "choices": [
         {
           "id": "mixed",
           "label": "Mixed",
-          "description": "A random card per slot per suit, from the deck and the test cards."
+          "description": "A random card per slot per suit, from the deck and the test cards; the marked cards plus three random unsuited cards."
         },
         {
           "id": "fixed",
           "label": "Fixed (Set v2)",
-          "description": "The 21 cards in spec.cards."
+          "description": "The cards in spec.cards, the open unsuited slots filled at random."
         }
       ]
     }
