@@ -407,10 +407,16 @@ function chapterEconomy() {
   return [
     chapter('3 · Influence'),
     ...(both ? [spot(SEL.hex(both), 'Tokens and cubes', `${eq(tokenHtml(v.board[both] ? Object.keys(v.board[both].tokens).find((f) => v.board[both].tokens[f] > 0) ?? faction : faction, 2), op('='), 'a faction\'s monsters')}${eq(cubeHtml(colour(YOU), 12), op('='), 'your influence')}`)] : []),
-    spot(onBoard.length ? onBoard.map(SEL.hex) : SEL.board, 'Influence on a location', `
-      ${eq(cubes(YOU, 2), op('on'), chip('location'), op('='), 'a bid for', tokens(others[0], 3))}
-      ${frame('When it fights, most cubes takes the bigger pile of dead tokens; second, the smaller.', 'Bid where the big fights will be.')}
-      <p class="small muted">You start with a cube on each ${suitIcon(arch.id)} location.</p>`),
+    (() => {
+      // A concrete example: your cubes against a rival's at one of your locations, and who takes which pile.
+      const rival = R.table.state.seating.find((pid) => pid !== YOU) ?? YOU;
+      const where = onBoard[0] ? L(onBoard[0]) : 'a location';
+      return spot(onBoard.length ? onBoard.map(SEL.hex) : SEL.board, 'Influence on a location: a bid for the dead', `
+      ${eq(cubes(YOU, 2), '<span class="small">you</span>', op('vs'), cubes(rival, 1), `<span class="small">${who(rival)}</span>`, op('at'), chip(where))}
+      ${eq(chip('fight there'), op('→'), 'you take the bigger pile', tokens(others[0], 3), op('·'), `${who(rival)} the smaller`, tokens(faction, 1))}
+      ${frame('When a location fights, the most cubes there takes the bigger pile of dead tokens; second most, the smaller.', 'Bid where the big fights will be.')}
+      <p class="small muted">Lit: you start with a cube on each ${suitIcon(arch.id)} location.</p>`);
+    })(),
     spot(SEL.faction(faction), 'Influence on a faction (A): fuel for gambits', `
       ${eq(tokenHtml(faction, 1), cubes(YOU, 1), op('→'), 'bait', op('→'), cubes(YOU, 1), op('on'), chip('location'))}
       ${frame('Each place your gambit lures a faction to costs 1 influence with it, and that cube lands there with them: your bid.', 'A faction that has never noticed you won\'t take your bait. Build influence before you need it.')}
