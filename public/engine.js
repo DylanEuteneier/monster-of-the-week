@@ -302,6 +302,15 @@ export function shuffle(items, rngState) {
 
 /** @param {GameState} state @param {string} loc */
 const factionsAt = (state, loc) => Object.keys(state.board[loc].tokens).filter((f) => state.board[loc].tokens[f] > 0);
+/** Every group on the board (memoised per state while a bot searches). @param {GameState} state @returns {{ location: string, faction: string }[]} */
+function groupsOf(state) {
+  const hit = memoDepth ? GROUPS_MEMO.get(state) : undefined;
+  if (hit) return hit;
+  const out = LOCATION_IDS.flatMap((loc) => factionsAt(state, loc).map((f) => ({ location: loc, faction: f })));
+  if (memoDepth) GROUPS_MEMO.set(state, out);
+  return out;
+}
+const GROUPS_MEMO = new WeakMap();
 /** @param {GameState} state @param {string} loc @param {string} faction */
 const tokensOf = (state, loc, faction) => state.board[loc].tokens[faction] ?? 0;
 /** @param {string} loc */
@@ -2294,7 +2303,7 @@ function nextShape(state, pid, cardId, t) {
   const mode = /** @type {'location' | 'faction'} */ (t.mode ?? 'location');
   if (card.suit && !t.mode) return { kind: 'mode' };
   const sf = suitFaction(state, card);
-  const groups = LOCATION_IDS.flatMap((loc) => factionsAt(state, loc).map((f) => ({ location: loc, faction: f })));
+  const groups = () => groupsOf(state);
   const groupOk = (/** @type {{ location: string, faction: string }} */ g) => !card.suit || (mode === 'location' ? suitLocations(card).includes(g.location) : g.faction === sf);
   const placeOk = (/** @type {string} */ loc) => !state.board[loc].scorched && (!card.suit || mode === 'faction' || suitLocations(card).includes(loc));
   const ok = (/** @type {Target} */ x) => !checkTarget(state, pid, card, x);
@@ -2341,7 +2350,7 @@ function nextShape(state, pid, cardId, t) {
     }
     case 'sow': {
       // Only groups that can be chased at least one step: influence with the faction, and a bordering location it can enter.
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => (state.players[pid].standing[g.faction] ?? 0) > 0 && exits(g, MAP[g.location].adjacent).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => (state.players[pid].standing[g.faction] ?? 0) > 0 && exits(g, MAP[g.location].adjacent).length > 0) };
       const path = t.path ?? [];
       if (path.includes('__stop')) return { kind: 'done' };
       const at = path.length ? path[path.length - 1] : t.location;
@@ -2355,7 +2364,7 @@ function nextShape(state, pid, cardId, t) {
     case 'halve': case 'halve-far': case 'drive-out': case 'drive-out-either': case 'teleport': {
       const far = card.action === 'teleport' || card.action === 'halve-far';
       if (!t.location) {
-        const gs = groups.filter(groupOk).filter((g) => (!card.action.startsWith('halve') || tokensOf(state, g.location, g.faction) >= 2)
+        const gs = groups().filter(groupOk).filter((g) => (!card.action.startsWith('halve') || tokensOf(state, g.location, g.faction) >= 2)
           && exits(g, far ? LOCATION_IDS : MAP[g.location].adjacent).length > 0);
         return { kind: 'group', key: 'group', options: card.action.startsWith('drive-out') ? gs.filter((g) => MAP[g.location].adjacent.some((to) => ok({ ...t, location: g.location, faction: g.faction, to }))) : gs };
       }
@@ -2363,9 +2372,9 @@ function nextShape(state, pid, cardId, t) {
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: reach.filter((to) => canEnter(state, to, /** @type {string} */ (t.faction))) };
     }
     case 'reinforce':
-      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => state.supply[g.faction] > 0) };
+      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => state.supply[g.faction] > 0) };
     case 'defect': case 'pit':
-      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups.filter((g) => ok({ mode, location: g.location, faction: g.faction })) };
+      return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups().filter((g) => ok({ mode, location: g.location, faction: g.faction })) };
     case 'carry-fight': {
       const dests = (/** @type {string} */ loc) => MAP[loc].adjacent.filter((to) => ok({ mode, location: loc, to }));
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((loc) => dests(loc).length > 0) };
@@ -2373,27 +2382,27 @@ function nextShape(state, pid, cardId, t) {
     }
     case 'slide': case 'chain': {
       const dirs = (/** @type {string} */ loc, /** @type {string} */ f) => spec.map.directions.map((d) => d.id).filter((d) => ok({ mode, location: loc, faction: f, direction: d }));
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => dirs(g.location, g.faction).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => dirs(g.location, g.faction).length > 0) };
       return t.direction ? { kind: 'done' } : { kind: 'direction', options: dirs(t.location, /** @type {string} */ (t.faction)) };
     }
     case 'swap-far': {
-      const partners = (/** @type {{ location: string, faction: string }} */ a) => groups.filter((b) => canSwap(state, a, b));
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => partners(g).length > 0) };
+      const partners = (/** @type {{ location: string, faction: string }} */ a) => groups().filter((b) => canSwap(state, a, b));
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => partners(g).length > 0) };
       return t.moves?.length ? { kind: 'done' } : { kind: 'group', key: 'move', options: partners({ location: t.location, faction: /** @type {string} */ (t.faction) }) };
     }
     case 'leap': {
       const dirs = (/** @type {string} */ loc, /** @type {string} */ f) => spec.map.directions.map((d) => d.id).filter((d) => ok({ mode, location: loc, faction: f, direction: d }));
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => dirs(g.location, g.faction).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => dirs(g.location, g.faction).length > 0) };
       return t.direction ? { kind: 'done' } : { kind: 'direction', options: dirs(t.location, /** @type {string} */ (t.faction)) };
     }
     case 'network': {
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => networkSpots(state, card, { mode, location: g.location, faction: g.faction }).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => networkSpots(state, card, { mode, location: g.location, faction: g.faction }).length > 0) };
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: networkSpots(state, card, t) };
     }
     case 'shove': {
       const f = /** @type {string} */ (t.faction);
       const tos = (/** @type {string} */ loc, /** @type {string} */ gf) => MAP[loc].adjacent.filter((to) => !state.board[to].scorched && (canEnter(state, to, gf) || (shoveable(state, to, gf) ?? []).some((x) => MAP[to].adjacent.some((d) => canEnter(state, d, x)))));
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => tos(g.location, g.faction).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => tos(g.location, g.faction).length > 0) };
       if (!t.to) return { kind: 'location', key: 'to', options: tos(t.location, f) };
       const can = shoveable(state, t.to, f);
       if (!can) return { kind: 'done' };
@@ -2409,12 +2418,12 @@ function nextShape(state, pid, cardId, t) {
     case 'surveil':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((loc) => cameraSpots(state, pid, loc).length > 0) };
     case 'follow': {
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => exits(g, MAP[g.location].adjacent).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => exits(g, MAP[g.location].adjacent).length > 0) };
       const f = /** @type {string} */ (t.faction);
       if (!t.to) return { kind: 'location', key: 'to', options: MAP[t.location].adjacent.filter((l) => canEnter(state, l, f)) };
       if (t.moves?.length) return { kind: 'done' };
       const to = t.to;
-      const followers = groups.filter((g) => g.faction !== f && g.location !== to && MAP[to].adjacent.includes(g.location) && canFollow(state, to, f, g.faction));
+      const followers = groups().filter((g) => g.faction !== f && g.location !== to && MAP[to].adjacent.includes(g.location) && canFollow(state, to, f, g.faction));
       return followers.length ? { kind: 'group', key: 'move', options: followers, optional: true } : { kind: 'done' };
     }
     case 'repel':
@@ -2423,7 +2432,7 @@ function nextShape(state, pid, cardId, t) {
       if (state.players[pid].supply <= 0) return { kind: 'location', key: 'location', options: [] };
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode) };
     case 'pit-fall':
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => tokensOf(state, g.location, g.faction) <= 3 && pitFalls(state, g.location, g.faction).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => tokensOf(state, g.location, g.faction) <= 3 && pitFalls(state, g.location, g.faction).length > 0) };
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: pitFalls(state, t.location, /** @type {string} */ (t.faction)) };
     case 'raise-stakes':
       if (state.players[pid].supply <= 0) return { kind: 'location', key: 'location', options: [] };
@@ -2432,7 +2441,7 @@ function nextShape(state, pid, cardId, t) {
       if (!t.faction) return { kind: 'faction', options: state.factions.slice() };
       return t.to ? { kind: 'done' } : { kind: 'faction', key: 'to', options: state.factions.filter((f) => f !== t.faction && (state.players[pid].standing[f] ?? 0) !== (state.players[pid].standing[/** @type {string} */ (t.faction)] ?? 0)) };
     case 'split': {
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => tokensOf(state, g.location, g.faction) >= 2 && exits(g, MAP[g.location].adjacent).length >= 2) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => tokensOf(state, g.location, g.faction) >= 2 && exits(g, MAP[g.location].adjacent).length >= 2) };
       const placedN = Object.values(t.split ?? {}).reduce((a, b) => a + b, 0);
       const left = tokensOf(state, t.location, /** @type {string} */ (t.faction)) - placedN;
       const dests = MAP[t.location].adjacent.filter((l) => canEnter(state, l, /** @type {string} */ (t.faction)));
@@ -2480,7 +2489,7 @@ function nextShape(state, pid, cardId, t) {
     case 'wake-dead': case 'swarm': case 'backdoor':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode) };
     case 'hack':
-      if (!t.location) return { kind: 'group', key: 'group', options: groups.filter(groupOk).filter((g) => loneRivals(state, g.faction, LOCATION_IDS).some((l) => l !== g.location)) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneRivals(state, g.faction, LOCATION_IDS).some((l) => l !== g.location)) };
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: loneRivals(state, /** @type {string} */ (t.faction), LOCATION_IDS).filter((l) => l !== t.location) };
     case 'truce':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched) };

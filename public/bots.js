@@ -290,21 +290,28 @@ function chancesAfter(s, pid) {
   const top = Math.max(...presence);
   const w = presence.map((n) => Math.exp((n - top) / (1.5 + 1.5 * roundsLeft)));
   const wSum = w.reduce((a, b) => a + b, 0);
-  const net = (/** @type {string} */ id, /** @type {string} */ f) => (s.players[id].standing[f] ?? 0) - s.players[id].trophies[f];
-  const lead = (/** @type {string} */ f) => net(pid, f) - Math.max(...others.map((o) => net(o, f)));
-  const asInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid(lead(f) / (1 + roundsLeft)), 0);
-  const marginInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * lead(f), 0);
+  // Each seat's net standing with each faction, and per faction the best and second best seat (so "the best of the others" is a lookup).
+  const nets = Object.fromEntries(s.seating.map((id) => [id, s.factions.map((f) => (s.players[id].standing[f] ?? 0) - s.players[id].trophies[f])]));
+  const best = s.factions.map((_, i) => { let a = -Infinity, b = -Infinity, who = ''; for (const id of s.seating) { const v = nets[id][i]; if (v > a) { b = a; a = v; who = id; } else if (v > b) b = v; } return { a, b, who }; });
+  const bestOther = (/** @type {string} */ id, /** @type {number} */ i) => (best[i].who === id ? best[i].b : best[i].a);
+  const lead = (/** @type {number} */ i) => nets[pid][i] - bestOther(pid, i);
+  const asInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid(lead(i) / (1 + roundsLeft)), 0);
+  const marginInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * lead(i), 0);
   // The best rival's chance of leading the winning faction (each rival against everyone else).
-  const rivalInvaders = Math.max(0, ...others.map((o) => s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid((net(o, f) - Math.max(...s.seating.filter((x) => x !== o).map((x) => net(x, f)))) / (1 + roundsLeft)), 0)));
-  const isl = (/** @type {string} */ id) => {
+  const rivalInvaders = Math.max(0, ...others.map((o) => s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid((nets[o][i] - bestOther(o, i)) / (1 + roundsLeft)), 0)));
+  /** @type {Record<string, number>} */
+  const islOf = {};
+  /** @type {Record<string, number>} */
+  const allOf = {};
+  for (const id of s.seating) {
     const t = s.factions.map((f) => s.players[id].trophies[f]).sort((a, b) => a - b);
-    return t[0] + 0.35 * t[1] + 0.12 * t[2];
-  };
-  const marginIsland = isl(pid) - Math.max(...others.map(isl));
-  const islAll = (/** @type {string} */ id) => isl(id) + 0.02 * s.factions.reduce((n, f) => n + s.players[id].trophies[f], 0);
-  const linearIsland = islAll(pid) - Math.max(...others.map(islAll)); // the island margin, counted directly
+    islOf[id] = t[0] + 0.35 * t[1] + 0.12 * t[2];
+    allOf[id] = islOf[id] + 0.02 * s.factions.reduce((n, f) => n + s.players[id].trophies[f], 0);
+  }
+  const marginIsland = islOf[pid] - Math.max(...others.map((o) => islOf[o]));
+  const linearIsland = allOf[pid] - Math.max(...others.map((o) => allOf[o])); // the island margin, counted directly
   const asIsland = sigmoid(marginIsland / (0.6 + 0.8 * roundsLeft));
-  const backers = others.filter((o) => Math.max(...s.factions.map((f) => net(o, f))) >= TABLE.backing).length;
+  const backers = others.filter((o) => Math.max(...nets[o]) >= TABLE.backing).length;
   const prior = Math.min(0.9, Math.max(0.1, TABLE.base + TABLE.step * backers));
   const rounds = Number(s.options.rounds);
   const known = rounds > 1 ? Math.min(1, (s.round - 1) / (rounds - 1)) : 1; // how much presence says by now
