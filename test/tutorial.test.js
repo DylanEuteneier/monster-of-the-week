@@ -46,7 +46,7 @@ test('flights: every token and cube that moved is paired from where it was to wh
   // 3 cubes from Ann's supply into standing with f; 1 of them onto `to` with 1 of f's tokens from `from`.
   after.players.Ann.supply -= 3;
   after.players.Ann.standing[f] += 2;
-  after.board[to].influence.Ann = (after.board[to].influence.Ann ?? 0) + 1;
+  after.board[to].sway.Ann = (after.board[to].sway.Ann ?? 0) + 1;
   after.board[from].tokens[f] -= 1;
   after.board[to].tokens[f] += 1;
   const flights = planFlights(before, after, () => '#fff');
@@ -54,4 +54,20 @@ test('flights: every token and cube that moved is paired from where it was to wh
   const cube = flights.filter((x) => x.owner === 'Ann');
   assert.deepEqual(token.map((x) => [x.from, x.to, x.n]), [[{ kind: 'loc', loc: from }, { kind: 'loc', loc: to }, 1]]);
   assert.deepEqual(cube.map((x) => [x.from.kind, x.to.kind, x.n]), [['supply', 'standing', 2], ['supply', 'loc', 1]]);
+});
+
+test('a game saved before influence was renamed sway still loads', async () => {
+  const { upgradeState } = await import('../public/engine.js');
+  const { upgradeRecord } = await import('../scripts/lib.js');
+  const s = /** @type {any} */ (createGame({ seed: 2, players: ['Ann', 'Bob', 'Cat'] }));
+  const loc = Object.keys(s.board)[0];
+  s.board[loc].influence = { Ann: 2 }; delete s.board[loc].sway;
+  s.options.influenceRequired = s.options.swayRequired; delete s.options.swayRequired;
+  s.events = [{ type: 'influence-spent', player: 'Ann' }];
+  const up = /** @type {any} */ (upgradeState(s));
+  assert.deepEqual(up.board[loc].sway, { Ann: 2 });
+  assert.equal('influence' in up.board[loc], false);
+  assert.equal(up.options.swayRequired, 'on');
+  assert.equal(up.events[0].type, 'sway-spent');
+  assert.deepEqual(upgradeRecord({ use: 'influence', dWinInfluence: 1, locationsWithInfluence: 2, name: 'influence of the moon' }), { use: 'sway', dWinSway: 1, locationsWithSway: 2, name: 'influence of the moon' });
 });

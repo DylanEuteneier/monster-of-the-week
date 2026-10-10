@@ -83,7 +83,7 @@ function render() {
     panel('Factions', 'icon 16×16; CSS token', `
       <p class="small muted">Each faction's icon, and its presence token: a cardboard token cut to the icon's outline (outline from <span class="mono">assets/sprites.py</span>; card, edge and shadow in CSS). A candidate token's edge turns gold and its face glows gold, pulsing gently; hovered, it brightens and lifts.</p>
       <div class="asset-grid">${factionCards.join('')}</div>`),
-    panel('Influence cubes', 'seat colours: red, gold, cyan, lime, pink', `<p class="small muted">A cube seen from above, shaded from one seat colour.</p><div class="asset-grid">${cubeCards.join('')}</div>`),
+    panel('Sway cubes', 'seat colours: red, gold, cyan, lime, pink', `<p class="small muted">A cube seen from above, shaded from one seat colour.</p><div class="asset-grid">${cubeCards.join('')}</div>`),
     panel('Archetype symbols', '9×9', `<div class="asset-grid">${spec.archetypes.map((a) => card(`${esc(a.symbol)} ${esc(a.name)}`, [1, 3, 6].map((s) => fig(img(symbols9[a.id], s), `${s}×`)).join(''))).join('')}</div>`),
   ].join('');
   $('palette').innerHTML = Object.entries(art.palette)
@@ -107,7 +107,7 @@ render();
 async function cards() {
   const load = async (/** @type {string} */ url) => { try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; } };
   /**
-   * @typedef {{ held: number, playedPct: number | null, actionPct: number | null, playablePct: number | null, dWinAction: number | null, dWinInfluence: number | null,
+   * @typedef {{ held: number, playedPct: number | null, actionPct: number | null, playablePct: number | null, dWinAction: number | null, dWinSway: number | null,
    *   winAfterAction: number | null, opener: number, perAction: Record<string, number | null>, probe: { n: number, benefit: number | null, up: number | null, opening: number | null, openingN: number, noTarget: number } }} CardFigures
    * @type {{ games: number, updated: string, profiles: string[], cards: Record<string, CardFigures> } | null}
    */
@@ -123,7 +123,7 @@ async function cards() {
   };
   const band = banding((c) => c.probe.benefit), bandOpen = banding((c) => (c.probe.openingN ? c.probe.opening : null)), bandHeld = banding((c) => c.held),
     bandPlayed = banding((c) => c.playedPct), bandAction = banding((c) => c.actionPct), bandPlayable = banding((c) => c.playablePct), bandDWin = banding((c) => c.dWinAction),
-    bandDInfl = banding((c) => c.dWinInfluence), bandWon = banding((c) => c.winAfterAction), bandBattle = banding((c) => (c.perAction.trophies === null ? null : (c.perAction.trophies ?? 0) + (c.perAction.flips ?? 0))),
+    bandDInfl = banding((c) => c.dWinSway), bandWon = banding((c) => c.winAfterAction), bandBattle = banding((c) => (c.perAction.trophies === null ? null : (c.perAction.trophies ?? 0) + (c.perAction.flips ?? 0))),
     bandMoved = banding((c) => c.perAction.moved);
   const playTags = (/** @type {string} */ id, /** @type {boolean} */ acts) => {
     const c = plays?.cards[id];
@@ -134,10 +134,10 @@ async function cards() {
       + (c.probe.openingN ? tag('Opener probe', sign(c.probe.opening), `The same, at each round's first play (${c.probe.openingN} probes)`, bandOpen(id)) : '')
       + tag('Held', String(c.held), 'Times in a hand at the start of play', bandHeld(id))
       + tag('Played', pctOf(c.playedPct), 'Share of the times it was held that it was played', bandPlayed(id))
-      + (acts ? tag('Action', pctOf(c.actionPct), 'Share of its plays that were for its action (the rest spent for influence)', bandAction(id)) : '')
+      + (acts ? tag('Action', pctOf(c.actionPct), 'Share of its plays that were for its action (the rest spent for sway)', bandAction(id)) : '')
       + (acts ? tag('Playable', pctOf(c.playablePct), 'Share of its holder\'s turns on which it had a legal target', bandPlayable(id)) : '')
       + (acts ? tag('Δ win', sign(c.dWinAction), 'Mean swing in its player\'s chance of winning when played for its action, in percentage points', bandDWin(id)) : '')
-      + (c.dWinInfluence === null ? '' : tag('Δ win (infl.)', sign(c.dWinInfluence), 'Mean swing in win chance when spent for influence, in percentage points', bandDInfl(id)))
+      + (c.dWinSway === null ? '' : tag('Δ win (infl.)', sign(c.dWinSway), 'Mean swing in win chance when spent for sway, in percentage points', bandDInfl(id)))
       + (acts ? tag('Won after', pctOf(c.winAfterAction), 'How often its player went on to win after playing it for its action (an even share is 100% ÷ players)', bandWon(id)) : '')
       + (acts && fx.trophies !== null ? tag('Battle', String(Math.round(((fx.trophies ?? 0) + (fx.flips ?? 0)) * 10) / 10), 'Per action play: trophies changing hands at this round\'s fights, plus fights flipped weighted by the tokens lost', bandBattle(id)) : '')
       + (acts && fx.moved !== null ? tag('Moved', String(fx.moved), 'Per action play: pieces moved or placed', bandMoved(id)) : '')
@@ -148,8 +148,8 @@ async function cards() {
   const tests = /** @type {AnyCard[]} */ (/** @type {unknown} */ (spec.testCards.cards));
   const all = [...deck.map((c) => ({ c, status: c.marked ? `Deck · marked ${c.marked}` : 'Deck' })), ...tests.map((c) => ({ c, status: c.round ? `Test · round ${c.round}` : 'Held out' }))];
   /** Types, from H.9's action types. */
-  const TYPES = ['Presence', 'Fight modifier', 'Influence', 'Response only'];
-  const typeOf = (/** @type {string | null} */ action) => (!action ? 'Response only' : action === 'token' ? 'Fight modifier' : ['move-influence', 'cash-in'].includes(action) ? 'Influence' : 'Presence');
+  const TYPES = ['Presence', 'Fight modifier', 'Sway', 'Response only'];
+  const typeOf = (/** @type {string | null} */ action) => (!action ? 'Response only' : action === 'token' ? 'Fight modifier' : ['move-sway', 'cash-in'].includes(action) ? 'Sway' : 'Presence');
   const suits = [...spec.archetypes.map((a) => a.id), null];
   all.sort((x, y) => suits.indexOf(x.c.suit) - suits.indexOf(y.c.suit) || TYPES.indexOf(typeOf(x.c.action)) - TYPES.indexOf(typeOf(y.c.action))
     || (x.c.action ?? '').localeCompare(y.c.action ?? '') || x.c.name.localeCompare(y.c.name));

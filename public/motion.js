@@ -99,7 +99,7 @@ export function planFlights(before, after, colourOf) {
     /** @type {[Spot, number][]} */
     const changes = [
       ...after.factions.map((f) => /** @type {[Spot, number]} */ ([{ kind: 'standing', faction: f }, (now.standing[f] ?? 0) - (was.standing[f] ?? 0)])),
-      ...locs.map((loc) => /** @type {[Spot, number]} */ ([{ kind: 'loc', loc }, (after.board[loc].influence[pid] ?? 0) - (before.board[loc]?.influence[pid] ?? 0)])),
+      ...locs.map((loc) => /** @type {[Spot, number]} */ ([{ kind: 'loc', loc }, (after.board[loc].sway[pid] ?? 0) - (before.board[loc]?.sway[pid] ?? 0)])),
       [{ kind: 'supply' }, now.supply - was.supply],
     ];
     // Natural paths first: standing onto the board, the board back to standing, then the supply.
@@ -122,7 +122,7 @@ function elementOf(spot, owner, you, faction) {
   const seat = (/** @type {string} */ pid) => q(`#players .player[data-player="${CSS.escape(pid)}"]`);
   switch (spot.kind) {
     case 'loc': return q(`#board [data-tile="${CSS.escape(spot.loc)}"] .hex`) ?? q(`#board [data-tile="${CSS.escape(spot.loc)}"]`);
-    case 'standing': return q(`#factions .faction-row[data-faction="${CSS.escape(spot.faction)}"] .cell-influence`);
+    case 'standing': return q(`#factions .faction-row[data-faction="${CSS.escape(spot.faction)}"] .cell-sway`);
     case 'trophy': return spot.player === you ? q('#score') : seat(spot.player);
     case 'supply':
       if (!owner) return q(`#factions .faction-row[data-faction="${CSS.escape(faction ?? '')}"] .cell-supply`);

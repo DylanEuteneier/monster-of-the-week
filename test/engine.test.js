@@ -21,8 +21,8 @@ function rng(seed) {
 /** An empty board to stage a fight on. @param {GameState} state */
 function clear(state) {
   const next = structuredClone(state);
-  for (const place of Object.values(next.board)) Object.assign(place, { tokens: {}, influence: {}, token: null, scorched: false });
-  // Standing with every faction, so moves can pay for the influence they place (IC1); tests of IC1 set it themselves.
+  for (const place of Object.values(next.board)) Object.assign(place, { tokens: {}, sway: {}, token: null, scorched: false });
+  // Standing with every faction, so moves can pay for the sway they place (IC1); tests of IC1 set it themselves.
   for (const p of Object.values(next.players)) p.standing = Object.fromEntries(next.factions.map((f) => [f, 10]));
   return next;
 }
@@ -52,11 +52,11 @@ test('the pool is 21 cards: five suits of Strike, Shift and Signature, and six u
   }
   for (const a of spec.archetypes) {
     const suit = spec.cards.filter((c) => c.suit === a.id);
-    assert.deepEqual(suit.map((c) => [c.slot, c.influence]).sort(), [['shift', 3], ['signature', 4], ['strike', 2]]);
+    assert.deepEqual(suit.map((c) => [c.slot, c.sway]).sort(), [['shift', 3], ['signature', 4], ['strike', 2]]);
     assert.ok(suit.find((c) => c.slot === 'signature')?.response, `${a.id} Signature carries a response`);
   }
   assert.deepEqual(spec.cards.filter((c) => c.marked).map((c) => c.marked).sort(), ['A', 'C', 'D']); // B to come
-  assert.equal(spec.cards.filter((c) => c.action === 'move-influence').length, 1); // Plan B, one copy
+  assert.equal(spec.cards.filter((c) => c.action === 'move-sway').length, 1); // Plan B, one copy
 });
 
 test('the map is symmetric, with five regions of three (layout D)', () => {
@@ -85,18 +85,18 @@ test('seeding puts 5 + 1 + 1 of each faction on its own locations (SD1)', () => 
   }
 });
 
-test('starting setup: more standing with the affinity faction, 1 with each other, 1 influence on each affinity location (designer)', () => {
+test('starting setup: more standing with the affinity faction, 1 with each other, 1 sway on each affinity location (designer)', () => {
   const s = newGame(2);
   const def = (/** @type {string} */ id) => Number(spec.variants.find((v) => v.id === id)?.default);
   for (const pid of PLAYERS) {
     const p = s.players[pid];
     const arch = spec.slayerGroups.find((g) => g.id === p.group)?.archetype;
     const linked = s.factions.find((f) => spec.factions.find((x) => x.id === f)?.archetype === arch) ?? '';
-    assert.equal(p.standing[linked], def('startInfluence'));
+    assert.equal(p.standing[linked], def('startSway'));
     for (const f of s.factions.filter((x) => x !== linked)) assert.equal(p.standing[f], def('startOthers'));
-    const mine = spec.locations.filter((l) => l.archetype === arch).map((l) => s.board[l.id].influence[pid] ?? 0);
+    const mine = spec.locations.filter((l) => l.archetype === arch).map((l) => s.board[l.id].sway[pid] ?? 0);
     assert.deepEqual(mine, [1, 1, 1].map(() => def('startBoard')));
-    assert.equal(p.supply, def('playerCubes') - def('startInfluence') - 4 * def('startOthers') - 3 * def('startBoard'));
+    assert.equal(p.supply, def('playerCubes') - def('startSway') - 4 * def('startOthers') - 3 * def('startBoard'));
   }
 });
 
@@ -149,7 +149,7 @@ test('the earliest marked card dealt sets the first player, who must open with i
   if (marked.length) {
     assert.equal(validate(s, { playerId: first, move: { type: 'pass' } }).ok, false);
     const other = s.players[first].hand.find((c) => !cardById(c).marked);
-    if (other) assert.equal(validate(s, { playerId: first, move: { type: 'play', card: other, use: cardById(other).suit ? 'influence' : 'action' } }).ok, false);
+    if (other) assert.equal(validate(s, { playerId: first, move: { type: 'play', card: other, use: cardById(other).suit ? 'sway' : 'action' } }).ok, false);
   }
   assert.deepEqual(waitingOn(s), [first]);
 });
@@ -169,7 +169,7 @@ test('the winner loses half the loser\'s tokens, rounded down, minimum 1 (FR5)',
 test('a true tie wipes both sides, scorches the location and rewards no one (TF1, TM1)', () => {
   const s = clear(newGame());
   s.board[NEUTRAL].tokens = { [A]: 3, [B]: 3 };
-  s.board[NEUTRAL].influence = { ann: 2 };
+  s.board[NEUTRAL].sway = { ann: 2 };
   const r = resolveFight(s, NEUTRAL);
   assert.equal(r.board[NEUTRAL].scorched, true);
   assert.deepEqual(r.board[NEUTRAL].tokens, {});
@@ -187,27 +187,27 @@ test('on aligned ground the aligned faction wins a tie (AL2)', () => {
   assert.equal(r.board[home].scorched, false);
 });
 
-test('trophies: the leader takes the bigger pile, the runner-up the smaller (TD1); half the leader\'s influence goes to the winner (AF3)', () => {
+test('trophies: the leader takes the bigger pile, the runner-up the smaller (TD1); half the leader\'s sway goes to the winner (AF3)', () => {
   const s = clear(newGame());
   s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
-  s.board[NEUTRAL].influence = { ann: 4, bob: 1 };
+  s.board[NEUTRAL].sway = { ann: 4, bob: 1 };
   const r = resolveFight(s, NEUTRAL);
   assert.equal(r.players.ann.trophies[B], 4);
   assert.equal(r.players.bob.trophies[A], 2);
   assert.equal(r.players.ann.standing[A], s.players.ann.standing[A] + 2);
   assert.equal(r.players.ann.supply, s.players.ann.supply + 2);
-  assert.equal(r.board[NEUTRAL].influence.bob, 1);
+  assert.equal(r.board[NEUTRAL].sway.bob, 1);
 });
 
 test('tied leaders collect nothing and both piles go back (PT2, ST1, AS1); a lone player takes both piles (UP1)', () => {
   const s = clear(newGame());
   for (const pid of PLAYERS) s.players[pid].group = 'slayerettes';
   s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
-  s.board[NEUTRAL].influence = { ann: 2, bob: 2 };
+  s.board[NEUTRAL].sway = { ann: 2, bob: 2 };
   const tied = resolveFight(s, NEUTRAL);
   assert.equal(tied.players.ann.trophies[B] + tied.players.bob.trophies[B], 0);
   assert.equal(tied.supply[B], s.supply[B] + 4);
-  s.board[NEUTRAL].influence = { cat: 1 };
+  s.board[NEUTRAL].sway = { cat: 1 };
   const lone = resolveFight(s, NEUTRAL);
   assert.equal(lone.players.cat.trophies[B], 4);
   assert.equal(lone.players.cat.trophies[A], 2);
@@ -324,7 +324,7 @@ test('a fixed deck deals test cards only into open unsuited slots', () => {
   for (const id of tests) assert.ok(!cardById(id).suit && !cardById(id).marked);
 });
 
-test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 influence weighted to strength (D12), the marked extras kept, the other unsuited slots drawn from the unmarked', () => {
+test('a mixed deck: one Strike, Shift and Signature per suit, 2/3/4 sway weighted to strength (D12), the marked extras kept, the other unsuited slots drawn from the unmarked', () => {
   for (let seed = 1; seed <= 20; seed++) {
     const s = createGame({ seed, players: PLAYERS, options: { deck: 'mixed' } });
     const deck = /** @type {string[]} */ (s.deck);
@@ -416,7 +416,7 @@ test('Lay Them to Rest: the token\'s owner takes the smaller pile; the rest go b
   const [f, g] = /** @type {string[]} */ (s.factions);
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
   s.board[loc].tokens = { [f]: 2, [g]: 5 };
-  s.board[loc].influence = { ann: 2 };
+  s.board[loc].sway = { ann: 2 };
   s.board[loc].token = { owner: 'ann', card: 'lay-to-rest' };
   const before = s.supply[f];
   const after = resolveFight(s, loc);
@@ -470,27 +470,27 @@ test('Lead the Horde shoves the smaller group on when it would make three factio
   assert.equal(after.board[away].tokens[g], 1);
 });
 
-test('round 14 unsuited: Bail Out, Call for Backup, Fall Back and Stake Out move or add only your own influence', () => {
+test('round 14 unsuited: Bail Out, Call for Backup, Fall Back and Stake Out move or add only your own sway', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const [x, y] = map[NEUTRAL].adjacent;
-  s.board[x].influence = { ann: 2, bob: 1 };
-  s.board[y].influence = { ann: 1 };
-  s.board[NEUTRAL].influence = { ann: 1 };
+  s.board[x].sway = { ann: 2, bob: 1 };
+  s.board[y].sway = { ann: 1 };
+  s.board[NEUTRAL].sway = { ann: 1 };
   const bail = previewTarget(s, 'ann', 'bail-out', { location: x, to: NEUTRAL });
-  assert.deepEqual([bail.board[x].influence, bail.board[NEUTRAL].influence.ann], [{ bob: 1 }, 3]);
+  assert.deepEqual([bail.board[x].sway, bail.board[NEUTRAL].sway.ann], [{ bob: 1 }, 3]);
   const backup = previewTarget(s, 'ann', 'call-backup', { location: x });
-  assert.deepEqual([backup.board[x].influence.ann, backup.players.ann.supply], [4, s.players.ann.supply - 2]);
+  assert.deepEqual([backup.board[x].sway.ann, backup.players.ann.supply], [4, s.players.ann.supply - 2]);
   const fall = previewTarget(s, 'ann', 'fall-back', { location: NEUTRAL });
-  assert.deepEqual([fall.board[NEUTRAL].influence.ann, fall.board[x].influence.ann, fall.board[x].influence.bob], [4, undefined, 1]);
+  assert.deepEqual([fall.board[NEUTRAL].sway.ann, fall.board[x].sway.ann, fall.board[x].sway.bob], [4, undefined, 1]);
   const stake = previewTarget(s, 'ann', 'stake-out', { location: y });
-  assert.deepEqual([stake.board[y].influence.ann, stake.players.ann.supply], [5, s.players.ann.supply - 4]);
+  assert.deepEqual([stake.board[y].sway.ann, stake.players.ann.supply], [5, s.players.ann.supply - 4]);
   s.players.ann.supply = 0;
   assert.ok(checkTarget(s, 'ann', cardById('stake-out'), { location: y }));
 });
 
 
-test('previewTarget runs a move with the game options (influence placed at the destination)', () => {
+test('previewTarget runs a move with the game options (sway placed at the destination)', () => {
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[3]);
   const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
@@ -499,26 +499,26 @@ test('previewTarget runs a move with the game options (influence placed at the d
   s.players.ann.standing[f] = 2;
   const to = adj[loc].adjacent[0];
   const after = previewTarget(s, 'ann', 'board-up', { mode: 'faction', location: loc, faction: f, split: { [to]: 2, [adj[loc].adjacent[1]]: 1 } });
-  assert.equal(after.board[to].influence.ann, 1);
+  assert.equal(after.board[to].sway.ann, 1);
 });
 
-test('Plan B moves only your own influence, up to 3, to one location', () => {
+test('Plan B moves only your own sway, up to 3, to one location', () => {
   const s = clear(newGame());
   const [x, y, z] = spec.locations.map((l) => l.id);
-  s.board[x].influence = { ann: 2, bob: 4 };
-  s.board[y].influence = { ann: 1 };
+  s.board[x].sway = { ann: 2, bob: 4 };
+  s.board[y].sway = { ann: 1 };
   const c = nextChoice(s, 'ann', 'plan-b', {});
   assert.ok(c.kind === 'location' && c.options.includes(z));
   const step = nextChoice(s, 'ann', 'plan-b', { location: z, from: [x, x] });
   assert.ok(step.kind === 'location' && step.key === 'from' && !step.options.includes(x) && step.options.includes(y));
   assert.ok(checkTarget(s, 'ann', cardById('plan-b'), { location: z, from: [x, x, x] }));
   const after = previewTarget(s, 'ann', 'plan-b', { location: z, from: [x, x, y] });
-  assert.deepEqual([after.board[x].influence, after.board[y].influence, after.board[z].influence], [{ bob: 4 }, {}, { ann: 3 }]);
+  assert.deepEqual([after.board[x].sway, after.board[y].sway, after.board[z].sway], [{ bob: 4 }, {}, { ann: 3 }]);
 });
 
 test('a game saved before an option existed plays on with its default', () => {
   const s = newGame(7);
-  delete (/** @type {Record<string, string>} */ (s.options)).influencePerMove;
+  delete (/** @type {Record<string, string>} */ (s.options)).swayPerMove;
   const end = playOut(s, rng(7), undefined, Object.fromEntries(s.seating.map((pid) => [pid, fast('trophy')])));
   assert.equal(end.phase, 'ended');
   for (const pid of end.seating) for (const n of Object.values(end.players[pid].standing)) assert.ok(Number.isFinite(n));
@@ -541,7 +541,7 @@ test('Set a Trap (A) hides its trap among bluffs and takes every pile; round 15 
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
-  s.board[NEUTRAL].influence = { ann: 1, bob: 3, cat: 2 };
+  s.board[NEUTRAL].sway = { ann: 1, bob: 3, cat: 2 };
   const trapped = previewTarget(s, 'ann', 'set-trap', { location: NEUTRAL, bluff: map[NEUTRAL].adjacent[0] });
   assert.ok(trapped.board[NEUTRAL].token && trapped.board[map[NEUTRAL].adjacent[0]].token); // the trap and a bluff, face down
   const fought = resolveFight(/** @type {GameState} */ ({ ...s, board: trapped.board }), NEUTRAL);
@@ -550,7 +550,7 @@ test('Set a Trap (A) hides its trap among bluffs and takes every pile; round 15 
   assert.deepEqual(resolveFight(/** @type {GameState} */ ({ ...s, board: truce.board }), NEUTRAL).board[NEUTRAL].tokens, { [A]: 6, [B]: 4 });
   const near = map[NEUTRAL].adjacent[0];
   s.board[NEUTRAL].tokens = {};
-  s.board[NEUTRAL].influence = { ann: 2, bob: 1 };
+  s.board[NEUTRAL].sway = { ann: 2, bob: 1 };
   s.board[near].tokens = { [C]: 3 };
   const t = { location: NEUTRAL, faction: C, from: [near] };
   assert.equal(checkTarget(s, 'ann', cardById('lay-trail'), t), null);
@@ -567,12 +567,12 @@ test('round 16 unsuited: Canvass the Town, Set the Bait, Defect', () => {
   const [x, y] = map[NEUTRAL].adjacent;
   const supply = s.players.ann.supply;
   const canvass = previewTarget(s, 'ann', 'canvass', { from: [x, y, NEUTRAL] });
-  assert.deepEqual([x, y, NEUTRAL].map((l) => canvass.board[l].influence.ann).concat(canvass.players.ann.supply), [1, 1, 1, supply - 3]);
+  assert.deepEqual([x, y, NEUTRAL].map((l) => canvass.board[l].sway.ann).concat(canvass.players.ann.supply), [1, 1, 1, supply - 3]);
   s.board[x].tokens = { [A]: 3 };
   const bait = { location: NEUTRAL, faction: A, from: [x] };
   assert.equal(checkTarget(s, 'ann', cardById('set-bait'), bait), null);
   const baited = previewTarget(s, 'ann', 'set-bait', bait);
-  assert.deepEqual([baited.board[NEUTRAL].tokens[A], baited.board[NEUTRAL].influence.ann >= 2], [3, true]);
+  assert.deepEqual([baited.board[NEUTRAL].tokens[A], baited.board[NEUTRAL].sway.ann >= 2], [3, true]);
   s.players.ann.standing = { [A]: 5, [B]: 0 };
   const c = nextChoice(s, 'ann', 'change-allegiance', { faction: A });
   assert.ok(c.kind === 'faction' && c.key === 'to' && !c.options.includes(A));
@@ -580,7 +580,7 @@ test('round 16 unsuited: Canvass the Town, Set the Bait, Defect', () => {
   assert.deepEqual([moved.players.ann.standing[A], moved.players.ann.standing[B]], [1, 4]);
 });
 
-test('IC1: a move goes only as far as the player can pay for the influence it places', () => {
+test('IC1: a move goes only as far as the player can pay for the sway it places', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const from = /** @type {string} */ (Object.keys(map).find((l) => map[l].adjacent.length >= 3));
@@ -594,7 +594,7 @@ test('IC1: a move goes only as far as the player can pay for the influence it pl
   s.players.ann.standing[sci] = 0;
   const beam = { mode: /** @type {const} */ ('faction'), location: from, faction: sci, to: map[from].adjacent[0] };
   assert.ok(checkTarget(s, 'ann', cardById('beam'), beam));
-  const off = { ...s, options: { ...s.options, influenceRequired: 'off' } };
+  const off = { ...s, options: { ...s.options, swayRequired: 'off' } };
   assert.equal(checkTarget(off, 'ann', cardById('beam'), beam), null);
 });
 
@@ -612,7 +612,7 @@ test('D15: each faction moved pays its own (whoPays=each, first draft); only the
   const t = { mode: /** @type {const} */ ('location'), location: bell, lead: A };
   assert.equal(checkTarget(s, 'ann', cardById('bell'), t), null);
   const led = previewTarget(s, 'ann', 'bell', t);
-  assert.deepEqual([led.board[bell].tokens[A], led.board[bell].tokens[B], led.board[bell].influence.ann, led.players.ann.standing[A]], [2, 4, 1, 0]);
+  assert.deepEqual([led.board[bell].tokens[A], led.board[bell].tokens[B], led.board[bell].sway.ann, led.players.ann.standing[A]], [2, 4, 1, 0]);
   const each = { ...s, options: { ...s.options, whoPays: 'each' } };
   const paid = previewTarget(each, 'ann', 'bell', { mode: 'location', location: bell });
   assert.deepEqual([paid.board[bell].tokens[A], paid.board[bell].tokens[B]], [2, undefined]);
@@ -632,20 +632,20 @@ test('round 17: Open the Pit drops a small group in its region; Trade Secrets sw
   if (c.kind === 'location') for (const l of c.options) assert.notEqual(l, x);
 });
 
-test('round 18: Tip Off the Sheriff pays its tipper; Split Up doubles influence at the fight; Wake the Dead raises the fallen as Undead', () => {
+test('round 18: Tip Off the Sheriff pays its tipper; Split Up doubles sway at the fight; Wake the Dead raises the fallen as Undead', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const [x] = map[NEUTRAL].adjacent;
   s.board[x].tokens = { [A]: 4 };
-  // Tip-off: bob tipped A, so ann's move of A gives bob 1 influence where it lands.
+  // Tip-off: bob tipped A, so ann's move of A gives bob 1 sway where it lands.
   s.tips = [{ pid: 'bob', faction: A }];
   const tipped = previewTarget(s, 'ann', 'lamps', { mode: 'location', location: x, faction: A, to: NEUTRAL });
-  assert.equal(tipped.board[NEUTRAL].influence.bob, 1);
+  assert.equal(tipped.board[NEUTRAL].sway.bob, 1);
   s.tips = [];
   // Split Up: ann 2 doubled beats bob 3.
   s.board[x].tokens = {};
   s.board[NEUTRAL].tokens = { [A]: 6, [B]: 4 };
-  s.board[NEUTRAL].influence = { ann: 2, bob: 3 };
+  s.board[NEUTRAL].sway = { ann: 2, bob: 3 };
   s.board[NEUTRAL].double = ['ann'];
   const split = resolveFight(s, NEUTRAL);
   assert.ok(split.players.ann.trophies[B] > 0);
@@ -701,7 +701,7 @@ test('round 20 Sentients: Hack the Network jumps to a lone rival anywhere; Link 
   assert.equal(fought.board[NEUTRAL].tokens[rival], undefined);
 });
 
-test('round 20 Sentients: Call Home pulls 1 token from every location holding the faction; Install a Backdoor counts the Sentients there as your influence', () => {
+test('round 20 Sentients: Call Home pulls 1 token from every location holding the faction; Install a Backdoor counts the Sentients there as your sway', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const sent = /** @type {string} */ (factionOfArchetype(s, 'sentients'));
@@ -713,7 +713,7 @@ test('round 20 Sentients: Call Home pulls 1 token from every location holding th
   assert.ok(others.every((l) => home.board[l].tokens[sent] === 1));
   for (const l of others) s.board[l].tokens = {};
   s.board[NEUTRAL].tokens = { [sent]: 4, [rival]: 2 };
-  s.board[NEUTRAL].influence = { bob: 3 };
+  s.board[NEUTRAL].sway = { bob: 3 };
   s.board[NEUTRAL].backdoor = ['ann'];
   const fought = resolveFight(s, NEUTRAL);
   assert.ok(Object.values(fought.players.ann.trophies).reduce((a, b) => a + b, 0) > 0); // ann's 4 beats bob's 3

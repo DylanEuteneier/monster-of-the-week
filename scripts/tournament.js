@@ -7,15 +7,15 @@
  * - the game: its ending and winners, wins by seat, profile and slayer group,
  *   total presence after each round, scorched locations, trophies per player;
  * - the economy at the end of each round's play, before the fights: fights,
- *   and how many players have influence at each (bidding contests),
- *   locations with influence, influence on the board and standing held;
- * - every card play: what it was played for (its action or its influence),
+ *   and how many players have sway at each (bidding contests),
+ *   locations with sway, sway on the board and standing held;
+ * - every card play: what it was played for (its action or its sway),
  *   whether it opened the round, the swing in its player's chance of winning
  *   (winChances in public/bots.js, percentage points), and for actions what
  *   the play did to this round's fights (trophies changing hands, fights
  *   whose winner flips weighted by the tokens lost there), control taken
- *   (contested locations where its player became sole top influence), pieces
- *   moved or placed, influence placed, and presence after the reckoning;
+ *   (contested locations where its player became sole top sway), pieces
+ *   moved or placed, sway placed, and presence after the reckoning;
  * - calibration: at the start of each round's play, each seat's predicted
  *   chance of winning (the bots' own estimate), against who did win: how
  *   far the bots' judgement can be trusted;
@@ -38,7 +38,7 @@
  *   summary so far (public/card-play-stats.json is what the card review page
  *   reads). Runs across every core.
  * - strength= also writes each card's probe result as its strength, for
- *   printed influence (D12: public/card-strength.json, read by the engine).
+ *   printed sway (D12: public/card-strength.json, read by the engine).
  * - One seat per profile, so the profile count is the player count (3 to 5).
  *   The standard tuning table (designer, 2026-10-08: both halves of the game)
  *   seats two faction backers and three goal trophy chasers (hunter removed 2026-10-09), so the
@@ -54,12 +54,12 @@ import { fileURLToPath } from 'node:url';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, validate } from '../public/engine.js';
 import { PROFILES, botMove, fast, features } from '../public/bots.js';
-import { seededRng, chance, measureState, MAX_MOVES } from './lib.js';
+import { seededRng, chance, measureState, MAX_MOVES, upgradeRecord } from './lib.js';
 
 /** @typedef {import('../public/bots.js').Profile} Profile @typedef {import('../public/engine.js').GameState} GameState */
 /** @typedef {{ trophies: number, flips: number, control: number, moved: number, placed: number, presence: number }} Effect */
-/** @typedef {{ r: number, seat: string, card: string, use: 'action' | 'influence', dWin: number, opener: boolean, fx?: Effect }} Play */
-/** @typedef {{ r: number, fights: number, by: number[], influenced: number, onBoard: number, standing: number }} Economy */
+/** @typedef {{ r: number, seat: string, card: string, use: 'action' | 'sway', dWin: number, opener: boolean, fx?: Effect }} Play */
+/** @typedef {{ r: number, fights: number, by: number[], swayd: number, onBoard: number, standing: number }} Economy */
 /** @typedef {{ r: number, opening: boolean, profile: string, benefit: Record<string, number | null> }} Probe */
 /**
  * @typedef {{ g: number, side: 'island' | 'invaders', seats: Record<string, string>, groups: Record<string, string>, winners: string[], placings: string[], deck: string[],
@@ -93,9 +93,9 @@ function reckon(state) {
   return { presence: totalPresence(s) + grown, trophies: Object.fromEntries(s.seating.map((p) => [p, Object.values(s.players[p].trophies).reduce((a, b) => a + b, 0)])), fights };
 }
 
-/** The sole top-influence player at a location, or null. @param {GameState['board'][string]} place */
+/** The sole top-sway player at a location, or null. @param {GameState['board'][string]} place */
 function topOf(place) {
-  const e = Object.entries(place.influence).filter(([, n]) => n > 0).sort((x, y) => y[1] - x[1]);
+  const e = Object.entries(place.sway).filter(([, n]) => n > 0).sort((x, y) => y[1] - x[1]);
   return e.length && (e.length === 1 || e[0][1] > e[1][1]) ? e[0][0] : null;
 }
 
@@ -114,7 +114,7 @@ function effectOf(was, now, pid) {
     if (contestedPlace(p1) && topOf(p1) === pid && topOf(p0) !== pid) control += 1;
     for (const f of new Set([...Object.keys(p0.tokens), ...Object.keys(p1.tokens)])) moved += Math.max(0, (p1.tokens[f] ?? 0) - (p0.tokens[f] ?? 0));
     if (p1.token && !p0.token) moved += 1;
-    placed += Math.max(0, (p1.influence[pid] ?? 0) - (p0.influence[pid] ?? 0));
+    placed += Math.max(0, (p1.sway[pid] ?? 0) - (p0.sway[pid] ?? 0));
   }
   return { trophies, flips, control, moved, placed, presence: b.presence - a.presence };
 }
@@ -141,10 +141,10 @@ function summarise(records, list, options) {
   let scorched = 0, trophySum = 0, trophyN = 0, shared = 0;
   /** @type {Record<number, Economy & { rounds: number }>} */
   const economy = {};
-  /** @typedef {{ dealt: number, held: number, unplayed: number, action: number, influence: number, opener: number, dAction: number, dInfluence: number, winAction: number, winInfluence: number, endsIsland: number, fx: Effect, turns: number, playable: number, probes: number[], openingProbes: number[], probeNull: number, byProfile: Record<string, { probes: number[], dWin: number, plays: number }> }} Acc */
+  /** @typedef {{ dealt: number, held: number, unplayed: number, action: number, sway: number, opener: number, dAction: number, dSway: number, winAction: number, winSway: number, endsIsland: number, fx: Effect, turns: number, playable: number, probes: number[], openingProbes: number[], probeNull: number, byProfile: Record<string, { probes: number[], dWin: number, plays: number }> }} Acc */
   /** @type {Record<string, Acc>} */
   const cards = {};
-  const acc = (/** @type {string} */ id) => (cards[id] ??= { dealt: 0, held: 0, unplayed: 0, action: 0, influence: 0, opener: 0, dAction: 0, dInfluence: 0, winAction: 0, winInfluence: 0, endsIsland: 0, fx: { trophies: 0, flips: 0, control: 0, moved: 0, placed: 0, presence: 0 }, turns: 0, playable: 0, probes: [], openingProbes: [], probeNull: 0, byProfile: {} });
+  const acc = (/** @type {string} */ id) => (cards[id] ??= { dealt: 0, held: 0, unplayed: 0, action: 0, sway: 0, opener: 0, dAction: 0, dSway: 0, winAction: 0, winSway: 0, endsIsland: 0, fx: { trophies: 0, flips: 0, control: 0, moved: 0, placed: 0, presence: 0 }, turns: 0, playable: 0, probes: [], openingProbes: [], probeNull: 0, byProfile: {} });
   for (const r of records) {
     sides[r.side] += 1;
     if (r.winners.length > 1) shared += 1;
@@ -163,8 +163,8 @@ function summarise(records, list, options) {
     scorched += r.scorched;
     for (const t of Object.values(r.trophies)) { trophySum += t; trophyN += 1; }
     for (const e of r.economy) {
-      const x = (economy[e.r] ??= { r: e.r, rounds: 0, fights: 0, by: [0, 0, 0, 0], influenced: 0, onBoard: 0, standing: 0 });
-      x.rounds += 1; x.fights += e.fights; e.by.forEach((v, i) => (x.by[i] += v)); x.influenced += e.influenced; x.onBoard += e.onBoard; x.standing += e.standing;
+      const x = (economy[e.r] ??= { r: e.r, rounds: 0, fights: 0, by: [0, 0, 0, 0], swayd: 0, onBoard: 0, standing: 0 });
+      x.rounds += 1; x.fights += e.fights; e.by.forEach((v, i) => (x.by[i] += v)); x.swayd += e.swayd; x.onBoard += e.onBoard; x.standing += e.standing;
     }
     for (const id of r.deck) acc(id).dealt += 1;
     for (const id of r.held) acc(id).held += 1;
@@ -177,7 +177,7 @@ function summarise(records, list, options) {
         a.action += 1; a.dAction += p.dWin; a.winAction += won;
         if (r.side === 'island') a.endsIsland += 1;
         if (p.fx) for (const k of /** @type {(keyof Effect)[]} */ (Object.keys(a.fx))) a.fx[k] += p.fx[k];
-      } else { a.influence += 1; a.dInfluence += p.dWin; a.winInfluence += won; }
+      } else { a.sway += 1; a.dSway += p.dWin; a.winSway += won; }
       if (p.opener) a.opener += 1;
       if (p.use === 'action') { const bp = (a.byProfile[r.seats[p.seat]] ??= { probes: [], dWin: 0, plays: 0 }); bp.dWin += p.dWin; bp.plays += 1; }
     }
@@ -198,14 +198,14 @@ function summarise(records, list, options) {
     game: { presenceByRound: presence.map((xs) => mean(xs)), scorchedPerGame: avg(scorched, n), trophiesPerPlayer: avg(trophySum, trophyN) },
     calibration: Object.fromEntries(Object.entries(calib).map(([round, bins]) => [round, bins.filter((b) => b.n).map((b) => ({ predicted: r1(b.p / b.n), won: r1(b.won / b.n), n: b.n }))])),
     economy: Object.values(economy).map((e) => ({
-      round: e.r, fights: avg(e.fights, e.rounds), contests: e.by.map((v) => pct(v, e.fights)), locationsWithInfluence: avg(e.influenced, e.rounds),
+      round: e.r, fights: avg(e.fights, e.rounds), contests: e.by.map((v) => pct(v, e.fights)), locationsWithSway: avg(e.swayd, e.rounds),
       onBoardPerPlayer: avg(e.onBoard, e.rounds * players), standingPerPlayer: avg(e.standing, e.rounds * players),
     })),
     cards: Object.fromEntries(Object.entries(cards).map(([id, a]) => [id, {
-      name: cardById(id).name, dealt: a.dealt, held: a.held, action: a.action, influence: a.influence, unplayed: a.unplayed, opener: a.opener,
-      playedPct: pct(a.action + a.influence, a.held), actionPct: pct(a.action, a.action + a.influence), playablePct: pct(a.playable, a.turns),
-      dWinAction: avg(a.dAction, a.action), dWinInfluence: avg(a.dInfluence, a.influence),
-      winAfterAction: pct(a.winAction, a.action), winAfterInfluence: pct(a.winInfluence, a.influence), islandAfterAction: pct(a.endsIsland, a.action),
+      name: cardById(id).name, dealt: a.dealt, held: a.held, action: a.action, sway: a.sway, unplayed: a.unplayed, opener: a.opener,
+      playedPct: pct(a.action + a.sway, a.held), actionPct: pct(a.action, a.action + a.sway), playablePct: pct(a.playable, a.turns),
+      dWinAction: avg(a.dAction, a.action), dWinSway: avg(a.dSway, a.sway),
+      winAfterAction: pct(a.winAction, a.action), winAfterSway: pct(a.winSway, a.sway), islandAfterAction: pct(a.endsIsland, a.action),
       perAction: Object.fromEntries(Object.entries(a.fx).map(([k, v]) => [k, avg(v, a.action)])),
       probe: { n: a.probes.length, benefit: mean(a.probes), up: pct(a.probes.filter((v) => v > 0).length, a.probes.length), opening: mean(a.openingProbes), openingN: a.openingProbes.length, noTarget: a.probeNull },
       byProfile: Object.fromEntries(Object.entries(a.byProfile).map(([p, b]) => [p, { probe: mean(b.probes), probes: b.probes.length, dWinAction: avg(b.dWin, b.plays), actions: b.plays }])),
@@ -229,7 +229,7 @@ function main() {
   for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:lean=0)`);
   const games = Number(gamesArg), seed = Number(seedArg);
   /** @type {GameRecord[]} */
-  const records = logFile && existsSync(logFile) ? readFileSync(logFile, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
+  const records = logFile && existsSync(logFile) ? readFileSync(logFile, 'utf8').split('\n').filter(Boolean).map((l) => upgradeRecord(JSON.parse(l))) : [];
   const done = new Set(records.map((r) => r.g));
   const todo = Array.from({ length: games }, (_, g) => g).filter((g) => !done.has(g));
   if (records.length) process.stderr.write(`resuming: ${records.length} games already in ${logFile}\n`);
@@ -263,14 +263,14 @@ function main() {
     console.log(`Calibration (predicted chance of winning → how often it happened, by round): ${Object.entries(s.calibration).map(([round, bins]) => `r${round} ${bins.map((b) => `${b.predicted}→${b.won}`).join(' ')}`).join(' | ')}`);
     console.log(`Wins by seat: ${Object.entries(s.bySeat).map(([k, v]) => `${k} ${v}%`).join(' · ')}`);
     console.log(`Wins by slayer group: ${Object.entries(s.byGroup).map(([k, v]) => `${k} ${v}%`).join(' · ')}`);
-    console.log('\nround | fights | by players with influence there: 0 / 1 / 2 / 3+ | locations with influence | influence on board per player | standing per player');
-    for (const e of s.economy) console.log(`${String(e.round).padStart(5)} | ${String(e.fights).padStart(6)} | ${e.contests.map((x) => `${x}%`).join(' / ').padEnd(47)} | ${String(e.locationsWithInfluence).padStart(24)} | ${String(e.onBoardPerPlayer).padStart(29)} | ${String(e.standingPerPlayer).padStart(19)}`);
+    console.log('\nround | fights | by players with sway there: 0 / 1 / 2 / 3+ | locations with sway | sway on board per player | standing per player');
+    for (const e of s.economy) console.log(`${String(e.round).padStart(5)} | ${String(e.fights).padStart(6)} | ${e.contests.map((x) => `${x}%`).join(' / ').padEnd(47)} | ${String(e.locationsWithSway).padStart(24)} | ${String(e.onBoardPerPlayer).padStart(29)} | ${String(e.standingPerPlayer).padStart(19)}`);
     const probing = Object.values(s.cards).some((c) => c.probe.n);
     const rows = Object.entries(s.cards).filter(([, c]) => c.held > 0 || c.probe.n > 0).sort((a, b) => (probing ? (b[1].probe.benefit ?? -99) - (a[1].probe.benefit ?? -99) : (b[1].dWinAction ?? -99) - (a[1].dWinAction ?? -99)));
     const f = (/** @type {number | null} */ x, /** @type {string} */ u = '') => (x === null ? '–' : `${u === 'pp' && x > 0 ? '+' : ''}${x}${u === '%' ? '%' : ''}`);
     console.log(`\n${'card'.padEnd(30)} | held | played | action | playable | Δwin act | Δwin infl | won after | trophies | flips | moved | ${probing ? 'probe | opener probe | probe by profile' : 'opener'}`);
     for (const [, c] of rows) {
-      console.log(`${c.name.padEnd(30)} | ${String(c.held).padStart(4)} | ${f(c.playedPct, '%').padStart(6)} | ${f(c.actionPct, '%').padStart(6)} | ${f(c.playablePct, '%').padStart(8)} | ${f(c.dWinAction, 'pp').padStart(8)} | ${f(c.dWinInfluence, 'pp').padStart(9)} | ${f(c.winAfterAction, '%').padStart(9)} | ${f(c.perAction.trophies).padStart(8)} | ${f(c.perAction.flips).padStart(5)} | ${f(c.perAction.moved).padStart(5)} | ${probing ? `${f(c.probe.benefit, 'pp').padStart(5)} | ${f(c.probe.opening, 'pp').padStart(12)} | ${Object.entries(c.byProfile).filter(([, b]) => b.probes).map(([p, b]) => `${p} ${f(b.probe, 'pp')}`).join(', ')}` : String(c.opener).padStart(6)}`);
+      console.log(`${c.name.padEnd(30)} | ${String(c.held).padStart(4)} | ${f(c.playedPct, '%').padStart(6)} | ${f(c.actionPct, '%').padStart(6)} | ${f(c.playablePct, '%').padStart(8)} | ${f(c.dWinAction, 'pp').padStart(8)} | ${f(c.dWinSway, 'pp').padStart(9)} | ${f(c.winAfterAction, '%').padStart(9)} | ${f(c.perAction.trophies).padStart(8)} | ${f(c.perAction.flips).padStart(5)} | ${f(c.perAction.moved).padStart(5)} | ${probing ? `${f(c.probe.benefit, 'pp').padStart(5)} | ${f(c.probe.opening, 'pp').padStart(12)} | ${Object.entries(c.byProfile).filter(([, b]) => b.probes).map(([p, b]) => `${p} ${f(b.probe, 'pp')}`).join(', ')}` : String(c.opener).padStart(6)}`);
     }
   }
 }
@@ -344,11 +344,11 @@ else {
         } else s = applyMove(s, { playerId: pid, move });
         if (prev.phase === 'play' && s.phase !== 'play') {
           // The board as the fights find it (the former economy study).
-          const e = { r: prev.round, fights: 0, by: [0, 0, 0, 0], influenced: 0, onBoard: 0, standing: 0 };
+          const e = { r: prev.round, fights: 0, by: [0, 0, 0, 0], swayd: 0, onBoard: 0, standing: 0 };
           for (const place of Object.values(prev.board)) {
-            const who = Object.values(place.influence).filter((x) => x > 0).length;
-            if (who > 0) e.influenced += 1;
-            e.onBoard += Object.values(place.influence).reduce((a, b) => a + b, 0);
+            const who = Object.values(place.sway).filter((x) => x > 0).length;
+            if (who > 0) e.swayd += 1;
+            e.onBoard += Object.values(place.sway).reduce((a, b) => a + b, 0);
             if (!contestedPlace(place)) continue;
             e.fights += 1;
             e.by[Math.min(3, who)] += 1;

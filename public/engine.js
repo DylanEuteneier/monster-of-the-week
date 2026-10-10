@@ -15,7 +15,7 @@
  * Where this file and docs/motw-design.md disagree, the design document wins.
  */
 import spec from './spec.json' with { type: 'json' };
-// Measured card strength (D12, designer 2026-10-08: the probe result from the tuning tournament, scripts/tournament.js strength=): sets printed influence.
+// Measured card strength (D12, designer 2026-10-08: the probe result from the tuning tournament, scripts/tournament.js strength=): sets printed sway.
 import cardStrength from './card-strength.json' with { type: 'json' };
 
 export { spec };
@@ -45,20 +45,20 @@ export { spec };
 
 /**
  * A face-down token on a location (IN1). `card` is null for a bluff (BT1).
- * The owner's marker cube sits on it and counts as their influence (MC3).
+ * The owner's marker cube sits on it and counts as their sway (MC3).
  * @typedef {{ owner: string, card: string | null }} Token
  */
 
 /**
  * @typedef {object} Place
  * @property {Record<string, number>} tokens      faction → tokens
- * @property {Record<string, number>} influence  player → influence placed here
+ * @property {Record<string, number>} sway  player → sway placed here
  * @property {Token | null} token
  * @property {boolean} scorched
  * @property {boolean} [truce]     Call a Truce (test card, round 15): no fight here this round
- * @property {string[]} [double]   Split Up, Gang! (test card, round 18): players whose influence here counts twice at this round's fight
+ * @property {string[]} [double]   Split Up, Gang! (test card, round 18): players whose sway here counts twice at this round's fight
  * @property {boolean} [wake]      Wake the Dead (test card, round 18): this round's fight can't scorch, and the loser's casualties rise as Undead
- * @property {string[]} [backdoor] Install a Backdoor (test card, round 20): players whose influence here counts 1 more per Sentient token at this round's fight
+ * @property {string[]} [backdoor] Install a Backdoor (test card, round 20): players whose sway here counts 1 more per Sentient token at this round's fight
  * @property {boolean} [swarm]     Link the Swarm (test card, round 20): at this round's fight, the Sentients here count their tokens next door too
  * @property {boolean} [lock]      Lock Down the Town (test card, round 19): this round, no group moves into or out of this location's region
  */
@@ -66,8 +66,8 @@ export { spec };
 /**
  * @typedef {object} PlayerState
  * @property {string} group          slayer group id
- * @property {number} supply         influence cubes not on the board or with a faction
- * @property {Record<string, number>} standing  faction → influence (public, IF1)
+ * @property {number} supply         sway cubes not on the board or with a faction
+ * @property {Record<string, number>} standing  faction → sway (public, IF1)
  * @property {Record<string, number>} trophies  faction → trophies (secret, IN2)
  * @property {number} bluffs         bluff tokens in hand
  * @property {string[]} hand         cards to play this round
@@ -112,14 +112,14 @@ export { spec };
  * @property {Record<string, number>} supply  faction → tokens in its supply
  * @property {string[]} leftOut    cards not dealt this round (DR5)
  * @property {string[]} [deck]     this game's 21 cards (variant deck=mixed); absent: spec.cards
- * @property {Record<string, number>} [printed]  this game's printed influence by card (variant deck=mixed); absent: each card's own
+ * @property {Record<string, number>} [printed]  this game's printed sway by card (variant deck=mixed); absent: each card's own
  * @property {number} pass         draft: which pick this is (1-based)
  * @property {string | null} first  this round's first player (FP2)
  * @property {number} turn         index into seating of the player to act
  * @property {number} passesInRow
  * @property {boolean} opened      the first player has opened with their marked card
  * @property {Pending | null} pending
- * @property {{ pid: string, faction: string }[]} [tips]  Tip Off the Sheriff (test card, round 18): this round, whoever moves the faction, the tipper places 1 influence where it lands
+ * @property {{ pid: string, faction: string }[]} [tips]  Tip Off the Sheriff (test card, round 18): this round, whoever moves the faction, the tipper places 1 sway where it lands
  * @property {string[]} [bounties]  Put a Bounty On It (test card, round 19): factions whose winning group loses 1 more token at each fight this round
  * @property {string | null} [lastPlayed]  the last card played for its action (Steal Their Playbook, test card, round 15)
  * @property {GameEvent[]} events  what the last resolved action did, for "after" responses
@@ -150,7 +150,7 @@ export { spec };
 
 /**
  * @typedef {{ type: 'pick', keep: string[] }
- *   | { type: 'play', card: string, use: 'action' | 'influence', target?: Target | null, location?: string }
+ *   | { type: 'play', card: string, use: 'action' | 'sway', target?: Target | null, location?: string }
  *   | { type: 'confirm' }
  *   | { type: 'withdraw' }
  *   | { type: 'pass' }
@@ -172,10 +172,10 @@ export { spec };
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, picked: boolean }>} players
  * @property {{ faction: string, leaders: string[], next: number, due: Record<string, number> } | null} growing
  * @property {string[]} factions
- * @property {Record<string, { tokens: Record<string, number>, influence: Record<string, number>, token: { owner: string } | null, scorched: boolean, truce?: boolean, double?: string[], wake?: boolean, swarm?: boolean, backdoor?: string[], lock?: boolean }>} board
+ * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, token: { owner: string } | null, scorched: boolean, truce?: boolean, double?: string[], wake?: boolean, swarm?: boolean, backdoor?: string[], lock?: boolean }>} board
  * @property {Record<string, number>} supply
  * @property {string[]} deck  this game's cards
- * @property {Record<string, number>} printed  this game's printed influence by card
+ * @property {Record<string, number>} printed  this game's printed sway by card
  * @property {string | null} lastPlayed  the last card played for its action
  * @property {{ pid: string, faction: string }[]} tips  Tip Off the Sheriff this round (round 18)
  * @property {string[]} bounties  Put a Bounty On It this round (round 19)
@@ -239,14 +239,14 @@ export function cardById(id) {
 
 /** Are responses in play? Out of the first draft unless the variant turns them on. @param {{ options: Options }} state */
 export const responsesOn = (state) => (state.options.responses ?? 'off') === 'on';
-/** IC1 (designer, 2026-10-07): the influence a card places is a requirement. @param {{ options: Options }} state */
-export const influenceRequired = (state) => (state.options.influenceRequired ?? 'on') === 'on';
+/** IC1 (designer, 2026-10-07): the sway a card places is a requirement. @param {{ options: Options }} state */
+export const swayRequired = (state) => (state.options.swayRequired ?? 'on') === 'on';
 /** D15, as a variant: each faction moved pays its own (first draft), or only the selected faction pays (others free). @param {{ options: Options }} state */
 export const selectedPays = (state) => (state.options.whoPays ?? 'each') === 'selected';
 /** Cards that move several factions at once: the player names the faction they lead (location reading). */
 const LEADS = new Set(['draw-adjacent', 'conveyor', 'repel', 'circle', 'carry-fight']);
 /**
- * The faction that pays a card's influence (D15): the faction the player
+ * The faction that pays a card's sway (D15): the faction the player
  * selects (a target group's, or the one named on a card that moves several),
  * or the suit's faction in the faction reading. Other factions the card moves
  * come along free (designer). null: each group pays its own (scaffold multi-moves).
@@ -357,11 +357,11 @@ const affinityOf = (state, pid) => {
 };
 
 /**
- * Influence leaders of a faction: the most standing; affinity breaks a tie
+ * Sway leaders of a faction: the most standing; affinity breaks a tie
  * (AB1); otherwise all tied are leaders. 0 counts.
  * @param {GameState} state @param {string} faction
  */
-export function influenceLeaders(state, faction) {
+export function swayLeaders(state, faction) {
   const best = Math.max(...state.seating.map((pid) => state.players[pid].standing[faction] ?? 0));
   const tied = state.seating.filter((pid) => (state.players[pid].standing[faction] ?? 0) === best);
   const withAffinity = tied.filter((pid) => affinityOf(state, pid) === archetypeOf(faction));
@@ -369,7 +369,7 @@ export function influenceLeaders(state, faction) {
 }
 
 /**
- * Move tokens, placing 1 influence at the destination spent from the
+ * Move tokens, placing 1 sway at the destination spent from the
  * player's standing with the faction moved (3.7, CA2); under IC1 (D15) a move
  * it can't pay for doesn't happen. A faction other than the led one comes
  * along free and places nothing (D15). Returns the number moved (0 if it may
@@ -384,9 +384,9 @@ function move(state, pid, faction, from, to, count, placedAt) {
   if ((state.board[from].lock || state.board[to].lock) && regionOf(from) !== regionOf(to)) return 0; // Lock Down the Town (test card, round 19)
   // D15: only the led faction pays; the others come along free, placing nothing.
   const free = !!placedAt.led && faction !== placedAt.led;
-  // IC1: a move that places influence goes only as far as the player can pay for it.
-  const cost = num(state, 'influencePerMove');
-  if (!free && influenceRequired(state) && cost > 0 && !placedAt.has(`${to}:${faction}`) && (state.players[pid].standing[faction] ?? 0) < cost) return 0;
+  // IC1: a move that places sway goes only as far as the player can pay for it.
+  const cost = num(state, 'swayPerMove');
+  if (!free && swayRequired(state) && cost > 0 && !placedAt.has(`${to}:${faction}`) && (state.players[pid].standing[faction] ?? 0) < cost) return 0;
   state.board[from].tokens[faction] -= n;
   if (state.board[from].tokens[faction] === 0) delete state.board[from].tokens[faction];
   state.board[to].tokens[faction] = tokensOf(state, to, faction) + n;
@@ -396,17 +396,17 @@ function move(state, pid, faction, from, to, count, placedAt) {
     const k = Math.min(amount, state.players[pid].standing[faction] ?? 0);
     if (k <= 0) return;
     state.players[pid].standing[faction] -= k;
-    state.board[loc].influence[pid] = (state.board[loc].influence[pid] ?? 0) + k;
-    for (let i = 0; i < k; i++) state.events.push({ type: 'influence-placed', player: pid, faction, location: loc });
+    state.board[loc].sway[pid] = (state.board[loc].sway[pid] ?? 0) + k;
+    for (let i = 0; i < k; i++) state.events.push({ type: 'sway-placed', player: pid, faction, location: loc });
   };
-  place(to, `${to}:${faction}`, num(state, 'influencePerMove'));
-  // Tip Off the Sheriff (test card, round 18): each tipper places 1 influence from their supply where the faction lands.
+  place(to, `${to}:${faction}`, num(state, 'swayPerMove'));
+  // Tip Off the Sheriff (test card, round 18): each tipper places 1 sway from their supply where the faction lands.
   for (const tip of ('tips' in state && state.tips) || []) {
     if (tip.faction !== faction || state.players[tip.pid].supply <= 0) continue;
     state.players[tip.pid].supply -= 1;
-    state.board[to].influence[tip.pid] = (state.board[to].influence[tip.pid] ?? 0) + 1;
+    state.board[to].sway[tip.pid] = (state.board[to].sway[tip.pid] ?? 0) + 1;
   }
-  if (state.options.influenceAtOrigin === 'on') place(from, `${from}:${faction}:origin`, 1); // test lever
+  if (state.options.swayAtOrigin === 'on') place(from, `${from}:${faction}:origin`, 1); // test lever
   return n;
 }
 
@@ -448,7 +448,7 @@ export function createGame(input) {
     return s.items[0].id;
   });
   /** @type {Record<string, Place>} */
-  const board = Object.fromEntries(LOCATION_IDS.map((loc) => [loc, { tokens: {}, influence: {}, token: null, scorched: false }]));
+  const board = Object.fromEntries(LOCATION_IDS.map((loc) => [loc, { tokens: {}, sway: {}, token: null, scorched: false }]));
   /** @type {Record<string, number>} */
   const supply = {};
   for (const faction of factions) {
@@ -476,7 +476,7 @@ export function createGame(input) {
   input.players.forEach((pid, i) => {
     const group = groups[i];
     const linked = factions.find((f) => archetypeOf(f) === spec.slayerGroups.find((g) => g.id === group)?.archetype) ?? factions[0];
-    const start = num({ options }, 'startInfluence');
+    const start = num({ options }, 'startSway');
     // Starting setup (designer, 2026-10-07): more with the affinity faction, startOthers with every other faction.
     const others = num({ options }, 'startOthers');
     const standing = Object.fromEntries(factions.map((f) => [f, f === linked ? start : others]));
@@ -486,11 +486,11 @@ export function createGame(input) {
       trophies: Object.fromEntries(factions.map((f) => [f, 0])), bluffs: num({ options }, 'bluffs'),
       hand: [], kept: [], batch: [], picked: false, known: [],
     };
-    // Each slayer group starts with influence on the board at each of its affinity locations (designer, 2026-10-07), from its supply.
+    // Each slayer group starts with sway on the board at each of its affinity locations (designer, 2026-10-07), from its supply.
     const arch = spec.slayerGroups.find((g) => g.id === group)?.archetype;
     for (const loc of LOCATION_IDS.filter((l) => alignmentOf(l) === arch)) {
       const n = Math.min(onBoard, players[pid].supply);
-      if (n > 0) { board[loc].influence[pid] = (board[loc].influence[pid] ?? 0) + n; players[pid].supply -= n; }
+      if (n > 0) { board[loc].sway[pid] = (board[loc].sway[pid] ?? 0) + n; players[pid].supply -= n; }
     }
   });
   // The deck. Mixed (prototype test plumbing, not a rule): each suit draws
@@ -517,7 +517,7 @@ export function createGame(input) {
   const fill = shuffle(/** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => unmarkedExtra(c) && !deck.includes(c.id)).map((c) => c.id), rngState);
   rngState = fill.rngState;
   deck.push(...fill.items.slice(0, Math.max(0, spec.constants.unsuitedSlots - unsuited)));
-  // Printed influence (D12): each suit prints 2, 3 and 4 (9 in all), weighted
+  // Printed sway (D12): each suit prints 2, 3 and 4 (9 in all), weighted
   // to strength: the weakest action gets the most. Strength is the probe
   // result (the change in a player's chance of winning when the card is
   // played); a card not yet measured counts as weakest; ties fall at random.
@@ -541,9 +541,9 @@ export function createGame(input) {
 
 /** This game's cards: its mixed deck, or the fixed pool. @param {GameState | PlayerView} state */
 export const deckOf = (state) => ('deck' in state && state.deck ? state.deck.slice() : spec.cards.map((card) => card.id));
-/** A card's printed influence in this game. @param {GameState | PlayerView} state @param {string} cardId */
-export const printedOf = (state, cardId) => (('printed' in state && state.printed?.[cardId]) || cardById(cardId).influence)
-  + (cardById(cardId).suit ? num(state, 'influenceBonus') : 0); // test lever: more influence from cards (designer, 2026-10-07)
+/** A card's printed sway in this game. @param {GameState | PlayerView} state @param {string} cardId */
+export const printedOf = (state, cardId) => (('printed' in state && state.printed?.[cardId]) || cardById(cardId).sway)
+  + (cardById(cardId).suit ? num(state, 'swayBonus') : 0); // test lever: more sway from cards (designer, 2026-10-07)
 
 /** Start a round's draft: shuffle all 21 cards, deal hands, leave the rest out (PS1, DR4, DR5). @param {GameState} state */
 function deal(state) {
@@ -669,7 +669,7 @@ function pitFalls(state, loc, f) {
   return LOCATION_IDS.filter((l) => l !== loc && regionOf(l) === regionOf(loc) && !state.board[l].scorched && canEnter(/** @type {GameState} */ (state), l, f));
 }
 
-/** Where Install the Cameras places influence, with the faction it spends standing from (round 12). @param {GameState | PlayerView} state @param {string} pid @param {string} loc */
+/** Where Install the Cameras places sway, with the faction it spends standing from (round 12). @param {GameState | PlayerView} state @param {string} pid @param {string} loc */
 function cameraSpots(state, pid, loc) {
   const standing = { ...state.players[pid].standing };
   return [loc, ...MAP[loc].adjacent].flatMap((l) => {
@@ -685,9 +685,9 @@ function howlStep(state, target, from, f) {
   const between = MAP[from].adjacent.filter((m) => MAP[target].adjacent.includes(m) && canEnter(state, m, f));
   return between.find((m) => tokensOf(state, m, f) > 0) ?? between[0] ?? null;
 }
-/** Lay a Trail: locations where the player alone has the most influence. @param {GameState | PlayerView} state @param {string} pid */
+/** Lay a Trail: locations where the player alone has the most sway. @param {GameState | PlayerView} state @param {string} pid */
 const trailSpots = (state, pid) => LOCATION_IDS.filter((l) => {
-  const inf = state.board[l].influence, mine = inf[pid] ?? 0;
+  const inf = state.board[l].sway, mine = inf[pid] ?? 0;
   return !state.board[l].scorched && mine > 0 && Object.entries(inf).every(([p, n]) => p === pid || n < mine);
 });
 /**
@@ -695,8 +695,8 @@ const trailSpots = (state, pid) => LOCATION_IDS.filter((l) => {
  * @param {GameState | PlayerView} state @param {Card} card @returns {Card}
  */
 const copied = (state, card) => (card.action === 'copy' && 'lastPlayed' in state && state.lastPlayed ? cardById(state.lastPlayed) : card);
-/** Fall Back: the locations next to `to` holding the player's influence (`to` itself not scorched). @param {GameState | PlayerView} state @param {string} pid @param {string} to */
-const fallBackFrom = (state, pid, to) => (state.board[to].scorched ? [] : MAP[to].adjacent.filter((l) => (state.board[l].influence[pid] ?? 0) > 0));
+/** Fall Back: the locations next to `to` holding the player's sway (`to` itself not scorched). @param {GameState | PlayerView} state @param {string} pid @param {string} to */
+const fallBackFrom = (state, pid, to) => (state.board[to].scorched ? [] : MAP[to].adjacent.filter((l) => (state.board[l].sway[pid] ?? 0) > 0));
 /** Groups a Howl draws in (round 13). @param {GameState} state @param {string} target @param {string} f */
 const howlers = (state, target, f) => LOCATION_IDS.filter((l) => l !== target && !MAP[target].adjacent.includes(l) && twoHex(target).includes(l) && tokensOf(state, l, f) > 0)
   .flatMap((from) => { const to = howlStep(state, target, from, f); return to ? [{ from, to }] : []; });
@@ -718,14 +718,14 @@ const canFollow = (state, to, mover, f) => {
 };
 
 /**
- * Where 1 influence goes when a card is spent for influence, under the test
- * lever influenceToBoard: the locations its faction controls (LC2). Empty
+ * Where 1 sway goes when a card is spent for sway, under the test
+ * lever swayToBoard: the locations its faction controls (LC2). Empty
  * when the lever is off.
  * @param {GameState | PlayerView} state @param {string} cardId
  */
-export function influenceSpots(state, cardId) {
+export function swaySpots(state, cardId) {
   const card = cardById(cardId);
-  if (state.options.influenceToBoard !== 'on' || !card.suit) return [];
+  if (state.options.swayToBoard !== 'on' || !card.suit) return [];
   const f = factionOfArchetype(state, card.suit);
   return LOCATION_IDS.filter((loc) => !state.board[loc].scorched && controllerOf(/** @type {GameState} */ (state), loc) === f);
 }
@@ -738,14 +738,14 @@ function tokenSpots(state, card, mode) {
     && (mode === 'location' ? suitLocations(card).includes(loc) : tokensOf(state, loc, /** @type {string} */ (sf)) > 0));
 }
 
-/** @typedef {Set<string> & { led: string | null }} Placed  where influence was placed this action, and the led faction (D15) */
+/** @typedef {Set<string> & { led: string | null }} Placed  where sway was placed this action, and the led faction (D15) */
 
 /**
- * The factions a target would move, before IC1 (influence not required).
+ * The factions a target would move, before IC1 (sway not required).
  * @param {GameState} state @param {string} pid @param {Card} card @param {Target} t
  */
 function movingFactions(state, pid, card, t) {
-  const copy = /** @type {GameState} */ (/** @type {unknown} */ (clone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options: { ...state.options, influenceRequired: 'off' }, lastPlayed: state.lastPlayed ?? null, leftOut: state.leftOut ?? [], tips: state.tips ?? [], events: [], log: [] })));
+  const copy = /** @type {GameState} */ (/** @type {unknown} */ (clone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options: { ...state.options, swayRequired: 'off' }, lastPlayed: state.lastPlayed ?? null, leftOut: state.leftOut ?? [], tips: state.tips ?? [], events: [], log: [] })));
   act(copy, pid, card, t);
   return state.factions.filter((f) => LOCATION_IDS.some((l) => (copy.board[l].tokens[f] ?? 0) > (state.board[l].tokens[f] ?? 0)));
 }
@@ -789,17 +789,17 @@ function checkTargetNow(state, pid, card, t) {
   const lead = selectedPays(state) && LEADS.has(/** @type {string} */ (copied(state, card).action)) ? ledFaction(state, copied(state, card), t) : 'n/a';
   if (lead === null) return 'Choose the faction you lead.';
   if (lead !== 'n/a' && !movingFactions(state, pid, card, { ...t, lead: undefined }).includes(lead)) return 'That faction doesn\'t move with this card.';
-  if (!influenceRequired(state)) return null;
-  const cost = num(state, 'influencePerMove');
+  if (!swayRequired(state)) return null;
+  const cost = num(state, 'swayPerMove');
   const led = selectedPays(state) ? ledFaction(state, copied(state, card), t) : null;
-  if (led && cost > 0 && (state.players[pid].standing[led] ?? 0) < cost && movingFactions(state, pid, card, t).includes(led)) return 'You need standing with the faction you lead to pay for the influence this move places (IC1).';
+  if (led && cost > 0 && (state.players[pid].standing[led] ?? 0) < cost && movingFactions(state, pid, card, t).includes(led)) return 'You need standing with the faction you lead to pay for the sway this move places (IC1).';
   // IC1: the card must be payable for at least one of its moves.
   const moved = (/** @type {Options} */ options) => {
     const copy = /** @type {GameState} */ (/** @type {unknown} */ (clone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options, lastPlayed: state.lastPlayed ?? null, leftOut: state.leftOut ?? [], tips: state.tips ?? [], events: [], log: [] })));
     act(copy, pid, card, t);
     return LOCATION_IDS.some((l) => JSON.stringify(copy.board[l].tokens) !== JSON.stringify(state.board[l].tokens));
   };
-  if (!moved(state.options) && moved({ ...state.options, influenceRequired: 'off' })) return 'You need standing with the faction to pay for the influence this move places (IC1).';
+  if (!moved(state.options) && moved({ ...state.options, swayRequired: 'off' })) return 'You need standing with the faction to pay for the sway this move places (IC1).';
   return null;
 }
 
@@ -943,11 +943,11 @@ function checkShape(state, pid, card, t) {
       return howlers(state, t.location ?? '', t.faction).length ? null : 'No group of that faction two hexes away can come closer.';
     }
     case 'repel': return placeTarget(state, card, t) ?? (pushes(state, /** @type {string} */ (t.location), movable(state, card, t)).length ? null : 'Nothing next to it can be pushed away.');
-    case 'move-influence': {
+    case 'move-sway': {
       if ((card.suit && t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode ?? 'location').includes(t.location)) return 'Choose the target location.';
       const from = t.from ?? [];
-      if (from.length < 1 || from.length > 3) return 'Move 1 to 3 influence.';
-      for (const l of new Set(from)) if (l === t.location || from.filter((x) => x === l).length > (state.board[l]?.influence[pid] ?? 0)) return 'You don\'t have that much influence there.';
+      if (from.length < 1 || from.length > 3) return 'Move 1 to 3 sway.';
+      for (const l of new Set(from)) if (l === t.location || from.filter((x) => x === l).length > (state.board[l]?.sway[pid] ?? 0)) return 'You don\'t have that much sway there.';
       return null;
     }
     case 'cash-in': {
@@ -956,14 +956,14 @@ function checkShape(state, pid, card, t) {
       return null;
     }
     case 'bail-out': {
-      if (!t.location || (state.board[t.location]?.influence[pid] ?? 0) <= 0) return 'Choose a location where you have influence.';
-      return t.to && t.to !== t.location && state.board[t.to] && !state.board[t.to].scorched ? null : 'Choose where your influence goes.';
+      if (!t.location || (state.board[t.location]?.sway[pid] ?? 0) <= 0) return 'Choose a location where you have sway.';
+      return t.to && t.to !== t.location && state.board[t.to] && !state.board[t.to].scorched ? null : 'Choose where your sway goes.';
     }
     case 'backup': {
-      if (!t.location || (state.board[t.location]?.influence[pid] ?? 0) <= 0) return 'Choose a location where you have influence.';
+      if (!t.location || (state.board[t.location]?.sway[pid] ?? 0) <= 0) return 'Choose a location where you have sway.';
       return state.players[pid].supply > 0 ? null : 'You have no cubes in your supply.';
     }
-    case 'fall-back': return t.location && fallBackFrom(state, pid, t.location).length ? null : 'Choose a location next to your influence.';
+    case 'fall-back': return t.location && fallBackFrom(state, pid, t.location).length ? null : 'Choose a location next to your sway.';
     case 'canvass': {
       const at = t.from ?? [];
       if (at.length < 1 || at.length > 4 || new Set(at).size !== at.length || at.some((l) => !state.board[l] || state.board[l].scorched)) return 'Choose one to four locations.';
@@ -1006,7 +1006,7 @@ function checkShape(state, pid, card, t) {
     case 'truce': return t.location && state.board[t.location] && !state.board[t.location].scorched ? null : 'Choose a location.';
     case 'copy': return 'Nothing has been played to copy yet.';
     case 'trail': {
-      if (!t.location || !trailSpots(state, pid).includes(t.location)) return 'Choose a location where you have the most influence.';
+      if (!t.location || !trailSpots(state, pid).includes(t.location)) return 'Choose a location where you have the most sway.';
       const from = t.from?.[0];
       return t.faction && from && MAP[t.location].adjacent.includes(from) && tokensOf(state, from, t.faction) > 0 && canEnter(state, t.location, t.faction) ? null : 'Choose a group next to it.';
     }
@@ -1047,8 +1047,8 @@ function act(state, pid, card, t) {
     }
     case 'sow': {
       // The whole group sets off; each location entered gets 1 token and 1 of
-      // the player's influence; the chase stops at a location it can't enter
-      // or when the player's influence with that faction runs out; leftover
+      // the player's sway; the chase stops at a location it can't enter
+      // or when the player's sway with that faction runs out; leftover
       // tokens stay together at the last location entered.
       const f = /** @type {string} */ (t.faction), start = /** @type {string} */ (t.location);
       let left = tokensOf(state, start, f);
@@ -1059,8 +1059,8 @@ function act(state, pid, card, t) {
         if (left <= 0 || next === start || visited.includes(next) || !MAP[at].adjacent.includes(next) || !canEnter(state, next, f, state.pending?.blocked) || (state.players[pid].standing[f] ?? 0) <= 0) break;
         state.board[next].tokens[f] = tokensOf(state, next, f) + 1;
         state.players[pid].standing[f] -= 1;
-        state.board[next].influence[pid] = (state.board[next].influence[pid] ?? 0) + 1;
-        state.events.push({ type: 'influence-placed', player: pid, faction: f, location: next });
+        state.board[next].sway[pid] = (state.board[next].sway[pid] ?? 0) + 1;
+        state.events.push({ type: 'sway-placed', player: pid, faction: f, location: next });
         left -= 1;
         visited.push(next);
         at = next;
@@ -1077,14 +1077,14 @@ function act(state, pid, card, t) {
         state.board[loc].token = { owner: pid, card: real ? card.id : null };
         if (!real) p.bluffs -= 1;
         p.supply -= 1;
-        state.board[loc].influence[pid] = (state.board[loc].influence[pid] ?? 0) + 1;
+        state.board[loc].sway[pid] = (state.board[loc].sway[pid] ?? 0) + 1;
         state.events.push({ type: 'token-placed', player: pid, location: loc });
       }
       if (t.bluff && p.bluffs > 0 && p.supply > 0) {
         state.board[t.bluff].token = { owner: pid, card: null };
         p.bluffs -= 1;
         p.supply -= 1;
-        state.board[t.bluff].influence[pid] = (state.board[t.bluff].influence[pid] ?? 0) + 1;
+        state.board[t.bluff].sway[pid] = (state.board[t.bluff].sway[pid] ?? 0) + 1;
         state.events.push({ type: 'token-placed', player: pid, location: t.bluff });
       }
       logLine(state, `${pid} places a face-down token${t.bluff ? 's at ' + lname(loc) + ' and ' + lname(t.bluff) : ' at ' + lname(loc)}.`);
@@ -1118,9 +1118,9 @@ function act(state, pid, card, t) {
     case 'surveil-supply': {
       const at = [/** @type {string} */ (t.location), ...MAP[/** @type {string} */ (t.location)].adjacent].filter((l) => !state.board[l].scorched && factionsAt(state, l).length > 0);
       const n = Math.min(at.length, state.players[pid].supply);
-      for (const l of at.slice(0, n)) state.board[l].influence[pid] = (state.board[l].influence[pid] ?? 0) + 1;
+      for (const l of at.slice(0, n)) state.board[l].sway[pid] = (state.board[l].sway[pid] ?? 0) + 1;
       state.players[pid].supply -= n;
-      logLine(state, `${pid}: ${card.name} places influence at ${at.slice(0, n).map(lname).join(', ')}.`);
+      logLine(state, `${pid}: ${card.name} places sway at ${at.slice(0, n).map(lname).join(', ')}.`);
       break;
     }
     case 'pit-fall': {
@@ -1132,8 +1132,8 @@ function act(state, pid, card, t) {
       const to = /** @type {string} */ (t.location);
       const n = Math.min(5, Math.max(...factionsAt(state, to).map((f) => tokensOf(state, to, f))), state.players[pid].supply);
       state.players[pid].supply -= n;
-      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
-      logLine(state, `${pid}: ${card.name} places ${n} influence at ${lname(to)}.`);
+      state.board[to].sway[pid] = (state.board[to].sway[pid] ?? 0) + n;
+      logLine(state, `${pid}: ${card.name} places ${n} sway at ${lname(to)}.`);
       break;
     }
     case 'swap-standing': {
@@ -1286,10 +1286,10 @@ function act(state, pid, card, t) {
       const spots = cameraSpots(state, pid, /** @type {string} */ (t.location));
       for (const { loc, f } of spots) {
         state.players[pid].standing[f] -= 1;
-        state.board[loc].influence[pid] = (state.board[loc].influence[pid] ?? 0) + 1;
-        state.events.push({ type: 'influence-placed', player: pid, faction: f, location: loc });
+        state.board[loc].sway[pid] = (state.board[loc].sway[pid] ?? 0) + 1;
+        state.events.push({ type: 'sway-placed', player: pid, faction: f, location: loc });
       }
-      logLine(state, `${pid}: ${card.name} places influence at ${spots.map((x) => lname(x.loc)).join(', ')}.`);
+      logLine(state, `${pid}: ${card.name} places sway at ${spots.map((x) => lname(x.loc)).join(', ')}.`);
       break;
     }
     case 'follow': {
@@ -1338,71 +1338,71 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} drives ${n} group${n === 1 ? '' : 's'} away from ${lname(/** @type {string} */ (t.location))}.`);
       break;
     }
-    case 'move-influence': {
+    case 'move-sway': {
       const to = /** @type {string} */ (t.location);
       for (const from of t.from ?? []) {
-        if ((state.board[from].influence[pid] ?? 0) <= 0) continue;
-        state.board[from].influence[pid] -= 1;
-        if (state.board[from].influence[pid] === 0) delete state.board[from].influence[pid];
-        state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + 1;
+        if ((state.board[from].sway[pid] ?? 0) <= 0) continue;
+        state.board[from].sway[pid] -= 1;
+        if (state.board[from].sway[pid] === 0) delete state.board[from].sway[pid];
+        state.board[to].sway[pid] = (state.board[to].sway[pid] ?? 0) + 1;
       }
-      logLine(state, `${pid}: ${card.name} moves ${(t.from ?? []).length} influence to ${lname(to)}.`);
+      logLine(state, `${pid}: ${card.name} moves ${(t.from ?? []).length} sway to ${lname(to)}.`);
       break;
     }
     case 'cash-in': {
       const to = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
       const n = Math.min(3, state.players[pid].standing[f] ?? 0);
       state.players[pid].standing[f] -= n;
-      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
-      for (let i = 0; i < n; i++) state.events.push({ type: 'influence-placed', player: pid, faction: f, location: to });
-      logLine(state, `${pid}: ${card.name} places ${n} influence at ${lname(to)}.`);
+      state.board[to].sway[pid] = (state.board[to].sway[pid] ?? 0) + n;
+      for (let i = 0; i < n; i++) state.events.push({ type: 'sway-placed', player: pid, faction: f, location: to });
+      logLine(state, `${pid}: ${card.name} places ${n} sway at ${lname(to)}.`);
       break;
     }
     case 'bail-out': {
       const from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
-      const n = state.board[from].influence[pid] ?? 0;
-      delete state.board[from].influence[pid];
-      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
-      logLine(state, `${pid}: ${card.name} moves all ${n} of their influence from ${lname(from)} to ${lname(to)}.`);
+      const n = state.board[from].sway[pid] ?? 0;
+      delete state.board[from].sway[pid];
+      state.board[to].sway[pid] = (state.board[to].sway[pid] ?? 0) + n;
+      logLine(state, `${pid}: ${card.name} moves all ${n} of their sway from ${lname(from)} to ${lname(to)}.`);
       break;
     }
     case 'backup': {
       const to = /** @type {string} */ (t.location);
-      const n = Math.min(state.board[to].influence[pid] ?? 0, state.players[pid].supply);
+      const n = Math.min(state.board[to].sway[pid] ?? 0, state.players[pid].supply);
       state.players[pid].supply -= n;
-      state.board[to].influence[pid] += n;
-      logLine(state, `${pid}: ${card.name} doubles their influence at ${lname(to)} (+${n} from their supply).`);
+      state.board[to].sway[pid] += n;
+      logLine(state, `${pid}: ${card.name} doubles their sway at ${lname(to)} (+${n} from their supply).`);
       break;
     }
     case 'fall-back': {
       const to = /** @type {string} */ (t.location);
       let n = 0;
-      for (const from of fallBackFrom(state, pid, to)) { n += state.board[from].influence[pid]; delete state.board[from].influence[pid]; }
-      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
-      logLine(state, `${pid}: ${card.name} gathers ${n} of their influence into ${lname(to)}.`);
+      for (const from of fallBackFrom(state, pid, to)) { n += state.board[from].sway[pid]; delete state.board[from].sway[pid]; }
+      state.board[to].sway[pid] = (state.board[to].sway[pid] ?? 0) + n;
+      logLine(state, `${pid}: ${card.name} gathers ${n} of their sway into ${lname(to)}.`);
       break;
     }
     case 'stake': {
       const to = /** @type {string} */ (t.location);
       const n = Math.min(/** @type {number} */ ((/** @type {any} */ (card)).amount ?? 4), state.players[pid].supply);
       state.players[pid].supply -= n;
-      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
-      logLine(state, `${pid}: ${card.name} places ${n} influence at ${lname(to)}.`);
+      state.board[to].sway[pid] = (state.board[to].sway[pid] ?? 0) + n;
+      logLine(state, `${pid}: ${card.name} places ${n} sway at ${lname(to)}.`);
       break;
     }
     case 'canvass': {
       const at = (t.from ?? []).slice(0, state.players[pid].supply);
-      for (const l of at) state.board[l].influence[pid] = (state.board[l].influence[pid] ?? 0) + 1;
+      for (const l of at) state.board[l].sway[pid] = (state.board[l].sway[pid] ?? 0) + 1;
       state.players[pid].supply -= at.length;
-      logLine(state, `${pid}: ${card.name} places 1 influence at each of ${at.map(lname).join(', ')}.`);
+      logLine(state, `${pid}: ${card.name} places 1 sway at each of ${at.map(lname).join(', ')}.`);
       break;
     }
     case 'bait': {
       const to = /** @type {string} */ (t.location), from = /** @type {string} */ (t.from?.[0]), f = /** @type {string} */ (t.faction);
       const n = Math.min(2, state.players[pid].supply);
       state.players[pid].supply -= n;
-      state.board[to].influence[pid] = (state.board[to].influence[pid] ?? 0) + n;
-      logLine(state, `${pid}: ${card.name} at ${lname(to)} (${n} influence) and draws ${move(state, pid, f, from, to, tokensOf(state, from, f), placed)} ${names(f)} in.`);
+      state.board[to].sway[pid] = (state.board[to].sway[pid] ?? 0) + n;
+      logLine(state, `${pid}: ${card.name} at ${lname(to)} (${n} sway) and draws ${move(state, pid, f, from, to, tokensOf(state, from, f), placed)} ${names(f)} in.`);
       break;
     }
     case 'allegiance': {
@@ -1416,11 +1416,11 @@ function act(state, pid, card, t) {
     case 'split-up': {
       const at = (t.from ?? []).slice(0, state.players[pid].supply);
       for (const l of at) {
-        state.board[l].influence[pid] = (state.board[l].influence[pid] ?? 0) + 1;
+        state.board[l].sway[pid] = (state.board[l].sway[pid] ?? 0) + 1;
         state.board[l].double = [...(state.board[l].double ?? []), pid];
       }
       state.players[pid].supply -= at.length;
-      logLine(state, `${pid}: ${card.name}: 1 influence each at ${at.map(lname).join(', ')}, counting double there this round.`);
+      logLine(state, `${pid}: ${card.name}: 1 sway each at ${at.map(lname).join(', ')}, counting double there this round.`);
       break;
     }
     case 'tipoff': {
@@ -1489,11 +1489,11 @@ function triggerMatches(state, pid, response, location) {
   switch (response.trigger) {
     case 'card-played': return !!pend && pend.player !== pid && !pend.cancelled;
     case 'move-into-your-location':
-      return !!pend && pend.player !== pid && !pend.cancelled && !!location && (state.board[location]?.influence[pid] ?? 0) > 0
+      return !!pend && pend.player !== pid && !pend.cancelled && !!location && (state.board[location]?.sway[pid] ?? 0) > 0
         && pendingDestinations(state, pend).includes(location) && !pend.blocked.includes(location);
     case 'token-placed': return state.events.some((e) => e.type === 'token-placed' && e.player !== pid && (!location || e.location === location));
-    case 'influence-spent': return state.events.some((e) => e.type === 'influence-spent' && e.player !== pid);
-    case 'influence-placed': return state.events.some((e) => e.type === 'influence-placed' && e.player !== pid);
+    case 'sway-spent': return state.events.some((e) => e.type === 'sway-spent' && e.player !== pid);
+    case 'sway-placed': return state.events.some((e) => e.type === 'sway-placed' && e.player !== pid);
     case 'pass': return state.events.some((e) => e.type === 'pass' && e.player !== pid);
     default: return false;
   }
@@ -1554,7 +1554,7 @@ export function validate(state, submission) {
   }
   if (state.phase === 'growth') {
     if (m.type !== 'grow' || !state.growing) return no('Choose where the faction grows.');
-    if (state.growing.leaders[state.growing.next % state.growing.leaders.length] !== pid) return no('Another influence leader places this token.');
+    if (state.growing.leaders[state.growing.next % state.growing.leaders.length] !== pid) return no('Another sway leader places this token.');
     return (state.growing.due[m.location] ?? 0) > 0 ? OK : no('That location doesn\'t grow.');
   }
   if (state.phase !== 'play') return no('That move does not belong in this phase.');
@@ -1578,14 +1578,14 @@ export function validate(state, submission) {
     const mine = p.hand.filter((c) => cardById(c).marked).sort((a, b) => MARKS.indexOf(cardById(a).marked ?? '') - MARKS.indexOf(cardById(b).marked ?? ''));
     if (mine.length && m.card !== mine[0]) return no('The first player opens with their marked card.');
   }
-  if (m.use === 'influence') {
-    if (!card.suit) return no('Unsuited cards have no influence use.');
+  if (m.use === 'sway') {
+    if (!card.suit) return no('Unsuited cards have no sway use.');
     if (p.supply <= 0) return no('Your supply is empty.');
-    const spots = influenceSpots(state, m.card);
-    if (spots.length ? !spots.includes(m.location ?? '') : m.location) return no('Choose a location its faction controls for 1 of the influence.');
+    const spots = swaySpots(state, m.card);
+    if (spots.length ? !spots.includes(m.location ?? '') : m.location) return no('Choose a location its faction controls for 1 of the sway.');
     return OK;
   }
-  if (m.use !== 'action') return no('Choose the action or the influence.');
+  if (m.use !== 'action') return no('Choose the action or the sway.');
   const e = checkTarget(state, pid, card, m.target ?? null);
   if (e) return no(e);
   return OK;
@@ -1635,19 +1635,19 @@ export function applyMove(state, submission) {
       next.events = [];
       if (pid === next.first) next.opened = true;
       const card = cardById(m.card);
-      if (m.use === 'influence') {
+      if (m.use === 'sway') {
         const faction = factionOfArchetype(next, /** @type {string} */ (card.suit));
         const gain = Math.min(printedOf(state, card.id), p.supply);
         p.supply -= gain;
         p.standing[faction] += gain;
-        next.events.push({ type: 'influence-spent', player: pid, faction, amount: gain });
+        next.events.push({ type: 'sway-spent', player: pid, faction, amount: gain });
         if (m.location && gain > 0) {
-          // Test lever influenceToBoard: 1 of it goes onto the chosen location.
+          // Test lever swayToBoard: 1 of it goes onto the chosen location.
           p.standing[faction] -= 1;
-          next.board[m.location].influence[pid] = (next.board[m.location].influence[pid] ?? 0) + 1;
-          next.events.push({ type: 'influence-placed', player: pid, faction, location: m.location });
+          next.board[m.location].sway[pid] = (next.board[m.location].sway[pid] ?? 0) + 1;
+          next.events.push({ type: 'sway-placed', player: pid, faction, location: m.location });
         }
-        logLine(next, `${pid} plays ${card.name} for ${gain} influence with ${factionById(faction).name}.`);
+        logLine(next, `${pid} plays ${card.name} for ${gain} sway with ${factionById(faction).name}.`);
         next.turn = (next.turn + 1) % next.seating.length;
         return next;
       }
@@ -1740,7 +1740,7 @@ function respond(state, pid, cardId, location) {
       break;
     }
     case 'pull-plug': {
-      const e = state.events.find((x) => x.type === 'influence-spent' && x.player !== pid);
+      const e = state.events.find((x) => x.type === 'sway-spent' && x.player !== pid);
       if (e?.faction) {
         const target = state.players[e.player];
         if ((target.standing[e.faction] ?? 0) > 0 && (e.amount ?? 0) > 1) {
@@ -1765,7 +1765,7 @@ function respond(state, pid, cardId, location) {
     }
   }
   if (response.timing === 'after') {
-    const kind = { 'token-placed': 'token-placed', 'influence-spent': 'influence-spent', 'influence-placed': 'influence-placed', pass: 'pass' }[response.trigger];
+    const kind = { 'token-placed': 'token-placed', 'sway-spent': 'sway-spent', 'sway-placed': 'sway-placed', pass: 'pass' }[response.trigger];
     const i = state.events.findIndex((e) => e.type === kind && e.player !== pid);
     if (i >= 0) state.events.splice(i, 1); // each event is answered once
   }
@@ -1849,9 +1849,9 @@ function fight(state, loc) {
     // Wake the Dead (test card, round 18): no scorching; both sides go back to their supplies.
     state.supply[a] += na;
     state.supply[b] += nb;
-    for (const [pid, n] of Object.entries(place.influence)) state.players[pid].supply += n;
+    for (const [pid, n] of Object.entries(place.sway)) state.players[pid].supply += n;
     place.tokens = {};
-    place.influence = {};
+    place.sway = {};
     logLine(state, `  ${name}: a true tie, but the dead won't rest: ${name} is not scorched.`);
     return;
   }
@@ -1859,9 +1859,9 @@ function fight(state, loc) {
     // TF1 + TM1: both wiped, the location scorched, nothing rewarded; everything back to its supply.
     state.supply[a] += na;
     state.supply[b] += nb;
-    for (const [pid, n] of Object.entries(place.influence)) state.players[pid].supply += n;
+    for (const [pid, n] of Object.entries(place.sway)) state.players[pid].supply += n;
     place.tokens = {};
-    place.influence = {};
+    place.sway = {};
     place.scorched = true;
     logLine(state, `  ${name}: a true tie. Both sides are wiped out and ${name} is scorched.`);
     return;
@@ -1932,33 +1932,33 @@ function fight(state, loc) {
   } else {
     piles.forEach((pile, i) => give(pile, collectors[i] ?? null));
   }
-  // Influence after the fight (AF3 adjusted, AS1).
+  // Sway after the fight (AF3 adjusted, AS1).
   const leader = collectors[0];
   if (leader) {
-    const n = place.influence[leader] ?? 0;
+    const n = place.sway[leader] ?? 0;
     const half = Math.floor(n / 2);
     state.players[leader].standing[winner] += half;
     state.players[leader].supply += n - half;
-    delete place.influence[leader];
+    delete place.sway[leader];
   }
   for (const pid of ranking.tiedLeaders) {
-    state.players[pid].supply += place.influence[pid] ?? 0;
-    delete place.influence[pid];
+    state.players[pid].supply += place.sway[pid] ?? 0;
+    delete place.sway[pid];
   }
 }
 
 /**
- * Rank players by influence at a location, with affinity breaking ties (AB1)
+ * Rank players by sway at a location, with affinity breaking ties (AB1)
  * and standing ties using up their places (PT2, ST1). `places` lists who
  * collects first and second place (null where a tie used the place up).
  * @param {GameState} state @param {string} loc @param {number} [hacked]  Sentient tokens at the fight's start, for Install a Backdoor
  */
 function rankAt(state, loc, hacked = 0) {
   const place = state.board[loc];
-  // Install a Backdoor (test card, round 20): 1 more per Sentient token here as the fight started, even with no influence placed.
-  const influence = { ...place.influence };
-  for (const pid of place.backdoor ?? []) influence[pid] = (influence[pid] ?? 0) + hacked;
-  const entries = Object.entries(influence).filter(([, n]) => n > 0).map(([pid, n]) => /** @type {[string, number]} */ ([pid, place.double?.includes(pid) ? 2 * n : n]));
+  // Install a Backdoor (test card, round 20): 1 more per Sentient token here as the fight started, even with no sway placed.
+  const sway = { ...place.sway };
+  for (const pid of place.backdoor ?? []) sway[pid] = (sway[pid] ?? 0) + hacked;
+  const entries = Object.entries(sway).filter(([, n]) => n > 0).map(([pid, n]) => /** @type {[string, number]} */ ([pid, place.double?.includes(pid) ? 2 * n : n]));
   const involved = entries.length;
   const byAmount = new Map();
   for (const [pid, n] of entries) byAmount.set(n, [...(byAmount.get(n) ?? []), pid]);
@@ -2002,7 +2002,7 @@ export function growthDue(state, faction) {
 /**
  * Growth for each faction in turn, from `from`. A faction with enough supply
  * grows everywhere it is due; one short of tokens grows as far as its supply
- * allows, its influence leaders taking turns to choose (3.5).
+ * allows, its sway leaders taking turns to choose (3.5).
  * @param {GameState} state @param {number} [from]
  */
 function beginGrowth(state, from = 0) {
@@ -2015,7 +2015,7 @@ function beginGrowth(state, from = 0) {
       state.supply[faction] -= wants;
       logLine(state, `${factionById(faction).name} grows at ${Object.keys(due).length} location${Object.keys(due).length === 1 ? '' : 's'}.`);
     } else if (state.supply[faction] > 0) {
-      state.growing = { faction, left: state.supply[faction], leaders: influenceLeaders(state, faction), next: 0, due };
+      state.growing = { faction, left: state.supply[faction], leaders: swayLeaders(state, faction), next: 0, due };
       state.phase = 'growth';
       return state;
     }
@@ -2023,7 +2023,7 @@ function beginGrowth(state, from = 0) {
   return endRound(state);
 }
 
-/** One token placed by an influence leader during a short-supply growth. @param {GameState} state @param {string} loc */
+/** One token placed by a sway leader during a short-supply growth. @param {GameState} state @param {string} loc */
 function growOne(state, loc) {
   const g = /** @type {NonNullable<GameState['growing']>} */ (state.growing);
   state.board[loc].tokens[g.faction] += 1;
@@ -2195,8 +2195,8 @@ export function sampleTarget(state, pid, cardId, rng) {
       }
       case 'halve': case 'drive-out': case 'drive-out-either': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(MAP[g.loc].adjacent) }; break;
       case 'teleport': case 'halve-far': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(LOCATION_IDS) }; break;
-      case 'move-influence': {
-        const mine = LOCATION_IDS.filter((l) => (state.board[l].influence[pid] ?? 0) > 0);
+      case 'move-sway': {
+        const mine = LOCATION_IDS.filter((l) => (state.board[l].sway[pid] ?? 0) > 0);
         const to = pick(holdingSpots(state, card, mode));
         const from = mine.filter((l) => l !== to);
         if (to && from.length) t = { mode, location: to, from: Array.from({ length: 1 + Math.floor(rng() * 3) }, () => pick(from)) };
@@ -2220,7 +2220,7 @@ export function sampleTarget(state, pid, cardId, rng) {
   return null;
 }
 /** Actions sampleTarget guesses directly; any other walks the table's choices. */
-const SAMPLED = new Set(['lure', 'draw-adjacent', 'gather-region', 'gather-neighbours', 'broadcast', 'sow', 'token', 'halve', 'drive-out', 'drive-out-either', 'teleport', 'halve-far', 'move-influence', 'split', 'conveyor']);
+const SAMPLED = new Set(['lure', 'draw-adjacent', 'gather-region', 'gather-neighbours', 'broadcast', 'sow', 'token', 'halve', 'drive-out', 'drive-out-either', 'teleport', 'halve-far', 'move-sway', 'split', 'conveyor']);
 
 /**
  * A random target built one choice at a time, as the table offers them (for bots).
@@ -2304,8 +2304,8 @@ export function nextChoice(state, pid, cardId, t) {
   const card = copied(state, cardById(cardId));
   if (c.kind !== 'done' || !selectedPays(state) || !LEADS.has(/** @type {string} */ (card.action)) || ledFaction(state, card, t) !== null) return c;
   // D15: name the faction you lead, among those that would move (and, under IC1, that you can pay for).
-  const cost = num(state, 'influencePerMove');
-  const options = movingFactions(state, pid, card, t).filter((f) => !influenceRequired(state) || cost <= 0 || (state.players[pid].standing[f] ?? 0) >= cost);
+  const cost = num(state, 'swayPerMove');
+  const options = movingFactions(state, pid, card, t).filter((f) => !swayRequired(state) || cost <= 0 || (state.players[pid].standing[f] ?? 0) >= cost);
   return { kind: 'faction', key: 'lead', options };
 }
 
@@ -2361,13 +2361,13 @@ function nextShape(state, pid, cardId, t) {
       return { kind: 'done' };
     }
     case 'sow': {
-      // Only groups that can be chased at least one step: influence with the faction, and a bordering location it can enter.
+      // Only groups that can be chased at least one step: sway with the faction, and a bordering location it can enter.
       if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => (state.players[pid].standing[g.faction] ?? 0) > 0 && exits(g, MAP[g.location].adjacent).length > 0) };
       const path = t.path ?? [];
       if (path.includes('__stop')) return { kind: 'done' };
       const at = path.length ? path[path.length - 1] : t.location;
       const f = /** @type {string} */ (t.faction);
-      // Steps left: one token and one influence per location entered.
+      // Steps left: one token and one sway per location entered.
       const left = Math.min(tokensOf(state, t.location, f), state.players[pid].standing[f] ?? 0) - path.length;
       // The chase never enters a location twice, nor goes back to its start (G.8).
       const opts = left > 0 ? MAP[at].adjacent.filter((l) => canEnter(state, l, f) && l !== t.location && !path.includes(l)) : [];
@@ -2465,13 +2465,13 @@ function nextShape(state, pid, cardId, t) {
       if (mode === 'location' && !t.location) return { kind: 'location', key: 'location', options: suitLocations(card) };
       return t.direction ? { kind: 'done' } : { kind: 'direction', options: spec.map.directions.map((d) => d.id) };
     case 'bail-out': {
-      const mine = LOCATION_IDS.filter((l) => (state.board[l].influence[pid] ?? 0) > 0);
+      const mine = LOCATION_IDS.filter((l) => (state.board[l].sway[pid] ?? 0) > 0);
       if (!t.location) return { kind: 'location', key: 'location', options: mine };
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: LOCATION_IDS.filter((l) => l !== t.location && !state.board[l].scorched) };
     }
     case 'backup':
       if (state.players[pid].supply <= 0) return { kind: 'location', key: 'location', options: [] };
-      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => (state.board[l].influence[pid] ?? 0) > 0) };
+      return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => (state.board[l].sway[pid] ?? 0) > 0) };
     case 'fall-back':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => fallBackFrom(state, pid, l).length > 0) };
     case 'canvass': {
@@ -2514,8 +2514,8 @@ function nextShape(state, pid, cardId, t) {
     case 'stake':
       if (state.players[pid].supply <= 0) return { kind: 'location', key: 'location', options: [] };
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched) };
-    case 'move-influence': {
-      const mine = (/** @type {string} */ l) => state.board[l].influence[pid] ?? 0;
+    case 'move-sway': {
+      const mine = (/** @type {string} */ l) => state.board[l].sway[pid] ?? 0;
       if (!t.location) return { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((to) => LOCATION_IDS.some((l) => l !== to && mine(l) > 0)) };
       const from = t.from ?? [];
       if (from.includes('__stop') || from.length >= 3) return { kind: 'done' };
@@ -2587,6 +2587,25 @@ export function describeTarget(cardId, t) {
 // ---------------------------------------------------------------------------
 
 /**
+ * A saved game from before "influence" was renamed "sway" (designer,
+ * 2026-10-10), brought up to date: each location's influence, the option
+ * ids and the events' types. Data plumbing, not a rule; a game saved since
+ * passes through unchanged.
+ * @param {GameState} state @returns {GameState}
+ */
+export function upgradeState(state) {
+  const old = /** @type {any} */ (state);
+  for (const place of Object.values(old.board ?? {})) {
+    if (place && 'influence' in place) { place.sway = { ...(place.sway ?? {}), ...place.influence }; delete place.influence; }
+  }
+  for (const key of Object.keys(old.options ?? {})) {
+    if (key.startsWith('influence')) { old.options[`sway${key.slice(9)}`] ??= old.options[key]; delete old.options[key]; }
+  }
+  for (const e of old.events ?? []) if (typeof e.type === 'string') e.type = e.type.replace(/^influence-/, 'sway-');
+  return state;
+}
+
+/**
  * The copy of the state one seat may see. Hands, kept cards, batches, the
  * left-out cards, token faces and trophy totals are hidden (3.11, IN2).
  * @param {GameState} state
@@ -2610,7 +2629,7 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, influence: { ...place.influence }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: true } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
+      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: true } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),

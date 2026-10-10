@@ -11,7 +11,7 @@
  *              faction for the invaders) that it switches only past a margin.
  *              Its style is a lean toward factions or trophy sets that fades by
  *              round (designer: more proof to back a faction early on). It searches one move ahead: each card in hand with
- *              sampled targets, its influence, and passing; with the
+ *              sampled targets, its sway, and passing; with the
  *              search switches below it plays its best moves out to the end
  *              of the round.
  * - (goal-deep, goal with a reply lookahead, was removed 2026-10-09: its
@@ -27,7 +27,7 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, clone, memoising, memoOn, resolveFights, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, influenceSpots, growthDue,
+  cardById, clone, memoising, memoOn, resolveFights, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthDue,
 } from './engine.js';
 import evalFit from './eval-fit.json' with { type: 'json' };
 
@@ -35,14 +35,14 @@ import evalFit from './eval-fit.json' with { type: 'json' };
 /** @typedef {import('./engine.js').Move} Move */
 
 /**
- * Spending a card for influence; under the test lever influenceToBoard, 1 of
+ * Spending a card for sway; under the test lever swayToBoard, 1 of
  * it goes onto a location its faction controls (`at` picks which).
  * @param {GameState} state @param {string} cardId @param {(spots: string[]) => string} [at]
  * @returns {Move}
  */
 function spend(state, cardId, at = (spots) => spots[0]) {
-  const spots = influenceSpots(state, cardId);
-  return spots.length ? { type: 'play', card: cardId, use: 'influence', location: at(spots) } : { type: 'play', card: cardId, use: 'influence' };
+  const spots = swaySpots(state, cardId);
+  return spots.length ? { type: 'play', card: cardId, use: 'sway', location: at(spots) } : { type: 'play', card: cardId, use: 'sway' };
 }
 /** @typedef {'trophy' | 'backer'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory, table?: Record<string, string>, memories?: Record<string, BotMemory> }} BotOptions  table, memories: every seat's profile and memory, for play-outs (persona table) */
@@ -178,7 +178,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  *   (eval-fit.json, from scripts/fit.mjs), this many points per unit of
  *   log-odds, in place of the hand-built goal value; its goal still steers
  *   only the draft's and the plan's choices. A tuning test.
- * - save: the worth of each influence cube kept in supply (default 0.02).
+ * - save: the worth of each sway cube kept in supply (default 0.02).
  * - blend: add the fitted evaluation, this many points per unit of log-odds,
  *   to the goal value (which keeps the goal's own terms).
  * - w2, w3: the island margin's weights on the second and third weakest
@@ -188,7 +188,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  *   seat's within it) by this factor: the bots' forecasts are over-confident.
  * - keep, playouts: the play-out search's size (default SIM.keep, SIM.playouts);
  *   tune these down for faster tuning runs rather than using a weaker bot.
- * - sets: for the island, value standing (and influence on the board) with the
+ * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
  * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
@@ -292,7 +292,7 @@ export function features(state, pid) {
     weakest: t[0], second: t[1], third: t[2], trophies: t.reduce((a, x) => a + x, 0),
     leadTop: net(pid, top) - Math.max(...others.map((o) => net(o, top))), bestLead: Math.max(...s.factions.map((f) => net(pid, f) - Math.max(...others.map((o) => net(o, f))))),
     standing: s.factions.reduce((a, f) => a + (p.standing[f] ?? 0), 0), supply: p.supply, hand: state.players[pid].hand.length,
-    onBoard: Object.values(s.board).reduce((a, place) => a + (place.influence[pid] ?? 0), 0), access: setAccess(state, pid),
+    onBoard: Object.values(s.board).reduce((a, place) => a + (place.sway[pid] ?? 0), 0), access: setAccess(state, pid),
   }).map(([k, v]) => [k, r3(v)]));
 }
 
@@ -394,7 +394,7 @@ function presenceGuard(state, pid, c, persona) {
 /**
  * Access to the colours a player is short of (persona sets): for each faction,
  * how much its colour is needed (the weakest counts most, as the island
- * ending does, TS2/WT1) times the standing and board influence the player
+ * ending does, TS2/WT1) times the standing and board sway the player
  * could use to contest its fights, with diminishing returns. Fades to nothing
  * in the last round, when only trophies in hand count.
  * @param {GameState} state @param {string} pid
@@ -405,7 +405,7 @@ function setAccess(state, pid) {
   if (!roundsLeft) return 0;
   const order = state.factions.slice().sort((a, b) => p.trophies[a] - p.trophies[b]);
   const need = [1, 0.35, 0.12, 0, 0];
-  const onBoard = (/** @type {string} */ f) => Object.values(state.board).reduce((n, place) => n + ((place.tokens[f] ?? 0) > 0 ? place.influence[pid] ?? 0 : 0), 0);
+  const onBoard = (/** @type {string} */ f) => Object.values(state.board).reduce((n, place) => n + ((place.tokens[f] ?? 0) > 0 ? place.sway[pid] ?? 0 : 0), 0);
   return order.reduce((acc, f, i) => acc + need[i] * Math.sqrt((p.standing[f] ?? 0) + onBoard(f)), 0) * Math.min(1, roundsLeft / 2);
 }
 
@@ -447,9 +447,9 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false) {
   for (const cardId of new Set(p.hand)) {
     const card = cardById(cardId);
     if (card.suit) {
-      const spots = influenceSpots(state, cardId);
-      if (spots.length) for (const location of spots) moves.push({ type: 'play', card: cardId, use: 'influence', location });
-      else moves.push({ type: 'play', card: cardId, use: 'influence' });
+      const spots = swaySpots(state, cardId);
+      if (spots.length) for (const location of spots) moves.push({ type: 'play', card: cardId, use: 'sway', location });
+      else moves.push({ type: 'play', card: cardId, use: 'sway' });
     }
     if (!card.action) continue;
     /** @type {Set<string>} */

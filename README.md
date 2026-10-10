@@ -49,7 +49,7 @@ public/
   app.js          client: renders one playerView, sends moves, previews with the engine
   host.html/js    host page: deal games, choose options and bots, copy links
   assets.html/js  assets page: example location card, tokens, cubes, every sprite, the palette
-  pieces.js       presence tokens and influence cubes as HTML (CSS pieces)
+  pieces.js       presence tokens and sway cubes as HTML (CSS pieces)
   assets/         built art: sprites.json, sprite PNGs, token outlines (SVG); static files
   bots.js         bots (goal, goal-deep, hunter), shared by the server and the scripts
   engine.js       pure game logic — createGame, validate, applyMove, resolve, playerView
@@ -145,7 +145,7 @@ environment, falling back to `.dev.vars` locally.
   `ADMIN_SECRET` and they require `Authorization: Bearer <secret>`.
 - **Art.** Whatever would be printed art in a physical production is pixel
   art; whatever would be physical is UI; a few pieces (presence tokens,
-  influence cubes) imitate real 3D objects in CSS. Fonts are Tiny5 for
+  sway cubes) imitate real 3D objects in CSS. Fonts are Tiny5 for
   headings and Rubik for text. Details in `assets/README.md`.
 - **Variants.** Candidate rules the host can switch between go in
   `spec.variants`; the host page builds its option pickers from that list and

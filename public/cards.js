@@ -23,7 +23,7 @@ export function suitIcon(archetype, scale = 2) {
 const fname = (f) => factionById(f).name;
 
 /**
- * @typedef {{ mode?: '' | 'act' | 'respond' | 'keep', ticked?: boolean, influence?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string, empty?: string[], view?: PlayerView | null, extra?: string }} CardOptions
+ * @typedef {{ mode?: '' | 'act' | 'respond' | 'keep', ticked?: boolean, sway?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string, empty?: string[], view?: PlayerView | null, extra?: string }} CardOptions
  */
 
 /**
@@ -37,13 +37,13 @@ export function cardHtml(id, o = {}) {
   const c = cardById(id);
   const suit = spec.archetypes.find((a) => a.id === c.suit);
   const view = o.view ?? null;
-  // This game's printed influence (a mixed deck sets it per game).
-  const printed = view?.printed?.[id] ?? c.influence;
+  // This game's printed sway (a mixed deck sets it per game).
+  const printed = view?.printed?.[id] ?? c.sway;
   const sf = view && c.suit ? view.factions.find((f) => factionById(f).archetype === c.suit) : undefined;
   const band = c.suit ? `<span class="suit-line">${suitIcon(c.suit)} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
-  // The card's options, on its right: its two readings and its influence.
+  // The card's options, on its right: its two readings and its sway.
   // Live (clickable) on your turn; lit as the next step once the card is picked.
-  const live = !!o.influence;
+  const live = !!o.sway;
   // What each reading targets, under the effect; once one is chosen the other fades.
   const r = 'readings' in c ? c.readings : undefined;
   const reading = (/** @type {'location' | 'faction'} */ m, /** @type {string} */ label, /** @type {string} */ text) => `<div class="card-reading${o.reading ? (o.reading === m ? ' is-on' : ' is-off') : ''}"><dt>${label}</dt><dd>${esc(text)}</dd></div>`;
@@ -54,7 +54,7 @@ export function cardHtml(id, o = {}) {
   const options = c.suit ? `<div class="card-options">
       ${c.action ? opt('set-mode', 'LOC', `Location target: ${r?.location ?? ''}${o.empty?.includes('location') ? ' Nothing to target right now.' : ''}`, o.reading === 'location', { mode: 'location' }) : ''}
       ${c.action ? opt('set-mode', 'FAC', `Faction target: ${r?.faction ?? ''}${sf ? ` (${fname(sf)})` : ''}${o.empty?.includes('faction') ? ' Nothing to target right now.' : ''}`, o.reading === 'faction', { mode: 'faction' }) : ''}
-      ${opt('influence', `<b>+${printed}</b>`, `Spend for ${printed} influence with ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}`, false)}
+      ${opt('sway', `<b>+${printed}</b>`, `Spend for ${printed} sway with ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}`, false)}
     </div>` : '';
   const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : '', o.selected && o.next ? 'card-needs-reading' : ''].filter(Boolean).join(' ');
   // Responses are out of the first draft: their text shows only when the variant turns them on.

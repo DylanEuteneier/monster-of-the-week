@@ -22,7 +22,7 @@
  * its own playerView.
  */
 import { DurableObject } from 'cloudflare:workers';
-import { applyMove, createGame, playerView, IllegalMoveError, spec } from '../public/engine.js';
+import { applyMove, createGame, playerView, IllegalMoveError, spec, upgradeState } from '../public/engine.js';
 import { botMove, PROFILES } from '../public/bots.js';
 import type { BotMemory, Profile } from '../public/bots.js';
 import type { GameState, Move, Options, PlayerView } from '../public/engine.js';
@@ -198,7 +198,8 @@ export class Game extends DurableObject<Env> {
     this.botProfiles = botProfiles ?? {};
     this.botMemory = botMemory ?? {};
     // A game saved by an older engine can't be read by this one; set it aside so the host deals a new game.
-    this.game = game && game.version === spec.meta.version ? game : null;
+    // A game saved before influence was renamed sway is upgraded as it loads.
+    this.game = game && game.version === spec.meta.version ? upgradeState(game) : null;
     this.tokens = tokens ?? {};
     this.chat = chat ?? [];
     this.bots = bots ?? [];

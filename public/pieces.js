@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * Pieces on the board, as HTML: presence tokens (a CSS cardboard token with
- * the faction's pixel art on its face) and influence cubes (a CSS 3D cube in
+ * the faction's pixel art on its face) and sway cubes (a CSS 3D cube in
  * a seat colour). Styles live in app.css under "Pieces on the board".
  * Shared by the table and the /assets page; holds no rules.
  */
@@ -48,7 +48,7 @@ export function tokenHtml(id, scale, state = '') {
 }
 
 /**
- * An influence cube in a seat colour.
+ * A sway cube in a seat colour.
  * @param {string} colour  any CSS colour
  * @param {number} [size]  edge length in px
  */

@@ -3,7 +3,7 @@
  * The tutorial (/tutorial): a guided walkthrough of the first draft's rules
  * (Appendix G) on a real game held in this tab, with three bots.
  *
- * Teaching order (designer, 2026-10-10): 1. how to win; 2. the influence
+ * Teaching order (designer, 2026-10-10): 1. how to win; 2. the sway
  * economy, from factions to the board to trophies; 3. the game's structure;
  * 4. a round played out, phase by phase.
  *
@@ -111,7 +111,7 @@ const SEL = {
   hand: '#hand .card',
   bar: '#dock',
   supply: '#mine .chip',
-  influenceTab: '#influence',
+  swayTab: '#sway',
   trophyTab: '#score',
   /** @param {string} loc */ hex: (loc) => `#board [data-tile="${loc}"]`,
   /** @param {string} f */ faction: (f) => `#factions .faction-row[data-faction="${f}"]`,
@@ -245,7 +245,7 @@ function endingSteps() {
   const homes = groups(E).filter((g) => g.f === backs).map((g) => g.loc);
   const spots = homes.length ? homes : Object.keys(E.board).filter((l) => !Object.values(E.board[l].tokens).some((n) => n > 0)).slice(0, 2);
   for (let k = 0; total(E) <= t + 7 && E.supply[backs] > 0; k++) { E.board[spots[k % spots.length]].tokens[backs] = (E.board[spots[k % spots.length]].tokens[backs] ?? 0) + 1; E.supply[backs] -= 1; }
-  // F: the backer has built influence with it; you haven't.
+  // F: the backer has built sway with it; you haven't.
   const F_ = clone(E);
   const bp = F_.players[backer];
   const want = 8;
@@ -255,19 +255,19 @@ function endingSteps() {
   const theirScore = bp.standing[backs] - bp.trophies[backs];
 
   return [
-    spot(SEL.presence, 'Count the monsters', `${eq(...v.factions.map((f) => tokenHtml(f, 1)), op('on the island now'), op('='), `<b>${total(s0)}</b>`)}<p>After round ${rounds()}, count the monster tokens left on the board:</p>${eq(`more than <b>${t}</b>`, op('→'), '<b>invader influence</b> decides the winner')}${eq(`<b>${t}</b> or fewer`, op('→'), '<b>complete trophy sets</b> decide the winner')}`),
+    spot(SEL.presence, 'Count the monsters', `${eq(...v.factions.map((f) => tokenHtml(f, 1)), op('on the island now'), op('='), `<b>${total(s0)}</b>`)}<p>After round ${rounds()}, count the monster tokens left on the board:</p>${eq(`more than <b>${t}</b>`, op('→'), '<b>invader sway</b> decides the winner')}${eq(`<b>${t}</b> or fewer`, op('→'), '<b>complete trophy sets</b> decide the winner')}`),
     demo(() => s0, () => A, () => ({ type: 'spot', target: [SEL.hex(g1.loc), SEL.hex(g2.loc), SEL.presence, SEL.trophyTab], title: 'Fights kill monsters',
       html: `${eq(chip('fight'), op('→'), tokens(g1.f, 3), op('→'), 'trophies', op('·'), `<b>${total(A)}</b> monsters left`)}<p>The dead leave the board. Some become your trophies.</p>` })),
     demo(() => A, () => B, () => ({ type: 'spot', target: [...grew.map(SEL.hex), SEL.presence], title: 'Growth breeds more',
       html: `${eq(chip('round end'), op('→'), 'groups grow', op('·'), `<b>${total(B)}</b> monsters`)}<p>Left alone, monsters multiply.</p>` })),
     demo(() => B, () => C, () => ({ type: 'spot', target: [SEL.presence, SEL.trophyTab], title: `${t} or fewer: the slayers win`,
-      html: `<p>The slayers did their job. Now the slayer with the most <b>complete sets</b> of trophies wins: you score your fewest colour.</p>${trophyRow(v.factions, lopsided)}${eq('no', tokenHtml(missing, 1), op('='), 'no complete set', op('='), '<b>0</b>')}<p class="small muted">Influence counts for nothing.</p>` })),
+      html: `<p>The slayers did their job. Now the slayer with the most <b>complete sets</b> of trophies wins: you score your fewest colour.</p>${trophyRow(v.factions, lopsided)}${eq('no', tokenHtml(missing, 1), op('='), 'no complete set', op('='), '<b>0</b>')}<p class="small muted">Sway counts for nothing.</p>` })),
     demo(() => C, () => D, () => ({ type: 'spot', target: [SEL.trophyTab], title: 'Hunt every kind',
       html: `${trophyRow(v.factions, even)}${eq('2 of every colour', op('='), '2 complete sets', op('='), '<b>2</b>')}${more('Ties', 'Compare the next-fewest colour, then the next.')}` })),
     demo(() => D, () => E, () => ({ type: 'spot', target: [...homes.map(SEL.hex), SEL.presence, SEL.faction(backs)], title: `More than ${t}: the invaders win`,
-      html: `${eq(tokens(backs, 3), op('most monsters'), op('→'), `<b>${F(backs)}</b> decide the winner`)}<p>The faction with the most monsters on the board takes the island, and picks its winner by influence.</p>${more('Ties', 'Factions tied on tokens: the one controlling more locations wins; still tied, they win together and scores add up.')}` })),
+      html: `${eq(tokens(backs, 3), op('most monsters'), op('→'), `<b>${F(backs)}</b> decide the winner`)}<p>The faction with the most monsters on the board takes the island, and picks its winner by sway.</p>${more('Ties', 'Factions tied on tokens: the one controlling more locations wins; still tied, they win together and scores add up.')}` })),
     demo(() => E, () => F_, () => ({ type: 'spot', target: [SEL.faction(backs), SEL.trophyTab], title: 'Its backers score',
-      html: `${eq(cubes(backer, want), op('−'), '0', op('='), `<b>${theirScore}</b>`, `<span class="small">${who(backer)}</span>`)}${eq(cubes(YOU, F_.players[YOU].standing[backs]), op('−'), tokens(backs, F_.players[YOU].trophies[backs]), op('='), `<b>${yourScore}</b>`, '<span class="small">you</span>')}<p>Most influence with them, minus their trophies, wins. ${who(backer)} backed them and never hunted them. Your sets count for nothing.</p>${more('Ties', 'Fewest trophies of the winner, then affinity, then the next faction down.')}` })),
+      html: `${eq(cubes(backer, want), op('−'), '0', op('='), `<b>${theirScore}</b>`, `<span class="small">${who(backer)}</span>`)}${eq(cubes(YOU, F_.players[YOU].standing[backs]), op('−'), tokens(backs, F_.players[YOU].trophies[backs]), op('='), `<b>${yourScore}</b>`, '<span class="small">you</span>')}<p>Most sway with them, minus their trophies, wins. ${who(backer)} backed them and never hunted them. Your sets count for nothing.</p>${more('Ties', 'Fewest trophies of the winner, then affinity, then the next faction down.')}` })),
     restore,
     modal('Every move is a bet', `
       <div class="tut-cols">
@@ -310,7 +310,7 @@ function chapterWin() {
     },
     spot(SEL.board, 'They\'re all here already', `${eq(...view().factions.map((f) => tokenHtml(f, 2)))}<p>Every token is a monster.</p>`),
     // The two things a score is made of, before the endings that count them (designer, 2026-10-10).
-    spot(SEL.faction(faction), 'Influence: your sway over a faction', `
+    spot(SEL.faction(faction), 'Sway: your sway over a faction', `
       ${eq(cubes(YOU, 3), op('→'), tokenHtml(faction, 1))}
       <p>How much a faction has noticed you: the pull your bait and traps have on it. Back a faction, and it's your claim if it wins.</p>`),
     spot(SEL.trophyTab, 'Trophies: monsters you got killed', `
@@ -325,12 +325,12 @@ function chapterWin() {
 const totalPresence = (v) => Object.values(v.board).reduce((n, p) => n + Object.values(p.tokens).reduce((a, b) => a + b, 0), 0);
 
 // ---------------------------------------------------------------------------
-// 2. The influence economy
+// 2. The sway economy
 // ---------------------------------------------------------------------------
 
 /**
  * The economy shown on a copy of the start: spend a card of your faction's
- * suit for influence; play a card that moves a faction into a fight, paying
+ * suit for sway; play a card that moves a faction into a fight, paying
  * standing (the engine's own preview of a real card in this deck); then that
  * fight. The move is the one, of every card and target, that best shows the
  * flow (it pays your faction's standing and wins you a pile).
@@ -357,14 +357,14 @@ function economyDemo() {
       const paid = s2.players[YOU].standing[faction] < s1.players[YOU].standing[faction];
       for (const loc of Object.keys(s2.board)) {
         const place = s2.board[loc];
-        if ((place.influence[YOU] ?? 0) <= (s1.board[loc].influence[YOU] ?? 0)) continue;
+        if ((place.sway[YOU] ?? 0) <= (s1.board[loc].sway[YOU] ?? 0)) continue;
         const sides = Object.entries(place.tokens).filter(([, n]) => n > 0);
         if (sides.length !== 2 || sides[0][1] === sides[1][1]) continue;
         const s3 = resolveFight(s2, loc);
         const won = Object.values(s3.players[YOU].trophies).reduce((a, b) => a + b, 0);
-        // Best shows the whole contest: a rival bidding there too (each of you takes a pile), your influence paying for the lure.
+        // Best shows the whole contest: a rival bidding there too (each of you takes a pile), your sway paying for the lure.
         const rivals = s3.seating.filter((pid) => pid !== YOU && Object.values(s3.players[pid].trophies).reduce((x, y) => x + y, 0) > Object.values(s2.players[pid].trophies).reduce((x, y) => x + y, 0)).length;
-        const mine = place.influence[YOU] ?? 0, top = Math.max(0, ...s2.seating.filter((pid) => pid !== YOU).map((pid) => place.influence[pid] ?? 0));
+        const mine = place.sway[YOU] ?? 0, top = Math.max(0, ...s2.seating.filter((pid) => pid !== YOU).map((pid) => place.sway[pid] ?? 0));
         const clear = top > 0 && mine > top; // you lead outright, a rival runs up
         const loserN = Math.min(sides[0][1], sides[1][1]), winnerLoss = Math.max(1, Math.floor(loserN / 2));
         const score = won + (rivals && clear ? 40 : rivals ? 15 : 0) + (loserN !== winnerLoss ? 5 : 0) + (paid ? 10 : 0) + (sides.some(([f]) => f === faction) ? 3 : 0);
@@ -379,14 +379,14 @@ function chapterEconomy() {
   const v = view();
   const { group, arch, faction } = yours();
   const mine = v.players[YOU];
-  const onBoard = Object.keys(v.board).filter((l) => (v.board[l].influence[YOU] ?? 0) > 0);
+  const onBoard = Object.keys(v.board).filter((l) => (v.board[l].sway[YOU] ?? 0) > 0);
   const others = v.factions.filter((f) => f !== faction);
   const both = onBoard.find((l) => Object.values(v.board[l].tokens).some((n) => n > 0)) ?? onBoard[0];
   const d = economyDemo();
   /** @type {Step[]} */
   const flow = [];
   if (d.spend) {
-    flow.push(demo(() => d.s0, () => d.s1, () => ({ type: 'spot', target: [SEL.faction(faction), SEL.supply], title: '1 · Spend a card: supply → influence',
+    flow.push(demo(() => d.s0, () => d.s1, () => ({ type: 'spot', target: [SEL.faction(faction), SEL.supply], title: '1 · Spend a card: supply → sway',
       html: `${eq(chip('supply'), op('→'), cubes(YOU, d.gain), op('→'), tokenHtml(faction, 1))}<p>Spend <b>${esc(cardById(/** @type {string} */ (d.spend)).name)}</b> for its +${d.gain}. (A demonstration.)</p>` })));
   }
   const b = d.best;
@@ -398,32 +398,32 @@ function chapterEconomy() {
       return (y.log.find((e) => e.round === y.round)?.events ?? []).slice(was).map((l) => `<li>${esc(youify(l.trim()))}</li>`).join('');
     };
     flow.push(
-      demo(() => d.s1, () => b.s2, () => ({ type: 'spot', target: [...moved.locs.map(SEL.hex), ...paidWith.map(SEL.faction)], title: '2 · Set the bait: influence → a bid',
+      demo(() => d.s1, () => b.s2, () => ({ type: 'spot', target: [...moved.locs.map(SEL.hex), ...paidWith.map(SEL.faction)], title: '2 · Set the bait: sway → a bid',
         html: `${eq(...paidWith.map((f) => tokenHtml(f, 1)), cubes(YOU, 1), op('→'), chip(L(b.loc)))}<p><b>${esc(cardById(b.card).name)}</b>: ${esc(describeTarget(b.card, b.target))}.</p>` })),
       demo(() => b.s2, () => b.s3, () => ({ type: 'spot', target: [SEL.hex(b.loc), SEL.trophyTab, ...b.s3.factions.filter((f) => b.s3.players[YOU].standing[f] > b.s2.players[YOU].standing[f]).map(SEL.faction), SEL.supply], title: '3 · The fight: a bid → trophies',
-        html: `<ul class="tut-changes">${lines(b.s2, b.s3)}</ul>${eq(cubes(YOU, 1), op('→'), 'half back as influence with the winner')}${more('Fight rules', 'Bigger group wins. The loser loses all its tokens there; the winner loses half that, rounded down (at least 1). Most cubes there takes the bigger pile, second the smaller. Then half the leader\'s cubes (rounded down) join their influence with the winner; the rest go home.')}` })),
+        html: `<ul class="tut-changes">${lines(b.s2, b.s3)}</ul>${eq(cubes(YOU, 1), op('→'), 'half back as sway with the winner')}${more('Fight rules', 'Bigger group wins. The loser loses all its tokens there; the winner loses half that, rounded down (at least 1). Most cubes there takes the bigger pile, second the smaller. Then half the leader\'s cubes (rounded down) join their sway with the winner; the rest go home.')}` })),
     );
   }
   return [
-    chapter('3 · Influence'),
-    ...(both ? [spot(SEL.hex(both), 'Tokens and cubes', `${eq(tokenHtml(v.board[both] ? Object.keys(v.board[both].tokens).find((f) => v.board[both].tokens[f] > 0) ?? faction : faction, 2), op('='), 'a faction\'s monsters')}${eq(cubeHtml(colour(YOU), 12), op('='), 'your influence')}`)] : []),
+    chapter('3 · Sway'),
+    ...(both ? [spot(SEL.hex(both), 'Tokens and cubes', `${eq(tokenHtml(v.board[both] ? Object.keys(v.board[both].tokens).find((f) => v.board[both].tokens[f] > 0) ?? faction : faction, 2), op('='), 'a faction\'s monsters')}${eq(cubeHtml(colour(YOU), 12), op('='), 'your sway')}`)] : []),
     (() => {
       // A concrete example: your cubes against a rival's at one of your locations, and who takes which pile.
       const rival = R.table.state.seating.find((pid) => pid !== YOU) ?? YOU;
       const where = onBoard[0] ? L(onBoard[0]) : 'a location';
-      return spot(onBoard.length ? onBoard.map(SEL.hex) : SEL.board, 'Influence on a location: a bid for the dead', `
+      return spot(onBoard.length ? onBoard.map(SEL.hex) : SEL.board, 'Sway on a location: a bid for the dead', `
       ${eq(cubes(YOU, 2), '<span class="small">you</span>', op('vs'), cubes(rival, 1), `<span class="small">${who(rival)}</span>`, op('at'), chip(where))}
       ${eq(chip('fight there'), op('→'), 'you take the bigger pile', tokens(others[0], 3), op('·'), `${who(rival)} the smaller`, tokens(faction, 1))}
       ${frame('When a location fights, the most cubes there takes the bigger pile of dead tokens; second most, the smaller.', 'Bid where the big fights will be.')}
       <p class="small muted">Lit: you start with a cube on each ${suitIcon(arch.id)} location.</p>`);
     })(),
-    spot(SEL.faction(faction), 'Influence on a faction (A): fuel for gambits', `
+    spot(SEL.faction(faction), 'Sway on a faction (A): fuel for gambits', `
       ${eq(tokenHtml(faction, 1), cubes(YOU, 1), op('→'), 'bait', op('→'), cubes(YOU, 1), op('on'), chip('location'))}
-      ${frame('Each place your gambit lures a faction to costs 1 influence with it, and that cube lands there with them: your bid.', 'A faction that has never noticed you won\'t take your bait. Build influence before you need it.')}
+      ${frame('Each place your gambit lures a faction to costs 1 sway with it, and that cube lands there with them: your bid.', 'A faction that has never noticed you won\'t take your bait. Build sway before you need it.')}
       <p class="small muted">You start with ${mine.standing[faction]} with ${F(faction)}, ${mine.standing[others[0]]} with the rest.</p>`),
-    spot(SEL.faction(faction), 'Influence on a faction (B): a bet', `
+    spot(SEL.faction(faction), 'Sway on a faction (B): a bet', `
       ${eq(cubes(YOU, 6), op('−'), tokens(faction, 2), op('='), '<b>4</b>')}
-      ${frame('If that faction wins the game, your influence with it, minus its trophies, is your score.', 'Back a faction you think will survive, and keep it alive.')}`),
+      ${frame('If that faction wins the game, your sway with it, minus its trophies, is your score.', 'Back a faction you think will survive, and keep it alive.')}`),
     ...flow,
     restore,
     spot(SEL.seat(YOU), `You are the ${esc(group.name)}`, `${eq(suitIcon(arch.id), op('='), 'you win ties', op('with'), tokenHtml(faction, 1), op('and on'), suitIcon(arch.id), 'locations')}`),
@@ -467,12 +467,12 @@ function chapterStructure() {
  * What kind of card use a move is: the round teaches each kind the first
  * time it comes up and fast-forwards the rest (designer, 2026-10-10: cover
  * the main card actions, then jump ahead).
- * @param {Move} move @returns {'influence' | 'move' | 'token' | 'special' | 'pass' | 'other'}
+ * @param {Move} move @returns {'sway' | 'move' | 'token' | 'special' | 'pass' | 'other'}
  */
 function kindOf(move) {
   if (move.type === 'pass') return 'pass';
   if (move.type !== 'play') return 'other';
-  if (move.use === 'influence') return 'influence';
+  if (move.use === 'sway') return 'sway';
   const c = cardById(move.card);
   return c.action === 'token' ? 'token' : c.suit ? 'move' : 'special';
 }
@@ -556,7 +556,7 @@ function draftSteps() {
       const sf = /** @type {string} */ (R.table.state.factions.find((f) => factionById(f).archetype === c.suit) ?? '');
       return { type: 'spot', target: SEL.card(id), title: 'Every card: one use', html: c.suit
         ? `${eq(chip('action'), op('or'), chip(`+${view().printed[id]}`), op('→'), tokenHtml(sf, 1))}<p>Its action aims at a ${suitIcon(c.suit)} location (LOC) or at ${F(sf)} anywhere (FAC).</p>`
-        : `${eq(chip('action'), op('only'))}<p>Unsuited: no influence, a stronger action. A–D also decide who goes first.</p>` };
+        : `${eq(chip('action'), op('only'))}<p>Unsuited: no sway, a stronger action. A–D also decide who goes first.</p>` };
     },
     () => {
       const move = autoMove(R.table, YOU);
@@ -585,7 +585,7 @@ function changes(a, b) {
     const parts = b.factions.map((f) => [f, (pb.tokens[f] ?? 0) - (pa.tokens[f] ?? 0)]).filter(([, n]) => n)
       .map(([f, n]) => `${Number(n) > 0 ? '+' : '−'}${Math.abs(Number(n))} ${F(String(f))}`);
     for (const pid of b.seating) {
-      const n = (pb.influence[pid] ?? 0) - (pa.influence[pid] ?? 0);
+      const n = (pb.sway[pid] ?? 0) - (pa.sway[pid] ?? 0);
       if (n) parts.push(`${n > 0 ? '+' : '−'}${Math.abs(n)} ${cubeHtml(colour(pid), 9)} ${who(pid)}`);
     }
     if (!pa.token && pb.token) parts.push('a face-down token');
@@ -598,11 +598,11 @@ function changes(a, b) {
 
 /** What a move did, in words, and what to point at. @param {string} pid @param {Move} move @param {GameState} a @param {GameState} b @returns {Show} */
 function narrate(pid, move, a, b) {
-  if (move.type === 'play' && move.use === 'influence') {
+  if (move.type === 'play' && move.use === 'sway') {
     const c = cardById(move.card);
     const f = /** @type {string} */ (b.factions.find((x) => factionById(x).archetype === c.suit));
     const gain = b.players[pid].standing[f] - a.players[pid].standing[f];
-    const teach = once('influence') ? '<p class="small muted">Supply → influence: pull for your gambits, and a bet on that faction.</p>' : '';
+    const teach = once('sway') ? '<p class="small muted">Supply → sway: pull for your gambits, and a bet on that faction.</p>' : '';
     return { type: 'spot', target: SEL.faction(f), title: `${who(pid)} ${verb(pid, 'spends')} ${esc(c.name)}`, html: `${eq(cubes(pid, gain), op('→'), tokenHtml(f, 1), `<b>+${gain}</b>`)}${teach}`, auto: pid !== YOU && !teach };
   }
   if (move.type === 'play') {
@@ -610,12 +610,12 @@ function narrate(pid, move, a, b) {
     const ch = changes(a, b);
     const what = c.action === 'token' ? (pid === YOU ? describeTarget(c.id, move.target ?? null) : 'two face-down tokens: one real, one bluff') : describeTarget(c.id, move.target ?? null);
     // Paid from standing onto the board (a move), not from the supply (a token's marker cube).
-    const placed = b.seating.some((x) => b.factions.some((f) => b.players[x].standing[f] < a.players[x].standing[f]) && Object.keys(b.board).some((l) => (b.board[l].influence[x] ?? 0) > (a.board[l].influence[x] ?? 0)));
+    const placed = b.seating.some((x) => b.factions.some((f) => b.players[x].standing[f] < a.players[x].standing[f]) && Object.keys(b.board).some((l) => (b.board[l].sway[x] ?? 0) > (a.board[l].sway[x] ?? 0)));
     const teach = [
-      placed && once('move') ? '<p class="small muted">Influence spent on the lure → a bid on the board.</p>' : '',
+      placed && once('move') ? '<p class="small muted">Sway spent on the lure → a bid on the board.</p>' : '',
       c.action === 'token' && once('token') ? '<p class="small muted">Face-down: one real, one bluff. Each cube counts as a bid. They flip at the fight.</p>' : '',
       !c.suit && c.marked && once('marked') ? `<p class="small muted">Marked ${esc(c.marked)}: opened the round.</p>` : '',
-      !c.suit && c.action !== 'token' && once('special') ? '<p class="small muted">Unsuited: no influence, bends a rule.</p>' : '',
+      !c.suit && c.action !== 'token' && once('special') ? '<p class="small muted">Unsuited: no sway, bends a rule.</p>' : '',
     ].join('');
     return { type: 'spot', target: ch.locs.length ? ch.locs.map(SEL.hex) : SEL.seat(pid), title: `${who(pid)} ${verb(pid, 'plays')} ${esc(c.name)}`,
       html: `<div class="tut-card">${cardHtml(c.id, { view: playerView(b, YOU) })}</div><p>${esc(what)}${ch.locs.length ? '' : ': no effect'}.</p>${teach}`, auto: pid !== YOU && !teach, dwell: 3200 };
@@ -624,7 +624,7 @@ function narrate(pid, move, a, b) {
     const teach = once('pass') ? '<p>Not final: play again when the turn returns. All pass in a row → the round ends.</p>' : '';
     return { type: 'spot', target: SEL.seat(pid), title: `${who(pid)} ${verb(pid, 'passes', 'pass')}`, html: teach || `<p>${plural(b.passesInRow, 'pass')} in a row.</p>`, auto: pid !== YOU && !teach };
   }
-  if (move.type === 'grow') return { type: 'spot', target: SEL.hex(move.location), title: `${who(pid)} ${verb(pid, 'chooses')} where a faction grows`, html: `<p>Short supply: its influence leaders choose ${L(move.location)}.</p>` };
+  if (move.type === 'grow') return { type: 'spot', target: SEL.hex(move.location), title: `${who(pid)} ${verb(pid, 'chooses')} where a faction grows`, html: `<p>Short supply: its sway leaders choose ${L(move.location)}.</p>` };
   return { type: 'spot', target: SEL.bar, title: who(pid), html: '' };
 }
 
@@ -657,7 +657,7 @@ function turnSteps(pid, given, taught = false) {
         return { type: 'spot', target: SEL.card(m.card), title: `We'll play ${esc(cardById(m.card).name)}`, html: `<p>Its action: ${esc(describeTarget(m.card, m.target))}.</p><p class="small muted">Playing for real: click the card, then its targets.</p>` };
       }
       if (m.type === 'play') {
-        return { type: 'spot', target: SEL.card(m.card), title: `We'll spend ${esc(cardById(m.card).name)}`, html: `${eq(chip(`+${view().printed[m.card]}`), op('→'), 'influence', op('instead of'), 'its action')}` };
+        return { type: 'spot', target: SEL.card(m.card), title: `We'll spend ${esc(cardById(m.card).name)}`, html: `${eq(chip(`+${view().printed[m.card]}`), op('→'), 'sway', op('instead of'), 'its action')}` };
       }
       return { type: 'spot', target: SEL.bar, title: 'We\'ll pass', html: 'Nothing worth playing yet.' };
     });
@@ -745,7 +745,7 @@ function resolveSteps(pid, move, style) {
 function before(s, loc) {
   const place = s.board[loc];
   const sides = Object.entries(place.tokens).filter(([, n]) => n > 0).map(([f, n]) => `${tokens(f, n)}<b>${n}</b>`);
-  const bids = s.seating.map((pid) => [pid, place.influence[pid] ?? 0]).filter(([, n]) => Number(n) > 0).sort((x, y) => Number(y[1]) - Number(x[1]));
+  const bids = s.seating.map((pid) => [pid, place.sway[pid] ?? 0]).filter(([, n]) => Number(n) > 0).sort((x, y) => Number(y[1]) - Number(x[1]));
   const teach = once('fightBefore') ? '<p class="small muted">Bigger group wins. Most cubes takes the bigger pile; second, the smaller.</p>' : '';
   return `${eq(sides[0] ?? '', op('vs'), sides[1] ?? '')}${bids.length ? eq(...bids.map(([pid, n]) => `${cubes(String(pid), Number(n))}<span class="small">${who(String(pid))}</span>`)) : '<p>No bids here: the dead go back to their supplies.</p>'}${place.token ? '<p class="small">A face-down token will flip.</p>' : ''}${teach}`;
 }
@@ -759,7 +759,7 @@ function after(a, b, loc) {
   const lines = (b.log.find((e) => e.round === b.round)?.events ?? []).slice(was).map((l) => `<li>${esc(youify(l.trim()))}</li>`).join('');
   const tie = b.board[loc].scorched;
   const teach = tie && once('scorch') ? '<p class="small muted">A true tie: equal groups, neither on its own ground. Both wiped out, nobody collects, the location is gone for good.</p>'
-    : once('fightAfter') ? `${eq('loser', op('→'), 'loses all', op('·'), 'winner', op('→'), 'loses half that (min 1)')}${eq('leader\'s cubes', op('→'), 'half to influence with the winner')}` : '';
+    : once('fightAfter') ? `${eq('loser', op('→'), 'loses all', op('·'), 'winner', op('→'), 'loses half that (min 1)')}${eq('leader\'s cubes', op('→'), 'half to sway with the winner')}` : '';
   return `<ul class="tut-changes">${lines}</ul>${teach}`;
 }
 

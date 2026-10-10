@@ -20,7 +20,7 @@ import { planFlights, fly } from './motion.js';
 /** @typedef {import('./engine.js').Move} Move */
 /** @typedef {{ from: string, text: string, at: number }} ChatLine */
 
-const PALETTE = SEAT_COLOURS;   // seat colours match the influence cubes
+const PALETTE = SEAT_COLOURS;   // seat colours match the sway cubes
 const SPRITES = /** @type {Record<string, { width: number, height: number, src: string }>} */ (art.sprites);
 const HEXES = /** @type {Record<string, { width: number, height: number, src: string }>} */ (art.hexes ?? {});
 const TOAST_MS = 4000;
@@ -91,7 +91,7 @@ const ui = {
   keepFor: -1,
   /** the phone map window has been centred once */
   boardCentred: false,
-  /** a side stack opened by a tap: 'influence', 'score' or null */
+  /** a side stack opened by a tap: 'sway', 'score' or null */
   /** @type {string | null} */
   sideOpen: null,
   /** the slayer group card open in the accordion (null: your own) */
@@ -370,7 +370,7 @@ function picks() {
     return out;
   }
   if (ui.responding && view.pending) {
-    out.spots = pendingDestinations(/** @type {any} */ (view), view.pending).filter((l) => (view.board[l].influence[view.you] ?? 0) > 0 && !view.pending?.blocked.includes(l));
+    out.spots = pendingDestinations(/** @type {any} */ (view), view.pending).filter((l) => (view.board[l].sway[view.you] ?? 0) > 0 && !view.pending?.blocked.includes(l));
     return out;
   }
   const choice = currentChoice();
@@ -388,7 +388,7 @@ function picks() {
 /**
  * The pieces on one hex, as repeated pieces in rows: each faction's tokens in
  * its own row (a location holds at most two factions, LL1), then the
- * players' influence cubes. A candidate group's row is lit and clickable, and
+ * players' sway cubes. A candidate group's row is lit and clickable, and
  * so is every group of a candidate faction.
  * @param {string} loc @param {ReturnType<typeof picks>} lit @param {PlayerView['board']} [board]
  */
@@ -403,7 +403,7 @@ function piecesAt(loc, lit, board = /** @type {PlayerView} */ (ui.view).board) {
     const tokens = Array.from({ length: n }, () => tokenHtml(f, 1, group || faction ? 'candidate' : '')).join('');
     return `<span class="token-stack piece-row"${action} title="${n} ${esc(fname(f))}">${tokens}</span>`;
   });
-  const cubes = Object.entries(place.influence).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
+  const cubes = Object.entries(place.sway).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
     .flatMap(([pid, n]) => Array.from({ length: n }, () => cubeHtml(colourOf(pid), 8))).join('');
   const token = place.token ? `<span class="hidden-token" style="--owner:${colourOf(place.token.owner)}" title="a face-down token"></span>` : '';
   return `${rows.join('')}<span class="cube-row piece-row">${cubes}${token}</span>`;
@@ -416,7 +416,7 @@ function factionTable(lit) {
     const faction = factionById(f);
     const arch = spec.archetypes.find((a) => a.id === faction.archetype);
     const best = Math.max(0, ...view.seating.map((pid) => view.players[pid].standing[f] ?? 0));
-    const influence = view.seating.filter((pid) => (view.players[pid].standing[f] ?? 0) > 0)
+    const sway = view.seating.filter((pid) => (view.players[pid].standing[f] ?? 0) > 0)
       .sort((a, b) => view.players[b].standing[f] - view.players[a].standing[f]).map((pid) => {
       const n = view.players[pid].standing[f];
       return `<span class="standing-group${n === best ? ' is-leading' : ''}" title="${esc(pid)}: ${n}">${Array.from({ length: n }, () => cubeHtml(colourOf(pid), 8)).join('')}</span>`;
@@ -425,11 +425,11 @@ function factionTable(lit) {
     return `<div class="faction-row${on ? ' is-candidate' : ''}" data-faction="${esc(f)}"${on ? ' data-action="pick-faction"' : ''}>
       <span class="faction-id cell-id">${tokenHtml(f, 2, on ? 'candidate' : '')}<span><b>${esc(faction.name)}</b><span class="small muted suit-line">${suitIcon(arch?.id)} ${esc(arch?.name ?? '')}</span></span></span>
       <span class="faction-cell cell-supply" data-label="Supply"><span class="supply-row" title="${view.supply[f]} in supply">${pile(view.supply[f], () => tokenHtml(f, 1))}</span></span>
-      <span class="faction-cell cell-influence" data-label="Influence"><span class="standing-row">${influence || '<span class="small muted">—</span>'}</span></span>
+      <span class="faction-cell cell-sway" data-label="Sway"><span class="standing-row">${sway || '<span class="small muted">—</span>'}</span></span>
     </div>`;
   });
   return `<div class="faction-table">
-    <div class="faction-row faction-head small muted"><span>Faction</span><span>Supply</span><span>Influence (players' standing)</span></div>
+    <div class="faction-row faction-head small muted"><span>Faction</span><span>Supply</span><span>Sway (players' standing)</span></div>
     ${rows.join('')}</div>`;
 }
 
@@ -447,7 +447,7 @@ function presenceGauge(total, threshold, rounds) {
       <span class="gauge-track"><span class="gauge-fill"></span><span class="gauge-mark"><b>${threshold}</b></span></span>
       <span class="gauge-value"><b>${total}</b></span>
     </div>
-    <p class="small muted gauge-note">After round ${rounds}: more than ${threshold} left, invader influence decides the winner; ${threshold} or fewer, complete trophy sets decide it.</p>`;
+    <p class="small muted gauge-note">After round ${rounds}: more than ${threshold} left, invader sway decides the winner; ${threshold} or fewer, complete trophy sets decide it.</p>`;
 }
 
 function renderBoard() {
@@ -499,10 +499,10 @@ function responseReady(view, cardId) {
   switch (r.trigger) {
     case 'card-played': return !!pend && pend.player !== view.you && !pend.cancelled;
     case 'move-into-your-location': return !!pend && pend.player !== view.you && !pend.cancelled
-      && pendingDestinations(/** @type {any} */ (view), pend).some((l) => (view.board[l].influence[view.you] ?? 0) > 0 && !pend.blocked.includes(l));
+      && pendingDestinations(/** @type {any} */ (view), pend).some((l) => (view.board[l].sway[view.you] ?? 0) > 0 && !pend.blocked.includes(l));
     case 'token-placed': return others('token-placed');
-    case 'influence-spent': return others('influence-spent');
-    case 'influence-placed': return others('influence-placed');
+    case 'sway-spent': return others('sway-spent');
+    case 'sway-placed': return others('sway-placed');
     case 'pass': return others('pass');
     default: return false;
   }
@@ -578,9 +578,9 @@ function renderMine() {
   const me = view.players[view.you];
   const standing = view.factions.filter((f) => (me.standing[f] ?? 0) > 0).sort((a, b) => me.standing[b] - me.standing[a])
     .map((f) => `<span class="side-row">${tokenHtml(f, 1)}<b>${me.standing[f]}</b><span class="side-name">${esc(fname(f))}</span></span>`).join('');
-  setHtml('mine', `${chip(cubeHtml(colourOf(view.you), 9), me.supply, `Supply: ${me.supply} influence tokens`)}${chip('<span class="bluff"></span>', me.bluffs, `Bluff tokens: ${me.bluffs}`)}`);
-  setHtml('influence', `<span class="side-head" data-action="toggle-side" data-side="influence">Influence</span>${standing || '<span class="side-row is-zero"><span class="muted">—</span></span>'}`);
-  $('influence').classList.toggle('is-open', ui.sideOpen === 'influence');
+  setHtml('mine', `${chip(cubeHtml(colourOf(view.you), 9), me.supply, `Supply: ${me.supply} sway cubes`)}${chip('<span class="bluff"></span>', me.bluffs, `Bluff tokens: ${me.bluffs}`)}`);
+  setHtml('sway', `<span class="side-head" data-action="toggle-side" data-side="sway">Sway</span>${standing || '<span class="side-row is-zero"><span class="muted">—</span></span>'}`);
+  $('sway').classList.toggle('is-open', ui.sideOpen === 'sway');
 }
 
 /** Your trophies (secret): a token and count per faction. */
@@ -642,7 +642,7 @@ function renderPlay() {
     const card = cardById(c);
     const canAct = myTurn && !!card.action && (!mustOpen || !!card.marked);
     const mode = ready.includes(c) ? 'respond' : canAct ? 'act' : '';
-    return cardHtml(c, { mode, influence: myTurn && !mustOpen && !!card.suit, dim: !mode });
+    return cardHtml(c, { mode, sway: myTurn && !mustOpen && !!card.suit, dim: !mode });
   }), false);
   const played = pending ? `${pending.player === view.you ? '<b>You</b> play' : `<b>${esc(pending.player)}</b> plays`} <span title="${esc(describeTarget(pending.card, pending.target))}">${esc(cardById(pending.card).name)}</span>${pending.cancelled ? ' (cancelled)' : ''}` : '';
   if (ui.responding) {
@@ -676,7 +676,7 @@ function renderTargeting(cardId) {
   });
   const key = choice.kind === 'location' || (choice.kind === 'group' && choice.key === 'lure') ? choice.key : choice.kind;
   const words = choice.kind === 'split' ? `Send tokens: ${choice.left} left`
-    : choice.kind === 'location' && choice.key === 'from' && card.action === 'move-influence' ? `Pick your influence to move · ${3 - (ui.target.from ?? []).filter((l) => l !== '__stop').length} left`
+    : choice.kind === 'location' && choice.key === 'from' && card.action === 'move-sway' ? `Pick your sway to move · ${3 - (ui.target.from ?? []).filter((l) => l !== '__stop').length} left`
     : choice.kind === 'location' && choice.key === 'path' ? `Pick the next step · ${choice.left} left` : WORDS[key] ?? '';
   const arrows = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';
   const t = ui.target;
@@ -689,7 +689,7 @@ function renderTargeting(cardId) {
   if ((choice.kind === 'location' || choice.kind === 'group') && choice.optional) handAction('skip', { label: choice.kind === 'location' && choice.key === 'bluff' ? 'No bluff' : 'Done' });
   handAction('target-none', { tip: 'Play it for no effect' });
   handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
-  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, influence: true, next: !t.mode && !!card.suit, reading: t.mode, empty } : { dim: true })), false);
+  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, reading: t.mode, empty } : { dim: true })), false);
 }
 
 function renderGrowth() {
@@ -856,10 +856,10 @@ function onClick(event) {
   if (action === 'pass') return sendMove({ type: 'pass' });
   if (action === 'confirm') return sendMove({ type: 'confirm' });
   if (action === 'withdraw') return sendMove({ type: 'withdraw' });
-  if (action === 'influence') {
+  if (action === 'sway') {
     ui.choosing = null;
     ui.target = {};
-    return sendMove({ type: 'play', card, use: 'influence' });
+    return sendMove({ type: 'play', card, use: 'sway' });
   }
   if (action === 'back') {
     // Undo the last pick (a reading counts); with nothing left to undo, put the card down.
@@ -903,7 +903,7 @@ function onClick(event) {
   if (action === 'toggle-side' || target.closest('.side-stack')) {
     const side = /** @type {HTMLElement} */ (target.closest('.side-stack'))?.id ?? null;
     ui.sideOpen = ui.sideOpen === side ? null : side;
-    for (const id of ['influence', 'score']) document.getElementById(id)?.classList.toggle('is-open', ui.sideOpen === id);
+    for (const id of ['sway', 'score']) document.getElementById(id)?.classList.toggle('is-open', ui.sideOpen === id);
     return;
   }
   if (action === 'set-mode') {
@@ -951,12 +951,12 @@ function onClick(event) {
 }
 
 /** Cards built one step at a time: each step shows on the board as soon as it is picked. */
-const STEPWISE = ['sow', 'split', 'broadcast', 'move-influence'];
+const STEPWISE = ['sow', 'split', 'broadcast', 'move-sway'];
 
 /**
  * The view as the table shows it: the real one, or, while a step-by-step
  * card's target is being built, with the steps picked so far already carried
- * out on the board and in standing (Track leaves its token and influence at
+ * out on the board and in standing (Track leaves its token and sway at
  * each step). Nothing is sent until the target is finished, so Back still
  * undoes a step.
  * @returns {PlayerView}
@@ -979,7 +979,7 @@ function shownView() {
 /**
  * Outcome preview: hovering a lit choice that would finish the target (or
  * extend a path or a list of sources) shows on each hex what the play would
- * change: +n / -n tokens per faction, and your influence placed.
+ * change: +n / -n tokens per faction, and your sway placed.
  * @param {PointerEvent} event
  */
 function onPreview(event) {
@@ -999,7 +999,7 @@ function onPreview(event) {
     const was = now[loc];
     const chips = view.factions.map((f) => [f, (place.tokens[f] ?? 0) - (was.tokens[f] ?? 0)]).filter(([, n]) => n)
       .map(([f, n]) => `<span class="preview-chip ${Number(n) > 0 ? 'is-up' : 'is-down'}">${tokenHtml(String(f), 1)}${Number(n) > 0 ? '+' : '−'}${Math.abs(Number(n))}</span>`);
-    const mine = (place.influence[view.you] ?? 0) - (was.influence[view.you] ?? 0);
+    const mine = (place.sway[view.you] ?? 0) - (was.sway[view.you] ?? 0);
     if (mine) chips.push(`<span class="preview-chip ${mine > 0 ? 'is-up' : 'is-down'}">${cubeHtml(colourOf(view.you), 8)}${mine > 0 ? '+' : '−'}${Math.abs(mine)}</span>`);
     const box = document.querySelector(`#board [data-tile="${CSS.escape(loc)}"] .hex-preview`);
     if (box) box.innerHTML = chips.join('');

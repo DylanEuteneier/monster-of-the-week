@@ -40,6 +40,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { availableParallelism, hostname } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { upgradeRecord } from './lib.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIR = join(ROOT, 'experiments');
@@ -201,7 +202,7 @@ function cachedBase(/** @type {string} */ table, /** @type {number} */ seed, /**
   if (!existsSync(BASES)) return null;
   const have = readdirSync(BASES).filter((f) => f.startsWith(prefix)).map((f) => ({ f, n: Number(f.slice(prefix.length).replace('.jsonl', '')) })).filter((x) => x.n >= games).sort((x, y) => x.n - y.n)[0];
   if (!have) return null;
-  return { records: readFileSync(join(BASES, have.f), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).filter((r) => r.g < games), file: join(BASES, have.f) };
+  return { records: readFileSync(join(BASES, have.f), 'utf8').split('\n').filter(Boolean).map((l) => upgradeRecord(JSON.parse(l))).filter((r) => r.g < games), file: join(BASES, have.f) };
 }
 const baseName = (/** @type {string} */ table, /** @type {number} */ seed) => `${codeHash()}-node${nodeMajor()}-${short(table)}-s${seed}-g`;
 

@@ -241,7 +241,7 @@
       "name": "Leave Out Fresh Meat",
       "suit": "nocturnals",
       "slot": "strike",
-      "influence": 2,
+      "sway": 2,
       "action": "lure",
       "text": "The largest group adjacent to the target moves into it, all of it. Target: the bait location.",
       "readings": {
@@ -254,9 +254,9 @@
       "name": "Track Them in the Snow",
       "suit": "nocturnals",
       "slot": "shift",
-      "influence": 3,
+      "sway": 3,
       "action": "sow",
-      "text": "Drive the target group hex by bordering hex, leaving 1 token and 1 of your influence in each location entered, while your influence with that faction lasts. A location it can't enter ends the chase; leftover tokens stay together at the last location. Target: the group chased.",
+      "text": "Drive the target group hex by bordering hex, leaving 1 token and 1 of your sway in each location entered, while your sway with that faction lasts. A location it can't enter ends the chase; leftover tokens stay together at the last location. Target: the group chased.",
       "readings": {
         "location": "any group at a ◐ location.",
         "faction": "a Nocturnal group anywhere."
@@ -267,7 +267,7 @@
       "name": "Silver Bullets",
       "suit": "nocturnals",
       "slot": "signature",
-      "influence": 4,
+      "sway": 4,
       "action": "token",
       "text": "Hidden: at its fight, each group loses 2 more tokens as casualties, and the token’s owner takes those as a pile of their own. (Revised in round 17.)",
       "readings": {
@@ -279,7 +279,7 @@
         "name": "Never Invite Them In",
         "timing": "before",
         "trigger": "move-into-your-location",
-        "text": "When a player is about to move tokens into a location where you have influence, block it; the tokens stay where they are."
+        "text": "When a player is about to move tokens into a location where you have sway, block it; the tokens stay where they are."
       }
     },
     {
@@ -287,7 +287,7 @@
       "name": "Broadcast a Signal",
       "suit": "scifi",
       "slot": "strike",
-      "influence": 2,
+      "sway": 2,
       "action": "broadcast",
       "text": "Call the groups of one faction from up to two locations anywhere into the target. Target: where they answer.",
       "readings": {
@@ -300,7 +300,7 @@
       "name": "Leak the Documents",
       "suit": "scifi",
       "slot": "shift",
-      "influence": 3,
+      "sway": 3,
       "action": "halve",
       "text": "Half the target group, rounded down, leaves for an adjacent location of your choice. Target: the group split.",
       "readings": {
@@ -313,7 +313,7 @@
       "name": "Beam Them Up",
       "suit": "scifi",
       "slot": "signature",
-      "influence": 4,
+      "sway": 4,
       "action": "teleport",
       "text": "Lift the target group and set it down at any location on the island. Target: the group taken.",
       "readings": {
@@ -333,7 +333,7 @@
       "name": "Hack the Network",
       "suit": "sentients",
       "slot": "strike",
-      "influence": 2,
+      "sway": 2,
       "action": "hack",
       "text": "Move the target group to any location on the island that holds one other faction, so it fights there at the round’s end. Target: the group, then where it goes.",
       "readings": {
@@ -346,7 +346,7 @@
       "name": "Reroute the Power Grid",
       "suit": "sentients",
       "slot": "shift",
-      "influence": 3,
+      "sway": 3,
       "action": "gather-region",
       "text": "Move one faction's tokens from every location in the target's region into the target. Target: the destination.",
       "readings": {
@@ -359,7 +359,7 @@
       "name": "Reprogram the Traffic Lights",
       "suit": "sentients",
       "slot": "signature",
-      "influence": 4,
+      "sway": 4,
       "action": "conveyor",
       "text": "Choose one of the six hex directions; every group of the target moves one hex that way, where it can.",
       "readings": {
@@ -370,8 +370,8 @@
         "id": "pull-plug",
         "name": "Pull the Plug",
         "timing": "after",
-        "trigger": "influence-spent",
-        "text": "When a player spends a card for influence, they gain 1 less, and you gain 1 with the same faction."
+        "trigger": "sway-spent",
+        "text": "When a player spends a card for sway, they gain 1 less, and you gain 1 with the same faction."
       }
     },
     {
@@ -379,7 +379,7 @@
       "name": "Ring the Church Bell",
       "suit": "undead",
       "slot": "strike",
-      "influence": 2,
+      "sway": 2,
       "action": "draw-adjacent",
       "text": "Every token in adjacent locations is drawn into the target. Target: where the bell rings.",
       "readings": {
@@ -392,7 +392,7 @@
       "name": "Board Up the Windows",
       "suit": "undead",
       "slot": "shift",
-      "influence": 3,
+      "sway": 3,
       "action": "split",
       "text": "The target group is turned away, split across at least two adjacent locations. Target: the group.",
       "readings": {
@@ -405,7 +405,7 @@
       "name": "Salt and Burn the Bones",
       "suit": "undead",
       "slot": "signature",
-      "influence": 4,
+      "sway": 4,
       "action": "token",
       "text": "Hidden: at its fight, both groups lose all their tokens; trophies are handed out as normal and the location is not scorched.",
       "readings": {
@@ -425,7 +425,7 @@
       "name": "Draw a Summoning Circle",
       "suit": "demonic",
       "slot": "strike",
-      "influence": 2,
+      "sway": 2,
       "action": "gather-neighbours",
       "text": "Every group of one faction in neighbouring regions moves into the target. Target: the circle.",
       "readings": {
@@ -438,7 +438,7 @@
       "name": "Light Every Lamp",
       "suit": "demonic",
       "slot": "shift",
-      "influence": 3,
+      "sway": 3,
       "action": "drive-out",
       "text": "At a contested location, the target faction is driven to an adjacent location of your choice, so the fight there doesn't happen. Target: the faction driven out.",
       "readings": {
@@ -451,7 +451,7 @@
       "name": "Set the House on Fire",
       "suit": "demonic",
       "slot": "signature",
-      "influence": 4,
+      "sway": 4,
       "action": "token",
       "text": "Hidden: any fight here counts as a true tie: both groups are wiped out and the location is scorched.",
       "readings": {
@@ -462,8 +462,8 @@
         "id": "sign-blood",
         "name": "Sign in Blood",
         "timing": "after",
-        "trigger": "influence-placed",
-        "text": "When a player spends influence from a faction, gain 1 influence with the Demon faction."
+        "trigger": "sway-placed",
+        "text": "When a player spends sway from a faction, gain 1 sway with the Demon faction."
       }
     },
     {
@@ -471,7 +471,7 @@
       "name": "Set a Trap",
       "suit": null,
       "slot": "extra",
-      "influence": 0,
+      "sway": 0,
       "action": "token",
       "text": "Hidden: place a face-down token (and a bluff) on the target. At its fight, the token’s owner takes every pile, whoever leads. Target: any location.",
       "marked": "A"
@@ -481,7 +481,7 @@
       "name": "Lock Down the Town",
       "suit": null,
       "slot": "extra",
-      "influence": 0,
+      "sway": 0,
       "action": "lockdown",
       "text": "Name a region; this round, no group moves into or out of it. Target: a location in the region.",
       "marked": "C"
@@ -491,7 +491,7 @@
       "name": "Put a Bounty On It",
       "suit": null,
       "slot": "extra",
-      "influence": 0,
+      "sway": 0,
       "action": "bounty",
       "text": "Name a faction; at every fight this round, its group loses 1 more token when it wins, into the trophy piles. Target: the faction.",
       "marked": "D"
@@ -501,9 +501,9 @@
       "name": "Plan B",
       "suit": null,
       "slot": "extra",
-      "influence": 0,
-      "action": "move-influence",
-      "text": "Pivot: move up to 3 of your influence from other locations to one location."
+      "sway": 0,
+      "action": "move-sway",
+      "text": "Pivot: move up to 3 of your sway from other locations to one location."
     }
   ],
   "variants": [
@@ -627,7 +627,7 @@
     {
       "id": "playerCubes",
       "label": "Cubes per player",
-      "description": "Each player's influence cubes (G.7). 30 while the cards are designed: a bump from 20 so the supply rarely limits play (designer, 2026-10-07); the balancing number comes later.",
+      "description": "Each player's sway cubes (G.7). 30 while the cards are designed: a bump from 20 so the supply rarely limits play (designer, 2026-10-07); the balancing number comes later.",
       "default": "30",
       "choices": [
         {
@@ -653,9 +653,9 @@
       ]
     },
     {
-      "id": "startInfluence",
-      "label": "Starting influence",
-      "description": "Influence each slayer group starts with, with its linked faction (G.7). Designer (2026-10-07): start with more influence on the affinity faction; 5 is Claude’s suggested starting number (was 3), to measure.",
+      "id": "startSway",
+      "label": "Starting sway",
+      "description": "Sway each slayer group starts with, with its linked faction (G.7). Designer (2026-10-07): start with more sway on the affinity faction; 5 is Claude’s suggested starting number (was 3), to measure.",
       "default": "5",
       "choices": [
         {
@@ -703,7 +703,7 @@
     {
       "id": "startOthers",
       "label": "Starting standing with other factions",
-      "description": "Designer (2026-10-07): each player starts with 1 influence with every faction other than their affinity faction. 0 was the first draft before.",
+      "description": "Designer (2026-10-07): each player starts with 1 sway with every faction other than their affinity faction. 0 was the first draft before.",
       "default": "1",
       "choices": [
         {
@@ -725,8 +725,8 @@
     },
     {
       "id": "startBoard",
-      "label": "Starting influence on affinity locations",
-      "description": "Designer (2026-10-07): each slayer group starts with 1 influence on the board at each of its affinity locations (its archetype’s three), from its supply.",
+      "label": "Starting sway on affinity locations",
+      "description": "Designer (2026-10-07): each slayer group starts with 1 sway on the board at each of its affinity locations (its archetype’s three), from its supply.",
       "default": "1",
       "choices": [
         {
@@ -798,9 +798,9 @@
       ]
     },
     {
-      "id": "influencePerMove",
-      "label": "Influence per move",
-      "description": "Test lever (influence economy, 2026-10-07): influence a move places at each destination, from standing with the faction moved (CA2).",
+      "id": "swayPerMove",
+      "label": "Sway per move",
+      "description": "Test lever (sway economy, 2026-10-07): sway a move places at each destination, from standing with the faction moved (CA2).",
       "default": "1",
       "choices": [
         {
@@ -816,9 +816,9 @@
       ]
     },
     {
-      "id": "influenceToBoard",
-      "label": "Influence onto the board",
-      "description": "Test lever (influence economy, 2026-10-07): when a card is spent for influence, 1 of it goes onto a location its faction controls.",
+      "id": "swayToBoard",
+      "label": "Sway onto the board",
+      "description": "Test lever (sway economy, 2026-10-07): when a card is spent for sway, 1 of it goes onto a location its faction controls.",
       "default": "off",
       "choices": [
         {
@@ -834,9 +834,9 @@
       ]
     },
     {
-      "id": "influenceRequired",
-      "label": "Influence as a requirement",
-      "description": "IC1 (designer, 2026-10-07, first draft): the card says how much influence a move places, and that is a requirement, paid from standing with the faction moved. A move goes only as far as the player can pay: with 1 standing, a card that places 1 per location spread to spreads to one location. Cards that place no influence have no requirement.",
+      "id": "swayRequired",
+      "label": "Sway as a requirement",
+      "description": "IC1 (designer, 2026-10-07, first draft): the card says how much sway a move places, and that is a requirement, paid from standing with the faction moved. A move goes only as far as the player can pay: with 1 standing, a card that places 1 per location spread to spreads to one location. Cards that place no sway have no requirement.",
       "default": "on",
       "choices": [
         {
@@ -847,20 +847,20 @@
         {
           "id": "off",
           "label": "Off",
-          "description": "Before IC1: any move is allowed; influence is placed only as far as standing goes."
+          "description": "Before IC1: any move is allowed; sway is placed only as far as standing goes."
         }
       ]
     },
     {
       "id": "whoPays",
       "label": "Who pays to move several factions",
-      "description": "D15 (designer, 2026-10-07; first-draft starting place, not set in stone): each faction moved to a new location costs 1 influence from that faction, placed on the new location, regardless of the size of the group moved. A draw-in can place up to two; a spread more. Alternative: only the selected faction pays.",
+      "description": "D15 (designer, 2026-10-07; first-draft starting place, not set in stone): each faction moved to a new location costs 1 sway from that faction, placed on the new location, regardless of the size of the group moved. A draw-in can place up to two; a spread more. Alternative: only the selected faction pays.",
       "default": "each",
       "choices": [
         {
           "id": "each",
           "label": "Each faction",
-          "description": "The first draft: each faction moved to a new location pays 1 influence from that faction, placed there; a group you can’t pay for stays."
+          "description": "The first draft: each faction moved to a new location pays 1 sway from that faction, placed there; a group you can’t pay for stays."
         },
         {
           "id": "selected",
@@ -870,9 +870,9 @@
       ]
     },
     {
-      "id": "influenceBonus",
-      "label": "Extra influence from cards",
-      "description": "Test lever (designer, 2026-10-07: bump the influence cards provide): added to every suited card’s printed influence when it is spent for influence. 0 is the first draft.",
+      "id": "swayBonus",
+      "label": "Extra sway from cards",
+      "description": "Test lever (designer, 2026-10-07: bump the sway cards provide): added to every suited card’s printed sway when it is spent for sway. 0 is the first draft.",
       "default": "0",
       "choices": [
         {
@@ -898,9 +898,9 @@
       ]
     },
     {
-      "id": "influenceAtOrigin",
-      "label": "Influence where tokens leave",
-      "description": "Test lever (influence economy, 2026-10-07): a move also places 1 influence where the tokens left from.",
+      "id": "swayAtOrigin",
+      "label": "Sway where tokens leave",
+      "description": "Test lever (sway economy, 2026-10-07): a move also places 1 sway where the tokens left from.",
       "default": "off",
       "choices": [
         {
@@ -936,7 +936,7 @@
     {
       "id": "deck",
       "label": "Deck",
-      "description": "Prototype test plumbing, not a rule. Mixed: when the game is created, each suit draws one Strike, one Shift and one Signature at random from the deck and the test cards, printed 2, 3 and 4 influence by measured strength, the strongest 2 and the weakest 4 (9 per suit, D12); the marked unsuited cards (A, C, D) stay and the other three unsuited slots draw at random from the unmarked unsuited cards. Fixed: Set v2, its unsuited slots filled at random to six.",
+      "description": "Prototype test plumbing, not a rule. Mixed: when the game is created, each suit draws one Strike, one Shift and one Signature at random from the deck and the test cards, printed 2, 3 and 4 sway by measured strength, the strongest 2 and the weakest 4 (9 per suit, D12); the marked unsuited cards (A, C, D) stay and the other three unsuited slots draw at random from the unmarked unsuited cards. Fixed: Set v2, its unsuited slots filled at random to six.",
       "default": "mixed",
       "choices": [
         {
@@ -1196,14 +1196,14 @@
     }
   },
   "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 20 ideas (rounds 14 to 19: unsuited extras, rounds 18 and 19 marked-card candidates (Lock Down the Town and Put a Bounty On It adopted as C and D; Set a Trap, with Claim the Spoils’ rules, is A); rounds 17 to 19: revisions of the weakest) under measurement by scripts/tournament.js. A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); influence is set per game. Not rules.",
+    "notes": "Cards out of the fixed deck: rounds 8 to 20 ideas (rounds 14 to 19: unsuited extras, rounds 18 and 19 marked-card candidates (Lock Down the Town and Put a Bounty On It adopted as C and D; Set a Trap, with Claim the Spoils’ rules, is A); rounds 17 to 19: revisions of the weakest) under measurement by scripts/tournament.js. A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); sway is set per game. Not rules.",
     "cards": [
       {
         "id": "force-field",
         "name": "Raise the Force Field",
         "suit": "scifi",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "token",
         "text": "Hidden: at its fight, the winner loses no tokens.",
         "readings": {
@@ -1217,7 +1217,7 @@
         "name": "Sign the Contract",
         "suit": "demonic",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "token",
         "text": "Hidden: at its fight, the token’s owner takes the bigger pile and the leader only the smaller; the owner pays 2 standing with the Demons for the deal. (Revised in round 17.)",
         "readings": {
@@ -1231,7 +1231,7 @@
         "name": "Leak It to the Press",
         "suit": "scifi",
         "slot": "shift",
-        "influence": 3,
+        "sway": 3,
         "action": "halve-far",
         "text": "Half the target group, rounded down, goes to any location on the island it can enter. Target: the group split.",
         "readings": {
@@ -1245,7 +1245,7 @@
         "name": "Light Every Lamp (either side)",
         "suit": "demonic",
         "slot": "shift",
-        "influence": 3,
+        "sway": 3,
         "action": "drive-out-either",
         "text": "At a contested location, either faction is driven to an adjacent location of your choice, so the fight there doesn’t happen. Target: the faction driven out.",
         "readings": {
@@ -1259,7 +1259,7 @@
         "name": "Wait for the Full Moon",
         "suit": "nocturnals",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "reinforce",
         "text": "Up to 3 tokens from the faction’s supply join the target group. Target: the group.",
         "readings": {
@@ -1273,7 +1273,7 @@
         "name": "Turn On the Tractor Beam",
         "suit": "scifi",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "carry-fight",
         "text": "Both groups at the target are lifted together into an adjacent location with no tokens; the fight happens there. Target: the contest.",
         "readings": {
@@ -1287,7 +1287,7 @@
         "name": "Reprogram the Drones",
         "suit": "sentients",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "defect",
         "text": "Up to 3 tokens of the target group change sides: they join the other faction at that location (swapped through the supplies). Target: the group that defects.",
         "readings": {
@@ -1301,7 +1301,7 @@
         "name": "Hear the Banshee Wail",
         "suit": "undead",
         "slot": "shift",
-        "influence": 3,
+        "sway": 3,
         "action": "repel",
         "text": "Every group next to the target is driven one hex straight on, away from it, where it can enter. Target: where she wails.",
         "readings": {
@@ -1315,7 +1315,7 @@
         "name": "Open the Pit",
         "suit": "demonic",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "pit-fall",
         "text": "The target group, 3 tokens or fewer, falls through to any location in its region it can enter. Target: the group, then where it lands. (Revised in round 17.)",
         "readings": {
@@ -1329,7 +1329,7 @@
         "name": "Chase Them Down the Slope",
         "suit": "nocturnals",
         "slot": "strike",
-        "influence": 3,
+        "sway": 3,
         "action": "slide",
         "round": 11,
         "text": "Choose a direction; the target group slides hex by hex that way until it reaches a location it can’t enter, or the coast. Target: the group.",
@@ -1343,7 +1343,7 @@
         "name": "Crash-Land the Saucer",
         "suit": "scifi",
         "slot": "strike",
-        "influence": 3,
+        "sway": 3,
         "action": "chain",
         "round": 11,
         "text": "Choose a direction; the target group moves one hex that way. Any group of another faction in its way is knocked one hex on, the same way, and so on down the line; a group with nowhere to go stays. Target: the group.",
@@ -1357,7 +1357,7 @@
         "name": "Livestream the Fight",
         "suit": "sentients",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "token",
         "round": 11,
         "text": "Hidden: at its fight, each trophy pile is doubled from its faction’s supply.",
@@ -1371,7 +1371,7 @@
         "name": "Lay Them to Rest",
         "suit": "undead",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "token",
         "round": 11,
         "text": "Hidden: at its fight, the token’s owner takes the smaller pile; the rest go back to their supplies. (Revised in round 17.)",
@@ -1385,7 +1385,7 @@
         "name": "Trade Souls",
         "suit": "demonic",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "swap-far",
         "round": 11,
         "text": "The target group trades places with any other group on the island, if each can stand where the other was. Target: the first soul.",
@@ -1399,7 +1399,7 @@
         "name": "Circle the Prey",
         "suit": "nocturnals",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "circle",
         "round": 12,
         "text": "The groups round the target circle it: each moves one location on, clockwise, where it can enter. Target: the prey.",
@@ -1413,7 +1413,7 @@
         "name": "Follow the Lights",
         "suit": "scifi",
         "slot": "strike",
-        "influence": 3,
+        "sway": 3,
         "action": "follow",
         "round": 12,
         "text": "The target group moves to an adjacent location; then a group of another faction next to that location may follow it in. Target: the leader.",
@@ -1427,10 +1427,10 @@
         "name": "Install the Cameras",
         "suit": "sentients",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "surveil-supply",
         "round": 12,
-        "text": "Place 1 influence from your supply at the target and at each location next to it that holds tokens. Target: the hub. (Revised in round 17.)",
+        "text": "Place 1 sway from your supply at the target and at each location next to it that holds tokens. Target: the hub. (Revised in round 17.)",
         "readings": {
           "location": "a ⏏ location.",
           "faction": "a location holding the Sentients."
@@ -1441,7 +1441,7 @@
         "name": "Invert the Pentagram",
         "suit": "demonic",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "token",
         "round": 12,
         "text": "Hidden: at its fight, the smaller group wins.",
@@ -1455,7 +1455,7 @@
         "name": "Howl at the Moon",
         "suit": "nocturnals",
         "slot": "shift",
-        "influence": 3,
+        "sway": 3,
         "action": "howl",
         "round": 13,
         "text": "Every group of one faction two hexes from the target moves one hex closer (to a location next to it; one already holding that faction if it can). Target: where the howl rises.",
@@ -1469,7 +1469,7 @@
         "name": "Back Up to the Cloud",
         "suit": "sentients",
         "slot": "shift",
-        "influence": 3,
+        "sway": 3,
         "action": "network",
         "round": 13,
         "text": "Move the target group across the network, however far. Target: the group moved. (Round 7 wording, first built in round 13.)",
@@ -1483,7 +1483,7 @@
         "name": "Lead the Horde",
         "suit": "undead",
         "slot": "shift",
-        "influence": 3,
+        "sway": 3,
         "action": "shove",
         "round": 13,
         "text": "Move the target group into an adjacent location; if that would make three factions there, the smaller group already there is shoved on to an adjacent location of your choice. Target: the horde. (Round 7 wording, first built in round 13.)",
@@ -1497,7 +1497,7 @@
         "name": "Read from the Book",
         "suit": "demonic",
         "slot": "strike",
-        "influence": 3,
+        "sway": 3,
         "action": "leap",
         "round": 13,
         "text": "The target group leaps over an adjacent location into the one beyond it, in a straight line. Target: the group. (Round 6 idea, first built in round 13; readings added.)",
@@ -1511,48 +1511,48 @@
         "name": "Bail Out",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "bail-out",
         "round": 14,
-        "text": "Pivot: move all your influence at one location to any other location. Target: where you bail out from, then where it goes."
+        "text": "Pivot: move all your sway at one location to any other location. Target: where you bail out from, then where it goes."
       },
       {
         "id": "call-backup",
         "name": "Call for Backup",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "backup",
         "round": 14,
-        "text": "Double your influence at the target; the extra comes from your supply. Target: a location where you have influence."
+        "text": "Double your sway at the target; the extra comes from your supply. Target: a location where you have sway."
       },
       {
         "id": "fall-back",
         "name": "Fall Back",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "fall-back",
         "round": 14,
-        "text": "Pivot: move all your influence from every location next to the target into it. Target: the rallying point."
+        "text": "Pivot: move all your sway from every location next to the target into it. Target: the rallying point."
       },
       {
         "id": "stake-out",
         "name": "Stake Out",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "stake",
         "amount": 4,
         "round": 14,
-        "text": "Place 4 influence from your supply on the target. Target: any location. (Designer seed, 2026-10-07.)"
+        "text": "Place 4 sway from your supply on the target. Target: any location. (Designer seed, 2026-10-07.)"
       },
       {
         "id": "call-truce",
         "name": "Call a Truce",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "truce",
         "round": 15,
         "text": "There is no fight at the target this round; both groups stay. Target: any location."
@@ -1562,7 +1562,7 @@
         "name": "Steal Their Playbook",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "copy",
         "round": 15,
         "text": "Play the action of the last card played this game, as if it were yours. Its own target rules apply."
@@ -1572,37 +1572,37 @@
         "name": "Lay a Trail",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "trail",
         "round": 15,
-        "text": "Move a whole group into a location where you alone have the most influence, from a location next to it. Target: your location, then the group."
+        "text": "Move a whole group into a location where you alone have the most sway, from a location next to it. Target: your location, then the group."
       },
       {
         "id": "canvass",
         "name": "Canvass the Town",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "canvass",
         "round": 16,
-        "text": "Place 1 influence from your supply at each of up to four locations. Target: the locations."
+        "text": "Place 1 sway from your supply at each of up to four locations. Target: the locations."
       },
       {
         "id": "set-bait",
         "name": "Set the Bait",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "bait",
         "round": 16,
-        "text": "Place 2 influence from your supply at the target, then draw a whole group into it from a location next to it. Target: the bait, then the group."
+        "text": "Place 2 sway from your supply at the target, then draw a whole group into it from a location next to it. Target: the bait, then the group."
       },
       {
         "id": "change-allegiance",
         "name": "Defect",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "allegiance",
         "round": 16,
         "text": "Move up to 4 of your standing from one faction to another. Target: the faction you leave, then the one you join."
@@ -1612,17 +1612,17 @@
         "name": "Raise the Stakes",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "raise-stakes",
         "round": 17,
-        "text": "At a contested location, place influence from your supply equal to the larger group there (up to 5). Target: the contest. (Round 17.)"
+        "text": "At a contested location, place sway from your supply equal to the larger group there (up to 5). Target: the contest. (Round 17.)"
       },
       {
         "id": "swap-allegiance",
         "name": "Trade Secrets",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "swap-standing",
         "round": 17,
         "text": "Swap your standing with two factions. Target: the two factions. (Round 17.)"
@@ -1632,27 +1632,27 @@
         "name": "Split Up, Gang!",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "split-up",
         "round": 18,
-        "text": "Opening gambit (marked-card candidate for B): place 1 influence from your supply at up to three locations in different regions; this round, your influence at each counts double at its fight. Target: the locations."
+        "text": "Opening gambit (marked-card candidate for B): place 1 sway from your supply at up to three locations in different regions; this round, your sway at each counts double at its fight. Target: the locations."
       },
       {
         "id": "tip-off",
         "name": "Tip Off the Sheriff",
         "suit": null,
         "slot": "extra",
-        "influence": 0,
+        "sway": 0,
         "action": "tipoff",
         "round": 18,
-        "text": "Opening gambit (marked-card candidate for B): name a faction; for the rest of the round, whenever anyone moves it, place 1 influence from your supply where it lands. Target: the faction."
+        "text": "Opening gambit (marked-card candidate for B): name a faction; for the rest of the round, whenever anyone moves it, place 1 sway from your supply where it lands. Target: the faction."
       },
       {
         "id": "wake-dead",
         "name": "Wake the Dead",
         "suit": "undead",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "wake-dead",
         "round": 18,
         "text": "This round, the fight at the target can’t scorch it, and the losing faction’s casualties rise there as Undead instead of becoming trophies. Target: the graveyard.",
@@ -1666,7 +1666,7 @@
         "name": "Link the Swarm",
         "suit": "sentients",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "swarm",
         "round": 20,
         "text": "At this round’s fight at the target, the Sentients count their tokens in every location next to it too, for who wins (casualties and trophies as usual). Target: the hub.",
@@ -1680,7 +1680,7 @@
         "name": "Call Home",
         "suit": "sentients",
         "slot": "shift",
-        "influence": 3,
+        "sway": 3,
         "action": "call-home",
         "round": 20,
         "text": "1 token of the target faction moves to the target from every other location holding it, anywhere on the island. Target: the destination, then the faction.",
@@ -1694,10 +1694,10 @@
         "name": "Install a Backdoor",
         "suit": "sentients",
         "slot": "signature",
-        "influence": 3,
+        "sway": 3,
         "action": "backdoor",
         "round": 20,
-        "text": "At this round’s fight at the target, your influence there counts 1 more for each Sentient token there, even if you placed none. Target: the hacked location.",
+        "text": "At this round’s fight at the target, your sway there counts 1 more for each Sentient token there, even if you placed none. Target: the hacked location.",
         "readings": {
           "location": "a ⏏ location.",
           "faction": "a location holding the Sentients."

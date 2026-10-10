@@ -37,11 +37,11 @@ function roundOne(seed) {
   const scorched = log.some((l) => /scorched/.test(l));
   const mine = plays.filter((p) => p.pid === YOU);
   const youAct = mine.some((p) => p.use === 'action');
-  const youInf = mine.some((p) => p.use === 'influence');
-  const botInf = plays.some((p) => p.pid !== YOU && p.use === 'influence');
+  const youInf = mine.some((p) => p.use === 'sway');
+  const botInf = plays.some((p) => p.pid !== YOU && p.use === 'sway');
   const first = log.find((l) => l.startsWith('Draft done'))?.replace(/Draft done\. | goes first\./g, '');
   const unsuitedYou = mine.some((p) => !cardById(p.card).suit);
-  const contestedWithYou = fightsState ? Object.values(fightsState.board).filter((pl) => Object.values(pl.tokens).filter((n) => n > 0).length === 2 && (pl.influence[YOU] ?? 0) > 0).length : 0;
+  const contestedWithYou = fightsState ? Object.values(fightsState.board).filter((pl) => Object.values(pl.tokens).filter((n) => n > 0).length === 2 && (pl.sway[YOU] ?? 0) > 0).length : 0;
   const score = (youAct ? 3 : 0) + (youInf ? 3 : 0) + (botInf ? 1 : 0) + Math.min(fights, 4) + (yourPiles ? 3 : 0) + Math.min(piles, 4) * 0.5 + (grows ? 2 : 0) + (first !== YOU ? 1 : 0) + (contestedWithYou ? 1 : 0) - (scorched ? 0 : 0) - (unsuitedYou ? 0 : 0) - Math.max(0, plays.length - 14) * 0.3;
   return { seed, score, fights, piles, yourPiles, youAct, youInf, botInf, grows, scorched, first, plays: plays.length };
 }

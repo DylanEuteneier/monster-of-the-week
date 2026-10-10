@@ -379,7 +379,7 @@ TOKEN_SOURCES = tuple(fid for fid in FACTION_IDS if fid in SPRITES)
 # Board hexes: a floating hex of ground with a location's building on it
 # ---------------------------------------------------------------------------
 # Pointy-top hexes, drawn at 1x and shown at 2x. The upper part holds the
-# building; the lower part is left clear for presence tokens and influence
+# building; the lower part is left clear for presence tokens and sway
 # cubes (its box is exported as "pieces" in sprites.json).
 
 HEX_R = 30           # circumradius of the hex, in pixels

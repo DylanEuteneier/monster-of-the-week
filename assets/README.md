@@ -25,7 +25,7 @@ Whatever would be physical is UI. A select few physical pieces imitate real
 |---|---|---|
 | **Pixel art** | Illustrations, icons, location tiles, the art printed on a token or card | Pixel sprites, scaled by whole numbers, never smoothed |
 | **UI** | Boards, panels, cards, tracks, buttons, frames: the physical parts of a production | Clean, readable HTML and CSS layout; not imitated, not pixel art |
-| **Physical pieces** | Presence tokens, influence cubes (later, any other piece that sits on the board) | CSS objects with a realistic but clean look: depth, edges, soft shadows |
+| **Physical pieces** | Presence tokens, sway cubes (later, any other piece that sits on the board) | CSS objects with a realistic but clean look: depth, edges, soft shadows |
 
 ### Decisions so far
 
@@ -36,7 +36,7 @@ Whatever would be physical is UI. A select few physical pieces imitate real
 | 2026-10-03 | The palette's colours: 32, supplied by the designer (see [The palette](#1-the-palette)) |
 | 2026-10-03 | Fonts: **Tiny5** (pixel) for headings and labels, **Rubik** for everything else |
 | 2026-10-03 | Every location shows its presence visually, at a glance |
-| 2026-10-03 | Faction presence is shown with **tokens**; player influence with **cubes** in seat colours |
+| 2026-10-03 | Faction presence is shown with **tokens**; player sway with **cubes** in seat colours |
 | 2026-10-03 | Tokens are CSS cardboard cut to the art's outline, with pixel art on the face |
 | 2026-10-03 | Cubes are seen from above, never rotated: top face, near side, and right side |
 | 2026-10-03 | Presence tokens are per faction: 15, one for each faction's icon |
@@ -78,7 +78,7 @@ A die-cut cardboard token with the faction's art printed on it.
 - One token per faction (15), generated from each faction's icon. Every
   faction in `spec.json` that has a sprite gets a token automatically.
 
-### Influence cubes
+### Sway cubes
 
 - Seen from above, never rotated: a square top face, the near side as a band
   below it, the right side as a narrower band.
@@ -266,8 +266,8 @@ Mark each row keep, cut, or later. **Required** rows are confirmed.
 |---|---|---|---|
 | **Location tiles** (Required) | 15 | 32×32 | Lighthouse drafted; three per archetype |
 | **Presence tokens** (Required) | 15 | from 16×16 art | **Built**, one per faction, generated from the faction icons |
-| **Influence cubes** (Required) | 5 | CSS | Built; need final seat colours |
-| **Location card layout** (Required) | 1 | UI | Tile, presence, and influence at a glance; example on `/assets` |
+| **Sway cubes** (Required) | 5 | CSS | Built; need final seat colours |
+| **Location card layout** (Required) | 1 | UI | Tile, presence, and sway at a glance; example on `/assets` |
 | **Archetype symbols** (Required) | 5 | 9×9 plaque | **Done**: moon and star, alien head, power, skull, horns |
 | **Board hexes** (Required) | 15 | 54×62 | Format set; the Lighthouse is drawn as the sample |
 | **Faction icons** (Required) | 15 | 16×16 | **Drawn** (first pass, 2026-10-03) |
@@ -288,7 +288,7 @@ of cubes. Open:
   with a number beside it? Piles read as "on the board" (1.4) but get
   crowded; a location may hold up to two factions (LL1, a candidate) and
   growth pushes counts up.
-- **Influence at locations is a candidate rule** (CU4, 3.7; influence ties at
+- **Sway at locations is a candidate rule** (CU4, 3.7; sway ties at
   a location, 3.13). The cubes are ready; how they're used follows whichever
   rule is settled.
 - **Size.** The tile at 3× (96px) with tokens at 2× reads well; confirm once
@@ -304,7 +304,7 @@ of cubes. Open:
    emblems. Faction icons and their tokens are done. One sheet render and one review per
    batch.
 4. Render tokens, cubes, and tiles in the table once the engine tracks
-   presence and influence.
+   presence and sway.
 
 ## Preview pages
 

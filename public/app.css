@@ -225,7 +225,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .seatbar .seat { padding: var(--space-1) var(--space-3); }
 
 /* ---------------------------------------------------------------------------
-   Pieces: sprites, presence tokens, influence cubes, hexes (pieces.js)
+   Pieces: sprites, presence tokens, sway cubes, hexes (pieces.js)
    Clean, physical CSS objects; only the art printed on a token is pixel art.
 --------------------------------------------------------------------------- */
 .sprite { image-rendering: pixelated; image-rendering: crisp-edges; display: block; flex: none; }
@@ -319,7 +319,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .supply-row > .token + .token { margin-left: -14px; }
 .supply-row.cubes { gap: 1px; }
 .standing-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; max-width: 220px; min-height: 12px; }
-/* A player's cubes with one faction; the influence leader's are underlined in gold. */
+/* A player's cubes with one faction; the sway leader's are underlined in gold. */
 .standing-group { display: inline-flex; gap: 1px; padding-bottom: 2px; border-bottom: 2px solid transparent; }
 .standing-group.is-leading { border-bottom-color: var(--state-candidate); }
 .trophies { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
@@ -492,14 +492,14 @@ body { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px + 2 * va
 .mini-card + .mini-card { margin-left: -5px; }
 
 /* ---------------------------------------------------------------------------
-   Factions: one row per faction (token and name, supply, influence). Narrow
+   Factions: one row per faction (token and name, supply, sway). Narrow
    (by the table's own width), each row stacks with labels.
 --------------------------------------------------------------------------- */
 .faction-table { display: flex; flex-direction: column; width: 100%; container-type: inline-size; border: var(--border); box-shadow: var(--shadow); background: var(--color-panel); }
 .faction-row {
   display: grid;
   grid-template-columns: minmax(150px, 1fr) minmax(0, 1.5fr) minmax(0, 1.5fr);
-  grid-template-areas: "id supply influence";
+  grid-template-areas: "id supply sway";
   align-items: center;
   gap: var(--space-3);
   padding: 6px var(--space-2);
@@ -508,11 +508,11 @@ body { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px + 2 * va
 .faction-row:last-child { border-bottom: 0; }
 .faction-row > .cell-id { grid-area: id; min-width: 0; }
 .faction-row > .cell-supply { grid-area: supply; min-width: 0; }
-.faction-row > .cell-influence { grid-area: influence; min-width: 0; }
+.faction-row > .cell-sway { grid-area: sway; min-width: 0; }
 .faction-head { padding-top: 4px; padding-bottom: 4px; border-bottom: 0; background: var(--ink); font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; }
 .faction-head > span:nth-child(1) { grid-area: id; }
 .faction-head > span:nth-child(2) { grid-area: supply; }
-.faction-head > span:nth-child(3) { grid-area: influence; }
+.faction-head > span:nth-child(3) { grid-area: sway; }
 .faction-row.is-candidate { cursor: pointer; background: color-mix(in oklab, var(--color-panel), var(--state-candidate) 14%); outline: 2px solid var(--state-candidate); outline-offset: -2px; }
 .faction-id { display: flex; align-items: center; gap: var(--space-2); }
 .faction-id > span:last-child { display: flex; flex-direction: column; }
@@ -522,7 +522,7 @@ body { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px + 2 * va
 .faction-table .supply-row > .token { margin-left: -14px; }
 @container (max-width: 720px) {
   .faction-head { display: none; }
-  .faction-row { grid-template-columns: minmax(0, 1fr); grid-template-areas: "id" "supply" "influence"; row-gap: 6px; }
+  .faction-row { grid-template-columns: minmax(0, 1fr); grid-template-areas: "id" "supply" "sway"; row-gap: 6px; }
   .faction-cell::before { content: attr(data-label); flex: none; width: 72px; font-family: var(--font-display); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
 }
 
@@ -571,7 +571,7 @@ body { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px + 2 * va
 .card-reading dd { margin: 0; }
 .card-reading.is-on { color: var(--ink); }
 .card-reading.is-off { opacity: 0.4; }
-/* Text on the left, the card's options (readings, influence) on the right. */
+/* Text on the left, the card's options (readings, sway) on the right. */
 .card-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: start; }
 .card-text { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .card-options { display: flex; flex-direction: column; gap: 4px; }
@@ -625,7 +625,7 @@ button.card-opt:hover { background: #f6cca1; }
 .chip b { font-weight: 600; }
 .bluff { width: 10px; height: 10px; background: var(--color-cell); border: 2px solid var(--color-muted); box-shadow: 1px 1px 0 var(--ink); }
 
-/* Influence (left) and trophies (right): tabs rising from the bar's ends,
+/* Sway (left) and trophies (right): tabs rising from the bar's ends,
    in its colours. Compact: tokens and numbers only (trophies: only those
    held). Hovered or tapped: a heading, names, and every faction. */
 .side-stack {
@@ -876,7 +876,7 @@ button.card-opt:hover { background: #f6cca1; }
   .hand .card.is-active, .hand .card.card-selected { z-index: auto; }
   .hand .card.card-selected { outline: 3px solid var(--state-candidate); outline-offset: 2px; }
 
-  /* Influence and trophies: static sections, always in full. */
+  /* Sway and trophies: static sections, always in full. */
   .side-stack, .side-stack:hover, .side-stack.is-open { position: static; align-items: stretch; gap: 3px; padding: 8px 10px; border: var(--border); border-left: 0; border-right: 0; border-top: 0; cursor: default; }
   .side-stack:not(:has(.side-row:not(.is-zero)))::before { content: none; }
   .side-head { display: block; }
