@@ -24,7 +24,7 @@
  * none. Cards are temporary, so nothing here names a card; every number is
  * read from the game's options.
  */
-import { spec, factionById, locationById, cardById, describeTarget, playerView, resolveFight, clone, listTargets, previewTarget, deckOf, printedOf, controllerOf } from './engine.js';
+import { spec, factionById, locationById, cardById, describeTarget, playerView, resolveFight, clone, listTargets, previewTarget, deckOf, printedOf, controllerOf, growthDue } from './engine.js';
 import { newTable, copyTable, autoMove, nextActor, play, botPicks, check, YOU, BOTS } from './tutorial-game.js';
 import { tokenHtml, cubeHtml, SEAT_COLOURS } from './pieces.js';
 import { cardHtml, suitIcon } from './cards.js';
@@ -157,15 +157,6 @@ const demo = (from, to, show) => () => present(from(), { instant: true }).then((
 /** Back to the real game after a demonstration. @type {Step} */
 const restore = () => present(R.table.state, { instant: true }).then(() => null);
 
-/** The real game's start with the learner's trophies and standing set for a demonstration (taken from the factions' supplies, as in play). @param {number[]} trophies  per faction, in play order @param {Record<string, number>} [standing] */
-function staged(trophies, standing = {}) {
-  const s = clone(R.table.state);
-  const me = s.players[YOU];
-  s.factions.forEach((f, i) => { me.trophies[f] = trophies[i] ?? 0; s.supply[f] -= me.trophies[f]; });
-  for (const [f, n] of Object.entries(standing)) { me.supply -= n - me.standing[f]; me.standing[f] = n; }
-  return s;
-}
-
 // Visual words: equations built from the real pieces, and the mechanic /
 // strategy frame for the core ideas (designer, 2026-10-10: fewer words, more
 // pictures; frame each core mechanic by how it works and why it matters).
@@ -206,16 +197,91 @@ function factionItem(f, first, i = 0, with_ = '') {
   return with_ ? `<div class="tut-allied">${with_}${item}</div>` : item;
 }
 
-function chapterWin() {
+/**
+ * How the game ends, told on copies of the real board (designer, 2026-10-10:
+ * the endings need explaining properly). Fights shrink presence, growth adds
+ * to it; then each ending with its score, and what each makes worthless.
+ * @returns {Step[]}
+ */
+function endingSteps() {
   const t = opt('threshold');
-  const v = view();
-  const now = totalPresence(v);
+  const s0 = R.table.state;
+  const v = playerView(s0, YOU);
   const { faction } = yours();
   const fi = v.factions.indexOf(faction);
+  const total = (/** @type {GameState} */ s) => Object.values(s.board).reduce((n, p) => n + Object.values(p.tokens).reduce((a, b) => a + b, 0), 0);
+  const groups = (/** @type {GameState} */ s) => Object.keys(s.board).flatMap((loc) => Object.entries(s.board[loc].tokens).filter(([, n]) => n > 0).map(([f, n]) => ({ loc, f, n })));
+  /** Take n of f's tokens off loc: to your trophies, or back to its supply. @param {GameState} s @param {string} loc @param {string} f @param {number} n @param {boolean} toYou */
+  const kill = (s, loc, f, n, toYou) => { const k = Math.min(n, s.board[loc].tokens[f] ?? 0); s.board[loc].tokens[f] -= k; if (toYou) s.players[YOU].trophies[f] += k; else s.supply[f] += k; };
+  /** Your trophies set to these counts (from or to the factions' supplies). @param {GameState} s @param {number[]} counts */
+  const trophiesTo = (s, counts) => s.factions.forEach((f, i) => { const d = (counts[i] ?? 0) - s.players[YOU].trophies[f]; s.players[YOU].trophies[f] += d; s.supply[f] -= d; });
+  // Who backs whom: the group that switched sides in the opening, with its own faction.
+  const { groups: cast } = castOf();
+  const turn = cast[1] ?? cast[0];
+  const backer = s0.seating.find((pid) => s0.players[pid].group === turn) ?? s0.seating[1];
+  const backs = s0.factions.find((f) => factionById(f).archetype === spec.slayerGroups.find((g) => g.id === turn)?.archetype) ?? s0.factions[1];
+
+  // A: two fights. The two biggest groups lose 3 each; you take one pile.
+  const A = clone(s0);
+  const [g1, g2] = groups(s0).sort((x, y) => y.n - x.n);
+  kill(A, g1.loc, g1.f, 3, true);
+  kill(A, g2.loc, g2.f, 3, false);
+  // B: growth, by the engine's own rule.
+  const B = clone(A);
+  for (const f of B.factions) for (const [loc, n] of Object.entries(growthDue(B, f))) { const k = Math.min(n, B.supply[f]); B.board[loc].tokens[f] += k; B.supply[f] -= k; }
+  const grew = Object.keys(B.board).filter((l) => B.factions.some((f) => B.board[l].tokens[f] > (A.board[l].tokens[f] ?? 0)));
+  // C, D: the island wins; your trophies lopsided, then even.
   const lopsided = v.factions.map((f, i) => (i === (fi + 1) % 5 ? 0 : [4, 3, 3, 2, 3][i]));
   const even = v.factions.map((_, i) => (i === fi ? 3 : 2));
   const missing = v.factions[(fi + 1) % 5];
-  const asFaction = v.factions.map((f) => (f === faction ? 2 : 0));
+  const C = clone(B);
+  while (total(C) > t - 3) { const g = groups(C).sort((x, y) => y.n - x.n)[0]; kill(C, g.loc, g.f, 1, false); }
+  trophiesTo(C, lopsided);
+  const D = clone(C);
+  trophiesTo(D, even);
+  // E: the invaders win: the backed faction swells across its locations.
+  const E = clone(D);
+  trophiesTo(E, v.factions.map((f) => (f === backs ? 1 : 0)));
+  const homes = groups(E).filter((g) => g.f === backs).map((g) => g.loc);
+  const spots = homes.length ? homes : Object.keys(E.board).filter((l) => !Object.values(E.board[l].tokens).some((n) => n > 0)).slice(0, 2);
+  for (let k = 0; total(E) <= t + 7 && E.supply[backs] > 0; k++) { E.board[spots[k % spots.length]].tokens[backs] = (E.board[spots[k % spots.length]].tokens[backs] ?? 0) + 1; E.supply[backs] -= 1; }
+  // F: the backer has built influence with it; you haven't.
+  const F_ = clone(E);
+  const bp = F_.players[backer];
+  const want = 8;
+  bp.supply -= want - bp.standing[backs];
+  bp.standing[backs] = want;
+  const yourScore = F_.players[YOU].standing[backs] - F_.players[YOU].trophies[backs];
+  const theirScore = bp.standing[backs] - bp.trophies[backs];
+
+  return [
+    spot(SEL.presence, 'The final count', `${eq(`after round ${rounds()}`, op('→'), 'count every monster on the board')}<p>The mark is <b>${t}</b>. Now: ${total(s0)}.</p>`),
+    demo(() => s0, () => A, () => ({ type: 'spot', target: [SEL.hex(g1.loc), SEL.hex(g2.loc), SEL.presence, SEL.trophyTab], title: 'Fights kill monsters',
+      html: `${eq(chip('fight'), op('→'), tokens(g1.f, 3), op('→'), 'trophies', op('·'), `presence <b>${total(A)}</b>`)}<p>The dead leave the board. Some become your trophies.</p>` })),
+    demo(() => A, () => B, () => ({ type: 'spot', target: [...grew.map(SEL.hex), SEL.presence], title: 'Growth breeds more',
+      html: `${eq(chip('round end'), op('→'), 'groups grow', op('·'), `presence <b>${total(B)}</b>`)}<p>Left alone, monsters multiply.</p>` })),
+    demo(() => B, () => C, () => ({ type: 'spot', target: [SEL.presence, SEL.trophyTab], title: `${t} or fewer: the slayers win`,
+      html: `<p>The slayers did their job. Now the slayer with the most <b>complete sets</b> of trophies wins: you score your fewest colour.</p>${trophyRow(v.factions, lopsided)}${eq('no', tokenHtml(missing, 1), op('='), 'no complete set', op('='), '<b>0</b>')}<p class="small muted">Influence counts for nothing.</p>` })),
+    demo(() => C, () => D, () => ({ type: 'spot', target: [SEL.trophyTab], title: 'Hunt every kind',
+      html: `${trophyRow(v.factions, even)}${eq('2 of every colour', op('='), '2 complete sets', op('='), '<b>2</b>')}${more('Ties', 'Compare the next-fewest colour, then the next.')}` })),
+    demo(() => D, () => E, () => ({ type: 'spot', target: [...homes.map(SEL.hex), SEL.presence, SEL.faction(backs)], title: `More than ${t}: the invaders win`,
+      html: `${eq(tokens(backs, 3), op('most presence'), op('→'), `<b>${F(backs)}</b> decide the winner`)}<p>The faction with the most tokens on the board takes the island, and picks its winner by influence.</p>${more('Ties', 'Factions tied on tokens: the one controlling more locations wins; still tied, they win together and scores add up.')}` })),
+    demo(() => E, () => F_, () => ({ type: 'spot', target: [SEL.faction(backs), SEL.trophyTab], title: 'Its backers score',
+      html: `${eq(cubes(backer, want), op('−'), '0', op('='), `<b>${theirScore}</b>`, `<span class="small">${who(backer)}</span>`)}${eq(cubes(YOU, F_.players[YOU].standing[backs]), op('−'), tokens(backs, F_.players[YOU].trophies[backs]), op('='), `<b>${yourScore}</b>`, '<span class="small">you</span>')}<p>Most influence with them, minus their trophies, wins. ${who(backer)} backed them and never hunted them. Your sets count for nothing.</p>${more('Ties', 'Fewest trophies of the winner, then affinity, then the next faction down.')}` })),
+    restore,
+    modal('Every move is a bet', `
+      <div class="tut-cols">
+        <div><h3>Hunt widely</h3>${eq(tokens(v.factions[0], 1), tokens(v.factions[1], 1), tokens(v.factions[2], 1), op('→'), 'pays if the island wins')}</div>
+        <div><h3>Back a faction</h3>${eq(cubes(YOU, 3), op('→'), tokenHtml(faction, 1), op('→'), 'pays if it wins')}</div>
+      </div>
+      <p>Each ending makes the other half worthless. You won't know which until the end: read the table.</p>`),
+  ];
+}
+
+function chapterWin() {
+  const v = view();
+  const { faction } = yours();
+  const fi = v.factions.indexOf(faction);
   return [
     chapter('1 · The basics'),
     // The premise (designer, 2026-10-10), in three frames of one layout: one
@@ -251,23 +317,7 @@ function chapterWin() {
       ${eq(chip('fight'), op('→'), tokens(v.factions[(fi + 2) % 5], 2), op('→'), cubeHtml(colour(YOU), 10))}
       <p>When monsters fight, the biggest bids take the dead. Kept secret, here.</p>`),
     chapter('2 · How to win'),
-    spot(SEL.presence, 'Two endings', `
-      ${eq(`<b>${t}</b> or fewer`, op('→'), '<b>the island wins</b>', op('→'), 'trophies score')}
-      ${eq(`more than <b>${t}</b>`, op('→'), '<b>the invaders win</b>', op('→'), 'influence scores')}
-      <p class="small muted">Invader tokens counted after round ${rounds()}. Now: ${now}.</p>`),
-    demo(() => R.table.state, () => staged(lopsided), () => ({ type: 'spot', target: SEL.trophyTab, title: 'Island wins: your weakest colour scores',
-      html: `<p>Trophies are tokens killed in fights, kept secret here.</p>${trophyRow(v.factions, lopsided)}${eq('no', tokenHtml(missing, 1), op('='), '<b>0</b>')}` })),
-    demo(() => staged(lopsided), () => staged(even), () => ({ type: 'spot', target: SEL.trophyTab, title: 'Spread out',
-      html: `${trophyRow(v.factions, even)}${eq('fewest', op('='), '<b>2</b>')}${more('Ties', 'Compare the next-fewest colour, then the next.')}` })),
-    demo(() => staged(even), () => staged(asFaction, { [faction]: 6 }), () => ({ type: 'spot', target: [SEL.faction(faction), SEL.trophyTab], title: 'A faction wins: its backers score',
-      html: `${eq(cubes(YOU, 6), op('−'), tokens(faction, 2), op('='), '<b>4</b>')}<p>Influence with the winner, minus its trophies.</p>${more('Ties', 'Factions tied on tokens: most locations controlled wins; still tied, they win together and scores add up. Players tied: fewest trophies of the winner, then affinity, then the next faction down.')}` })),
-    restore,
-    modal('Every move is a bet', `
-      <div class="tut-cols">
-        <div><h3>Fight widely</h3>${eq(tokens(v.factions[0], 1), tokens(v.factions[1], 1), tokens(v.factions[2], 1), op('→'), 'island')}</div>
-        <div><h3>Avoid fights</h3>${eq(cubes(YOU, 3), op('→'), tokenHtml(faction, 1))}</div>
-      </div>
-      <p>You won't know the ending until the end. Read the table.</p>`),
+    ...endingSteps(),
   ];
 }
 
