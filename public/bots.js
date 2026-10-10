@@ -46,7 +46,7 @@ function spend(state, cardId, at = (spots) => spots[0]) {
 }
 /** @typedef {'trophy' | 'backer'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory, table?: Record<string, string>, memories?: Record<string, BotMemory> }} BotOptions  table, memories: every seat's profile and memory, for play-outs (persona table) */
-/** @typedef {{ profiles?: Record<string, string>, memories?: Record<string, BotMemory> }} Seats  the table as a play-out sees it */
+/** @typedef {{ profiles?: Record<string, string>, memories?: Record<string, BotMemory>, deep?: number }} Seats  the table as a play-out sees it (deep: persona deep) */
 /** What a bot remembers between its turns: its goal, and this game's variation in its lean. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal, jitter?: number }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
 
@@ -172,6 +172,9 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  *   profiles (BotOptions.table; a little cheating, fine for now).
  * - halve: spend the play-outs (keep × playouts) by successive halving: each
  *   round drops the worse half of the moves, so the best get the most.
+ * - deep: play-outs go on this many rounds past this one (drafts included;
+ *   the next deals drawn at random per play-out), so the value at
+ *   their end is read later, or from the game's result. Needs table.
  * - fit: score positions by the evaluation fitted to how games end
  *   (eval-fit.json, from scripts/fit.mjs), this many points per unit of
  *   log-odds, in place of the hand-built goal value; its goal still steers
@@ -186,7 +189,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - sets: for the island, value standing (and influence on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, fit?: number, blend?: number, save?: number, soft?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, deep?: number, fit?: number, blend?: number, save?: number, soft?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -524,7 +527,7 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
   const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum);
-  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories } : undefined, persona.halve ?? 0);
+  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories, deep: persona.deep } : undefined, persona.halve ?? 0);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
     const v = value(after(state, pid, move));
@@ -592,9 +595,13 @@ function playOutRound(state, seed, pid, memory, table = undefined) {
   /** @type {Record<string, BotMemory>} */
   // Each seat keeps the plan it holds (persona table: every seat's memory; otherwise only this bot's own).
   const mem = Object.fromEntries(state.seating.map((id) => [id, id === pid && memory ? { ...memory } : { ...(table?.memories?.[id] ?? {}) }]));
-  let s = state;
+  const deep = table?.deep ?? 0;
+  // deep: the next rounds' deals are drawn from this play-out's seed, not the game's (a bot can't see the coming deck).
+  let s = deep ? { ...state, rngState: (seed ^ 0x5bd1e995) >>> 0 } : state;
   const round = s.round;
-  for (let n = 0; n < SIM.maxMoves && s.phase === 'play' && s.round === round; n++) {
+  // deep: on through the next rounds' drafts and play, until `deep` rounds after this one have been played (or the game ends).
+  const going = deep ? () => s.phase !== 'ended' && s.round <= round + deep : () => s.phase === 'play' && s.round === round;
+  for (let n = 0; n < SIM.maxMoves * (deep + 1) && going(); n++) {
     let moved = false;
     for (const id of s.seating) {
       const m = playMove(s, id, r, table?.profiles?.[id] ? fast(table.profiles[id]) : ROLLOUT, mem[id]);
