@@ -27,7 +27,7 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, sampleTarget, listTargets, playableResponses, validate, applyMove, resolveFight, totalPresence, presenceOf, influenceSpots, growthDue,
+  cardById, clone, memoising, memoOn, resolveFights, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, influenceSpots, growthDue,
 } from './engine.js';
 
 /** @typedef {import('./engine.js').GameState} GameState */
@@ -75,7 +75,7 @@ const ROLLOUT = 'trophy:sim=0,enum=0,combo=0';
 export function botMove(state, input) {
   const p = state.players[input.playerId];
   if (!p || state.phase === 'ended') return null;
-  return playMove(state, input.playerId, input.rng, input.profile ?? 'trophy', input.memory, { profiles: input.table, memories: input.memories });
+  return memoising(() => playMove(state, input.playerId, input.rng, input.profile ?? 'trophy', input.memory, { profiles: input.table, memories: input.memories }));
 }
 
 /** @param {GameState} state @param {string} pid @param {Move} move */
@@ -98,17 +98,25 @@ function contested(state) {
  * @param {GameState} state @param {string} [pid] @param {boolean} [rivals]
  */
 function projectFights(state, pid = undefined, rivals = false) {
-  let s = state;
-  for (const loc of contested(state)) {
-    const tok = s.board[loc].token;
-    if (tok && !(pid !== undefined && (tok.owner === pid || rivals))) {
-      s = structuredClone(s);
-      s.board[loc].token = null;
-    }
-    s = resolveFight(s, loc);
-  }
-  return s;
+  const locs = contested(state);
+  if (!locs.length) return state;
+  const hide = locs.filter((loc) => { const tok = state.board[loc].token; return tok && !(pid !== undefined && (tok.owner === pid || rivals)); });
+  // Memoised per state and tokens set aside (a speed-up, not a heuristic): the same projection is asked for many times.
+  if (!memoOn()) return resolveFights({ ...state, log: [], events: [], board: Object.fromEntries(Object.entries(state.board).map(([loc, place]) => [loc, hide.includes(loc) ? { ...place, token: null } : place])) }, locs);
+  let memo = PROJECTED.get(state);
+  if (!memo) { memo = new Map(); PROJECTED.set(state, memo); }
+  const key = hide.join(',');
+  const hit = memo.get(key);
+  if (hit) return hit;
+  const s = clone({ ...state, log: [], events: [] }); // the log is not read here, and copying it was most of the cost
+  for (const loc of hide) s.board[loc].token = null;
+  const out = resolveFights(s, locs, false);
+  memo.set(key, out);
+  return out;
 }
+
+/** @type {WeakMap<object, Map<string, GameState>>} */
+const PROJECTED = new WeakMap();
 
 const sigmoid = (/** @type {number} */ x) => 1 / (1 + Math.exp(-x));
 
@@ -213,6 +221,20 @@ const TABLE = { backing: 8, base: 0.3, step: 0.15 };
  * @param {GameState} state @param {string} pid @param {boolean} [hidden]  persona hidden: count face-down tokens (see projectFights)
  */
 export function winChances(state, pid, hidden = false) {
+  // Memoised per state (a speed-up): goals, values and play-outs ask about the same position many times. Read-only result.
+  if (!memoOn()) return chancesNow(state, pid, hidden);
+  let memo = CHANCES.get(state);
+  if (!memo) { memo = new Map(); CHANCES.set(state, memo); }
+  const key = `${pid}|${hidden ? 1 : 0}`;
+  let c = memo.get(key);
+  if (!c) { c = chancesNow(state, pid, hidden); memo.set(key, c); }
+  return c;
+}
+/** @type {WeakMap<object, Map<string, ReturnType<typeof chancesAfter>>>} */
+const CHANCES = new WeakMap();
+
+/** winChances, uncached. @param {GameState} state @param {string} pid @param {boolean} hidden */
+function chancesNow(state, pid, hidden) {
   if (!hidden) return chancesAfter(projectFights(state), pid);
   const mine = chancesAfter(projectFights(state, pid, false), pid);
   if (!Object.values(state.board).some((place) => place.token && place.token.owner !== pid)) return mine;
@@ -497,7 +519,7 @@ function cardWorth(state, pid, cardId, rng, ev, base) {
   const card = cardById(cardId);
   // A rough worth in the draft, where it isn't this bot's turn: score the
   // card's best play as if it were.
-  const s = structuredClone(state);
+  const s = clone(state);
   s.phase = 'play';
   s.turn = s.seating.indexOf(pid);
   s.opened = true;
@@ -528,7 +550,7 @@ function cardWorth(state, pid, cardId, rng, ev, base) {
 function comboWorth(state, pid, cardId, kept, rng, ev, base) {
   let best = cardWorth(state, pid, cardId, rng, ev, base);
   for (const k of kept.filter((id) => id !== cardId)) {
-    const s = structuredClone(state);
+    const s = clone(state);
     s.phase = 'play';
     s.turn = s.seating.indexOf(pid);
     s.opened = true;
@@ -538,7 +560,7 @@ function comboWorth(state, pid, cardId, kept, rng, ev, base) {
     if (!firsts.length) continue;
     const alone = firsts[0].v;
     for (const f of firsts.slice(0, 2)) {
-      const s2 = structuredClone(f.s);
+      const s2 = clone(f.s);
       s2.phase = 'play';
       s2.turn = s2.seating.indexOf(pid);
       s2.pending = null;

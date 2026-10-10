@@ -736,7 +736,7 @@ function tokenSpots(state, card, mode) {
  * @param {GameState} state @param {string} pid @param {Card} card @param {Target} t
  */
 function movingFactions(state, pid, card, t) {
-  const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options: { ...state.options, influenceRequired: 'off' }, lastPlayed: state.lastPlayed ?? null, leftOut: state.leftOut ?? [], tips: state.tips ?? [], events: [], log: [] })));
+  const copy = /** @type {GameState} */ (/** @type {unknown} */ (clone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options: { ...state.options, influenceRequired: 'off' }, lastPlayed: state.lastPlayed ?? null, leftOut: state.leftOut ?? [], tips: state.tips ?? [], events: [], log: [] })));
   act(copy, pid, card, t);
   return state.factions.filter((f) => LOCATION_IDS.some((l) => (copy.board[l].tokens[f] ?? 0) > (state.board[l].tokens[f] ?? 0)));
 }
@@ -746,6 +746,35 @@ function movingFactions(state, pid, card, t) {
  * @param {GameState} state @param {string} pid @param {Card} card @param {Target | null | undefined} t
  */
 export function checkTarget(state, pid, card, t) {
+  // Memoised per state object while a bot searches (memoising): there states are not changed once built, and the same
+  // question is asked many times. Not a rule.
+  if (!memoDepth) return checkTargetNow(state, pid, card, t);
+  let memo = TARGET_MEMO.get(state);
+  if (!memo) { memo = new Map(); TARGET_MEMO.set(state, memo); }
+  const key = `${pid}|${card.id}|${JSON.stringify(t ?? null)}`;
+  const hit = memo.get(key);
+  if (hit !== undefined) return hit;
+  const reason = checkTargetNow(state, pid, card, t);
+  memo.set(key, reason);
+  return reason;
+}
+/** @type {WeakMap<object, Map<string, string | null>>} */
+const TARGET_MEMO = new WeakMap();
+let memoDepth = 0;
+/**
+ * Runs `fn` with per-state memos on (checkTarget here, projections in the bots): for callers that never change a
+ * state after asking about it, such as a bot's search. A speed-up, not a rule.
+ * @template T @param {() => T} fn @returns {T}
+ */
+export function memoising(fn) {
+  memoDepth += 1;
+  try { return fn(); } finally { memoDepth -= 1; }
+}
+/** Whether memoising is on (for the bots' own memos). */
+export const memoOn = () => memoDepth > 0;
+
+/** checkTarget, uncached. @param {GameState} state @param {string} pid @param {Card} card @param {Target | null | undefined} t */
+function checkTargetNow(state, pid, card, t) {
   const reason = checkShape(state, pid, card, t);
   if (reason || !t) return reason;
   const lead = selectedPays(state) && LEADS.has(/** @type {string} */ (copied(state, card).action)) ? ledFaction(state, copied(state, card), t) : 'n/a';
@@ -757,7 +786,7 @@ export function checkTarget(state, pid, card, t) {
   if (led && cost > 0 && (state.players[pid].standing[led] ?? 0) < cost && movingFactions(state, pid, card, t).includes(led)) return 'You need standing with the faction you lead to pay for the influence this move places (IC1).';
   // IC1: the card must be payable for at least one of its moves.
   const moved = (/** @type {Options} */ options) => {
-    const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options, lastPlayed: state.lastPlayed ?? null, leftOut: state.leftOut ?? [], tips: state.tips ?? [], events: [], log: [] })));
+    const copy = /** @type {GameState} */ (/** @type {unknown} */ (clone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options, lastPlayed: state.lastPlayed ?? null, leftOut: state.leftOut ?? [], tips: state.tips ?? [], events: [], log: [] })));
     act(copy, pid, card, t);
     return LOCATION_IDS.some((l) => JSON.stringify(copy.board[l].tokens) !== JSON.stringify(state.board[l].tokens));
   };
@@ -1567,7 +1596,9 @@ export function applyMove(state, submission) {
   const verdict = validate(state, submission);
   if (!verdict.ok) throw new IllegalMoveError(verdict.reason);
   /** @type {GameState} */
-  const next = structuredClone(state);
+  const next = clone({ ...state, log: [] });
+  // The log is shared copy-on-write: only this round's entry can still change (logLine), so only it is copied.
+  next.log = state.log.map((e) => (e.round === state.round ? { ...e, events: e.events.slice() } : e));
   const { playerId: pid, move: m } = submission;
   const p = next.players[pid];
   switch (m.type) {
@@ -1749,9 +1780,35 @@ function endOfPlay(state) {
   return beginGrowth(state);
 }
 
+/**
+ * A deep copy of plain game data (objects, arrays, primitives: all a game
+ * state holds). Several times faster than structuredClone, which was most of
+ * a bot game's time (2026-10-10 profile: 81%). Not a rule.
+ * @template T @param {T} x @returns {T}
+ */
+export function clone(x) {
+  if (x === null || typeof x !== 'object') return x;
+  if (Array.isArray(x)) {
+    const n = x.length, a = new Array(n);
+    for (let i = 0; i < n; i++) a[i] = clone(x[i]);
+    return /** @type {T} */ (/** @type {unknown} */ (a));
+  }
+  /** @type {Record<string, unknown>} */
+  const o = {};
+  for (const k in x) o[k] = clone(/** @type {Record<string, unknown>} */ (x)[k]);
+  return /** @type {T} */ (o);
+}
+
+/** Several locations' fights in turn, on one copy (as resolveFight one after another); `copy` false: on `state` itself, already a copy. @param {GameState} state @param {string[]} locs @returns {GameState} */
+export function resolveFights(state, locs, copy = true) {
+  const next = copy ? clone(state) : state;
+  for (const loc of locs) fight(next, loc);
+  return next;
+}
+
 /** One location's fight on a copy of the state, for tests and previews. @param {GameState} state @param {string} loc @returns {GameState} */
 export function resolveFight(state, loc) {
-  const next = structuredClone(state);
+  const next = clone(state);
   fight(next, loc);
   return next;
 }
@@ -2461,7 +2518,7 @@ function nextShape(state, pid, cardId, t) {
  * @returns {{ board: GameState['board'], players: GameState['players'] }}
  */
 export function previewTarget(state, pid, cardId, t) {
-  const copy = /** @type {GameState} */ (/** @type {unknown} */ (structuredClone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options: state.options, lastPlayed: 'lastPlayed' in state ? state.lastPlayed : null, leftOut: 'leftOut' in state ? state.leftOut : [], tips: 'tips' in state ? state.tips : [], events: [], log: [] })));
+  const copy = /** @type {GameState} */ (/** @type {unknown} */ (clone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options: state.options, lastPlayed: 'lastPlayed' in state ? state.lastPlayed : null, leftOut: 'leftOut' in state ? state.leftOut : [], tips: 'tips' in state ? state.tips : [], events: [], log: [] })));
   act(copy, pid, cardById(cardId), t);
   return { board: copy.board, players: copy.players };
 }
@@ -2540,14 +2597,14 @@ export function playerView(state, playerId) {
     tips: (state.tips ?? []).map((x) => ({ ...x })),
     bounties: (state.bounties ?? []).slice(),
     printed: Object.fromEntries(deckOf(state).map((id) => [id, printedOf(state, id)])),
-    growing: state.growing ? structuredClone(state.growing) : null,
+    growing: state.growing ? clone(state.growing) : null,
     first: state.first,
     opened: state.opened,
     toAct: waitingOn(state)[0] ?? null,
     pending: state.pending ? { player: state.pending.player, card: state.pending.card, target: state.pending.target, cancelled: state.pending.cancelled, blocked: state.pending.blocked.slice() } : null,
-    log: structuredClone(state.log),
-    result: state.result ? structuredClone(state.result) : null,
-    events: structuredClone(state.events),
+    log: clone(state.log),
+    result: state.result ? clone(state.result) : null,
+    events: clone(state.events),
     me: {
       hand: me.hand.slice(), kept: me.kept.slice(), batch: me.batch.slice(), picked: me.picked, trophies: { ...me.trophies }, known: me.known.slice(),
       leftOut: me.known.includes('leftout') ? state.leftOut.slice() : null,

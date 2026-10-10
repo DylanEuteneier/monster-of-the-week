@@ -6,7 +6,7 @@
  * a moment, against letting the turn go, with the rest of the round played
  * out). A measuring tool, not rules.
  */
-import { applyMove, nextRandom, sampleTarget, validate } from '../public/engine.js';
+import { applyMove, clone, memoising, nextRandom, sampleTarget, validate } from '../public/engine.js';
 import { botMove, winChances } from '../public/bots.js';
 
 /** @typedef {import('../public/engine.js').GameState} GameState @typedef {import('../public/engine.js').Move} Move @typedef {import('../public/bots.js').Profile} Profile */
@@ -26,7 +26,9 @@ export function seededRng(seed) {
  * high predictions came true about half as often as claimed).
  * @param {GameState} s @param {string} pid
  */
-export const chance = (s, pid) => {
+export const chance = (s, pid) => memoising(() => chanceNow(s, pid));
+/** chance, unmemoised. @param {GameState} s @param {string} pid */
+const chanceNow = (s, pid) => {
   const raw = (/** @type {string} */ id) => { const c = winChances(s, id); return c.pInvaders * c.asInvaders + (1 - c.pInvaders) * c.asIsland; };
   const all = s.seating.map((id) => ({ id, v: raw(id) }));
   const sum = all.reduce((n, x) => n + x.v, 0);
@@ -70,7 +72,7 @@ export function playRest(state, seed, bots, memories = undefined) {
   let s = state;
   const round = s.round;
   /** @type {Record<string, import('../public/bots.js').BotMemory>} */
-  const memory = Object.fromEntries(s.seating.map((id) => [id, structuredClone(memories?.[id] ?? {})]));
+  const memory = Object.fromEntries(s.seating.map((id) => [id, clone(memories?.[id] ?? {})]));
   for (let n = 0; n < MAX_MOVES && s.phase === 'play' && s.round === round; n++) {
     let moved = false;
     for (const playerId of s.seating) {
@@ -112,7 +114,7 @@ export function measureState(state, cardIds, o) {
   const seeds = Array.from({ length: o.playouts }, (_, i) => o.seed * 7919 + i);
   const mean = (/** @type {GameState} */ s) => seeds.reduce((n, seed) => n + chance(playRest(s, seed, o.bots, o.memories), pid), 0) / seeds.length;
   // Baseline: the turn goes by with nothing played (a measuring device, not a move in the game).
-  const skip = structuredClone(state);
+  const skip = clone(state);
   skip.opened = true;
   skip.turn = (skip.turn + 1) % skip.seating.length;
   const base = mean(skip);
@@ -120,7 +122,7 @@ export function measureState(state, cardIds, o) {
   const out = {};
   const rng = seededRng(o.seed);
   for (const cardId of cardIds) {
-    const s = structuredClone(state);
+    const s = clone(state);
     s.opened = true; // the card is measured on its own, not as the forced opener
     s.players[pid].hand.push(cardId);
     /** @type {Map<string, Move>} */
