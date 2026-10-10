@@ -29,6 +29,7 @@
 import {
   cardById, clone, memoising, memoOn, resolveFights, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, influenceSpots, growthDue,
 } from './engine.js';
+import evalFit from './eval-fit.json' with { type: 'json' };
 
 /** @typedef {import('./engine.js').GameState} GameState */
 /** @typedef {import('./engine.js').Move} Move */
@@ -171,12 +172,18 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  *   profiles (BotOptions.table; a little cheating, fine for now).
  * - halve: spend the play-outs (keep × playouts) by successive halving: each
  *   round drops the worse half of the moves, so the best get the most.
+ * - fit: score positions by the evaluation fitted to how games end
+ *   (eval-fit.json, from scripts/fit.mjs), this many points per unit of
+ *   log-odds, in place of the hand-built goal value; its goal still steers
+ *   only the draft's and the plan's choices. A tuning test.
+ * - soft: widen the spread of every win chance (the ending's, and each
+ *   seat's within it) by this factor: the bots' forecasts are over-confident.
  * - keep, playouts: the play-out search's size (default SIM.keep, SIM.playouts);
  *   tune these down for faster tuning runs rather than using a weaker bot.
  * - sets: for the island, value standing (and influence on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, fit?: number, soft?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -229,25 +236,25 @@ const TABLE = { backing: 8, base: 0.3, step: 0.15 };
  * sharpen as rounds run out.
  * @param {GameState} state @param {string} pid @param {boolean} [hidden]  persona hidden: count face-down tokens (see projectFights)
  */
-export function winChances(state, pid, hidden = false) {
+export function winChances(state, pid, hidden = false, soft = 1) {
   // Memoised per state (a speed-up): goals, values and play-outs ask about the same position many times. Read-only result.
-  if (!memoOn()) return chancesNow(state, pid, hidden);
+  if (!memoOn()) return chancesNow(state, pid, hidden, soft);
   let memo = CHANCES.get(state);
   if (!memo) { memo = new Map(); CHANCES.set(state, memo); }
-  const key = `${pid}|${hidden ? 1 : 0}`;
+  const key = `${pid}|${hidden ? 1 : 0}|${soft}`;
   let c = memo.get(key);
-  if (!c) { c = chancesNow(state, pid, hidden); memo.set(key, c); }
+  if (!c) { c = chancesNow(state, pid, hidden, soft); memo.set(key, c); }
   return c;
 }
 /** @type {WeakMap<object, Map<string, ReturnType<typeof chancesAfter>>>} */
 const CHANCES = new WeakMap();
 
-/** winChances, uncached. @param {GameState} state @param {string} pid @param {boolean} hidden */
-function chancesNow(state, pid, hidden) {
-  if (!hidden) return chancesAfter(projectFights(state), pid);
-  const mine = chancesAfter(projectFights(state, pid, false), pid);
+/** winChances, uncached. @param {GameState} state @param {string} pid @param {boolean} hidden @param {number} soft */
+function chancesNow(state, pid, hidden, soft) {
+  if (!hidden) return chancesAfter(projectFights(state), pid, soft);
+  const mine = chancesAfter(projectFights(state, pid, false), pid, soft);
   if (!Object.values(state.board).some((place) => place.token && place.token.owner !== pid)) return mine;
-  const theirs = chancesAfter(projectFights(state, pid, true), pid);
+  const theirs = chancesAfter(projectFights(state, pid, true), pid, soft);
   return /** @type {typeof mine} */ (Object.fromEntries(Object.entries(mine).map(([k, v]) => [k, (v + /** @type {Record<string, number>} */ (/** @type {unknown} */ (theirs))[k]) / 2])));
 }
 
@@ -268,7 +275,7 @@ export function features(state, pid) {
   const top = s.factions[presence.indexOf(Math.max(...presence))];
   const r3 = (/** @type {number} */ x) => Math.round(x * 1000) / 1000;
   return Object.fromEntries(Object.entries({
-    pInvaders: c.pInvaders, asInvaders: c.asInvaders, asIsland: c.asIsland, marginIsland: c.marginIsland, marginInvaders: c.marginInvaders,
+    pInvaders: c.pInvaders, invWin: c.pInvaders * c.asInvaders, islWin: (1 - c.pInvaders) * c.asIsland, rivalWin: c.pInvaders * c.rivalInvaders, asInvaders: c.asInvaders, asIsland: c.asIsland, marginIsland: c.marginIsland, marginInvaders: c.marginInvaders,
     rivalInvaders: c.rivalInvaders, linearIsland: c.linearIsland, roundsLeft: c.roundsLeft, projected: c.projected - c.threshold,
     weakest: t[0], second: t[1], third: t[2], trophies: t.reduce((a, x) => a + x, 0),
     leadTop: net(pid, top) - Math.max(...others.map((o) => net(o, top))), bestLead: Math.max(...s.factions.map((f) => net(pid, f) - Math.max(...others.map((o) => net(o, f))))),
@@ -277,14 +284,14 @@ export function features(state, pid) {
   }).map(([k, v]) => [k, r3(v)]));
 }
 
-/** winChances on a board whose fights are already projected. @param {GameState} s @param {string} pid */
-function chancesAfter(s, pid) {
+/** winChances on a board whose fights are already projected. @param {GameState} s @param {string} pid @param {number} [soft]  persona soft: widens every chance's spread */
+function chancesAfter(s, pid, soft = 1) {
   const roundsLeft = Math.max(0, Number(s.options.rounds) - s.round);
   const threshold = Number(s.options.threshold);
   let grow = 0;
   for (const f of s.factions) grow += Math.min(s.supply[f], Object.values(growthDue(s, f)).reduce((a, b) => a + b, 0));
   const projected = totalPresence(s) + (s.phase === 'play' ? grow : 0);
-  const spreadP = 2 + 3 * roundsLeft;
+  const spreadP = soft * (2 + 3 * roundsLeft);
   const others = s.seating.filter((id) => id !== pid);
   const presence = s.factions.map((f) => presenceOf(s, f));
   const top = Math.max(...presence);
@@ -295,10 +302,10 @@ function chancesAfter(s, pid) {
   const best = s.factions.map((_, i) => { let a = -Infinity, b = -Infinity, who = ''; for (const id of s.seating) { const v = nets[id][i]; if (v > a) { b = a; a = v; who = id; } else if (v > b) b = v; } return { a, b, who }; });
   const bestOther = (/** @type {string} */ id, /** @type {number} */ i) => (best[i].who === id ? best[i].b : best[i].a);
   const lead = (/** @type {number} */ i) => nets[pid][i] - bestOther(pid, i);
-  const asInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid(lead(i) / (1 + roundsLeft)), 0);
+  const asInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid(lead(i) / (soft * (1 + roundsLeft))), 0);
   const marginInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * lead(i), 0);
   // The best rival's chance of leading the winning faction (each rival against everyone else).
-  const rivalInvaders = Math.max(0, ...others.map((o) => s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid((nets[o][i] - bestOther(o, i)) / (1 + roundsLeft)), 0)));
+  const rivalInvaders = Math.max(0, ...others.map((o) => s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid((nets[o][i] - bestOther(o, i)) / (soft * (1 + roundsLeft))), 0)));
   /** @type {Record<string, number>} */
   const islOf = {};
   /** @type {Record<string, number>} */
@@ -310,7 +317,7 @@ function chancesAfter(s, pid) {
   }
   const marginIsland = islOf[pid] - Math.max(...others.map((o) => islOf[o]));
   const linearIsland = allOf[pid] - Math.max(...others.map((o) => allOf[o])); // the island margin, counted directly
-  const asIsland = sigmoid(marginIsland / (0.6 + 0.8 * roundsLeft));
+  const asIsland = sigmoid(marginIsland / (soft * (0.6 + 0.8 * roundsLeft)));
   const backers = others.filter((o) => Math.max(...nets[o]) >= TABLE.backing).length;
   const prior = Math.min(0.9, Math.max(0.1, TABLE.base + TABLE.step * backers));
   const rounds = Number(s.options.rounds);
@@ -321,7 +328,8 @@ function chancesAfter(s, pid) {
 
 /** A goal bot's value: its win chance, weighted toward its goal, plus its margins. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
 function goalValue(state, pid, goal, persona) {
-  const c = winChances(state, pid, !!persona.hidden);
+  if (persona.fit) { const v = fitValue(state, pid); if (v !== null) return persona.fit * v + 0.02 * state.players[pid].supply; }
+  const c = winChances(state, pid, !!persona.hidden, persona.soft ?? 1);
   // Margins are added on their own, never scaled by an ending's chance: a margin can be negative, and scaling it would
   // reward a bot that is behind for making that ending less likely (2026-10-08 fix).
   const inv = c.pInvaders * 10 * c.asInvaders + persona.margin * c.marginInvaders;
@@ -330,6 +338,21 @@ function goalValue(state, pid, goal, persona) {
   const threat = (persona.threat ?? 0) * 10 * c.pInvaders * c.rivalInvaders;
   const guard = persona.protect && goal === 'invaders' ? persona.protect * presenceGuard(state, pid, c, persona) : 0;
   return (goal === 'invaders' ? inv + guard : isl + (persona.sets ? persona.sets * (1 - c.pInvaders) * setAccess(state, pid) : 0)) - threat + 0.02 * state.players[pid].supply;
+}
+
+/**
+ * The fitted evaluation (persona fit): the log-odds of winning from this
+ * seat's features, by the weights fitted for this round (a play-out ends
+ * after the round's fights, in the next round). Null at the game's end, where
+ * the hand-built value counts the result, and with no fit for the round.
+ * @param {GameState} state @param {string} pid @returns {number | null}
+ */
+function fitValue(state, pid) {
+  const rounds = /** @type {Record<string, { mean: number[], sd: number[], w: number[] }>} */ (evalFit.rounds);
+  const m = state.phase === 'ended' ? undefined : rounds[String(state.round)];
+  if (!m) return null;
+  const f = features(state, pid);
+  return /** @type {string[]} */ (evalFit.names).reduce((a, k, j) => a + m.w[j] * ((f[k] ?? 0) - m.mean[j]) / m.sd[j], 0);
 }
 
 /**
@@ -381,7 +404,7 @@ function setAccess(state, pid) {
  * @param {GameState} state @param {string} pid @param {Persona} persona @param {BotMemory} [memory] @param {() => number} [rng] @returns {Goal}
  */
 export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
-  const c = winChances(state, pid, !!persona.hidden);
+  const c = winChances(state, pid, !!persona.hidden, persona.soft ?? 1);
   const push = persona.push * (c.roundsLeft + 1);
   // allies: the rivals seen backing a faction push presence up too, so the invaders' ending is more reachable than one player's push.
   const pushInv = push * (1 + (persona.allies ?? 0) * c.backers);
