@@ -176,6 +176,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  *   (eval-fit.json, from scripts/fit.mjs), this many points per unit of
  *   log-odds, in place of the hand-built goal value; its goal still steers
  *   only the draft's and the plan's choices. A tuning test.
+ * - save: the worth of each influence cube kept in supply (default 0.02).
  * - blend: add the fitted evaluation, this many points per unit of log-odds,
  *   to the goal value (which keeps the goal's own terms).
  * - soft: widen the spread of every win chance (the ending's, and each
@@ -185,7 +186,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - sets: for the island, value standing (and influence on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, fit?: number, blend?: number, soft?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, fit?: number, blend?: number, save?: number, soft?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -340,7 +341,7 @@ function goalValue(state, pid, goal, persona) {
   const threat = (persona.threat ?? 0) * 10 * c.pInvaders * c.rivalInvaders;
   const guard = persona.protect && goal === 'invaders' ? persona.protect * presenceGuard(state, pid, c, persona) : 0;
   const fitted = persona.blend ? persona.blend * (fitValue(state, pid) ?? 0) : 0;
-  return (goal === 'invaders' ? inv + guard : isl + (persona.sets ? persona.sets * (1 - c.pInvaders) * setAccess(state, pid) : 0)) - threat + 0.02 * state.players[pid].supply + fitted;
+  return (goal === 'invaders' ? inv + guard : isl + (persona.sets ? persona.sets * (1 - c.pInvaders) * setAccess(state, pid) : 0)) - threat + (persona.save ?? 0.02) * state.players[pid].supply + fitted;
 }
 
 /**

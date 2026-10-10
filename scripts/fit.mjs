@@ -37,6 +37,7 @@ for (const f of files) for (const line of readFileSync(f, 'utf8').split('\n').fi
   /** @type {Record<number, Table>} */
   const tables = {};
   // Derived features older logs lack (bots.js features): each ending's win chance, and a rival's through the invaders.
+  for (const x of fc) x.f.isBacker = String(r.seats[x.seat]).startsWith('backer') ? 1 : 0; // a control: the profile, not the position
   for (const x of fc) { x.f.invWin ??= x.f.pInvaders * x.f.asInvaders; x.f.islWin ??= (1 - x.f.pInvaders) * x.f.asIsland; x.f.rivalWin ??= x.f.pInvaders * x.f.rivalInvaders; }
   for (const x of fc) (tables[x.r] ??= { fold: Math.floor(r.g / 5) % 5, seats: [] }).seats.push({ x: x.f, p: x.p / 100, y: r.winners.includes(x.seat) ? 1 / r.winners.length : 0 });
   for (const [round, t] of Object.entries(tables)) (byRound[Number(round)] ??= []).push(t);
