@@ -31,7 +31,7 @@
  *   search (sim) off, which would otherwise nest play-outs inside play-outs.
  *
  *   node scripts/tournament.js [games=50] [seed=1] [profiles=backer,backer,trophy,trophy,trophy]
- *     [log=games.jsonl] [out=summary.json] [strength=card-strength.json] [probe=0] [probeOpen=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [probeLite=0] [workers=cores] [option=value ...]
+ *     [log=games.jsonl] [out=summary.json] [strength=card-strength.json] [probe=0] [probeOpen=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [probeLite=0] [workers=cores] [duplicate=0] [option=value ...]
  *
  * - log= appends one line per finished game; a run with the same log resumes,
  *   skipping games already in it. out= is rewritten after every game with the
@@ -53,7 +53,7 @@ import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, validate } from '../public/engine.js';
-import { PROFILES, botMove, fast } from '../public/bots.js';
+import { PROFILES, botMove, fast, features } from '../public/bots.js';
 import { seededRng, chance, measureState, MAX_MOVES } from './lib.js';
 
 /** @typedef {import('../public/bots.js').Profile} Profile @typedef {import('../public/engine.js').GameState} GameState */
@@ -64,7 +64,7 @@ import { seededRng, chance, measureState, MAX_MOVES } from './lib.js';
 /**
  * @typedef {{ g: number, side: 'island' | 'invaders', seats: Record<string, string>, groups: Record<string, string>, winners: string[], deck: string[],
  *   presence: number[], scorched: number, trophies: Record<string, number>, trophiesByColour?: Record<string, Record<string, number>>, scores?: Record<string, number>, goals?: Record<string, string>[], wonBy?: string[], standing?: Record<string, Record<string, number>>, presenceBy?: Record<string, number>, economy: Economy[], plays: Play[], held: string[], unplayed: string[],
- *   playable: Record<string, [number, number]>, probes: Probe[], forecasts: { r: number, seat: string, p: number }[] }} GameRecord
+ *   playable: Record<string, [number, number]>, probes: Probe[], forecasts: { r: number, seat: string, p: number, f?: Record<string, number> }[] }} GameRecord
  */
 
 // ---------------------------------------------------------------------------
@@ -222,9 +222,10 @@ function main() {
   const [gamesArg = '50', seedArg = '1'] = args.filter((a) => !a.includes('='));
   const pairs = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
   const list = (pairs.profiles ?? 'backer,backer,trophy,trophy,trophy').split(pairs.profiles?.includes(';') ? ';' : ',');
+  const duplicate = pairs.duplicate === '1';
   const logFile = pairs.log, outFile = pairs.out, strengthFile = pairs.strength, workerCap = Number(pairs.workers ?? 0);
   const probe = { rate: Number(pairs.probe ?? 0), open: pairs.probeOpen === '1', sample: Number(pairs.probeSample ?? 6), cards: pairs.probeCards?.split(','), playouts: Number(pairs.probePlayouts ?? 2), targets: Number(pairs.probeTargets ?? 2), lite: pairs.probeLite === '1' };
-  for (const k of ['profiles', 'log', 'out', 'strength', 'probe', 'probeOpen', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets', 'probeLite', 'workers']) delete pairs[k];
+  for (const k of ['profiles', 'duplicate', 'log', 'out', 'strength', 'probe', 'probeOpen', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets', 'probeLite', 'workers']) delete pairs[k];
   for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:lean=0)`);
   const games = Number(gamesArg), seed = Number(seedArg);
   /** @type {GameRecord[]} */
@@ -238,7 +239,7 @@ function main() {
   let running = workers;
   const t0 = Date.now();
   for (let w = 0; w < workers; w++) {
-    const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { games: todo.filter((_, i) => i % workers === w), seed, list, options: pairs, probe } });
+    const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { games: todo.filter((_, i) => i % workers === w), seed, list, options: pairs, probe, duplicate } });
     worker.on('message', (/** @type {GameRecord} */ r) => {
       records.push(r);
       if (logFile) appendFileSync(logFile, `${JSON.stringify(r)}\n`);
@@ -283,15 +284,21 @@ else {
     // Rotate: in game g, seat i plays profile (i + g) mod n.
     /** @type {Record<string, string>} */
     const seats = Object.fromEntries(players.map((/** @type {string} */ pid, /** @type {number} */ i) => [pid, d.list[(i + g) % d.list.length]]));
-    let s = createGame({ seed: d.seed * 10007 + g, players, options: d.options });
-    const rng = seededRng(d.seed * 7 + g), side = seededRng(d.seed * 13 + g); // side: probes and playable checks, so they don't change the game
+    // duplicate=1: games come in blocks of one deal per profile count, the same deal with the profiles rotated through
+    // every seat, and each seat's bot draws from its own stream seeded by the deal: two tables run on the same seed meet
+    // the same deals with the same luck, so they can be compared deal by deal (scripts/pair.mjs).
+    const deal = d.duplicate ? Math.floor(g / d.list.length) : g;
+    let s = createGame({ seed: d.seed * 10007 + deal, players, options: d.options });
+    const own = Object.fromEntries(players.map((/** @type {string} */ pid, /** @type {number} */ i) => [pid, seededRng(d.seed * 7919 + deal * 31 + i)]));
+    const shared = seededRng(d.seed * 7 + g), side = seededRng(d.seed * 13 + g); // side: probes and playable checks, so they don't change the game
+    const rngOf = (/** @type {string} */ pid) => (d.duplicate ? own[pid] : shared);
     /** @type {Record<string, import('../public/bots.js').BotMemory>} */
     const memory = Object.fromEntries(players.map((/** @type {string} */ pid) => [pid, {}]));
     /** @type {Play[]} */ const plays = [];
     /** @type {string[]} */ const held = [], unplayed = [];
     /** @type {Economy[]} */ const economy = [];
     /** @type {Probe[]} */ const probes = [];
-    /** @type {{ r: number, seat: string, p: number }[]} */ const forecasts = [];
+    /** @type {{ r: number, seat: string, p: number, f: Record<string, number> }[]} */ const forecasts = [];
     /** @type {Record<string, [number, number]>} */ const playable = {};
     const presence = [totalPresence(s)];
     /** @type {Record<string, string>[]} each round's end: the plan each seat holds (goal bots: island or invaders) */ const goals = [];
@@ -301,14 +308,14 @@ else {
     for (let n = 0; n < MAX_MOVES && s.phase !== 'ended'; n++) {
       if (s.phase === 'play' && !hands) {
         hands = Object.fromEntries(s.seating.map((pid) => [pid, s.players[pid].hand.slice()]));
-        for (const pid of s.seating) forecasts.push({ r: s.round, seat: pid, p: Math.round(chance(s, pid) * 10) / 10 });
+        for (const pid of s.seating) forecasts.push({ r: s.round, seat: pid, p: Math.round(chance(s, pid) * 10) / 10, f: features(s, pid) });
         for (const h of Object.values(hands)) held.push(...h);
       }
       // The player to act: playable checks, and a probe on a share of turns.
       const actor = s.phase === 'play' && !s.pending ? s.seating[s.turn] : null;
       let moved = false;
       for (const pid of s.seating) {
-        const move = botMove(s, { playerId: pid, rng, profile: /** @type {Profile} */ (seats[pid]), memory: memory[pid], table: seats, memories: memory });
+        const move = botMove(s, { playerId: pid, rng: rngOf(pid), profile: /** @type {Profile} */ (seats[pid]), memory: memory[pid], table: seats, memories: memory });
         if (!move) continue;
         if (pid === actor) {
           for (const c of new Set(s.players[pid].hand)) {
