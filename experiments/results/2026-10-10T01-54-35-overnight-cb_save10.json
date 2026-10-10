@@ -1,0 +1,481 @@
+{
+ "id": "2026-10-10T01-54-35-overnight-cb_save10",
+ "kind": "overnight",
+ "date": "2026-10-10T01:54:35.000Z",
+ "host": "overnight",
+ "node": "v24",
+ "code": {
+  "hash": "overnight",
+  "commit": "5ad8218..713182a"
+ },
+ "profile": "backer",
+ "design": "single",
+ "params": {
+  "save": {
+   "base": 0.02,
+   "value": 0.1
+  }
+ },
+ "table": "backer;backer;trophy;trophy;trophy",
+ "variant": "backer:save=0.1",
+ "hypothesis": "The fit: unspent supply predicts winning in rounds 2–3; value a kept cube more (standard 0.02).",
+ "runs": [
+  {
+   "seed": 11,
+   "games": 20,
+   "base": ".tuning/d/base.jsonl (local)",
+   "metrics": {
+    "games": 20,
+    "seats": 20,
+    "winA": 0.15,
+    "winB": 0.25,
+    "dWin": -0.1,
+    "seWin": 0.143,
+    "zWin": -0.698,
+    "gain": 0.5,
+    "seGain": 0.473,
+    "zGain": 1.057,
+    "invA": 10,
+    "invB": 4
+   },
+   "records": [
+    {
+     "g": 0,
+     "side": "invaders",
+     "seats": {
+      "P1": "backer",
+      "P2": "backer:save=0.1",
+      "P3": "trophy",
+      "P4": "trophy",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P1"
+     ],
+     "placings": [
+      "P1",
+      "P2",
+      "P5",
+      "P4",
+      "P3"
+     ]
+    },
+    {
+     "g": 1,
+     "side": "island",
+     "seats": {
+      "P1": "backer:save=0.1",
+      "P2": "trophy",
+      "P3": "trophy",
+      "P4": "trophy",
+      "P5": "backer"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P3",
+      "P2",
+      "P5",
+      "P1"
+     ]
+    },
+    {
+     "g": 2,
+     "side": "island",
+     "seats": {
+      "P1": "trophy",
+      "P2": "trophy",
+      "P3": "trophy",
+      "P4": "backer",
+      "P5": "backer:save=0.1"
+     },
+     "winners": [
+      "P2"
+     ],
+     "placings": [
+      "P2",
+      "P3",
+      "P5",
+      "P4",
+      "P1"
+     ]
+    },
+    {
+     "g": 3,
+     "side": "island",
+     "seats": {
+      "P1": "trophy",
+      "P2": "trophy",
+      "P3": "backer",
+      "P4": "backer:save=0.1",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P2"
+     ],
+     "placings": [
+      "P2",
+      "P3",
+      "P5",
+      "P1",
+      "P4"
+     ]
+    },
+    {
+     "g": 4,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy",
+      "P2": "backer",
+      "P3": "backer:save=0.1",
+      "P4": "trophy",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P1"
+     ],
+     "placings": [
+      "P1",
+      "P3",
+      "P2",
+      "P4",
+      "P5"
+     ]
+    },
+    {
+     "g": 5,
+     "side": "island",
+     "seats": {
+      "P1": "backer",
+      "P2": "backer:save=0.1",
+      "P3": "trophy",
+      "P4": "trophy",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P5",
+      "P2",
+      "P1",
+      "P3"
+     ]
+    },
+    {
+     "g": 6,
+     "side": "island",
+     "seats": {
+      "P1": "backer:save=0.1",
+      "P2": "trophy",
+      "P3": "trophy",
+      "P4": "trophy",
+      "P5": "backer"
+     },
+     "winners": [
+      "P3"
+     ],
+     "placings": [
+      "P3",
+      "P2",
+      "P1",
+      "P4",
+      "P5"
+     ]
+    },
+    {
+     "g": 7,
+     "side": "island",
+     "seats": {
+      "P1": "trophy",
+      "P2": "trophy",
+      "P3": "trophy",
+      "P4": "backer",
+      "P5": "backer:save=0.1"
+     },
+     "winners": [
+      "P3"
+     ],
+     "placings": [
+      "P3",
+      "P2",
+      "P5",
+      "P1",
+      "P4"
+     ]
+    },
+    {
+     "g": 8,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy",
+      "P2": "trophy",
+      "P3": "backer",
+      "P4": "backer:save=0.1",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P3"
+     ],
+     "placings": [
+      "P3",
+      "P4",
+      "P5",
+      "P2",
+      "P1"
+     ]
+    },
+    {
+     "g": 9,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy",
+      "P2": "backer",
+      "P3": "backer:save=0.1",
+      "P4": "trophy",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P2"
+     ],
+     "placings": [
+      "P2",
+      "P3",
+      "P5",
+      "P1",
+      "P4"
+     ]
+    },
+    {
+     "g": 10,
+     "side": "island",
+     "seats": {
+      "P1": "backer",
+      "P2": "backer:save=0.1",
+      "P3": "trophy",
+      "P4": "trophy",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P1"
+     ],
+     "placings": [
+      "P1",
+      "P5",
+      "P4",
+      "P3",
+      "P2"
+     ]
+    },
+    {
+     "g": 11,
+     "side": "invaders",
+     "seats": {
+      "P1": "backer:save=0.1",
+      "P2": "trophy",
+      "P3": "trophy",
+      "P4": "trophy",
+      "P5": "backer"
+     },
+     "winners": [
+      "P3"
+     ],
+     "placings": [
+      "P3",
+      "P5",
+      "P1",
+      "P4",
+      "P2"
+     ]
+    },
+    {
+     "g": 12,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy",
+      "P2": "trophy",
+      "P3": "trophy",
+      "P4": "backer",
+      "P5": "backer:save=0.1"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P2",
+      "P1",
+      "P3",
+      "P5"
+     ]
+    },
+    {
+     "g": 13,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy",
+      "P2": "trophy",
+      "P3": "backer",
+      "P4": "backer:save=0.1",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P3"
+     ],
+     "placings": [
+      "P3",
+      "P1",
+      "P4",
+      "P2",
+      "P5"
+     ]
+    },
+    {
+     "g": 14,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy",
+      "P2": "backer",
+      "P3": "backer:save=0.1",
+      "P4": "trophy",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P3"
+     ],
+     "placings": [
+      "P3",
+      "P1",
+      "P4",
+      "P5",
+      "P2"
+     ]
+    },
+    {
+     "g": 15,
+     "side": "invaders",
+     "seats": {
+      "P1": "backer",
+      "P2": "backer:save=0.1",
+      "P3": "trophy",
+      "P4": "trophy",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P2"
+     ],
+     "placings": [
+      "P2",
+      "P5",
+      "P1",
+      "P4",
+      "P3"
+     ]
+    },
+    {
+     "g": 16,
+     "side": "invaders",
+     "seats": {
+      "P1": "backer:save=0.1",
+      "P2": "trophy",
+      "P3": "trophy",
+      "P4": "trophy",
+      "P5": "backer"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P3",
+      "P2",
+      "P1",
+      "P5"
+     ]
+    },
+    {
+     "g": 17,
+     "side": "island",
+     "seats": {
+      "P1": "trophy",
+      "P2": "trophy",
+      "P3": "trophy",
+      "P4": "backer",
+      "P5": "backer:save=0.1"
+     },
+     "winners": [
+      "P1"
+     ],
+     "placings": [
+      "P1",
+      "P4",
+      "P5",
+      "P2",
+      "P3"
+     ]
+    },
+    {
+     "g": 18,
+     "side": "island",
+     "seats": {
+      "P1": "trophy",
+      "P2": "trophy",
+      "P3": "backer",
+      "P4": "backer:save=0.1",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P5",
+      "P1",
+      "P3",
+      "P2"
+     ]
+    },
+    {
+     "g": 19,
+     "side": "island",
+     "seats": {
+      "P1": "trophy",
+      "P2": "backer",
+      "P3": "backer:save=0.1",
+      "P4": "trophy",
+      "P5": "trophy"
+     },
+     "winners": [
+      "P1"
+     ],
+     "placings": [
+      "P1",
+      "P5",
+      "P2",
+      "P4",
+      "P3"
+     ]
+    }
+   ]
+  }
+ ],
+ "metrics": {
+  "games": 20,
+  "seats": 20,
+  "winA": 0.15,
+  "winB": 0.25,
+  "dWin": -0.1,
+  "seWin": 0.143,
+  "zWin": -0.698,
+  "gain": 0.5,
+  "seGain": 0.473,
+  "zGain": 1.057,
+  "invA": 10,
+  "invB": 4
+ },
+ "verdict": "inconclusive",
+ "minutes": null
+}

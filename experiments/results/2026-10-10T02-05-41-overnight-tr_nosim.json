@@ -1,0 +1,482 @@
+{
+ "id": "2026-10-10T02-05-41-overnight-tr_nosim",
+ "kind": "overnight",
+ "date": "2026-10-10T02:05:41.000Z",
+ "host": "overnight",
+ "node": "v24",
+ "code": {
+  "hash": "overnight",
+  "commit": "5ad8218..713182a"
+ },
+ "profile": "trophy",
+ "design": "group",
+ "params": {
+  "sim": {
+   "base": 1,
+   "value": 0
+  }
+ },
+ "table": "backer;backer;trophy;trophy;trophy",
+ "variant": "trophy:sim=0",
+ "hypothesis": "Sensitivity check: take the play-out search away from all three trophy seats (known to be worse as a single challenger, +25 points).",
+ "notes": "Shows how much a group test dilutes: the same search is worth +25 points as a single challenger over 200 games.",
+ "runs": [
+  {
+   "seed": 11,
+   "games": 20,
+   "base": ".tuning/d/base.jsonl (local)",
+   "metrics": {
+    "games": 20,
+    "seats": 60,
+    "winA": 0.167,
+    "winB": 0.217,
+    "dWin": -0.05,
+    "seWin": 0.056,
+    "zWin": -0.9,
+    "gain": -0.217,
+    "seGain": 0.175,
+    "zGain": -1.239,
+    "invA": 10,
+    "invB": 4
+   },
+   "records": [
+    {
+     "g": 0,
+     "side": "island",
+     "seats": {
+      "P1": "backer",
+      "P2": "backer",
+      "P3": "trophy:sim=0",
+      "P4": "trophy:sim=0",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P3",
+      "P1",
+      "P5",
+      "P2"
+     ]
+    },
+    {
+     "g": 1,
+     "side": "island",
+     "seats": {
+      "P1": "backer",
+      "P2": "trophy:sim=0",
+      "P3": "trophy:sim=0",
+      "P4": "trophy:sim=0",
+      "P5": "backer"
+     },
+     "winners": [
+      "P2"
+     ],
+     "placings": [
+      "P2",
+      "P4",
+      "P3",
+      "P1",
+      "P5"
+     ]
+    },
+    {
+     "g": 2,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "trophy:sim=0",
+      "P3": "trophy:sim=0",
+      "P4": "backer",
+      "P5": "backer"
+     },
+     "winners": [
+      "P2"
+     ],
+     "placings": [
+      "P2",
+      "P4",
+      "P5",
+      "P3",
+      "P1"
+     ]
+    },
+    {
+     "g": 3,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "trophy:sim=0",
+      "P3": "backer",
+      "P4": "backer",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P5"
+     ],
+     "placings": [
+      "P5",
+      "P1",
+      "P4",
+      "P2",
+      "P3"
+     ]
+    },
+    {
+     "g": 4,
+     "side": "island",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "backer",
+      "P3": "backer",
+      "P4": "trophy:sim=0",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P1",
+      "P3",
+      "P2",
+      "P5"
+     ]
+    },
+    {
+     "g": 5,
+     "side": "island",
+     "seats": {
+      "P1": "backer",
+      "P2": "backer",
+      "P3": "trophy:sim=0",
+      "P4": "trophy:sim=0",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P2"
+     ],
+     "placings": [
+      "P2",
+      "P3",
+      "P4",
+      "P5",
+      "P1"
+     ]
+    },
+    {
+     "g": 6,
+     "side": "invaders",
+     "seats": {
+      "P1": "backer",
+      "P2": "trophy:sim=0",
+      "P3": "trophy:sim=0",
+      "P4": "trophy:sim=0",
+      "P5": "backer"
+     },
+     "winners": [
+      "P1"
+     ],
+     "placings": [
+      "P1",
+      "P3",
+      "P4",
+      "P5",
+      "P2"
+     ]
+    },
+    {
+     "g": 7,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "trophy:sim=0",
+      "P3": "trophy:sim=0",
+      "P4": "backer",
+      "P5": "backer"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P3",
+      "P5",
+      "P1",
+      "P2"
+     ]
+    },
+    {
+     "g": 8,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "trophy:sim=0",
+      "P3": "backer",
+      "P4": "backer",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P1"
+     ],
+     "placings": [
+      "P1",
+      "P4",
+      "P3",
+      "P5",
+      "P2"
+     ]
+    },
+    {
+     "g": 9,
+     "side": "island",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "backer",
+      "P3": "backer",
+      "P4": "trophy:sim=0",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P2"
+     ],
+     "placings": [
+      "P2",
+      "P4",
+      "P3",
+      "P5",
+      "P1"
+     ]
+    },
+    {
+     "g": 10,
+     "side": "island",
+     "seats": {
+      "P1": "backer",
+      "P2": "backer",
+      "P3": "trophy:sim=0",
+      "P4": "trophy:sim=0",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P1"
+     ],
+     "placings": [
+      "P1",
+      "P3",
+      "P5",
+      "P4",
+      "P2"
+     ]
+    },
+    {
+     "g": 11,
+     "side": "island",
+     "seats": {
+      "P1": "backer",
+      "P2": "trophy:sim=0",
+      "P3": "trophy:sim=0",
+      "P4": "trophy:sim=0",
+      "P5": "backer"
+     },
+     "winners": [
+      "P3"
+     ],
+     "placings": [
+      "P3",
+      "P5",
+      "P2",
+      "P4",
+      "P1"
+     ]
+    },
+    {
+     "g": 12,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "trophy:sim=0",
+      "P3": "trophy:sim=0",
+      "P4": "backer",
+      "P5": "backer"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P1",
+      "P3",
+      "P5",
+      "P2"
+     ]
+    },
+    {
+     "g": 13,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "trophy:sim=0",
+      "P3": "backer",
+      "P4": "backer",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P3",
+      "P2",
+      "P1",
+      "P5"
+     ]
+    },
+    {
+     "g": 14,
+     "side": "island",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "backer",
+      "P3": "backer",
+      "P4": "trophy:sim=0",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P3",
+      "P1",
+      "P5",
+      "P2"
+     ]
+    },
+    {
+     "g": 15,
+     "side": "invaders",
+     "seats": {
+      "P1": "backer",
+      "P2": "backer",
+      "P3": "trophy:sim=0",
+      "P4": "trophy:sim=0",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P1"
+     ],
+     "placings": [
+      "P1",
+      "P3",
+      "P2",
+      "P4",
+      "P5"
+     ]
+    },
+    {
+     "g": 16,
+     "side": "island",
+     "seats": {
+      "P1": "backer",
+      "P2": "trophy:sim=0",
+      "P3": "trophy:sim=0",
+      "P4": "trophy:sim=0",
+      "P5": "backer"
+     },
+     "winners": [
+      "P5"
+     ],
+     "placings": [
+      "P5",
+      "P1",
+      "P4",
+      "P2",
+      "P3"
+     ]
+    },
+    {
+     "g": 17,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "trophy:sim=0",
+      "P3": "trophy:sim=0",
+      "P4": "backer",
+      "P5": "backer"
+     },
+     "winners": [
+      "P3"
+     ],
+     "placings": [
+      "P3",
+      "P5",
+      "P2",
+      "P1",
+      "P4"
+     ]
+    },
+    {
+     "g": 18,
+     "side": "invaders",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "trophy:sim=0",
+      "P3": "backer",
+      "P4": "backer",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P4"
+     ],
+     "placings": [
+      "P4",
+      "P1",
+      "P3",
+      "P5",
+      "P2"
+     ]
+    },
+    {
+     "g": 19,
+     "side": "island",
+     "seats": {
+      "P1": "trophy:sim=0",
+      "P2": "backer",
+      "P3": "backer",
+      "P4": "trophy:sim=0",
+      "P5": "trophy:sim=0"
+     },
+     "winners": [
+      "P5"
+     ],
+     "placings": [
+      "P5",
+      "P1",
+      "P2",
+      "P3",
+      "P4"
+     ]
+    }
+   ]
+  }
+ ],
+ "metrics": {
+  "games": 20,
+  "seats": 60,
+  "winA": 0.167,
+  "winB": 0.217,
+  "dWin": -0.05,
+  "seWin": 0.056,
+  "zWin": -0.9,
+  "gain": -0.217,
+  "seGain": 0.175,
+  "zGain": -1.239,
+  "invA": 10,
+  "invB": 4
+ },
+ "verdict": "inconclusive",
+ "minutes": null
+}
