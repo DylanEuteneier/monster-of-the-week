@@ -186,6 +186,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  *   to the goal value (which keeps the goal's own terms).
  * - w2, w3: the island margin's weights on the second and third weakest
  *   colours (default 0.35, 0.12; the weakest counts 1).
+ * - all: the counted island margin's weight on every trophy (default 0.02).
  * - soft: widen the spread of every win chance (the ending's, and each
  *   seat's within it) by this factor: the bots' forecasts are over-confident.
  * - keep, playouts: the play-out search's size (default SIM.keep, SIM.playouts);
@@ -193,7 +194,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - sets: for the island, value standing (and influence on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, deep?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, deep?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -258,10 +259,10 @@ export function winChances(state, pid, hidden = false, soft = 1, colours = ISLAN
 }
 /** @type {WeakMap<object, Map<string, ReturnType<typeof chancesAfter>>>} */
 const CHANCES = new WeakMap();
-/** The island margin's weights on the weakest three colours (TS2, WT1: the weakest decides, then the next). */
-const ISLAND = [1, 0.35, 0.12];
+/** The island margin's weights on the weakest three colours (TS2, WT1: the weakest decides, then the next), and on every trophy in the counted margin. */
+const ISLAND = [1, 0.35, 0.12, 0.02];
 /** @param {Persona} persona */
-const coloursOf = (persona) => (persona.w2 === undefined && persona.w3 === undefined ? ISLAND : [1, persona.w2 ?? ISLAND[1], persona.w3 ?? ISLAND[2]]);
+const coloursOf = (persona) => (persona.w2 === undefined && persona.w3 === undefined && persona.all === undefined ? ISLAND : [1, persona.w2 ?? ISLAND[1], persona.w3 ?? ISLAND[2], persona.all ?? ISLAND[3]]);
 
 /** winChances, uncached. @param {GameState} state @param {string} pid @param {boolean} hidden @param {number} soft @param {number[]} colours */
 function chancesNow(state, pid, hidden, soft, colours) {
@@ -298,7 +299,7 @@ export function features(state, pid) {
   }).map(([k, v]) => [k, r3(v)]));
 }
 
-/** winChances on a board whose fights are already projected. @param {GameState} s @param {string} pid @param {number} [soft]  persona soft: widens every chance's spread @param {number[]} [colours]  the island margin's weights on the weakest, second and third colours */
+/** winChances on a board whose fights are already projected. @param {GameState} s @param {string} pid @param {number} [soft]  persona soft: widens every chance's spread @param {number[]} [colours]  the island margin's weights on the weakest, second and third colours, and on every trophy */
 function chancesAfter(s, pid, soft = 1, colours = ISLAND) {
   const roundsLeft = Math.max(0, Number(s.options.rounds) - s.round);
   const threshold = Number(s.options.threshold);
@@ -327,7 +328,7 @@ function chancesAfter(s, pid, soft = 1, colours = ISLAND) {
   for (const id of s.seating) {
     const t = s.factions.map((f) => s.players[id].trophies[f]).sort((a, b) => a - b);
     islOf[id] = colours[0] * t[0] + colours[1] * t[1] + colours[2] * t[2];
-    allOf[id] = islOf[id] + 0.02 * s.factions.reduce((n, f) => n + s.players[id].trophies[f], 0);
+    allOf[id] = islOf[id] + (colours[3] ?? 0.02) * s.factions.reduce((n, f) => n + s.players[id].trophies[f], 0);
   }
   const marginIsland = islOf[pid] - Math.max(...others.map((o) => islOf[o]));
   const linearIsland = allOf[pid] - Math.max(...others.map((o) => allOf[o])); // the island margin, counted directly
