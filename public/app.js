@@ -429,7 +429,7 @@ function factionTable(lit) {
     </div>`;
   });
   return `<div class="faction-table">
-    <div class="faction-row faction-head small muted"><span>Faction</span><span>Supply</span><span>Sway (players' standing)</span></div>
+    <div class="faction-row faction-head small muted"><span>Faction</span><span>Supply</span><span>Sway</span></div>
     ${rows.join('')}</div>`;
 }
 
@@ -578,7 +578,7 @@ function renderMine() {
   const me = view.players[view.you];
   const standing = view.factions.filter((f) => (me.standing[f] ?? 0) > 0).sort((a, b) => me.standing[b] - me.standing[a])
     .map((f) => `<span class="side-row">${tokenHtml(f, 1)}<b>${me.standing[f]}</b><span class="side-name">${esc(fname(f))}</span></span>`).join('');
-  setHtml('mine', `${chip(cubeHtml(colourOf(view.you), 9), me.supply, `Supply: ${me.supply} sway cubes`)}${chip('<span class="bluff"></span>', me.bluffs, `Bluff tokens: ${me.bluffs}`)}`);
+  setHtml('mine', `${chip(cubeHtml(colourOf(view.you), 9), me.supply, `Supply: ${me.supply} sway`)}${chip('<span class="bluff"></span>', me.bluffs, `Bluff tokens: ${me.bluffs}`)}`);
   setHtml('sway', `<span class="side-head" data-action="toggle-side" data-side="sway">Sway</span>${standing || '<span class="side-row is-zero"><span class="muted">—</span></span>'}`);
   $('sway').classList.toggle('is-open', ui.sideOpen === 'sway');
 }

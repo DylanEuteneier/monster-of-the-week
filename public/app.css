@@ -803,19 +803,34 @@ button.card-opt:hover { background: #f6cca1; }
 .tut-side > :nth-child(4) { rotate: 3deg; translate: 8px -6px; }
 .tut-side > :nth-child(5) { rotate: -4deg; translate: -6px -2px; }
 .tut-cast-item.is-absent { opacity: 0.4; }
-.tut-cast-item.is-gone { visibility: hidden; }
-.tut-allied { display: flex; align-items: center; }
-.tut-allied .tut-cast-item { width: 112px; }
 .tut-cast-item .small { line-height: 1.2; }
 .tut-cast-item.is-waiting { display: none; }
 /* The group that crosses over walks from the slayers' side to stand with its faction. */
-.tut-defect { animation: tut-defect 1100ms cubic-bezier(.5,0,.3,1) 400ms both; }
-.tut-defect b { color: var(--color-accent); }
 /* New pieces crash in, one after another, from a little way off; the rows open as they land. */
 .tut-cast-item.is-new { animation: tut-open 560ms cubic-bezier(.2,1.4,.4,1) both; animation-delay: calc((var(--i) - 1) * 240ms); }
 @keyframes tut-open { from { max-height: 0; padding-block: 0; opacity: 0; transform: translateY(-30px) scale(1.4); } 50% { opacity: 1; } to { max-height: 200px; opacity: 1; transform: none; } }
-@keyframes tut-defect { from { transform: translateX(-260px); } to { transform: none; } }
-@media (prefers-reduced-motion: reduce) { .tut-cast-item.is-new, .tut-defect { animation: none; } }
+/* The monsters are at each other's throats: once in, they jostle (a nudge and a tilt, out of step). */
+.tut-cast-item.is-brawling > :first-child { animation: tut-jostle 900ms ease-in-out infinite alternate; animation-delay: calc(1600ms + var(--i) * 170ms); }
+.tut-side > :nth-child(odd) .token, .tut-side > .is-brawling:nth-child(odd) > :first-child { animation-direction: alternate-reverse; }
+@keyframes tut-jostle { 0% { transform: translateX(-3px) rotate(-6deg); } 50% { transform: translateX(2px) rotate(3deg); } 100% { transform: translateX(4px) rotate(7deg); } }
+/* The centre mark: vs, or (once a group falls for a monster) a heart. */
+.tut-mid { display: grid; place-items: center; }
+.tut-mid > * { grid-area: 1 / 1; }
+.tut-heart { display: inline-flex; visibility: hidden; }
+/* Switching sides: everyone but the pair leaves the way they came (outer ones first), then vs turns to a heart. */
+.leave-1 { --o: 1; } .leave-2 { --o: 2; } .leave-3 { --o: 3; } .leave-4 { --o: 4; }
+.tut-cast-item.is-leaving { animation: tut-close 480ms cubic-bezier(.6,0,.8,.4) both; animation-delay: calc(500ms + var(--o) * 200ms); }
+@keyframes tut-close { from { max-height: 200px; opacity: 1; transform: none; } 50% { opacity: 1; } to { max-height: 0; padding-block: 0; opacity: 0; transform: translateY(-30px) scale(1.4); } }
+.is-smitten .tut-vs { animation: tut-fade-out 250ms ease 1500ms both; }
+.is-smitten .tut-heart { visibility: visible; animation: tut-heart 520ms cubic-bezier(.2,1.8,.4,1) 1650ms both; }
+@keyframes tut-fade-out { to { opacity: 0; } }
+/* ...and the pair draw together as the heart appears. */
+.is-smitten .tut-side:first-child > :nth-child(3) { animation: tut-closer-l 600ms cubic-bezier(.3,1.3,.5,1) 1650ms both; }
+.is-smitten .tut-side:last-child > :nth-child(3) { animation: tut-closer-r 600ms cubic-bezier(.3,1.3,.5,1) 1650ms both; }
+@keyframes tut-closer-l { to { transform: translateX(36px); } }
+@keyframes tut-closer-r { to { transform: translateX(-36px); } }
+@keyframes tut-heart { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1.3); } }
+@media (prefers-reduced-motion: reduce) { .is-smitten .tut-side > :nth-child(3), .tut-cast-item.is-new, .tut-heart, .tut-vs, .tut-cast-item.is-brawling > :first-child { animation: none; } .tut-cast-item.is-leaving { animation: none; display: none; } .is-smitten .tut-vs { visibility: hidden; } }
 .tut-trophies .is-low b { color: var(--color-accent); }
 .tut-none { opacity: 0.3; }
 .tut-phases { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
