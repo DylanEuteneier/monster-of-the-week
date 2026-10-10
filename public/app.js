@@ -447,7 +447,7 @@ function presenceGauge(total, threshold, rounds) {
       <span class="gauge-track"><span class="gauge-fill"></span><span class="gauge-mark"><b>${threshold}</b></span></span>
       <span class="gauge-value"><b>${total}</b></span>
     </div>
-    <p class="small muted gauge-note">After round ${rounds}: more than ${threshold} left, the invaders win; ${threshold} or fewer, the slayers win.</p>`;
+    <p class="small muted gauge-note">After round ${rounds}: more than ${threshold} left, invader influence decides the winner; ${threshold} or fewer, complete trophy sets decide it.</p>`;
 }
 
 function renderBoard() {
