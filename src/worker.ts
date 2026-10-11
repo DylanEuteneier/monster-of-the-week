@@ -327,7 +327,13 @@ export class Game extends DurableObject<Env> {
     if (message.type === 'hint') {
       // Hints everywhere but multiplayer games (designer, 2026-10-11): one human seat only.
       if (this.game.seating.filter((id) => !this.bots?.includes(id)).length > 1) return this.send(ws, { type: 'error', reason: 'hints are off in multiplayer games' });
-      return this.send(ws, { type: 'hint', hint: suggest(this.game, playerId, (this.hintMemory[playerId] ??= {})) });
+      // The move is the strongest bot's (designer, 2026-10-11: full search, seeing what any bot sees, set up as this
+      // table's bots are); hints.js explains it without rivals' face-down tokens, so the words reveal nothing.
+      const memory = (this.hintMemory[playerId] ??= { jitter: 0 }); // no random lean in a hint
+      const table = Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'trophy']));
+      let move: Move | null = null;
+      try { move = this.game.phase === 'ended' ? null : botMove(this.game, { playerId, rng: Math.random, profile: 'trophy', memory, table, memories: { ...this.botMemory, [playerId]: memory } }); } catch (error) { console.error('hint failed:', error); }
+      return this.send(ws, { type: 'hint', hint: suggest(this.game, playerId, memory, move ?? undefined) });
     }
     return this.handleMove(ws, { playerId, move: message.move });
   }

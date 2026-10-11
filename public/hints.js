@@ -4,8 +4,11 @@
  * reasons and a refresher of the rule it uses. Everywhere but multiplayer
  * games; the tutorial's first round suggests its own scripted moves.
  *
- * The move is the bot's (bots.js rankForHint: its plan, every move valued one
- * move ahead). The words are this file's: each line reports something the
+ * The move is the strongest bot's (the caller passes it: the worker runs the
+ * full bot as this table's bots are set up, designer 2026-10-11; the tutorial
+ * passes its scripted move), else the best one move ahead (bots.js
+ * rankForHint, which also ranks the other options and holds the plan). The
+ * words are this file's: each line reports something the
  * bot's value really counts (trophies from this round's fights, sway with a
  * faction, the monster count against the mark), measured before and after the
  * move, so a hint never gives a reason the bot didn't have. Rivals' face-down
@@ -21,7 +24,7 @@ import { rankForHint, afterMove } from './bots.js';
 /** @typedef {import('./bots.js').BotMemory} BotMemory */
 /**
  * @typedef {{ title: string, why: string[] }} Option
- * @typedef {{ key: string, plan: string, title: string, why: string[], rule: string, others: Option[], move: Move | null, card?: string, keep?: string[], tiles: string[] }} Hint
+ * @typedef {{ key: string, plan: string, short: string, title: string, why: string[], rule: string, others: Option[], move: Move | null, card?: string, keep?: string[], tiles: string[] }} Hint  short: the move in a few words (the concise hint); title: in full
  */
 
 const F = (/** @type {string} */ f) => factionById(f).name;
@@ -174,6 +177,16 @@ function titleOf(s, pid, move) {
   return `${c.name}${how}: ${describeTarget(c.id, move.target ?? null).replace(/ \((faction|location) target\)/, '')}`;
 }
 
+/** A move in a few words, for the concise hint. @param {Move} move */
+function shortOf(move) {
+  if (move.type === 'pass') return 'Pass';
+  if (move.type === 'grow') return `Grow at ${L(move.location)}`;
+  if (move.type !== 'play') return '';
+  const c = cardById(move.card);
+  if (move.use === 'sway') return `Spend ${c.name} for sway`;
+  return `Play ${c.name}${move.target?.mode === 'faction' ? ' · FAC' : move.target?.mode === 'location' ? ' · LOC' : ''}`;
+}
+
 /** Every location a move names, to light on the board. @param {Move} move */
 function tilesOf(move) {
   if (move.type === 'grow') return [move.location];
@@ -191,7 +204,7 @@ export function explain(state, pid, move, goal) {
   const why = reasons(state, b, pid, goal).slice(0, 2);
   if (move.type === 'pass' && !why.length) why.push('Nothing in your hand helps your plan right now. Passing keeps your cards, and you see the others\' moves before you commit.');
   if (!why.length) why.push('Little changes now: it sets up later plays.');
-  return { key: hintKey(state, pid), plan: planLine(state, pid, goal), title: titleOf(state, pid, move), why, rule: ruleFor(state, move), others: [], move, card: move.type === 'play' ? move.card : undefined, tiles: tilesOf(move) };
+  return { key: hintKey(state, pid), plan: planLine(state, pid, goal), short: shortOf(move), title: titleOf(state, pid, move), why, rule: ruleFor(state, move), others: [], move, card: move.type === 'play' ? move.card : undefined, tiles: tilesOf(move) };
 }
 
 /**
@@ -213,8 +226,10 @@ export function suggest(state, pid, memory, given = undefined) {
     solo.phase = 'play'; solo.turn = solo.seating.indexOf(pid); solo.opened = true; solo.pending = null; solo.players[pid].hand = [fresh];
     const best = rankForHint(solo, pid, { ...memory }).moves.find((m) => m.move.type === 'play');
     const how = best ? (best.move.type === 'play' && best.move.use === 'sway' ? 'spent for sway' : titleOf(solo, pid, best.move).replace(/^.*?(\((LOC|FAC)\))?: /, (_, m) => (m ? `${m} ` : ''))) : '';
-    const why = best ? [`${cardById(fresh).name}, played now: ${how}. ${reasons(solo, best.s, pid, r.goal)[0] ?? ''}`.trim()] : [];
-    return { key: hintKey(state, pid), plan: planLine(state, pid, r.goal), title: `Keep ${keep.map((c) => cardById(c).name).join(', ')}${p.kept.some((c) => !keep.includes(c)) ? ` (put back ${p.kept.filter((c) => !keep.includes(c)).map((c) => cardById(c).name).join(', ')})` : ''}`, why, rule: `Keep ${n} from your picks so far and this batch; the rest pass left. Your picks rejoin every new batch, so you can swap one back.`, others: [], move: { type: 'pick', keep }, keep, tiles: [] };
+    const first = best ? reasons(solo, best.s, pid, r.goal)[0] : undefined;
+    const why = best ? [`${cardById(fresh).name}: ${first ? first.charAt(0).toLowerCase() + first.slice(1) : 'little changes now.'}`, `Played now: ${how}.`] : [];
+    const short = `Keep ${keep.filter((c) => !p.kept.includes(c)).map((c) => cardById(c).name).join(', ')}${p.kept.some((c) => !keep.includes(c)) ? `, put back ${p.kept.filter((c) => !keep.includes(c)).map((c) => cardById(c).name).join(', ')}` : ''}`;
+    return { key: hintKey(state, pid), plan: planLine(state, pid, r.goal), short, title: `Keep ${keep.map((c) => cardById(c).name).join(', ')}${p.kept.some((c) => !keep.includes(c)) ? ` (put back ${p.kept.filter((c) => !keep.includes(c)).map((c) => cardById(c).name).join(', ')})` : ''}`, why, rule: `Keep ${n} from your picks so far and this batch; the rest pass left. Your picks rejoin every new batch, so you can swap one back.`, others: [], move: { type: 'pick', keep }, keep, tiles: [] };
   }
   if (!r.moves.length && !given) return null;
   const top = given ?? r.moves[0].move;

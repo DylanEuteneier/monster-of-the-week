@@ -946,7 +946,9 @@ function resolveSteps(pid, move, style) {
   fights.forEach((loc, i) => {
     const a = chain[i], b = chain[i + 1];
     if (teach && i > 0) return;
-    if (teach) steps.push(() => present(a, { instant: true }).then(() => ({ type: 'spot', target: SEL.hex(loc), title: `Fight at ${L(loc)}`, html: `${before(a, loc)}${recall('Bigger group wins; the loser loses all, the winner half that; the most sway takes the bigger pile.')}` })));
+    if (teach) steps.push(() => present(a, { instant: true }).then(() => ({ type: 'spot', target: SEL.hex(loc), title: `Fight at ${L(loc)}`, html: `${before(a, loc)}${recall('The most sway takes the bigger pile, second most the smaller.')}` })));
+    // Counting the dead (designer, 2026-10-11), with this fight's real numbers.
+    if (teach) steps.push(() => ({ type: 'spot', target: SEL.hex(loc), title: 'Counting the dead', html: countDead(a, b, loc) }));
     steps.push(() => present(a, { instant: true }).then(() => lead({ type: 'spot', target: SEL.hex(loc), title: `Fight at ${L(loc)}`, html: after(a, b, loc), dwell: 2600 }, () => present(b))));
   });
   if (teach && fights.length > 1) {
@@ -976,6 +978,28 @@ function resolveSteps(pid, move, style) {
     return present(s).then(() => null);
   });
   return steps;
+}
+
+/**
+ * The first live fight's losses, counted out: the chapter 2 rule with this
+ * fight's numbers (a face-down token flips first, so its counts are the ones
+ * that fight). @param {GameState} a @param {GameState} b @param {string} loc
+ */
+function countDead(a, b, loc) {
+  const sides = Object.entries(a.board[loc].tokens).filter(([, n]) => n > 0).map(([f, n]) => ({ f, n, lost: n - (b.board[loc].tokens[f] ?? 0) }));
+  const flip = a.board[loc].token ? '<p class="small">The face-down token flips first, so the count is after it.</p>' : '';
+  if (sides.length === 2 && !a.board[loc].token) {
+    const [x, y] = sides;
+    if (x.n === y.n) {
+      const home = sides.find((t) => factionById(t.f).archetype === locationById(loc).archetype);
+      if (b.board[loc].scorched || !home) return `${eq(tokens(x.f, x.n), op('vs'), tokens(y.f, y.n), op('→'), 'level')}<p>A true tie on ground neither calls home: both groups wiped out, nobody collects, and ${L(loc)} is gone for good.</p>`;
+      const away = /** @type {typeof home} */ (sides.find((t) => t !== home));
+      return `${eq(tokens(x.f, x.n), op('vs'), tokens(y.f, y.n), op('→'), 'level')}<p>Level, but ${L(loc)} is ${suitIcon(locationById(loc).archetype)} ground, the ${F(home.f)}' own: they win, as in any fight.</p>${eq(`the ${F(away.f)} lose all`, op('='), tokens(away.f, away.n))}${eq('the winners lose half that, rounded down, at least 1', op('='), tokens(home.f, Math.max(1, Math.floor(away.n / 2))))}`;
+    }
+    const [win, lose] = x.n > y.n ? [x, y] : [y, x];
+    return fightMath(win.f, win.n, lose.f, lose.n);
+  }
+  return `${flip}${sides.map((s) => eq(`the ${F(s.f)} lose`, op('='), s.lost ? tokens(s.f, s.lost) : '0')).join('')}${recall('Bigger group wins; the loser loses all, the winner half that, rounded down, at least 1.')}`;
 }
 
 /** A fight before it happens. @param {GameState} s @param {string} loc */

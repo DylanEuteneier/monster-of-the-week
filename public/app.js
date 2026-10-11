@@ -767,7 +767,7 @@ function hintsAvailable() {
   const view = ui.view;
   if (!view) return false;
   if (ui.tutorial) return true;
-  return !ui.hotseat.enabled && view.seating.filter((id) => !ui.bots.includes(id)).length === 1;
+  return view.seating.filter((id) => !ui.bots.includes(id)).length === 1; // hotseat too, when it's one human against bots
 }
 
 /** Whether this seat has a decision to make now. @param {PlayerView} view */
@@ -797,24 +797,78 @@ function requestHint() {
 /** Turn hints on or off (the Hints button, or the tutorial). @param {boolean} on */
 function setHints(on) {
   ui.hints.on = on;
-  $('hint-overlay').hidden = !on;
   if (on) requestHint();
-  else { ui.hints.hint = null; markHint(); }
+  else ui.hints.hint = null;
+  renderHint();
 }
 
+/**
+ * The hint panel (designer, 2026-10-11): concise (the move in a few words and
+ * its main reason), opening on hover or tap to the full move, every reason,
+ * the plan, the rule it uses and other options. Shown only while there's a
+ * hint (or one is coming); placed beside what it suggests (placeHint).
+ */
 function renderHint() {
   const h = ui.hints.hint;
   const view = ui.view;
-  const waiting = view && myDecision(view) && ui.hints.got < ui.hints.asked;
+  const waiting = !!view && myDecision(view) && ui.hints.got < ui.hints.asked;
+  const panel = $('hint-overlay');
+  panel.hidden = !ui.hints.on || (!h && !waiting);
+  $('hint-button').classList.toggle('is-on', ui.hints.on);
+  if (panel.hidden) return markHint();
+  panel.classList.remove('is-open');
   $('hint').innerHTML = !h
-    ? `<p class="muted small">${waiting ? 'Thinking…' : 'A suggestion appears here when it\'s your move.'}</p>`
-    : `<p class="hint-plan"><span class="field-label">Plan</span> ${esc(h.plan)}</p>
-      <h3 class="hint-title">${esc(h.title)}</h3>
-      <ul class="hint-why">${h.why.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>
-      <p class="hint-rule">↩ ${esc(h.rule)}</p>
-      ${h.others.length ? `<details class="hint-others"><summary>Other options</summary>${h.others.map((o) => `<p><b>${esc(o.title)}</b><br><span class="small muted">${esc(o.why.join(' '))}</span></p>`).join('')}</details>` : ''}
-      <p class="small muted">A suggestion only: any legal move is fine.</p>`;
+    ? '<p class="muted small">Thinking…</p>'
+    : `<h3 class="hint-title">${esc(h.short ?? h.title)}</h3>
+      <p class="hint-gist">${esc(h.why[0] ?? '')}</p>
+      <div class="hint-more"><div class="hint-more-inner">
+        ${h.short && h.title !== h.short ? `<p class="hint-full">${esc(h.title)}</p>` : ''}
+        ${h.why.length > 1 ? `<ul class="hint-why">${h.why.slice(1).map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+        <p class="hint-plan"><span class="field-label">Plan</span> ${esc(h.plan)}</p>
+        <p class="hint-rule">↩ ${esc(h.rule)}</p>
+        ${h.others.length ? `<div class="hint-others"><span class="field-label">Other options</span>${h.others.map((o) => `<p><b>${esc(o.title)}</b><br><span class="small muted">${esc(o.why.join(' '))}</span></p>`).join('')}</div>` : ''}
+        <p class="small muted">A suggestion only: any legal move is fine.</p>
+      </div></div>`;
   markHint();
+  placeHint(true);
+}
+
+/**
+ * Put the hint panel beside what it suggests, as the tutorial's tooltip sits
+ * beside what it points at: the move's locations, else the suggested card,
+ * covering as little of those and of the hand as it can. In the lower half
+ * it hangs from its bottom edge, so opening grows it upward. Phones: a sheet
+ * placed by its class. @param {boolean} [fresh] a new hint: free to move
+ */
+function placeHint(fresh = false) {
+  const panel = $('hint-overlay');
+  const h = ui.hints.hint;
+  if (panel.hidden || !h || window.matchMedia('(max-width: 600px), (hover: none) and (pointer: coarse)').matches) { panel.style.left = panel.style.top = panel.style.bottom = ''; return; }
+  const vw = window.innerWidth, vh = window.innerHeight, gap = 12, m = 12;
+  const rect = (/** @type {Element} */ x) => x.getBoundingClientRect();
+  const tiles = h.tiles.map((l) => document.querySelector(`#board [data-tile="${CSS.escape(l)}"] .hex`)).filter((x) => !!x).map((x) => rect(/** @type {Element} */ (x)));
+  const cards = [...document.querySelectorAll('#hand .card.is-suggested')].map(rect);
+  const hand = [...document.querySelectorAll('#hand .card, #dock')].map(rect);
+  const anchors = (tiles.length ? tiles : cards).filter((r) => r.bottom > 0 && r.top < vh);
+  const avoid = [...tiles, ...cards, ...hand];
+  const pw = panel.offsetWidth, ph = panel.offsetHeight;
+  /** @type {number[][]} */
+  const spots = [];
+  if (anchors.length) {
+    const b = { left: Math.min(...anchors.map((r) => r.left)), top: Math.min(...anchors.map((r) => r.top)), right: Math.max(...anchors.map((r) => r.right)), bottom: Math.max(...anchors.map((r) => r.bottom)) };
+    const cx = (b.left + b.right) / 2 - pw / 2, cy = (b.top + b.bottom) / 2 - ph / 2;
+    spots.push([b.right + gap, cy], [b.left - gap - pw, cy], [cx, b.top - gap - ph], [cx, b.bottom + gap]);
+  }
+  spots.push([vw - pw - m, 56], [m, 56]);
+  const fit = spots.map(([x, y]) => [Math.max(m, Math.min(vw - pw - m, x)), Math.max(m, Math.min(vh - ph - m, y))]);
+  const covered = (/** @type {number} */ x, /** @type {number} */ y) => avoid.reduce((n, r) => n + Math.max(0, Math.min(x + pw, r.right) - Math.max(x, r.left)) * Math.max(0, Math.min(y + ph, r.bottom) - Math.max(y, r.top)), 0);
+  let best = fit[0], least = Infinity;
+  for (const [x, y] of fit) { const c = covered(x, y); if (c < least - 1) { least = c; best = [x, y]; } }
+  if (!fresh && panel.dataset.placed) return; // stays put while you read it (and while it opens)
+  panel.dataset.placed = '1';
+  panel.style.left = `${Math.round(best[0])}px`;
+  if (best[1] + ph / 2 > vh / 2) { panel.style.top = ''; panel.style.bottom = `${Math.round(vh - best[1] - ph)}px`; }
+  else { panel.style.bottom = ''; panel.style.top = `${Math.round(best[1])}px`; }
 }
 
 /** Outline the suggested card(s) and light the locations the move names. */
@@ -1017,7 +1071,8 @@ function onClick(event) {
       if (other) other.hidden = true;
     }
     panel.hidden = !opening;
-    if (target.dataset.target === 'hint-overlay' || ui.hints.on) setHints(target.dataset.target === 'hint-overlay' && opening);
+    if (target.dataset.target === 'hint-overlay') setHints(!ui.hints.on);
+    else if (ui.hints.on) $('hint-overlay').hidden = true; // out of the way of the log or table talk until the next hint
     if (opening && target.dataset.target === 'chat-overlay') {
       ui.unread = 0;
       renderUnread();
@@ -1290,6 +1345,11 @@ const tableHooks = {
 
 function main() {
   watchHand();
+  $('hint-overlay').addEventListener('click', (event) => { if (!(event.target instanceof HTMLElement && event.target.closest('button'))) $('hint-overlay').classList.toggle('is-open'); });
+  let hintQueued = false;
+  const replace = () => { if (hintQueued) return; hintQueued = true; requestAnimationFrame(() => { hintQueued = false; placeHint(true); }); };
+  globalThis.addEventListener?.('resize', replace);
+  globalThis.addEventListener?.('scroll', replace, { passive: true });
   document.addEventListener('click', onClick);
   document.addEventListener('pointerover', onPreview);
   document.addEventListener('click', onCardClick);

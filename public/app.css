@@ -16,6 +16,8 @@
         .dock          the bar along the bottom                                 z: --z-dock
         .side-stack    tabs rising from the bar's two ends                      z: --z-side
         .overlay       the log and table talk, top right                        z: --z-overlay
+        .hint          the hint panel, beside what it suggests (left/top or
+                       bottom set by app.js placeHint; top right by default)  z: --z-overlay
         .overlay-buttons  their buttons, top right                              z: --z-overlay-buttons
         .toast         messages, centred just above the resting hand            z: --z-toast
         .flight-layer  pieces flying between places (motion.js)                 z: --z-flight
@@ -713,18 +715,27 @@ button.card-opt:hover { background: #f6cca1; }
 --------------------------------------------------------------------------- */
 .overlay-buttons { position: fixed; top: 10px; right: var(--space-4); z-index: var(--z-overlay-buttons); display: flex; gap: var(--space-2); }
 .overlay { position: fixed; top: 56px; right: var(--space-4); z-index: var(--z-overlay); width: min(380px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
-/* Hints (app.js renderHint): the plan, the suggestion, its reasons and the rule it uses; the suggested card outlined
-   in gold, the move's locations in their hover light. */
-.hint { display: flex; flex-direction: column; gap: var(--space-2); font-size: 13px; }
-.hint h2, .hint .hint-title { margin: 0; }
-.hint-title { font-size: 14px; color: var(--color-accent); }
+/* Hints (app.js renderHint, placeHint): concise (the move and its main reason), opening on hover, focus or tap to
+   the rest; it glides to sit beside what it suggests. The suggested card is outlined in gold, the move's locations
+   lit in their hover light, and the suggested card wears a cyan HINT tab (not the gold of a ticked or chosen card). */
+.hint { position: fixed; top: 56px; right: var(--space-4); z-index: var(--z-overlay); width: min(320px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: var(--space-1); font-size: 13px; cursor: pointer; transition: left 220ms ease, top 220ms ease, bottom 220ms ease; }
+.hint[style*="left"] { right: auto; }
+.hint[style*="bottom"] { top: auto; }
+.hint h2 { margin: 0; font-size: 11px; color: var(--color-muted); }
+.hint-title { margin: 0; font-size: 14px; color: var(--color-accent); }
+.hint-gist { margin: 0; }
+.hint-more { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease; }
+.hint:hover .hint-more, .hint:focus-within .hint-more, .hint.is-open .hint-more { grid-template-rows: 1fr; }
+.hint-more-inner { overflow: hidden; display: flex; flex-direction: column; gap: var(--space-2); }
+.hint-more-inner > :first-child { margin-top: var(--space-2); }
+.hint-full { margin: 0; color: var(--color-muted); }
 .hint-plan { margin: 0; color: var(--color-muted); }
-.hint-plan .field-label { margin-right: var(--space-1); }
+.hint-plan .field-label, .hint-others .field-label { margin-right: var(--space-1); }
 .hint-why { margin: 0; padding-left: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); }
 .hint-rule { margin: 0; padding: var(--space-1) var(--space-2); background: var(--color-panel-2); border-left: var(--line) solid var(--color-accent); }
-.hint-others summary { cursor: pointer; color: var(--color-link); }
 .hint-others p { margin: var(--space-1) 0 0; }
-.hand .card.is-suggested { outline: var(--line) solid var(--color-accent); outline-offset: 2px; }
+#hint-button.is-on { border-color: var(--color-accent); color: var(--color-accent); }
+.hand .card.is-suggested::before { content: "HINT"; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); padding: 1px var(--space-2); font-family: var(--font-display); font-size: 11px; color: var(--ink); background: var(--color-link); border: var(--border); pointer-events: none; }
 .overlay-close { position: absolute; top: var(--space-2); right: var(--space-2); padding: 0 var(--space-2); }
 .log-round { display: flex; flex-direction: column; gap: 2px; font-size: 12px; padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-cell); }
 .chat-lines { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow-y: auto; font-size: 12px; }
@@ -935,6 +946,7 @@ button.card-opt:hover { background: #f6cca1; }
    scroll sideways in place (catalogue 5).
 =========================================================================== */
 @media (max-width: 600px), (hover: none) and (pointer: coarse) {
+  .hint { top: auto; bottom: var(--space-2); left: var(--space-4); right: var(--space-4); width: auto; }
   body { min-width: 0; }
   .toast { bottom: var(--space-6); }
 
