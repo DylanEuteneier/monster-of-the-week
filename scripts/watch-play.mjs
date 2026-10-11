@@ -99,9 +99,9 @@ for (;;) {
   if (sig !== lastSig) { lastSig = sig; lastChange = Date.now(); }
   const story = s.guide || s.frame || s.tip;
   if (story && story !== said) { said = story; console.log(`· ${story.slice(0, 160)}`); if (/plays|spends|fights/i.test(story)) await shot('story'); }
-  const r = Number(/Round (\d+)/.exec(s.phase)?.[1] ?? 0);
+  const r = Number(/Round (\d+)/i.exec(s.phase)?.[1] ?? 0);
   if (r !== round) { round = r; console.log(`ROUND ${r}`); if (r > ROUNDS) finish(0, `played ${ROUNDS} round(s)`); }
-  if (/Game over/.test(s.phase) || /That was a round/.test(s.tip)) finish(0, s.tip || 'game over');
+  if (/Game over/i.test(s.phase) || /That was a round/.test(s.tip)) finish(0, s.tip || 'game over');
   if (Date.now() - lastChange > IDLE) {
     await shot('stalled');
     console.log(JSON.stringify(s, null, 1));

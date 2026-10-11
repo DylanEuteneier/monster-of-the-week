@@ -295,6 +295,7 @@ function showState(view, online) {
   const phaseKey = `${view.round}:${view.phase}`;
   if (phaseKey !== ui.phaseKey) resetDrafts(phaseKey);
   render();
+  if (myDecision(view)) ownScroll = false; // your move: the guide may scroll again next time
   followTheAction(view);
   autoPass(view);
   requestHint();
@@ -905,9 +906,21 @@ function unlight() { for (const x of document.querySelectorAll('.is-guided')) x.
 const tileOf = (/** @type {string} */ l) => document.querySelector(`#board [data-tile="${CSS.escape(l)}"]`);
 const hexOf = (/** @type {string} */ l) => tileOf(l)?.querySelector('.hex');
 
+/**
+ * You took the scroll yourself while other seats' turns were being told
+ * (designer, 2026-10-11): the guide leaves the page where you put it until
+ * your next move. Real input only (wheel, touch, scroll keys); the guide's own
+ * scrolling doesn't count.
+ */
+let ownScroll = false;
+const tookScroll = () => { if (animating) ownScroll = true; };
+globalThis.addEventListener?.('wheel', tookScroll, { passive: true });
+globalThis.addEventListener?.('touchmove', tookScroll, { passive: true });
+globalThis.addEventListener?.('keydown', (/** @type {KeyboardEvent} */ e) => { if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) tookScroll(); });
+
 /** Bring an element into view if it's off screen (desktop sections never scroll on their own). @param {Element | null | undefined} el */
 function reveal(el) {
-  if (!el) return Promise.resolve();
+  if (!el || ownScroll) return Promise.resolve();
   const r = el.getBoundingClientRect();
   if (r.top >= 60 && r.bottom <= window.innerHeight - 120) return Promise.resolve();
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1044,9 +1057,9 @@ async function tellRoundEnd(before, final, fights, s) {
     const fightLine = !winner ? 'Level: both wiped out' : `${fname(winner.f)} win${level ? ' on their own ground' : ''}, losing ${winner.lost}`;
     // Each player's piles together (IN2: who takes which pile is seen; totals stay secret).
     const by = new Map();
-    for (const p of x.piles) by.set(p.pid, [...(by.get(p.pid) ?? []), `${p.n} ${fname(p.f)}`]);
+    for (const p of x.piles) by.set(p.pid, [...(by.get(p.pid) ?? []), `${p.n} ${p.n === 1 ? fname(p.f).replace(/ves$/, 'f').replace(/s$/, '') : fname(p.f)}`]);
     const piles = [...by].map(([pid, ps]) => `${esc(seatName(pid))} ${pid === final.you ? 'take' : 'takes'} ${esc(ps.join(' + '))}`).join(' · ');
-    return `${x.flipped ? `<span class="small muted">${esc(seatName(x.flipped))}'s face-down token flipped first.</span> ` : ''}<b>${esc(fightLine)}</b>${x.scorched ? ' · the location is scorched' : ''} · ${piles || 'nobody collects'}`;
+    return `${x.flipped ? `<span class="small muted">${x.flipped === final.you ? 'Your' : `${esc(x.flipped)}'s`} face-down token flipped first.</span> ` : ''}<b>${esc(fightLine)}</b>${x.scorched ? ' · the location is scorched' : ''} · ${piles || 'nobody collects'}`;
   };
   frame.innerHTML = `<h2>Round ${before.round} · the fights</h2>
     <ol class="round-fights">${fights.map((x, i) => `<li class="round-fight" data-i="${i}"><span class="round-where">${esc(lname(x.loc))}</span>
@@ -1064,6 +1077,7 @@ async function tellRoundEnd(before, final, fights, s) {
     const tile = tileOf(x.loc), hex = hexOf(x.loc);
     await reveal(tile);
     light(hex);
+    if (hex) placeNear(frame, [hex]); // step aside from the fight being told
     if (s.speed <= 1 && tile && hex) await tussleOn(tile, hex, s.guide ? 1100 : 700);
     // The pieces after this fight: the location, the supplies, everyone's sway; your own piles to your trophies.
     const next = structuredClone(cur);
@@ -1246,7 +1260,9 @@ function markHint() {
     else card?.classList.add('is-hint-next');
     return;
   }
-  const next = hintNext(m.target ?? {});
+  // A card played for no effect (nothing to target): its ⊘ button is the click.
+  if (!m.target) { q('[data-action="target-none"]')?.classList.add('is-hint-next'); return; }
+  const next = hintNext(m.target);
   if (!next) return;
   if (next.kind === 'tile') tile(next.location)?.classList.add('is-hint-next');
   if (next.kind === 'group') q(`#board .token-stack[data-location="${CSS.escape(next.location)}"][data-faction="${CSS.escape(next.faction)}"]`)?.classList.add('is-hint-next');
