@@ -6,7 +6,7 @@
  */
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, applyMove, playerView, factionById } from '../public/engine.js';
+import { createGame, applyMove, playerView, factionById, spec } from '../public/engine.js';
 import { botMove, fast } from '../public/bots.js';
 
 /** @typedef {import('../public/engine.js').GameState} GameState */
@@ -127,4 +127,17 @@ test('the log and the ended phase render', () => {
   assert.match(html('phase'), /win/);
   assert.match(html('phase'), /(winner)/);
   assert.match(html('log'), /cards dealt/);
+});
+
+test('with responses off, the bar never asks you to answer', () => {
+  const state = playUntil(createGame({ seed: 5, players: PLAYERS, options: { responses: 'off' } }), (s) => s.phase === 'play');
+  const responder = spec.cards.find((c) => c.response?.trigger === 'pass');
+  assert.ok(responder, 'a card that answers a pass');
+  const view = playerView(state, ME);
+  view.me.hand = [responder.id];
+  view.events = [{ type: 'pass', player: PLAYERS.find((p) => p !== ME) ?? '' }];
+  view.toAct = PLAYERS.find((p) => p !== ME) ?? null;
+  if (!onMessage) throw new Error('app did not open a websocket');
+  onMessage({ data: JSON.stringify({ type: 'state', view, online: PLAYERS, bots: [] }) });
+  assert.doesNotMatch(html('phase'), /Answer\?/);
 });

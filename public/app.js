@@ -493,7 +493,8 @@ function renderBoard() {
  */
 function responseReady(view, cardId) {
   const r = cardById(cardId).response;
-  if (!r || view.phase !== 'play') return false;
+  // Responses are out of the first draft (variant responses, off): no card answers anything then.
+  if (!r || view.phase !== 'play' || !responsesOn(view)) return false;
   const pend = view.pending;
   const others = (/** @type {string} */ type) => view.events.some((e) => e.type === type && e.player !== view.you);
   switch (r.trigger) {
