@@ -742,8 +742,8 @@ function chapterStructure() {
         <div><b>3 · Resolve</b><span>fights, then growth</span></div>
       </div>
       <p class="small muted">${rounds()} rounds, then the count.</p>`),
-    spot(inRegion(region).map(SEL.hex), `A region: ${esc(region)}`, 'Lured monsters roam freely inside a region…'),
-    spot([...inRegion(region), ...near.flatMap(inRegion)].map(SEL.hex), 'Neighbouring regions', `…and into a neighbour: ${near.map(esc).join(', ')}. No further.`),
+    spot(inRegion(region).map(SEL.hex), `A region: ${esc(region)}`, '<p>Fifteen locations in five regions of three, in a ring round the lake. Monsters never move on their own: only your gambits move them, and each card says where.</p>'),
+    spot([...inRegion(region), ...near.flatMap(inRegion)].map(SEL.hex), 'Neighbouring regions', `<p>Cards use the regions: some draw monsters from a whole region, or from its neighbours (here ${near.map(esc).join(' and ')}); others from next door, or anywhere.</p>`),
     ...(() => {
       const c = sceneCast();
       const ownF = c.L1; // your faction's own ground (one of your archetype's locations)

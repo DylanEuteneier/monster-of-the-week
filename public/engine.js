@@ -326,17 +326,15 @@ const archetypeOf = (faction) => factionById(faction).archetype;
 /** @param {string} loc */
 const alignmentOf = (loc) => locationById(loc).archetype;
 
-/** A region is impassable once all its locations are scorched (3.1). @param {GameState} state @param {string} region */
-const regionOpen = (state, region) => LOCATION_IDS.some((loc) => regionOf(loc) === region && !state.board[loc].scorched);
-
 /**
- * May a faction's tokens be moved into this location? Not scorched, its region
- * still passable, and never a third faction (LL1).
+ * May a faction's tokens be moved into this location? Not scorched, and never
+ * a third faction (LL1). Factions only ever move by a card, which says where
+ * (D19); regions are geography that cards refer to.
  * @param {GameState} state @param {string} loc @param {string} faction @param {string[]} [blocked]
  */
 export function canEnter(state, loc, faction, blocked = []) {
   const place = state.board[loc];
-  if (!place || place.scorched || !regionOpen(state, regionOf(loc)) || blocked.includes(loc)) return false;
+  if (!place || place.scorched || blocked.includes(loc)) return false;
   const here = factionsAt(state, loc);
   return here.includes(faction) || here.length < 2;
 }

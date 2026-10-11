@@ -484,13 +484,12 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - *Open:* what is connected at the start of the game.
     - *Open:* whether a built connection can be used by everyone or only by its builder.
     - *Open:* which connections burn in a tie.
-  - `CN3` *Regions (first draft):* the island is divided into regions. Movement is free within a region and allowed between neighbouring regions.
+  - `CN3` *Regions (first draft):* the island is divided into regions: geography that cards refer to (a region, neighbouring regions). There is no generic movement: factions move only by a card, which says where (D19).
     - Five regions of three locations, for now. More regions are preferred, so that movement is harder.
     - No region borders all the others.
     - Which regions border which is left to map design.
 - `TM1` **Scorched earth (first draft):** a location where a fight ends in a tie is scorched, and is no longer a location for the rest of the game.
   - First draft: scorching only comes from a true tie, and a true tie never rewards anyone. It burns everything: no trophies are collected and no sway goes to any faction. Tokens, sway, hidden tokens and any other pieces on the location return to their supplies.
-  - First draft: a region whose locations are all scorched is impassable. Nothing moves into or through it, so the ring of regions can break.
 - *Open:* whether locations limit the number of tokens they hold, or have special properties.
 
 #### 3.2 Location control · *Ideas*
@@ -1049,6 +1048,13 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** every section, Appendix B (Sway, Sway cube, Sway leader), the card text, the prototype (the board's stored field, the variant ids, events; saved games and logs from before are upgraded as they load).
 - **Date:** 2026-10-10
 
+#### D19. No generic movement
+
+- **Decided (designer):** there are no generic movement rules. Factions move only by a card (or a card's effect), and each card says where: adjacent locations, a region, neighbouring regions, or anywhere. Regions are geography that cards refer to. The rule that a region whose locations are all scorched is impassable is dropped. Still standing: no move enters a scorched location, and no move brings a third faction into a location (LL1).
+- **Why (designer):** every movement rule is already specified by the cards; factions never move without a card or gambit, so generic movement rules were unnecessary and inconsistent.
+- **Affects:** 3.1 (CN3, TM1), Appendix B (Region, Scorched earth), Appendix G (G.4), the tutorial; the prototype engine (the impassable check removed; it never changed play, since a location in a fully scorched region is itself scorched).
+- **Date:** 2026-10-11
+
 #### D14. Tokens and cubes
 
 - **Decided:** faction presence on the board is made of **tokens**; **cubes** are always players' sway. A faction never has cubes, and a player never has tokens (apart from hidden and bluff tokens, which are separate pieces).
@@ -1105,6 +1111,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-09 | The tuned table confirmed over 40 games | Backers 18.1% a seat, trophy 21.3%; the invaders' ending 15 in 40 |
 | 2026-10-10 | Unattended experiment runner (designer: a repeatable script for several machines that jitters the tuned values, runs, judges and commits its results): `scripts/experiment.js`, one game pool per machine fed by several experiments at once, shared baselines, a testing log entry per attempt (`experiments/`); last night's 48 attempts backfilled. The play-outs-into-the-next-round switch (`deep`) removed: clearly worse | Standard bots unchanged (identical play checked) |
 | 2026-10-10 | Overnight bot tuning (designer: implement the research's best candidates and keep testing on short runs): bot games about 5× faster with identical play; tools for duplicate deals, placings and fitting the evaluation; about 30 variants tested | None adopted: no change measurably beats the standard profiles; 20-game runs only find large effects (F.9, Tuning method) |
+| 2026-10-11 | No generic movement (D19, designer): factions move only by cards, which say where; regions are geography cards refer to; the impassable-region rule dropped | Ruled out: free movement within a region and into neighbouring regions as a general rule; impassable fully scorched regions |
 | 2026-10-10 | Influence renamed sway everywhere (D18, designer): rules, cards, prototype, code, stored state and variant ids, with an upgrade for saved games and logs | Name only; no rule changes |
 | 2026-10-10 | Tutorial reworked (D17, designer): premise in three frames, sway and trophies primed before the endings, mechanic and strategy framing, few words, demonstrations with the real pieces, a multi-place spotlight. The table: total presence as a gauge on the island; every trophy colour shown, 0s included; flights re-measure their ends each frame | Prototype tooling, not rules |
 | 2026-10-10 | Tutorial mode at `/tutorial` and moving pieces in every game (D17, designer). The server sends a view after each bot move so bot turns animate one by one. The smoke test's opener fixed for the current marked cards | Prototype tooling, not rules. A "watch every round" mode was dropped for skipping ahead (designer: no need to play out every card) |
@@ -1153,11 +1160,11 @@ Actual changes to mechanisms and game structure.
 | **Player view** | The copy of the game state that one seat is allowed to see. |
 | **Presence** | *(Idea.)* The number of invader tokens on the board. A faction's presence is the number of its own tokens on the board. |
 | **Presence threshold** | *(Idea.)* The level of total invader presence, checked at game end, that decides which win condition applies. |
-| **Region** | *(Idea.)* A group of locations on the island. Movement is free within a region and allowed between neighbouring regions. |
+| **Region** | *(Idea.)* A group of locations on the island: geography that cards refer to, such as "a region" or "neighbouring regions". Factions never move on their own; every move comes from a card. |
 | **Round** | One full cycle of the phases. |
 | **Ruleset** | A sample selection of candidates that could be played together, built to show one character of game, such as the lightest rules. Listed in Appendix E. |
 | **Runner-up** | *(Idea.)* The player with the second most sway at a location. |
-| **Scorched earth** | *(Idea.)* A location removed from play for the rest of the game after a true tie there. Everything on it returns to its supply. A region whose locations are all scorched is impassable. |
+| **Scorched earth** | *(Idea.)* A location removed from play for the rest of the game after a true tie there. Everything on it returns to its supply. |
 | **Seat** | One player's place in a prototype game, reached through its magic link. |
 | **Slayer group** | What a player plays: one of five groups of characters modelled on a monster-of-the-week trope, each linked to one archetype. |
 | **Slot** | A question the game has to answer, such as how a fight resolves. Candidates in the same slot share a two-letter prefix. |
@@ -2699,7 +2706,7 @@ The game lasts a fixed number of rounds [to balance] (GL1). Each round has three
   - *Gain sway (CA1):* move cubes from your supply into standing with a faction.
   - *Affect a faction's presence (CA2):* any faction, placing sway spent from your standing with it. Example: move a faction's tokens from one location to adjacent locations, and at each location moved to, place 1 sway spent from that faction, along with at least 1 of its tokens.
   - *Place without moving presence (CA3):* for example a trap; place tokens and 1 sway from your supply on a location.
-  - Movement follows the regions (CN3): free within a region, and allowed into a neighbouring region. A region whose three locations are all scorched is impassable: nothing moves into or through it.
+  - Factions move only by a card, which says where (adjacent locations, a region, neighbouring regions, anywhere). There is no generic movement (D19). No move may enter a scorched location or bring in a third faction.
   - What the marked cards A to D do.
 
 #### 3. Resolve
