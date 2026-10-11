@@ -694,35 +694,22 @@ function chapterTable() {
   ];
 }
 
-/** The round: its phases as a picture, then the draft on a small table. */
+/** The round: its phases as a picture, with what's particular to this draft in the same frame (drafting itself is familiar: designer, 2026-10-11). */
 function chapterRound() {
   const st = R.table.state;
   const hand = /** @type {Record<string, number>} */ (spec.constants.handSize)[String(st.seating.length)];
   const c = sceneCast();
-  // The draft, with this game's real first batch (your cards face up, the others' face down).
-  const mine = st.players[YOU].batch.slice();
-  const keep = mine.find((id) => cardById(id).suit) ?? mine[0];
-  const left = st.seating[1], right = st.seating[st.seating.length - 1];
-  const theirs = (/** @type {string} */ pid) => st.players[pid].batch.map((id) => `~${id}`);
-  /** @param {Record<string, string[]>} hands @returns {Scene} */
-  const table = (hands) => ({ players: st.seating.map((pid) => ({ pid, hand: hands[pid] })) });
-  const d0 = table(Object.fromEntries(st.seating.map((pid) => [pid, pid === YOU ? mine : theirs(pid)])));
-  // Everyone keeps one (rivals' face down) and takes the rest of the hand on their right.
-  const passed = (/** @type {string} */ pid) => (pid === YOU ? mine.filter((id) => id !== keep) : st.players[pid].batch.slice(1));
-  const fromOf = (/** @type {number} */ i) => st.seating[(i - 1 + st.seating.length) % st.seating.length];
-  const d1 = table(Object.fromEntries(st.seating.map((pid, i) => [pid, pid === YOU ? [keep, ...passed(fromOf(i))] : [`~${st.players[pid].batch[0]}`, ...passed(fromOf(i)).map((id) => `~${id}`)]])));
+  const first = st.players[YOU].batch[0];
   return [
     chapter('6 · A round'),
     modal('Every round, three phases', `
       <div class="tut-phases">
-        <div><b>1 · Draft</b>${eq(miniCard(mine[0]))}<span>plan your week: ${hand} cards each</span></div>
+        <div><b>1 · Draft</b>${eq(miniCard(first))}<span>plan your week: ${hand} cards each</span></div>
         <div><b>2 · Play</b>${eq(tokenHtml(c.F0, 1), op('→'), cubeHtml(colour(YOU), 9))}<span>one card at a time, until everyone passes</span></div>
         <div><b>3 · Resolve</b>${eq(CLASH, op('then'), '+1')}<span>fights, then growth</span></div>
       </div>
+      <p><b>The draft:</b> pick and pass, left, to ${hand} cards each (${plural(st.leftOut.length, 'card')} left out, unseen). When a new batch arrives, your picks so far rejoin it, so you can put one back for something better. Cards you don't play are lost; every round drafts the whole deck again.</p>
       <p class="small muted">${rounds()} rounds, then the count.</p>`),
-    sceneStep('The draft', d0, d0, `<p>Each round starts with a draft. Everyone is dealt ${hand} cards; ${plural(st.leftOut.length, 'card')} ${st.leftOut.length === 1 ? 'is' : 'are'} left out, unseen.</p>`, [`player:${YOU}`]),
-    sceneStep('The draft', d0, d0, `<p>Keep one: ${miniCard(keep)}.</p>`, [`card:${keep}`]),
-    sceneStep('The draft', d0, d1, `<p>Pass the rest to your left, and take the hand passed from your right. Your kept card joins it: keep 2 of these, and so on until hands are full. You can put earlier picks back to take more from a new batch.</p>`, [`player:${YOU}`, `player:${left}`, `player:${right}`]),
   ];
 }
 
