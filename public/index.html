@@ -31,12 +31,18 @@
   <aside class="side-stack side-right" id="score" data-action="toggle-side" aria-label="Your trophies"></aside>
 
   <div class="overlay-buttons overlay-buttons-top">
+    <button class="btn" id="hint-button" data-action="toggle-overlay" data-target="hint-overlay" hidden>Hints</button>
     <button class="btn" data-action="toggle-overlay" data-target="log-overlay">Log</button>
     <button class="btn" data-action="toggle-overlay" data-target="chat-overlay">Table talk <span class="tag" id="chat-unread" hidden></span></button>
   </div>
   <aside class="overlay panel" id="log-overlay" hidden aria-label="Log">
     <button class="btn overlay-close" data-action="toggle-overlay" data-target="log-overlay" aria-label="Close the log">×</button>
     <div id="log"></div>
+  </aside>
+  <aside class="overlay panel hint" id="hint-overlay" hidden aria-label="Hints" aria-live="polite">
+    <button class="btn overlay-close" data-action="toggle-overlay" data-target="hint-overlay" aria-label="Close hints">×</button>
+    <h2>Hint</h2>
+    <div id="hint"></div>
   </aside>
   <aside class="overlay panel chat" id="chat-overlay" hidden aria-label="Table talk">
     <button class="btn overlay-close" data-action="toggle-overlay" data-target="chat-overlay" aria-label="Close table talk">×</button>

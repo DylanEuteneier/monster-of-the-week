@@ -13,9 +13,13 @@
  * - a spotlight (everything but the subject dimmed, scrolled into view) with
  *   a tooltip narrating it, for pointing at the table;
  * - moves played out, animated like any game (motion.js): the first time
- *   each kind of card play comes up (the learner's own turns played for them
- *   on Next), the first fight, and growth. Everything else fast-forwards
- *   (designer, 2026-10-10: cover the main card actions, then jump ahead).
+ *   each kind of card play comes up, the first fight, and growth. Bots'
+ *   other turns fast-forward (designer, 2026-10-10: cover the main card
+ *   actions, then jump ahead).
+ * From round 1 the learner makes every move on the real table (designer,
+ * 2026-10-11), with hints on: the hint suggests the move the deal was chosen
+ * around (autoMove, as the bots play) and explains it (hints.js), but any
+ * legal move is taken and the narration follows what happens.
  * After round 1 the learner skips to the last round's fights, or plays on
  * against the bots; either way the game's end is explained from its real
  * result.
@@ -26,6 +30,7 @@
  */
 import { spec, factionById, locationById, cardById, describeTarget, playerView, resolveFight, clone, listTargets, previewTarget, deckOf, printedOf, controllerOf, growthDue } from './engine.js';
 import { newTable, copyTable, autoMove, nextActor, play, botPicks, check, YOU, BOTS } from './tutorial-game.js';
+import { suggest } from './hints.js';
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { flyPaths, SLOW } from './motion.js';
 import { cardHtml, suitIcon } from './cards.js';
@@ -173,7 +178,7 @@ function emblem(pid) {
   return em ? `<img class="sprite" src="${esc(em.src)}" width="${em.width * 2}" height="${em.height * 2}" alt="">` : '';
 }
 
-/** A scene, its focused parts lit in the table's own way (tokens in their hover state; rows outlined; sway underlined; a lit hex is simply not dimmed) and every part holding nothing lit dimmed. @param {Scene} sc @param {string[]} [focus] */
+/** A scene, its focused parts lit in the table's own way (tokens in their hover state; rows outlined; sway underlined; a lit hex, or a player's row holding a lit card, is simply not dimmed) and every part holding nothing lit dimmed. @param {Scene} sc @param {string[]} [focus] */
 function sceneHtml(sc, focus = []) {
   const lit = (/** @type {string} */ k) => focus.includes(k);
   const part = (/** @type {boolean} */ on) => (focus.length && !on ? ' is-dim' : '');
@@ -181,9 +186,8 @@ function sceneHtml(sc, focus = []) {
     // Tokens marked to die in this fight are drawn last in their row, crossed out.
     const rows = Object.entries(h.tokens).filter(([, n]) => n > 0).map(([f, n]) => {
       const doomed = Math.min(n, h.doomed?.[f] ?? 0);
-      // Doomed tokens stay in full colour (and lit with their row), marked only by the cross.
       const state = lit(`hextok:${h.loc}:${f}`) ? 'hovered' : '';
-      const t = (/** @type {boolean} */ dead) => (dead ? `<span class="tut-doomed">${tokenHtml(f, 1, state)}</span>` : tokenHtml(f, 1, state));
+      const t = (/** @type {boolean} */ dead) => (dead ? `<span class="tut-doomed">${tokenHtml(f, 1)}</span>` : tokenHtml(f, 1, state));
       return `<span class="piece-row" data-k="hextok:${h.loc}:${f}">${run(n - doomed, () => t(false), 6)}${Array.from({ length: doomed }, () => t(true)).join('')}</span>`;
     }).join('');
     const sway = Object.entries(h.sway ?? {}).filter(([, n]) => n > 0).map(([pid, n]) => run(n, () => cubeHtml(colour(pid), 8))).join('');
@@ -195,7 +199,7 @@ function sceneHtml(sc, focus = []) {
       <span class="tut-scene-cell" data-k="rowsupply:${r.f}"><span class="tut-scene-label">supply</span>${run(r.supply, () => tokenHtml(r.f, 1))}</span>
       <span class="tut-scene-cell" data-k="rowsway:${r.f}"><span class="tut-scene-label">sway</span>${Object.entries(r.sway).filter(([, n]) => n > 0).map(([pid, n]) => `<span class="tut-scene-sway">${run(n, () => cubeHtml(colour(pid), 9))}</span>`).join('')}</span>
     </div>`).join('');
-  const players = (sc.players ?? []).map((p) => `<div class="tut-scene-player tut-part${lit(`player:${p.pid}`) ? ' is-lit' : part(false)}" data-k="player:${p.pid}">
+  const players = (sc.players ?? []).map((p) => `<div class="tut-scene-player tut-part${lit(`player:${p.pid}`) ? ' is-lit' : part(!!p.hand?.some((id) => lit(`card:${id.replace(/^~/, '')}`)))}" data-k="player:${p.pid}">
       <span class="tut-scene-id">${emblem(p.pid)}<span><b>${who(p.pid)}</b><span class="small muted">${esc(spec.slayerGroups.find((g) => g.id === R.table.state.players[p.pid]?.group)?.name ?? '')}</span></span></span>
       ${p.hand ? `<span class="tut-scene-cell tut-scene-hand" data-k="hand:${p.pid}"><span class="tut-scene-label">hand</span>${p.hand.map((id) => miniCard(id, lit(`card:${id.replace(/^~/, '')}`))).join('')}</span>` : ''}
       ${p.supply !== undefined ? `<span class="tut-scene-cell" data-k="supply:${p.pid}"><span class="tut-scene-label">supply</span>${run(p.supply, () => cubeHtml(colour(p.pid), 9))}</span>` : ''}
@@ -751,12 +755,17 @@ function drive() {
     next(spot(SEL.players, 'Who goes first', `${marked ? eq(miniCard(marked)) : ''}<p>${who(first)} ${verb(first, 'holds', 'hold')} the earliest marked card (A–D), so ${first === YOU ? 'you open' : `${esc(first)} opens`} with it, then play goes round the table. We'll stop at each new kind of play and skip the rest.</p>`), drive);
     return null;
   }
-  if (actor === YOU && R.mode === 'play') { next(waitStep, drive); return null; }
+  if (actor === YOU) {
+    // The learner moves on the table, with a hint (designer, 2026-10-11); the controls explained the first time.
+    if (hooks.ui.note) { hooks.ui.note = null; hooks.render(); }
+    if (R.mode === 'guided' && !R.taught.yourTurn) { R.taught.yourTurn = true; next(yourTurn, waitStep, drive); } else next(waitStep, drive);
+    return null;
+  }
   if (R.mode === 'guided') {
-    // Teach a turn if it's the learner's first, or the first of its kind; otherwise fast-forward it.
+    // Teach a bot's turn if it's the first of its kind; otherwise fast-forward it.
     const move = /** @type {Move} */ (autoMove(R.table, actor));
     const kind = kindOf(move);
-    const fresh = (actor === YOU && !R.taught.yourTurn) || (kind !== 'other' && !R.taught[`kind:${kind}`]);
+    const fresh = kind !== 'other' && !R.taught[`kind:${kind}`];
     if (fresh) {
       R.taught[`kind:${kind}`] = true;
       next(...turnSteps(actor, move, true), drive);
@@ -783,22 +792,37 @@ function fastStep(pid, move) {
 }
 
 /** The learner's move, in play mode. @type {Step} */
-function waitStep() { R.waiting = true; return { type: 'wait' }; }
+function waitStep() { R.waiting = true; if (hooks.ui.note) { hooks.ui.note = null; hooks.render(); } return { type: 'wait' }; }
 
 /** The draft: the first pass taught in round 1, the rest fast-forwarded; in play mode, the learner picks. @returns {Step[]} */
 function draftSteps() {
+  // The learner drafts by hand, hints on (designer, 2026-10-11); the draft's rules were in chapter 6.
+  const intro = R.mode === 'guided' && !R.taught.draftIntro ? [chapter('7 · Round 1'), () => {
+    R.taught.draftIntro = true;
+    hooks.hints(true, tutorialHint);
+    return /** @type {Show} */ ({ type: 'spot', target: ['#hint-overlay', SEL.hand], title: 'Your turn now', html: `<p>From here you play: tick cards to keep, then ✓. The <b>Hint</b> panel suggests a move, says why, and recalls the rule. Take it or not: any legal move is fine. Close it any time; the Hints button brings it back.</p>` });
+  }] : [];
+  return [...intro, waitStep, () => { botPicks(R.table); return null; }, () => present(R.table.state).then(() => null)];
+}
+
+/** The learner's first turn in the play phase: the controls. @type {Step} */
+function yourTurn() {
+  hooks.ui.note = null;
   const s = R.table.state;
-  if (R.mode === 'play') return [waitStep, () => { botPicks(R.table); return null; }, () => present(R.table.state).then(() => null)];
-  // The draft was taught on the small table (chapter 6); the live one runs ahead, ending on your hand.
-  return [chapter('7 · Round 1'), () => {
-    while (R.table.state.phase === 'draft') {
-      const move = autoMove(R.table, YOU);
-      if (move && !R.table.state.players[YOU].picked) play(R.table, YOU, move);
-      botPicks(R.table);
-    }
-    hooks.ui.note = null;
-    return present(R.table.state).then(() => ({ type: 'spot', target: SEL.hand, title: `Round ${s.round}: your hand`, html: `${recall('Each card: an offering, or its action at a location of its suit (LOC) or on its faction (FAC).')}<p>The draft ran ahead. These are your actions for the round; cards you don't play are lost.</p>` }));
-  }];
+  const mustOpen = s.first === YOU && !s.opened;
+  return { type: 'spot', target: SEL.hand, title: 'Your turn', html: `${eq(chip('LOC'), chip('FAC'), chip('+N'), op('·'), '<span class="bar-btn bar-icon">»</span>')}<p>Play one card or pass. Click a card, then LOC or FAC on it, then a lit target; its +N spends it as an offering; » passes.${mustOpen ? ' You must open with your marked card.' : ''}</p>` };
+}
+
+/**
+ * The tutorial's hint: the move the deal was chosen around (autoMove, on a
+ * copy so the game's dice are untouched), explained. @returns {import('./hints.js').Hint | null}
+ */
+function tutorialHint() {
+  const s = R.table.state;
+  const copy = copyTable(R.table);
+  const move = autoMove(copy, YOU);
+  if (!move) return null;
+  return suggest(s, YOU, clone(copy.memory[YOU] ?? {}), move);
 }
 /** The pick shown with ticks, applied on the next step. @type {Move | null} */
 let pickMove = null;
@@ -873,26 +897,6 @@ function turnSteps(pid, given, taught = false) {
     move ??= autoMove(R.table, pid);
     return null;
   }];
-  if (pid === YOU && R.mode === 'guided') {
-    steps.push(() => {
-      if (R.taught.yourTurn) return null;
-      R.taught.yourTurn = true;
-      hooks.ui.note = null;
-      const s = R.table.state;
-      const mustOpen = s.first === YOU && !s.opened;
-      return { type: 'spot', target: SEL.hand, title: 'Your turn', html: `${eq(chip('LOC'), chip('FAC'), chip('+N'), op('·'), '<span class="bar-btn bar-icon">»</span>')}<p>Play one card or pass. Click a card, then LOC or FAC on it, then a lit target; its +N spends it as an offering; » passes.${mustOpen ? ' You must open with your marked card.' : ''}</p>` };
-    }, () => {
-      const m = /** @type {Move} */ (move);
-      if (m.type === 'play' && m.use === 'action' && m.target) {
-        try { hooks.choose(m.card, m.target); } catch { hooks.choose(null); }
-        return { type: 'spot', target: SEL.card(m.card), title: `We'll play ${esc(cardById(m.card).name)}`, html: `<p>Its action: ${esc(describeTarget(m.card, m.target))}.</p>` };
-      }
-      if (m.type === 'play') {
-        return { type: 'spot', target: SEL.card(m.card), title: `We'll spend ${esc(cardById(m.card).name)}`, html: `${eq(chip(`+${view().printed[m.card]}`), op('→'), 'sway', op('instead of'), 'its action')}` };
-      }
-      return { type: 'spot', target: SEL.bar, title: 'We\'ll pass', html: 'Nothing worth playing yet.' };
-    });
-  }
   steps.push(() => {
     const m = /** @type {Move} */ (move);
     hooks.ui.note = null;
@@ -907,7 +911,9 @@ function turnSteps(pid, given, taught = false) {
     const after = R.table.state;
     const shown = narrate(pid, m, before, after);
     if (taught && shown.type === 'spot') shown.auto = false;
-    return lead(shown, () => present(after)).then(() => (R.mode === 'play' && pid === YOU ? null : shown));
+    // The learner's own move was made on the table: narrate it only when it teaches something.
+    const quiet = pid === YOU && (R.mode === 'play' || shown.type !== 'spot' || !/tut-recall|<p>(?!Done)/.test(shown.html));
+    return lead(shown, () => present(after)).then(() => (quiet ? null : shown));
   });
   return steps;
 }
@@ -1032,6 +1038,7 @@ function playHelp() {
       <li><b>A plan:</b> click a card, choose LOC or FAC on it, then click the lit targets on the board.</li>
       <li><b>An offering:</b> the +N on a suit card spends it for sway.</li>
       <li><b>Pass:</b> » on the bar.</li>
+      <li><b>Hints:</b> the Hints button, top right, any time.</li>
     </ul>
     <p class="small muted">Hover a lit target to preview what it does.</p>`,
   buttons: [{ label: 'Play', primary: true, run: () => { R.mode = 'play'; R.chapter = 'Your game'; next(drive); void go(); } }] };
@@ -1197,7 +1204,7 @@ function renderTipNav() {
 }
 
 /** Elements fixed to the window (the hand, bar and tabs on desktop) never need scrolling to. @param {Element} x */
-const fixedEl = (x) => { const f = x.closest('.dock, .hand, .side-stack'); return !!f && getComputedStyle(f).position === 'fixed'; };
+const fixedEl = (x) => { const f = x.closest('.dock, .hand, .side-stack, .overlay'); return !!f && getComputedStyle(f).position === 'fixed'; };
 const sleep = (/** @type {number} */ ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -1381,6 +1388,8 @@ function onMove(move) {
   const verdict = check(R.table, YOU, move);
   if (!verdict.ok) return hooks.toast(verdict.reason);
   R.waiting = false;
+  // The bots' dice run as if the learner's move had been chosen by autoMove (as the deal was found), whatever they play.
+  autoMove(R.table, YOU);
   if (move.type === 'pick') {
     play(R.table, YOU, move);
     void present(R.table.state).then(() => go());

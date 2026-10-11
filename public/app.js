@@ -94,6 +94,13 @@ const ui = {
   /** a side stack opened by a tap: 'sway', 'score' or null */
   /** @type {string | null} */
   sideOpen: null,
+  /**
+   * Hints (designer, 2026-10-11): a suggested move with its reasons and the
+   * rule it uses, everywhere but multiplayer games. The server answers each
+   * request in order (got catches up with asked); the tutorial supplies its own.
+   * @type {{ on: boolean, hint: import('./hints.js').Hint | null, asked: number, got: number, source: (() => import('./hints.js').Hint | null) | null }}
+   */
+  hints: { on: false, hint: null, asked: 0, got: 0, source: null },
   /** the slayer group card open in the accordion (null: your own) */
   /** @type {string | null} */
   expanded: null,
@@ -196,6 +203,10 @@ function handleServerMessage(raw) {
   }
   if (message.type === 'chat') return receiveChat(message.lines, message.reset === true);
   if (message.type === 'error') return toast(message.reason);
+  if (message.type === 'hint') {
+    ui.hints.got++;
+    if (ui.hints.got === ui.hints.asked) { ui.hints.hint = message.hint; renderHint(); }
+  }
 }
 
 /**
@@ -237,6 +248,7 @@ function showState(view, online) {
   if (phaseKey !== ui.phaseKey) resetDrafts(phaseKey);
   render();
   followTheAction(view);
+  requestHint();
 }
 
 /** Clear the player's unsent choices; add fields here as real phases land. @param {string} phaseKey */
@@ -568,6 +580,7 @@ function renderHand() {
   el.classList.toggle('is-tucked', ui.tuck && !ui.raise);
   el.classList.toggle('is-locked', !!ui.choosing || !!ui.responding);
   el.style.setProperty('--n', String(n));
+  markHint();
 }
 
 /** A small chip: an icon and a number, with a tooltip. @param {string} icon @param {number | string} value @param {string} tip */
@@ -741,6 +754,76 @@ function render() {
   renderPlayers();
   renderBoard();
   renderLog();
+  $('hint-button').hidden = !hintsAvailable();
+  markHint();
+}
+
+// ---------------------------------------------------------------------------
+// Hints
+// ---------------------------------------------------------------------------
+
+/** Hints are for the tutorial and games with one human seat (designer: not multiplayer). */
+function hintsAvailable() {
+  const view = ui.view;
+  if (!view) return false;
+  if (ui.tutorial) return true;
+  return !ui.hotseat.enabled && view.seating.filter((id) => !ui.bots.includes(id)).length === 1;
+}
+
+/** Whether this seat has a decision to make now. @param {PlayerView} view */
+function myDecision(view) {
+  if (view.phase === 'ended') return false;
+  if (view.phase === 'draft') return !view.players[view.you].picked;
+  return waitingOn(view).includes(view.you);
+}
+
+/** Ask for a hint for the view now showing (when hints are on and it's this seat's move). */
+function requestHint() {
+  const view = ui.view;
+  if (!ui.hints.on || !view || !hintsAvailable()) return;
+  ui.hints.hint = null;
+  if (!myDecision(view)) return renderHint();
+  ui.hints.asked++;
+  if (ui.hints.source) {
+    ui.hints.got = ui.hints.asked;
+    ui.hints.hint = ui.hints.source();
+    return renderHint();
+  }
+  if (!ui.socket || ui.socket.readyState !== WebSocket.OPEN) return;
+  renderHint();
+  ui.socket.send(JSON.stringify({ type: 'hint' }));
+}
+
+/** Turn hints on or off (the Hints button, or the tutorial). @param {boolean} on */
+function setHints(on) {
+  ui.hints.on = on;
+  $('hint-overlay').hidden = !on;
+  if (on) requestHint();
+  else { ui.hints.hint = null; markHint(); }
+}
+
+function renderHint() {
+  const h = ui.hints.hint;
+  const view = ui.view;
+  const waiting = view && myDecision(view) && ui.hints.got < ui.hints.asked;
+  $('hint').innerHTML = !h
+    ? `<p class="muted small">${waiting ? 'Thinking…' : 'A suggestion appears here when it\'s your move.'}</p>`
+    : `<p class="hint-plan"><span class="field-label">Plan</span> ${esc(h.plan)}</p>
+      <h3 class="hint-title">${esc(h.title)}</h3>
+      <ul class="hint-why">${h.why.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>
+      <p class="hint-rule">↩ ${esc(h.rule)}</p>
+      ${h.others.length ? `<details class="hint-others"><summary>Other options</summary>${h.others.map((o) => `<p><b>${esc(o.title)}</b><br><span class="small muted">${esc(o.why.join(' '))}</span></p>`).join('')}</details>` : ''}
+      <p class="small muted">A suggestion only: any legal move is fine.</p>`;
+  markHint();
+}
+
+/** Outline the suggested card(s) and light the locations the move names. */
+function markHint() {
+  for (const x of document.querySelectorAll('.is-suggested')) x.classList.remove('is-suggested');
+  const h = ui.hints.on ? ui.hints.hint : null;
+  if (!h) return;
+  for (const id of [h.card, ...(h.keep ?? [])]) if (id) document.querySelector(`#hand .card[data-card="${CSS.escape(id)}"]`)?.classList.add('is-suggested');
+  for (const l of h.tiles) document.querySelector(`#board [data-tile="${CSS.escape(l)}"] .hex`)?.classList.add('is-suggested');
 }
 
 // ---------------------------------------------------------------------------
@@ -929,11 +1012,12 @@ function onClick(event) {
     const panel = document.getElementById(target.dataset.target ?? '');
     if (!panel) return;
     const opening = panel.hidden;
-    for (const id of ['log-overlay', 'chat-overlay']) {
+    for (const id of ['log-overlay', 'chat-overlay', 'hint-overlay']) {
       const other = document.getElementById(id);
       if (other) other.hidden = true;
     }
     panel.hidden = !opening;
+    if (target.dataset.target === 'hint-overlay' || ui.hints.on) setHints(target.dataset.target === 'hint-overlay' && opening);
     if (opening && target.dataset.target === 'chat-overlay') {
       ui.unread = 0;
       renderUnread();
@@ -1200,6 +1284,8 @@ const tableHooks = {
   setKeep: (keep) => { ui.keep = keep.slice(); ui.keepFor = ui.view?.me.kept.length ?? -1; renderPhase(); },
   /** Select a card with a finished target (shown as chosen), or put it down. @param {string | null} card @param {import('./engine.js').Target} [target] */
   choose: (card, target = {}) => { ui.choosing = card; ui.target = structuredClone(target); ui.undo = []; render(); },
+  /** Hints on or off, and where they come from (the tutorial's own). @param {boolean} on @param {(() => import('./hints.js').Hint | null)} [source] */
+  hints: (on, source) => { if (source) ui.hints.source = source; setHints(on); },
 };
 
 function main() {

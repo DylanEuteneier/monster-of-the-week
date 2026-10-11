@@ -24,6 +24,8 @@
 import { DurableObject } from 'cloudflare:workers';
 import { applyMove, createGame, playerView, IllegalMoveError, spec, upgradeState } from '../public/engine.js';
 import { botMove, PROFILES } from '../public/bots.js';
+import { suggest } from '../public/hints.js';
+import type { Hint } from '../public/hints.js';
 import type { BotMemory, Profile } from '../public/bots.js';
 import type { GameState, Move, Options, PlayerView } from '../public/engine.js';
 
@@ -43,13 +45,15 @@ interface ChatLine {
 
 type ClientMessage =
   | { type: 'move'; move: Move }
-  | { type: 'chat'; text: string };
+  | { type: 'chat'; text: string }
+  | { type: 'hint' };
 
 type ServerMessage =
   | { type: 'state'; view: PlayerView; online: string[]; bots: string[] }
   | { type: 'error'; reason: string }
   | { type: 'chat'; lines: ChatLine[]; reset?: boolean }
-  | { type: 'presence'; online: string[] };
+  | { type: 'presence'; online: string[] }
+  | { type: 'hint'; hint: Hint | null };
 
 interface NewGameRequest {
   players?: unknown;
@@ -180,6 +184,8 @@ export class Game extends DurableObject<Env> {
   private tokens: TokenMap | undefined;
   private chat: ChatLine[] | undefined;
   private bots: string[] | undefined;
+  /** Each seat's plan between hints (not saved: a restart only forgets the plan's stubbornness). */
+  private hintMemory: Record<string, BotMemory> = {};
   private botProfiles: Record<string, Profile> = {};
   private botMemory: Record<string, BotMemory> = {};
   private limiter = new RateLimiter();
@@ -318,6 +324,11 @@ export class Game extends DurableObject<Env> {
     const message = parseClientMessage(raw);
     if (!message) return this.send(ws, { type: 'error', reason: 'malformed message' });
     if (message.type === 'chat') return this.handleChat(playerId, message.text);
+    if (message.type === 'hint') {
+      // Hints everywhere but multiplayer games (designer, 2026-10-11): one human seat only.
+      if (this.game.seating.filter((id) => !this.bots?.includes(id)).length > 1) return this.send(ws, { type: 'error', reason: 'hints are off in multiplayer games' });
+      return this.send(ws, { type: 'hint', hint: suggest(this.game, playerId, (this.hintMemory[playerId] ??= {})) });
+    }
     return this.handleMove(ws, { playerId, move: message.move });
   }
 
@@ -430,6 +441,7 @@ function parseClientMessage(raw: string | ArrayBuffer): ClientMessage | null {
   if (typeof parsed !== 'object' || parsed === null) return null;
   const candidate = parsed as { type?: unknown; move?: unknown; text?: unknown };
   if (candidate.type === 'chat' && typeof candidate.text === 'string') return { type: 'chat', text: candidate.text };
+  if (candidate.type === 'hint') return { type: 'hint' };
   if (candidate.type === 'move' && typeof candidate.move === 'object' && candidate.move !== null) {
     return { type: 'move', move: candidate.move as Move };
   }

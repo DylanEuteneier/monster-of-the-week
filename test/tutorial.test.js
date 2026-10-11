@@ -5,8 +5,9 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { playerView, createGame } from '../public/engine.js';
-import { newTable, nextActor, autoMove, play, botPicks, YOU } from '../public/tutorial-game.js';
+import { playerView, createGame, clone, validate } from '../public/engine.js';
+import { newTable, copyTable, nextActor, autoMove, play, botPicks, YOU } from '../public/tutorial-game.js';
+import { suggest } from '../public/hints.js';
 import { planFlights } from '../public/motion.js';
 
 /** Play the tutorial's game to the end, as its watch mode does. */
@@ -70,4 +71,41 @@ test('a game saved before influence was renamed sway still loads', async () => {
   assert.equal(up.options.swayRequired, 'on');
   assert.equal(up.events[0].type, 'sway-spent');
   assert.deepEqual(upgradeRecord({ use: 'influence', dWinInfluence: 1, locationsWithInfluence: 2, name: 'influence of the moon' }), { use: 'sway', dWinSway: 1, locationsWithSway: 2, name: 'influence of the moon' });
+});
+
+/** Round 1, the learner's moves made by `pick` (the bots' dice kept as the tutorial keeps them). @param {(table: any) => any} pick */
+function roundOne(pick) {
+  const table = newTable();
+  while (table.state.round === 1 && table.state.phase !== 'ended') {
+    if (table.state.phase === 'draft') {
+      if (!table.state.players[YOU].picked) { const m = pick(table); autoMove(table, YOU); play(table, YOU, m); }
+      botPicks(table);
+      continue;
+    }
+    const pid = /** @type {string} */ (nextActor(table.state));
+    if (pid === YOU) { const m = pick(table); autoMove(table, YOU); play(table, YOU, m); } else play(table, pid, /** @type {any} */ (autoMove(table, pid)));
+  }
+  return table.state;
+}
+
+test('following the tutorial\'s hints replays its scripted round 1 exactly', () => {
+  const scripted = roundOne((t) => autoMove(copyTable(t), YOU));
+  const hinted = roundOne((t) => {
+    const copy = copyTable(t);
+    const move = autoMove(copy, YOU);
+    const hint = suggest(t.state, YOU, clone(copy.memory[YOU] ?? {}), /** @type {any} */ (move));
+    assert.ok(hint && hint.why.length && hint.plan && hint.rule);
+    return hint?.move;
+  });
+  assert.deepEqual(hinted, scripted);
+});
+
+test('a hint (the bot\'s own choice) is always a legal move', () => {
+  const memory = {};
+  roundOne((t) => {
+    const hint = suggest(t.state, YOU, memory);
+    assert.ok(hint?.move);
+    assert.ok(validate(t.state, { playerId: YOU, move: hint.move }).ok, JSON.stringify(hint.move));
+    return hint.move;
+  });
 });

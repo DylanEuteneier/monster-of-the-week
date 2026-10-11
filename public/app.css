@@ -337,8 +337,8 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .hex.is-candidate:hover > .hex-state-hover, .hex.is-candidate.is-hovered > .hex-state-hover { display: block; }
 .hex.is-candidate:hover, .hex.is-candidate.is-hovered { transform: translateY(-2px); }
 /* A card that acts on a whole region: every location it will touch shows its hover art while a candidate is hovered (app.js, lightRegions). */
-.hex.is-region > .hex-state-hover { display: block; }
-.hex.is-region > .hex-state-candidate { display: none; }
+.hex.is-region > .hex-state-hover, .hex.is-suggested > .hex-state-hover { display: block; }
+.hex.is-region > .hex-state-candidate, .hex.is-suggested > .hex-state-candidate { display: none; }
 .hex-pieces { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .hex-pieces .stack-row { flex-wrap: nowrap; gap: 4px; justify-content: center; }
 .hex-pieces .token-stack > * + * { margin-left: calc(var(--w) * -0.66); }
@@ -713,6 +713,18 @@ button.card-opt:hover { background: #f6cca1; }
 --------------------------------------------------------------------------- */
 .overlay-buttons { position: fixed; top: 10px; right: var(--space-4); z-index: var(--z-overlay-buttons); display: flex; gap: var(--space-2); }
 .overlay { position: fixed; top: 56px; right: var(--space-4); z-index: var(--z-overlay); width: min(380px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
+/* Hints (app.js renderHint): the plan, the suggestion, its reasons and the rule it uses; the suggested card outlined
+   in gold, the move's locations in their hover light. */
+.hint { display: flex; flex-direction: column; gap: var(--space-2); font-size: 13px; }
+.hint h2, .hint .hint-title { margin: 0; }
+.hint-title { font-size: 14px; color: var(--color-accent); }
+.hint-plan { margin: 0; color: var(--color-muted); }
+.hint-plan .field-label { margin-right: var(--space-1); }
+.hint-why { margin: 0; padding-left: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); }
+.hint-rule { margin: 0; padding: var(--space-1) var(--space-2); background: var(--color-panel-2); border-left: var(--line) solid var(--color-accent); }
+.hint-others summary { cursor: pointer; color: var(--color-link); }
+.hint-others p { margin: var(--space-1) 0 0; }
+.hand .card.is-suggested { outline: var(--line) solid var(--color-accent); outline-offset: 2px; }
 .overlay-close { position: absolute; top: var(--space-2); right: var(--space-2); padding: 0 var(--space-2); }
 .log-round { display: flex; flex-direction: column; gap: 2px; font-size: 12px; padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-cell); }
 .chat-lines { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow-y: auto; font-size: 12px; }
@@ -838,7 +850,8 @@ button.card-opt:hover { background: #f6cca1; }
 .tut-presence li { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: var(--space-2); padding: 2px var(--space-2); background: var(--color-panel-2); border: var(--border); }
 .tut-presence li.is-top { outline: var(--line) solid var(--color-accent); outline-offset: -2px; }
 .tut-presence b { font-family: var(--font-display); font-weight: 400; }
-/* A token marked to die in a fight: a red pixel cross over it, its colours kept. */
+/* A token marked to die in a fight: greyed, with a red pixel cross. */
+.tut-doomed .token { filter: grayscale(1) brightness(0.7); }
 .tut-doomed { position: relative; display: inline-flex; }
 .tut-doomed::after { content: "✕"; position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-size: 14px; color: var(--color-danger); text-shadow: 1px 1px 0 var(--ink); }
 /* A card in a scene's hand: small, in its suit's colour, like the cards' band. */

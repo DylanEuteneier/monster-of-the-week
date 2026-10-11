@@ -718,3 +718,45 @@ function bestPlays(s, pid, cardId, rng, ev) {
   }
   return out.sort((a, b) => b.v - a.v);
 }
+
+// ---------------------------------------------------------------------------
+// Hints (designer, 2026-10-11: a suggestion mode outside multiplayer games)
+// ---------------------------------------------------------------------------
+
+/**
+ * The bot's view of a seat's options, for a hint (public/hints.js): its plan
+ * and every move ranked by its value one move ahead, with no noise and no
+ * play-outs (play-outs would play rivals' hidden hands; one move ahead uses
+ * only what the seat can see, rivals' face-down tokens as even odds). Draft:
+ * each card in the pool by the worth of its best play now. Growth: each
+ * location the seat may choose. `memory` keeps the plan between hints.
+ * @param {GameState} state @param {string} pid @param {BotMemory} memory @param {string} [profile]
+ * @returns {{ goal: Goal, ev: (s: GameState) => number, base: number, moves: { move: Move, s: GameState, v: number }[], worth: { card: string, v: number }[] }}
+ */
+export function rankForHint(state, pid, memory, profile = 'trophy:hidden=1,enum=1') {
+  let x = 12345;
+  const rng = () => { x = (Math.imul(x, 1664525) + 1013904223) | 0; return (x >>> 0) / 2 ** 32; };
+  const persona = personaOf(profile) ?? /** @type {Persona} */ (personaOf('trophy'));
+  if (memory.jitter === undefined) memory.jitter = 0; // no random lean in a hint
+  const goal = chooseGoal(state, pid, persona, memory, rng);
+  const ev = (/** @type {GameState} */ s) => evaluate(s, pid, profile, goal);
+  const base = ev(state);
+  /** @type {{ move: Move, s: GameState, v: number }[]} */
+  let moves = [];
+  /** @type {{ card: string, v: number }[]} */
+  let worth = [];
+  const p = state.players[pid];
+  if (state.phase === 'draft' && !p.picked) {
+    worth = [...p.kept, ...p.batch].map((card) => ({ card, v: cardWorth(state, pid, card, rng, ev, base) })).sort((a, b) => b.v - a.v);
+  } else if (state.phase === 'growth') {
+    const g = state.growing;
+    if (g && g.leaders[g.next % g.leaders.length] === pid) moves = Object.keys(g.due).map((location) => { const move = /** @type {Move} */ ({ type: 'grow', location }); const s = applyMove(state, { playerId: pid, move }); return { move, s, v: ev(s) }; });
+  } else if (state.phase === 'play' && !state.pending && state.seating[state.turn] === pid) {
+    moves = candidates(state, pid, rng, SEARCH.targets, true).map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) }; });
+  }
+  moves.sort((a, b) => b.v - a.v);
+  return { goal, ev, base, moves, worth };
+}
+
+/** A state after a move played straight through (for hints). @param {GameState} state @param {string} pid @param {Move} move */
+export const afterMove = (state, pid, move) => after(state, pid, move);
