@@ -217,6 +217,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 /* The header: the title, round and seat (app.js renderHeader) and the table's tools (turn speed, hints, log, table
    talk) in the bar itself, in flow. */
 .topbar-main { flex: 1; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4); min-width: 0; }
+.stale-tag { background: var(--color-danger); color: var(--color-text); }
 .topbar-buttons { display: flex; flex-wrap: wrap; gap: var(--space-2); align-self: center; }
 .topbar h1 { font-size: 20px; letter-spacing: 0.06em; color: var(--color-accent); text-shadow: 2px 2px 0 var(--ink); }
 .topbar .phase-label { font-family: var(--font-display); font-size: 16px; text-transform: uppercase; }

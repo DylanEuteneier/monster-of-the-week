@@ -59,6 +59,8 @@ const ui = {
   bots: [],
   /** a move sent, its view not back yet */
   sending: false,
+  /** the server runs older rules than these files (wrangler dev stopped reloading) */
+  stale: false,
   /** @type {PlayerView | null} */
   view: null,
   /** @type {string[]} */
@@ -200,6 +202,7 @@ function handleClose(event) {
 /** @param {string} raw */
 function handleServerMessage(raw) {
   const message = JSON.parse(raw);
+  if (message.type === 'state') { queueNow.got.push(`${message.view.toAct}<${message.last?.player ?? '-'}`); queueNow.got.splice(0, queueNow.got.length - 20); }
   if (message.type === 'state') {
     ui.bots = message.bots ?? [];
     ui.sending = false; // any new view answers a sent move (a draft pick's view names no move: it's secret)
@@ -211,6 +214,7 @@ function handleServerMessage(raw) {
   }
   if (message.type === 'chat') return receiveChat(message.lines, message.reset === true);
   if (message.type === 'error') { if (ui.sending) { ui.sending = false; renderPhase(); } return toast(message.reason); }
+  if (message.type === 'stale') { ui.stale = true; return renderHeader(); }
   if (message.type === 'hint') {
     ui.hints.got++;
     if (ui.hints.got === ui.hints.asked) { ui.hints.hint = message.hint; renderHint(); }
@@ -228,6 +232,12 @@ function handleServerMessage(raw) {
  */
 const incoming = [];
 let animating = false;
+/** What the view queue is doing, for scripts/watch-play.mjs when a table stalls (dev aid, not UI). */
+/** @type {{ step: string, at: number, got: string[], shown: string[] }} */
+const queueNow = { step: 'idle', at: 0, got: /** @type {string[]} */ ([]), shown: /** @type {string[]} */ ([]) };
+/** @param {string} step */
+const mark = (step) => { queueNow.step = step; queueNow.at = Date.now(); };
+/** @type {any} */ (globalThis).motwQueue = () => ({ got: queueNow.got.slice(-6), shown: queueNow.shown.slice(-6), animating, queued: incoming.length, step: queueNow.step, forMs: Date.now() - queueNow.at, toAct: ui.view?.toAct, sending: ui.sending, speed: speedNow().id });
 
 /** @param {PlayerView} view @param {string[]} online @param {boolean} [instant] skip the flight @param {number} [speed] how fast pieces fly (default: faster as the queue grows) @param {ViewMeta} [meta] @returns {Promise<void>} once shown */
 function receiveState(view, online, instant = false, speed = undefined, meta = undefined) {
@@ -244,6 +254,7 @@ async function showNext() {
     const item = /** @type {(typeof incoming)[number]} */ (incoming.shift());
     const before = ui.view;
     const last = item.meta?.last;
+    mark(`view ${item.view.round}:${item.view.phase} after ${last ? `${last.player} ${last.move.type}` : 'nothing'}`);
     // Another seat's move plays at this screen's speed (your own always at once, unpaused: designer, 2026-10-11).
     const other = !!before && !!last && last.player !== before.you && before.you === item.view.you;
     const s = speedNow();
@@ -255,6 +266,7 @@ async function showNext() {
         continue;
       }
       if (other && last && !item.instant && s.guide) {
+        mark(`guide ${last.player} ${last.move.type}`);
         await guideTurn(before, item.view, last, s);
         item.done();
         continue;
@@ -265,15 +277,19 @@ async function showNext() {
     }
     const instant = item.instant || (other && s.instant);
     const flights = before && !instant ? planFlights(before, item.view, colourOf) : [];
+    mark(`fly ${flights.length}`);
     if (flights.length) await fly(flights, item.view.you, { speed: item.speed ?? (other ? s.speed : 1) + incoming.length * 0.75 });
     showState(item.view, item.online);
     item.done();
   }
   animating = false;
+  mark('idle');
 }
 
 /** @param {PlayerView} view @param {string[]} online */
 function showState(view, online) {
+  queueNow.shown.push(String(view.toAct));
+  queueNow.shown.splice(0, queueNow.shown.length - 20);
   ui.view = view;
   ui.online = online;
   const phaseKey = `${view.round}:${view.phase}`;
@@ -386,7 +402,8 @@ function renderHeader() {
     <h1>MONSTER OF THE WEEK</h1>
     <span class="phase-label">${esc(status)}</span>
     ${you}
-    <span class="muted small">${esc(ui.connectionNote)}</span>`);
+    <span class="muted small">${esc(ui.connectionNote)}</span>
+    ${ui.stale ? '<span class="tag stale-tag" title="The worker hasn\'t reloaded since the game files changed; the table and the rules may not match.">Server running old code: restart npm run dev</span>' : ''}`);
 }
 
 /** @param {string} playerId */
@@ -963,6 +980,7 @@ async function guideTurn(before, after, last, s) {
     panel.hidden = false; light(seat); draw();
     await wait(s.guide * 0.6);
     panel.hidden = true; unlight();
+    showState(after, ui.online); // the turn moves on: every way out of the guide shows the new view
     return;
   }
   if (m.type === 'play') {

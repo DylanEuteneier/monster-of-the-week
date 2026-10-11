@@ -55,7 +55,8 @@ type ServerMessage =
   | { type: 'error'; reason: string }
   | { type: 'chat'; lines: ChatLine[]; reset?: boolean }
   | { type: 'presence'; online: string[] }
-  | { type: 'hint'; hint: Hint | null };
+  | { type: 'hint'; hint: Hint | null }
+  | { type: 'stale' };
 
 interface NewGameRequest {
   players?: unknown;
@@ -178,6 +179,24 @@ class RateLimiter {
 }
 
 // ---------------------------------------------------------------------------
+// Stale code (dev tooling, designer 2026-10-11): `wrangler dev` can stop
+// reloading the worker while the static files keep updating, so tables run new
+// UI against old rules. The worker fingerprints the shared files it imports
+// when its code loads; a table that connects after they've changed on disk is
+// told (deployed, the two always ship together, so this never fires).
+// ---------------------------------------------------------------------------
+
+const SHARED = ['/engine.js', '/bots.js', '/hints.js', '/guide.js', '/spec.json', '/eval-fit.json'];
+/** The shared files' fingerprint now, read through the assets binding. @returns {Promise<string>} */
+async function sharedPrint(env: Env): Promise<string> {
+  const texts = await Promise.all(SHARED.map(async (p) => { try { return await (await env.ASSETS.fetch(new Request(`http://assets${p}`))).text(); } catch { return ''; } }));
+  const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(texts.join('\u0000')));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+/** The fingerprint when this code loaded (module scope: a reload starts it again). */
+let bootPrint: Promise<string> | null = null;
+
+// ---------------------------------------------------------------------------
 // The Durable Object
 // ---------------------------------------------------------------------------
 
@@ -214,6 +233,7 @@ export class Game extends DurableObject<Env> {
   }
 
   async fetch(request: Request): Promise<Response> {
+    bootPrint ??= sharedPrint(this.env);
     await this.load();
     const url = new URL(request.url);
     if (url.pathname.startsWith('/ws/')) return this.acceptPlayer(request, url.pathname.slice('/ws/'.length));
@@ -312,6 +332,7 @@ export class Game extends DurableObject<Env> {
     server.serializeAttachment({ playerId });
     this.send(server, { type: 'state', view: playerView(this.game, playerId), online: this.online(), bots: this.bots ?? [] });
     this.send(server, { type: 'chat', lines: this.chat ?? [] });
+    this.ctx.waitUntil((async () => { if (bootPrint && (await bootPrint) !== (await sharedPrint(this.env))) this.send(server, { type: 'stale' }); })());
     this.broadcastPresence();
     // A table that stalled (a bot that failed, a code reload) picks up again when anyone connects.
     this.ctx.waitUntil(this.runBots());

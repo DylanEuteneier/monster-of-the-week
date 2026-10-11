@@ -12,7 +12,7 @@
  * Chrome is always closed. Needs `npm run dev` (port 8788). Replaces the dev
  * server's current game (the designer allows it).
  *
- *   node scripts/watch-play.mjs [--tutorial] [--rounds=1] [--idle=20] [--max=600] [--shots=dir] [--seed=7]
+ *   node scripts/watch-play.mjs [--tutorial] [--keep] [--rounds=1] [--idle=20] [--max=600] [--shots=dir] [--seed=7]
  */
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -64,7 +64,9 @@ await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, dev
 
 let url = `${BASE}/tutorial`;
 if (!TUTORIAL) {
-  const made = await (await fetch(`${BASE}/admin/new-game`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ players: ['Me', 'Ash', 'Bea', 'Cy'], bots: ['Ash', 'Bea', 'Cy'], force: true, seed: SEED }) })).json();
+  // --keep: play the dev server's current game (its human seat) instead of starting one.
+  const made = process.argv.includes('--keep') ? await (await fetch(`${BASE}/admin/links`)).json()
+    : await (await fetch(`${BASE}/admin/new-game`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ players: ['Me', 'Ash', 'Bea', 'Cy'], bots: ['Ash', 'Bea', 'Cy'], force: true, seed: SEED }) })).json();
   url = made.links.find((/** @type {any} */ l) => l.player === 'Me').url.replace(/^https?:\/\/[^/]+/, BASE);
 }
 // Hints on (full), so the human seat can follow them: set before the table loads.
@@ -104,6 +106,7 @@ for (;;) {
     await shot('stalled');
     console.log(JSON.stringify(s, null, 1));
     if (errors.length) console.log(`page errors:\n  ${errors.slice(-8).join('\n  ')}`);
+    console.log('queue:', JSON.stringify(await ev(`globalThis.motwQueue?.()`)));
     finish(2, `nothing changed for ${IDLE / 1000}s`);
   }
   // The human seat's move: Next on a tutorial step; the draft's first cards; the hint's marks, else pass.
