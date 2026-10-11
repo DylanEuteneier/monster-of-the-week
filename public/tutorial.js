@@ -217,11 +217,10 @@ function endingSteps() {
   const kill = (s, loc, f, n, toYou) => { const k = Math.min(n, s.board[loc].tokens[f] ?? 0); s.board[loc].tokens[f] -= k; if (toYou) s.players[YOU].trophies[f] += k; else s.supply[f] += k; };
   /** Your trophies set to these counts (from or to the factions' supplies). @param {GameState} s @param {number[]} counts */
   const trophiesTo = (s, counts) => s.factions.forEach((f, i) => { const d = (counts[i] ?? 0) - s.players[YOU].trophies[f]; s.players[YOU].trophies[f] += d; s.supply[f] -= d; });
-  // Who backs whom: the group that switched sides in the opening, with its own faction.
-  const { groups: cast } = castOf();
-  const turn = cast[1] ?? cast[0];
-  const backer = s0.seating.find((pid) => s0.players[pid].group === turn) ?? s0.seating[1];
-  const backs = s0.factions.find((f) => factionById(f).archetype === spec.slayerGroups.find((g) => g.id === turn)?.archetype) ?? s0.factions[1];
+  // Who backs whom: you and your own faction, as in the opening; a rival for comparison.
+  const backer = YOU;
+  const backs = faction;
+  const rival = s0.seating.find((pid) => pid !== YOU) ?? YOU;
 
   // A: two fights. The two biggest groups lose 3 each; you take one pile.
   const A = clone(s0);
@@ -243,18 +242,18 @@ function endingSteps() {
   trophiesTo(D, even);
   // E: the invaders win: the backed faction swells across its locations.
   const E = clone(D);
-  trophiesTo(E, v.factions.map((f) => (f === backs ? 1 : 0)));
+  trophiesTo(E, v.factions.map((f) => (f === backs ? 0 : 1)));
   const homes = groups(E).filter((g) => g.f === backs).map((g) => g.loc);
   const spots = homes.length ? homes : Object.keys(E.board).filter((l) => !Object.values(E.board[l].tokens).some((n) => n > 0)).slice(0, 2);
   for (let k = 0; total(E) <= t + 7 && E.supply[backs] > 0; k++) { E.board[spots[k % spots.length]].tokens[backs] = (E.board[spots[k % spots.length]].tokens[backs] ?? 0) + 1; E.supply[backs] -= 1; }
-  // F: the backer has built sway with it; you haven't.
+  // F: you have built sway with it; the rival hasn't.
   const F_ = clone(E);
   const bp = F_.players[backer];
   const want = 8;
   bp.supply -= want - bp.standing[backs];
   bp.standing[backs] = want;
-  const yourScore = F_.players[YOU].standing[backs] - F_.players[YOU].trophies[backs];
-  const theirScore = bp.standing[backs] - bp.trophies[backs];
+  const yourScore = bp.standing[backs] - bp.trophies[backs];
+  const theirScore = F_.players[rival].standing[backs] - F_.players[rival].trophies[backs];
 
   return [
     spot(SEL.presence, 'Count the monsters', `${eq(...v.factions.map((f) => tokenHtml(f, 1)), op('on the island now'), op('='), `<b>${total(s0)}</b>`)}<p>After round ${rounds()}, count the monster tokens left on the board:</p>${eq(`more than <b>${t}</b>`, op('→'), '<b>invader sway</b> decides the winner')}${eq(`<b>${t}</b> or fewer`, op('→'), '<b>complete trophy sets</b> decide the winner')}`),
@@ -269,7 +268,7 @@ function endingSteps() {
     demo(() => D, () => E, () => ({ type: 'spot', target: [...homes.map(SEL.hex), SEL.presence, SEL.faction(backs)], title: `More than ${t}: the biggest faction decides`,
       html: `${eq(tokens(backs, 3), op('most monsters'), op('→'), `the <b>${F(backs)}</b> take the island`)}<p>The winner is whoever they're most swayed by.</p>${more('Ties', 'Factions tied on tokens: the one controlling more locations wins; still tied, they win together and scores add up.')}` })),
     demo(() => E, () => F_, () => ({ type: 'spot', target: [SEL.faction(backs), SEL.trophyTab], title: 'Its backers score',
-      html: `${eq(cubes(backer, want), op('−'), '0', op('='), `<b>${theirScore}</b>`, `<span class="small">${who(backer)}</span>`)}${eq(cubes(YOU, F_.players[YOU].standing[backs]), op('−'), tokens(backs, F_.players[YOU].trophies[backs]), op('='), `<b>${yourScore}</b>`, '<span class="small">you</span>')}<p>Sway with them, minus their trophies. ${who(backer)} backed them and never hunted them. Your sets count for nothing.</p>${more('Ties', 'Fewest trophies of the winner, then affinity, then the next faction down.')}` })),
+      html: `${eq(cubes(YOU, want), op('−'), '0', op('='), `<b>${yourScore}</b>`, '<span class="small">you</span>')}${eq(cubes(rival, F_.players[rival].standing[backs]), op('−'), '0', op('='), `<b>${theirScore}</b>`, `<span class="small">${who(rival)}</span>`)}<p>Sway with them, minus their trophies. You backed them and never hunted them, so you win. Trophy sets count for nothing.</p>${more('Ties', 'Fewest trophies of the winner, then affinity, then the next faction down.')}` })),
     restore,
     modal('Every move is a bet', `
       <div class="tut-cols">
@@ -300,17 +299,16 @@ function chapterWin() {
     }),
     () => {
       const { groups, factions } = castOf();
-      // The one who crosses over (the first rival seat, for its own archetype's faction) takes the centre; everyone
-      // else leaves the way they came, and the vs becomes a heart.
-      const turn = groups[1] ?? groups[0];
+      // Your group and its own faction stay in the centre (designer); everyone else leaves the way they came, and
+      // the vs becomes a heart.
+      const turn = groups[0];
       const arch = spec.slayerGroups.find((g) => g.id === turn)?.archetype;
       const backs = factions.find((f) => factionById(f).archetype === arch) ?? factions[0];
-      const seat = st.seating.find((pid) => st.players[pid].group === turn) ?? '';
       const gs = [turn, ...groups.filter((g) => g !== turn)], fs = [backs, ...factions.filter((f) => f !== backs)];
       const out = (/** @type {number} */ k) => `is-leaving leave-${4 - k}`; // outer ones leave first
       return { type: /** @type {const} */ ('modal'), title: 'Until someone switches sides', html: `
         ${versus([groupItem(gs[0], true), ...gs.slice(1).map((g, k) => groupItem(g, false, 0, out(k)))], [factionItem(fs[0], false), ...fs.slice(1).map((f, k) => factionItem(f, false, 0, false, out(k)))], 'is-smitten')}
-        <p>Every group hunts every monster, <b>until one decides a monster is worth backing</b>. ${who(seat)} ${verb(seat, 'falls', 'fall')} for the ${F(backs)}: if they take the island, ${seat === YOU ? 'you win' : `${esc(seat)} wins`}.</p>` };
+        <p>Every group hunts every monster, <b>until one decides a monster is worth backing</b>. Say you fall for the ${F(backs)}: if they take the island, you win.</p>` };
     },
     spot(home ? SEL.hex(home) : SEL.board, 'Monsters and sway', `
       ${eq(tokenHtml(home ? Object.keys(st.board[home].tokens).find((f) => st.board[home].tokens[f] > 0) ?? faction : faction, 2), op('='), 'a monster')}
