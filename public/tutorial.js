@@ -414,6 +414,11 @@ function endingSteps() {
   const want = 8;
   bp.supply -= want - bp.standing[backs];
   bp.standing[backs] = want;
+  /** Every faction's monsters on the board, most first, the biggest marked. @param {GameState} st */
+  const presenceList = (st) => {
+    const counts = st.factions.map((f) => ({ f, n: Object.values(st.board).reduce((k, p) => k + (p.tokens[f] ?? 0), 0) })).sort((x, y) => y.n - x.n);
+    return `<ul class="tut-presence">${counts.map(({ f, n }, i) => `<li class="${i === 0 ? 'is-top' : ''}">${tokenHtml(f, 1)}<span>${F(f)}</span><b>${n}</b>${i === 0 ? '<span class="tut-chip">takes the island</span>' : '<span></span>'}</li>`).join('')}</ul>`;
+  };
   const yourScore = bp.standing[backs] - bp.trophies[backs];
   const theirScore = F_.players[rival].standing[backs] - F_.players[rival].trophies[backs];
 
@@ -428,7 +433,7 @@ function endingSteps() {
     demo(() => C, () => D, () => ({ type: 'spot', target: [SEL.trophyTab], title: 'Hunt every kind',
       html: `${trophyRow(v.factions, even)}${eq('2 of every colour', op('='), '2 complete sets', op('='), '<b>2</b>')}${more('Ties', 'Compare the next-fewest colour, then the next.')}` })),
     demo(() => D, () => E, () => ({ type: 'spot', target: [...homes.map(SEL.hex), SEL.presence, SEL.faction(backs)], title: `More than ${t}: the biggest faction decides`,
-      html: `${eq(miniGauge(total(E), t), `<b>${total(E)}</b>`, op(`more than ${t}`))}${eq(tokens(backs, 3), op('most monsters'), op('→'), `the <b>${F(backs)}</b> take the island`)}<p>The winner is whoever they're most swayed by.</p>${more('Ties', 'Factions tied on tokens: the one controlling more locations wins; still tied, they win together and scores add up.')}` })),
+      html: `${eq(miniGauge(total(E), t), `<b>${total(E)}</b>`, op(`more than ${t}`))}${presenceList(E)}<p>The faction with the most monsters on the board takes the island: the <b>${F(backs)}</b>. The winner is whoever they're most swayed by.</p>${more('Ties', 'Factions tied on tokens: the one controlling more locations wins; still tied, they win together and scores add up.')}` })),
     demo(() => E, () => F_, () => ({ type: 'spot', target: [SEL.faction(backs), SEL.trophyTab], title: 'Its backers score',
       html: `${eq(cubes(YOU, want), op('−'), '0', op('='), `<b>${yourScore}</b>`, '<span class="small">you</span>')}${eq(cubes(rival, F_.players[rival].standing[backs]), op('−'), '0', op('='), `<b>${theirScore}</b>`, `<span class="small">${who(rival)}</span>`)}<p>Sway with them, minus their trophies. You backed them and never hunted them, so you win. Trophy sets count for nothing.</p>${more('Ties', 'Fewest trophies of the winner, then affinity, then the next faction down.')}` })),
     restore,
