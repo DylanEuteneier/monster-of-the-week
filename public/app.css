@@ -819,20 +819,63 @@ button.card-opt:hover { background: #f6cca1; }
 .tut-heart { display: inline-flex; visibility: hidden; }
 /* Switching sides: everyone but the pair leaves the way they came (outer ones first), then vs turns to a heart. */
 .leave-1 { --o: 1; } .leave-2 { --o: 2; } .leave-3 { --o: 3; } .leave-4 { --o: 4; }
-.tut-cast-item.is-leaving { overflow: hidden; pointer-events: none; animation: tut-close 480ms cubic-bezier(.6,0,.8,.4) both; animation-delay: calc(500ms + var(--o) * 200ms); }
+.tut-cast-item.is-leaving { overflow: hidden; pointer-events: none; animation: tut-close 340ms cubic-bezier(.6,0,.8,.4) both; animation-delay: calc(var(--o) * 90ms); }
 @keyframes tut-close { from { max-height: 200px; opacity: 1; transform: none; } 50% { opacity: 1; } to { max-height: 0; padding-block: 0; opacity: 0; transform: translateY(-30px) scale(1.4); visibility: hidden; } }
-.is-smitten .tut-vs { animation: tut-fade-out 250ms ease 1500ms both; }
-.is-smitten .tut-heart { visibility: visible; animation: tut-heart 520ms cubic-bezier(.2,1.8,.4,1) 1650ms both; }
+.is-smitten .tut-vs { animation: tut-fade-out 200ms ease 650ms both; }
+.is-smitten .tut-heart { visibility: visible; animation: tut-heart 460ms cubic-bezier(.2,1.8,.4,1) 750ms both; }
 @keyframes tut-fade-out { to { opacity: 0; } }
 /* ...and the pair draw together as the heart appears. */
-.is-smitten .tut-side:first-child > :nth-child(3) { animation: tut-closer-l 600ms cubic-bezier(.3,1.3,.5,1) 1650ms both; }
-.is-smitten .tut-side:last-child > :nth-child(3) { animation: tut-closer-r 600ms cubic-bezier(.3,1.3,.5,1) 1650ms both; }
+.is-smitten .tut-side:first-child > :nth-child(3) { animation: tut-closer-l 500ms cubic-bezier(.3,1.3,.5,1) 750ms both; }
+.is-smitten .tut-side:last-child > :nth-child(3) { animation: tut-closer-r 500ms cubic-bezier(.3,1.3,.5,1) 750ms both; }
 @keyframes tut-closer-l { to { transform: translateX(36px); } }
 @keyframes tut-closer-r { to { transform: translateX(-36px); } }
 @keyframes tut-heart { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1.3); } }
 @media (prefers-reduced-motion: reduce) { .is-smitten .tut-side > :nth-child(3), .tut-cast-item.is-new, .tut-heart, .tut-vs, .tut-cast-item.is-brawling > :first-child { animation: none; } .tut-cast-item.is-leaving { animation: none; display: none; } .is-smitten .tut-vs { visibility: hidden; } }
 .tut-trophies .is-low b { color: var(--color-accent); }
 .tut-none { opacity: 0.3; }
+/* Scenes: a small table in a modal, made of the real pieces (catalogue 1; hexes from pieces.js). */
+.tut-scene { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2); background: var(--color-bg); border: var(--border); }
+.tut-scene-board { display: flex; justify-content: center; gap: var(--space-4); }
+.tut-scene-hex { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tut-scene-hex .hex { position: relative; }
+.tut-scene-hex .hex-pieces { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.tut-scene-hex.is-scorched .hex { filter: brightness(0.35) saturate(0.4); transition: filter 600ms ease; }
+.tut-scene-row, .tut-scene-player { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-1) var(--space-2); background: var(--color-panel); border: var(--border); }
+.tut-scene-id { display: flex; align-items: center; gap: var(--space-2); min-width: 150px; }
+.tut-scene-id > span { display: flex; flex-direction: column; }
+.tut-scene-cell { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; min-height: 26px; min-width: 60px; flex: 1; }
+.tut-scene-label { font-family: var(--font-display); font-size: 10px; text-transform: uppercase; color: var(--color-muted); margin-right: var(--space-1); }
+.tut-scene-sway { display: inline-flex; gap: 2px; margin-right: var(--space-2); }
+.tut-scene-players { display: grid; gap: var(--space-1); }
+.tut-count { font-size: 11px; margin-left: 2px; }
+/* A card in a scene's hand: small, in its suit's colour, like the cards' band. */
+.tut-mini-card { display: inline-flex; align-items: center; gap: var(--space-1); padding: 1px var(--space-1); background: var(--card-face); color: var(--card-ink); border: var(--border); border-left: 4px solid var(--suit-none); font-size: 11px; vertical-align: middle; }
+.tut-mini-card.card-suit-nocturnals { border-left-color: var(--suit-nocturnals); } .tut-mini-card.card-suit-scifi { border-left-color: var(--suit-scifi); }
+.tut-mini-card.card-suit-sentients { border-left-color: var(--suit-sentients); } .tut-mini-card.card-suit-undead { border-left-color: var(--suit-undead); }
+.tut-mini-card.card-suit-demonic { border-left-color: var(--suit-demonic); }
+.tut-mini-card .tut-chip { border-color: var(--card-ink); }
+.tut-mini-card.is-lit { outline: var(--line) solid var(--color-accent); }
+.tut-scene-hand { flex: 2; gap: var(--space-1); }
+/* A tussle on a scene's hex before the casualties fly: a shake, dust, a little blood, the clash. */
+.tut-tussle { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.tut-scene-hex.is-tussling .hex > .sprite { animation: tut-shake 110ms linear 0s 8 alternate; }
+@keyframes tut-shake { from { transform: translate(-2px, 1px); } to { transform: translate(2px, -1px); } }
+.tut-clash { position: absolute; left: 50%; top: 42%; translate: -50% -50%; animation: tut-clash 1000ms cubic-bezier(.2,1.6,.4,1) both; }
+@keyframes tut-clash { 0% { opacity: 0; transform: scale(0.3) rotate(-20deg); } 25% { opacity: 1; transform: scale(1.3) rotate(8deg); } 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+.tut-dust { position: absolute; left: 50%; top: 50%; translate: -50% -50%; opacity: 0; animation: tut-dust 800ms ease-out var(--d) both; }
+@keyframes tut-dust { 0% { opacity: 0; transform: translate(0, 0) scale(0.4); } 30% { opacity: 0.9; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.4); } }
+.tut-blood { position: absolute; left: 50%; top: 45%; width: 4px; height: 4px; background: #e7482d; box-shadow: 4px 0 0 #a93c3b; opacity: 0; animation: tut-blood 600ms cubic-bezier(.2,.6,.4,1) var(--d) both; }
+@keyframes tut-blood { 0% { opacity: 1; transform: translate(0, 0); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 14px)); } }
+/* A small gauge beside an outcome: the count against the mark. */
+.tut-gauge { position: relative; display: inline-block; width: 72px; height: 10px; background: var(--color-cell); border: var(--border); vertical-align: middle; }
+.tut-gauge-fill { position: absolute; left: 0; top: 0; bottom: 0; width: var(--now); background: var(--color-ok); }
+.tut-gauge.is-over .tut-gauge-fill { background: var(--color-danger); }
+.tut-gauge-mark { position: absolute; left: var(--mark); top: -3px; bottom: -3px; border-left: 2px solid var(--color-accent); }
+/* Walking a scene through: lit tokens in their hover state, rows outlined, sway underlined; parts holding nothing lit dim. */
+.tut-part { transition: opacity 300ms ease, filter 300ms ease; }
+.tut-part.is-dim { opacity: 0.3; }
+.tut-scene-row.is-lit, .tut-scene-player.is-lit { outline: var(--line) solid var(--color-accent); outline-offset: -2px; }
+.tut-scene .piece-row.is-lit { box-shadow: 0 2px 0 var(--color-accent); }
 .tut-phases { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
 .tut-phases > div { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); background: var(--color-panel-2); border: var(--border); }
 .tut-phases b { font-family: var(--font-display); font-weight: 400; color: var(--color-accent); text-transform: uppercase; }

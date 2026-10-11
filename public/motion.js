@@ -25,6 +25,8 @@ import { tokenHtml, cubeHtml } from './pieces.js';
 /** How long one piece is in the air, and the gap between pieces leaving. */
 export const FLIGHT_MS = 700;
 const STAGGER_MS = 45;
+/** How much longer a flight to or from a supply or trophies takes. */
+export const SLOW = 1.6;
 /** The most pieces drawn along one path (the rest land with them). */
 const MAX_PER_PATH = 6;
 
@@ -91,7 +93,7 @@ export function planFlights(before, after, colourOf) {
     changes.push([{ kind: 'trophy', player: after.you }, (after.me.trophies[f] ?? 0) - (before.me.trophies[f] ?? 0)]);
     for (const p of piles.filter((x) => x.faction === f)) changes.push([{ kind: 'trophy', player: p.player }, p.n]);
     const { out, into } = flows(changes);
-    for (const path of pair(out, into)) flights.push({ ...path, piece: tokenHtml(f, 2), owner: '', faction: f });
+    for (const path of pair(out, into)) flights.push({ ...path, piece: tokenHtml(f, 1), owner: '', faction: f }); // the size tokens are on the board and in supply
   }
   for (const pid of after.seating) {
     const was = before.players[pid], now = after.players[pid];
@@ -107,7 +109,7 @@ export function planFlights(before, after, colourOf) {
     const { out, into } = flows(changes);
     out.sort((a, b) => order[a.spot.kind] - order[b.spot.kind]);
     into.sort((a, b) => order[a.spot.kind] - order[b.spot.kind]);
-    for (const path of pair(out, into)) flights.push({ ...path, piece: cubeHtml(colourOf(pid), 12), owner: pid });
+    for (const path of pair(out, into)) flights.push({ ...path, piece: cubeHtml(colourOf(pid), 8), owner: pid }); // the size cubes are on the board
   }
   return flights;
 }
@@ -156,12 +158,14 @@ export function fly(flights, you, o = {}) {
   for (const f of flights) {
     const from = elementOf(f.from, f.owner, you, f.faction);
     const to = elementOf(f.to, f.owner, you, f.faction);
-    if (from && to) paths.push({ from, to, piece: f.piece, n: f.n });
+    // Pieces leaving for or coming back from a supply or a trophy pile fly a little slower, so they're seen going.
+    const off = (/** @type {Spot} */ x) => x.kind === 'supply' || x.kind === 'trophy';
+    if (from && to) paths.push({ from, to, piece: f.piece, n: f.n, slow: off(f.from) || off(f.to) ? SLOW : 1 });
   }
   return flyPaths(paths, o);
 }
 
-/** Pieces flying from one element to another. @typedef {{ from: Element, to: Element, piece: string, n: number }} Path */
+/** Pieces flying from one element to another; `slow` stretches the flight (1.6 is 60% longer). @typedef {{ from: Element, to: Element, piece: string, n: number, slow?: number }} Path */
 
 /**
  * Fly pieces along paths between elements (any elements: the table, or the
@@ -177,7 +181,7 @@ export function flyPaths(paths, o = {}) {
   const layer = document.createElement('div');
   layer.className = 'flight-layer';
   document.body.appendChild(layer);
-  /** @type {{ el: HTMLElement, from: Element, to: Element, delay: number, jitter: number, last: { a: { x: number, y: number }, b: { x: number, y: number } } }[]} */
+  /** @type {{ el: HTMLElement, from: Element, to: Element, delay: number, jitter: number, duration: number, last: { a: { x: number, y: number }, b: { x: number, y: number } } }[]} */
   const pieces = [];
   /** @type {Set<Element>} */
   const landing = new Set();
@@ -192,7 +196,7 @@ export function flyPaths(paths, o = {}) {
       el.innerHTML = f.piece;
       el.style.opacity = '0';
       layer.appendChild(el);
-      pieces.push({ el, from, to, delay: (i++ * STAGGER_MS) / speed, jitter: (k - (n - 1) / 2) * 6, last: { a: centre(from), b: centre(to) } });
+      pieces.push({ el, from, to, delay: (i++ * STAGGER_MS) / speed, jitter: (k - (n - 1) / 2) * 6, duration: duration * (f.slow ?? 1), last: { a: centre(from), b: centre(to) } });
     }
   }
   if (!pieces.length) {
@@ -205,7 +209,7 @@ export function flyPaths(paths, o = {}) {
     const frame = (/** @type {number} */ now) => {
       let busy = false;
       for (const p of pieces) {
-        const t = Math.min(1, Math.max(0, (now - start - p.delay) / duration));
+        const t = Math.min(1, Math.max(0, (now - start - p.delay) / p.duration));
         if (t < 1) busy = true;
         // Re-measure both ends (an element replaced mid-flight keeps its last place).
         if (p.from.isConnected) p.last.a = centre(p.from);

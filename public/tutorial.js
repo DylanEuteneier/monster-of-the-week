@@ -26,7 +26,8 @@
  */
 import { spec, factionById, locationById, cardById, describeTarget, playerView, resolveFight, clone, listTargets, previewTarget, deckOf, printedOf, controllerOf, growthDue } from './engine.js';
 import { newTable, copyTable, autoMove, nextActor, play, botPicks, check, YOU, BOTS } from './tutorial-game.js';
-import { tokenHtml, cubeHtml, SEAT_COLOURS } from './pieces.js';
+import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
+import { flyPaths, SLOW } from './motion.js';
 import { cardHtml, suitIcon } from './cards.js';
 import art from './assets/sprites.json' with { type: 'json' };
 
@@ -37,7 +38,7 @@ import art from './assets/sprites.json' with { type: 'json' };
 
 /**
  * What a step shows. A step that shows nothing runs and the next one follows.
- * @typedef {{ type: 'modal', title: string, html: string, buttons?: { label: string, primary?: boolean, run: () => void }[] }
+ * @typedef {{ type: 'modal', title: string, html: string, scene?: { from: Scene, to: Scene, focus?: string[], fight?: string }, buttons?: { label: string, primary?: boolean, run: () => void }[] }
  *   | { type: 'spot', target: string | string[], title: string, html: string, dwell?: number, auto?: boolean }
  *   | { type: 'wait' }} Show
  * @typedef {() => (Show | null | Promise<Show | null>)} Step
@@ -143,6 +144,154 @@ function once(key) {
 }
 
 // ---------------------------------------------------------------------------
+// Scenes: a small table in a modal, made of the real assets (hexes, a faction
+// row, each player's supply and trophies), where a rule is first shown with
+// pieces flying as they would in play (designer, 2026-10-10: a simplified
+// board teaches a rule best the first time it comes up).
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {{ loc: string, tokens: Record<string, number>, sway?: Record<string, number>, scorched?: boolean }} SceneHex
+ * @typedef {{ f: string, supply: number, sway: Record<string, number> }} SceneRow
+ * @typedef {{ pid: string, supply?: number, trophies?: Record<string, number>, hand?: string[] }} ScenePlayer
+ * @typedef {{ hexes?: SceneHex[], rows?: SceneRow[], players?: ScenePlayer[] }} Scene
+ */
+
+/** A run of pieces, with a count once it's long. @param {number} n @param {() => string} piece @param {number} [cap] */
+const run = (n, piece, cap = 8) => (n > cap ? `${Array.from({ length: cap }, piece).join('')}<b class="tut-count">×${n}</b>` : Array.from({ length: n }, piece).join(''));
+
+/** A card in a scene's hand: its suit, name and printed sway, small. @param {string} id @param {boolean} [on] */
+function miniCard(id, on = false) {
+  const c = cardById(id);
+  return `<span class="tut-mini-card card-suit-${c.suit ?? 'none'}${on ? ' is-lit' : ''}" data-k="card:${id}">${suitIcon(c.suit, 1)}<b>${esc(c.name)}</b>${c.suit ? `<span class="tut-chip">+${printedOf(R.table.state, id)}</span>` : ''}</span>`;
+}
+
+/** A player's slayer group emblem (pixel art, 2×). @param {string} pid */
+function emblem(pid) {
+  const em = /** @type {Record<string, { width: number, height: number, src: string }>} */ (art.sprites)[R.table.state.players[pid]?.group ?? ''];
+  return em ? `<img class="sprite" src="${esc(em.src)}" width="${em.width * 2}" height="${em.height * 2}" alt="">` : '';
+}
+
+/** A scene, its focused parts lit in the table's own way (tokens in their hover state; rows outlined; sway underlined; a lit hex is simply not dimmed) and every part holding nothing lit dimmed. @param {Scene} sc @param {string[]} [focus] */
+function sceneHtml(sc, focus = []) {
+  const lit = (/** @type {string} */ k) => focus.includes(k);
+  const part = (/** @type {boolean} */ on) => (focus.length && !on ? ' is-dim' : '');
+  const hexes = (sc.hexes ?? []).map((h) => {
+    const rows = Object.entries(h.tokens).filter(([, n]) => n > 0).map(([f, n]) => `<span class="piece-row" data-k="hextok:${h.loc}:${f}">${run(n, () => tokenHtml(f, 1, lit(`hextok:${h.loc}:${f}`) ? 'hovered' : ''), 6)}</span>`).join('');
+    const sway = Object.entries(h.sway ?? {}).filter(([, n]) => n > 0).map(([pid, n]) => run(n, () => cubeHtml(colour(pid), 8))).join('');
+    const on = lit(`hex:${h.loc}`) || focus.some((k) => k.startsWith(`hextok:${h.loc}:`) || k === `hexsway:${h.loc}`);
+    return `<div class="tut-scene-hex tut-part${h.scorched ? ' is-scorched' : ''}${part(on)}" data-k="hex:${h.loc}">${hexHtml(h.loc, 2, `${rows}<span class="piece-row${lit(`hexsway:${h.loc}`) ? ' is-lit' : ''}" data-k="hexsway:${h.loc}">${sway}</span>`)}<span class="small">${L(h.loc)}</span></div>`;
+  }).join('');
+  const rows = (sc.rows ?? []).map((r) => `<div class="tut-scene-row tut-part${lit(`row:${r.f}`) ? ' is-lit' : part(false)}" data-k="row:${r.f}">
+      <span class="tut-scene-id">${tokenHtml(r.f, 2)}<b>${F(r.f)}</b></span>
+      <span class="tut-scene-cell" data-k="rowsupply:${r.f}"><span class="tut-scene-label">supply</span>${run(r.supply, () => tokenHtml(r.f, 1))}</span>
+      <span class="tut-scene-cell" data-k="rowsway:${r.f}"><span class="tut-scene-label">sway</span>${Object.entries(r.sway).filter(([, n]) => n > 0).map(([pid, n]) => `<span class="tut-scene-sway">${run(n, () => cubeHtml(colour(pid), 9))}</span>`).join('')}</span>
+    </div>`).join('');
+  const players = (sc.players ?? []).map((p) => `<div class="tut-scene-player tut-part${lit(`player:${p.pid}`) ? ' is-lit' : part(false)}" data-k="player:${p.pid}">
+      <span class="tut-scene-id">${emblem(p.pid)}<span><b>${who(p.pid)}</b><span class="small muted">${esc(spec.slayerGroups.find((g) => g.id === R.table.state.players[p.pid]?.group)?.name ?? '')}</span></span></span>
+      ${p.hand ? `<span class="tut-scene-cell tut-scene-hand"><span class="tut-scene-label">hand</span>${p.hand.map((id) => miniCard(id, lit(`card:${id}`))).join('')}</span>` : ''}
+      ${p.supply !== undefined ? `<span class="tut-scene-cell" data-k="supply:${p.pid}"><span class="tut-scene-label">supply</span>${run(p.supply, () => cubeHtml(colour(p.pid), 9))}</span>` : ''}
+      <span class="tut-scene-cell" data-k="trophies:${p.pid}"><span class="tut-scene-label">trophies</span>${Object.entries(p.trophies ?? {}).filter(([, n]) => n > 0).map(([f, n]) => run(n, () => tokenHtml(f, 1))).join('')}</span>
+    </div>`).join('');
+  // One persistent layout: faction rows on top, the locations under them, the players under those.
+  return `<div class="tut-scene">${rows}${hexes ? `<div class="tut-scene-board">${hexes}</div>` : ''}${players ? `<div class="tut-scene-players">${players}</div>` : ''}</div>`;
+}
+
+/** Where each piece is in a scene, as signed changes between two scenes. @param {Scene} a @param {Scene} b */
+function sceneChanges(a, b) {
+  /** @type {Map<string, Map<string, number>>} piece kind → place key → change */
+  const delta = new Map();
+  const add = (/** @type {string} */ kind, /** @type {string} */ key, /** @type {number} */ d) => { if (!d) return; const m = delta.get(kind) ?? new Map(); m.set(key, (m.get(key) ?? 0) + d); delta.set(kind, m); };
+  for (const [sc, sign] of /** @type {[Scene, number][]} */ ([[a, -1], [b, 1]])) {
+    for (const h of sc.hexes ?? []) {
+      for (const [f, n] of Object.entries(h.tokens)) add(`token:${f}`, `hex:${h.loc}`, sign * n);
+      for (const [pid, n] of Object.entries(h.sway ?? {})) add(`cube:${pid}`, `hex:${h.loc}`, sign * n);
+    }
+    for (const r of sc.rows ?? []) {
+      add(`token:${r.f}`, `rowsupply:${r.f}`, sign * r.supply);
+      for (const [pid, n] of Object.entries(r.sway)) add(`cube:${pid}`, `rowsway:${r.f}`, sign * n);
+    }
+    for (const p of sc.players ?? []) {
+      if (p.supply !== undefined) add(`cube:${p.pid}`, `supply:${p.pid}`, sign * p.supply);
+      for (const [f, n] of Object.entries(p.trophies ?? {})) add(`token:${f}`, `trophies:${p.pid}`, sign * n);
+    }
+  }
+  return delta;
+}
+
+/** What stays put between two scenes: every count at the lower of the two (pieces leave as they launch, arrive as they land). @param {Scene} a @param {Scene} b @returns {Scene} */
+function sceneMid(a, b) {
+  const lo = (/** @type {Record<string, number> | undefined} */ x, /** @type {Record<string, number> | undefined} */ y) => Object.fromEntries([...new Set([...Object.keys(x ?? {}), ...Object.keys(y ?? {})])].map((k) => [k, Math.min(x?.[k] ?? 0, y?.[k] ?? 0)]));
+  const find = (/** @type {any[] | undefined} */ list, /** @type {string} */ key, /** @type {string} */ id) => (list ?? []).find((x) => x[key] === id);
+  return {
+    hexes: (b.hexes ?? []).map((h) => { const o = find(a.hexes, 'loc', h.loc); return { ...h, scorched: o?.scorched ?? false, tokens: lo(o?.tokens, h.tokens), sway: lo(o?.sway, h.sway) }; }),
+    rows: (b.rows ?? []).map((r) => { const o = find(a.rows, 'f', r.f); return { ...r, supply: Math.min(o?.supply ?? 0, r.supply), sway: lo(o?.sway, r.sway) }; }),
+    players: (b.players ?? []).map((p) => { const o = find(a.players, 'pid', p.pid); return { ...p, supply: p.supply === undefined ? undefined : Math.min(o?.supply ?? 0, p.supply), trophies: lo(o?.trophies, p.trophies) }; }),
+  };
+}
+
+/** A fixed, invisible stand-in at an element's place, so a flight keeps its ends while the scene is redrawn. @param {Element} el */
+function ghost(el) {
+  const r = el.getBoundingClientRect();
+  const g = document.createElement('div');
+  Object.assign(g.style, { position: 'fixed', left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, pointerEvents: 'none' });
+  document.body.appendChild(g);
+  return g;
+}
+
+/** A tussle on a scene's hex: it shakes, dust puffs up, a little blood flies, the clash shows. @param {HTMLElement} slot @param {string} loc */
+function tussle(slot, loc) {
+  const hex = slot.querySelector(`[data-k="hex:${loc}"]`);
+  const at = hex?.querySelector('.hex');
+  if (!hex || !at || typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve();
+  const fx = document.createElement('div');
+  fx.className = 'tut-tussle';
+  const puffs = [[-34, -10], [30, -14], [-20, 18], [26, 16], [0, -26]].map(([x, y], i) => `<span class="tut-dust" style="--dx:${x}px;--dy:${y}px;--d:${i * 70}ms">${DUST}</span>`).join('');
+  const blood = [[-26, -30], [22, -34], [34, 4], [-36, 8], [10, 30], [-12, -38], [30, -20]].map(([x, y], i) => `<span class="tut-blood" style="--dx:${x}px;--dy:${y}px;--d:${200 + i * 50}ms"></span>`).join('');
+  fx.innerHTML = `${puffs}${blood}<span class="tut-clash">${CLASH}</span>`;
+  at.appendChild(fx);
+  hex.classList.add('is-tussling');
+  return sleep(1100).then(() => { fx.remove(); hex.classList.remove('is-tussling'); });
+}
+
+/** Fly a scene's pieces from one state to the next inside `slot` (a tussle first, if a hex fights), then draw the next. @param {HTMLElement} slot @param {Scene} a @param {Scene} b @param {string} [fight] */
+function playScene(slot, a, b, fight = '', focus = /** @type {string[]} */ ([])) {
+  /** @type {import('./motion.js').Path[]} */
+  const paths = [];
+  for (const [kind, places] of sceneChanges(a, b)) {
+    const [what, who_] = kind.split(':');
+    const out = [...places].filter(([, d]) => d < 0).map(([k, d]) => ({ k, n: -d }));
+    const into = [...places].filter(([, d]) => d > 0).map(([k, d]) => ({ k, n: d }));
+    for (const src of out) {
+      for (const dst of into) {
+        const n = Math.min(src.n, dst.n);
+        if (n <= 0) continue;
+        const from = slot.querySelector(`[data-k="${src.k}"]`), to = slot.querySelector(`[data-k="${dst.k}"]`);
+        const off = (/** @type {string} */ k) => /^(supply|rowsupply|trophies):/.test(k);
+        if (from && to) paths.push({ from, to, n, piece: what === 'token' ? tokenHtml(who_, 1) : cubeHtml(colour(who_), 9), slow: off(src.k) || off(dst.k) ? SLOW : 1 });
+        src.n -= n; dst.n -= n;
+      }
+    }
+  }
+  // The pieces in flight leave their places as they launch.
+  return (fight ? tussle(slot, fight) : Promise.resolve()).then(() => {
+    // Measure each path's ends now, then redraw without the pieces in flight; the ends keep where they were.
+    const measured = paths.map((p) => ({ ...p, from: ghost(p.from), to: ghost(p.to) }));
+    slot.innerHTML = sceneHtml(sceneMid(a, b), focus);
+    return flyPaths(measured).then(() => measured.forEach((p) => { p.from.remove(); p.to.remove(); }));
+  }).then(() => { slot.innerHTML = sceneHtml(b, focus); });
+}
+
+/**
+ * A beat of a scene in a modal: its pieces move from `from` to `to` once it's
+ * up, and the parts named in `focus` (data-k keys) are lit, the rest dimmed,
+ * so a scene can be walked through beat by beat on one layout.
+ * @param {string} title @param {Scene} from @param {Scene} to @param {string} html @param {string[]} [focus] @param {string} [fight]  a hex that fights on this beat (a tussle first) @returns {Step}
+ */
+const sceneStep = (title, from, to, html, focus = [], fight = '') => () => ({ type: 'modal', title, html, scene: { from, to, focus, fight } });
+
+
+// ---------------------------------------------------------------------------
 // 1. How to win
 // ---------------------------------------------------------------------------
 
@@ -166,6 +315,8 @@ const op = (/** @type {string} */ s) => `<span class="tut-op">${s}</span>`;
 const chip = (/** @type {string} */ s) => `<span class="tut-chip">${s}</span>`;
 const frame = (/** @type {string} */ mechanic, /** @type {string} */ strategy) => `<dl class="tut-frame"><dt>Mechanic</dt><dd>${mechanic}</dd><dt>Strategy</dt><dd>${strategy}</dd></dl>`;
 const more = (/** @type {string} */ label, /** @type {string} */ html) => `<details class="tut-more"><summary>${label}</summary>${html}</details>`;
+/** A small gauge like the island's: a count against the mark. @param {number} n @param {number} mark */
+const miniGauge = (n, mark) => { const top = Math.max(n, mark * 2); return `<span class="tut-gauge${n > mark ? ' is-over' : ''}" style="--now:${(100 * n) / top}%;--mark:${(100 * mark) / top}%"><span class="tut-gauge-fill"></span><span class="tut-gauge-mark"></span></span>`; };
 /** One count per faction as tokens, the lowest picked out. @param {string[]} factions @param {number[]} counts */
 const trophyRow = (factions, counts) => { const low = Math.min(...counts); return `<div class="tut-trophies">${factions.map((f, i) => `<span class="${counts[i] === low ? 'is-low' : ''}">${counts[i] ? tokens(f, counts[i]) : `<span class="tut-none">${tokenHtml(f, 1)}</span>`}<b>${counts[i]}</b></span>`).join('')}</div>`; };
 
@@ -181,6 +332,10 @@ function castOf() {
 const middleOut = (items) => [items[1], items[2], items[0], items[3], items[4]].filter((x) => x !== undefined);
 /** Slayers against invaders: two columns, each grown out from its first item. @param {string[]} left @param {string[]} right */
 const versus = (left, right, cls = '') => `<div class="tut-versus ${cls}"><div class="tut-side">${middleOut(left).join('')}</div><span class="tut-op tut-mid"><span class="tut-vs">vs</span><span class="tut-heart" aria-label="backs">${HEART}</span></span><div class="tut-side">${middleOut(right).join('')}</div></div>`;
+/** Crossed swords for a fight, in palette colours (blades w, hilts y, ink k). */
+const CLASH = '<svg width="27" height="27" viewBox="0 0 9 9" shape-rendering="crispEdges"><path fill="#e0f2f4" d="M0 0h1v1h1v1h1v1h1v1H3V3H2V2H1V1H0zM8 0h1v1H8v1H7v1H6v1H5V3h1V2h1V1h1z"/><path fill="#f4b41a" d="M4 4h1v1H4zM3 5h1v1H3zM5 5h1v1H5zM2 6h1v1H2zM6 6h1v1H6z"/><path fill="#302b2d" d="M1 7h1v1h1v1H0V8h1zM7 7h1v1h1v1H6V8h1z"/></svg>';
+/** A puff of dust (palette greys). */
+const DUST = '<svg width="18" height="12" viewBox="0 0 6 4" shape-rendering="crispEdges"><path fill="#a0948f" d="M2 0h2v1h1v1h1v2H0V2h1V1h1z"/><path fill="#e0f2f4" d="M2 1h1v1H2z"/></svg>';
 /** A pixel heart, in the palette's red. */
 const HEART = '<svg width="21" height="18" viewBox="0 0 7 6" shape-rendering="crispEdges"><path fill="#e7482d" d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/><path fill="#f47e20" d="M1 1h1v1H1z"/></svg>';
 /** Crash-in order for the items after the first: the inner pair, then the outer pair. @param {number} k  0-based index among the rest */
@@ -256,17 +411,17 @@ function endingSteps() {
   const theirScore = F_.players[rival].standing[backs] - F_.players[rival].trophies[backs];
 
   return [
-    spot(SEL.presence, 'Count the monsters', `${eq(...v.factions.map((f) => tokenHtml(f, 1)), op('on the island now'), op('='), `<b>${total(s0)}</b>`)}<p>After round ${rounds()}, count the monster tokens left on the board:</p>${eq(`more than <b>${t}</b>`, op('→'), '<b>invader sway</b> decides the winner')}${eq(`<b>${t}</b> or fewer`, op('→'), '<b>complete trophy sets</b> decide the winner')}`),
+    spot(SEL.presence, 'Count the monsters', `${eq(...v.factions.map((f) => tokenHtml(f, 1)), op('on the island now'), op('='), `<b>${total(s0)}</b>`)}<p>After round ${rounds()}, count the monster tokens left on the board:</p>${eq(miniGauge(t + 8, t), `more than <b>${t}</b>`, op('→'), '<b>invader sway</b> decides the winner')}${eq(miniGauge(t - 6, t), `<b>${t}</b> or fewer`, op('→'), '<b>complete trophy sets</b> decide the winner')}`),
     demo(() => s0, () => A, () => ({ type: 'spot', target: [SEL.hex(g1.loc), SEL.hex(g2.loc), SEL.presence, SEL.trophyTab], title: 'Fights kill monsters',
       html: `${eq(chip('fight'), op('→'), tokens(g1.f, 3), op('→'), 'trophies', op('·'), `<b>${total(A)}</b> monsters left`)}<p>The dead leave the board. Some become your trophies.</p>` })),
     demo(() => A, () => B, () => ({ type: 'spot', target: [...grew.map(SEL.hex), SEL.presence], title: 'Growth breeds more',
       html: `${eq(chip('round end'), op('→'), `a faction alone with ${opt('growth')}+ monsters`, op('→'), '+1', op('·'), `<b>${total(B)}</b> monsters`)}<p>Left alone, they multiply.</p>` })),
     demo(() => B, () => C, () => ({ type: 'spot', target: [SEL.presence, SEL.trophyTab], title: `${t} or fewer: complete sets decide`,
-      html: `<p>The slayers did their job. Whoever holds the most <b>complete sets</b> of trophies wins: count your fewest colour.</p>${trophyRow(v.factions, lopsided)}${eq('no', tokenHtml(missing, 1), op('='), 'no complete set', op('='), '<b>0</b>')}<p class="small muted">Sway counts for nothing.</p>` })),
+      html: `${eq(miniGauge(total(C), t), `<b>${total(C)}</b>`, op(`${t} or fewer`))}<p>The slayers did their job. Whoever holds the most <b>complete sets</b> of trophies wins: count your fewest colour.</p>${trophyRow(v.factions, lopsided)}${eq('no', tokenHtml(missing, 1), op('='), 'no complete set', op('='), '<b>0</b>')}<p class="small muted">Sway counts for nothing.</p>` })),
     demo(() => C, () => D, () => ({ type: 'spot', target: [SEL.trophyTab], title: 'Hunt every kind',
       html: `${trophyRow(v.factions, even)}${eq('2 of every colour', op('='), '2 complete sets', op('='), '<b>2</b>')}${more('Ties', 'Compare the next-fewest colour, then the next.')}` })),
     demo(() => D, () => E, () => ({ type: 'spot', target: [...homes.map(SEL.hex), SEL.presence, SEL.faction(backs)], title: `More than ${t}: the biggest faction decides`,
-      html: `${eq(tokens(backs, 3), op('most monsters'), op('→'), `the <b>${F(backs)}</b> take the island`)}<p>The winner is whoever they're most swayed by.</p>${more('Ties', 'Factions tied on tokens: the one controlling more locations wins; still tied, they win together and scores add up.')}` })),
+      html: `${eq(miniGauge(total(E), t), `<b>${total(E)}</b>`, op(`more than ${t}`))}${eq(tokens(backs, 3), op('most monsters'), op('→'), `the <b>${F(backs)}</b> take the island`)}<p>The winner is whoever they're most swayed by.</p>${more('Ties', 'Factions tied on tokens: the one controlling more locations wins; still tied, they win together and scores add up.')}` })),
     demo(() => E, () => F_, () => ({ type: 'spot', target: [SEL.faction(backs), SEL.trophyTab], title: 'Its backers score',
       html: `${eq(cubes(YOU, want), op('−'), '0', op('='), `<b>${yourScore}</b>`, '<span class="small">you</span>')}${eq(cubes(rival, F_.players[rival].standing[backs]), op('−'), '0', op('='), `<b>${theirScore}</b>`, `<span class="small">${who(rival)}</span>`)}<p>Sway with them, minus their trophies. You backed them and never hunted them, so you win. Trophy sets count for nothing.</p>${more('Ties', 'Fewest trophies of the winner, then affinity, then the next faction down.')}` })),
     restore,
@@ -284,7 +439,6 @@ function chapterWin() {
   const { faction } = yours();
   const fi = v.factions.indexOf(faction);
   const st = R.table.state;
-  const home = Object.keys(st.board).find((l) => (st.board[l].sway[YOU] ?? 0) > 0 && Object.values(st.board[l].tokens).some((n) => n > 0));
   return [
     chapter('1 · The basics'),
     // The premise (designer, 2026-10-10), in one layout: your group against your monster; on Next, every group and
@@ -310,17 +464,35 @@ function chapterWin() {
         ${versus([groupItem(gs[0], true), ...gs.slice(1).map((g, k) => groupItem(g, false, 0, out(k)))], [factionItem(fs[0], false), ...fs.slice(1).map((f, k) => factionItem(f, false, 0, false, out(k)))], 'is-smitten')}
         <p>Every group hunts every monster, <b>until one decides a monster is worth backing</b>. Say you fall for the ${F(backs)}: if they take the island, you win.</p>` };
     },
-    spot(home ? SEL.hex(home) : SEL.board, 'Monsters and sway', `
-      ${eq(tokenHtml(home ? Object.keys(st.board[home].tokens).find((f) => st.board[home].tokens[f] > 0) ?? faction : faction, 2), op('='), 'a monster')}
-      ${eq(cubeHtml(colour(YOU), 12), op('='), 'your sway')}
-      <p>Every token on the island is a monster. Each cube in your colour is your sway.</p>`),
-    // The two things a score is made of, before the endings that count them (designer, 2026-10-10).
-    spot(SEL.faction(faction), 'Sway: how much a faction notices you', `
-      ${eq(cubes(YOU, 3), op('→'), tokenHtml(faction, 1))}
-      <p>Your sway with a faction sits in its row: the pull your bait and traps have on it. Spend cards to gain it. If you back a faction, it's your claim when it wins.</p>`),
-    spot(SEL.trophyTab, 'Trophies: monsters you got killed', `
-      ${eq(chip('fight'), op('→'), tokens(v.factions[(fi + 2) % 5], 2), op('→'), cubeHtml(colour(YOU), 10))}
-      <p>When two monsters fight over a location, whoever has the most sway there takes the dead. Kept secret, here.</p>`),
+    ...(() => {
+      // The basics as one growing scene (designer, 2026-10-10): a faction row and its sway; a location; monsters
+      // arriving there from their supplies; sway following them as bids; the fight and its trophies.
+      const c = sceneCast();
+      const Lx = c.L2; // a location in your region where the fight happens
+      /** @returns {SceneRow[]} */
+      const rows = (/** @type {number} */ fOut, /** @type {number} */ gOut, /** @type {number} */ youOut, /** @type {number} */ ashOut) => [
+        { f: c.F0, supply: c.supF - fOut, sway: { [YOU]: c.you0 - youOut, [c.ash]: c.ash0 + 1 - ashOut } },
+        { f: c.G, supply: c.st.supply[c.G] - gOut, sway: /** @type {Record<string, number>} */ ({}) },
+      ];
+      /** @type {Scene} */ const s1 = { rows: rows(0, 0, 0, 0).slice(0, 1) };
+      /** @type {Scene} */ const s2 = { hexes: [{ loc: Lx, tokens: {} }], rows: rows(0, 0, 0, 0).slice(0, 1) };
+      /** @type {Scene} */ const s3 = { hexes: [{ loc: Lx, tokens: { [c.F0]: 4, [c.G]: 3 } }], rows: rows(4, 3, 0, 0) };
+      /** @type {Scene} */ const s4 = { hexes: [{ loc: Lx, tokens: { [c.F0]: 4, [c.G]: 3 }, sway: { [YOU]: 2, [c.ash]: 1 } }], rows: rows(4, 3, 2, 1) };
+      const players = (/** @type {Record<string, number>} */ yours_, /** @type {Record<string, number>} */ ashs) => [{ pid: YOU, trophies: yours_ }, { pid: c.ash, trophies: ashs }];
+      /** @type {Scene} */ const s5 = { ...s4, players: players({}, {}) };
+      /** @type {Scene} */ const s6 = { ...s4, hexes: [{ loc: Lx, tokens: { [c.F0]: 4, [c.G]: 0 }, sway: { [YOU]: 2, [c.ash]: 1 } }], players: players({ [c.G]: 3 }, {}) };
+      /** @type {Scene} */ const s7 = { ...s4, hexes: [{ loc: Lx, tokens: { [c.F0]: 3 }, sway: { [YOU]: 2, [c.ash]: 1 } }], players: players({ [c.G]: 3 }, { [c.F0]: 1 }) };
+      const title = 'Monsters, sway and trophies';
+      return [
+        sceneStep(title, s1, s1, `<p>This is the ${F(c.F0)}' row: their monsters waiting in supply, and every slayer group's <b>sway</b> with them. Each cube in your colour is your sway: how much the ${F(c.F0)} have noticed you, and the pull your bait and traps have on them.</p>`, [`row:${c.F0}`]),
+        sceneStep(title, s1, s2, `<p>Below it, a location: ${L(Lx)}, one of fifteen on the island.</p>`, [`hex:${Lx}`]),
+        sceneStep(title, s2, s3, `${eq(tokenHtml(c.F0, 2), op('/'), tokenHtml(c.G, 2), op('='), 'a monster')}<p>Monsters come onto the board from their faction's supply. Here the ${F(c.F0)} meet the ${F(c.G)}, whose row joins above: two factions in one place will fight.</p>`, [`hex:${Lx}`, `row:${c.F0}`, `row:${c.G}`]),
+        sceneStep(title, s3, s4, `<p>Sway follows the monsters onto the location. Sway on a location is a <b>bid</b> for its fight: you have 2 here, ${who(c.ash)} 1.</p>`, [`hexsway:${Lx}`, `row:${c.F0}`]),
+        sceneStep(title, s4, s5, `<p>At the end of the round the monsters fight, and the dead become <b>trophies</b>.</p>`, [`hextok:${Lx}:${c.F0}`, `hextok:${Lx}:${c.G}`, `player:${YOU}`, `player:${c.ash}`], Lx),
+        sceneStep(title, s5, s6, `<p>The most sway there takes the bigger pile: that's you.</p>`, [`hextok:${Lx}:${c.G}`, `hexsway:${Lx}`, `player:${YOU}`]),
+        sceneStep(title, s6, s7, `<p>Second most takes the smaller: ${who(c.ash)}. Trophies are kept secret.</p>`, [`hextok:${Lx}:${c.F0}`, `hexsway:${Lx}`, `player:${c.ash}`]),
+      ];
+    })(),
     chapter('2 · How to win'),
     ...endingSteps(),
   ];
@@ -380,52 +552,117 @@ function economyDemo() {
   return { s0, s1, spend, gain, best };
 }
 
-function chapterEconomy() {
+/**
+ * The scenes' cast, from this game: your faction lured from a neighbouring
+ * location into a fight with a rival faction at one of your locations, a rival
+ * player bidding there too, and a tie elsewhere.
+ */
+function sceneCast() {
+  const st = R.table.state;
   const v = view();
-  const { group, arch, faction } = yours();
+  const { faction: F0 } = yours();
   const mine = v.players[YOU];
   const onBoard = Object.keys(v.board).filter((l) => (v.board[l].sway[YOU] ?? 0) > 0);
-  const others = v.factions.filter((f) => f !== faction);
-  const both = onBoard.find((l) => Object.values(v.board[l].tokens).some((n) => n > 0)) ?? onBoard[0];
+  const others = v.factions.filter((f) => f !== F0);
+  const map = /** @type {{ locations: Record<string, { region: string }> }} */ (/** @type {unknown} */ (spec.map));
+  const G = others[0], H = others[1];
+  const ash = st.seating.find((pid) => pid !== YOU) ?? YOU;
+  const L1 = onBoard[0] ?? Object.keys(st.board)[0];
+  const L2 = Object.keys(map.locations).find((l) => l !== L1 && map.locations[l].region === map.locations[L1].region) ?? Object.keys(st.board)[1];
+  const aligned = (/** @type {string} */ l, /** @type {string} */ f) => locationById(l).archetype === factionById(f).archetype;
+  const L3 = Object.keys(st.board).find((l) => l !== L1 && l !== L2 && !aligned(l, G) && !aligned(l, H)) ?? Object.keys(st.board)[2];
+  const supF = st.supply[F0], you0 = mine.standing[F0], ash0 = v.players[ash].standing[F0];
+  const row = (/** @type {number} */ yours_) => ({ f: F0, supply: supF, sway: { [YOU]: yours_, [ash]: ash0 } });
+  /** @type {Scene} */ const bid = { hexes: [{ loc: L1, tokens: { [F0]: 4, [G]: 3 }, sway: { [YOU]: 2, [ash]: 1 } }], players: [{ pid: YOU, trophies: {} }, { pid: ash, trophies: {} }] };
+  /** @type {Scene} */ const fought = { hexes: [{ loc: L1, tokens: { [F0]: 3, [G]: 0 }, sway: { [YOU]: 2, [ash]: 1 } }], players: [{ pid: YOU, trophies: { [G]: 3 } }, { pid: ash, trophies: { [F0]: 1 } }] };
+  return { st, v, F0, G, H, ash, L1, L2, L3, mine, onBoard, others, supF, you0, ash0, row, bid, fought };
+}
+
+function chapterEconomy() {
+  const { group, arch } = yours();
   const d = economyDemo();
+  const { st, F0, G, H, ash, L1, L2, L3, mine, onBoard, you0, ash0, supF } = sceneCast();
+  const gain = d.spend ? d.gain : 2;
+  // The core loop as one story (designer, 2026-10-10): an offering for sway, a gambit that spends it into a contested
+  // location where you're not the leader, and the fight that pays out. Real cards from your suit; the lure at your
+  // own ground, the fight at a neighbour in the same region.
+  const suitCards = deckOf(st).filter((id) => cardById(id).suit === arch.id);
+  const lure = suitCards.find((id) => cardById(id).action === 'lure') ?? suitCards[0];
+  const offer = suitCards.find((id) => id !== lure) ?? suitCards[0];
+  const g = printedOf(st, offer);
+  const ashSup = st.players[ash].supply;
+  const Lfrom = L1, Lfight = L2;
+  const rowS = (/** @type {number} */ y, /** @type {number} */ a) => ({ f: F0, supply: supF, sway: { [YOU]: y, [ash]: a } });
+  /** @param {Partial<Record<'L1' | 'L2' | 'row' | 'you' | 'ash', any>>} o @returns {Scene} */
+  const story = (o) => ({ hexes: [{ loc: Lfrom, ...o.L1 }, { loc: Lfight, ...o.L2 }], rows: [o.row], players: [{ pid: YOU, ...o.you }, { pid: ash, ...o.ash }] });
+  const T0 = story({ L1: { tokens: { [F0]: 4 }, sway: { [YOU]: 1 } }, L2: { tokens: { [G]: 3 }, sway: { [ash]: 2 } }, row: rowS(you0, ash0), you: { supply: mine.supply, hand: [offer, lure], trophies: {} }, ash: { supply: ashSup, trophies: {} } });
+  const T1 = story({ L1: { tokens: { [F0]: 4 }, sway: { [YOU]: 1 } }, L2: { tokens: { [G]: 3 }, sway: { [ash]: 2 } }, row: rowS(you0 + g, ash0), you: { supply: mine.supply - g, hand: [lure], trophies: {} }, ash: { supply: ashSup, trophies: {} } });
+  const T2 = story({ L1: { tokens: { [F0]: 0 }, sway: { [YOU]: 1 } }, L2: { tokens: { [G]: 3, [F0]: 4 }, sway: { [ash]: 2, [YOU]: 1 } }, row: rowS(you0 + g - 1, ash0), you: { supply: mine.supply - g, hand: [], trophies: {} }, ash: { supply: ashSup, trophies: {} } });
+  const T3 = story({ L1: { tokens: {}, sway: { [YOU]: 1 } }, L2: { tokens: { [G]: 0, [F0]: 4 }, sway: { [ash]: 2, [YOU]: 1 } }, row: rowS(you0 + g - 1, ash0), you: { supply: mine.supply - g, hand: [], trophies: {} }, ash: { supply: ashSup, trophies: { [G]: 3 } } });
+  const T4 = story({ L1: { tokens: {}, sway: { [YOU]: 1 } }, L2: { tokens: { [F0]: 3 }, sway: { [ash]: 2, [YOU]: 1 } }, row: rowS(you0 + g - 1, ash0), you: { supply: mine.supply - g, hand: [], trophies: { [F0]: 1 } }, ash: { supply: ashSup, trophies: { [G]: 3 } } });
+  const T5 = story({ L1: { tokens: {}, sway: { [YOU]: 1 } }, L2: { tokens: { [F0]: 3 }, sway: { [ash]: 0, [YOU]: 1 } }, row: rowS(you0 + g - 1, ash0 + 1), you: { supply: mine.supply - g, hand: [], trophies: { [F0]: 1 } }, ash: { supply: ashSup + 1, trophies: { [G]: 3 } } });
+  /** @type {Scene} */ const tie = { hexes: [{ loc: L3, tokens: { [G]: 2, [H]: 2 }, sway: { [ash]: 1 } }], players: [{ pid: ash, supply: 10 }] };
+  /** @type {Scene} */ const tied = { hexes: [{ loc: L3, tokens: {}, sway: {}, scorched: true }], players: [{ pid: ash, supply: 11 }] };
+  /** @type {Scene} */ const bet = { rows: [rowS(you0 + g - 1, ash0 + 1)], players: [{ pid: YOU, trophies: { [F0]: 1 } }] };
+
   /** @type {Step[]} */
-  const flow = [];
-  if (d.spend) {
-    flow.push(demo(() => d.s0, () => d.s1, () => ({ type: 'spot', target: [SEL.faction(faction), SEL.supply], title: '1 · Leave an offering: supply → sway',
-      html: `${eq(chip('supply'), op('→'), cubes(YOU, d.gain), op('→'), tokenHtml(faction, 1))}<p>Spend <b>${esc(cardById(/** @type {string} */ (d.spend)).name)}</b> for its +${d.gain}: the ${F(faction)} take notice. (A demonstration on a copy of the table.)</p>` })));
-  }
+  const table = [];
+  if (d.spend) table.push(demo(() => d.s0, () => d.s1, () => ({ type: 'spot', target: [SEL.faction(F0), SEL.supply], title: 'On the table: an offering',
+    html: `${eq(chip('supply'), op('→'), cubes(YOU, d.gain), op('→'), tokenHtml(F0, 1))}<p>${esc(cardById(/** @type {string} */ (d.spend)).name)}, spent for +${d.gain}.</p>` })));
   const b = d.best;
   if (b) {
     const moved = changes(d.s1, b.s2);
     const paidWith = d.s1.factions.filter((f) => b.s2.players[YOU].standing[f] < d.s1.players[YOU].standing[f]);
-    flow.push(
-      demo(() => d.s1, () => b.s2, () => ({ type: 'spot', target: [...moved.locs.map(SEL.hex), ...paidWith.map(SEL.faction)], title: '2 · Set the bait: sway → a bid',
-        html: `${eq(...paidWith.map((f) => tokenHtml(f, 1)), cubes(YOU, 1), op('→'), chip(L(b.loc)))}<p><b>${esc(cardById(b.card).name)}</b>: ${esc(describeTarget(b.card, b.target))}.</p>` })),
-      demo(() => b.s2, () => b.s3, () => ({ type: 'spot', target: [SEL.hex(b.loc), SEL.trophyTab, ...b.s3.factions.filter((f) => b.s3.players[YOU].standing[f] > b.s2.players[YOU].standing[f]).map(SEL.faction), SEL.supply], title: '3 · The fight: a bid → trophies',
-        html: `${fightLines(b.s2, b.s3, b.loc)}${eq('bigger group wins', op('·'), 'loser loses all', op('·'), 'winner loses half that (at least 1)')}${eq('leader\'s sway there', op('→'), 'half joins their sway with the winner: a foothold', op('·'), 'the rest goes home')}${eq('equal groups', op('→'), 'both wiped out, the location scorched for good')}<p class="small muted">Unless it's one side's own ground: then that side wins. A scorch leaves nobody any trophies.</p>` })),
+    table.push(
+      demo(() => d.s1, () => b.s2, () => ({ type: 'spot', target: [...moved.locs.map(SEL.hex), ...paidWith.map(SEL.faction)], title: 'On the table: the bait',
+        html: `${eq(...paidWith.map((f) => tokenHtml(f, 1)), cubes(YOU, 1), op('→'), chip(L(b.loc)))}<p>${esc(cardById(b.card).name)}: ${esc(describeTarget(b.card, b.target))}.</p>` })),
+      demo(() => b.s2, () => b.s3, () => ({ type: 'spot', target: [SEL.hex(b.loc), SEL.trophyTab, ...b.s3.factions.filter((f) => b.s3.players[YOU].standing[f] > b.s2.players[YOU].standing[f]).map(SEL.faction), SEL.supply], title: 'On the table: the fight',
+        html: fightLines(b.s2, b.s3, b.loc) })),
     );
   }
   return [
     chapter('3 · Sway'),
-    (() => {
-      // A concrete example: your sway against a rival's at one of your locations, and who takes which pile.
-      const rival = R.table.state.seating.find((pid) => pid !== YOU) ?? YOU;
-      const where = onBoard[0] ? L(onBoard[0]) : 'a location';
-      return spot(onBoard.length ? onBoard.map(SEL.hex) : SEL.board, 'Sway on a location: a bid for the dead', `
-      ${eq(cubes(YOU, 2), '<span class="small">you</span>', op('vs'), cubes(rival, 1), `<span class="small">${who(rival)}</span>`, op('at'), chip(where))}
-      ${eq(chip('fight there'), op('→'), 'you take the bigger pile', tokens(others[0], 3), op('·'), `${who(rival)} the smaller`, tokens(faction, 1))}
-      ${frame('When a location fights, the player with the most sway there takes the bigger pile of dead; second most, the smaller.', 'Bid where the big fights will be.')}
-      <p class="small muted">Lit: you start with 1 sway on each ${suitIcon(arch.id)} location.</p>`);
-    })(),
-    spot(SEL.faction(faction), 'Sway with a faction (A): fuel for gambits', `
-      ${eq(tokenHtml(faction, 1), cubes(YOU, 1), op('→'), 'bait', op('→'), cubes(YOU, 1), op('on'), chip('location'))}
-      ${frame('Each place your gambit lures a faction to costs 1 sway with it, and that sway lands there with them: your bid.', 'A faction that has never noticed you won\'t take your bait. Build sway before you need it.')}
-      <p class="small muted">You start with ${mine.standing[faction]} with ${F(faction)}, ${mine.standing[others[0]]} with each of the rest.</p>`),
-    spot(SEL.faction(faction), 'Sway with a faction (B): a bet', `
-      ${frame('The same sway is your score if that faction takes the island, minus its trophies.', 'Back a faction you think will survive, keep it alive, and don\'t hunt it.')}`),
-    ...flow,
+    sceneStep('A round, start to finish: an offering', T0, T1, `
+      <p>Here's the loop every round runs on. First, you spend ${miniCard(offer)} for its +${g} instead of playing it: sway flows from your supply into the ${F(F0)}' row.</p>`, [`card:${offer}`, `player:${YOU}`, `row:${F0}`]),
+    sceneStep('A gambit', T1, T2, `
+      <p>Then you play ${miniCard(lure)}: the ${F(F0)} at ${L(Lfrom)} take the bait and move into ${L(Lfight)}, where the ${F(G)} are.</p>
+      ${frame('Luring a faction to a new place costs 1 sway with it, and that sway lands there with them: your bid.', 'A faction that has never noticed you won\'t take your bait. Build sway before you need it.')}`, [`card:${lure}`, `hex:${Lfrom}`, `hex:${Lfight}`, `row:${F0}`]),
+    sceneStep('Contested', T2, T2, `
+      <p>${who(ash)} already has 2 sway at ${L(Lfight)}. You have 1, so you're second, not the leader.</p>
+      ${frame('When a location fights, the player with the most sway there takes the bigger pile of the dead; second most, the smaller.', 'Bid where the big fights will be.')}`, [`hexsway:${Lfight}`, `player:${YOU}`, `player:${ash}`]),
+    sceneStep('End of round: the bigger group wins', T2, T2, `
+      ${eq(tokens(F0, 4), op('vs'), tokens(G, 3), op('→'), `the ${F(F0)} win`)}
+      <p>Two factions in one place fight when the round ends.</p>`, [`hextok:${Lfight}:${F0}`, `hextok:${Lfight}:${G}`], Lfight),
+    sceneStep('The loser loses everything', T2, T3, `
+      ${eq(`the ${F(G)}`, op('lose all'), tokens(G, 3))}
+      <p>That's the bigger pile. ${who(ash)} has the most sway here, so ${who(ash)} takes it.</p>`, [`hextok:${Lfight}:${G}`, `hexsway:${Lfight}`, `player:${ash}`]),
+    sceneStep('The winner loses half', T3, T4, `
+      ${eq('half of 3', op('rounded down, at least 1'), op('='), tokens(F0, 1))}
+      <p>The winners lose half as many as the loser did. That's the smaller pile, and it's yours: second still pays.</p>`, [`hextok:${Lfight}:${F0}`, `hexsway:${Lfight}`, `player:${YOU}`]),
+    sceneStep('After the fight', T4, T5, `
+      <p>Only the leader's sway leaves. Half of ${who(ash)}'s 2 joins ${who(ash)}'s sway with the winners, the ${F(F0)}; the rest goes home. Your 1 stays at ${L(Lfight)} for the next fight.</p>`, [`hexsway:${Lfight}`, `row:${F0}`, `player:${ash}`]),
+    sceneStep('The loop', T5, T5, `
+      ${eq(chip('an offering'), op('→'), chip('a gambit'), op('→'), chip('a fight'), op('→'), chip('trophies'))}
+      <p>Cards become sway, sway becomes bids, bids become trophies.</p>`),
+    sceneStep('Ties scorch', tie, tied, `
+      ${eq('2 vs 2', op('neither on its own ground'), op('→'), 'both wiped out')}
+      <p>Nobody collects, sway goes home, and the location is gone for good. On one side's own ground, that side wins instead.</p>`, [`hex:${L3}`], L3),
+    sceneStep('Sway with a faction (B): a bet', bet, bet, `
+      ${eq(cubes(YOU, you0 + g - 1), op('−'), tokens(F0, 1), op('='), `<b>${you0 + g - 2}</b>`)}
+      <p>Your ${factionById(F0).name.replace(/s$/, '')} trophy from that fight counts against you here.</p>
+      ${frame('The same sway is your score if that faction takes the island, minus its trophies.', 'Back a faction you think will survive, keep it alive, and don\'t hunt it.')}`, [`row:${F0}`]),
+    spot(onBoard.length ? onBoard.map(SEL.hex) : SEL.board, 'Now on the real table', `<p>You start with 1 sway on each ${suitIcon(arch.id)} location, lit here, and ${you0} with the ${F(F0)}. The same moves, for real:</p>`),
+    ...table,
     restore,
-    spot(SEL.seat(YOU), `You are the ${esc(group.name)}`, `${eq(suitIcon(arch.id), op('='), 'your ties')}<p>Tied sway at ${suitIcon(arch.id)} locations, and tied sway with the ${F(faction)}, go to you.</p>`),
+    ...(() => {
+      // Affinity: a tie in sway at your own ground goes to you.
+      /** @type {Scene} */ const tieBid = { hexes: [{ loc: L1, tokens: { [F0]: 4, [G]: 3 }, sway: { [YOU]: 1, [ash]: 1 } }], players: [{ pid: YOU, trophies: {} }, { pid: ash, trophies: {} }] };
+      /** @type {Scene} */ const tieWon = { hexes: [{ loc: L1, tokens: { [F0]: 3 }, sway: { [YOU]: 1, [ash]: 1 } }], players: [{ pid: YOU, trophies: { [G]: 3 } }, { pid: ash, trophies: { [F0]: 1 } }] };
+      return [
+        sceneStep(`You are the ${group.name}`, tieBid, tieBid, `<p>${L(L1)} is ${suitIcon(arch.id)} ground, your group's own. Here you and ${who(ash)} are tied on sway.</p>`, [`hexsway:${L1}`]),
+        sceneStep(`You are the ${group.name}`, tieBid, tieWon, `${eq(suitIcon(arch.id), op('='), 'your ties')}<p>Ties at ${suitIcon(arch.id)} locations, and tied sway with the ${F(F0)}, go to you: you take the bigger pile.</p>`, [`hex:${L1}`, `player:${YOU}`, `player:${ash}`], L1),
+      ];
+    })(),
   ];
 }
 
@@ -453,7 +690,19 @@ function chapterStructure() {
       <p class="small muted">${rounds()} rounds, then the count.</p>`),
     spot(inRegion(region).map(SEL.hex), `A region: ${esc(region)}`, 'Lured monsters roam freely inside a region…'),
     spot([...inRegion(region), ...near.flatMap(inRegion)].map(SEL.hex), 'Neighbouring regions', `…and into a neighbour: ${near.map(esc).join(', ')}. No further.`),
-    ...(big?.f ? [spot(SEL.hex(big.l), 'Control', `${eq(tokens(big.f, big.n), op('='), 'control')}<p>The most monsters at a location control it. Control of a faction's own ground makes it grow faster, and breaks ties at the final count.</p>${eq('2 factions at most per location', op('·'), 'no lure can bring a third')}`)] : []),
+    ...(() => {
+      const c = sceneCast();
+      const ownF = c.L1; // your faction's own ground (one of your archetype's locations)
+      const away = Object.keys(c.st.board).find((l) => l !== c.L1 && l !== c.L2 && locationById(l).archetype !== factionById(c.G).archetype) ?? c.L2;
+      /** @type {Scene} */ const held = { hexes: [{ loc: ownF, tokens: { [c.F0]: 4, [c.G]: 2 } }] };
+      /** @type {Scene} */ const g0 = { hexes: [{ loc: away, tokens: { [c.G]: 2 } }, { loc: ownF, tokens: { [c.F0]: 3 } }], rows: [{ f: c.G, supply: 6, sway: {} }, { f: c.F0, supply: 6, sway: {} }] };
+      /** @type {Scene} */ const g1 = { hexes: [{ loc: away, tokens: { [c.G]: 3 } }, { loc: ownF, tokens: { [c.F0]: 5 } }], rows: [{ f: c.G, supply: 5, sway: {} }, { f: c.F0, supply: 4, sway: {} }] };
+      return [
+        sceneStep('Control', held, held, `${eq(tokens(c.F0, 4), op('vs'), tokens(c.G, 2), op('→'), `the ${F(c.F0)} control ${L(ownF)}`)}<p>The most monsters at a location control it. At most two factions share a location: no lure can bring a third.</p>`, [`hex:${ownF}`]),
+        sceneStep('Growth', g0, g0, `<p>At the end of every round, after the fights, each faction alone at a location with ${opt('growth')}+ monsters grows.</p>`, [`hex:${away}`, `hex:${ownF}`]),
+        sceneStep('Growth', g0, g1, `${eq(`${opt('growth')}+ alone`, op('→'), '+1', op('·'), 'on its own ground, if it controls it', op('→'), '+1 more')}<p>${L(ownF)} is the ${F(c.F0)}' own ground, so they grow twice there. Control also breaks ties at the final count.</p>`, [`hex:${away}`, `hex:${ownF}`, `row:${c.G}`, `row:${c.F0}`]),
+      ];
+    })(),
   ];
 }
 
@@ -1013,7 +1262,13 @@ function display(show) {
     const buttons = show.buttons
       ? `<div class="tut-nav"><span class="tut-chapter">${esc(R.chapter)}</span><span class="tut-nav-btns">${R.mode === 'guided' && R.history.length > 1 ? '<button class="btn" data-tut="back">Back</button>' : ''}${show.buttons.map((b, i) => `<button class="btn${b.primary ? ' btn-primary' : ''}" data-tut="button:${i}">${esc(b.label)}</button>`).join('')}</span></div>`
       : nav();
-    el.modal.innerHTML = `${show.title ? `<h2>${esc(show.title)}</h2>` : ''}<div class="tut-body">${show.html}</div>${buttons}`;
+    el.modal.innerHTML = `${show.title ? `<h2>${esc(show.title)}</h2>` : ''}<div class="tut-body">${show.scene ? `<div class="tut-scene-slot">${sceneHtml(show.scene.from, show.scene.focus)}</div>` : ''}${show.html}</div>${buttons}`;
+    const sc = show.scene;
+    if (sc) {
+      const slot = /** @type {HTMLElement} */ (el.modal.querySelector('.tut-scene-slot'));
+      if (sc.from !== sc.to) setTimeout(() => { if (R.shown === show) void playScene(slot, sc.from, sc.to, sc.fight, sc.focus); }, 450);
+      else if (sc.fight) setTimeout(() => { if (R.shown === show) void tussle(slot, /** @type {string} */ (sc.fight)); }, 450);
+    }
     /** @type {HTMLElement | null} */ (el.modal.querySelector('.btn-primary'))?.focus({ preventScroll: true });
     return;
   }
