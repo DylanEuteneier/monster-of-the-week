@@ -291,7 +291,7 @@ let passedFor = null;
  * happens by itself). The tutorial makes its own. @param {PlayerView} view
  */
 function autoPass(view) {
-  if (ui.tutorial || passedFor === view || view.phase !== 'play' || view.pending || view.me.hand.length || !waitingOn(view).includes(view.you)) return;
+  if (ui.tutorial || ui.sending || passedFor === view || view.phase !== 'play' || view.pending || view.me.hand.length || !waitingOn(view).includes(view.you)) return;
   passedFor = view;
   sendMove({ type: 'pass' });
 }
@@ -330,7 +330,36 @@ function sendMove(move) {
   if (!ui.socket || ui.socket.readyState !== WebSocket.OPEN) return toast('Not connected');
   ui.socket.send(JSON.stringify({ type: 'move', move }));
   ui.sending = true;
-  renderPhase();
+  // Your move starts moving the moment you click (designer, 2026-10-11): the table's own preview of it is shown at
+  // once; the server's view, when it comes, corrects anything the preview couldn't know.
+  const guess = ui.view && foresee(ui.view, move);
+  if (guess) void receiveState(guess, ui.online);
+  else renderPhase();
+}
+
+/**
+ * Your own move, as the table can preview it (an action through the engine's
+ * preview; an offering's sway), or null when there's nothing to show early.
+ * @param {PlayerView} view @param {Move} move @returns {PlayerView | null}
+ */
+function foresee(view, move) {
+  if (move.type !== 'play') return null;
+  try {
+    const next = structuredClone(view);
+    next.me.hand = next.me.hand.filter((c) => c !== move.card);
+    next.toAct = null;
+    if (move.use === 'sway') {
+      const f = view.factions.find((x) => factionById(x).archetype === cardById(move.card).suit);
+      if (!f) return null;
+      next.players[view.you].standing[f] = (next.players[view.you].standing[f] ?? 0) + (view.printed?.[move.card] ?? cardById(move.card).sway ?? 0);
+      return next;
+    }
+    if (!move.target) return null;
+    const { board, players } = previewTarget(view, view.you, move.card, move.target);
+    next.board = /** @type {PlayerView['board']} */ (/** @type {unknown} */ (board));
+    for (const pid of view.seating) if (players[pid]) { next.players[pid].standing = { ...players[pid].standing }; next.players[pid].supply = players[pid].supply; }
+    return next;
+  } catch { return null; }
 }
 
 /** @param {string} text */
@@ -1069,7 +1098,7 @@ function myDecision(view) {
 /** Ask for a hint for the view now showing (when hints are on and it's this seat's move). */
 function requestHint() {
   const view = ui.view;
-  if (!ui.hints.on || !view || !hintsAvailable()) return;
+  if (!ui.hints.on || !view || !hintsAvailable() || ui.sending) return;
   ui.hints.hint = null;
   if (!myDecision(view)) return renderHint();
   ui.hints.asked++;
