@@ -331,7 +331,15 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .standing-group.is-leading { border-bottom-color: var(--state-candidate); }
 .trophies { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 .trophies > .token + .token { margin-left: -12px; }
-.hidden-token { width: 10px; height: 10px; margin-left: 3px; background: var(--color-panel-2); border: 2px solid var(--owner); box-shadow: 1px 1px 0 var(--ink); }
+/* Face-down tokens (pieces.js faceDownHtml): the back, in the owner's colour, shows the icon of the card that placed
+   it (a real token and its bluff look the same); its owner sees the face: the icon on cardboard, or struck through for
+   the bluff. Effect tokens: a round token with the effect's icon. Rubble sits centred on a scorched location. */
+.face-down { position: relative; display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 3px; background: var(--color-panel-2); border: 2px solid var(--owner); box-shadow: 1px 1px 0 var(--ink); }
+.face-down.is-real, .face-down.is-bluff { background: var(--card-face); }
+.face-down.is-bluff .mark { opacity: 0.35; filter: grayscale(1); }
+.face-down.is-bluff::after { content: ""; position: absolute; left: 1px; right: 1px; top: 50%; height: 2px; background: var(--color-danger); transform: rotate(-45deg); }
+.effect-token { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 3px; border-radius: 50%; background: var(--ink); border: 2px solid var(--color-accent); box-shadow: 1px 1px 0 var(--ink); }
+.rubble { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -40%); line-height: 0; pointer-events: none; }
 
 /* Hexes: the hex art, its target-state art over it (CSS picks which shows),
    and its pieces laid over the clear lower part. */
@@ -770,7 +778,7 @@ button.card-opt:hover { background: #f6cca1; }
 /* The next click to follow a hint: a cyan HINT badge inside a location (never past its art), an outline on a group,
    a faction row or a bar button. */
 .board-tile.is-hint-next::after { content: "HINT"; position: absolute; top: 18%; left: 50%; transform: translateX(-50%); padding: 1px var(--space-1); font-family: var(--font-display); font-size: 10px; color: var(--ink); background: var(--color-link); border: var(--border); pointer-events: none; z-index: 2; }
-.token-stack.is-hint-next, .faction-row.is-hint-next, .bar-btn.is-hint-next { outline: var(--line) solid var(--color-link); outline-offset: 1px; }
+.token-stack.is-hint-next, .faction-row.is-hint-next, .bar-btn.is-hint-next, .hand .card.is-hint-next { outline: var(--line) solid var(--color-link); outline-offset: 1px; }
 .card-opt.is-suggested { outline: var(--line) solid var(--color-link); outline-offset: 1px; box-shadow: 0 0 0 4px rgb(61 195 216 / 0.35); }
 #hint-button.is-on { border-color: var(--color-accent); color: var(--color-accent); }
 .hand .card.is-suggested::before { content: "HINT" attr(data-hint); white-space: nowrap; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); padding: 1px var(--space-2); font-family: var(--font-display); font-size: 11px; color: var(--ink); background: var(--color-link); border: var(--border); pointer-events: none; }

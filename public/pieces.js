@@ -84,3 +84,45 @@ export function hexHtml(id, scale, inner = '', state = '') {
     + `<div class="hex-pieces" style="left:${p.x * scale}px;top:${p.y * scale}px;width:${p.w * scale}px;height:${p.h * scale}px">${inner}</div>`
     + '</div>';
 }
+
+// ---------------------------------------------------------------------------
+// Marks (designer, 2026-10-11): rubble on a scorched location, face-down
+// tokens whose backs show the card that placed them, and a token for each
+// effect a card leaves on a location. The icons are printed pixel art
+// (assets/sprites.py MARKS); the tokens holding them are CSS.
+// ---------------------------------------------------------------------------
+
+const marks = /** @type {Record<string, { width: number, height: number, src: string }>} */ (/** @type {any} */ (art).marks ?? {});
+
+/** A mark's pixel art at a whole-number scale, or '' if none. @param {string} id @param {number} [scale] */
+export function markImg(id, scale = 2) {
+  const m = marks[id];
+  return m ? `<img class="sprite mark" src="${m.src}" width="${m.width * scale}" height="${m.height * scale}" alt="">` : '';
+}
+
+/**
+ * A face-down token in its owner's colour. Everyone sees its back: the icon
+ * of the card that placed it (a play's real token and its bluff look the
+ * same). Its owner always sees its face instead: the card's icon on
+ * cardboard if it's the real one, struck through if it's the bluff.
+ * @param {{ kind?: string, real?: boolean }} token @param {string} colour  the owner's seat colour @param {string} [title]
+ */
+export function faceDownHtml(token, colour, title = '') {
+  const face = token.real === undefined ? 'back' : token.real ? 'real' : 'bluff';
+  return `<span class="face-down is-${face}" style="--owner:${colour}"${title ? ` title="${title}"` : ''}>${token.kind ? markImg(token.kind, 2) : ''}</span>`;
+}
+
+/** The effects a card can leave on a location for the round, by the flag it sets (engine Place), with words for a tooltip. */
+export const EFFECTS = /** @type {const} */ ({
+  truce: 'Call a Truce: no fight here this round',
+  double: 'Split Up, Gang!: some players\' sway here counts twice at this fight',
+  wake: 'Wake the Dead: this fight can\'t scorch, and the loser\'s casualties rise as Undead',
+  backdoor: 'Install a Backdoor: some players\' sway here counts 1 more per Sentient token at this fight',
+  swarm: 'Link the Swarm: the Sentients here count their tokens next door too at this fight',
+  lock: 'Lock Down the Town: no group moves into or out of this region this round',
+});
+
+/** A round token showing an effect on a location. @param {keyof typeof EFFECTS} id */
+export function effectHtml(id) {
+  return `<span class="effect-token" title="${EFFECTS[id].replace(/"/g, '&quot;')}">${markImg(id, 2)}</span>`;
+}

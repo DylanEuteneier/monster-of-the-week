@@ -749,6 +749,130 @@ def hex_rgb(h):
     return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
 
 
+
+# ---------------------------------------------------------------------------
+# Marks: small printed art on the board that isn't a piece of content
+# (designer, 2026-10-11). Rubble over a scorched location; the icon on the back
+# of each kind of face-down token (both the real one and its bluff show it);
+# and an icon for each effect a card leaves on a location for the round.
+# ---------------------------------------------------------------------------
+
+MARKS = {
+    "rubble": [
+        "....................",
+        "........kxk.........",
+        ".......kxXxk...kk...",
+        "...kk.kxXgXxk.kxXk..",
+        "..kxXkxXgzgXxkxXgXk.",
+        ".kxXgXXgzzzgXXgzgXk.",
+        "kxXgzgXgzzzzgXgzzgXk",
+        "kxXgzzgXgzzgXgzzzgXk",
+        "kkkkkkkkkkkkkkkkkkkk",
+    ],
+    # Face-down token backs, by card.
+    "silver-bullets": [
+        "...kk...",
+        "..kwzk..",
+        "..kwzk..",
+        "..kzgk..",
+        "..kyyk..",
+        "..kyOk..",
+        "..kyOk..",
+        "..kkkk..",
+    ],
+    "salt-burn": [
+        "kk....kk",
+        "kwk..kwk",
+        ".kwkkwk.",
+        "..kwwk..",
+        "..kzzk..",
+        ".kzkkzk.",
+        "kzk..kzk",
+        "kk....kk",
+    ],
+    "house-fire": [
+        "...k....",
+        "..krk.k.",
+        "..kryk.k",
+        ".krryrrk",
+        ".kryyyrk",
+        "kryyyyrk",
+        "kryOOyrk",
+        ".kkkkkk.",
+    ],
+    "set-trap": [
+        "kgk..kgk",
+        "kgkkkkgk",
+        ".kgggk..",
+        "..kxk...",
+        ".kgggk..",
+        "kgkkkkgk",
+        "kgk..kgk",
+        "........",
+    ],
+    # Location effects, by the flag the card sets.
+    "truce": [
+        ".kkkkk..",
+        ".kwwwwk.",
+        ".kwwwwk.",
+        ".kkkkk..",
+        ".ku.....",
+        ".ku.....",
+        ".ku.....",
+        "kkkk....",
+    ],
+    "double": [
+        "........",
+        "kk.kkkk.",
+        ".kkk..yk",
+        ".kkk.yk.",
+        "kk.kyk..",
+        "...kyyyk",
+        "...kkkkk",
+        "........",
+    ],
+    "wake": [
+        "..kkkk..",
+        ".kzzzzk.",
+        ".kzxxzk.",
+        ".kzzzzk.",
+        ".kzxzzk.",
+        ".kzzzzk.",
+        "kGGGGGGk",
+        "kkkkkkkk",
+    ],
+    "backdoor": [
+        ".kkkkkk.",
+        ".kuffuk.",
+        ".kffffk.",
+        ".kffffk.",
+        ".kffyfk.",
+        ".kffffk.",
+        ".kffffk.",
+        ".kkkkkk.",
+    ],
+    "swarm": [
+        "kk....kk",
+        "kck..kck",
+        ".kckkck.",
+        "..kcck..",
+        "..kcck..",
+        ".kckkck.",
+        "kck..kck",
+        "kk....kk",
+    ],
+    "lock": [
+        "..kkkk..",
+        ".kgkkgk.",
+        ".kk..kk.",
+        "kyyyyyyk",
+        "kyykkyyk",
+        "kyykkyyk",
+        "kyyyyyyk",
+        "kkkkkkkk",
+    ],
+}
+
 def write_png(path, pixels, width, height):
     raw = b"".join(b"\x00" + bytes(c for px in row for c in px) for row in pixels)
 
@@ -761,7 +885,7 @@ def write_png(path, pixels, width, height):
 
 
 def check():
-    for name, rows in {**SPRITES, **{f"header:{k}": v for k, v in HEADERS.items()}, **{f"hex:{k}": v for k, v in HEXES.items()}, **{f"scheme:{k}": v for k, v in HEX_SCHEMES.items()}, **{f"symbol:{k}": v for k, v in ARCHETYPE_SYMBOLS.items()}}.items():
+    for name, rows in {**SPRITES, **{f"header:{k}": v for k, v in HEADERS.items()}, **{f"hex:{k}": v for k, v in HEXES.items()}, **{f"scheme:{k}": v for k, v in HEX_SCHEMES.items()}, **{f"symbol:{k}": v for k, v in ARCHETYPE_SYMBOLS.items()}, **{f"mark:{k}": v for k, v in MARKS.items()}}.items():
         widths = {len(r) for r in rows}
         assert len(widths) == 1, (name, widths)
         for r in rows:
@@ -840,6 +964,13 @@ def build():
         stale.unlink()
     for name, rows in ARCHETYPE_SYMBOLS.items():
         sprite_png(symbols / f"{name}.png", rows)
+    marks = public / "marks"
+    marks.mkdir(parents=True, exist_ok=True)
+    for stale in marks.glob("*.png"):
+        if stale.stem not in MARKS:
+            stale.unlink()
+    for name, rows in MARKS.items():
+        sprite_png(marks / f"{name}.png", rows)
     for folder in ("pixel-tokens", "pixel-cubes"):  # option B, retired 2026-10-03
         old = public / folder
         if old.exists():
@@ -860,6 +991,7 @@ def build():
         "hexes": {name: {"width": len(rows[0]), "height": len(rows), "src": f"/assets/hexes/{name}.png", "pieces": HEX_PIECES,
                          "states": {state: {"src": f"/assets/hexes/{name}-{state}.png", "pad": STATE_PAD} for state in HEX_STATES}}
                   for name, rows in HEXES.items()},
+        "marks": {name: {"width": len(rows[0]), "height": len(rows), "src": f"/assets/marks/{name}.png"} for name, rows in MARKS.items()},
         "symbols": {arch: {"width": len(rows[0]), "height": len(rows), "src": f"/assets/symbols/{arch}.png"} for arch, rows in ARCHETYPE_SYMBOLS.items()},
         "board": {"width": len(board_rows[0]), "height": len(board_rows), "src": "/assets/board/d.png", "tiles": board_tiles},
         "headers": {name: {"width": len(rows[0]), "height": len(rows), "src": f"/assets/headers/{name}.png"} for name, rows in HEADERS.items()},

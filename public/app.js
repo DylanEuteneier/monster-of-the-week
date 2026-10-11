@@ -12,7 +12,7 @@
  */
 import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice, pendingDestinations, checkTarget, previewTarget, responsesOn } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
-import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml } from './pieces.js';
+import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml, faceDownHtml, effectHtml, markImg, EFFECTS } from './pieces.js';
 import { cardHtml as baseCardHtml, suitIcon } from './cards.js';
 import { planFlights, fly } from './motion.js';
 import { targetSteps } from './guide.js';
@@ -464,8 +464,11 @@ function piecesAt(loc, lit, board = /** @type {PlayerView} */ (ui.view).board) {
   });
   const cubes = Object.entries(place.sway).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
     .flatMap(([pid, n]) => Array.from({ length: n }, () => cubeHtml(colourOf(pid), 8))).join('');
-  const token = place.token ? `<span class="hidden-token" style="--owner:${colourOf(place.token.owner)}" title="a face-down token"></span>` : '';
-  return `${rows.join('')}<span class="cube-row piece-row">${cubes}${token}</span>`;
+  const t = place.token;
+  const token = t ? faceDownHtml(t, colourOf(t.owner), t.real === undefined ? `a face-down ${t.kind ? cardById(t.kind).name : ''} token: real or a bluff` : `your ${t.kind ? cardById(t.kind).name : ''} token: ${t.real ? 'the real one' : 'the bluff'}`) : '';
+  // Effects a card left here for the round, each as a token with its icon.
+  const effects = /** @type {(keyof typeof EFFECTS)[]} */ (Object.keys(EFFECTS)).filter((k) => { const v = /** @type {Record<string, unknown>} */ (place)[k]; return Array.isArray(v) ? v.length > 0 : !!v; }).map(effectHtml).join('');
+  return `${rows.join('')}<span class="cube-row piece-row">${cubes}${token}${effects}</span>`;
 }
 
 /** The faction summaries: one row per faction in play. @param {ReturnType<typeof picks>} lit */
@@ -521,7 +524,7 @@ function renderBoard() {
     const place = shown[t.loc];
     const on = lit.spots.includes(t.loc);
     const state = on ? 'candidate' : ui.choosing && chosen.has(t.loc) ? 'hovered' : '';
-    return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}" data-tile="${esc(t.loc)}"${on ? ` data-action="pick-location" data-location="${esc(t.loc)}"` : ''} title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? '<b>scorched</b>' : piecesAt(t.loc, lit, shown), /** @type {import('./pieces.js').TargetState} */ (state))}<div class="hex-preview" aria-hidden="true"></div></div>`;
+    return `<div class="board-tile${place.scorched ? ' is-scorched' : ''}" data-tile="${esc(t.loc)}"${on ? ` data-action="pick-location" data-location="${esc(t.loc)}"` : ''} title="${esc(locationById(t.loc).name)} · ${esc(t.region)}" style="position:absolute;left:${t.x * S}px;top:${t.y * S}px">${hexHtml(t.loc, S, place.scorched ? `<span class="rubble">${markImg('rubble', S)}</span>` : piecesAt(t.loc, lit, shown), /** @type {import('./pieces.js').TargetState} */ (state))}<div class="hex-preview" aria-hidden="true"></div></div>`;
   });
   const total = Object.values(view.board).reduce((n, pl) => n + Object.values(pl.tokens).reduce((a, b) => a + b, 0), 0);
   // Display tables are never narrower than the map (they may be wider).
@@ -699,11 +702,13 @@ function renderPlay() {
   const ready = me.hand.filter((c) => responseReady(view, c));
   const myTurn = view.toAct === view.you && !pending;
   const mustOpen = view.first === view.you && !view.opened && me.hand.some((c) => cardById(c).marked);
+  // Only the earliest marked card opens (FP2; the engine checks it), so only it is offered.
+  const opener = mustOpen ? me.hand.filter((c) => cardById(c).marked).sort((a, b) => String(cardById(a).marked).localeCompare(String(cardById(b).marked)))[0] : null;
   if (ui.choosing && !me.hand.includes(ui.choosing)) ui.choosing = null;
   if (myTurn && ui.choosing) return renderTargeting(ui.choosing);
   toHand(me.hand.map((c) => {
     const card = cardById(c);
-    const canAct = myTurn && !!card.action && (!mustOpen || !!card.marked);
+    const canAct = myTurn && !!card.action && (!mustOpen || c === opener);
     const mode = ready.includes(c) ? 'respond' : canAct ? 'act' : '';
     return cardHtml(c, { mode, sway: myTurn && !mustOpen && !!card.suit, dim: !mode });
   }), false);
@@ -720,7 +725,7 @@ function renderPlay() {
   if (pending) return step(ready.length ? 'respond' : 'wait', ready.length ? `${played} · Answer?` : played);
   if (myTurn) {
     if (!mustOpen) handAction('pass');
-    return step('turn', mustOpen ? 'You go first: play your marked card' : 'Your turn');
+    return step('turn', mustOpen ? `You go first: open with ${opener ? cardById(opener).name : 'your marked card'}` : 'Your turn');
   }
   return step(ready.length ? 'respond' : 'wait', ready.length ? 'Answer?' : esc(waitingText()));
 }
@@ -934,7 +939,7 @@ async function guideTurn(before, after, last, s) {
     const c = cardById(m.card);
     const how = m.use === 'sway' ? `+${before.printed?.[m.card] ?? c.sway} sway` : m.target?.mode === 'faction' ? 'FAC' : m.target?.mode === 'location' ? 'LOC' : '';
     head = `<p class="guide-head">${who} ${m.use === 'sway' ? 'spends' : 'plays'} <b class="guide-card card-suit-${c.suit ?? 'none'}">${c.suit ? suitIcon(c.suit) : ''} ${esc(c.name)}</b>${how ? ` <span class="tag">${esc(how)}</span>` : ''}</p>${m.use === 'action' ? `<p class="guide-text small">${esc(c.text)}</p>` : ''}`;
-  } else if (m.type === 'hidden') head = `<p class="guide-head">${who} places two face-down tokens</p><p class="guide-text small">One is real, one a bluff, and only ${esc(seatName(pid))} knows which. Each carries 1 sway as a bid; both flip when the location fights.</p>`;
+  } else if (m.type === 'hidden') head = `<p class="guide-head">${who} plays <b class="guide-card">${esc(cardById(m.card).name)}</b> face down</p><p class="guide-text small">${esc(cardById(m.card).text)}</p><p class="guide-text small">Its tokens look the same: one is real, one a bluff, and only ${esc(seatName(pid))} knows which. Each carries 1 sway as a bid; both flip when the location fights.</p>`;
   else if (m.type === 'grow') head = `<p class="guide-head">${who} chooses where a faction grows</p>`;
   else if (m.type === 'respond') head = `<p class="guide-head">${who} answers with <b>${esc(cardById(m.card).name)}</b></p>`;
   else head = `<p class="guide-head">${who}</p>`;
@@ -997,7 +1002,7 @@ async function tellRoundEnd(before, final, fights, s) {
   };
   frame.innerHTML = `<h2>Round ${before.round} · the fights</h2>
     <ol class="round-fights">${fights.map((x, i) => `<li class="round-fight" data-i="${i}"><span class="round-where">${esc(lname(x.loc))}</span>
-      <span class="round-sides">${x.sides.map((t) => icon(t.f, t.n)).join('<span class="muted">vs</span>')}${x.flipped ? `<span class="hidden-token" style="--owner:${colourOf(x.flipped)}" title="a face-down token: it flips first"></span>` : ''}</span>
+      <span class="round-sides">${x.sides.map((t) => icon(t.f, t.n)).join('<span class="muted">vs</span>')}${x.flipped ? faceDownHtml({ kind: before.board[x.loc].token?.kind, real: before.board[x.loc].token?.real }, colourOf(x.flipped), 'a face-down token: it flips first') : ''}</span>
       <span class="round-bids">${bids(x.sway)}</span>
       <span class="round-result muted">…</span></li>`).join('')}</ol>
     <p class="round-growth small muted" hidden></p>`;
@@ -1188,7 +1193,9 @@ function markHint() {
   card?.classList.add('is-suggested');
   if (card instanceof HTMLElement) card.dataset.hint = mode === 'sway' ? ` · ${card.querySelector('.card-opt[data-action="sway"]')?.textContent?.trim() ?? 'SWAY'}` : mode === 'faction' ? ' · FAC' : mode === 'location' ? ' · LOC' : '';
   if (ui.choosing !== m.card || m.use === 'sway') {
-    (mode === 'sway' ? card?.querySelector('.card-opt[data-action="sway"]') : mode ? card?.querySelector(`.card-opt[data-mode="${mode}"]`) : null)?.classList.add('is-suggested');
+    // The way to play it: its LOC, FAC or +N button; an unsuited card has none, so the card itself is the click.
+    if (mode) card?.querySelector(mode === 'sway' ? '.card-opt[data-action="sway"]' : `.card-opt[data-mode="${mode}"]`)?.classList.add('is-suggested');
+    else card?.classList.add('is-hint-next');
     return;
   }
   const next = hintNext(m.target ?? {});

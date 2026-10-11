@@ -31,7 +31,7 @@
 import { spec, factionById, locationById, cardById, describeTarget, playerView, resolveFight, clone, listTargets, previewTarget, deckOf, printedOf, controllerOf, growthDue } from './engine.js';
 import { newTable, copyTable, autoMove, nextActor, play, botPicks, check, YOU, BOTS } from './tutorial-game.js';
 import { suggest } from './hints.js';
-import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
+import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS, faceDownHtml } from './pieces.js';
 import { flyPaths, SLOW } from './motion.js';
 import { cardHtml, suitIcon } from './cards.js';
 import { CLASH, tussleOn } from './fx.js';
@@ -742,7 +742,7 @@ function drive() {
     R.taught.playIntro = true;
     R.chapter = '7 · Round 1';
     const first = /** @type {string} */ (s.first);
-    const marked = s.players[first].hand.find((id) => 'marked' in cardById(id) && cardById(id).marked);
+    const marked = s.players[first].hand.filter((id) => 'marked' in cardById(id) && cardById(id).marked).sort((a, b) => String(cardById(a).marked).localeCompare(String(cardById(b).marked)))[0];
     next(spot(SEL.players, 'Who goes first', `${marked ? eq(miniCard(marked)) : ''}<p>${who(first)} ${verb(first, 'holds', 'hold')} the earliest marked card (A–D), so ${first === YOU ? 'you open' : `${esc(first)} opens`} with it, then play goes round the table. We'll stop at each new kind of play and skip the rest.</p>`), drive);
     return null;
   }
@@ -871,13 +871,13 @@ function narrate(pid, move, a, b) {
     const c = cardById(move.card);
     const ch = changes(a, b);
     // What it did: the target in words (a rival's face-down tokens stay secret), or the card's own text when the target has none.
-    const said = c.action === 'token' && pid !== YOU ? 'two face-down tokens: one real, one bluff' : describeTarget(c.id, move.target ?? null);
+    const said = c.action === 'token' && pid !== YOU ? `two face-down ${c.name} tokens: one real, one bluff` : describeTarget(c.id, move.target ?? null);
     const what = said || c.text;
     // Paid from standing onto the board (a move), not from the supply (a token's marker cube).
     const placed = b.seating.some((x) => b.factions.some((f) => b.players[x].standing[f] < a.players[x].standing[f]) && Object.keys(b.board).some((l) => (b.board[l].sway[x] ?? 0) > (a.board[l].sway[x] ?? 0)));
     const teach = [
       placed && once('move') ? recall('The sway paid for the lure lands with the monsters as a bid.') : '',
-      c.action === 'token' && once('token') ? `${eq(`<span class="hidden-token" style="--owner:${colour(pid)}"></span>`, `<span class="hidden-token" style="--owner:${colour(pid)}"></span>`)}<p>Two face-down tokens: one real, one bluff, and only ${pid === YOU ? 'you know' : `${esc(pid)} knows`} which. Each carries 1 sway as a bid; both flip when that location fights.</p>` : '',
+      c.action === 'token' && once('token') ? `${eq(faceDownHtml({ kind: c.id }, colour(pid)), faceDownHtml({ kind: c.id }, colour(pid)))}<p>Two face-down tokens with the same back, the card's: one real, one bluff, and only ${pid === YOU ? 'you know' : `${esc(pid)} knows`} which. Each carries 1 sway as a bid; both flip when that location fights.</p>` : '',
       !c.suit && c.action !== 'token' && once('special') ? '<p class="small muted">Unsuited cards can\'t be spent for sway; they bend the rules instead.</p>' : '',
     ].join('');
     // The learner's own play was just previewed: say what changed rather than repeat the target.

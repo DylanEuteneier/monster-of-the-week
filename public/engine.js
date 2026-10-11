@@ -46,7 +46,7 @@ export { spec };
 /**
  * A face-down token on a location (IN1). `card` is null for a bluff (BT1).
  * The owner's marker cube sits on it and counts as their sway (MC3).
- * @typedef {{ owner: string, card: string | null }} Token
+ * @typedef {{ owner: string, card: string | null, kind?: string }} Token  kind: the card that placed it, shown on its back (designer, 2026-10-11: a play's real token and its bluff look the same; only the face says which is real)
  */
 
 /**
@@ -172,7 +172,7 @@ export { spec };
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, picked: boolean }>} players
  * @property {{ faction: string, leaders: string[], next: number, due: Record<string, number> } | null} growing
  * @property {string[]} factions
- * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, token: { owner: string } | null, scorched: boolean, truce?: boolean, double?: string[], wake?: boolean, swarm?: boolean, backdoor?: string[], lock?: boolean }>} board
+ * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, token: { owner: string, kind?: string, real?: boolean } | null, scorched: boolean, truce?: boolean, double?: string[], wake?: boolean, swarm?: boolean, backdoor?: string[], lock?: boolean }>} board
  * @property {Record<string, number>} supply
  * @property {string[]} deck  this game's cards
  * @property {Record<string, number>} printed  this game's printed sway by card
@@ -1072,14 +1072,14 @@ function act(state, pid, card, t) {
       const loc = /** @type {string} */ (t.location);
       const real = t.realOnly !== false;
       if (real || !t.bluff) {
-        state.board[loc].token = { owner: pid, card: real ? card.id : null };
+        state.board[loc].token = { owner: pid, card: real ? card.id : null, kind: card.id };
         if (!real) p.bluffs -= 1;
         p.supply -= 1;
         state.board[loc].sway[pid] = (state.board[loc].sway[pid] ?? 0) + 1;
         state.events.push({ type: 'token-placed', player: pid, location: loc });
       }
       if (t.bluff && p.bluffs > 0 && p.supply > 0) {
-        state.board[t.bluff].token = { owner: pid, card: null };
+        state.board[t.bluff].token = { owner: pid, card: null, kind: card.id };
         p.bluffs -= 1;
         p.supply -= 1;
         state.board[t.bluff].sway[pid] = (state.board[t.bluff].sway[pid] ?? 0) + 1;
@@ -2628,7 +2628,7 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: true } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
+      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: true } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),

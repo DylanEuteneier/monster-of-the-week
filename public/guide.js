@@ -14,8 +14,8 @@ import { cardById, factionById, locationById, nextChoice, resolveFight, clone } 
 /** @typedef {import('./engine.js').Target} Target */
 /**
  * A move as another seat may see it: a hidden play (a face-down token card)
- * shows only where its tokens went, never the card or which one is real.
- * @typedef {Move | { type: 'hidden', locations: string[] }} SeenMove
+ * shows its card and where its tokens went, never which one is real.
+ * @typedef {Move | { type: 'hidden', card: string, locations: string[] }} SeenMove  hidden: the card is known (its tokens' backs show it), not which token is real
  * @typedef {{ kind: 'location', location: string, label: string } | { kind: 'group', location: string, faction: string, label: string } | { kind: 'faction', faction: string, label: string } | { kind: 'direction', label: string }} Step
  * @typedef {{ loc: string, sides: { f: string, n: number, lost: number }[], sway: Record<string, number>, piles: { pid: string, f: string, n: number }[], scorched: boolean, flipped: string | null, lines: string[],
  *   place: PlayerView['board'][string], supply: Record<string, number>, players: Record<string, { standing: Record<string, number>, supply: number }> }} Fight
@@ -28,7 +28,7 @@ const L = (/** @type {string} */ l) => locationById(l).name;
 export function seenBy(move, pid, viewer) {
   if (move.type === 'pick') return null; // the draft is secret
   if (pid !== viewer && move.type === 'play' && move.use === 'action' && cardById(move.card).action === 'token') {
-    return { type: 'hidden', locations: [move.target?.location, move.target?.bluff].filter((x) => typeof x === 'string').sort() };
+    return { type: 'hidden', card: move.card, locations: [move.target?.location, move.target?.bluff].filter((x) => typeof x === 'string').sort() };
   }
   return move;
 }
@@ -139,7 +139,7 @@ export function roundFights(before) {
     out.push({
       loc, sides, sway: { ...place.sway }, piles, scorched: np.scorched, flipped: place.token ? place.token.owner : null,
       lines: (next.log.find((e) => e.round === next.round)?.events ?? []).slice(was).map((l) => l.trim()),
-      place: { tokens: { ...np.tokens }, sway: { ...np.sway }, token: np.token ? { owner: np.token.owner } : null, scorched: np.scorched },
+      place: { tokens: { ...np.tokens }, sway: { ...np.sway }, token: np.token ? { owner: np.token.owner, ...(np.token.kind ? { kind: np.token.kind } : {}) } : null, scorched: np.scorched },
       supply: { ...next.supply },
       players: Object.fromEntries(next.seating.map((id) => [id, { standing: { ...next.players[id].standing }, supply: next.players[id].supply }])),
     });
