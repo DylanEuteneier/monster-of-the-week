@@ -181,7 +181,9 @@ function sceneHtml(sc, focus = []) {
     // Tokens marked to die in this fight are drawn last in their row, crossed out.
     const rows = Object.entries(h.tokens).filter(([, n]) => n > 0).map(([f, n]) => {
       const doomed = Math.min(n, h.doomed?.[f] ?? 0);
-      const t = (/** @type {boolean} */ dead) => (dead ? `<span class="tut-doomed">${tokenHtml(f, 1)}</span>` : tokenHtml(f, 1, lit(`hextok:${h.loc}:${f}`) ? 'hovered' : ''));
+      // Doomed tokens stay in full colour (and lit with their row), marked only by the cross.
+      const state = lit(`hextok:${h.loc}:${f}`) ? 'hovered' : '';
+      const t = (/** @type {boolean} */ dead) => (dead ? `<span class="tut-doomed">${tokenHtml(f, 1, state)}</span>` : tokenHtml(f, 1, state));
       return `<span class="piece-row" data-k="hextok:${h.loc}:${f}">${run(n - doomed, () => t(false), 6)}${Array.from({ length: doomed }, () => t(true)).join('')}</span>`;
     }).join('');
     const sway = Object.entries(h.sway ?? {}).filter(([, n]) => n > 0).map(([pid, n]) => run(n, () => cubeHtml(colour(pid), 8))).join('');
@@ -200,7 +202,56 @@ function sceneHtml(sc, focus = []) {
       ${p.trophies ? `<span class="tut-scene-cell" data-k="trophies:${p.pid}"><span class="tut-scene-label">trophies</span>${Object.entries(p.trophies).filter(([, n]) => n > 0).map(([f, n]) => run(n, () => tokenHtml(f, 1))).join('')}</span>` : ''}
     </div>`).join('');
   // One persistent layout: faction rows on top, the locations under them, the players under those.
-  return `<div class="tut-scene">${rows}${hexes ? `<div class="tut-scene-board">${hexes}</div>` : ''}${players ? `<div class="tut-scene-players">${players}</div>` : ''}</div>`;
+  return `<div class="tut-scene">${rows}${hexes ? `<div class="tut-scene-board tut-grow" data-k="board">${hexes}</div>` : ''}${players ? `<div class="tut-scene-players tut-grow" data-k="players">${players}</div>` : ''}</div>`;
+}
+
+/**
+ * Update a scene in place rather than redrawing it (designer, 2026-10-11:
+ * smooth, no jumps): elements matched by their data-k key (or position) keep
+ * their node, so class changes (lighting, dimming) transition; parts that are
+ * new animate in quickly and the layout opens to make room.
+ * @param {Element} into @param {string} html
+ */
+function morph(into, html) {
+  const tpl = document.createElement('div');
+  tpl.innerHTML = html;
+  morphChildren(into, tpl);
+}
+/** @param {Element} a @param {Element} b */
+function morphChildren(a, b) {
+  const olds = [...a.childNodes];
+  const keyed = new Map(olds.filter((n) => n instanceof HTMLElement && n.dataset.k).map((n) => [/** @type {HTMLElement} */ (n).dataset.k, n]));
+  /** @type {Set<ChildNode>} */
+  const used = new Set();
+  let at = 0;
+  const next = [...b.childNodes].map((nb) => {
+    /** @type {ChildNode | null} */
+    let na = null;
+    if (nb instanceof HTMLElement && nb.dataset.k) na = keyed.get(nb.dataset.k) ?? null;
+    else {
+      while (at < olds.length && (used.has(olds[at]) || (olds[at] instanceof HTMLElement && /** @type {HTMLElement} */ (olds[at]).dataset.k))) at++;
+      if (olds[at] && olds[at].nodeName === nb.nodeName) na = olds[at++];
+    }
+    if (na && na.nodeName === nb.nodeName) {
+      used.add(na);
+      if (na.nodeType === Node.TEXT_NODE) { if (na.textContent !== nb.textContent) na.textContent = nb.textContent; }
+      else if (na instanceof Element && nb instanceof Element) {
+        const entering = na.classList.contains('is-entering');
+        for (const attr of [...na.attributes]) if (!nb.hasAttribute(attr.name)) na.removeAttribute(attr.name);
+        for (const attr of [...nb.attributes]) if (na.getAttribute(attr.name) !== attr.value) na.setAttribute(attr.name, attr.value);
+        if (entering) na.classList.add('is-entering');
+        morphChildren(na, nb);
+      }
+      return na;
+    }
+    if (nb instanceof HTMLElement && (nb.classList.contains('tut-part') || nb.classList.contains('tut-grow'))) {
+      nb.classList.add('is-entering');
+      nb.addEventListener('animationend', () => nb.classList.remove('is-entering'), { once: true });
+    }
+    return nb;
+  });
+  for (const n of olds) if (!used.has(n)) n.remove();
+  next.forEach((n, i) => { if (a.childNodes[i] !== n) a.insertBefore(n, a.childNodes[i] ?? null); });
 }
 
 /** Where each piece is in a scene, as signed changes between two scenes. @param {Scene} a @param {Scene} b */
@@ -285,9 +336,9 @@ function playScene(slot, a, b, fight = '', focus = /** @type {string[]} */ ([]))
   return (fight ? tussle(slot, fight) : Promise.resolve()).then(() => {
     // Measure each path's ends now, then redraw without the pieces in flight; the ends keep where they were.
     const measured = paths.map((p) => ({ ...p, from: ghost(p.from), to: ghost(p.to) }));
-    slot.innerHTML = sceneHtml(sceneMid(a, b), focus);
+    morph(slot, sceneHtml(sceneMid(a, b), focus));
     return flyPaths(measured).then(() => measured.forEach((p) => { p.from.remove(); p.to.remove(); }));
-  }).then(() => { slot.innerHTML = sceneHtml(b, focus); });
+  }).then(() => { morph(slot, sceneHtml(b, focus)); });
 }
 
 /**
@@ -530,10 +581,13 @@ function chapterStory() {
   const map = /** @type {{ directions: { dq: number, dr: number }[], locations: Record<string, { q: number, r: number }> }} */ (/** @type {unknown} */ (spec.map));
   const adj = (/** @type {string} */ a, /** @type {string} */ b) => map.directions.some((d) => map.locations[a].q + d.dq === map.locations[b].q && map.locations[a].r + d.dr === map.locations[b].r);
   const own = (/** @type {string} */ l) => locationById(l).archetype === arch.id;
-  // Your archetype's ground (S, where the Werewolves stand) and a neighbour off it (W, the Cryptids).
+  const { F0, G, H, ash } = c;
+  const homeOf = (/** @type {string} */ l, /** @type {string} */ f) => locationById(l).archetype === factionById(f).archetype;
+  // Your archetype's ground (S, the Werewolves), a neighbour off it (T, the Cryptids the lure will draw), and a
+  // third place (W) where the Cryptids and another faction stand tied, on ground neither calls home.
   const S = c.L1;
-  const W = Object.keys(map.locations).find((l) => adj(S, l) && !own(l)) ?? c.L2;
-  const { F0, G, ash } = c;
+  const T = Object.keys(map.locations).find((l) => adj(S, l) && !own(l)) ?? c.L2;
+  const W = Object.keys(map.locations).find((l) => l !== S && l !== T && (adj(S, l) || adj(T, l)) && !homeOf(l, G) && !homeOf(l, H)) ?? c.L3;
   const gArch = /** @type {typeof spec.archetypes[number]} */ (spec.archetypes.find((x) => x.id === factionById(G).archetype));
   const deck = deckOf(c.st);
   // A mixed hand: a card of the Cryptids' suit (the offering that pays for the lure), your suit's lure, and an unsuited card.
@@ -543,57 +597,57 @@ function chapterStory() {
   const po = printedOf(c.st, offer);
   const sF = c.supF, sG = c.st.supply[G], y = c.you0, yG = c.mine.standing[G], a = c.ash0, S0 = c.mine.supply, A0 = c.st.players[ash].supply;
   const icon = suitIcon(arch.id), gIcon = suitIcon(gArch.id);
-  /** @param {{ fS?: number, fRow?: number, ashF?: number, gSup?: number, gRow?: number, ashG?: number, S?: any, W?: any, you?: any, ash?: any, gRowOn?: boolean, players?: boolean, hexes?: string[] }} o @returns {Scene} */
+  /** @param {{ fS?: number, fRow?: number, ashF?: number, gSup?: number, gRow?: number, ashG?: number, S?: any, T?: any, W?: any, you?: any, ash?: any, gRowOn?: boolean, players?: boolean, hexes?: string[] }} o @returns {Scene} */
   const at = (o) => ({
     rows: [
       { f: F0, supply: o.fS ?? sF, sway: { [YOU]: o.fRow ?? y, [ash]: o.ashF ?? a - 1 } },
       ...(o.gRowOn === false ? [] : [{ f: G, supply: o.gSup ?? sG, sway: { [YOU]: o.gRow ?? yG, [ash]: o.ashG ?? 0 } }]),
     ],
-    hexes: (o.hexes ?? [S, W]).map((loc) => ({ loc, tokens: {}, ...(loc === S ? o.S : o.W) })),
+    hexes: (o.hexes ?? [T, S, W]).map((loc) => ({ loc, tokens: {}, ...(loc === S ? o.S : loc === T ? o.T : o.W) })),
     players: o.players === false ? [] : [{ pid: YOU, supply: S0, trophies: {}, ...o.you }, { pid: ash, supply: A0, trophies: {}, ...o.ash }],
   });
   const hand = [offer, lure, wild];
+  const tied = { tokens: { [G]: 2, [H]: 2 } };
   // The table, beat by beat. Sway starts in the rows and flies onto the locations once the slayers are there.
   const q1 = at({ fS: sF + 4, fRow: y + 1, ashF: a, gRowOn: false, players: false, hexes: [] });
   const q2 = at({ fRow: y + 1, ashF: a, gRowOn: false, players: false, hexes: [S], S: { tokens: { [F0]: 4 } } });
-  const q3a = at({ fRow: y + 1, ashF: a, gSup: sG + 3, ashG: 2, players: false, S: { tokens: { [F0]: 4 } } });
-  const q3 = at({ fRow: y + 1, ashF: a, ashG: 2, players: false, S: { tokens: { [F0]: 4 } }, W: { tokens: { [G]: 3 } } });
-  const qP = at({ fRow: y + 1, ashF: a, ashG: 2, S: { tokens: { [F0]: 4 } }, W: { tokens: { [G]: 3 } }, you: { hand } });
-  const placed = { S: { tokens: { [F0]: 4 }, sway: { [YOU]: 1, [ash]: 1 } }, W: { tokens: { [G]: 3 }, sway: { [ash]: 2 } } };
+  const q3a = at({ fRow: y + 1, ashF: a, gSup: sG + 5, ashG: 3, players: false, S: { tokens: { [F0]: 4 } } });
+  const q3 = at({ fRow: y + 1, ashF: a, ashG: 3, players: false, S: { tokens: { [F0]: 4 } }, T: { tokens: { [G]: 3 } }, W: tied });
+  const qP = at({ fRow: y + 1, ashF: a, ashG: 3, S: { tokens: { [F0]: 4 } }, T: { tokens: { [G]: 3 } }, W: tied, you: { hand } });
+  const placed = { S: { tokens: { [F0]: 4 }, sway: { [YOU]: 1, [ash]: 1 } }, T: { tokens: { [G]: 3 }, sway: { [ash]: 2 } }, W: { ...tied, sway: { [ash]: 1 } } };
   const q5 = at({ ...placed, you: { hand } });
   const q7 = at({ ...placed, gRow: yG + po, you: { supply: S0 - po, hand: [lure, wild] } });
   // The road not taken: on the Werewolves (FAC), into the Cryptids' location, where Ash leads.
-  const q8 = at({ fRow: y - 1, gRow: yG + po, S: { tokens: {}, sway: { [YOU]: 1, [ash]: 1 } }, W: { tokens: { [G]: 3, [F0]: 4 }, sway: { [ash]: 2, [YOU]: 1 } }, you: { supply: S0 - po, hand: [wild] } });
+  const q8 = at({ ...placed, fRow: y - 1, gRow: yG + po, S: { tokens: {}, sway: { [YOU]: 1, [ash]: 1 } }, T: { tokens: { [G]: 3, [F0]: 4 }, sway: { [ash]: 2, [YOU]: 1 } }, you: { supply: S0 - po, hand: [wild] } });
   // The play: at your archetype's location (LOC); the Cryptids come, paid with the sway the offering bought.
-  const fight = (/** @type {any} */ sHex, /** @type {any} */ you, /** @type {any} */ ash_, fRow = y) => at({ fRow, gRow: yG + po - 1, S: sHex, W: { tokens: {}, sway: { [ash]: 2 } }, you: { supply: S0 - po, hand: [wild], ...you }, ash: ash_ });
-  const q9 = fight({ tokens: { [F0]: 4, [G]: 3 }, sway: { [YOU]: 2, [ash]: 1 } }, {}, {});
-  const q12 = fight({ tokens: { [F0]: 4, [G]: 3 }, sway: { [YOU]: 2, [ash]: 1 }, doomed: { [G]: 3, [F0]: 1 } }, {}, {});
-  const q13 = fight({ tokens: { [F0]: 4, [G]: 0 }, sway: { [YOU]: 2, [ash]: 1 } }, { trophies: { [G]: 3 } }, {});
-  const q14 = fight({ tokens: { [F0]: 3 }, sway: { [YOU]: 2, [ash]: 1 } }, { trophies: { [G]: 3 } }, { trophies: { [F0]: 1 } });
-  const q15 = fight({ tokens: { [F0]: 3 }, sway: { [YOU]: 0, [ash]: 1 } }, { trophies: { [G]: 3 }, supply: S0 - po + 1 }, { trophies: { [F0]: 1 } }, y + 1);
+  const after = (/** @type {any} */ sHex, /** @type {any} */ you, /** @type {any} */ ash_, fRow = y, w = /** @type {any} */ ({ ...tied, sway: { [ash]: 1 } })) => at({ fRow, gRow: yG + po - 1, S: sHex, T: { tokens: {}, sway: { [ash]: 2 } }, W: w, you: { supply: S0 - po, hand: [wild], ...you }, ash: ash_ });
+  const q9 = after({ tokens: { [F0]: 4, [G]: 3 }, sway: { [YOU]: 2, [ash]: 1 } }, {}, {});
+  const q12 = after({ tokens: { [F0]: 4, [G]: 3 }, sway: { [YOU]: 2, [ash]: 1 }, doomed: { [G]: 3, [F0]: 1 } }, {}, {});
+  const q13 = after({ tokens: { [F0]: 4, [G]: 0 }, sway: { [YOU]: 2, [ash]: 1 } }, { trophies: { [G]: 3 } }, {});
+  const q14 = after({ tokens: { [F0]: 3 }, sway: { [YOU]: 2, [ash]: 1 } }, { trophies: { [G]: 3 } }, { trophies: { [F0]: 1 } });
+  const q15 = after({ tokens: { [F0]: 3 }, sway: { [YOU]: 0, [ash]: 1 } }, { trophies: { [G]: 3 }, supply: S0 - po + 1 }, { trophies: { [F0]: 1 } }, y + 1);
+  // Meanwhile, the tie: both groups wiped out, Ash's sway home, the location scorched.
+  const q16 = after({ tokens: { [F0]: 3 }, sway: { [YOU]: 0, [ash]: 1 } }, { trophies: { [G]: 3 }, supply: S0 - po + 1 }, { trophies: { [F0]: 1 }, supply: A0 + 1 }, y + 1, { tokens: {}, sway: {}, scorched: true });
   const t = 'How it works';
-  const tieLoc = c.L3, H = c.H;
-  /** @type {Scene} */ const tie = { hexes: [{ loc: tieLoc, tokens: { [G]: 2, [H]: 2 }, sway: { [ash]: 1 } }], players: [{ pid: ash, supply: 10 }] };
-  /** @type {Scene} */ const tied = { hexes: [{ loc: tieLoc, tokens: {}, sway: {}, scorched: true }], players: [{ pid: ash, supply: 11 }] };
   return [
     chapter('2 · How it works'),
     // The archetype is the thread: a faction, its ground and the cards of its suit all share it (designer, 2026-10-11).
     sceneStep(t, q1, q1, `<p>This is the ${F(F0)}' row: their monsters waiting in supply. The ${F(F0)} are ${icon} ${esc(arch.name)}, one of five archetypes.</p>`, [`row:${F0}`]),
     sceneStep(t, q1, q2, `${eq(tokenHtml(F0, 2), op('/'), tokenHtml(G, 2), op('='), 'a monster')}<p>Below it, ${L(S)}: a ${icon} location, ${esc(arch.name)} home ground. The ${F(F0)} come onto it from their supply.</p>`, [`hex:${S}`, `row:${F0}`]),
-    sceneStep(t, q3a, q3, `<p>Next door at ${L(W)}, the ${F(G)} arrive: ${gIcon} ${esc(gArch.name)}. Two factions in one place will fight.</p>`, [`hex:${W}`, `row:${G}`]),
+    sceneStep(t, q3a, q3, `<p>Nearby, the ${F(G)} (${gIcon} ${esc(gArch.name)}) arrive at ${L(T)}, and square off with the ${F(H)} at ${L(W)}. Two factions in one place will fight.</p>`, [`hex:${T}`, `hex:${W}`, `row:${G}`]),
     sceneStep(t, q3, qP, `<p>The slayers arrive: you, and ${who(ash)}.</p>`, [`player:${YOU}`, `player:${ash}`]),
-    sceneStep(t, qP, q5, `<p>Your cubes are your <b>sway</b>. In a faction's row: how much it has noticed you. On a location: a <b>bid</b> for the trophies when it fights.</p>`, [`hexsway:${S}`, `hexsway:${W}`, `row:${F0}`, `row:${G}`]),
+    sceneStep(t, qP, q5, `<p>Your cubes are your <b>sway</b>. In a faction's row: how much it has noticed you. On a location: a <b>bid</b> for the trophies when it fights.</p>`, [`hexsway:${S}`, `hexsway:${T}`, `hexsway:${W}`, `row:${F0}`, `row:${G}`]),
     sceneStep(t, q5, q5, `${eq(icon, op('card'), op('→'), `${icon} locations`, op('or'), `the ${F(F0)}`)}<p>Every card has a <b>suit</b>: an archetype, or none. A ${icon} card's action works at ${icon} locations (any faction there) or on the ${F(F0)} (anywhere). Each card is played once, one of three ways.</p>`, [`card:${offer}`, `card:${lure}`, `card:${wild}`]),
     sceneStep('1 · An offering', q5, q7, `${eq(miniCard(offer), op('→'), `+${po} sway`, op('→'), tokenHtml(G, 1))}<p>Spend a card for the sway printed on it, with the faction of its suit: this ${gIcon} card gives sway with the ${F(G)}. Its action is lost.</p>`, [`card:${offer}`, `player:${YOU}`, `row:${G}`]),
-    sceneStep(`2 · A gambit on the ${factionById(F0).name} (FAC)`, q7, q8, `<p>Play ${miniCard(lure)} on the ${F(F0)}, anywhere: bait ${L(W)} and only the ${F(F0)} come, paid with 1 of your sway with them. But ${who(ash)} has 2 there: you'd be second. Not this one.</p>`, [`card:${lure}`, `hex:${S}`, `hex:${W}`, `row:${F0}`]),
-    sceneStep(`3 · A gambit at a ${arch.name} location (LOC)`, q7, q9, `<p>Or play it at a ${icon} location: bait ${L(S)}, and the biggest group next door comes, whatever its faction: the ${F(G)}. You pay 1 sway with them, the sway your offering just bought, and it lands there with them. Now you lead, 2 to 1.</p>${frame('Luring a faction to a new place costs 1 sway with it, and that sway lands there with them: your bid.', 'Build sway with a faction before you need to move it.')}`, [`card:${lure}`, `hex:${S}`, `hex:${W}`, `row:${G}`]),
-    sceneStep('End of round: the fight', q9, q9, `${frame('When a location fights, the most sway there takes the bigger pile of the dead; second most, the smaller.', 'Bid where the big fights will be.')}${more('Ties between players', 'Tied for the most sway: a group whose archetype matches the location wins the tie. Otherwise nobody tied collects their pile.')}`, [`hextok:${S}:${F0}`, `hextok:${S}:${G}`, `hexsway:${S}`], S),
+    sceneStep(`2 · A gambit on the ${factionById(F0).name} (FAC)`, q7, q8, `<p>Play ${miniCard(lure)} on the ${F(F0)}, anywhere: bait ${L(T)} and only the ${F(F0)} come, paid with 1 of your sway with them. But ${who(ash)} has 2 there: you'd be second. Not this one.</p>`, [`card:${lure}`, `hex:${S}`, `hex:${T}`, `row:${F0}`]),
+    sceneStep(`3 · A gambit at a ${arch.name} location (LOC)`, q7, q9, `<p>Or play it at a ${icon} location: bait ${L(S)}, and the biggest group next door comes, whatever its faction: the ${F(G)} from ${L(T)}. You pay 1 sway with them, the sway your offering just bought, and it lands there with them. Now you lead, 2 to 1.</p>${frame('Luring a faction to a new place costs 1 sway with it, and that sway lands there with them: your bid.', 'Build sway with a faction before you need to move it.')}`, [`card:${lure}`, `hex:${S}`, `hex:${T}`, `row:${G}`]),
+    sceneStep('End of round: the fights', q9, q9, `<p>When the round ends, every location holding two factions fights: here ${L(S)} and ${L(W)}. ${L(S)} first.</p>${frame('When a location fights, the most sway there takes the bigger pile of the dead; second most, the smaller.', 'Bid where the big fights will be.')}${more('Ties between players', 'Tied for the most sway: a group whose archetype matches the location wins the tie. Otherwise nobody tied collects their pile.')}`, [`hextok:${S}:${F0}`, `hextok:${S}:${G}`, `hexsway:${S}`], S),
     sceneStep('Counting the dead', q12, q12, fightMath(F0, 4, G, 3), [`hextok:${S}:${F0}`, `hextok:${S}:${G}`]),
     sceneStep('The bigger pile', q12, q13, `<p>All 3 ${F(G)}: the bigger pile, to you, the most sway here.</p>`, [`hextok:${S}:${G}`, `hexsway:${S}`, `player:${YOU}`]),
     sceneStep('The smaller pile', q13, q14, `<p>The 1 ${esc(one(factionById(F0).name))} the winners lost: the smaller pile, to ${who(ash)}, second.</p>`, [`hextok:${S}:${F0}`, `hexsway:${S}`, `player:${ash}`]),
     sceneStep('After the fight', q14, q15, `<p>Only the leader's sway leaves: half of yours joins your sway with the winners, the ${F(F0)}; the rest comes home. ${who(ash)}'s stays for the next fight.</p>`, [`hexsway:${S}`, `row:${F0}`, `player:${YOU}`]),
-    sceneStep('Ties scorch', tie, tied, `${eq('2 vs 2', op('→'), 'both wiped out')}<p>Equal groups, on ground neither calls its own: nobody collects, sway goes home, and the location is gone for good. On one side's own ground, that side wins.</p>`, [`hex:${tieLoc}`], tieLoc),
-    sceneStep('The loop', q15, q15, `${eq(chip('an offering'), op('→'), chip('a gambit'), op('→'), chip('a fight'), op('→'), chip('trophies'))}<p>Cards become sway, sway becomes bids, bids become trophies.</p>`),
+    sceneStep('Meanwhile, a tie', q15, q16, `${eq('2 vs 2', op('→'), 'both wiped out')}<p>At ${L(W)} the ${F(G)} and the ${F(H)} are level, on ground neither calls home. Both groups are wiped out, nobody collects, sway goes home, and ${L(W)} is gone for good. (On one side's own ground, that side would win.)</p>`, [`hex:${W}`, `player:${ash}`], W),
+    sceneStep('The loop', q16, q16, `${eq(chip('an offering'), op('→'), chip('a gambit'), op('→'), chip('a fight'), op('→'), chip('trophies'))}<p>Cards become sway, sway becomes bids, bids become trophies.</p>`),
   ];
 }
 
@@ -1187,8 +1241,37 @@ function focusOn(target) {
 /** Point at a step's subject, then run what moves (so it's seen), then show the step. @param {Show} show @param {() => Promise<unknown>} run @returns {Promise<Show>} */
 const lead = (show, run) => (show.type === 'spot' && R.mode !== 'play' ? focusOn(show.target) : Promise.resolve()).then(run).then(() => show);
 
+/**
+ * Swap a step's text in place: the old fades out where it was, the new fades
+ * in, and the box eases to the new height (designer: text changes without
+ * jumps). @param {Element} box  a .tut-textbox @param {string} html
+ */
+function swapText(box, html) {
+  const old = box.querySelector('.tut-text:not(.is-leaving)');
+  const fresh = document.createElement('div');
+  fresh.className = 'tut-text is-arriving';
+  fresh.innerHTML = html;
+  const from = /** @type {HTMLElement} */ (box).offsetHeight;
+  old?.classList.add('is-leaving');
+  box.appendChild(fresh);
+  const to = fresh.offsetHeight;
+  const b = /** @type {HTMLElement} */ (box);
+  b.style.height = `${from}px`;
+  void b.offsetHeight;
+  b.style.height = `${to}px`;
+  requestAnimationFrame(() => fresh.classList.remove('is-arriving'));
+  setTimeout(() => { old?.remove(); b.style.height = ''; }, 280);
+}
+/** Cross-fade a heading's text. @param {Element | null} h @param {string} text */
+function swapTitle(h, text) {
+  if (!h || h.textContent === text) return;
+  h.classList.add('is-swapping');
+  setTimeout(() => { h.textContent = text; h.classList.remove('is-swapping'); }, 120);
+}
+
 /** @param {Show} show */
 function display(show) {
+  const before = R.shown;
   R.shown = show;
   R.waiting = show.type === 'wait';
   el.block.hidden = show.type === 'wait' || R.mode === 'play';
@@ -1207,10 +1290,27 @@ function display(show) {
       /** @type {HTMLElement | null} */ (el.modal.querySelector('.btn-primary'))?.focus({ preventScroll: true });
       return;
     }
+    // A scene beat that carries straight on from the last one: update it in place.
+    const slotNow = el.modal.querySelector('.tut-scene-slot');
+    if (show.scene && !show.buttons && before?.type === 'modal' && before.scene && before.scene.to === show.scene.from && slotNow && el.modal.querySelector('.tut-textbox')) {
+      swapTitle(el.modal.querySelector('h2'), show.title);
+      swapText(/** @type {Element} */ (el.modal.querySelector('.tut-textbox')), show.html);
+      const navEl = el.modal.querySelector('.tut-nav');
+      if (navEl) navEl.outerHTML = nav();
+      const sc = show.scene;
+      const slot = /** @type {HTMLElement} */ (slotNow);
+      if (sc.from !== sc.to) setTimeout(() => { if (R.shown === show) void playScene(slot, sc.from, sc.to, sc.fight, sc.focus); }, 120);
+      else {
+        morph(slot, sceneHtml(sc.to, sc.focus));
+        if (sc.fight) setTimeout(() => { if (R.shown === show) void tussle(slot, /** @type {string} */ (sc.fight)); }, 200);
+      }
+      /** @type {HTMLElement | null} */ (el.modal.querySelector('.btn-primary'))?.focus({ preventScroll: true });
+      return;
+    }
     const buttons = show.buttons
       ? `<div class="tut-nav"><span class="tut-chapter">${esc(R.chapter)}</span><span class="tut-nav-btns">${R.mode === 'guided' && R.history.length > 1 ? '<button class="btn" data-tut="back">Back</button>' : ''}${show.buttons.map((b, i) => `<button class="btn${b.primary ? ' btn-primary' : ''}" data-tut="button:${i}">${esc(b.label)}</button>`).join('')}</span></div>`
       : nav();
-    el.modal.innerHTML = `${show.title ? `<h2>${esc(show.title)}</h2>` : ''}<div class="tut-body">${show.scene ? `<div class="tut-scene-slot">${sceneHtml(show.scene.from, show.scene.focus)}</div>` : ''}${show.html}</div>${buttons}`;
+    el.modal.innerHTML = `${show.title ? `<h2>${esc(show.title)}</h2>` : ''}<div class="tut-body">${show.scene ? `<div class="tut-scene-slot">${sceneHtml(show.scene.from, show.scene.focus)}</div>` : ''}<div class="tut-textbox"><div class="tut-text">${show.html}</div></div></div>${buttons}`;
     el.modal.dataset.stageKey = show.stage?.key ?? '';
     if (show.stage) el.modal.querySelectorAll('.tut-intro').forEach((x) => { /** @type {HTMLElement} */ (x).dataset.stage = String(show.stage?.n); });
     const sc = show.scene;
@@ -1227,8 +1327,17 @@ function display(show) {
   el.dim.toggleAttribute('hidden', R.mode === 'play');
   el.tip.hidden = false;
   el.tip.classList.toggle('is-caption', R.mode === 'play');
-  el.tip.style.left = ''; el.tip.style.top = ''; // each step finds its own place
-  el.tip.innerHTML = `<h3>${show.title}</h3><div class="tut-body">${show.html}</div>${R.mode === 'play' ? '' : nav()}`;
+  const box = el.tip.querySelector('.tut-textbox');
+  if (before?.type === 'spot' && box && R.mode !== 'play') {
+    // Spot after spot: the tooltip glides to its new place and its text cross-fades.
+    swapTitle(el.tip.querySelector('h3'), show.title.replace(/<[^>]+>/g, ''));
+    swapText(box, show.html);
+    const navEl = el.tip.querySelector('.tut-nav');
+    if (navEl) navEl.outerHTML = nav();
+  } else {
+    el.tip.style.left = ''; el.tip.style.top = ''; // each step finds its own place
+    el.tip.innerHTML = `<h3>${show.title}</h3><div class="tut-body"><div class="tut-textbox"><div class="tut-text">${show.html}</div></div></div>${R.mode === 'play' ? '' : nav()}`;
+  }
   place();
   if ((R.mode !== 'guided' || show.auto) && !R.paused) R.timer = setTimeout(() => void go(), show.dwell ?? DWELL[R.mode]);
 }

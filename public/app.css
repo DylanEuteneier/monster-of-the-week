@@ -805,7 +805,6 @@ button.card-opt:hover { background: #f6cca1; }
 .tut-side > :nth-child(2) { rotate: 4deg; translate: -4px 10px; }
 .tut-side > :nth-child(4) { rotate: 3deg; translate: 8px -6px; }
 .tut-side > :nth-child(5) { rotate: -4deg; translate: -6px -2px; }
-.tut-cast-item.is-absent { opacity: 0.4; }
 .tut-cast-item .small { line-height: 1.2; }
 /* The group that crosses over walks from the slayers' side to stand with its faction. */
 /* New pieces crash in, one after another, from a little way off; the rows open as they land. */
@@ -839,9 +838,8 @@ button.card-opt:hover { background: #f6cca1; }
 .tut-presence li { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: var(--space-2); padding: 2px var(--space-2); background: var(--color-panel-2); border: var(--border); }
 .tut-presence li.is-top { outline: var(--line) solid var(--color-accent); outline-offset: -2px; }
 .tut-presence b { font-family: var(--font-display); font-weight: 400; }
-/* A token marked to die in a fight: greyed, with a red pixel cross. */
+/* A token marked to die in a fight: a red pixel cross over it, its colours kept. */
 .tut-doomed { position: relative; display: inline-flex; }
-.tut-doomed .token { filter: grayscale(1) brightness(0.7); }
 .tut-doomed::after { content: "✕"; position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-size: 14px; color: var(--color-danger); text-shadow: 1px 1px 0 var(--ink); }
 /* A card in a scene's hand: small, in its suit's colour, like the cards' band. */
 .tut-mini-card { display: inline-flex; align-items: center; gap: var(--space-1); padding: 1px var(--space-1); background: var(--card-face); color: var(--card-ink); border: var(--border); border-left: 4px solid var(--suit-none); font-size: 11px; vertical-align: middle; }
@@ -895,6 +893,19 @@ button.card-opt:hover { background: #f6cca1; }
 .tut-intro[data-stage="3"] .tut-side:last-child > :nth-child(3) { transform: translateX(-36px); transition-delay: 420ms; }
 .tut-intro h2 { margin-bottom: var(--space-2); }
 @media (prefers-reduced-motion: reduce) { .tut-intro *, .tut-stack > * { transition: none !important; animation: none !important; } }
+/* Smooth beats (tutorial.js: morph, swapText): new scene parts animate in quickly as the layout opens; text
+   cross-fades in a box that eases to its new height; headings cross-fade. */
+.tut-part.is-entering, .tut-grow.is-entering { animation: tut-enter 300ms cubic-bezier(.2,.8,.3,1) both; overflow: hidden; }
+@keyframes tut-enter { from { max-height: 0; opacity: 0; transform: translateY(-6px); padding-block: 0; margin-block: 0; } to { max-height: 400px; opacity: 1; transform: none; } }
+.tut-scene-board .tut-part.is-entering { animation-name: tut-enter-x; }
+@keyframes tut-enter-x { from { max-width: 0; opacity: 0; transform: scale(0.85); } to { max-width: 240px; opacity: 1; transform: none; } }
+.tut-textbox { position: relative; transition: height 260ms cubic-bezier(.3,.8,.3,1); }
+.tut-text { display: flex; flex-direction: column; gap: var(--space-2); transition: opacity 220ms ease; }
+.tut-text.is-leaving { position: absolute; inset: 0 0 auto 0; opacity: 0; pointer-events: none; }
+.tut-text.is-arriving { opacity: 0; }
+.tut-modal h2, .tut-tip h3 { transition: opacity 120ms ease; }
+.tut-modal h2.is-swapping, .tut-tip h3.is-swapping { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .tut-part.is-entering, .tut-grow.is-entering { animation: none; } .tut-textbox, .tut-text { transition: none; } }
 .tut-phases { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
 .tut-phases > div { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); background: var(--color-panel-2); border: var(--border); }
 .tut-phases b { font-family: var(--font-display); font-weight: 400; color: var(--color-accent); text-transform: uppercase; }
