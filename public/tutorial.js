@@ -742,8 +742,8 @@ function chapterStructure() {
         <div><b>3 · Resolve</b><span>fights, then growth</span></div>
       </div>
       <p class="small muted">${rounds()} rounds, then the count.</p>`),
-    spot(inRegion(region).map(SEL.hex), `A region: ${esc(region)}`, '<p>Fifteen locations in five regions of three, in a ring round the lake. Monsters never move on their own: only your gambits move them, and each card says where.</p>'),
-    spot([...inRegion(region), ...near.flatMap(inRegion)].map(SEL.hex), 'Neighbouring regions', `<p>Cards use the regions: some draw monsters from a whole region, or from its neighbours (here ${near.map(esc).join(' and ')}); others from next door, or anywhere.</p>`),
+    spot(inRegion(region).map(SEL.hex), `A region: ${esc(region)}`, '<p>A <b>location</b> is one hex. A <b>region</b> is a group of three neighbouring locations, like these: five regions in a ring round the lake. Monsters never move on their own: your gambits move them, and each card says where.</p>'),
+    spot([...inRegion(region), ...near.flatMap(inRegion)].map(SEL.hex), 'Neighbouring regions', `<p>Most cards act on locations: next door, or anywhere. A few act on a whole region, or its neighbouring regions (here ${near.map(esc).join(' and ')}); when you play one, hovering a target lights every location it reaches.</p>`),
     ...(() => {
       const c = sceneCast();
       const ownF = c.L1; // your faction's own ground (one of your archetype's locations)

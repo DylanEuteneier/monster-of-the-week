@@ -977,6 +977,34 @@ function shownView() {
 }
 
 /**
+ * Cards that act on a whole region: hovering a candidate location lights every
+ * location the card will touch, in the hexes' hover art (the region it locks,
+ * draws from or shifts; for the Summoning Circle, the neighbouring regions it
+ * pulls from), so it's plain that the card reaches a region, not one place.
+ * @param {HTMLElement | null} el  the hovered pick, if any
+ */
+function lightRegions(el) {
+  for (const hex of document.querySelectorAll('#board .hex.is-region')) hex.classList.remove('is-region');
+  const view = ui.view;
+  if (!el || !view || !ui.choosing || el.dataset.action !== 'pick-location') return;
+  const card = cardById(ui.choosing);
+  const loc = el.dataset.location ?? '';
+  const map = /** @type {{ regions: Record<string, { neighbours: string[] }>, locations: Record<string, { region: string }> }} */ (/** @type {unknown} */ (spec.map));
+  const region = map.locations[loc]?.region;
+  if (!region) return;
+  const inRegions = (/** @type {string[]} */ rs) => Object.keys(map.locations).filter((l) => rs.includes(map.locations[l].region));
+  /** @type {string[]} */
+  let lit = [];
+  const step = currentChoice();
+  const targetStep = step && step.kind !== 'mode' && 'key' in step ? step.key === 'location' : true;
+  if (!targetStep) return;
+  if (card.action === 'lockdown' || card.action === 'gather-region' || card.action === 'pit-fall') lit = inRegions([region]);
+  else if (card.action === 'conveyor' && (ui.target.mode ?? 'location') === 'location') lit = inRegions([region]);
+  else if (card.action === 'gather-neighbours') lit = [loc, ...inRegions(map.regions[region].neighbours)];
+  for (const l of lit) document.querySelector(`#board [data-tile="${CSS.escape(l)}"] .hex`)?.classList.add('is-region');
+}
+
+/**
  * Outcome preview: hovering a lit choice that would finish the target (or
  * extend a path or a list of sources) shows on each hex what the play would
  * change: +n / -n tokens per faction, and your sway placed.
@@ -987,6 +1015,7 @@ function onPreview(event) {
   if (el === ui.previewing) return;
   ui.previewing = el;
   for (const box of document.querySelectorAll('#board .hex-preview')) box.innerHTML = '';
+  lightRegions(el);
   const view = ui.view;
   if (!el || !view || !ui.choosing) return;
   const t = structuredClone(ui.target);

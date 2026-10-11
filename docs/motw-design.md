@@ -2325,6 +2325,10 @@ The page a player sees. It is one script with no framework and no build step.
 - **Light only.** A landing place brightens briefly; nothing changes borders or draws outside the art. Reduced-motion settings switch the flights off.
 - **Always lands.** Both ends of every flight are measured again each frame, so a page that scrolls mid-flight still lands each piece on its place.
 
+#### Cards that reach a whole region
+
+- **The region is lit (designer):** while targeting a card that acts on a whole region (Lock Down the Town, Reroute the Power Grid, Reprogram the Traffic Lights' location reading, Open the Pit) or on the neighbouring regions (Draw a Summoning Circle), hovering a candidate location lights every location the card will touch, in the hexes' hover art. Regions stay in the rules as geography that cards refer to (D19); the tutorial says briefly what a region is next to a location.
+
 #### The presence gauge and the trophy tab
 
 - **Presence as a gauge (designer):** total presence is a bar at the top of the island, labelled as the monsters on the island, with the threshold marked; the bar turns red when presence is past the mark. It replaces the line of text above the factions. The table and the tutorial speak of presence as monster tokens on the board (designer).

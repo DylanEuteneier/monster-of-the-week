@@ -2337,7 +2337,8 @@ function nextShape(state, pid, cardId, t) {
       return { kind: 'done' };
     }
     case 'gather-region': case 'gather-neighbours': case 'call-home': {
-      const sources = (/** @type {string} */ loc) => LOCATION_IDS.filter((l) => l !== loc && (card.action === 'call-home' || card.action === 'gather-region' ? regionOf(l) === regionOf(loc) : REGIONS[regionOf(loc)].neighbours.includes(regionOf(l))));
+      // Where the tokens come from: anywhere (Call Home), the target's region (Reroute), or the neighbouring regions (Summoning Circle).
+      const sources = (/** @type {string} */ loc) => LOCATION_IDS.filter((l) => l !== loc && (card.action === 'call-home' || (card.action === 'gather-region' ? regionOf(l) === regionOf(loc) : REGIONS[regionOf(loc)].neighbours.includes(regionOf(l)))));
       const gathers = (/** @type {string} */ loc, /** @type {string} */ f) => canEnter(state, loc, f) && sources(loc).some((l) => tokensOf(state, l, f) > 0);
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => movers.some((f) => gathers(loc, f))) };
       if (!t.faction) return { kind: 'faction', options: movers.filter((f) => gathers(/** @type {string} */ (t.location), f)) };

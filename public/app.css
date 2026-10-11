@@ -336,6 +336,9 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .hex.is-candidate:hover > .hex-state-candidate, .hex.is-candidate.is-hovered > .hex-state-candidate { display: none; }
 .hex.is-candidate:hover > .hex-state-hover, .hex.is-candidate.is-hovered > .hex-state-hover { display: block; }
 .hex.is-candidate:hover, .hex.is-candidate.is-hovered { transform: translateY(-2px); }
+/* A card that acts on a whole region: every location it will touch shows its hover art while a candidate is hovered (app.js, lightRegions). */
+.hex.is-region > .hex-state-hover { display: block; }
+.hex.is-region > .hex-state-candidate { display: none; }
 .hex-pieces { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .hex-pieces .stack-row { flex-wrap: nowrap; gap: 4px; justify-content: center; }
 .hex-pieces .token-stack > * + * { margin-left: calc(var(--w) * -0.66); }
