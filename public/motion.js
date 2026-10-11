@@ -151,7 +151,27 @@ export function motionOn() {
  * @returns {Promise<void>}
  */
 export function fly(flights, you, o = {}) {
-  if (!flights.length || !motionOn()) return Promise.resolve();
+  /** @type {Path[]} */
+  const paths = [];
+  for (const f of flights) {
+    const from = elementOf(f.from, f.owner, you, f.faction);
+    const to = elementOf(f.to, f.owner, you, f.faction);
+    if (from && to) paths.push({ from, to, piece: f.piece, n: f.n });
+  }
+  return flyPaths(paths, o);
+}
+
+/** Pieces flying from one element to another. @typedef {{ from: Element, to: Element, piece: string, n: number }} Path */
+
+/**
+ * Fly pieces along paths between elements (any elements: the table, or the
+ * tutorial's small scenes), then resolve. Both ends are measured again on
+ * every frame. Destinations get a short landing pulse.
+ * @param {Path[]} paths @param {{ speed?: number }} [o]
+ * @returns {Promise<void>}
+ */
+export function flyPaths(paths, o = {}) {
+  if (!paths.length || !motionOn()) return Promise.resolve();
   const speed = Math.max(0.25, o.speed ?? 1);
   const duration = FLIGHT_MS / speed;
   const layer = document.createElement('div');
@@ -162,10 +182,8 @@ export function fly(flights, you, o = {}) {
   /** @type {Set<Element>} */
   const landing = new Set();
   let i = 0;
-  for (const f of flights) {
-    const from = elementOf(f.from, f.owner, you, f.faction);
-    const to = elementOf(f.to, f.owner, you, f.faction);
-    if (!from || !to) continue;
+  for (const f of paths) {
+    const { from, to } = f;
     landing.add(to);
     const n = Math.min(f.n, MAX_PER_PATH);
     for (let k = 0; k < n; k++) {

@@ -313,7 +313,7 @@ function chapterWin() {
     spot(home ? SEL.hex(home) : SEL.board, 'Monsters and sway', `
       ${eq(tokenHtml(home ? Object.keys(st.board[home].tokens).find((f) => st.board[home].tokens[f] > 0) ?? faction : faction, 2), op('='), 'a monster')}
       ${eq(cubeHtml(colour(YOU), 12), op('='), 'your sway')}
-      <p>Every token on the island is a monster. Your coloured squares are your sway.</p>`),
+      <p>Every token on the island is a monster. Each cube in your colour is your sway.</p>`),
     // The two things a score is made of, before the endings that count them (designer, 2026-10-10).
     spot(SEL.faction(faction), 'Sway: how much a faction notices you', `
       ${eq(cubes(YOU, 3), op('→'), tokenHtml(faction, 1))}
