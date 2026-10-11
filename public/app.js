@@ -497,7 +497,8 @@ function piecesAt(loc, lit, board = /** @type {PlayerView} */ (ui.view).board) {
   const token = t ? faceDownHtml(t, colourOf(t.owner), t.real === undefined ? `a face-down ${t.kind ? cardById(t.kind).name : ''} token: real or a bluff` : `your ${t.kind ? cardById(t.kind).name : ''} token: ${t.real ? 'the real one' : 'the bluff'}`) : '';
   // Effects a card left here for the round, each as a token with its icon.
   const effects = /** @type {(keyof typeof EFFECTS)[]} */ (Object.keys(EFFECTS)).filter((k) => { const v = /** @type {Record<string, unknown>} */ (place)[k]; return Array.isArray(v) ? v.length > 0 : !!v; }).map(effectHtml).join('');
-  return `${rows.join('')}<span class="cube-row piece-row">${cubes}${token}${effects}</span>`;
+  // Face-down and effect tokens sit in a column at the location's side, apart from the groups and sway (designer, 2026-10-11).
+  return `${rows.join('')}<span class="cube-row piece-row">${cubes}</span>${token || effects ? `<span class="side-marks">${token}${effects}</span>` : ''}`;
 }
 
 /** The faction summaries: one row per faction in play. @param {ReturnType<typeof picks>} lit */

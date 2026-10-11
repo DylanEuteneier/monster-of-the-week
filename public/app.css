@@ -30,6 +30,7 @@
    3. Absolute inside a relative parent, at coordinates from data:
         .board > .board-tile   pixel positions from the board art (inline style)
         .hex > sprite/state/pieces   sizes from pieces.js (inline style)
+        .hex-pieces > .side-marks   face-down and effect tokens, a column at the location's side
         .token > face/art, .cube > faces   drawn pieces
         .hand .fan > .card     anchored at the fan's centre-bottom, moved only
                                by transform (see 4)
@@ -333,12 +334,14 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .trophies > .token + .token { margin-left: -12px; }
 /* Face-down tokens (pieces.js faceDownHtml): the back, in the owner's colour, shows the icon of the card that placed
    it (a real token and its bluff look the same); its owner sees the face: the icon on cardboard, or struck through for
-   the bluff. Effect tokens: a round token with the effect's icon. Rubble sits centred on a scorched location. */
-.face-down { position: relative; display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 3px; background: var(--color-panel-2); border: 2px solid var(--owner); box-shadow: 1px 1px 0 var(--ink); }
+   the bluff. Effect tokens: a round token with the effect's icon. Both sit in a column at the location's side (.side-marks, absolute in
+   the hex's pieces box). Rubble sits centred on a scorched location. */
+.side-marks { position: absolute; right: -4px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 2px; z-index: 1; }
+.face-down { position: relative; display: inline-grid; place-items: center; width: 20px; height: 20px; background: var(--color-panel-2); border: 2px solid var(--owner); box-shadow: 1px 1px 0 var(--ink); }
 .face-down.is-real, .face-down.is-bluff { background: var(--card-face); }
 .face-down.is-bluff .mark { opacity: 0.35; filter: grayscale(1); }
 .face-down.is-bluff::after { content: ""; position: absolute; left: 1px; right: 1px; top: 50%; height: 2px; background: var(--color-danger); transform: rotate(-45deg); }
-.effect-token { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 3px; border-radius: 50%; background: var(--ink); border: 2px solid var(--color-accent); box-shadow: 1px 1px 0 var(--ink); }
+.effect-token { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--ink); border: 2px solid var(--color-accent); box-shadow: 1px 1px 0 var(--ink); }
 .rubble { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -40%); line-height: 0; pointer-events: none; }
 
 /* Hexes: the hex art, its target-state art over it (CSS picks which shows),
