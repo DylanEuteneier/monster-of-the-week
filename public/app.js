@@ -416,7 +416,7 @@ function piecesAt(loc, lit, board = /** @type {PlayerView} */ (ui.view).board) {
     const faction = !group && lit.factions.includes(f);
     const action = group ? ` data-action="pick-group" data-location="${esc(loc)}" data-faction="${esc(f)}"` : faction ? ` data-action="pick-faction" data-faction="${esc(f)}"` : '';
     const tokens = Array.from({ length: n }, () => tokenHtml(f, 1, group || faction ? 'candidate' : '')).join('');
-    return `<span class="token-stack piece-row"${action} title="${n} ${esc(fname(f))}">${tokens}</span>`;
+    return `<span class="token-stack piece-row"${action}${group ? '' : ` data-location="${esc(loc)}"`}${group || faction ? '' : ` data-faction="${esc(f)}"`} title="${n} ${esc(fname(f))}">${tokens}</span>`;
   });
   const cubes = Object.entries(place.sway).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
     .flatMap(([pid, n]) => Array.from({ length: n }, () => cubeHtml(colourOf(pid), 8))).join('');
@@ -882,23 +882,81 @@ function placeHint(fresh = false) {
   else { panel.style.bottom = ''; panel.style.top = `${Math.round(best[1])}px`; }
 }
 
-/** Outline the suggested card(s) and light the locations the move names. */
+/**
+ * Mark the hint on the table (designer, 2026-10-11: every click needed to
+ * follow it): the move's locations in their hover light; the card with its
+ * HINT tab naming the way to play it and that button outlined; then, once the
+ * card is picked, the next thing to click as the target is built (a location,
+ * a group, a faction, an arrow, or Done), step by step until it plays.
+ */
 function markHint() {
-  for (const x of document.querySelectorAll('.is-suggested')) x.classList.remove('is-suggested');
+  for (const x of document.querySelectorAll('.is-suggested, .is-hint-next')) x.classList.remove('is-suggested', 'is-hint-next');
+  for (const x of document.querySelectorAll('#hand .card[data-hint]')) x.removeAttribute('data-hint');
   const h = ui.hints.on ? ui.hints.hint : null;
   if (!h) return;
-  for (const x of document.querySelectorAll('#hand .card[data-hint]')) x.removeAttribute('data-hint');
-  for (const id of [h.card, ...(h.keep ?? [])]) if (id) document.querySelector(`#hand .card[data-card="${CSS.escape(id)}"]`)?.classList.add('is-suggested');
-  // The way to play it (designer, 2026-10-11): its LOC, FAC or +N button marked, and named on the card's tab.
+  const q = (/** @type {string} */ sel) => document.querySelector(sel);
+  const tile = (/** @type {string} */ l) => q(`#board [data-tile="${CSS.escape(l)}"]`);
+  for (const id of h.keep ?? []) q(`#hand .card[data-card="${CSS.escape(id)}"]`)?.classList.add('is-suggested');
+  for (const l of h.tiles) tile(l)?.querySelector('.hex')?.classList.add('is-suggested');
   const m = h.move;
-  if (m?.type === 'play') {
-    const card = document.querySelector(`#hand .card[data-card="${CSS.escape(m.card)}"]`);
-    const mode = m.use === 'sway' ? 'sway' : m.target?.mode;
-    const opt = mode === 'sway' ? card?.querySelector('.card-opt[data-action="sway"], .card-opt:last-child') : mode ? card?.querySelector(`.card-opt[data-mode="${mode}"]`) : null;
-    opt?.classList.add('is-suggested');
-    if (card instanceof HTMLElement) card.dataset.hint = mode === 'sway' ? ` · ${opt?.textContent?.trim() ?? 'SWAY'}` : mode === 'faction' ? ' · FAC' : mode === 'location' ? ' · LOC' : '';
+  if (m?.type === 'pass') q('[data-action="pass"]')?.classList.add('is-hint-next');
+  if (m?.type === 'grow') tile(m.location)?.classList.add('is-hint-next');
+  if (m?.type !== 'play') return;
+  const card = q(`#hand .card[data-card="${CSS.escape(m.card)}"]`);
+  const mode = m.use === 'sway' ? 'sway' : m.target?.mode;
+  card?.classList.add('is-suggested');
+  if (card instanceof HTMLElement) card.dataset.hint = mode === 'sway' ? ` · ${card.querySelector('.card-opt[data-action="sway"]')?.textContent?.trim() ?? 'SWAY'}` : mode === 'faction' ? ' · FAC' : mode === 'location' ? ' · LOC' : '';
+  if (ui.choosing !== m.card || m.use === 'sway') {
+    (mode === 'sway' ? card?.querySelector('.card-opt[data-action="sway"]') : mode ? card?.querySelector(`.card-opt[data-mode="${mode}"]`) : null)?.classList.add('is-suggested');
+    return;
   }
-  for (const l of h.tiles) document.querySelector(`#board [data-tile="${CSS.escape(l)}"] .hex`)?.classList.add('is-suggested');
+  const next = hintNext(m.target ?? {});
+  if (!next) return;
+  if (next.kind === 'tile') tile(next.location)?.classList.add('is-hint-next');
+  if (next.kind === 'group') q(`#board .token-stack[data-location="${CSS.escape(next.location)}"][data-faction="${CSS.escape(next.faction)}"]`)?.classList.add('is-hint-next');
+  if (next.kind === 'faction') {
+    q(`#factions .faction-row[data-faction="${CSS.escape(next.faction)}"]`)?.classList.add('is-hint-next');
+    for (const x of document.querySelectorAll(`#board .token-stack[data-faction="${CSS.escape(next.faction)}"][data-action="pick-faction"]`)) x.classList.add('is-hint-next');
+  }
+  if (next.kind === 'direction') q(`[data-action="pick-direction"][data-direction="${CSS.escape(next.direction)}"]`)?.classList.add('is-hint-next');
+  if (next.kind === 'skip') q('[data-action="skip"]')?.classList.add('is-hint-next');
+}
+
+/**
+ * The next click towards the hint's target, from the step the table is on
+ * (the same steps applyPick fills in). @param {import('./engine.js').Target} ht
+ * @returns {{ kind: 'tile', location: string } | { kind: 'group', location: string, faction: string } | { kind: 'faction', faction: string } | { kind: 'direction', direction: string } | { kind: 'skip' } | null}
+ */
+function hintNext(ht) {
+  const c = currentChoice();
+  const t = ui.target;
+  if (!c) return null;
+  const real = (/** @type {string[] | undefined} */ xs) => (xs ?? []).filter((l) => l !== '__stop');
+  if (c.kind === 'location') {
+    /** @type {string | undefined} */
+    let l;
+    if (c.key === 'path') l = real(ht.path)[real(t.path).length];
+    else if (c.key === 'from') l = real(ht.from)[real(t.from).length];
+    else if (c.key === 'to' && t.moves?.length) l = ht.moves?.[t.moves.length - 1]?.to;
+    else l = /** @type {string | undefined} */ (ht[c.key]);
+    return l && c.options.includes(l) ? { kind: 'tile', location: l } : c.optional ? { kind: 'skip' } : null;
+  }
+  if (c.kind === 'split') {
+    const l = c.options.find((x) => (t.split?.[x] ?? 0) < (ht.split?.[x] ?? 0));
+    return l ? { kind: 'tile', location: l } : null;
+  }
+  if (c.kind === 'group') {
+    const g = c.key === 'lure' ? { location: ht.from?.[0] ?? '', faction: ht.faction ?? '' }
+      : c.key === 'move' ? ht.moves?.[(t.moves ?? []).length]
+      : { location: ht.location ?? '', faction: ht.faction ?? '' };
+    return g && c.options.some((o) => o.location === g.location && o.faction === g.faction) ? { kind: 'group', location: g.location, faction: g.faction } : c.optional ? { kind: 'skip' } : null;
+  }
+  if (c.kind === 'faction') {
+    const f = /** @type {string | undefined} */ (ht[c.key ?? 'faction']);
+    return f ? { kind: 'faction', faction: f } : null;
+  }
+  if (c.kind === 'direction') return ht.direction ? { kind: 'direction', direction: ht.direction } : null;
+  return null;
 }
 
 // ---------------------------------------------------------------------------

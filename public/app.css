@@ -734,6 +734,10 @@ button.card-opt:hover { background: #f6cca1; }
 .hint-why { margin: 0; padding-left: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); }
 .hint-rule { margin: 0; padding: var(--space-1) var(--space-2); background: var(--color-panel-2); border-left: var(--line) solid var(--color-accent); }
 .hint-others p { margin: var(--space-1) 0 0; }
+/* The next click to follow a hint: a cyan HINT badge inside a location (never past its art), an outline on a group,
+   a faction row or a bar button. */
+.board-tile.is-hint-next::after { content: "HINT"; position: absolute; top: 18%; left: 50%; transform: translateX(-50%); padding: 1px var(--space-1); font-family: var(--font-display); font-size: 10px; color: var(--ink); background: var(--color-link); border: var(--border); pointer-events: none; z-index: 2; }
+.token-stack.is-hint-next, .faction-row.is-hint-next, .bar-btn.is-hint-next { outline: var(--line) solid var(--color-link); outline-offset: 1px; }
 .card-opt.is-suggested { outline: var(--line) solid var(--color-link); outline-offset: 1px; box-shadow: 0 0 0 4px rgb(61 195 216 / 0.35); }
 #hint-button.is-on { border-color: var(--color-accent); color: var(--color-accent); }
 .hand .card.is-suggested::before { content: "HINT" attr(data-hint); white-space: nowrap; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); padding: 1px var(--space-2); font-family: var(--font-display); font-size: 11px; color: var(--ink); background: var(--color-link); border: var(--border); pointer-events: none; }
