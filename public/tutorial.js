@@ -507,6 +507,7 @@ function chapterWin() {
         sceneStep(title, s6, s7, `<p>Second most takes the smaller: ${who(c.ash)}. Trophies are kept secret.</p>`, [`hextok:${Lx}:${c.F0}`, `hexsway:${Lx}`, `player:${c.ash}`]),
       ];
     })(),
+    ...cardsAndAffinity(),
     chapter('2 · How to win'),
     ...endingSteps(),
   ];
@@ -514,6 +515,52 @@ function chapterWin() {
 
 /** @param {PlayerView} v */
 const totalPresence = (v) => Object.values(v.board).reduce((n, p) => n + Object.values(p.tokens).reduce((a, b) => a + b, 0), 0);
+
+/**
+ * Affinity, suits and a card's three uses, on one small table (designer,
+ * 2026-10-11): your slayer group with a real card in hand, your faction's row
+ * and a rival's, one of your suit's locations, and the two factions on
+ * neighbouring locations. Each use starts from the same table, so they read
+ * as alternatives.
+ * @returns {Step[]}
+ */
+function cardsAndAffinity() {
+  const c = sceneCast();
+  const { group, arch } = yours();
+  const map = /** @type {{ directions: { dq: number, dr: number }[], locations: Record<string, { q: number, r: number }> }} */ (/** @type {unknown} */ (spec.map));
+  const adj = (/** @type {string} */ a, /** @type {string} */ b) => map.directions.some((d) => map.locations[a].q + d.dq === map.locations[b].q && map.locations[a].r + d.dr === map.locations[b].r);
+  const home = (/** @type {string} */ l) => locationById(l).archetype === arch.id;
+  // Your suit's location, and two neighbours of it (off your ground) that touch each other: the Werewolves on one, the Cryptids on the other.
+  const S = c.L1;
+  const near = Object.keys(map.locations).filter((l) => l !== S && adj(S, l) && !home(l));
+  const pair = near.flatMap((a) => near.filter((b) => b !== a && adj(a, b)).map((b) => [a, b])).find(Boolean) ?? [near[0], near[1]];
+  const [A, B] = pair;
+  const suitCards = deckOf(c.st).filter((id) => cardById(id).suit === arch.id);
+  const card = suitCards.find((id) => cardById(id).action === 'lure') ?? suitCards[0];
+  const p = printedOf(c.st, card);
+  const youG = c.mine.standing[c.G];
+  /** @param {{ fRow?: number, gRow?: number, supply?: number, hand?: string[], S?: any, A?: any, B?: any }} o @returns {Scene} */
+  const table = (o) => ({
+    rows: [{ f: c.F0, supply: c.supF, sway: { [YOU]: o.fRow ?? c.you0 } }, { f: c.G, supply: c.st.supply[c.G], sway: { [YOU]: o.gRow ?? youG } }],
+    hexes: [{ loc: S, tokens: {}, ...o.S }, { loc: A, tokens: { [c.F0]: 2 }, ...o.A }, { loc: B, tokens: { [c.G]: 3 }, ...o.B }],
+    players: [{ pid: YOU, supply: o.supply ?? c.mine.supply, hand: o.hand ?? [card] }],
+  });
+  const base = table({});
+  const offered = table({ fRow: c.you0 + p, supply: c.mine.supply - p, hand: [] });
+  const locUse = table({ gRow: youG - 1, hand: [], S: { tokens: { [c.G]: 3 }, sway: { [YOU]: 1 } }, B: { tokens: {} } });
+  const facUse = table({ fRow: c.you0 - 1, hand: [], A: { tokens: {} }, B: { tokens: { [c.G]: 3, [c.F0]: 2 }, sway: { [YOU]: 1 } } });
+  const icon = suitIcon(arch.id);
+  const t = 'Your group, affinity and cards';
+  return [
+    sceneStep(t, base, base, `<p>You play the ${esc(group.name)}, a ${icon} ${esc(arch.name)} group.</p>`, [`player:${YOU}`]),
+    sceneStep(t, base, base, `${eq(icon, op('='), `the ${F(c.F0)}`, op('+'), `${icon} locations`)}<p>This game, ${icon}'s faction is the ${F(c.F0)}, and three locations are ${icon} ground, like ${L(S)}. Your group has <b>affinity</b> with both: tied sway with the ${F(c.F0)}, or at a ${icon} location, goes to you.</p>`, [`player:${YOU}`, `row:${c.F0}`, `hex:${S}`]),
+    sceneStep(t, base, base, `<p>Every card has a suit: one of the five archetypes, or none. ${miniCard(card)} is ${icon} ${esc(arch.name)}. You can use it in one of three ways.</p><div class="tut-card">${cardHtml(card, { view: view() })}</div>`, [`card:${card}`]),
+    sceneStep('1 · An offering', base, offered, `${eq(miniCard(card), op('→'), `+${p} sway`, op('→'), tokenHtml(c.F0, 1))}<p>Spend it for the sway printed on it, with its suit's faction, the ${F(c.F0)}. Its action is lost.</p>`, [`card:${card}`, `player:${YOU}`, `row:${c.F0}`]),
+    sceneStep(`2 · A gambit at a ${arch.name} location (LOC)`, base, locUse, `<p>Aim its action at a ${icon} location, any faction there. Bait ${L(S)}: the biggest group next to it comes, here the ${F(c.G)}. You pay 1 sway with them, and it goes with them.</p>`, [`card:${card}`, `hex:${S}`, `hex:${B}`, `row:${c.G}`]),
+    sceneStep(`3 · A gambit with the ${factionById(c.F0).name} (FAC)`, base, facUse, `<p>Or aim it at the ${F(c.F0)}, anywhere. Bait ${L(B)}: only the ${F(c.F0)} come, even off ${icon} ground. You pay 1 sway with them.</p>`, [`card:${card}`, `hex:${A}`, `hex:${B}`, `row:${c.F0}`]),
+    sceneStep(t, base, base, `${eq(chip('an offering'), op('or'), chip(`LOC: a ${icon} location`), op('or'), chip(`FAC: the ${F(c.F0)}`))}<p>Each card is played once, one way. Unsuited cards have no offering, but stronger actions.</p>`),
+  ];
+}
 
 // ---------------------------------------------------------------------------
 // 2. The sway economy
@@ -670,15 +717,6 @@ function chapterEconomy() {
     spot(onBoard.length ? onBoard.map(SEL.hex) : SEL.board, 'Now on the real table', `<p>You start with 1 sway on each ${suitIcon(arch.id)} location, lit here, and ${you0} with the ${F(F0)}. The same moves, for real:</p>`),
     ...table,
     restore,
-    ...(() => {
-      // Affinity: a tie in sway at your own ground goes to you.
-      /** @type {Scene} */ const tieBid = { hexes: [{ loc: L1, tokens: { [F0]: 4, [G]: 3 }, sway: { [YOU]: 1, [ash]: 1 } }], players: [{ pid: YOU, trophies: {} }, { pid: ash, trophies: {} }] };
-      /** @type {Scene} */ const tieWon = { hexes: [{ loc: L1, tokens: { [F0]: 3 }, sway: { [YOU]: 1, [ash]: 1 } }], players: [{ pid: YOU, trophies: { [G]: 3 } }, { pid: ash, trophies: { [F0]: 1 } }] };
-      return [
-        sceneStep(`You are the ${group.name}`, tieBid, tieBid, `<p>${L(L1)} is ${suitIcon(arch.id)} ground, your group's own. Here you and ${who(ash)} are tied on sway.</p>`, [`hexsway:${L1}`]),
-        sceneStep(`You are the ${group.name}`, tieBid, tieWon, `${eq(suitIcon(arch.id), op('='), 'your ties')}<p>Ties at ${suitIcon(arch.id)} locations, and tied sway with the ${F(F0)}, go to you: you take the bigger pile.</p>`, [`hex:${L1}`, `player:${YOU}`, `player:${ash}`], L1),
-      ];
-    })(),
   ];
 }
 
@@ -817,9 +855,9 @@ function draftSteps() {
       const id = me.batch.find((c) => cardById(c).suit) ?? me.batch[0];
       const c = cardById(id);
       const sf = /** @type {string} */ (R.table.state.factions.find((f) => factionById(f).archetype === c.suit) ?? '');
-      return { type: 'spot', target: SEL.card(id), title: 'Every card: one use', html: c.suit
-        ? `${eq(chip('a plan'), op('or'), chip(`an offering: +${view().printed[id]} sway`), tokenHtml(sf, 1))}<p>Play it for its action, or spend it for sway with the ${F(sf)}. Its action aims at a ${suitIcon(c.suit)} location (LOC) or at the ${F(sf)} anywhere (FAC): you choose when you play it.</p>`
-        : `${eq(chip('a plan'), op('only'))}<p>Unsuited: no sway to spend, but a stronger action. Marked A–D also decide who goes first.</p>` };
+      return { type: 'spot', target: SEL.card(id), title: 'Your cards', html: c.suit
+        ? `${eq(chip('an offering'), op('or'), chip('LOC'), op('or'), chip('FAC'))}<p>As before: spend a card for sway, or play its action at a location of its suit or on its suit's faction.</p>`
+        : '<p>Unsuited cards: no offering, stronger actions. Marked A–D also decide who goes first.</p>' };
     },
     () => {
       const move = autoMove(R.table, YOU);
