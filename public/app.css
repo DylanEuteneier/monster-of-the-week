@@ -867,6 +867,9 @@ button.card-opt:hover { background: #f6cca1; }
 .tut-mini-card.card-suit-demonic { border-left-color: var(--suit-demonic); }
 .tut-mini-card .tut-chip { border-color: var(--card-ink); }
 .tut-mini-card.is-lit { outline: var(--line) solid var(--color-accent); }
+.tut-mini-card.is-back { background: var(--color-cell); color: var(--color-muted); border-left-color: var(--color-cell); min-width: 22px; justify-content: center; }
+/* A callback to a rule taught earlier: one line, in a consistent style. */
+.tut-recall { padding: 2px var(--space-2); border-left: 3px solid var(--color-accent); color: var(--color-muted); font-size: 12px; }
 .tut-scene-hand { flex: 2; gap: var(--space-1); }
 /* A tussle on a scene's hex before the casualties fly: a shake, dust, a little blood, the clash. */
 .tut-tussle { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
