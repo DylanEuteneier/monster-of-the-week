@@ -807,35 +807,18 @@ button.card-opt:hover { background: #f6cca1; }
 .tut-side > :nth-child(5) { rotate: -4deg; translate: -6px -2px; }
 .tut-cast-item.is-absent { opacity: 0.4; }
 .tut-cast-item .small { line-height: 1.2; }
-.tut-cast-item.is-waiting { display: none; }
 /* The group that crosses over walks from the slayers' side to stand with its faction. */
 /* New pieces crash in, one after another, from a little way off; the rows open as they land. */
-.tut-cast-item.is-new { overflow: hidden; animation: tut-open 560ms cubic-bezier(.2,1.4,.4,1) both; animation-delay: calc((var(--i) - 1) * 240ms); }
-@keyframes tut-open { from { max-height: 0; padding-block: 0; opacity: 0; transform: translateY(-30px) scale(1.4); } 50% { opacity: 1; } to { max-height: 200px; opacity: 1; transform: none; } }
 /* The monsters are at each other's throats: once in, they jostle (a nudge and a tilt, out of step). */
-.tut-cast-item.is-brawling > :first-child { animation: tut-jostle 900ms ease-in-out infinite alternate; animation-delay: calc(1600ms + var(--i) * 170ms); }
 .tut-side > :nth-child(odd) .token, .tut-side > .is-brawling:nth-child(odd) > :first-child { animation-direction: alternate-reverse; }
 @keyframes tut-jostle { 0% { transform: translateX(-3px) rotate(-6deg); } 50% { transform: translateX(2px) rotate(3deg); } 100% { transform: translateX(4px) rotate(7deg); } }
 /* The centre mark: vs, or (once a group falls for a monster) a heart. */
 .tut-mid { display: grid; place-items: center; }
 .tut-mid > * { grid-area: 1 / 1; }
-.tut-heart { display: inline-flex; visibility: hidden; }
+.tut-heart { display: inline-flex; }
 /* Switching sides: everyone but the pair leaves the way they came (outer ones first), then vs turns to a heart. */
-.leave-1 { --o: 1; } .leave-2 { --o: 2; } .leave-3 { --o: 3; } .leave-4 { --o: 4; }
-.tut-cast-item.is-leaving { overflow: hidden; pointer-events: none; animation: tut-close 340ms cubic-bezier(.6,0,.8,.4) both; animation-delay: calc(var(--o) * 90ms); }
-@keyframes tut-close { from { max-height: 200px; opacity: 1; transform: none; } 50% { opacity: 1; } to { max-height: 0; padding-block: 0; opacity: 0; transform: translateY(-30px) scale(1.4); visibility: hidden; } }
-.is-smitten .tut-vs { animation: tut-fade-out 200ms ease 650ms both; }
-.is-smitten .tut-heart { visibility: visible; animation: tut-heart 460ms cubic-bezier(.2,1.8,.4,1) 750ms both; }
 @keyframes tut-fade-out { to { opacity: 0; } }
 /* ...and the pair draw together as the heart appears. */
-.is-smitten .tut-side:first-child > :nth-child(3) { animation: tut-closer-l 500ms cubic-bezier(.3,1.3,.5,1) 750ms both; }
-.is-smitten .tut-side:last-child > :nth-child(3) { animation: tut-closer-r 500ms cubic-bezier(.3,1.3,.5,1) 750ms both; }
-@keyframes tut-closer-l { to { transform: translateX(36px); } }
-@keyframes tut-closer-r { to { transform: translateX(-36px); } }
-@keyframes tut-heart { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1.3); } }
-@media (prefers-reduced-motion: reduce) { .is-smitten .tut-side > :nth-child(3), .tut-cast-item.is-new, .tut-heart, .tut-vs, .tut-cast-item.is-brawling > :first-child { animation: none; } .tut-cast-item.is-leaving { animation: none; display: none; } .is-smitten .tut-vs { visibility: hidden; } }
-.tut-trophies .is-low b { color: var(--color-accent); }
-.tut-none { opacity: 0.3; }
 /* Scenes: a small table in a modal, made of the real pieces (catalogue 1; hexes from pieces.js). */
 .tut-scene { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2); background: var(--color-bg); border: var(--border); }
 .tut-scene-board { display: flex; justify-content: center; gap: var(--space-4); }
@@ -891,6 +874,27 @@ button.card-opt:hover { background: #f6cca1; }
 .tut-part.is-dim { opacity: 0.3; }
 .tut-scene-row.is-lit, .tut-scene-player.is-lit { outline: var(--line) solid var(--color-accent); outline-offset: -2px; }
 .tut-scene .piece-row.is-lit { box-shadow: 0 2px 0 var(--color-accent); }
+/* The intro: one modal in three stages (tutorial.js, chapterTheme). Next changes data-stage; everything moves by
+   transition. Stage 1: the pair. Stage 2: the cast opens out in waves, the monsters jostling. Stage 3: the cast folds
+   away (outer ones first) and the vs turns to a heart as the pair draws together. Titles and texts cross-fade in one
+   fixed space (the tallest sets its height). */
+.tut-stack { display: grid; }
+.tut-stack > * { grid-area: 1 / 1; opacity: 0; visibility: hidden; transition: opacity 260ms ease, visibility 0s linear 260ms; }
+.tut-intro[data-stage="1"] .tut-stack > [data-s="1"], .tut-intro[data-stage="2"] .tut-stack > [data-s="2"], .tut-intro[data-stage="3"] .tut-stack > [data-s="3"] { opacity: 1; visibility: visible; transition: opacity 260ms ease 120ms, visibility 0s; }
+.tut-intro .is-extra { overflow: hidden; max-height: 200px; transition: max-height 460ms cubic-bezier(.3,.9,.3,1), padding 460ms ease, opacity 320ms ease, transform 460ms cubic-bezier(.2,1.4,.4,1); transition-delay: calc(var(--w) * 110ms); }
+.wave-1 { --w: 0; } .wave-2 { --w: 1; } .wave-3 { --w: 2; } .wave-4 { --w: 3; }
+.tut-intro[data-stage="1"] .is-extra, .tut-intro[data-stage="3"] .is-extra { max-height: 0; padding-block: 0; opacity: 0; transform: translateY(-24px) scale(1.3); pointer-events: none; }
+.tut-intro[data-stage="3"] .is-extra { transition-delay: calc((3 - var(--w)) * 70ms); }
+.tut-intro[data-stage="2"] .tut-cast-item.is-brawling > :first-child { animation: tut-jostle 900ms ease-in-out infinite alternate; animation-delay: calc(600ms + var(--w) * 170ms); }
+.tut-intro .tut-vs, .tut-intro .tut-heart { transition: opacity 240ms ease, transform 420ms cubic-bezier(.2,1.8,.4,1); }
+.tut-intro .tut-heart { opacity: 0; transform: scale(0.2); }
+.tut-intro[data-stage="3"] .tut-vs { opacity: 0; transition-delay: 300ms; }
+.tut-intro[data-stage="3"] .tut-heart { opacity: 1; transform: scale(1.3); transition-delay: 420ms; }
+.tut-intro .tut-side > :nth-child(3) { transition: transform 480ms cubic-bezier(.3,1.3,.5,1); }
+.tut-intro[data-stage="3"] .tut-side:first-child > :nth-child(3) { transform: translateX(36px); transition-delay: 420ms; }
+.tut-intro[data-stage="3"] .tut-side:last-child > :nth-child(3) { transform: translateX(-36px); transition-delay: 420ms; }
+.tut-intro h2 { margin-bottom: var(--space-2); }
+@media (prefers-reduced-motion: reduce) { .tut-intro *, .tut-stack > * { transition: none !important; animation: none !important; } }
 .tut-phases { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
 .tut-phases > div { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); background: var(--color-panel-2); border: var(--border); }
 .tut-phases b { font-family: var(--font-display); font-weight: 400; color: var(--color-accent); text-transform: uppercase; }

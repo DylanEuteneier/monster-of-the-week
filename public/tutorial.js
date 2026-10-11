@@ -38,7 +38,7 @@ import art from './assets/sprites.json' with { type: 'json' };
 
 /**
  * What a step shows. A step that shows nothing runs and the next one follows.
- * @typedef {{ type: 'modal', title: string, html: string, scene?: { from: Scene, to: Scene, focus?: string[], fight?: string }, buttons?: { label: string, primary?: boolean, run: () => void }[] }
+ * @typedef {{ type: 'modal', title: string, html: string, scene?: { from: Scene, to: Scene, focus?: string[], fight?: string }, stage?: { key: string, n: number }, buttons?: { label: string, primary?: boolean, run: () => void }[] }
  *   | { type: 'spot', target: string | string[], title: string, html: string, dwell?: number, auto?: boolean }
  *   | { type: 'wait' }} Show
  * @typedef {() => (Show | null | Promise<Show | null>)} Step
@@ -352,19 +352,17 @@ const CLASH = '<svg width="27" height="27" viewBox="0 0 9 9" shape-rendering="cr
 const DUST = '<svg width="18" height="12" viewBox="0 0 6 4" shape-rendering="crispEdges"><path fill="#a0948f" d="M2 0h2v1h1v1h1v2H0V2h1V1h1z"/><path fill="#e0f2f4" d="M2 1h1v1H2z"/></svg>';
 /** A pixel heart, in the palette's red. */
 const HEART = '<svg width="21" height="18" viewBox="0 0 7 6" shape-rendering="crispEdges"><path fill="#e7482d" d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/><path fill="#f47e20" d="M1 1h1v1H1z"/></svg>';
-/** Crash-in order for the items after the first: the inner pair, then the outer pair. @param {number} k  0-based index among the rest */
-const wave = (k) => k + 1;
-/** A slayer group in the versus layout. @param {string} id @param {boolean} _big (kept for call sites; every item looks the same) @param {number} [i] crash-in order (0: there from the start; -1: waiting for Next) @param {string} [cls] */
-function groupItem(id, _big, i = 0, cls = '') {
+/** A slayer group in the versus layout. @param {string} id @param {boolean} _big (kept for call sites; every item looks the same) @param {number} [_i] unused @param {string} [cls] */
+function groupItem(id, _big, _i = 0, cls = '') {
   const g = spec.slayerGroups.find((x) => x.id === id);
   const em = /** @type {Record<string, { width: number, height: number, src: string }>} */ (art.sprites)[id];
   const seat = R.table.state.seating.find((pid) => R.table.state.players[pid].group === id);
-  return `<div class="tut-cast-item${i > 0 ? ' is-new' : i < 0 ? ' is-waiting' : ''}${seat ? '' : ' is-absent'} ${cls}" style="--i:${i}">${em ? `<img class="sprite" src="${esc(em.src)}" width="${em.width * 3}" height="${em.height * 3}" alt="">` : ''}<b>${esc(g?.name ?? '')}</b><span class="small muted">${!seat ? 'not in this game' : seat === YOU ? `${esc(g?.trope ?? '')} · you` : esc(seat)}</span></div>`;
+  return `<div class="tut-cast-item${seat ? '' : ' is-absent'} ${cls}">${em ? `<img class="sprite" src="${esc(em.src)}" width="${em.width * 3}" height="${em.height * 3}" alt="">` : ''}<b>${esc(g?.name ?? '')}</b><span class="small muted">${!seat ? 'not in this game' : seat === YOU ? `${esc(g?.trope ?? '')} · you` : esc(seat)}</span></div>`;
 }
-/** A faction in the versus layout. @param {string} f @param {boolean} first  your monster @param {number} [i] @param {boolean} [brawl]  jostling the others @param {string} [cls] */
-function factionItem(f, first, i = 0, brawl = false, cls = '') {
+/** A faction in the versus layout. @param {string} f @param {boolean} first  your monster @param {number} [_i] unused @param {boolean} [brawl]  jostling the others @param {string} [cls] */
+function factionItem(f, first, _i = 0, brawl = false, cls = '') {
   const arch = spec.archetypes.find((a) => a.id === factionById(f).archetype);
-  const item = `<div class="tut-cast-item${i > 0 ? ' is-new' : i < 0 ? ' is-waiting' : ''}${brawl ? ' is-brawling' : ''} ${cls}" style="--i:${i}">${tokenHtml(f, 3)}<b>${F(f)}</b><span class="small muted">${first ? 'your monster' : esc(arch?.name ?? '')}</span></div>`;
+  const item = `<div class="tut-cast-item${brawl ? ' is-brawling' : ''} ${cls}">${tokenHtml(f, 3)}<b>${F(f)}</b><span class="small muted">${first ? 'your monster' : esc(arch?.name ?? '')}</span></div>`;
   return item;
 }
 
@@ -487,32 +485,28 @@ function sceneCast() {
 // ---------------------------------------------------------------------------
 
 function chapterTheme() {
-  const st = R.table.state;
+  // The premise (designer) as one modal drawn once, in three stages (designer, 2026-10-11: fluid, no pauses, no
+  // jumps): your group against your monster; every group and every monster, the monsters at each other's throats;
+  // everyone else folding away and the vs turning to a heart. Next only changes the stage, so pieces move by
+  // transition (and Back runs them in reverse), and the stacked titles and texts cross-fade in one fixed space.
+  const intro = () => {
+    const { group } = yours();
+    const { groups, factions } = castOf();
+    const wave = (/** @type {number} */ k) => `is-extra wave-${k + 1}`;
+    const titles = ['Monster of the week', 'This week, they all show up', 'Until someone switches sides'];
+    const texts = [
+      `You're the ${esc(group.name)}. Every week a new monster comes to town, and it's up to you to stop it.`,
+      'Five monsters, all at each other\'s throats for the island, and every slayer group caught in the middle. You can\'t beat them head-on, so you lure and trick them into tearing each other apart.',
+      `Every group hunts every monster, <b>until one decides a monster is worth backing</b>. Say you fall for the ${F(factions[0])}: if they take the island, you win.`,
+    ];
+    const stack = (/** @type {string[]} */ items, /** @type {string} */ tag) => `<div class="tut-stack">${items.map((x, i) => `<${tag} data-s="${i + 1}">${x}</${tag}>`).join('')}</div>`;
+    return `<div class="tut-intro">${stack(titles, 'h2')}
+      ${versus([groupItem(groups[0], true), ...groups.slice(1).map((g, k) => groupItem(g, false, 0, wave(k)))], [factionItem(factions[0], true), ...factions.slice(1).map((f, k) => factionItem(f, false, 0, true, wave(k)))])}
+      ${stack(texts, 'p')}</div>`;
+  };
   return [
     chapter('1 · The story'),
-    // The premise (designer, 2026-10-10), in one layout: your group against your monster; on Next, every group and
-    // every monster, the monsters at each other's throats too; then one group falling for a monster.
-    ...[false, true].map((all) => () => {
-      const { group } = yours();
-      const { groups, factions } = castOf();
-      const rest = (/** @type {number} */ i) => (all ? wave(i) : -1); // -1: hidden until Next
-      return { type: /** @type {const} */ ('modal'), title: all ? 'This week, they all show up' : 'Monster of the week', html: `
-        ${versus([groupItem(groups[0], true), ...groups.slice(1).map((g, i) => groupItem(g, false, rest(i)))], [factionItem(factions[0], true), ...factions.slice(1).map((f, i) => factionItem(f, false, rest(i), all))], all ? 'brawl' : '')}
-        ${all ? '<p>Five monsters, all at each other\'s throats for the island, and every slayer group caught in the middle. You can\'t beat them head-on, so you lure and trick them into tearing each other apart.</p>' : `<p>You're the ${esc(group.name)}. Every week a new monster comes to town, and it's up to you to stop it.</p>`}` };
-    }),
-    () => {
-      const { groups, factions } = castOf();
-      // Your group and its own faction stay in the centre (designer); everyone else leaves the way they came, and
-      // the vs becomes a heart.
-      const turn = groups[0];
-      const arch = spec.slayerGroups.find((g) => g.id === turn)?.archetype;
-      const backs = factions.find((f) => factionById(f).archetype === arch) ?? factions[0];
-      const gs = [turn, ...groups.filter((g) => g !== turn)], fs = [backs, ...factions.filter((f) => f !== backs)];
-      const out = (/** @type {number} */ k) => `is-leaving leave-${4 - k}`; // outer ones leave first
-      return { type: /** @type {const} */ ('modal'), title: 'Until someone switches sides', html: `
-        ${versus([groupItem(gs[0], true), ...gs.slice(1).map((g, k) => groupItem(g, false, 0, out(k)))], [factionItem(fs[0], false), ...fs.slice(1).map((f, k) => factionItem(f, false, 0, false, out(k)))], 'is-smitten')}
-        <p>Every group hunts every monster, <b>until one decides a monster is worth backing</b>. Say you fall for the ${F(backs)}: if they take the island, you win.</p>` };
-    },
+    ...[1, 2, 3].map((n) => () => ({ type: /** @type {const} */ ('modal'), title: '', html: intro(), stage: { key: 'intro', n } })),
   ];
 }
 
@@ -1204,10 +1198,21 @@ function display(show) {
   if (show.type === 'wait') { hideAll(); return; }
   if (show.type === 'modal') {
     el.wrap.hidden = false;
+    const staged = el.modal.querySelector('.tut-intro, [data-stage-key]');
+    if (show.stage && el.modal.dataset.stageKey === show.stage.key && staged) {
+      // Same modal, next stage: no redraw, so everything moves by transition.
+      el.modal.querySelectorAll('.tut-intro').forEach((x) => { /** @type {HTMLElement} */ (x).dataset.stage = String(show.stage?.n); });
+      const navEl = el.modal.querySelector('.tut-nav');
+      if (navEl) navEl.outerHTML = nav();
+      /** @type {HTMLElement | null} */ (el.modal.querySelector('.btn-primary'))?.focus({ preventScroll: true });
+      return;
+    }
     const buttons = show.buttons
       ? `<div class="tut-nav"><span class="tut-chapter">${esc(R.chapter)}</span><span class="tut-nav-btns">${R.mode === 'guided' && R.history.length > 1 ? '<button class="btn" data-tut="back">Back</button>' : ''}${show.buttons.map((b, i) => `<button class="btn${b.primary ? ' btn-primary' : ''}" data-tut="button:${i}">${esc(b.label)}</button>`).join('')}</span></div>`
       : nav();
     el.modal.innerHTML = `${show.title ? `<h2>${esc(show.title)}</h2>` : ''}<div class="tut-body">${show.scene ? `<div class="tut-scene-slot">${sceneHtml(show.scene.from, show.scene.focus)}</div>` : ''}${show.html}</div>${buttons}`;
+    el.modal.dataset.stageKey = show.stage?.key ?? '';
+    if (show.stage) el.modal.querySelectorAll('.tut-intro').forEach((x) => { /** @type {HTMLElement} */ (x).dataset.stage = String(show.stage?.n); });
     const sc = show.scene;
     if (sc) {
       const slot = /** @type {HTMLElement} */ (el.modal.querySelector('.tut-scene-slot'));
