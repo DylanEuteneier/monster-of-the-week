@@ -26,6 +26,8 @@ import { applyMove, createGame, playerView, IllegalMoveError, spec, upgradeState
 import { botMove, PROFILES } from '../public/bots.js';
 import { suggest } from '../public/hints.js';
 import type { Hint } from '../public/hints.js';
+import { seenBy, roundFights } from '../public/guide.js';
+import type { SeenMove, Fight } from '../public/guide.js';
 import type { BotMemory, Profile } from '../public/bots.js';
 import type { GameState, Move, Options, PlayerView } from '../public/engine.js';
 
@@ -49,7 +51,7 @@ type ClientMessage =
   | { type: 'hint' };
 
 type ServerMessage =
-  | { type: 'state'; view: PlayerView; online: string[]; bots: string[] }
+  | { type: 'state'; view: PlayerView; online: string[]; bots: string[]; last?: { player: string; move: SeenMove }; fights?: Fight[] }
   | { type: 'error'; reason: string }
   | { type: 'chat'; lines: ChatLine[]; reset?: boolean }
   | { type: 'presence'; online: string[] }
@@ -352,6 +354,7 @@ export class Game extends DurableObject<Env> {
 
   private async handleMove(ws: WebSocket, submission: { playerId: string; move: Move }): Promise<void> {
     if (!this.game) return;
+    const before = this.game;
     try {
       this.game = applyMove(this.game, submission);
     } catch (error) {
@@ -360,7 +363,9 @@ export class Game extends DurableObject<Env> {
     }
     // Save, then tell: a crash never shows clients a state that was lost.
     await this.ctx.storage.put(STORAGE_GAME, this.game);
-    this.broadcastState();
+    this.broadcastState({ player: submission.playerId, move: submission.move, before });
+    // Let the mover's view go out before the bots think (designer, 2026-10-11: a click must answer at once).
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await this.runBots();
   }
 
@@ -372,24 +377,26 @@ export class Game extends DurableObject<Env> {
   private async runBots(): Promise<void> {
     if (!this.game || !this.bots?.length) return;
     for (let tick = 0; tick < MAX_BOT_MOVES_PER_TICK; tick++) {
-      const acted = this.bots.some((playerId) => this.tryBotMove(playerId));
-      if (!acted) break;
+      const before = this.game;
+      let made: { player: string; move: Move } | null = null;
+      for (const playerId of this.bots) { const move = this.tryBotMove(playerId); if (move) { made = { player: playerId, move }; break; } }
+      if (!made) break;
       await this.ctx.storage.put({ [STORAGE_GAME]: this.game, [STORAGE_BOT_MEMORY]: this.botMemory });
-      this.broadcastState();
+      this.broadcastState({ ...made, before });
     }
   }
 
-  private tryBotMove(playerId: string): boolean {
-    if (!this.game) return false;
+  private tryBotMove(playerId: string): Move | null {
+    if (!this.game) return null;
     try {
       const move = botMove(this.game, { playerId, rng: Math.random, profile: this.botProfiles[playerId] ?? 'trophy', memory: (this.botMemory[playerId] ??= {}), table: Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'trophy'])), memories: this.botMemory });
-      if (!move) return false;
+      if (!move) return null;
       this.game = applyMove(this.game, { playerId, move });
-      return true;
+      return move;
     } catch (error) {
       // A bad bot move must never freeze the table: log it and let the seat sit this tick out.
       console.error(`bot ${playerId} failed:`, error);
-      return false;
+      return null;
     }
   }
 
@@ -402,13 +409,25 @@ export class Game extends DurableObject<Env> {
     for (const socket of this.ctx.getWebSockets()) this.send(socket, { type: 'chat', lines: lines.slice(-1) });
   }
 
-  private broadcastState(): void {
+  /**
+   * Send every seat its view, with the move that made it (as that seat may
+   * see it) so tables can tell other seats' turns, and, when the move ended
+   * the round's play, each fight with its numbers (the round-end ceremony).
+   */
+  private broadcastState(made?: { player: string; move: Move; before: GameState }): void {
     if (!this.game) return;
     const online = this.online();
     const bots = this.bots ?? [];
+    const ended = made && made.before.phase === 'play' && (this.game.round !== made.before.round || this.game.phase !== 'play');
+    let fights: Fight[] | undefined;
+    if (ended) {
+      try { fights = roundFights(made.before); } catch (error) { console.error('round fights failed:', error); }
+    }
     for (const socket of this.ctx.getWebSockets()) {
       const playerId = this.playerOf(socket);
-      if (playerId) this.send(socket, { type: 'state', view: playerView(this.game, playerId), online, bots });
+      if (!playerId) continue;
+      const seen = made ? seenBy(made.move, made.player, playerId) : null;
+      this.send(socket, { type: 'state', view: playerView(this.game, playerId), online, bots, ...(seen && made ? { last: { player: made.player, move: seen } } : {}), ...(fights ? { fights } : {}) });
     }
   }
 

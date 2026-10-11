@@ -34,6 +34,7 @@ import { suggest } from './hints.js';
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { flyPaths, SLOW } from './motion.js';
 import { cardHtml, suitIcon } from './cards.js';
+import { CLASH, tussleOn } from './fx.js';
 import art from './assets/sprites.json' with { type: 'json' };
 
 /** @typedef {import('./app.js').TableHooks} TableHooks */
@@ -305,15 +306,7 @@ function ghost(el) {
 function tussle(slot, loc) {
   const hex = slot.querySelector(`[data-k="hex:${loc}"]`);
   const at = hex?.querySelector('.hex');
-  if (!hex || !at || typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve();
-  const fx = document.createElement('div');
-  fx.className = 'tut-tussle';
-  const puffs = [[-34, -10], [30, -14], [-20, 18], [26, 16], [0, -26]].map(([x, y], i) => `<span class="tut-dust" style="--dx:${x}px;--dy:${y}px;--d:${i * 70}ms">${DUST}</span>`).join('');
-  const blood = [[-26, -30], [22, -34], [34, 4], [-36, 8], [10, 30], [-12, -38], [30, -20]].map(([x, y], i) => `<span class="tut-blood" style="--dx:${x}px;--dy:${y}px;--d:${200 + i * 50}ms"></span>`).join('');
-  fx.innerHTML = `${puffs}${blood}<span class="tut-clash">${CLASH}</span>`;
-  at.appendChild(fx);
-  hex.classList.add('is-tussling');
-  return sleep(1100).then(() => { fx.remove(); hex.classList.remove('is-tussling'); });
+  return hex && at ? tussleOn(hex, at) : Promise.resolve();
 }
 
 /** Fly a scene's pieces from one state to the next inside `slot` (a tussle first, if a hex fights), then draw the next. @param {HTMLElement} slot @param {Scene} a @param {Scene} b @param {string} [fight] */
@@ -402,9 +395,7 @@ const middleOut = (items) => [items[1], items[2], items[0], items[3], items[4]].
 /** Slayers against invaders: two columns, each grown out from its first item. @param {string[]} left @param {string[]} right */
 const versus = (left, right, cls = '') => `<div class="tut-versus ${cls}"><div class="tut-side">${middleOut(left).join('')}</div><span class="tut-op tut-mid"><span class="tut-vs">vs</span><span class="tut-heart" aria-label="backs">${HEART}</span></span><div class="tut-side">${middleOut(right).join('')}</div></div>`;
 /** Crossed swords for a fight, in palette colours (blades w, hilts y, ink k). */
-const CLASH = '<svg width="27" height="27" viewBox="0 0 9 9" shape-rendering="crispEdges"><path fill="#e0f2f4" d="M0 0h1v1h1v1h1v1h1v1H3V3H2V2H1V1H0zM8 0h1v1H8v1H7v1H6v1H5V3h1V2h1V1h1z"/><path fill="#f4b41a" d="M4 4h1v1H4zM3 5h1v1H3zM5 5h1v1H5zM2 6h1v1H2zM6 6h1v1H6z"/><path fill="#302b2d" d="M1 7h1v1h1v1H0V8h1zM7 7h1v1h1v1H6V8h1z"/></svg>';
 /** A puff of dust (palette greys). */
-const DUST = '<svg width="18" height="12" viewBox="0 0 6 4" shape-rendering="crispEdges"><path fill="#a0948f" d="M2 0h2v1h1v1h1v2H0V2h1V1h1z"/><path fill="#e0f2f4" d="M2 1h1v1H2z"/></svg>';
 /** A pixel heart, in the palette's red. */
 const HEART = '<svg width="21" height="18" viewBox="0 0 7 6" shape-rendering="crispEdges"><path fill="#e7482d" d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/><path fill="#f47e20" d="M1 1h1v1H1z"/></svg>';
 /** A slayer group in the versus layout. @param {string} id @param {boolean} _big (kept for call sites; every item looks the same) @param {number} [_i] unused @param {string} [cls] */
@@ -757,6 +748,8 @@ function drive() {
   }
   if (actor === YOU) {
     // The learner moves on the table, with a hint (designer, 2026-10-11); the controls explained the first time.
+    // No cards left: the pass is the only move, made for them (designer, 2026-10-11).
+    if (s.phase === 'play' && !s.pending && !s.players[YOU].hand.length) { next(...turnSteps(YOU, { type: 'pass' }), drive); return null; }
     if (hooks.ui.note) { hooks.ui.note = null; hooks.render(); }
     if (R.mode === 'guided' && !R.taught.yourTurn) { R.taught.yourTurn = true; next(yourTurn, waitStep, drive); } else next(waitStep, drive);
     return null;

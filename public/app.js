@@ -15,6 +15,8 @@ import art from './assets/sprites.json' with { type: 'json' };
 import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml } from './pieces.js';
 import { cardHtml as baseCardHtml, suitIcon } from './cards.js';
 import { planFlights, fly } from './motion.js';
+import { targetSteps } from './guide.js';
+import { tussleOn } from './fx.js';
 
 /** @typedef {import('./engine.js').PlayerView} PlayerView */
 /** @typedef {import('./engine.js').Move} Move */
@@ -55,6 +57,8 @@ const ui = {
   },
   /** @type {string[]} */
   bots: [],
+  /** a move sent, its view not back yet */
+  sending: false,
   /** @type {PlayerView | null} */
   view: null,
   /** @type {string[]} */
@@ -198,14 +202,15 @@ function handleServerMessage(raw) {
   const message = JSON.parse(raw);
   if (message.type === 'state') {
     ui.bots = message.bots ?? [];
-    return void receiveState(message.view, message.online);
+    ui.sending = false; // any new view answers a sent move (a draft pick's view names no move: it's secret)
+    return void receiveState(message.view, message.online, false, undefined, { last: message.last, fights: message.fights });
   }
   if (message.type === 'presence') {
     ui.online = message.online;
     return renderPlayers();
   }
   if (message.type === 'chat') return receiveChat(message.lines, message.reset === true);
-  if (message.type === 'error') return toast(message.reason);
+  if (message.type === 'error') { if (ui.sending) { ui.sending = false; renderPhase(); } return toast(message.reason); }
   if (message.type === 'hint') {
     ui.hints.got++;
     if (ui.hints.got === ui.hints.asked) { ui.hints.hint = message.hint; renderHint(); }
@@ -216,15 +221,18 @@ function handleServerMessage(raw) {
  * Views waiting to be shown. Each new view is shown in turn, after the pieces
  * that moved since the last one have flown there (motion.js), so every move,
  * bot turns included, is seen in order. A long queue flies faster.
- * @type {{ view: PlayerView, online: string[], instant: boolean, speed?: number, done: () => void }[]}
+ * meta: the move that made the view (another seat's turn is told by the
+ * guide, at this screen's speed) and, at a round's end, its fights.
+ * @typedef {{ last?: { player: string, move: import('./guide.js').SeenMove }, fights?: import('./guide.js').Fight[] }} ViewMeta
+ * @type {{ view: PlayerView, online: string[], instant: boolean, speed?: number, meta?: ViewMeta, done: () => void }[]}
  */
 const incoming = [];
 let animating = false;
 
-/** @param {PlayerView} view @param {string[]} online @param {boolean} [instant] skip the flight @param {number} [speed] how fast pieces fly (default: faster as the queue grows) @returns {Promise<void>} once shown */
-function receiveState(view, online, instant = false, speed = undefined) {
+/** @param {PlayerView} view @param {string[]} online @param {boolean} [instant] skip the flight @param {number} [speed] how fast pieces fly (default: faster as the queue grows) @param {ViewMeta} [meta] @returns {Promise<void>} once shown */
+function receiveState(view, online, instant = false, speed = undefined, meta = undefined) {
   return new Promise((done) => {
-    incoming.push({ view, online, instant, speed, done });
+    incoming.push({ view, online, instant, speed, meta, done });
     if (!animating) void showNext();
   });
 }
@@ -235,8 +243,29 @@ async function showNext() {
   while (incoming.length) {
     const item = /** @type {(typeof incoming)[number]} */ (incoming.shift());
     const before = ui.view;
-    const flights = before && !item.instant ? planFlights(before, item.view, colourOf) : [];
-    if (flights.length) await fly(flights, item.view.you, { speed: item.speed ?? 1 + incoming.length * 0.75 });
+    const last = item.meta?.last;
+    // Another seat's move plays at this screen's speed (your own always at once, unpaused: designer, 2026-10-11).
+    const other = !!before && !!last && last.player !== before.you && before.you === item.view.you;
+    const s = speedNow();
+    try {
+      if (before && !item.instant && item.meta?.fights?.length && !s.instant && before.you === item.view.you) {
+        if (other && last && s.guide) await guideTurn(before, before, last, s);
+        await tellRoundEnd(before, item.view, item.meta.fights, s);
+        item.done();
+        continue;
+      }
+      if (other && last && !item.instant && s.guide) {
+        await guideTurn(before, item.view, last, s);
+        item.done();
+        continue;
+      }
+    } catch (error) {
+      console.error('telling a turn failed:', error);
+      $('guide').hidden = true; $('round-frame').hidden = true; unlight();
+    }
+    const instant = item.instant || (other && s.instant);
+    const flights = before && !instant ? planFlights(before, item.view, colourOf) : [];
+    if (flights.length) await fly(flights, item.view.you, { speed: item.speed ?? (other ? s.speed : 1) + incoming.length * 0.75 });
     showState(item.view, item.online);
     item.done();
   }
@@ -251,7 +280,20 @@ function showState(view, online) {
   if (phaseKey !== ui.phaseKey) resetDrafts(phaseKey);
   render();
   followTheAction(view);
+  autoPass(view);
   requestHint();
+}
+
+/** The view a forced pass was sent for, so it's sent once. @type {PlayerView | null} */
+let passedFor = null;
+/**
+ * With no cards left, passing is the only move (designer, 2026-10-11: it
+ * happens by itself). The tutorial makes its own. @param {PlayerView} view
+ */
+function autoPass(view) {
+  if (ui.tutorial || passedFor === view || view.phase !== 'play' || view.pending || view.me.hand.length || !waitingOn(view).includes(view.you)) return;
+  passedFor = view;
+  sendMove({ type: 'pass' });
 }
 
 /** Clear the player's unsent choices; add fields here as real phases land. @param {string} phaseKey */
@@ -287,6 +329,8 @@ function sendMove(move) {
   if (ui.local) return ui.local(move);
   if (!ui.socket || ui.socket.readyState !== WebSocket.OPEN) return toast('Not connected');
   ui.socket.send(JSON.stringify({ type: 'move', move }));
+  ui.sending = true;
+  renderPhase();
 }
 
 /** @param {string} text */
@@ -309,7 +353,7 @@ function renderHeader() {
   const view = ui.view;
   const status = view ? `${ui.tutorial ? 'Tutorial · ' : ''}Round ${view.round} of ${view.rounds} — ${ui.note ?? PHASE_LABELS[view.phase]}` : ui.connectionNote;
   const you = view ? `<span class="row"><span class="swatch" style="height:12px;background:${colourOf(view.you)}"></span> ${esc(view.you)}</span>` : '';
-  setHtml('header', `
+  setHtml('header-main', `
     <h1>MONSTER OF THE WEEK</h1>
     <span class="phase-label">${esc(status)}</span>
     ${you}
@@ -619,6 +663,8 @@ function renderPhase() {
   const renderers = { draft: renderDraft, play: renderPlay, growth: renderGrowth, ended: renderEnded };
   renderers[view.phase]();
   if (ui.note) handNext = { ...handNext, actions: [], state: 'wait', text: esc(ui.note) };
+  // A move on its way to the server: said at once, so a click never looks dead (designer, 2026-10-11).
+  if (ui.sending) handNext = { ...handNext, actions: [], text: 'Sending…' };
   setHtml('phase', `<span class="bar-text">${handNext.text}</span>${handNext.extra}<span class="bar-actions">${handNext.actions.join('')}</span>`);
   const dock = $('dock');
   for (const s of ['turn', 'respond', 'wait', 'end']) dock.classList.toggle(`is-${s}`, handNext.state === s);
@@ -758,7 +804,242 @@ function render() {
   renderBoard();
   renderLog();
   $('hint-button').hidden = !hintsAvailable();
+  renderSpeed();
   markHint();
+}
+
+// ---------------------------------------------------------------------------
+// Other seats' turns and the round's end, told on the table
+// ---------------------------------------------------------------------------
+
+/**
+ * How other seats' turns play on this screen (designer, 2026-10-11: a button
+ * cycles them; each player's own setting, never applied to their own moves).
+ * guide: the turn told step by step (the card, each step of its target, the
+ * pieces moving, the result), pausing this long between steps (ms).
+ */
+const SPEEDS = /** @type {const} */ ([
+  { id: 'instant', label: 'Instant', speed: 1, instant: true, guide: 0 },
+  { id: 'very-fast', label: 'Very fast', speed: 3, instant: false, guide: 0 },
+  { id: 'normal', label: 'Normal', speed: 1, instant: false, guide: 0 },
+  { id: 'guide', label: 'Normal + guide', speed: 1, instant: false, guide: 1100 },
+  { id: 'slow', label: 'Slow + guide', speed: 0.8, instant: false, guide: 2000 },
+  { id: 'very-slow', label: 'Very slow + guide', speed: 0.6, instant: false, guide: 3400 },
+]);
+const SPEED_KEY = 'motw-bot-speed';
+let speedAt = 3;
+try { const i = SPEEDS.findIndex((x) => x.id === localStorage.getItem(SPEED_KEY)); if (i >= 0) speedAt = i; } catch { /* a convenience only */ }
+const speedNow = () => SPEEDS[speedAt];
+function renderSpeed() {
+  const b = document.getElementById('speed-button');
+  if (!b) return;
+  b.textContent = `Turns: ${speedNow().label}`;
+  b.title = 'How other seats\' turns play: Instant → Very fast → Normal → Normal + guide → Slow + guide → Very slow + guide';
+}
+function cycleSpeed() {
+  speedAt = (speedAt + 1) % SPEEDS.length;
+  try { localStorage.setItem(SPEED_KEY, speedNow().id); } catch { /* a convenience only */ }
+  renderSpeed();
+}
+
+const wait = (/** @type {number} */ ms) => new Promise((r) => setTimeout(r, ms));
+const lname = (/** @type {string} */ l) => locationById(l).name;
+/** A seat's name in a sentence. @param {string} pid */
+const seatName = (pid) => (pid === ui.view?.you ? 'You' : pid);
+
+/** Light a table element for the guide or the round frame (cleared by unlight). @param {Element | null | undefined} el */
+function light(el) { if (el) el.classList.add('is-guided'); }
+function unlight() { for (const x of document.querySelectorAll('.is-guided')) x.classList.remove('is-guided'); }
+const tileOf = (/** @type {string} */ l) => document.querySelector(`#board [data-tile="${CSS.escape(l)}"]`);
+const hexOf = (/** @type {string} */ l) => tileOf(l)?.querySelector('.hex');
+
+/** Bring an element into view if it's off screen (desktop sections never scroll on their own). @param {Element | null | undefined} el */
+function reveal(el) {
+  if (!el) return Promise.resolve();
+  const r = el.getBoundingClientRect();
+  if (r.top >= 60 && r.bottom <= window.innerHeight - 120) return Promise.resolve();
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return wait(400);
+}
+
+/**
+ * Put a floating panel beside some table elements, covering as little of them
+ * and of the hand as it can (as the tutorial's tooltip and the hint panel do).
+ * @param {HTMLElement} panel @param {Element[]} anchors
+ */
+function placeNear(panel, anchors) {
+  if (window.matchMedia('(max-width: 600px), (hover: none) and (pointer: coarse)').matches) { panel.style.left = panel.style.top = ''; return; }
+  const vw = window.innerWidth, vh = window.innerHeight, gap = 12, m = 12;
+  const rs = anchors.map((x) => x.getBoundingClientRect()).filter((r) => r.width && r.bottom > 0 && r.top < vh);
+  const avoid = [...rs, ...[...document.querySelectorAll('#hand .card, #dock')].map((x) => x.getBoundingClientRect())];
+  const pw = panel.offsetWidth, ph = panel.offsetHeight;
+  /** @type {number[][]} */
+  const spots = [];
+  if (rs.length) {
+    const b = { left: Math.min(...rs.map((r) => r.left)), top: Math.min(...rs.map((r) => r.top)), right: Math.max(...rs.map((r) => r.right)), bottom: Math.max(...rs.map((r) => r.bottom)) };
+    const cx = (b.left + b.right) / 2 - pw / 2, cy = (b.top + b.bottom) / 2 - ph / 2;
+    spots.push([b.right + gap, cy], [b.left - gap - pw, cy], [cx, b.top - gap - ph], [cx, b.bottom + gap]);
+  }
+  spots.push([m, 56], [vw - pw - m, 56]);
+  const fit = spots.map(([x, y]) => [Math.max(m, Math.min(vw - pw - m, x)), Math.max(56, Math.min(vh - ph - m, y))]);
+  const covered = (/** @type {number} */ x, /** @type {number} */ y) => avoid.reduce((n, r) => n + Math.max(0, Math.min(x + pw, r.right) - Math.max(x, r.left)) * Math.max(0, Math.min(y + ph, r.bottom) - Math.max(y, r.top)), 0);
+  let best = fit[0], least = Infinity;
+  for (const [x, y] of fit) { const c = covered(x, y); if (c < least - 1) { least = c; best = [x, y]; } }
+  panel.style.left = `${Math.round(best[0])}px`;
+  panel.style.top = `${Math.round(best[1])}px`;
+}
+
+/** What changed on the table between two views, as short lines. @param {PlayerView} a @param {PlayerView} b */
+function changeLines(a, b) {
+  const out = [];
+  for (const loc of Object.keys(b.board)) {
+    const pa = a.board[loc], pb = b.board[loc];
+    const parts = b.factions.map((f) => [f, (pb.tokens[f] ?? 0) - (pa.tokens[f] ?? 0)]).filter(([, n]) => n).map(([f, n]) => `${Number(n) > 0 ? '+' : '−'}${Math.abs(Number(n))} ${fname(String(f))}`);
+    for (const pid of b.seating) { const n = (pb.sway[pid] ?? 0) - (pa.sway[pid] ?? 0); if (n) parts.push(`${n > 0 ? '+' : '−'}${Math.abs(n)} sway (${seatName(pid)})`); }
+    if (!pa.token && pb.token) parts.push('a face-down token');
+    if (parts.length) out.push(`${lname(loc)}: ${parts.join(', ')}`);
+  }
+  for (const pid of b.seating) for (const f of b.factions) {
+    const n = (b.players[pid].standing[f] ?? 0) - (a.players[pid].standing[f] ?? 0);
+    if (n) out.push(`${seatName(pid)}: ${n > 0 ? '+' : '−'}${Math.abs(n)} sway with the ${fname(f)}`);
+  }
+  return out;
+}
+
+/**
+ * Tell another seat's turn on the table (the guide): who plays which card
+ * and how (its text too), then each step of its target lit in turn, then the
+ * pieces moving, then what changed. No buttons: it pauses between steps.
+ * @param {PlayerView} before @param {PlayerView} after @param {{ player: string, move: import('./guide.js').SeenMove }} last @param {(typeof SPEEDS)[number]} s
+ */
+async function guideTurn(before, after, last, s) {
+  const panel = $('guide');
+  const pid = last.player, m = last.move;
+  const seat = document.querySelector(`#players .player[data-player="${CSS.escape(pid)}"]`);
+  /** @type {string[]} */
+  const lines = [];
+  let head = '';
+  /** @type {Element[]} */
+  let anchors = seat ? [seat] : [];
+  const draw = () => { panel.innerHTML = `${head}${lines.length ? `<ol class="guide-steps">${lines.map((l) => `<li>${l}</li>`).join('')}</ol>` : ''}`; placeNear(panel, anchors); };
+  const who = `<span class="swatch" style="background:${colourOf(pid)}"></span><b>${esc(seatName(pid))}</b>`;
+  if (m.type === 'pass') {
+    head = `<p class="guide-head">${who} ${pid === before.you ? 'pass' : 'passes'}</p>`;
+    panel.hidden = false; light(seat); draw();
+    await wait(s.guide * 0.6);
+    panel.hidden = true; unlight();
+    return;
+  }
+  if (m.type === 'play') {
+    const c = cardById(m.card);
+    const how = m.use === 'sway' ? `+${before.printed?.[m.card] ?? c.sway} sway` : m.target?.mode === 'faction' ? 'FAC' : m.target?.mode === 'location' ? 'LOC' : '';
+    head = `<p class="guide-head">${who} ${m.use === 'sway' ? 'spends' : 'plays'} <b class="guide-card card-suit-${c.suit ?? 'none'}">${c.suit ? suitIcon(c.suit) : ''} ${esc(c.name)}</b>${how ? ` <span class="tag">${esc(how)}</span>` : ''}</p>${m.use === 'action' ? `<p class="guide-text small">${esc(c.text)}</p>` : ''}`;
+  } else if (m.type === 'hidden') head = `<p class="guide-head">${who} places two face-down tokens</p><p class="guide-text small">One is real, one a bluff, and only ${esc(seatName(pid))} knows which. Each carries 1 sway as a bid; both flip when the location fights.</p>`;
+  else if (m.type === 'grow') head = `<p class="guide-head">${who} chooses where a faction grows</p>`;
+  else if (m.type === 'respond') head = `<p class="guide-head">${who} answers with <b>${esc(cardById(m.card).name)}</b></p>`;
+  else head = `<p class="guide-head">${who}</p>`;
+  panel.hidden = false; light(seat); draw();
+  await wait(s.guide);
+  // Each step of the target, lit in turn.
+  /** @type {import('./guide.js').Step[]} */
+  let steps = [];
+  if (m.type === 'play' && m.use === 'action' && m.target) { try { steps = targetSteps(before, pid, m.card, m.target); } catch { steps = []; } }
+  if (m.type === 'play' && m.use === 'sway') {
+    const f = before.factions.find((x) => factionById(x).archetype === cardById(m.card).suit);
+    if (f) steps = [{ kind: 'faction', faction: f, label: `with the ${fname(f)}` }];
+  }
+  if (m.type === 'hidden') steps = m.locations.map((l) => ({ kind: 'location', location: l, label: `at ${lname(l)}` }));
+  if (m.type === 'grow') steps = [{ kind: 'location', location: m.location, label: `at ${lname(m.location)}` }];
+  for (const step of steps) {
+    const el = step.kind === 'location' ? tileOf(step.location)
+      : step.kind === 'group' ? document.querySelector(`#board .token-stack[data-location="${CSS.escape(step.location)}"][data-faction="${CSS.escape(step.faction)}"]`) ?? tileOf(step.location)
+      : step.kind === 'faction' ? document.querySelector(`#factions .faction-row[data-faction="${CSS.escape(step.faction)}"]`) : null;
+    await reveal(el);
+    if (step.kind === 'location') light(hexOf(step.location)); else light(el);
+    if (el) anchors = [el];
+    lines.push(esc(step.label));
+    draw();
+    await wait(s.guide * 0.7);
+  }
+  // The pieces move, then what changed.
+  const flights = planFlights(before, after, colourOf);
+  if (flights.length) await fly(flights, after.you, { speed: s.speed });
+  showState(after, ui.online);
+  const changed = changeLines(before, after);
+  if (changed.length) { lines.push(`<span class="guide-result">${changed.map(esc).join('<br>')}</span>`); draw(); }
+  await wait(s.guide);
+  panel.hidden = true;
+  unlight();
+}
+
+/**
+ * The round's end, told (designer, 2026-10-11): a frame listing every fight
+ * with its numbers; each fight then plays on the board one at a time (the
+ * tussle, the dead flying to trophies and supplies) and its row in the frame
+ * fills in with the result; then growth. Piles taken are public (IN2: the
+ * running totals stay secret).
+ * @param {PlayerView} before @param {PlayerView} final @param {import('./guide.js').Fight[]} fights @param {(typeof SPEEDS)[number]} s
+ */
+async function tellRoundEnd(before, final, fights, s) {
+  const frame = $('round-frame');
+  const pause = s.guide || (s.speed > 1 ? 150 : 600);
+  const icon = (/** @type {string} */ f, /** @type {number} */ n) => `${tokenHtml(f, 1)}<b>${n}</b>`;
+  const bids = (/** @type {Record<string, number>} */ sway) => Object.entries(sway).filter(([, n]) => n > 0).sort((x, y) => y[1] - x[1]).map(([pid, n]) => `<span class="round-bid"><span class="swatch" style="background:${colourOf(pid)}"></span>${esc(seatName(pid))} ${n}</span>`).join('') || '<span class="muted">no sway</span>';
+  const result = (/** @type {import('./guide.js').Fight} */ x) => {
+    const winner = x.sides.find((t) => t.lost < t.n);
+    const level = x.sides.length === 2 && x.sides[0].n === x.sides[1].n && !x.flipped;
+    const fightLine = !winner ? 'Level: both wiped out' : `${fname(winner.f)} win${level ? ' on their own ground' : ''}, losing ${winner.lost}`;
+    // Each player's piles together (IN2: who takes which pile is seen; totals stay secret).
+    const by = new Map();
+    for (const p of x.piles) by.set(p.pid, [...(by.get(p.pid) ?? []), `${p.n} ${fname(p.f)}`]);
+    const piles = [...by].map(([pid, ps]) => `${esc(seatName(pid))} ${pid === final.you ? 'take' : 'takes'} ${esc(ps.join(' + '))}`).join(' · ');
+    return `${x.flipped ? `<span class="small muted">${esc(seatName(x.flipped))}'s face-down token flipped first.</span> ` : ''}<b>${esc(fightLine)}</b>${x.scorched ? ' · the location is scorched' : ''} · ${piles || 'nobody collects'}`;
+  };
+  frame.innerHTML = `<h2>Round ${before.round} · the fights</h2>
+    <ol class="round-fights">${fights.map((x, i) => `<li class="round-fight" data-i="${i}"><span class="round-where">${esc(lname(x.loc))}</span>
+      <span class="round-sides">${x.sides.map((t) => icon(t.f, t.n)).join('<span class="muted">vs</span>')}${x.flipped ? `<span class="hidden-token" style="--owner:${colourOf(x.flipped)}" title="a face-down token: it flips first"></span>` : ''}</span>
+      <span class="round-bids">${bids(x.sway)}</span>
+      <span class="round-result muted">…</span></li>`).join('')}</ol>
+    <p class="round-growth small muted" hidden></p>`;
+  frame.hidden = false;
+  placeNear(frame, fights.map((x) => hexOf(x.loc)).filter((x) => !!x));
+  await wait(pause);
+  let cur = before;
+  for (const [i, x] of fights.entries()) {
+    const row = frame.querySelector(`.round-fight[data-i="${i}"]`);
+    row?.classList.add('is-active');
+    const tile = tileOf(x.loc), hex = hexOf(x.loc);
+    await reveal(tile);
+    light(hex);
+    if (s.speed <= 1 && tile && hex) await tussleOn(tile, hex, s.guide ? 1100 : 700);
+    // The pieces after this fight: the location, the supplies, everyone's sway; your own piles to your trophies.
+    const next = structuredClone(cur);
+    next.board[x.loc] = { ...next.board[x.loc], ...x.place };
+    next.supply = { ...x.supply };
+    for (const [pid, p] of Object.entries(x.players)) if (next.players[pid]) { next.players[pid].standing = { ...p.standing }; next.players[pid].supply = p.supply; }
+    for (const p of x.piles) if (p.pid === next.you) next.me.trophies[p.f] = (next.me.trophies[p.f] ?? 0) + p.n;
+    const flights = planFlights(cur, next, colourOf);
+    if (flights.length) await fly(flights, next.you, { speed: s.speed });
+    ui.view = next;
+    render();
+    const res = row?.querySelector('.round-result');
+    if (res) { res.innerHTML = result(x); res.classList.remove('muted'); }
+    row?.classList.remove('is-active');
+    row?.classList.add('is-done');
+    await wait(pause);
+    unlight();
+    cur = next;
+  }
+  // Growth (and the next round's deal), then the frame steps aside.
+  const grew = Object.keys(final.board).filter((l) => final.factions.some((f) => (final.board[l].tokens[f] ?? 0) > (cur.board[l].tokens[f] ?? 0)));
+  const g = frame.querySelector('.round-growth');
+  if (g instanceof HTMLElement && grew.length) { g.hidden = false; g.textContent = `Growth: ${grew.map(lname).join(', ')}`; for (const l of grew) light(hexOf(l)); }
+  const flights = planFlights(cur, final, colourOf);
+  if (flights.length) await fly(flights, final.you, { speed: s.speed });
+  showState(final, ui.online);
+  await wait(pause * 1.5);
+  unlight();
+  frame.hidden = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -1058,7 +1339,7 @@ function renderSeatbar() {
 function onClick(event) {
   // Clicking away from a selected card (on nothing you can choose) unselects it.
   if ((ui.choosing || ui.responding) && event.target instanceof HTMLElement
-    && !event.target.closest('[data-action], .card-selected, #dock, .side-stack, .overlay, .overlay-buttons, .tut')) {
+    && !event.target.closest('[data-action], .card-selected, #dock, .side-stack, .overlay, .topbar-buttons, .tut')) {
     ui.choosing = null;
     ui.responding = null;
     ui.target = {};
@@ -1141,6 +1422,7 @@ function onClick(event) {
     }
     return;
   }
+  if (action === 'cycle-speed') return cycleSpeed();
   if (action === 'toggle-overlay') {
     if (target.dataset.target === 'hint-overlay') {
       // The Hints button cycles off → marks → full; the panel's × drops to marks.

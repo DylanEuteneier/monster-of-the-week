@@ -105,7 +105,7 @@ function playUntil(state, stop) {
 test('the draft renders the island, the seats and the cards to keep', () => {
   const state = createGame({ seed: 3, players: PLAYERS });
   push(state);
-  assert.match(html('header'), /MONSTER OF THE WEEK/);
+  assert.match(html('header-main'), /MONSTER OF THE WEEK/);
   for (const id of state.factions) assert.ok(html('factions').includes(factionById(id).name.replace("'", '&#39;')), id);
   assert.match(html('board'), /src="\/assets\/hexes\/lighthouse.png"/);
   assert.match(html('board'), /class="gauge-value"><b>35<\/b>/);

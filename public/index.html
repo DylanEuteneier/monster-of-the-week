@@ -10,7 +10,15 @@
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-  <header class="topbar" id="header"></header>
+  <header class="topbar" id="header">
+    <div class="topbar-main" id="header-main"></div>
+    <nav class="topbar-buttons" aria-label="Table tools">
+      <button class="btn" id="speed-button" data-action="cycle-speed">Turns: Normal + guide</button>
+      <button class="btn" id="hint-button" data-action="toggle-overlay" data-target="hint-overlay" hidden>Hints: off</button>
+      <button class="btn" data-action="toggle-overlay" data-target="log-overlay">Log</button>
+      <button class="btn" data-action="toggle-overlay" data-target="chat-overlay">Table talk <span class="tag" id="chat-unread" hidden></span></button>
+    </nav>
+  </header>
   <nav class="seatbar" id="seatbar" hidden aria-label="Hotseat seats"></nav>
 
   <main class="table">
@@ -30,15 +38,12 @@
   <aside class="side-stack side-left" id="sway" data-action="toggle-side" aria-label="Your sway with each faction"></aside>
   <aside class="side-stack side-right" id="score" data-action="toggle-side" aria-label="Your trophies"></aside>
 
-  <div class="overlay-buttons overlay-buttons-top">
-    <button class="btn" id="hint-button" data-action="toggle-overlay" data-target="hint-overlay" hidden>Hints: off</button>
-    <button class="btn" data-action="toggle-overlay" data-target="log-overlay">Log</button>
-    <button class="btn" data-action="toggle-overlay" data-target="chat-overlay">Table talk <span class="tag" id="chat-unread" hidden></span></button>
-  </div>
   <aside class="overlay panel" id="log-overlay" hidden aria-label="Log">
     <button class="btn overlay-close" data-action="toggle-overlay" data-target="log-overlay" aria-label="Close the log">×</button>
     <div id="log"></div>
   </aside>
+  <aside class="panel guide" id="guide" hidden aria-live="polite" aria-label="The turn being played"></aside>
+  <aside class="panel round-frame" id="round-frame" hidden aria-live="polite" aria-label="The round's fights"></aside>
   <aside class="panel hint" id="hint-overlay" hidden aria-label="Hints" aria-live="polite">
     <button class="btn overlay-close" data-action="toggle-overlay" data-target="hint-overlay" aria-label="Close hints">×</button>
     <h2>Hint</h2>

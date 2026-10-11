@@ -16,9 +16,11 @@
         .dock          the bar along the bottom                                 z: --z-dock
         .side-stack    tabs rising from the bar's two ends                      z: --z-side
         .overlay       the log and table talk, top right                        z: --z-overlay
+        .guide, .round-frame  another seat's turn told step by step, and the
+                       round's fights; beside what they tell (app.js
+                       placeNear sets left/top)                               z: --z-overlay
         .hint          the hint panel, beside what it suggests (left/top or
                        bottom set by app.js placeHint; top right by default)  z: --z-overlay
-        .overlay-buttons  their buttons, top right                              z: --z-overlay-buttons
         .toast         messages, centred just above the resting hand            z: --z-toast
         .flight-layer  pieces flying between places (motion.js)                 z: --z-flight
         .tut           the tutorial: blocker, spotlight, tooltip, modal         z: --z-tut
@@ -110,7 +112,6 @@
   --z-dock: 16;
   --z-side: 17;
   --z-overlay: 20;
-  --z-overlay-buttons: 21;
   --z-toast: 30;
   --z-flight: 40;
   --z-tut: 50;
@@ -212,6 +213,10 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
   background: var(--color-panel-2);
   box-shadow: 0 3px 0 var(--ink);
 }
+/* The header: the title, round and seat (app.js renderHeader) and the table's tools (turn speed, hints, log, table
+   talk) in the bar itself, in flow. */
+.topbar-main { flex: 1; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4); min-width: 0; }
+.topbar-buttons { display: flex; flex-wrap: wrap; gap: var(--space-2); align-self: center; }
 .topbar h1 { font-size: 20px; letter-spacing: 0.06em; color: var(--color-accent); text-shadow: 2px 2px 0 var(--ink); }
 .topbar .phase-label { font-family: var(--font-display); font-size: 16px; text-transform: uppercase; }
 
@@ -713,8 +718,36 @@ button.card-opt:hover { background: #f6cca1; }
 /* ---------------------------------------------------------------------------
    Overlays (log, table talk) and the toast (catalogue 2)
 --------------------------------------------------------------------------- */
-.overlay-buttons { position: fixed; top: 10px; right: var(--space-4); z-index: var(--z-overlay-buttons); display: flex; gap: var(--space-2); }
 .overlay { position: fixed; top: 56px; right: var(--space-4); z-index: var(--z-overlay); width: min(380px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; }
+/* Other seats' turns and the round's end, told (app.js guideTurn, tellRoundEnd): a panel beside what's being told,
+   which glides as the story moves. What it points at is lit: a location in its hover light, a seat, faction row or
+   group outlined in gold, as the tutorial lights things. */
+.guide, .round-frame { position: fixed; top: 56px; left: var(--space-4); z-index: var(--z-overlay); display: flex; flex-direction: column; gap: var(--space-2); font-size: 13px; transition: left 260ms ease, top 260ms ease; }
+.guide { width: min(320px, calc(100vw - 32px)); }
+.round-frame { width: min(440px, calc(100vw - 32px)); }
+.guide p, .round-frame h2, .round-frame p { margin: 0; }
+.guide-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.guide-head .swatch, .round-bid .swatch { display: inline-block; width: 10px; height: 10px; }
+.guide-card { color: var(--color-accent); }
+.guide-text { color: var(--color-muted); }
+.guide-steps { margin: 0; padding-left: var(--space-4); display: flex; flex-direction: column; gap: 2px; }
+.guide-steps li { animation: guide-in 220ms ease both; }
+.guide-result { color: var(--color-text); }
+@keyframes guide-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.round-fights { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-1); }
+.round-fight { display: grid; grid-template-columns: 1fr auto; gap: 2px var(--space-2); padding: var(--space-1) var(--space-2); background: var(--color-panel-2); border-left: var(--line) solid transparent; transition: border-color 200ms ease, background 200ms ease; }
+.round-fight.is-active { border-left-color: var(--color-accent); }
+.round-fight.is-done { background: var(--color-panel); }
+.round-where { font-weight: 600; }
+.round-sides { display: inline-flex; align-items: center; gap: var(--space-1); }
+.round-bids { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--space-2); font-size: 12px; }
+.round-bid { display: inline-flex; align-items: center; gap: 3px; }
+.round-result { grid-column: 1 / -1; animation: guide-in 220ms ease both; }
+.hex.is-guided > .hex-state-hover { display: block; }
+.hex.is-guided > .hex-state-candidate { display: none; }
+.player.is-guided, .faction-row.is-guided, .token-stack.is-guided { outline: var(--line) solid var(--color-accent); outline-offset: 1px; }
+#speed-button { white-space: nowrap; }
+
 /* Hints (app.js renderHint, placeHint): concise (the move and its main reason), opening on hover, focus or tap to
    the rest; it glides to sit beside what it suggests. The suggested card is outlined in gold, the move's locations
    lit in their hover light, and the suggested card wears a cyan HINT tab (not the gold of a ticked or chosen card). */
@@ -881,9 +914,9 @@ button.card-opt:hover { background: #f6cca1; }
 /* A callback to a rule taught earlier: one line, in a consistent style. */
 .tut-recall { padding: 2px var(--space-2); border-left: 3px solid var(--color-accent); color: var(--color-muted); font-size: 12px; }
 .tut-scene-hand { flex: 2; gap: var(--space-1); }
-/* A tussle on a scene's hex before the casualties fly: a shake, dust, a little blood, the clash. */
+/* A tussle on a hex (a scene's or the board's, fx.js) before the casualties fly: a shake, dust, a little blood, the clash. */
 .tut-tussle { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
-.tut-scene-hex.is-tussling .hex > .sprite { animation: tut-shake 110ms linear 0s 8 alternate; }
+.is-tussling .hex > .sprite { animation: tut-shake 110ms linear 0s 8 alternate; }
 @keyframes tut-shake { from { transform: translate(-2px, 1px); } to { transform: translate(2px, -1px); } }
 .tut-clash { position: absolute; left: 50%; top: 42%; translate: -50% -50%; animation: tut-clash 1000ms cubic-bezier(.2,1.6,.4,1) both; }
 @keyframes tut-clash { 0% { opacity: 0; transform: scale(0.3) rotate(-20deg); } 25% { opacity: 1; transform: scale(1.3) rotate(8deg); } 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
@@ -951,6 +984,7 @@ button.card-opt:hover { background: #f6cca1; }
    scroll sideways in place (catalogue 5).
 =========================================================================== */
 @media (max-width: 600px), (hover: none) and (pointer: coarse) {
+  .guide, .round-frame { top: auto; bottom: var(--space-2); left: var(--space-4); right: var(--space-4); width: auto; }
   .hint { top: auto; bottom: var(--space-2); left: var(--space-4); right: var(--space-4); width: auto; }
   body { min-width: 0; }
   .toast { bottom: var(--space-6); }
