@@ -792,7 +792,27 @@ function fastStep(pid, move) {
 }
 
 /** The learner's move, in play mode. @type {Step} */
-function waitStep() { R.waiting = true; if (hooks.ui.note) { hooks.ui.note = null; hooks.render(); } return { type: 'wait' }; }
+function waitStep() {
+  R.waiting = true;
+  if (hooks.ui.note) { hooks.ui.note = null; hooks.render(); }
+  ahead();
+  return { type: 'wait' };
+}
+
+/**
+ * The scripted move for the learner's decision now, worked out while they
+ * think (autoMove on a copy): the hint shows it, and the bots' dice move on
+ * as it would, so nothing is computed after their click.
+ * @type {{ state: GameState, move: Move | null, rng: number, memory: import('./tutorial-game.js').Table['memory'] } | null}
+ */
+let scripted = null;
+function ahead() {
+  if (scripted?.state === R.table.state) return scripted;
+  const copy = copyTable(R.table);
+  const move = autoMove(copy, YOU);
+  scripted = { state: R.table.state, move, rng: copy.rng, memory: copy.memory };
+  return scripted;
+}
 
 /** The draft: the first pass taught in round 1, the rest fast-forwarded; in play mode, the learner picks. @returns {Step[]} */
 function draftSteps() {
@@ -818,11 +838,9 @@ function yourTurn() {
  * copy so the game's dice are untouched), explained. @returns {import('./hints.js').Hint | null}
  */
 function tutorialHint() {
-  const s = R.table.state;
-  const copy = copyTable(R.table);
-  const move = autoMove(copy, YOU);
-  if (!move) return null;
-  return suggest(s, YOU, clone(copy.memory[YOU] ?? {}), move);
+  const a = ahead();
+  if (!a.move) return null;
+  return suggest(R.table.state, YOU, clone(a.memory[YOU] ?? {}), a.move);
 }
 /** The pick shown with ticks, applied on the next step. @type {Move | null} */
 let pickMove = null;
@@ -913,6 +931,8 @@ function turnSteps(pid, given, taught = false) {
     if (taught && shown.type === 'spot') shown.auto = false;
     // The learner's own move was made on the table: narrate it only when it teaches something.
     const quiet = pid === YOU && (R.mode === 'play' || shown.type !== 'spot' || !/tut-recall|<p>(?!Done)/.test(shown.html));
+    // The learner's own move moves at once (designer, 2026-10-11: no pause after their click); a bot's is pointed at first.
+    if (pid === YOU) return present(after).then(() => (quiet ? null : shown));
     return lead(shown, () => present(after)).then(() => (quiet ? null : shown));
   });
   return steps;
@@ -1413,10 +1433,12 @@ function onMove(move) {
   if (!verdict.ok) return hooks.toast(verdict.reason);
   R.waiting = false;
   // The bots' dice run as if the learner's move had been chosen by autoMove (as the deal was found), whatever they play.
-  autoMove(R.table, YOU);
+  const a = ahead();
+  R.table.rng = a.rng;
+  R.table.memory = clone(a.memory);
   if (move.type === 'pick') {
     play(R.table, YOU, move);
-    void present(R.table.state).then(() => go());
+    void present(R.table.state, { instant: true }).then(() => go());
     return;
   }
   next(...turnSteps(YOU, move));
