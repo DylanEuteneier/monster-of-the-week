@@ -800,7 +800,7 @@ function draftSteps() {
   const intro = R.mode === 'guided' && !R.taught.draftIntro ? [chapter('7 · Round 1'), () => {
     R.taught.draftIntro = true;
     hooks.hints(true, tutorialHint);
-    return /** @type {Show} */ ({ type: 'spot', target: ['#hint-overlay', SEL.hand], title: 'Your turn now', html: `<p>From here you play: tick cards to keep, then ✓. The <b>Hint</b> panel suggests a move, says why, and recalls the rule. Take it or not: any legal move is fine. Close it any time; the Hints button brings it back.</p>` });
+    return /** @type {Show} */ ({ type: 'spot', target: ['#hint-overlay', SEL.hand], title: 'Your turn now', html: `<p>From here you play: tick cards to keep, then ✓. The <b>Hint</b> panel suggests a move, says why, and recalls the rule. Take it or not: any legal move is fine. The Hints button (top right) cycles between off, marks on the table only, and marks with this panel.</p>` });
   }] : [];
   return [...intro, waitStep, () => { botPicks(R.table); return null; }, () => present(R.table.state).then(() => null)];
 }
@@ -1062,7 +1062,7 @@ function playHelp() {
       <li><b>A plan:</b> click a card, choose LOC or FAC on it, then click the lit targets on the board.</li>
       <li><b>An offering:</b> the +N on a suit card spends it for sway.</li>
       <li><b>Pass:</b> » on the bar.</li>
-      <li><b>Hints:</b> the Hints button, top right, any time.</li>
+      <li><b>Hints:</b> the Hints button, top right, cycles off → marks → marks and panel.</li>
     </ul>
     <p class="small muted">Hover a lit target to preview what it does.</p>`,
   buttons: [{ label: 'Play', primary: true, run: () => { R.mode = 'play'; R.chapter = 'Your game'; next(drive); void go(); } }] };

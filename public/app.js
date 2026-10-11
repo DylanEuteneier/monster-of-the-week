@@ -98,9 +98,12 @@ const ui = {
    * Hints (designer, 2026-10-11): a suggested move with its reasons and the
    * rule it uses, everywhere but multiplayer games. The server answers each
    * request in order (got catches up with asked); the tutorial supplies its own.
-   * @type {{ on: boolean, hint: import('./hints.js').Hint | null, asked: number, got: number, source: (() => import('./hints.js').Hint | null) | null }}
+   * mode (designer, 2026-10-11, cycled by the Hints button): off; marks (the
+   * card, its way of playing and the locations marked on the table); full
+   * (marks and the panel).
+   * @type {{ on: boolean, mode: 'off' | 'marks' | 'full', hint: import('./hints.js').Hint | null, asked: number, got: number, source: (() => import('./hints.js').Hint | null) | null }}
    */
-  hints: { on: false, hint: null, asked: 0, got: 0, source: null },
+  hints: { on: false, mode: 'off', hint: null, asked: 0, got: 0, source: null },
   /** the slayer group card open in the accordion (null: your own) */
   /** @type {string | null} */
   expanded: null,
@@ -794,8 +797,13 @@ function requestHint() {
   ui.socket.send(JSON.stringify({ type: 'hint' }));
 }
 
-/** Turn hints on or off (the Hints button, or the tutorial). @param {boolean} on */
-function setHints(on) {
+const HINT_MODES = /** @type {const} */ (['off', 'marks', 'full']);
+const HINT_LABELS = { off: 'Hints: off', marks: 'Hints: marks', full: 'Hints: full' };
+/** Set the hint mode (the Hints button cycles it; the tutorial starts full). @param {'off' | 'marks' | 'full'} mode */
+function setHints(mode) {
+  ui.hints.mode = mode;
+  const on = mode !== 'off';
+  try { localStorage.setItem('motw-hints', mode); } catch { /* a convenience only */ }
   ui.hints.on = on;
   if (on) requestHint();
   else ui.hints.hint = null;
@@ -813,8 +821,11 @@ function renderHint() {
   const view = ui.view;
   const waiting = !!view && myDecision(view) && ui.hints.got < ui.hints.asked;
   const panel = $('hint-overlay');
-  panel.hidden = !ui.hints.on || (!h && !waiting);
-  $('hint-button').classList.toggle('is-on', ui.hints.on);
+  panel.hidden = ui.hints.mode !== 'full' || (!h && !waiting);
+  const button = $('hint-button');
+  button.classList.toggle('is-on', ui.hints.on);
+  button.textContent = HINT_LABELS[ui.hints.mode];
+  button.title = 'Hints: off → marks on the table → marks and the panel';
   if (panel.hidden) return markHint();
   panel.classList.remove('is-open');
   $('hint').innerHTML = !h
@@ -876,7 +887,17 @@ function markHint() {
   for (const x of document.querySelectorAll('.is-suggested')) x.classList.remove('is-suggested');
   const h = ui.hints.on ? ui.hints.hint : null;
   if (!h) return;
+  for (const x of document.querySelectorAll('#hand .card[data-hint]')) x.removeAttribute('data-hint');
   for (const id of [h.card, ...(h.keep ?? [])]) if (id) document.querySelector(`#hand .card[data-card="${CSS.escape(id)}"]`)?.classList.add('is-suggested');
+  // The way to play it (designer, 2026-10-11): its LOC, FAC or +N button marked, and named on the card's tab.
+  const m = h.move;
+  if (m?.type === 'play') {
+    const card = document.querySelector(`#hand .card[data-card="${CSS.escape(m.card)}"]`);
+    const mode = m.use === 'sway' ? 'sway' : m.target?.mode;
+    const opt = mode === 'sway' ? card?.querySelector('.card-opt[data-action="sway"], .card-opt:last-child') : mode ? card?.querySelector(`.card-opt[data-mode="${mode}"]`) : null;
+    opt?.classList.add('is-suggested');
+    if (card instanceof HTMLElement) card.dataset.hint = mode === 'sway' ? ` · ${opt?.textContent?.trim() ?? 'SWAY'}` : mode === 'faction' ? ' · FAC' : mode === 'location' ? ' · LOC' : '';
+  }
   for (const l of h.tiles) document.querySelector(`#board [data-tile="${CSS.escape(l)}"] .hex`)?.classList.add('is-suggested');
 }
 
@@ -1063,16 +1084,20 @@ function onClick(event) {
     return;
   }
   if (action === 'toggle-overlay') {
+    if (target.dataset.target === 'hint-overlay') {
+      // The Hints button cycles off → marks → full; the panel's × drops to marks.
+      if (target.id === 'hint-button') setHints(HINT_MODES[(HINT_MODES.indexOf(ui.hints.mode) + 1) % HINT_MODES.length]);
+      else setHints('marks');
+      return;
+    }
     const panel = document.getElementById(target.dataset.target ?? '');
     if (!panel) return;
     const opening = panel.hidden;
     for (const id of ['log-overlay', 'chat-overlay', 'hint-overlay']) {
       const other = document.getElementById(id);
-      if (other) other.hidden = true;
+      if (other) other.hidden = true; // the hint panel steps aside until the next hint
     }
     panel.hidden = !opening;
-    if (target.dataset.target === 'hint-overlay') setHints(!ui.hints.on);
-    else if (ui.hints.on) $('hint-overlay').hidden = true; // out of the way of the log or table talk until the next hint
     if (opening && target.dataset.target === 'chat-overlay') {
       ui.unread = 0;
       renderUnread();
@@ -1340,7 +1365,7 @@ const tableHooks = {
   /** Select a card with a finished target (shown as chosen), or put it down. @param {string | null} card @param {import('./engine.js').Target} [target] */
   choose: (card, target = {}) => { ui.choosing = card; ui.target = structuredClone(target); ui.undo = []; render(); },
   /** Hints on or off, and where they come from (the tutorial's own). @param {boolean} on @param {(() => import('./hints.js').Hint | null)} [source] */
-  hints: (on, source) => { if (source) ui.hints.source = source; setHints(on); },
+  hints: (on, source) => { if (source) ui.hints.source = source; setHints(on ? 'full' : 'off'); },
 };
 
 function main() {
@@ -1355,6 +1380,9 @@ function main() {
   document.addEventListener('click', onCardClick);
   $('chat-form').addEventListener('submit', onChatSubmit);
   render();
+  let saved = null;
+  try { saved = localStorage.getItem('motw-hints'); } catch { /* a convenience only */ }
+  if (!ui.tutorial && (saved === 'marks' || saved === 'full')) { ui.hints.mode = saved; ui.hints.on = true; }
   if (ui.tutorial) return void import('./tutorial.js').then((m) => m.start(tableHooks));
   if (ui.hotseat.enabled) return void loadHotseat();
   if (ui.token) connect();
