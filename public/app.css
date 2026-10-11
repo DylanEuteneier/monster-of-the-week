@@ -848,6 +848,10 @@ button.card-opt:hover { background: #f6cca1; }
 .tut-scene-sway { display: inline-flex; gap: 2px; margin-right: var(--space-2); }
 .tut-scene-players { display: grid; gap: var(--space-1); }
 .tut-count { font-size: 11px; margin-left: 2px; }
+/* A token marked to die in a fight: greyed, with a red pixel cross. */
+.tut-doomed { position: relative; display: inline-flex; }
+.tut-doomed .token { filter: grayscale(1) brightness(0.7); }
+.tut-doomed::after { content: "✕"; position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-size: 14px; color: var(--color-danger); text-shadow: 1px 1px 0 var(--ink); }
 /* A card in a scene's hand: small, in its suit's colour, like the cards' band. */
 .tut-mini-card { display: inline-flex; align-items: center; gap: var(--space-1); padding: 1px var(--space-1); background: var(--card-face); color: var(--card-ink); border: var(--border); border-left: 4px solid var(--suit-none); font-size: 11px; vertical-align: middle; }
 .tut-mini-card.card-suit-nocturnals { border-left-color: var(--suit-nocturnals); } .tut-mini-card.card-suit-scifi { border-left-color: var(--suit-scifi); }

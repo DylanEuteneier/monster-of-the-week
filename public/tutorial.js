@@ -151,7 +151,7 @@ function once(key) {
 // ---------------------------------------------------------------------------
 
 /**
- * @typedef {{ loc: string, tokens: Record<string, number>, sway?: Record<string, number>, scorched?: boolean }} SceneHex
+ * @typedef {{ loc: string, tokens: Record<string, number>, sway?: Record<string, number>, scorched?: boolean, doomed?: Record<string, number> }} SceneHex
  * @typedef {{ f: string, supply: number, sway: Record<string, number> }} SceneRow
  * @typedef {{ pid: string, supply?: number, trophies?: Record<string, number>, hand?: string[] }} ScenePlayer
  * @typedef {{ hexes?: SceneHex[], rows?: SceneRow[], players?: ScenePlayer[] }} Scene
@@ -177,7 +177,12 @@ function sceneHtml(sc, focus = []) {
   const lit = (/** @type {string} */ k) => focus.includes(k);
   const part = (/** @type {boolean} */ on) => (focus.length && !on ? ' is-dim' : '');
   const hexes = (sc.hexes ?? []).map((h) => {
-    const rows = Object.entries(h.tokens).filter(([, n]) => n > 0).map(([f, n]) => `<span class="piece-row" data-k="hextok:${h.loc}:${f}">${run(n, () => tokenHtml(f, 1, lit(`hextok:${h.loc}:${f}`) ? 'hovered' : ''), 6)}</span>`).join('');
+    // Tokens marked to die in this fight are drawn last in their row, crossed out.
+    const rows = Object.entries(h.tokens).filter(([, n]) => n > 0).map(([f, n]) => {
+      const doomed = Math.min(n, h.doomed?.[f] ?? 0);
+      const t = (/** @type {boolean} */ dead) => (dead ? `<span class="tut-doomed">${tokenHtml(f, 1)}</span>` : tokenHtml(f, 1, lit(`hextok:${h.loc}:${f}`) ? 'hovered' : ''));
+      return `<span class="piece-row" data-k="hextok:${h.loc}:${f}">${run(n - doomed, () => t(false), 6)}${Array.from({ length: doomed }, () => t(true)).join('')}</span>`;
+    }).join('');
     const sway = Object.entries(h.sway ?? {}).filter(([, n]) => n > 0).map(([pid, n]) => run(n, () => cubeHtml(colour(pid), 8))).join('');
     const on = lit(`hex:${h.loc}`) || focus.some((k) => k.startsWith(`hextok:${h.loc}:`) || k === `hexsway:${h.loc}`);
     return `<div class="tut-scene-hex tut-part${h.scorched ? ' is-scorched' : ''}${part(on)}" data-k="hex:${h.loc}">${hexHtml(h.loc, 2, `${rows}<span class="piece-row${lit(`hexsway:${h.loc}`) ? ' is-lit' : ''}" data-k="hexsway:${h.loc}">${sway}</span>`)}<span class="small">${L(h.loc)}</span></div>`;
@@ -315,6 +320,8 @@ const op = (/** @type {string} */ s) => `<span class="tut-op">${s}</span>`;
 const chip = (/** @type {string} */ s) => `<span class="tut-chip">${s}</span>`;
 const frame = (/** @type {string} */ mechanic, /** @type {string} */ strategy) => `<dl class="tut-frame"><dt>Mechanic</dt><dd>${mechanic}</dd><dt>Strategy</dt><dd>${strategy}</dd></dl>`;
 const more = (/** @type {string} */ label, /** @type {string} */ html) => `<details class="tut-more"><summary>${label}</summary>${html}</details>`;
+/** How a fight's losses are counted, in pieces: the loser's whole group, then half that (rounded down, at least 1) of the winners. @param {string} win @param {number} w @param {string} lose @param {number} l */
+const fightMath = (win, w, lose, l) => `${eq(tokens(win, w), op('vs'), tokens(lose, l), op('→'), 'the bigger group wins')}${eq('the loser loses all', op('='), tokens(lose, l))}${eq(`the winner loses half that, rounded down, at least 1`, op('='), tokens(win, Math.max(1, Math.floor(l / 2))))}${more('More examples', '<p>5 vs 2: the 2 die, the winners lose 1. 6 vs 5: the 5 die, the winners lose 2. 2 vs 1: the 1 dies, the winners still lose 1.</p>')}`;
 /** A small gauge like the island's: a count against the mark. @param {number} n @param {number} mark */
 const miniGauge = (n, mark) => { const top = Math.max(n, mark * 2); return `<span class="tut-gauge${n > mark ? ' is-over' : ''}" style="--now:${(100 * n) / top}%;--mark:${(100 * mark) / top}%"><span class="tut-gauge-fill"></span><span class="tut-gauge-mark"></span></span>`; };
 /** One count per faction as tokens, the lowest picked out. @param {string[]} factions @param {number[]} counts */
@@ -480,6 +487,7 @@ function chapterWin() {
       /** @type {Scene} */ const s4 = { hexes: [{ loc: Lx, tokens: { [c.F0]: 4, [c.G]: 3 }, sway: { [YOU]: 2, [c.ash]: 1 } }], rows: rows(4, 3, 2, 1) };
       const players = (/** @type {Record<string, number>} */ yours_, /** @type {Record<string, number>} */ ashs) => [{ pid: YOU, trophies: yours_ }, { pid: c.ash, trophies: ashs }];
       /** @type {Scene} */ const s5 = { ...s4, players: players({}, {}) };
+      /** @type {Scene} */ const s5d = { ...s5, hexes: [{ loc: Lx, tokens: { [c.F0]: 4, [c.G]: 3 }, sway: { [YOU]: 2, [c.ash]: 1 }, doomed: { [c.G]: 3, [c.F0]: 1 } }] };
       /** @type {Scene} */ const s6 = { ...s4, hexes: [{ loc: Lx, tokens: { [c.F0]: 4, [c.G]: 0 }, sway: { [YOU]: 2, [c.ash]: 1 } }], players: players({ [c.G]: 3 }, {}) };
       /** @type {Scene} */ const s7 = { ...s4, hexes: [{ loc: Lx, tokens: { [c.F0]: 3 }, sway: { [YOU]: 2, [c.ash]: 1 } }], players: players({ [c.G]: 3 }, { [c.F0]: 1 }) };
       const title = 'Monsters, sway and trophies';
@@ -488,8 +496,9 @@ function chapterWin() {
         sceneStep(title, s1, s2, `<p>Below it, a location: ${L(Lx)}, one of fifteen on the island.</p>`, [`hex:${Lx}`]),
         sceneStep(title, s2, s3, `${eq(tokenHtml(c.F0, 2), op('/'), tokenHtml(c.G, 2), op('='), 'a monster')}<p>Monsters come onto the board from their faction's supply. Here the ${F(c.F0)} meet the ${F(c.G)}, whose row joins above: two factions in one place will fight.</p>`, [`hex:${Lx}`, `row:${c.F0}`, `row:${c.G}`]),
         sceneStep(title, s3, s4, `<p>Sway follows the monsters onto the location. Sway on a location is a <b>bid</b> for its fight: you have 2 here, ${who(c.ash)} 1.</p>`, [`hexsway:${Lx}`, `row:${c.F0}`]),
-        sceneStep(title, s4, s5, `<p>At the end of the round the monsters fight, and the dead become <b>trophies</b>.</p>`, [`hextok:${Lx}:${c.F0}`, `hextok:${Lx}:${c.G}`, `player:${YOU}`, `player:${c.ash}`], Lx),
-        sceneStep(title, s5, s6, `<p>The most sway there takes the bigger pile: that's you.</p>`, [`hextok:${Lx}:${c.G}`, `hexsway:${Lx}`, `player:${YOU}`]),
+        sceneStep(title, s4, s5, `<p>At the end of the round the monsters fight, and the dead become <b>trophies</b> for the slayers.</p>`, [`hextok:${Lx}:${c.F0}`, `hextok:${Lx}:${c.G}`, `player:${YOU}`, `player:${c.ash}`], Lx),
+        sceneStep(title, s5d, s5d, fightMath(c.F0, 4, c.G, 3), [`hextok:${Lx}:${c.F0}`, `hextok:${Lx}:${c.G}`]),
+        sceneStep(title, s5d, s6, `<p>The most sway there takes the bigger pile: that's you.</p>`, [`hextok:${Lx}:${c.G}`, `hexsway:${Lx}`, `player:${YOU}`]),
         sceneStep(title, s6, s7, `<p>Second most takes the smaller: ${who(c.ash)}. Trophies are kept secret.</p>`, [`hextok:${Lx}:${c.F0}`, `hexsway:${Lx}`, `player:${c.ash}`]),
       ];
     })(),
@@ -598,6 +607,7 @@ function chapterEconomy() {
   const T0 = story({ L1: { tokens: { [F0]: 4 }, sway: { [YOU]: 1 } }, L2: { tokens: { [G]: 3 }, sway: { [ash]: 2 } }, row: rowS(you0, ash0), you: { supply: mine.supply, hand: [offer, lure], trophies: {} }, ash: { supply: ashSup, trophies: {} } });
   const T1 = story({ L1: { tokens: { [F0]: 4 }, sway: { [YOU]: 1 } }, L2: { tokens: { [G]: 3 }, sway: { [ash]: 2 } }, row: rowS(you0 + g, ash0), you: { supply: mine.supply - g, hand: [lure], trophies: {} }, ash: { supply: ashSup, trophies: {} } });
   const T2 = story({ L1: { tokens: { [F0]: 0 }, sway: { [YOU]: 1 } }, L2: { tokens: { [G]: 3, [F0]: 4 }, sway: { [ash]: 2, [YOU]: 1 } }, row: rowS(you0 + g - 1, ash0), you: { supply: mine.supply - g, hand: [], trophies: {} }, ash: { supply: ashSup, trophies: {} } });
+  const T2d = story({ L1: { tokens: { [F0]: 0 }, sway: { [YOU]: 1 } }, L2: { tokens: { [G]: 3, [F0]: 4 }, sway: { [ash]: 2, [YOU]: 1 }, doomed: { [G]: 3, [F0]: 1 } }, row: rowS(you0 + g - 1, ash0), you: { supply: mine.supply - g, hand: [], trophies: {} }, ash: { supply: ashSup, trophies: {} } });
   const T3 = story({ L1: { tokens: {}, sway: { [YOU]: 1 } }, L2: { tokens: { [G]: 0, [F0]: 4 }, sway: { [ash]: 2, [YOU]: 1 } }, row: rowS(you0 + g - 1, ash0), you: { supply: mine.supply - g, hand: [], trophies: {} }, ash: { supply: ashSup, trophies: { [G]: 3 } } });
   const T4 = story({ L1: { tokens: {}, sway: { [YOU]: 1 } }, L2: { tokens: { [F0]: 3 }, sway: { [ash]: 2, [YOU]: 1 } }, row: rowS(you0 + g - 1, ash0), you: { supply: mine.supply - g, hand: [], trophies: { [F0]: 1 } }, ash: { supply: ashSup, trophies: { [G]: 3 } } });
   const T5 = story({ L1: { tokens: {}, sway: { [YOU]: 1 } }, L2: { tokens: { [F0]: 3 }, sway: { [ash]: 0, [YOU]: 1 } }, row: rowS(you0 + g - 1, ash0 + 1), you: { supply: mine.supply - g, hand: [], trophies: { [F0]: 1 } }, ash: { supply: ashSup + 1, trophies: { [G]: 3 } } });
@@ -633,7 +643,8 @@ function chapterEconomy() {
     sceneStep('End of round: the bigger group wins', T2, T2, `
       ${eq(tokens(F0, 4), op('vs'), tokens(G, 3), op('→'), `the ${F(F0)} win`)}
       <p>Two factions in one place fight when the round ends.</p>`, [`hextok:${Lfight}:${F0}`, `hextok:${Lfight}:${G}`], Lfight),
-    sceneStep('The loser loses everything', T2, T3, `
+    sceneStep('Counting the dead', T2d, T2d, fightMath(F0, 4, G, 3), [`hextok:${Lfight}:${F0}`, `hextok:${Lfight}:${G}`]),
+    sceneStep('The loser loses everything', T2d, T3, `
       ${eq(`the ${F(G)}`, op('lose all'), tokens(G, 3))}
       <p>That's the bigger pile. ${who(ash)} has the most sway here, so ${who(ash)} takes it.</p>`, [`hextok:${Lfight}:${G}`, `hexsway:${Lfight}`, `player:${ash}`]),
     sceneStep('The winner loses half', T3, T4, `
