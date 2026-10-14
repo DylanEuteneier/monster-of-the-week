@@ -29,9 +29,18 @@
  *   first play (for the marked cards, which open rounds). probeLite=1: the
  *   probes' imagined futures are played by the same bots with the play-out
  *   search (sim) off, which would otherwise nest play-outs inside play-outs.
+ * - vanished fights (designer, 2026-10-13: a fight disappearing, not being
+ *   outbid, is what undoes a player's progress): each round, every fight
+ *   (a location contested by a pair of factions) a play makes, and every
+ *   fight a play makes disappear, with who had a stake in it (sway or a
+ *   hidden token there), who made it and with which card, and how far into
+ *   the round it went; how many fights made in play are still there when the
+ *   fights come. reach=rate also asks, on that share of turns, every card
+ *   with an action whether it could make a fight others hold a stake in
+ *   disappear there and then (its listed targets, up to reachTargets=40).
  *
  *   node scripts/tournament.js [games=50] [seed=1] [profiles=backer,backer,trophy,trophy,trophy]
- *     [log=games.jsonl] [out=summary.json] [strength=card-strength.json] [probe=0] [probeOpen=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [probeLite=0] [workers=cores] [duplicate=0] [option=value ...]
+ *     [log=games.jsonl] [out=summary.json] [strength=card-strength.json] [probe=0] [probeOpen=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [probeLite=0] [reach=0] [reachTargets=40] [workers=cores] [duplicate=0] [option=value ...]
  *
  * - log= appends one line per finished game; a run with the same log resumes,
  *   skipping games already in it. out= is rewritten after every game with the
@@ -52,19 +61,22 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, validate } from '../public/engine.js';
+import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, listTargets, clone, validate } from '../public/engine.js';
 import { PROFILES, botMove, fast, features } from '../public/bots.js';
-import { seededRng, chance, measureState, MAX_MOVES, upgradeRecord } from './lib.js';
+import { seededRng, chance, measureState, play, MAX_MOVES, upgradeRecord } from './lib.js';
 
 /** @typedef {import('../public/bots.js').Profile} Profile @typedef {import('../public/engine.js').GameState} GameState */
-/** @typedef {{ trophies: number, flips: number, control: number, moved: number, placed: number, presence: number }} Effect */
+/** @typedef {{ trophies: number, flips: number, control: number, moved: number, placed: number, presence: number, made?: number, big?: number }} Effect */
 /** @typedef {{ r: number, seat: string, card: string, use: 'action' | 'sway', dWin: number, opener: boolean, fx?: Effect }} Play */
 /** @typedef {{ r: number, fights: number, by: number[], swayd: number, onBoard: number, standing: number }} Economy */
 /** @typedef {{ r: number, opening: boolean, profile: string, benefit: Record<string, number | null> }} Probe */
+/** @typedef {{ at: number, card: string, seat: string, loc: string, stake: string[], maker: string, makerCard: string, moved: boolean, size?: number, big?: boolean }} Vanish */
+/** @typedef {{ r: number, plays: number, start: number, made: number, kept: number, lost: Vanish[], bigMade?: number, bigKept?: number }} FightRound */
+/** @typedef {{ r: number, staked: number, cards: Record<string, [number, number]> }} Reach */
 /**
  * @typedef {{ g: number, side: 'island' | 'invaders', seats: Record<string, string>, groups: Record<string, string>, winners: string[], placings: string[], deck: string[],
  *   presence: number[], scorched: number, trophies: Record<string, number>, trophiesByColour?: Record<string, Record<string, number>>, scores?: Record<string, number>, goals?: Record<string, string>[], wonBy?: string[], standing?: Record<string, Record<string, number>>, presenceBy?: Record<string, number>, economy: Economy[], plays: Play[], held: string[], unplayed: string[],
- *   playable: Record<string, [number, number]>, probes: Probe[], forecasts: { r: number, seat: string, p: number, f?: Record<string, number> }[] }} GameRecord
+ *   playable: Record<string, [number, number]>, probes: Probe[], fightRounds?: FightRound[], reach?: Reach[], forecasts: { r: number, seat: string, p: number, f?: Record<string, number> }[] }} GameRecord
  */
 
 // ---------------------------------------------------------------------------
@@ -116,7 +128,71 @@ function effectOf(was, now, pid) {
     if (p1.token && !p0.token) moved += 1;
     placed += Math.max(0, (p1.sway[pid] ?? 0) - (p0.sway[pid] ?? 0));
   }
-  return { trophies, flips, control, moved, placed, presence: b.presence - a.presence };
+  // The largest fight the play made or grew (both groups' tokens), and whether it is big (BIG_FIGHT or more): a big
+  // fight made in a single move is as lazy as one undone (designer, 2026-10-13).
+  let made = 0;
+  for (const [loc, pair] of fightsOn(now)) {
+    const before = fightsOn(was).get(loc) === pair ? fightSize(was, loc, pair) : 0;
+    if (fightSize(now, loc, pair) > before) made = Math.max(made, fightSize(now, loc, pair));
+  }
+  return { trophies, flips, control, moved, placed, presence: b.presence - a.presence, made, big: made >= BIG_FIGHT ? 1 : 0 };
+}
+
+/** A big fight, in tokens (both groups together): a measuring line, not a rule. */
+const BIG_FIGHT = 6;
+
+// ---------------------------------------------------------------------------
+// Vanished fights (a play that makes a fight disappear)
+// ---------------------------------------------------------------------------
+
+/** Each fight on the board, as location → the pair of factions, sorted (a truce there: no fight). @param {GameState} s */
+function fightsOn(s) {
+  /** @type {Map<string, string>} */
+  const out = new Map();
+  for (const [loc, place] of Object.entries(s.board)) if (contestedPlace(place) && !place.truce) out.set(loc, Object.keys(place.tokens).filter((f) => place.tokens[f] > 0).sort().join('+'));
+  return out;
+}
+
+/** A fight's size: both groups' tokens together. @param {GameState} s @param {string} loc @param {string} pair */
+const fightSize = (s, loc, pair) => pair.split('+').reduce((n, f) => n + (s.board[loc].tokens[f] ?? 0), 0);
+
+/** The players with a stake in a location's fight: sway there, or a hidden token there. @param {GameState['board'][string]} place */
+const stakeOf = (place) => [...new Set([...Object.entries(place.sway).filter(([, n]) => n > 0).map(([p]) => p), ...(place.token ? [place.token.owner] : [])])];
+
+/** What one play did to the fights: those that disappeared (with their stakes; moved: the same pair now fights at a new location) and those it made. @param {GameState} was @param {GameState} now */
+function fightChange(was, now) {
+  const a = fightsOn(was), b = fightsOn(now);
+  const made = [...b].filter(([loc, pair]) => a.get(loc) !== pair).map(([loc]) => loc);
+  const pairsMade = new Set(made.map((loc) => b.get(loc)));
+  const gone = [...a].filter(([loc, pair]) => b.get(loc) !== pair).map(([loc, pair]) => ({ loc, stake: stakeOf(was.board[loc]), moved: pairsMade.has(pair) }));
+  return { gone, made };
+}
+
+/**
+ * Could each card make a fight that others hold a stake in disappear, played now by the player to act? Per card:
+ * [could, the most such fights one play makes disappear]; absent: no legal target. A measuring device, not a move.
+ * @param {GameState} state @param {string[]} cardIds @param {number} cap
+ */
+function reachOf(state, cardIds, cap) {
+  const pid = state.seating[state.turn];
+  const theirs = (/** @type {GameState} */ s, /** @type {string} */ loc) => stakeOf(s.board[loc]).some((p) => p !== pid);
+  /** @type {Record<string, [number, number]>} */
+  const out = {};
+  for (const id of cardIds) {
+    const s = clone(state);
+    s.opened = true;
+    s.players[pid].hand.push(id);
+    const { targets } = listTargets(s, pid, id, cap);
+    let best = -1;
+    for (const target of targets) {
+      const move = /** @type {import('../public/engine.js').Move} */ ({ type: 'play', card: id, use: 'action', target });
+      if (!validate(s, { playerId: pid, move }).ok) continue;
+      const n = fightChange(s, play(s, pid, move)).gone.filter((g) => !g.moved && theirs(s, g.loc)).length;
+      best = Math.max(best, n);
+    }
+    if (best >= 0) out[id] = [best > 0 ? 1 : 0, best];
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -144,8 +220,30 @@ function summarise(records, list, options) {
   /** @typedef {{ dealt: number, held: number, unplayed: number, action: number, sway: number, opener: number, dAction: number, dSway: number, winAction: number, winSway: number, endsIsland: number, fx: Effect, turns: number, playable: number, probes: number[], openingProbes: number[], probeNull: number, byProfile: Record<string, { probes: number[], dWin: number, plays: number }> }} Acc */
   /** @type {Record<string, Acc>} */
   const cards = {};
-  const acc = (/** @type {string} */ id) => (cards[id] ??= { dealt: 0, held: 0, unplayed: 0, action: 0, sway: 0, opener: 0, dAction: 0, dSway: 0, winAction: 0, winSway: 0, endsIsland: 0, fx: { trophies: 0, flips: 0, control: 0, moved: 0, placed: 0, presence: 0 }, turns: 0, playable: 0, probes: [], openingProbes: [], probeNull: 0, byProfile: {} });
+  const acc = (/** @type {string} */ id) => (cards[id] ??= { dealt: 0, held: 0, unplayed: 0, action: 0, sway: 0, opener: 0, dAction: 0, dSway: 0, winAction: 0, winSway: 0, endsIsland: 0, fx: { trophies: 0, flips: 0, control: 0, moved: 0, placed: 0, presence: 0, made: 0, big: 0 }, turns: 0, playable: 0, probes: [], openingProbes: [], probeNull: 0, byProfile: {} });
+  const vanish = { rounds: 0, plays: 0, start: 0, made: 0, kept: 0, gone: 0, staked: 0, moved: 0, byQuarter: [0, 0, 0, 0], own: 0, bigRounds: 0, bigMade: 0, bigKept: 0, bigUndone: 0, bigUndoneStaked: 0 };
+  /** @type {Record<string, { actions: number, gone: number, staked: number, moved: number, plays: number, reachN: number, reach: number, reachMax: number, bigUndone: number }>} */
+  const undo = {};
+  const un = (/** @type {string} */ id) => (undo[id] ??= { actions: 0, gone: 0, staked: 0, moved: 0, plays: 0, reachN: 0, reach: 0, reachMax: 0, bigUndone: 0 });
+  /** @type {Record<string, number>} maker card → card that made it disappear */
+  const pairs = {};
   for (const r of records) {
+    for (const fr of r.fightRounds ?? []) {
+      vanish.rounds += 1; vanish.plays += fr.plays; vanish.start += fr.start; vanish.made += fr.made; vanish.kept += fr.kept;
+      if (fr.bigMade !== undefined) { vanish.bigRounds += 1; vanish.bigMade += fr.bigMade; vanish.bigKept += fr.bigKept ?? 0; }
+      for (const v of fr.lost) {
+        if (v.moved) { vanish.moved += 1; un(v.card).moved += 1; continue; }
+        if (v.big) { vanish.bigUndone += 1; un(v.card).bigUndone += 1; if (v.stake.some((p) => p !== v.seat)) vanish.bigUndoneStaked += 1; }
+        vanish.gone += 1; un(v.card).gone += 1;
+        if (!v.stake.some((p) => p !== v.seat)) continue; // no one else's stake: nobody's progress undone
+        vanish.staked += 1; un(v.card).staked += 1;
+        vanish.byQuarter[Math.min(3, Math.floor((4 * v.at) / Math.max(1, fr.plays)))] += 1;
+        if (v.maker === v.seat) vanish.own += 1;
+        if (v.makerCard) pairs[`${v.makerCard} → ${v.card}`] = (pairs[`${v.makerCard} → ${v.card}`] ?? 0) + 1;
+      }
+    }
+    for (const p of r.plays) if (p.use === 'action' && r.fightRounds) un(p.card).actions += 1;
+    for (const x of r.reach ?? []) for (const [id, [could, most]] of Object.entries(x.cards)) { const u = un(id); u.reachN += 1; u.reach += could; u.reachMax = Math.max(u.reachMax, most); }
     sides[r.side] += 1;
     if (r.winners.length > 1) shared += 1;
     for (const pid of r.winners) {
@@ -176,7 +274,7 @@ function summarise(records, list, options) {
       if (p.use === 'action') {
         a.action += 1; a.dAction += p.dWin; a.winAction += won;
         if (r.side === 'island') a.endsIsland += 1;
-        if (p.fx) for (const k of /** @type {(keyof Effect)[]} */ (Object.keys(a.fx))) a.fx[k] += p.fx[k];
+        if (p.fx) for (const k of /** @type {(keyof Effect)[]} */ (Object.keys(a.fx))) a.fx[k] = (a.fx[k] ?? 0) + (p.fx[k] ?? 0);
       } else { a.sway += 1; a.dSway += p.dWin; a.winSway += won; }
       if (p.opener) a.opener += 1;
       if (p.use === 'action') { const bp = (a.byProfile[r.seats[p.seat]] ??= { probes: [], dWin: 0, plays: 0 }); bp.dWin += p.dWin; bp.plays += 1; }
@@ -201,6 +299,14 @@ function summarise(records, list, options) {
       round: e.r, fights: avg(e.fights, e.rounds), contests: e.by.map((v) => pct(v, e.fights)), locationsWithSway: avg(e.swayd, e.rounds),
       onBoardPerPlayer: avg(e.onBoard, e.rounds * players), standingPerPlayer: avg(e.standing, e.rounds * players),
     })),
+    fights: {
+      rounds: vanish.rounds, playsPerRound: avg(vanish.plays, vanish.rounds), atStartPerRound: avg(vanish.start, vanish.rounds), madePerRound: avg(vanish.made, vanish.rounds),
+      madeKeptPct: pct(vanish.kept, vanish.made), vanishedPerRound: avg(vanish.gone, vanish.rounds), stakedVanishedPerRound: avg(vanish.staked, vanish.rounds), movedPerRound: avg(vanish.moved, vanish.rounds),
+      stakedByQuarter: vanish.byQuarter.map((q) => pct(q, vanish.staked)), stakedOwnMadePct: pct(vanish.own, vanish.staked),
+      bigFight: BIG_FIGHT, bigMadePerRound: avg(vanish.bigMade, vanish.bigRounds), bigUndonePct: pct(vanish.bigUndone, vanish.bigMade), bigUndoneStakedPct: pct(vanish.bigUndoneStaked, vanish.bigMade), bigKeptPct: pct(vanish.bigKept, vanish.bigMade),
+      pairs: Object.entries(pairs).sort((a, b) => b[1] - a[1]).slice(0, 15),
+      byCard: Object.fromEntries(Object.entries(undo).map(([id, u]) => [id, { name: cardById(id).name, actions: u.actions, stakedPerAction: avg(u.staked, u.actions), vanished: u.gone, moved: u.moved, reachN: u.reachN, reachPct: pct(u.reach, u.reachN), reachMax: u.reachMax, bigUndone: u.bigUndone }])),
+    },
     cards: Object.fromEntries(Object.entries(cards).map(([id, a]) => [id, {
       name: cardById(id).name, dealt: a.dealt, held: a.held, action: a.action, sway: a.sway, unplayed: a.unplayed, opener: a.opener,
       playedPct: pct(a.action + a.sway, a.held), actionPct: pct(a.action, a.action + a.sway), playablePct: pct(a.playable, a.turns),
@@ -225,7 +331,8 @@ function main() {
   const duplicate = pairs.duplicate === '1';
   const logFile = pairs.log, outFile = pairs.out, strengthFile = pairs.strength, workerCap = Number(pairs.workers ?? 0);
   const probe = { rate: Number(pairs.probe ?? 0), open: pairs.probeOpen === '1', sample: Number(pairs.probeSample ?? 6), cards: pairs.probeCards?.split(','), playouts: Number(pairs.probePlayouts ?? 2), targets: Number(pairs.probeTargets ?? 2), lite: pairs.probeLite === '1' };
-  for (const k of ['profiles', 'duplicate', 'log', 'out', 'strength', 'probe', 'probeOpen', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets', 'probeLite', 'workers']) delete pairs[k];
+  const reach = { rate: Number(pairs.reach ?? 0), targets: Number(pairs.reachTargets ?? 40) };
+  for (const k of ['profiles', 'duplicate', 'log', 'out', 'strength', 'probe', 'probeOpen', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets', 'probeLite', 'reach', 'reachTargets', 'workers']) delete pairs[k];
   for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:lean=0)`);
   const games = Number(gamesArg), seed = Number(seedArg);
   /** @type {GameRecord[]} */
@@ -239,7 +346,7 @@ function main() {
   let running = workers;
   const t0 = Date.now();
   for (let w = 0; w < workers; w++) {
-    const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { games: todo.filter((_, i) => i % workers === w), seed, list, options: pairs, probe, duplicate } });
+    const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { games: todo.filter((_, i) => i % workers === w), seed, list, options: pairs, probe, reach, duplicate } });
     worker.on('message', (/** @type {GameRecord} */ r) => {
       records.push(r);
       if (logFile) appendFileSync(logFile, `${JSON.stringify(r)}\n`);
@@ -265,6 +372,19 @@ function main() {
     console.log(`Wins by slayer group: ${Object.entries(s.byGroup).map(([k, v]) => `${k} ${v}%`).join(' · ')}`);
     console.log('\nround | fights | by players with sway there: 0 / 1 / 2 / 3+ | locations with sway | sway on board per player | standing per player');
     for (const e of s.economy) console.log(`${String(e.round).padStart(5)} | ${String(e.fights).padStart(6)} | ${e.contests.map((x) => `${x}%`).join(' / ').padEnd(47)} | ${String(e.locationsWithSway).padStart(24)} | ${String(e.onBoardPerPlayer).padStart(29)} | ${String(e.standingPerPlayer).padStart(19)}`);
+    const fx = s.fights;
+    if (fx.rounds) {
+      console.log(`\nFights per round: ${fx.atStartPerRound} at the start of play, ${fx.madePerRound} made by plays (${fx.madeKeptPct}% of those still there when the fights come). Plays per round ${fx.playsPerRound}.`);
+      console.log(`Made to disappear per round: ${fx.vanishedPerRound}, of them ${fx.stakedVanishedPerRound} with another player's stake (${fx.stakedOwnMadePct}% of those the remover had made); moved whole to a new location ${fx.movedPerRound}.`);
+      if (fx.bigMadePerRound !== null) console.log(`Big fights (${fx.bigFight}+ tokens) a play made or grew to big: ${fx.bigMadePerRound} per round; ${fx.bigUndonePct}% made to disappear later that round (${fx.bigUndoneStakedPct}% with another player's stake), ${fx.bigKeptPct}% still there when the fights come.`);
+      console.log(`Staked fights made to disappear, by quarter of the round's plays: ${fx.stakedByQuarter.map((q) => `${q}%`).join(' / ')}`);
+      console.log(`Most frequent (card that made the fight → card that made it disappear): ${fx.pairs.map(([k, v]) => `${k} ${v}`).join(' · ')}`);
+      console.log(`\n${'card'.padEnd(34)} | actions | staked gone / action | gone | moved | could (reach) | most at once | fight made (tokens) | big made | big undone`);
+      for (const [id, u] of Object.entries(fx.byCard).sort((a, b) => (b[1].stakedPerAction ?? -1) - (a[1].stakedPerAction ?? -1) || (b[1].reachPct ?? -1) - (a[1].reachPct ?? -1))) {
+        if (!u.actions && !u.reachN) continue;
+        console.log(`${u.name.padEnd(34)} | ${String(u.actions).padStart(7)} | ${String(u.stakedPerAction ?? '–').padStart(20)} | ${String(u.vanished).padStart(4)} | ${String(u.moved).padStart(5)} | ${(u.reachPct === null ? '–' : `${u.reachPct}% of ${u.reachN}`).padStart(13)} | ${String(u.reachN ? u.reachMax : '–').padStart(12)} | ${String(s.cards[id]?.perAction.made ?? '–').padStart(19)} | ${(s.cards[id]?.perAction.big === undefined || s.cards[id]?.perAction.big === null ? '–' : `${Math.round(100 * (s.cards[id]?.perAction.big ?? 0))}%`).padStart(8)} | ${String(u.bigUndone).padStart(10)}`);
+      }
+    }
     const probing = Object.values(s.cards).some((c) => c.probe.n);
     const rows = Object.entries(s.cards).filter(([, c]) => c.held > 0 || c.probe.n > 0).sort((a, b) => (probing ? (b[1].probe.benefit ?? -99) - (a[1].probe.benefit ?? -99) : (b[1].dWinAction ?? -99) - (a[1].dWinAction ?? -99)));
     const f = (/** @type {number | null} */ x, /** @type {string} */ u = '') => (x === null ? '–' : `${u === 'pp' && x > 0 ? '+' : ''}${x}${u === '%' ? '%' : ''}`);
@@ -300,6 +420,11 @@ else {
     /** @type {Probe[]} */ const probes = [];
     /** @type {{ r: number, seat: string, p: number, f: Record<string, number> }[]} */ const forecasts = [];
     /** @type {Record<string, [number, number]>} */ const playable = {};
+    /** @type {FightRound[]} */ const fightRounds = [];
+    /** @type {Reach[]} */ const reach = [];
+    /** @type {FightRound | null} */ let fr = null;
+    /** @type {Map<string, { maker: string, card: string, big: boolean }>} this round's fights, by location: who made each (none: there when play began), and whether a play made it big */
+    const makers = new Map();
     const presence = [totalPresence(s)];
     /** @type {Record<string, string>[]} each round's end: the plan each seat holds (goal bots: island or invaders) */ const goals = [];
     /** @type {Record<string, string[]> | null} */
@@ -310,6 +435,9 @@ else {
         hands = Object.fromEntries(s.seating.map((pid) => [pid, s.players[pid].hand.slice()]));
         for (const pid of s.seating) forecasts.push({ r: s.round, seat: pid, p: Math.round(chance(s, pid) * 10) / 10, f: features(s, pid) });
         for (const h of Object.values(hands)) held.push(...h);
+        fr = { r: s.round, plays: 0, start: fightsOn(s).size, made: 0, kept: 0, lost: [], bigMade: 0, bigKept: 0 };
+        makers.clear();
+        for (const loc of fightsOn(s).keys()) makers.set(loc, { maker: '', card: '', big: false });
       }
       // The player to act: playable checks, and a probe on a share of turns.
       const actor = s.phase === 'play' && !s.pending ? s.seating[s.turn] : null;
@@ -330,6 +458,10 @@ else {
             const pick = probeCards.map((/** @type {string} */ c) => ({ c, k: side() })).sort((/** @type {{ k: number }} */ a, /** @type {{ k: number }} */ b) => a.k - b.k).slice(0, d.probe.sample).map((/** @type {{ c: string }} */ x) => x.c);
             probes.push({ r: s.round, opening: !s.opened && pid === s.first, profile: seats[pid], benefit: measureState(s, pick, { playouts: d.probe.playouts, targets: d.probe.targets, bots: d.probe.lite ? Object.fromEntries(Object.entries(seats).map(([k, v]) => [k, fast(String(v))])) : seats, memories: memory, seed: d.seed * 100003 + g * 101 + n }) });
           }
+          if (d.reach.rate > 0 && side() < d.reach.rate) { // reach=rate: what every card could do to the fights here (only where others hold a stake in one)
+            const staked = [...fightsOn(s).keys()].filter((loc) => stakeOf(s.board[loc]).some((p) => p !== pid)).length;
+            if (staked) reach.push({ r: s.round, staked, cards: reachOf(s, probeCards, d.reach.targets) });
+          }
         }
         const prev = s;
         if (move.type === 'play') {
@@ -340,6 +472,24 @@ else {
           const rec = { r: prev.round, seat: pid, card: move.card, use: move.use, dWin: Math.round((chance(s, pid) - before) * 10) / 10, opener };
           if (move.use === 'action' && s.phase === 'play') rec.fx = effectOf(prev, s, pid);
           plays.push(rec);
+          if (fr && s.phase === 'play') {
+            const { gone, made } = fightChange(prev, s);
+            const was = fightsOn(prev);
+            for (const v of gone) {
+              const m = makers.get(v.loc);
+              fr.lost.push({ at: fr.plays, card: move.card, seat: pid, loc: v.loc, stake: v.stake, maker: m?.maker ?? '', makerCard: m?.card ?? '', moved: v.moved, size: fightSize(prev, v.loc, /** @type {string} */ (was.get(v.loc))), big: !!m?.big });
+              makers.delete(v.loc);
+            }
+            for (const loc of made) { makers.set(loc, { maker: pid, card: move.card, big: false }); fr.made += 1; }
+            // A fight this play made big (BIG_FIGHT or more, from below it): made, or grown.
+            for (const [loc, pair] of fightsOn(s)) {
+              const m = makers.get(loc);
+              if (!m || m.big || fightSize(s, loc, pair) < BIG_FIGHT) continue;
+              if (!made.includes(loc) && fightSize(prev, loc, pair) >= BIG_FIGHT) continue;
+              m.big = true; fr.bigMade = (fr.bigMade ?? 0) + 1;
+            }
+            fr.plays += 1;
+          }
           if (hands) hands[pid] = hands[pid].filter((c, i, a) => c !== move.card || a.indexOf(c) !== i);
         } else s = applyMove(s, { playerId: pid, move });
         if (prev.phase === 'play' && s.phase !== 'play') {
@@ -355,6 +505,7 @@ else {
           }
           for (const p of prev.seating) e.standing += Object.values(prev.players[p].standing).reduce((a, b) => a + b, 0);
           economy.push(e);
+          if (fr) { fr.kept = [...makers.values()].filter((m) => m.maker).length; fr.bigKept = [...makers.values()].filter((m) => m.big).length; fightRounds.push(fr); fr = null; }
           if (hands) { for (const h of Object.values(hands)) unplayed.push(...h); hands = null; }
         }
         moved = true;
@@ -368,7 +519,7 @@ else {
       g, side: result.side, seats, groups: Object.fromEntries(s.seating.map((p) => [p, s.players[p].group])), winners: result.players, placings: result.placings ?? [], deck: s.deck ?? [],
       presence, scorched: Object.values(s.board).filter((p) => p.scorched).length, trophies: Object.fromEntries(s.seating.map((p) => [p, Object.values(s.players[p].trophies).reduce((a, b) => a + b, 0)])),
       trophiesByColour: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].trophies }])), scores: s.result?.scores ?? {}, goals, wonBy: s.result?.factions ?? [], standing: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].standing }])), presenceBy: Object.fromEntries(s.factions.map((f) => [f, presenceOf(s, f)])),
-      economy, plays, held, unplayed, playable, probes, forecasts,
+      economy, plays, held, unplayed, playable, probes, fightRounds, reach, forecasts,
     }));
   }
 }

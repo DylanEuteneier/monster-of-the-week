@@ -367,6 +367,23 @@ export function swayLeaders(state, faction) {
 }
 
 /**
+ * Tokens of a faction free to leave a location. Test lever pinning (designer, 2026-10-13): at a contested location
+ * each token pins one enemy token, so only the larger group's surplus can leave; off, every token is free. Pinning
+ * stops movement only: a card marked unpinned in the spec does something other than move tokens (designer: Trade
+ * Souls), so it takes every token.
+ * @param {GameState} state @param {string} loc @param {string} faction @param {boolean} [unpinned]
+ */
+function freeOf(state, loc, faction, unpinned = false) {
+  const n = tokensOf(state, loc, faction);
+  if (unpinned || state.options.pinning !== 'on') return n;
+  const other = factionsAt(state, loc).find((f) => f !== faction);
+  return other ? Math.max(0, n - tokensOf(state, loc, other)) : n;
+}
+
+/** Whether a card's action is not movement, so pinning doesn't hold it (spec: unpinned). @param {Card} card */
+const unpinnedCard = (card) => 'unpinned' in card && !!card.unpinned;
+
+/**
  * Move tokens, placing 1 sway at the destination spent from the
  * player's standing with the faction moved (3.7, CA2); under IC1 (D15) a move
  * it can't pay for doesn't happen. A faction other than the led one comes
@@ -374,9 +391,10 @@ export function swayLeaders(state, faction) {
  * not enter, or can't be paid for).
  * @param {GameState} state @param {string} pid @param {string} faction
  * @param {string} from @param {string} to @param {number} count @param {Placed} placedAt
+ * @param {boolean} [freed]  the count is already limited to the free tokens (pinning), taken before the board changed
  */
-function move(state, pid, faction, from, to, count, placedAt) {
-  const n = Math.min(count, tokensOf(state, from, faction));
+function move(state, pid, faction, from, to, count, placedAt, freed = false) {
+  const n = Math.min(count, freed ? tokensOf(state, from, faction) : freeOf(state, from, faction, placedAt.unpinned));
   if (n <= 0 || from === to) return 0;
   if (!canEnter(state, to, faction, state.pending?.blocked ?? [])) return 0;
   if ((state.board[from].lock || state.board[to].lock) && regionOf(from) !== regionOf(to)) return 0; // Lock Down the Town (test card, round 19)
@@ -384,7 +402,11 @@ function move(state, pid, faction, from, to, count, placedAt) {
   const free = !!placedAt.led && faction !== placedAt.led;
   // IC1: a move that places sway goes only as far as the player can pay for it.
   const cost = num(state, 'swayPerMove');
-  if (!free && swayRequired(state) && cost > 0 && !placedAt.has(`${to}:${faction}`) && (state.players[pid].standing[faction] ?? 0) < cost) return 0;
+  // Test lever gatherSway (designer, 2026-10-13): a gather (spec: gather) places its sway on each location taken
+  // from, instead of the destination, paid by the faction moved.
+  const spot = state.options.gatherSway === 'origin' && placedAt.gather ? from : to;
+  const key = spot === to ? `${to}:${faction}` : `${from}:${faction}:origin`;
+  if (!free && swayRequired(state) && cost > 0 && !placedAt.has(key) && (state.players[pid].standing[faction] ?? 0) < cost) return 0;
   state.board[from].tokens[faction] -= n;
   if (state.board[from].tokens[faction] === 0) delete state.board[from].tokens[faction];
   state.board[to].tokens[faction] = tokensOf(state, to, faction) + n;
@@ -397,7 +419,7 @@ function move(state, pid, faction, from, to, count, placedAt) {
     state.board[loc].sway[pid] = (state.board[loc].sway[pid] ?? 0) + k;
     for (let i = 0; i < k; i++) state.events.push({ type: 'sway-placed', player: pid, faction, location: loc });
   };
-  place(to, `${to}:${faction}`, num(state, 'swayPerMove'));
+  place(spot, key, num(state, 'swayPerMove'));
   // Tip Off the Sheriff (test card, round 18): each tipper places 1 sway from their supply where the faction lands.
   for (const tip of ('tips' in state && state.tips) || []) {
     if (tip.faction !== faction || state.players[tip.pid].supply <= 0) continue;
@@ -638,7 +660,7 @@ function slideEnd(state, loc, f, dir) {
   return at;
 }
 /** Can two groups trade places (round 11)? Each must be able to stand where the other was. @param {GameState} state @param {{ location: string, faction: string }} a @param {{ location: string, faction: string }} b */
-function canSwap(state, a, b) {
+function canSwap(state, a, b, unpinned = false) {
   if (a.location === b.location || a.faction === b.faction) return false;
   const after = (/** @type {string} */ loc, /** @type {string} */ out, /** @type {string} */ inn) => {
     const place = state.board[loc];
@@ -646,7 +668,8 @@ function canSwap(state, a, b) {
     const left = factionsAt(state, loc).filter((f) => f !== out);
     return left.includes(inn) || left.length < 2;
   };
-  return tokensOf(state, a.location, a.faction) > 0 && tokensOf(state, b.location, b.faction) > 0 && after(a.location, a.faction, b.faction) && after(b.location, b.faction, a.faction);
+  const whole = (/** @type {{ location: string, faction: string }} */ g) => freeOf(state, g.location, g.faction, unpinned) === tokensOf(state, g.location, g.faction); // pinning: a pinned group can't trade places, unless the card is unpinned
+  return tokensOf(state, a.location, a.faction) > 0 && tokensOf(state, b.location, b.faction) > 0 && whole(a) && whole(b) && after(a.location, a.faction, b.faction) && after(b.location, b.faction, a.faction);
 }
 
 /** The ring round a location, clockwise: [from, to] for each neighbour with a next neighbour (round 12). @param {GameState} state @param {string} loc */
@@ -736,7 +759,7 @@ function tokenSpots(state, card, mode) {
     && (mode === 'location' ? suitLocations(card).includes(loc) : tokensOf(state, loc, /** @type {string} */ (sf)) > 0));
 }
 
-/** @typedef {Set<string> & { led: string | null }} Placed  where sway was placed this action, and the led faction (D15) */
+/** @typedef {Set<string> & { led: string | null, unpinned?: boolean, gather?: boolean }} Placed  where sway was placed this action, the led faction (D15), whether the card is unpinned (pinning), and whether it is a gather (gatherSway) */
 
 /**
  * The factions a target would move, before IC1 (sway not required).
@@ -895,7 +918,7 @@ function checkShape(state, pid, card, t) {
       const e = groupTarget(state, card, t);
       if (e) return e;
       const other = t.moves?.[0];
-      return other && canSwap(state, { location: /** @type {string} */ (t.location), faction: /** @type {string} */ (t.faction) }, other) ? null : 'Choose a group elsewhere that can trade places with it.';
+      return other && canSwap(state, { location: /** @type {string} */ (t.location), faction: /** @type {string} */ (t.faction) }, other, unpinnedCard(card)) ? null : 'Choose a group elsewhere that can trade places with it.';
     }
     case 'circle': return placeTarget(state, card, t) ?? (circlers(state, /** @type {string} */ (t.location), movable(state, card, t)).length ? null : 'Nothing round it can circle.');
     case 'surveil': {
@@ -1031,7 +1054,7 @@ function step(state, loc, dir) {
 function act(state, pid, card, t) {
   card = copied(state, card);
   /** @type {Placed} */
-  const placed = Object.assign(new Set(), { led: selectedPays(state) ? ledFaction(state, card, t) : null });
+  const placed = Object.assign(new Set(), { led: selectedPays(state) ? ledFaction(state, card, t) : null, unpinned: unpinnedCard(card), gather: 'gather' in card && !!card.gather });
   const names = (/** @type {string} */ f) => factionById(f).name;
   const lname = (/** @type {string} */ l) => locationById(l).name;
   switch (card.action) {
@@ -1049,8 +1072,9 @@ function act(state, pid, card, t) {
       // or when the player's sway with that faction runs out; leftover
       // tokens stay together at the last location entered.
       const f = /** @type {string} */ (t.faction), start = /** @type {string} */ (t.location);
-      let left = tokensOf(state, start, f);
-      delete state.board[start].tokens[f];
+      let left = freeOf(state, start, f, placed.unpinned);
+      state.board[start].tokens[f] = tokensOf(state, start, f) - left;
+      if (state.board[start].tokens[f] <= 0) delete state.board[start].tokens[f];
       let at = start;
       const visited = /** @type {string[]} */ ([]);
       for (const next of t.path ?? []) {
@@ -1263,19 +1287,19 @@ function act(state, pid, card, t) {
       const a = { location: /** @type {string} */ (t.location), faction: /** @type {string} */ (t.faction) }, b = /** @type {{ location: string, faction: string }} */ (t.moves?.[0]);
       const nb = tokensOf(state, b.location, b.faction);
       delete state.board[b.location].tokens[b.faction];
-      move(state, pid, a.faction, a.location, b.location, tokensOf(state, a.location, a.faction), placed);
+      move(state, pid, a.faction, a.location, b.location, tokensOf(state, a.location, a.faction), placed, true);
       state.board[b.location].tokens[b.faction] = nb;
-      move(state, pid, b.faction, b.location, a.location, nb, placed);
+      move(state, pid, b.faction, b.location, a.location, nb, placed, true);
       logLine(state, `${pid}: ${card.name}: ${names(a.faction)} at ${lname(a.location)} and ${names(b.faction)} at ${lname(b.location)} trade places.`);
       break;
     }
     case 'circle': {
-      const moves = circlers(state, /** @type {string} */ (t.location), movable(state, card, t)).map((g) => ({ ...g, n: tokensOf(state, g.from, g.f) }));
-      for (const g of moves) { delete state.board[g.from].tokens[g.f]; } // all lift at once
+      const moves = circlers(state, /** @type {string} */ (t.location), movable(state, card, t)).map((g) => ({ ...g, n: freeOf(state, g.from, g.f, placed.unpinned) }));
+      for (const g of moves) { state.board[g.from].tokens[g.f] -= g.n; if (state.board[g.from].tokens[g.f] <= 0) delete state.board[g.from].tokens[g.f]; } // all lift at once
       let n = 0;
       for (const g of moves) {
         state.board[g.from].tokens[g.f] = tokensOf(state, g.from, g.f) + g.n;
-        n += move(state, pid, g.f, g.from, g.to, g.n, placed) ? 1 : 0; // a group that can't enter stays
+        n += move(state, pid, g.f, g.from, g.to, g.n, placed, true) ? 1 : 0; // a group that can't enter stays
       }
       logLine(state, `${pid}: ${card.name}: ${n} group${n === 1 ? '' : 's'} circle ${lname(/** @type {string} */ (t.location))}.`);
       break;
@@ -2397,7 +2421,7 @@ function nextShape(state, pid, cardId, t) {
       return t.direction ? { kind: 'done' } : { kind: 'direction', options: dirs(t.location, /** @type {string} */ (t.faction)) };
     }
     case 'swap-far': {
-      const partners = (/** @type {{ location: string, faction: string }} */ a) => groups().filter((b) => canSwap(state, a, b));
+      const partners = (/** @type {{ location: string, faction: string }} */ a) => groups().filter((b) => canSwap(state, a, b, unpinnedCard(cardById(cardId))));
       if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => partners(g).length > 0) };
       return t.moves?.length ? { kind: 'done' } : { kind: 'group', key: 'move', options: partners({ location: t.location, faction: /** @type {string} */ (t.faction) }) };
     }

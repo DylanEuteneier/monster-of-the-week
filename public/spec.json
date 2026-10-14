@@ -243,6 +243,7 @@
       "slot": "strike",
       "sway": 2,
       "action": "lure",
+      "gather": true,
       "text": "The largest group adjacent to the target moves into it, all of it. Target: the bait location.",
       "readings": {
         "location": "a ◐ location, any faction comes.",
@@ -315,6 +316,7 @@
       "slot": "signature",
       "sway": 4,
       "action": "teleport",
+      "unpinned": true,
       "text": "Lift the target group and set it down at any location on the island. Target: the group taken.",
       "readings": {
         "location": "any group at an ↂ location.",
@@ -335,6 +337,7 @@
       "slot": "strike",
       "sway": 2,
       "action": "hack",
+      "unpinned": true,
       "text": "Move the target group to any location on the island that holds one other faction, so it fights there at the round’s end. Target: the group, then where it goes.",
       "readings": {
         "location": "any group at a ⏏ location.",
@@ -381,6 +384,7 @@
       "slot": "strike",
       "sway": 2,
       "action": "draw-adjacent",
+      "gather": true,
       "text": "Every token in adjacent locations is drawn into the target. Target: where the bell rings.",
       "readings": {
         "location": "a ☾ location, any faction comes.",
@@ -916,6 +920,42 @@
       ]
     },
     {
+      "id": "pinning",
+      "label": "Pinning",
+      "description": "Test lever (designer, 2026-10-13: fights made to disappear): at a contested location, each token pins one enemy token, so only the larger group's surplus can leave. Pinning stops movement only: a card marked unpinned does something else (designer: Trade Souls) and takes every token.",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "The first draft."
+        },
+        {
+          "id": "on",
+          "label": "On",
+          "description": "Test lever."
+        }
+      ]
+    },
+    {
+      "id": "gatherSway",
+      "label": "Gather sway where taken from",
+      "description": "Test lever (designer, 2026-10-13): a gather (cards marked gather: Leave Out Fresh Meat, Set the Bait, Lay a Trail, Follow the Lights, Ring the Church Bell) places 1 sway on each location it takes tokens from, instead of the destination, paid from standing with the faction moved.",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "The first draft."
+        },
+        {
+          "id": "origin",
+          "label": "Where taken from",
+          "description": "Test lever."
+        }
+      ]
+    },
+    {
       "id": "responses",
       "label": "Responses",
       "description": "Out of the first draft (designer, 2026-10-07): responses stay candidate ideas. Off: a played action resolves at once and cards' responses are ignored.",
@@ -1275,6 +1315,7 @@
         "slot": "signature",
         "sway": 3,
         "action": "carry-fight",
+        "unpinned": true,
         "text": "Both groups at the target are lifted together into an adjacent location with no tokens; the fight happens there. Target: the contest.",
         "readings": {
           "location": "a contest at an ↂ location.",
@@ -1317,6 +1358,7 @@
         "slot": "signature",
         "sway": 3,
         "action": "pit-fall",
+        "unpinned": true,
         "text": "The target group, 3 tokens or fewer, falls through to any location in its region it can enter. Target: the group, then where it lands. (Revised in round 17.)",
         "readings": {
           "location": "a small group at a ⎈ location.",
@@ -1387,6 +1429,7 @@
         "slot": "signature",
         "sway": 3,
         "action": "swap-far",
+        "unpinned": true,
         "round": 11,
         "text": "The target group trades places with any other group on the island, if each can stand where the other was. Target: the first soul.",
         "readings": {
@@ -1415,6 +1458,7 @@
         "slot": "strike",
         "sway": 3,
         "action": "follow",
+        "gather": true,
         "round": 12,
         "text": "The target group moves to an adjacent location; then a group of another faction next to that location may follow it in. Target: the leader.",
         "readings": {
@@ -1471,6 +1515,7 @@
         "slot": "shift",
         "sway": 3,
         "action": "network",
+        "unpinned": true,
         "round": 13,
         "text": "Move the target group across the network, however far. Target: the group moved. (Round 7 wording, first built in round 13.)",
         "readings": {
@@ -1499,6 +1544,7 @@
         "slot": "strike",
         "sway": 3,
         "action": "leap",
+        "unpinned": true,
         "round": 13,
         "text": "The target group leaps over an adjacent location into the one beyond it, in a straight line. Target: the group. (Round 6 idea, first built in round 13; readings added.)",
         "readings": {
@@ -1574,6 +1620,7 @@
         "slot": "extra",
         "sway": 0,
         "action": "trail",
+        "gather": true,
         "round": 15,
         "text": "Move a whole group into a location where you alone have the most sway, from a location next to it. Target: your location, then the group."
       },
@@ -1594,6 +1641,7 @@
         "slot": "extra",
         "sway": 0,
         "action": "bait",
+        "gather": true,
         "round": 16,
         "text": "Place 2 sway from your supply at the target, then draw a whole group into it from a location next to it. Target: the bait, then the group."
       },

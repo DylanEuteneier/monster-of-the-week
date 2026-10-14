@@ -411,6 +411,30 @@ test('Trade Souls swaps two groups of different factions anywhere (round 11)', (
   assert.ok(checkTarget(s, 'ann', cardById('trade-souls'), { ...t, moves: [{ location: far, faction: f, to: '' }] })); // a group of the same faction: nothing to trade
 });
 
+test('pinning (test lever): in a fight each token pins one enemy token; only the surplus leaves; a card that isn\'t movement (unpinned) is not held', () => {
+  const s = clear(newGame());
+  const [f, g, h] = /** @type {string[]} */ (s.factions);
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const from = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
+  const to = map[from].adjacent[0];
+  s.board[from].tokens = { [f]: 5, [g]: 2 };
+  const horde = { mode: /** @type {const} */ ('location'), location: from, faction: f, to };
+  assert.equal(previewTarget(s, 'ann', 'horde', horde).board[to].tokens[f], 5); // off: the whole group goes
+  const on = { ...s, options: { ...s.options, pinning: 'on' } };
+  const after = previewTarget(on, 'ann', 'horde', horde);
+  assert.deepEqual(after.board[from].tokens, { [f]: 2, [g]: 2 }); // the surplus of 3 leaves; the fight stays
+  assert.equal(after.board[to].tokens[f], 3);
+  assert.equal(previewTarget(on, 'ann', 'beam', { mode: 'location', location: from, faction: f, to }).board[to].tokens[f], 5); // Beam Them Up isn't movement (unpinned)
+  const demonic = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'demonic')?.id);
+  const far = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals')?.id);
+  const t = { mode: /** @type {const} */ ('location'), location: demonic, faction: f, moves: [{ location: far, faction: g, to: '' }] };
+  on.board = structuredClone(s.board);
+  on.board[demonic].tokens = { [f]: 2 };
+  on.board[far].tokens = { [g]: 5, [h]: 1 };
+  assert.equal(checkTarget(on, 'ann', cardById('trade-souls'), t), null); // trading souls isn't movement (unpinned): the pin doesn't hold it
+  assert.deepEqual(previewTarget(on, 'ann', 'trade-souls', t).board[demonic].tokens, { [g]: 5 });
+});
+
 test('Lay Them to Rest: the token\'s owner takes the smaller pile; the rest go back to their supplies (round 17 revision)', () => {
   const s = clear(newGame());
   const [f, g] = /** @type {string[]} */ (s.factions);
@@ -596,6 +620,21 @@ test('IC1: a move goes only as far as the player can pay for the sway it places'
   assert.ok(checkTarget(s, 'ann', cardById('beam'), beam));
   const off = { ...s, options: { ...s.options, swayRequired: 'off' } };
   assert.equal(checkTarget(off, 'ann', cardById('beam'), beam), null);
+});
+
+test('gatherSway (test lever): a gather places its sway on each location taken from, paid by the faction moved', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const bell = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead' && map[l.id].adjacent.length >= 2)?.id);
+  const [x, y] = map[bell].adjacent;
+  s.board[x].tokens = { [A]: 2 };
+  s.board[y].tokens = { [A]: 3 };
+  s.players.ann.standing = { [A]: 5, [B]: 0, [C]: 0 };
+  const t = { mode: /** @type {const} */ ('location'), location: bell };
+  const off = previewTarget(s, 'ann', 'bell', t);
+  assert.deepEqual([off.board[bell].sway.ann, off.board[x].sway.ann, off.board[y].sway.ann, off.players.ann.standing[A]], [1, undefined, undefined, 4]);
+  const on = previewTarget({ ...s, options: { ...s.options, gatherSway: 'origin' } }, 'ann', 'bell', t);
+  assert.deepEqual([on.board[bell].tokens[A], on.board[bell].sway.ann, on.board[x].sway.ann, on.board[y].sway.ann, on.players.ann.standing[A]], [5, undefined, 1, 1, 3]);
 });
 
 test('D15: each faction moved pays its own (whoPays=each, first draft); only the selected faction pays, the others free (whoPays=selected)', () => {
