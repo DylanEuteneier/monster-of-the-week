@@ -26,7 +26,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
   - *Designer (2026-10-15):* strikes that draw focus should, in general, not give players an easy way to pile sway into a single location.
   - *Designer (2026-10-15), where a strike's sway goes:* where the groups were drawn from, and card by card (each strike says where). At most 1 at the destination is fine, but never a whole pile.
   - *Designer (2026-10-15):* a strike should feel like a climax: whole groups colliding is fine.
-  - *◐ Nocturnal strike, working draft: Invite Them In* (designer: the best so far). The target is an empty location; two groups of different factions, each alone at a location next to it, come in whole. 1 sway at each location affected (designer): the two locations they left and the new fight. Open: who pays the 1 at the fight; the invitation's range (next door, or further); whether the target is empty or holds a lone host; principle 14's faction reading.
+  - *◐ Nocturnal strike, working draft: Invite Them In* (designer: the best so far). The target is an empty location; two groups of different factions, each alone at a location next to it, come in whole. 1 sway at each location affected (designer): the two locations they left and the new fight, 3 in all, paid from standing with the factions moved (each pays at the location it left; the 1 at the fight comes from either, the player's choice). Open: the invitation's range (next door, or further); whether the target is empty or holds a lone host; principle 14's faction reading.
 - *Shifts:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
 - *Signatures:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
 - *Unsuited:* A · B · C · D · two unmarked (not started)
