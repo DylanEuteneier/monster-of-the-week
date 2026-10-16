@@ -24,6 +24,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
   - *Designer (2026-10-15):* no size line for a strike's contest for now: any size; refined later.
   - *Designer (2026-10-15):* a strike only ever draws on groups that are not otherwise engaged: groups not already in a contest. So a strike never takes tokens out of a fight, and never makes one disappear.
   - *Designer (2026-10-15):* strikes that draw focus should, in general, not give players an easy way to pile sway into a single location.
+  - *Designer (2026-10-15), where a strike's sway goes:* where the groups were drawn from, and card by card (each strike says where). At most 1 at the destination is fine, but never a whole pile.
 - *Shifts:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
 - *Signatures:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
 - *Unsuited:* A · B · C · D · two unmarked (not started)
