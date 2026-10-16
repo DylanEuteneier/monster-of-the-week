@@ -411,6 +411,16 @@ test('Trade Souls swaps two groups of different factions anywhere (round 11)', (
   assert.ok(checkTarget(s, 'ann', cardById('trade-souls'), { ...t, moves: [{ location: far, faction: f, to: '' }] })); // a group of the same faction: nothing to trade
 });
 
+test('a pulled card (spec: pulled) stays built but is never dealt in the mixed playtesting deck (designer, 2026-10-15)', () => {
+  const gone = [...spec.cards, ...spec.testCards.cards].filter((c) => 'pulled' in c && c.pulled).map((c) => c.id);
+  assert.ok(gone.includes('call-truce') && gone.includes('trade-souls'));
+  for (let seed = 1; seed <= 40; seed++) {
+    const deck = createGame({ seed, players: PLAYERS, options: { deck: 'mixed' } }).deck ?? [];
+    assert.equal(deck.filter((id) => gone.includes(id)).length, 0);
+  }
+  assert.ok(cardById('trade-souls') && cardById('call-truce')); // still built
+});
+
 test('pinning (test lever): in a fight each token pins one enemy token; only the surplus leaves; a card that isn\'t movement (unpinned) is not held', () => {
   const s = clear(newGame());
   const [f, g, h] = /** @type {string[]} */ (s.factions);

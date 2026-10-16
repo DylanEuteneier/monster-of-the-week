@@ -1429,6 +1429,7 @@
         "slot": "signature",
         "sway": 3,
         "action": "swap-far",
+        "pulled": true,
         "unpinned": true,
         "round": 11,
         "text": "The target group trades places with any other group on the island, if each can stand where the other was. Target: the first soul.",
@@ -1600,6 +1601,7 @@
         "slot": "extra",
         "sway": 0,
         "action": "truce",
+        "pulled": true,
         "round": 15,
         "text": "There is no fight at the target this round; both groups stay. Target: any location."
       },

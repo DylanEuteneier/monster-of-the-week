@@ -449,6 +449,8 @@ export function resolveOptions(raw = {}) {
 
 /** An unsuited card with an action and no mark: it can fill an open unsuited slot. @param {Card} c */
 const unmarkedExtra = (c) => !c.suit && !('marked' in c && c.marked) && !!c.action;
+/** A card pulled from the playtesting deck (spec: pulled): still built, never dealt (designer, 2026-10-15). Not a rule. @param {Card} c */
+export const pulled = (c) => 'pulled' in c && !!c.pulled;
 
 /**
  * @param {{ seed: number, players: string[], options?: Partial<Options> }} input
@@ -519,7 +521,7 @@ export function createGame(input) {
   /** @type {string[]} */
   let deck = spec.cards.map((c) => c.id);
   if (options.deck === 'mixed') {
-    const pool = /** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action);
+    const pool = /** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action && !pulled(c));
     deck = [];
     for (const arch of spec.archetypes) {
       for (const slot of ['strike', 'shift', 'signature']) {
@@ -534,7 +536,7 @@ export function createGame(input) {
   // Six unsuited slots (PS1). While some have no card yet (prototype), they
   // are filled at random from the unmarked unsuited cards, so the pool stays 21.
   const unsuited = deck.filter((id) => !cardById(id).suit).length;
-  const fill = shuffle(/** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => unmarkedExtra(c) && !deck.includes(c.id)).map((c) => c.id), rngState);
+  const fill = shuffle(/** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => unmarkedExtra(c) && !pulled(c) && !deck.includes(c.id)).map((c) => c.id), rngState);
   rngState = fill.rngState;
   deck.push(...fill.items.slice(0, Math.max(0, spec.constants.unsuitedSlots - unsuited)));
   // Printed sway (D12): each suit prints 2, 3 and 4 (9 in all), weighted

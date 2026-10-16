@@ -61,7 +61,7 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, listTargets, clone, validate } from '../public/engine.js';
+import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, listTargets, clone, validate, pulled } from '../public/engine.js';
 import { PROFILES, botMove, fast, features } from '../public/bots.js';
 import { seededRng, chance, measureState, play, MAX_MOVES, upgradeRecord } from './lib.js';
 
@@ -399,7 +399,7 @@ if (isMainThread) main();
 else {
   const d = workerData;
   const players = d.list.map((/** @type {string} */ _, /** @type {number} */ i) => `P${i + 1}`);
-  const probeCards = d.probe.cards ?? [...spec.cards, ...spec.testCards.cards].filter((c) => c.action).map((c) => c.id);
+  const probeCards = d.probe.cards ?? [...spec.cards, ...spec.testCards.cards].filter((c) => c.action && !pulled(/** @type {any} */ (c))).map((c) => c.id);
   for (const g of d.games) {
     // Rotate: in game g, seat i plays profile (i + g) mod n.
     /** @type {Record<string, string>} */
