@@ -750,6 +750,28 @@ test('round 20 Sentients: Hack the Network jumps to a lone rival anywhere; Link 
   assert.equal(fought.board[NEUTRAL].tokens[rival], undefined);
 });
 
+test('Link the Swarm: the location reading links any faction at a Sentients location; the faction reading links the Sentients (designer, 2026-10-15)', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const sent = /** @type {string} */ (factionOfArchetype(s, 'sentients'));
+  const [f, g] = s.factions.filter((x) => x !== sent);
+  const hub = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'sentients')?.id);
+  const [x] = map[hub].adjacent;
+  s.board[hub].tokens = { [f]: 2, [g]: 3 };
+  s.board[x].tokens = { [f]: 2 };
+  const c = nextChoice(s, 'ann', 'link-swarm', { mode: 'location', location: hub });
+  assert.ok(c.kind === 'faction' && c.options.includes(f) && c.options.includes(g));
+  assert.ok(checkTarget(s, 'ann', cardById('link-swarm'), { mode: 'location', location: hub })); // a faction must be chosen
+  const t = { mode: /** @type {const} */ ('location'), location: hub, faction: f };
+  assert.equal(checkTarget(s, 'ann', cardById('link-swarm'), t), null);
+  const linked = previewTarget(s, 'ann', 'link-swarm', t);
+  assert.equal(linked.board[hub].swarm, f);
+  const fought = resolveFight(/** @type {GameState} */ ({ ...s, board: linked.board }), hub);
+  assert.equal(fought.board[hub].tokens[g], undefined); // 2 here and 2 next door beat 3
+  s.board[hub].tokens = { [sent]: 1 };
+  assert.equal(previewTarget(s, 'ann', 'link-swarm', { mode: 'faction', location: hub }).board[hub].swarm, sent);
+});
+
 test('round 20 Sentients: Call Home pulls 1 token from every location holding the faction; Install a Backdoor counts the Sentients there as your sway', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);

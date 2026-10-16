@@ -59,7 +59,7 @@ export { spec };
  * @property {string[]} [double]   Split Up, Gang! (test card, round 18): players whose sway here counts twice at this round's fight
  * @property {boolean} [wake]      Wake the Dead (test card, round 18): this round's fight can't scorch, and the loser's casualties rise as Undead
  * @property {string[]} [backdoor] Install a Backdoor (test card, round 20): players whose sway here counts 1 more per Sentient token at this round's fight
- * @property {boolean} [swarm]     Link the Swarm (test card, round 20): at this round's fight, the Sentients here count their tokens next door too
+ * @property {string | boolean} [swarm]  Link the Swarm (test card, round 20): at this round's fight, this faction here counts its tokens next door too (true, from older games: the Sentients)
  * @property {boolean} [lock]      Lock Down the Town (test card, round 19): this round, no group moves into or out of this location's region
  */
 
@@ -172,7 +172,7 @@ export { spec };
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, picked: boolean }>} players
  * @property {{ faction: string, leaders: string[], next: number, due: Record<string, number> } | null} growing
  * @property {string[]} factions
- * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, token: { owner: string, kind?: string, real?: boolean } | null, scorched: boolean, truce?: boolean, double?: string[], wake?: boolean, swarm?: boolean, backdoor?: string[], lock?: boolean }>} board
+ * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, token: { owner: string, kind?: string, real?: boolean } | null, scorched: boolean, truce?: boolean, double?: string[], wake?: boolean, swarm?: string | boolean, backdoor?: string[], lock?: boolean }>} board
  * @property {Record<string, number>} supply
  * @property {string[]} deck  this game's cards
  * @property {Record<string, number>} printed  this game's printed sway by card
@@ -1020,7 +1020,12 @@ function checkShape(state, pid, card, t) {
     }
     case 'tipoff': case 'bounty': return t.faction && state.factions.includes(t.faction) ? null : 'Choose a faction.';
     case 'lockdown': return t.location && state.board[t.location] && !state.board[t.location].lock ? null : 'Choose a location in a region not already locked down.';
-    case 'wake-dead': case 'swarm': case 'backdoor': return (t.mode === 'location' || t.mode === 'faction') && t.location && holdingSpots(state, card, t.mode).includes(t.location) ? null : 'Choose the target location.';
+    case 'swarm': {
+      // Location reading: any faction at a ⏏ location (designer, 2026-10-15); faction reading: the Sentients, where they are.
+      if ((t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode).includes(t.location)) return 'Choose the target location.';
+      return t.mode === 'faction' || (t.faction && tokensOf(state, t.location, t.faction) > 0) ? null : 'Choose a faction there.';
+    }
+    case 'wake-dead': case 'backdoor': return (t.mode === 'location' || t.mode === 'faction') && t.location && holdingSpots(state, card, t.mode).includes(t.location) ? null : 'Choose the target location.';
     case 'hack': {
       const e = groupTarget(state, card, t);
       if (e) return e;
@@ -1469,7 +1474,7 @@ function act(state, pid, card, t) {
       break;
     }
     case 'swarm': {
-      state.board[/** @type {string} */ (t.location)].swarm = true;
+      state.board[/** @type {string} */ (t.location)].swarm = t.mode === 'location' ? /** @type {string} */ (t.faction) : /** @type {string} */ (factionOfArchetype(state, 'sentients'));
       logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}.`);
       break;
     }
@@ -1861,8 +1866,8 @@ function fight(state, loc) {
   const effect = token?.card ?? null;
   if (token) logLine(state, `  ${name}: ${token.owner}'s token flips: ${effect ? cardById(effect).name : 'a bluff'}.`);
   const na = place.tokens[a], nb = place.tokens[b];
-  // Link the Swarm (test card, round 20): the Sentients count their tokens next door too, for who wins.
-  const swarm = place.swarm ? factionOfArchetype(state, 'sentients') : null;
+  // Link the Swarm (test card, round 20): the linked faction counts its tokens next door too, for who wins.
+  const swarm = place.swarm === true ? factionOfArchetype(state, 'sentients') : place.swarm || null;
   const next = (/** @type {string} */ f) => (f === swarm ? MAP[loc].adjacent.reduce((n, l) => n + tokensOf(state, l, f), 0) : 0);
   const sa = na + next(a), sb = nb + next(b);
   // Install a Backdoor (test card, round 20): counted on the Sentients here as the fight starts.
@@ -2523,7 +2528,10 @@ function nextShape(state, pid, cardId, t) {
       return t.faction ? { kind: 'done' } : { kind: 'faction', options: state.factions.slice() };
     case 'lockdown':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].lock) };
-    case 'wake-dead': case 'swarm': case 'backdoor':
+    case 'swarm':
+      if (!t.location) return { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((l) => mode === 'faction' || factionsAt(state, l).length > 0) };
+      return mode === 'faction' || t.faction ? { kind: 'done' } : { kind: 'faction', key: 'faction', options: factionsAt(state, t.location) };
+    case 'wake-dead': case 'backdoor':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode) };
     case 'hack':
       if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneRivals(state, g.faction, LOCATION_IDS).some((l) => l !== g.location)) };
@@ -2589,7 +2597,8 @@ export function describeTarget(cardId, t) {
     case 'pit-fall': return `${F(t.faction)} at ${L(t.location)}${t.to ? ` to ${L(t.to)}` : ''}${how}`;
     case 'surveil-supply': case 'raise-stakes': return `at ${L(t.location)}${how}`;
     case 'split-up': return `at ${(t.from ?? []).map(L).join(', ')}`;
-    case 'wake-dead': case 'swarm': return `at ${L(t.location)}${how}`;
+    case 'wake-dead': return `at ${L(t.location)}${how}`;
+    case 'swarm': return `${t.mode === 'location' && t.faction ? `${F(t.faction)} ` : ''}at ${L(t.location)}${how}`;
     case 'hack': return `${F(t.faction)} at ${L(t.location)} to ${L(t.to)}${how}`;
     case 'tipoff': case 'bounty': return `on ${F(t.faction)}`;
     case 'lockdown': return `the region of ${L(t.location)}`;
@@ -2654,7 +2663,7 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: true } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
+      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: place.swarm } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),

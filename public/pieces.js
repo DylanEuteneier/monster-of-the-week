@@ -118,7 +118,7 @@ export const EFFECTS = /** @type {const} */ ({
   double: 'Split Up, Gang!: some players\' sway here counts twice at this fight',
   wake: 'Wake the Dead: this fight can\'t scorch, and the loser\'s casualties rise as Undead',
   backdoor: 'Install a Backdoor: some players\' sway here counts 1 more per Sentient token at this fight',
-  swarm: 'Link the Swarm: the Sentients here count their tokens next door too at this fight',
+  swarm: 'Link the Swarm: a faction here counts its tokens next door too at this fight',
   lock: 'Lock Down the Town: no group moves into or out of this region this round',
 });
 

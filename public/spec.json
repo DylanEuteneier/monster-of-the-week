@@ -1724,10 +1724,10 @@
         "sway": 3,
         "action": "swarm",
         "round": 20,
-        "text": "At this round’s fight at the target, the Sentients count their tokens in every location next to it too, for who wins (casualties and trophies as usual). Target: the hub.",
+        "text": "At this round’s fight at the target, the target faction counts its tokens in every location next to it too, for who wins (casualties and trophies as usual). Target: the hub, then the faction linked.",
         "readings": {
-          "location": "a ⏏ location.",
-          "faction": "a location holding the Sentients."
+          "location": "any faction at a ⏏ location.",
+          "faction": "the Sentients, at a location holding them."
         }
       },
       {
