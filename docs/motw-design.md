@@ -22,6 +22,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 - *Strikes:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
   - *Strike brief:* a move that creates a contest at or from a suit location (3.7); targets by principle 14; written from the slayers' side (principle 11); unique in the deck; doesn't make a big fight in a single move; sway placed from standing with the faction moved (D15).
   - *Designer (2026-10-15):* a strike only ever draws on groups that are not otherwise engaged: groups not already in a contest. So a strike never takes tokens out of a fight, and never makes one disappear.
+  - *Designer (2026-10-15):* strikes that draw focus should, in general, not give players an easy way to pile sway into a single location.
 - *Shifts:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
 - *Signatures:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
 - *Unsuited:* A · B · C · D · two unmarked (not started)
