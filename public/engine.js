@@ -146,6 +146,7 @@ export { spec };
  * @property {boolean} [realOnly]  only one location was free: place the real token there (else the bluff)
  * @property {{ location: string, faction: string, to: string }[]} [moves]
  * @property {string} [lead]       the faction the player leads, on cards that move several factions (D15)
+ * @property {string} [payer]      Invite Them In: the invited faction that pays the 1 sway at the new fight
  */
 
 /**
@@ -636,6 +637,21 @@ function placeTarget(state, card, t) {
 /** The factions a destination card may move: any (location mode) or only the suit's (faction mode). @param {GameState} state @param {Card} card @param {Target} t */
 const movable = (state, card, t) => (card.suit && t.mode === 'faction' ? [/** @type {string} */ (suitFaction(state, card))] : state.factions.slice());
 
+/** The one faction at a location, if exactly one is there (a group not otherwise engaged), else null. @param {GameState} state @param {string} loc */
+const loneAt = (state, loc) => { const here = factionsAt(state, loc); return !state.board[loc].scorched && here.length === 1 ? here[0] : null; };
+
+/**
+ * Invite Them In (designer, 2026-10-15): the groups that may be invited into `to`. Location reading: lone groups next
+ * door, any faction, into an empty location. Faction reading: a lone Nocturnal group next door, into a location held
+ * by a lone group of another faction (the host).
+ * @param {GameState} state @param {Card} card @param {'location' | 'faction'} mode @param {string} to
+ */
+function guestsOf(state, card, mode, to) {
+  const sf = suitFaction(state, card);
+  return MAP[to].adjacent.map((l) => ({ location: l, faction: /** @type {string} */ (loneAt(state, l)) }))
+    .filter((g) => g.faction && (mode === 'location' || g.faction === sf) && g.faction !== loneAt(state, to));
+}
+
 /** Locations under the two-target rule: a suit location, or one holding the suit's faction. @param {GameState} state @param {Card} card @param {'location' | 'faction'} mode */
 function holdingSpots(state, card, mode) {
   if (!card.suit) return LOCATION_IDS.filter((loc) => !state.board[loc].scorched); // unsuited: any location
@@ -816,13 +832,17 @@ function checkTargetNow(state, pid, card, t) {
   const cost = num(state, 'swayPerMove');
   const led = selectedPays(state) ? ledFaction(state, copied(state, card), t) : null;
   if (led && cost > 0 && (state.players[pid].standing[led] ?? 0) < cost && movingFactions(state, pid, card, t).includes(led)) return 'You need standing with the faction you lead to pay for the sway this move places (IC1).';
-  // IC1: the card must be payable for at least one of its moves.
-  const moved = (/** @type {Options} */ options) => {
+  const tokensAfter = (/** @type {Options} */ options) => {
     const copy = /** @type {GameState} */ (/** @type {unknown} */ (clone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options, lastPlayed: state.lastPlayed ?? null, leftOut: state.leftOut ?? [], tips: state.tips ?? [], events: [], log: [] })));
     act(copy, pid, card, t);
-    return LOCATION_IDS.some((l) => JSON.stringify(copy.board[l].tokens) !== JSON.stringify(state.board[l].tokens));
+    return JSON.stringify(LOCATION_IDS.map((l) => copy.board[l].tokens));
   };
-  if (!moved(state.options) && moved({ ...state.options, swayRequired: 'off' })) return 'You need standing with the faction to pay for the sway this move places (IC1).';
+  const paid = tokensAfter(state.options), free = tokensAfter({ ...state.options, swayRequired: 'off' });
+  // All or nothing (designer, 2026-10-15; variant payInFull): every move the card makes must be paid for.
+  if ((state.options.payInFull ?? 'on') === 'on') return paid === free ? null : 'You need the sway to pay for all of it (all or nothing).';
+  // IC1 as first drafted: the card must be payable for at least one of its moves.
+  const before = JSON.stringify(LOCATION_IDS.map((l) => state.board[l].tokens));
+  if (paid === before && free !== before) return 'You need standing with the faction to pay for the sway this move places (IC1).';
   return null;
 }
 
@@ -833,6 +853,21 @@ function checkShape(state, pid, card, t) {
   if (!t) return null; // a card with no legal target may be played for no effect (partial actions)
   switch (card.action) {
     case 'lure': return placeTarget(state, card, t);
+    case 'invite': {
+      // Invite Them In: all of it, or it can't be played (designer).
+      const to = t.location, sf = /** @type {string} */ (suitFaction(state, card));
+      if (!to || !state.board[to] || state.board[to].scorched) return 'Choose a location on the board.';
+      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      const host = loneAt(state, to);
+      if (t.mode === 'location' ? !suitLocations(card).includes(to) || factionsAt(state, to).length : !host || host === sf) return t.mode === 'location' ? 'Choose an empty ◐ location.' : 'Choose a location held by a lone group of another faction.';
+      const guests = t.moves ?? [], ok = guestsOf(state, card, t.mode, to);
+      if (guests.length !== (t.mode === 'location' ? 2 : 1) || guests.some((g) => !ok.some((o) => o.location === g.location && o.faction === g.faction))) return 'Choose the groups to invite.';
+      if (guests.length === 2 && (guests[0].faction === guests[1].faction || guests[0].location === guests[1].location)) return 'Invite two groups of different factions.';
+      const payer = t.mode === 'faction' ? sf : t.payer;
+      if (!payer || !guests.some((g) => g.faction === payer)) return 'Choose which invited faction pays at the fight.';
+      if (swayRequired(state) && guests.some((g) => (state.players[pid].standing[g.faction] ?? 0) < 1 + (g.faction === payer ? 1 : 0))) return 'You need the sway to pay at every location.';
+      return null;
+    }
     case 'sow': return groupTarget(state, card, t) ?? (t.path === undefined || Array.isArray(t.path) ? null : 'Choose a path.');
     case 'token': {
       if (card.suit && t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
@@ -1078,6 +1113,25 @@ function act(state, pid, card, t) {
         .filter((g) => g.n > 0 && canEnter(state, to, g.f, state.pending?.blocked)).sort((a, b) => b.n - a.n);
       const pick = (t.faction && t.from?.[0] ? groups.find((g) => g.f === t.faction && g.from === t.from?.[0] && g.n === groups[0].n) : null) ?? groups[0];
       if (pick) logLine(state, `${pid}: ${card.name} draws ${move(state, pid, pick.f, pick.from, to, pick.n, placed)} ${names(pick.f)} into ${lname(to)}.`);
+      break;
+    }
+    case 'invite': {
+      // Each invited group comes in whole; 1 sway where each left and 1 at the new fight, from the factions moved.
+      const to = /** @type {string} */ (t.location);
+      const payer = t.mode === 'faction' ? /** @type {string} */ (suitFaction(state, card)) : /** @type {string} */ (t.payer);
+      const pay = (/** @type {string} */ f, /** @type {string} */ loc) => {
+        const k = Math.min(1, state.players[pid].standing[f] ?? 0);
+        if (k <= 0) return;
+        state.players[pid].standing[f] -= k;
+        state.board[loc].sway[pid] = (state.board[loc].sway[pid] ?? 0) + k;
+        state.events.push({ type: 'sway-placed', player: pid, faction: f, location: loc });
+      };
+      for (const g of t.moves ?? []) {
+        placed.add(`${to}:${g.faction}`); // its sway goes where it left, not to the fight
+        if (move(state, pid, g.faction, g.location, to, tokensOf(state, g.location, g.faction), placed)) pay(g.faction, g.location);
+      }
+      pay(payer, to);
+      logLine(state, `${pid}: ${card.name}: ${(t.moves ?? []).map((g) => names(g.faction)).join(' and ')} come into ${lname(to)}.`);
       break;
     }
     case 'sow': {
@@ -1541,6 +1595,7 @@ export function pendingDestinations(state, pend) {
   if (!t) return [];
   const card = copied(state, cardById(pend.card));
   switch (card.action) {
+    case 'invite': return t.location ? [t.location] : [];
     case 'lure': case 'broadcast': case 'gather-region': case 'gather-neighbours': case 'call-home': case 'draw-adjacent': return t.location ? [t.location] : [];
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': case 'hack': return t.to ? [t.to] : [];
     case 'sow': return t.path ?? [];
@@ -2330,7 +2385,7 @@ const finishWalk = (t) => t;
  * time, and the server still checks the finished target (checkTarget).
  * @typedef {{ kind: 'mode' } | { kind: 'location', key: 'location' | 'to' | 'bluff' | 'path' | 'from', options: string[], optional?: boolean, left?: number }
  *   | { kind: 'group', key: 'group' | 'move' | 'lure', options: { location: string, faction: string }[], optional?: boolean }
- *   | { kind: 'faction', key?: 'faction' | 'to' | 'lead', options: string[] } | { kind: 'direction', options: string[] }
+ *   | { kind: 'faction', key?: 'faction' | 'to' | 'lead' | 'payer', options: string[] } | { kind: 'direction', options: string[] }
  *   | { kind: 'split', options: string[], left: number } | { kind: 'done' }} Choice
  * @param {GameState} state @param {string} pid @param {string} cardId @param {Target} t
  * @returns {Choice}
@@ -2360,6 +2415,20 @@ function nextShape(state, pid, cardId, t) {
   /** The factions this reading may move: any (location target) or only the suit's (faction target). */
   const movers = card.suit && mode === 'faction' ? [/** @type {string} */ (sf)] : state.factions.slice();
   switch (card.action) {
+    case 'invite': {
+      const need = mode === 'location' ? 2 : 1;
+      const pays = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
+      // Guests that can come, given those already chosen: other locations, other factions, and payable.
+      const open = (/** @type {string} */ to, /** @type {{ location: string, faction: string }[]} */ chosen) => guestsOf(state, card, mode, to)
+        .filter((g) => !chosen.some((c) => c.location === g.location || c.faction === g.faction) && pays(g.faction, mode === 'faction' ? 2 : 1));
+      const fits = (/** @type {string} */ to) => (mode === 'location' ? suitLocations(card).includes(to) && !state.board[to].scorched && factionsAt(state, to).length === 0
+        : !!loneAt(state, to) && loneAt(state, to) !== sf) && (need === 1 ? open(to, []).length > 0 : open(to, []).some((g) => open(to, [g]).length > 0 && (pays(g.faction, 2) || open(to, [g]).some((h) => pays(h.faction, 2)))));
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(fits) };
+      const chosen = (t.moves ?? []).map((g) => ({ location: g.location, faction: g.faction }));
+      if (chosen.length < need) return { kind: 'group', key: 'move', options: open(t.location, chosen) };
+      if (mode === 'location' && !t.payer) return { kind: 'faction', key: 'payer', options: chosen.map((g) => g.faction).filter((f) => pays(f, 2)) };
+      return { kind: 'done' };
+    }
     case 'lure': case 'draw-adjacent': {
       // Only where it would do something: a group of a faction that may come is adjacent and can enter.
       const comes = (/** @type {string} */ loc) => MAP[loc].adjacent.some((from) => movers.some((f) => tokensOf(state, from, f) > 0 && canEnter(state, loc, f)));
@@ -2605,6 +2674,7 @@ export function describeTarget(cardId, t) {
     case 'gather-region': case 'gather-neighbours': case 'call-home': return `${F(t.faction)} into ${L(t.location)}${how}`;
     case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
+    case 'invite': return `${(t.moves ?? []).map((g) => `${F(g.faction)} from ${L(g.location)}`).join(' and ')} into ${L(t.location)}${t.payer ? `, ${F(t.payer)} paying at the fight` : ''}`;
     case 'sow': return `${F(t.faction)} from ${L(t.location)} via ${(t.path ?? []).map(L).join(', ')}${how}`;
     case 'token': return `token at ${L(t.location)}${t.bluff ? `, bluff at ${L(t.bluff)}` : ''}${how}`;
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': return `${F(t.faction)} at ${L(t.location)} to ${L(t.to)}${how}`;

@@ -958,6 +958,24 @@
       ]
     },
     {
+      "id": "payInFull",
+      "label": "Pay in full",
+      "description": "Designer, 2026-10-15: every card is all or nothing on the sway it places. A card whose action can't be paid for in full can't be played for its action (it can still be played for sway).",
+      "default": "on",
+      "choices": [
+        {
+          "id": "on",
+          "label": "All or nothing",
+          "description": "The current rule."
+        },
+        {
+          "id": "off",
+          "label": "As far as you can pay",
+          "description": "IC1 as first drafted: a move goes only as far as the player can pay."
+        }
+      ]
+    },
+    {
       "id": "responses",
       "label": "Responses",
       "description": "Out of the first draft (designer, 2026-10-07): responses stay candidate ideas. Off: a played action resolves at once and cards' responses are ignored.",
@@ -1340,6 +1358,20 @@
         "faction": "a Demon group anywhere."
       }
     },
+        {
+          "id": "invite-in",
+          "name": "Invite Them In",
+          "suit": "nocturnals",
+          "slot": "strike",
+          "sway": 2,
+          "action": "invite",
+          "text": "Two groups of different factions, each alone next door, are invited into an empty location and come in whole. Place 1 sway where each left and 1 at the new fight, from your standing with the factions moved. All of it, or it can’t be played. Target: where they’re invited.",
+          "readings": {
+            "location": "an empty ◐ location; any two lone groups next to it.",
+            "faction": "a location held by a lone group of another faction, next to a lone Nocturnal group: only the Nocturnals come (1 sway where they left, 1 at the fight)."
+          },
+          "round": 21
+        },
         {
         "id": "drones",
         "name": "Reprogram the Drones",

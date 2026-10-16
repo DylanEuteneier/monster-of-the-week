@@ -433,6 +433,54 @@ test('a pulled card (spec: pulled) stays built but is never dealt in the mixed p
   assert.ok(cardById('trade-souls') && cardById('call-truce')); // still built
 });
 
+test('Invite Them In: two lone groups next door come whole into an empty ◐ location; 1 sway where each left and 1 at the fight (designer, 2026-10-15)', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const noct = /** @type {string} */ (factionOfArchetype(s, 'nocturnals'));
+  const [f, g, h] = s.factions.filter((x) => x !== noct);
+  const to = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals' && map[l.id].adjacent.length >= 3)?.id);
+  const [a, b, c] = map[to].adjacent;
+  s.board[a].tokens = { [f]: 3 };
+  s.board[b].tokens = { [g]: 4 };
+  s.board[c].tokens = { [f]: 2, [h]: 2 }; // engaged: never invited
+  s.players.ann.standing = Object.fromEntries(s.factions.map((x) => [x, 0]));
+  s.players.ann.standing[f] = 2; s.players.ann.standing[g] = 1;
+  const offered = nextChoice(s, 'ann', 'invite-in', { mode: 'location', location: to });
+  assert.ok(offered.kind === 'group' && offered.options.every((o) => o.location !== c));
+  const t = { mode: /** @type {const} */ ('location'), location: to, moves: [{ location: a, faction: f, to: '' }, { location: b, faction: g, to: '' }], payer: f };
+  assert.equal(checkTarget(s, 'ann', cardById('invite-in'), t), null);
+  const after = previewTarget(s, 'ann', 'invite-in', t);
+  assert.deepEqual(after.board[to].tokens, { [f]: 3, [g]: 4 });
+  assert.deepEqual([after.board[a].sway.ann, after.board[b].sway.ann, after.board[to].sway.ann, after.players.ann.standing[f], after.players.ann.standing[g]], [1, 1, 1, 0, 0]);
+  assert.ok(checkTarget(s, 'ann', cardById('invite-in'), { ...t, payer: g })); // g can't pay twice: all or nothing
+  // Faction reading: a lone Nocturnal group next door comes into a lone host's location (2 Nocturnal sway).
+  const q = clear(newGame());
+  q.board[to].tokens = { [f]: 2 };
+  q.board[a].tokens = { [noct]: 3 };
+  q.players.ann.standing[noct] = 2;
+  const ft = { mode: /** @type {const} */ ('faction'), location: to, moves: [{ location: a, faction: noct, to: '' }] };
+  assert.equal(checkTarget(q, 'ann', cardById('invite-in'), ft), null);
+  const fa = previewTarget(q, 'ann', 'invite-in', ft);
+  assert.deepEqual([fa.board[to].tokens[noct], fa.board[a].sway.ann, fa.board[to].sway.ann], [3, 1, 1]);
+  q.players.ann.standing[noct] = 1;
+  assert.ok(checkTarget(q, 'ann', cardById('invite-in'), ft));
+});
+
+test('payInFull (designer, 2026-10-15): a card that can\'t pay for every move can\'t be played for its action; off, it goes as far as it can pay (IC1)', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const bell = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead' && map[l.id].adjacent.length >= 2)?.id);
+  const [x, y] = map[bell].adjacent;
+  s.board[x].tokens = { [A]: 2 };
+  s.board[y].tokens = { [B]: 4 };
+  s.players.ann.standing = { [A]: 1, [B]: 0, [C]: 0 };
+  const t = { mode: /** @type {const} */ ('location'), location: bell };
+  assert.ok(checkTarget(s, 'ann', cardById('bell'), t)); // B can't be paid for
+  assert.equal(checkTarget({ ...s, options: { ...s.options, payInFull: 'off' } }, 'ann', cardById('bell'), t), null);
+  s.players.ann.standing[B] = 1;
+  assert.equal(checkTarget(s, 'ann', cardById('bell'), t), null);
+});
+
 test('pinning (test lever): in a fight each token pins one enemy token; only the surplus leaves; a card that isn\'t movement (unpinned) is not held', () => {
   const s = clear(newGame());
   const [f, g, h] = /** @type {string[]} */ (s.factions);

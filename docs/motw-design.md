@@ -19,14 +19,14 @@ The current focus, below, lists what is being worked on right now; the backlog h
 **Goal:** a first draft of the rules, complete enough to build a playable web app prototype on.
 
 **Now (designer, 2026-10-15): slot-first card design** (step 2 below). Each slot's card is built from scratch, in order:
-- *Strikes:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
+- *Strikes:* ◐ Invite Them In (built as a test card, `invite-in`) · ↂ · ⏏ · ☾ · ⎈
   - *Strike brief:* a move that creates a contest at or from a suit location (3.7); targets by principle 14; written from the slayers' side (principle 11); unique in the deck; sway placed from standing with the faction moved (D15).
   - *Designer (2026-10-15):* no size line for a strike's contest for now: any size; refined later.
   - *Designer (2026-10-15):* a strike only ever draws on groups that are not otherwise engaged: groups not already in a contest. So a strike never takes tokens out of a fight, and never makes one disappear.
   - *Designer (2026-10-15):* strikes that draw focus should, in general, not give players an easy way to pile sway into a single location.
   - *Designer (2026-10-15), where a strike's sway goes:* where the groups were drawn from, and card by card (each strike says where). At most 1 at the destination is fine, but never a whole pile.
   - *Designer (2026-10-15):* a strike should feel like a climax: whole groups colliding is fine.
-  - *◐ Nocturnal strike, working draft: Invite Them In* (designer: the best so far; readings settled 2026-10-15). The invitation reaches next door only.
+  - *◐ Nocturnal strike: Invite Them In* (designer: settled and built, 2026-10-15). All or nothing: without the full sway, it can't be played. The invitation reaches next door only.
     - *Location reading:* the target is an empty ◐ location. Two groups of different factions, each alone at a location next to it, come in whole. 3 sway: 1 at each location they left and 1 at the new fight, paid from standing with the factions moved (each at the location it left; the 1 at the fight from either, the player's choice).
     - *Faction reading:* the target is any location holding a lone group of another faction (the host), next to a lone Nocturnal group. The Nocturnals come in whole. 2 sway, from standing with the Nocturnals: 1 where they left and 1 at the new fight.
 - *Shifts:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
@@ -652,7 +652,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - `CU2` *Applied together (ruled out of the first draft):* every play does both.
   - `CU3` *Intertwined (first draft, as single-purpose cards):* cards are single use and do one thing (increase sway, alter or modify board presence, and so on), but board actions require spending a sway cube.
 - *Intertwined option, ideas:*
-  - `IC1` A board action costs sway with the faction being moved. **First draft (designer, 2026-10-07; D15):** the card dictates how sway is placed, and that placement is a requirement, paid from standing with the faction moved. A move goes only as far as the player can pay. Example: a card spreads one group to several locations and places 1 sway at each location spread to, however many tokens go there; a player with 1 standing with that faction can spread to only one location. A card that places no sway has no requirement.
+  - `IC1` A board action costs sway with the faction being moved. **First draft (designer, 2026-10-07; D15):** the card dictates how sway is placed, and that placement is a requirement, paid from standing with the faction moved. **All or nothing (designer, 2026-10-15; D21):** a card whose action can't be paid for in full can't be played for its action; it can still be played for sway. A card that places no sway has no requirement.
   - `IC2` The cost depends on the card. Indirect cards (such as a "bait" card) cost no sway but have a smaller effect: fewer tokens or locations. Direct cards cost sway but make a bigger move; thematically, the player is cashing in some of their sway with the faction's leader.
   - *Open:* what a board action affecting more than one faction costs.
   - *Open:* whether players start with any sway, since costly cards are unusable without it.
@@ -1106,6 +1106,13 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** 3.11 (IN1, BT1: the card behind a hidden play is public, the real token is not), Appendix B (Hidden token, Bluff token), the prototype (the engine's token carries its card, shown to all; the real-or-bluff face only to its owner; the table draws each card's icon on the backs, and the turn guide names a hidden play's card).
 - **Date:** 2026-10-11
 
+#### D21. All or nothing
+
+- **Decided (designer):** for now, every card is all or nothing on the sway its action places. A card whose action can't be paid for in full can't be played for its action. It replaces D15's "a move goes only as far as the player can pay".
+- **Why (designer):** a player can always play the card for sway instead.
+- **Affects:** 3.7 (IC1), Appendix G (moving factions); the prototype (variant `payInFull`, on by default; off restores the first draft's partial payment).
+- **Date:** 2026-10-15
+
 #### D14. Tokens and cubes
 
 - **Decided:** faction presence on the board is made of **tokens**; **cubes** are always players' sway. A faction never has cubes, and a player never has tokens (apart from hidden and bluff tokens, which are separate pieces).
@@ -1162,6 +1169,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-09 | The tuned table confirmed over 40 games | Backers 18.1% a seat, trophy 21.3%; the invaders' ending 15 in 40 |
 | 2026-10-10 | Unattended experiment runner (designer: a repeatable script for several machines that jitters the tuned values, runs, judges and commits its results): `scripts/experiment.js`, one game pool per machine fed by several experiments at once, shared baselines, a testing log entry per attempt (`experiments/`); last night's 48 attempts backfilled. The play-outs-into-the-next-round switch (`deep`) removed: clearly worse | Standard bots unchanged (identical play checked) |
 | 2026-10-10 | Overnight bot tuning (designer: implement the research's best candidates and keep testing on short runs): bot games about 5× faster with identical play; tools for duplicate deals, placings and fitting the evaluation; about 30 variants tested | None adopted: no change measurably beats the standard profiles; 20-game runs only find large effects (F.9, Tuning method) |
+| 2026-10-15 | All or nothing (D21, designer): a card's action that can't be paid for in full can't be played; IC1's partial payment is now the variant `payInFull=off`. The ◐ strike, Invite Them In, settled and built as a test card | First bot run (8 games): dealt 3 times, played for its action 3 times, playable on 29% of the turns held; no fights made to disappear |
 | 2026-10-15 | Card design restarted slot-first (designer): every card leaves the core set; each slot is built from scratch, strikes first, then shifts, signatures and the unsuited cards | Bulk ideas slotted into place weren't working. The trim towards 21 stops; existing cards become inspiration |
 | 2026-10-15 | The reworked split named Light of the Cross and moved to the ⎈ Demons shift (designer). Prototype: it is a test card; the fixed deck (Set v2, the tutorial's) takes Lead the Horde as its ☾ shift, and the tutorial a new seed | The fixed deck is prototype plumbing; playtesting uses the mixed deck |
 | 2026-10-15 | Board Up the Windows: an even split between exactly two adjacent locations, both open to the faction and both paid for, or not playable; not on a group of 1 (designer) | Before: any split across two or more adjacent locations, paid as far as the player could |
@@ -1214,6 +1222,7 @@ Actual changes to mechanisms and game structure.
 | **Magic link** | A link that belongs to one seat in the prototype. Opening it is how a player takes that seat. |
 | **Marked card** | *(Idea.)* One of two cards in the draft, marked A and B. The player holding A goes first. If A was left out of the deal that round, the player holding B goes first. |
 | **Marker cube** | *(Idea.)* A player's cube placed on a hidden token or bluff token to show who placed it. It counts as that player's sway at the location. |
+| **Pay in full** | *(First draft; D21.)* A card's action is all or nothing on the sway it places: if it can't be paid for in full, it can't be played for its action. |
 | **Phase** | A step within a round. |
 | **Pile** | *(Idea.)* One faction's casualties from a fight, handed to a player together as trophies. |
 | **Pinning** | *(Test lever, prototype only.)* At a contested location each token pins one enemy token, so only the larger group's surplus can leave by a movement card. Cards marked unpinned aren't movement and aren't held. Not to be confused with the Pin action type in Appendix H (a card that stops movement into or out of a location). |
@@ -2746,7 +2755,7 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
 - **A player's cubes** are always in one of three places: their supply, their standing with a faction (public sway), or on a location (sway there).
 - **Two-faction limit (LL1):** a location holds at most two factions. No action may bring a third faction into a location.
 - **Control (LC1, LC2):** factions control locations; players never do. A faction controls a location when it has the most tokens there. If two factions are tied there, the one aligned with the location controls it; otherwise no one does.
-- **Moving factions:** any player can take an action that affects any faction's presence. Sway placed by such an action is spent from the player's standing with the faction being affected. **IC1 (D15):** that placement is a requirement: a move goes only as far as the player can pay for it, so a player with no standing with a faction can't move it with a card that places sway. (Variant: only a faction's sway leader can affect it, IL1.)
+- **Moving factions:** any player can take an action that affects any faction's presence. Sway placed by such an action is spent from the player's standing with the faction being affected. **IC1 (D15, D21):** that placement is a requirement, all or nothing: a card's action that can't be paid for in full can't be played (the card can still be played for sway), so a player with no standing with a faction can't move it with a card that places sway. (Variant: only a faction's sway leader can affect it, IL1.)
 - **Sway leader:** the player with the most sway with a faction. Affinity breaks a tie for the most (AB1); otherwise all tied players are sway leaders. It decides where a short-supplied faction grows.
 - **Affinity (AB1):** a slayer group has affinity for its archetype's faction and for that archetype's three locations. Affinity only breaks ties between players: affinity for a location in fights there, affinity for a faction in sway with it.
 - **Hidden information:** hands are hidden. Sway with factions is public. Collected trophies are secret: everyone sees which pile a player takes, but not their running total (IN2).
