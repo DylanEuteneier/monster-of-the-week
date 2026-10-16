@@ -411,6 +411,7 @@
       "slot": "signature",
       "sway": 4,
       "action": "token",
+      "pulled": true,
       "text": "Hidden: at its fight, both groups lose all their tokens; trophies are handed out as normal and the location is not scorched.",
       "readings": {
         "location": "a ☾ location.",
@@ -1245,6 +1246,7 @@
         "slot": "signature",
         "sway": 3,
         "action": "token",
+        "pulled": true,
         "text": "Hidden: at its fight, the winner loses no tokens.",
         "readings": {
           "location": "an ↂ location.",
@@ -1315,6 +1317,7 @@
         "slot": "signature",
         "sway": 3,
         "action": "carry-fight",
+        "pulled": true,
         "unpinned": true,
         "text": "Both groups at the target are lifted together into an adjacent location with no tokens; the fight happens there. Target: the contest.",
         "readings": {
@@ -1330,6 +1333,7 @@
         "slot": "signature",
         "sway": 3,
         "action": "defect",
+        "pulled": true,
         "text": "Up to 3 tokens of the target group change sides: they join the other faction at that location (swapped through the supplies). Target: the group that defects.",
         "readings": {
           "location": "a group in a contest at a ⏏ location.",
@@ -1704,6 +1708,7 @@
         "slot": "signature",
         "sway": 3,
         "action": "wake-dead",
+        "pulled": true,
         "round": 18,
         "text": "This round, the fight at the target can’t scorch it, and the losing faction’s casualties rise there as Undead instead of becoming trophies. Target: the graveyard.",
         "readings": {
