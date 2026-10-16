@@ -18,6 +18,12 @@ The current focus, below, lists what is being worked on right now; the backlog h
 
 **Goal:** a first draft of the rules, complete enough to build a playable web app prototype on.
 
+**Now (designer, 2026-10-15): slot-first card design** (step 2 below). Each slot's card is built from scratch, in order:
+- *Strikes:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
+- *Shifts:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
+- *Signatures:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
+- *Unsuited:* A · B · C · D · two unmarked (not started)
+
 1. **First draft of the rules** *(drafted; Appendix G. What's left comes with the cards or with balancing).* In each decision area, start from the designer's favourite candidate. Where an idea has a close second, record it as that area's first variant. The draft is one ruleset, not a set of samples.
 2. **First draft of the cards** *(restarted 2026-10-15: slot-first design, below; principles in 3.7, ideas in Appendices H and J).* Define the cards the draft ruleset needs, and design player actions (3.7) and hidden actions (`IN1`, 3.11) together with them.
    - **Slot-first design (designer, 2026-10-15):** generating ideas in bulk and slotting them in wasn't working. Every card leaves the core set, suited and unsuited alike, and each slot's card is built from scratch for that slot. Nothing carries over; existing cards and ideas (Appendices H and J) are inspiration, and Claude may suggest one again only alongside new, deeply considered ideas. Order: the five strikes, then the five shifts, then the five signatures, then the six unsuited cards (A to D and two unmarked). The prototype keeps dealing the existing mixed deck meanwhile.
