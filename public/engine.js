@@ -858,7 +858,7 @@ function checkShape(state, pid, card, t) {
       if (card.action === 'halve-far') return tokensOf(state, loc, f) >= 2 && t.to && t.to !== loc && state.board[t.to] ? null : 'Half needs a group of 2 or more and a destination.';
       if (card.action === 'teleport') return t.to && t.to !== loc && state.board[t.to] ? null : 'Choose where to set it down.';
       if (card.action === 'split') {
-        // Board Up the Windows (designer, 2026-10-15): the group splits evenly between exactly two adjacent locations
+        // Light of the Cross (reworked from Board Up the Windows; designer, 2026-10-15): the group splits evenly between exactly two adjacent locations
         // (the player chooses which takes an odd token); both must take the faction, and both must be paid for.
         const split = t.split ?? {};
         const dests = Object.keys(split).filter((d) => split[d] > 0);

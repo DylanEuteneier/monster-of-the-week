@@ -21,7 +21,7 @@ export const BOTS = /** @type {const} */ ([['Ash', 'backer'], ['Bea', 'trophy'],
  * shows every part of a round (both uses of a card, fights with piles, growth).
  * A different engine or deck may need a new seed; the narration adapts either way.
  */
-export const SEED = 101;
+export const SEED = 264;
 /** The fixed deck (Set v2), and seats in order so the learner is Slayerettes. */
 export const OPTIONS = { deck: 'fixed', groups: 'seat' };
 

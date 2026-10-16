@@ -269,26 +269,26 @@ test('Track Them in the Snow lights only groups you can chase, and counts the st
   assert.equal(step.kind === 'location' && step.left, 2);
 });
 
-test('Board Up the Windows splits a group evenly between two adjacent locations, both paid for (designer, 2026-10-15)', () => {
+test('Light of the Cross (reworked from Board Up the Windows) splits a group evenly between two adjacent locations, both paid for (designer, 2026-10-15)', () => {
   const s = clear(newGame());
-  const f = /** @type {string} */ (s.factions[3]); // the Undead faction
-  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
+  const f = /** @type {string} */ (factionOfArchetype(s, 'demonic'));
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'demonic')?.id);
   const [p, q, r] = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations)[loc].adjacent;
   s.board[loc].tokens[f] = 5;
   const base = { mode: /** @type {const} */ ('faction'), location: loc, faction: f };
-  assert.equal(checkTarget(s, 'ann', cardById('board-up'), { ...base, split: { [p]: 3, [q]: 2 } }), null); // the odd token goes where the player sends it
-  assert.ok(checkTarget(s, 'ann', cardById('board-up'), { ...base, split: { [p]: 4, [q]: 1 } })); // not even
-  if (r) assert.ok(checkTarget(s, 'ann', cardById('board-up'), { ...base, split: { [p]: 2, [q]: 2, [r]: 1 } })); // exactly two locations
+  assert.equal(checkTarget(s, 'ann', cardById('light-cross'), { ...base, split: { [p]: 3, [q]: 2 } }), null); // the odd token goes where the player sends it
+  assert.ok(checkTarget(s, 'ann', cardById('light-cross'), { ...base, split: { [p]: 4, [q]: 1 } })); // not even
+  if (r) assert.ok(checkTarget(s, 'ann', cardById('light-cross'), { ...base, split: { [p]: 2, [q]: 2, [r]: 1 } })); // exactly two locations
   // Step by step: once one side has 3 of 5, the other takes the rest, and no third location is offered.
-  const c = nextChoice(s, 'ann', 'board-up', { ...base, split: { [p]: 3, [q]: 1 } });
+  const c = nextChoice(s, 'ann', 'light-cross', { ...base, split: { [p]: 3, [q]: 1 } });
   assert.ok(c.kind === 'split' && c.options.length === 1 && c.options[0] === q);
-  const after = previewTarget(s, 'ann', 'board-up', { ...base, split: { [p]: 3, [q]: 2 } });
+  const after = previewTarget(s, 'ann', 'light-cross', { ...base, split: { [p]: 3, [q]: 2 } });
   assert.deepEqual([after.board[p].tokens[f], after.board[q].tokens[f], after.board[loc].tokens[f], after.board[p].sway.ann, after.board[q].sway.ann], [3, 2, undefined, 1, 1]);
   s.players.ann.standing[f] = 1;
-  assert.ok(checkTarget(s, 'ann', cardById('board-up'), { ...base, split: { [p]: 3, [q]: 2 } })); // can't pay both: can't play
+  assert.ok(checkTarget(s, 'ann', cardById('light-cross'), { ...base, split: { [p]: 3, [q]: 2 } })); // can't pay both: can't play
   s.players.ann.standing[f] = 10;
   s.board[loc].tokens[f] = 1;
-  assert.ok(checkTarget(s, 'ann', cardById('board-up'), { ...base, split: { [p]: 1 } })); // a group of 1 can't be split
+  assert.ok(checkTarget(s, 'ann', cardById('light-cross'), { ...base, split: { [p]: 1 } })); // a group of 1 can't be split
 });
 
 test('Broadcast a Signal offers only factions that can enter the target', () => {
@@ -538,13 +538,13 @@ test('round 14 unsuited: Bail Out, Call for Backup, Fall Back and Stake Out move
 
 test('previewTarget runs a move with the game options (sway placed at the destination)', () => {
   const s = clear(newGame());
-  const f = /** @type {string} */ (s.factions[3]);
+  const f = /** @type {string} */ (factionOfArchetype(s, 'demonic'));
   const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
-  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'demonic')?.id);
   s.board[loc].tokens[f] = 3;
   s.players.ann.standing[f] = 2;
   const to = adj[loc].adjacent[0];
-  const after = previewTarget(s, 'ann', 'board-up', { mode: 'faction', location: loc, faction: f, split: { [to]: 2, [adj[loc].adjacent[1]]: 1 } });
+  const after = previewTarget(s, 'ann', 'light-cross', { mode: 'faction', location: loc, faction: f, split: { [to]: 2, [adj[loc].adjacent[1]]: 1 } });
   assert.equal(after.board[to].sway.ann, 1);
 });
 
@@ -630,10 +630,11 @@ test('IC1: a move goes only as far as the player can pay for the sway it places'
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const from = /** @type {string} */ (Object.keys(map).find((l) => map[l].adjacent.length >= 3));
-  s.board[from].tokens = { [A]: 5 };
-  s.players.ann.standing[A] = 1;
+  const dem = /** @type {string} */ (factionOfArchetype(s, 'demonic'));
+  s.board[from].tokens = { [dem]: 5 };
+  s.players.ann.standing[dem] = 1;
   const [p, q] = map[from].adjacent;
-  assert.ok(checkTarget(s, 'ann', cardById('board-up'), { mode: 'faction', location: from, faction: A, split: { [p]: 2, [q]: 3 } })); // Board Up must pay both or not play
+  assert.match(String(checkTarget(s, 'ann', cardById('light-cross'), { mode: 'faction', location: from, faction: dem, split: { [p]: 2, [q]: 3 } })), /both/); // Light of the Cross must pay both or not play
   const sci = /** @type {string} */ (factionOfArchetype(s, 'scifi'));
   s.board[from].tokens = { [sci]: 5 };
   s.players.ann.standing[sci] = 0;

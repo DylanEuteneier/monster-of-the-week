@@ -392,19 +392,6 @@
       }
     },
     {
-      "id": "board-up",
-      "name": "Board Up the Windows",
-      "suit": "undead",
-      "slot": "shift",
-      "sway": 3,
-      "action": "split",
-      "text": "The target group is turned away, split evenly between two adjacent locations that can take it (you choose where an odd token goes). Both must be paid for, or it can’t be played; a group of 1 can’t be split. Target: the group.",
-      "readings": {
-        "location": "any group at a ☾ location.",
-        "faction": "an Undead group anywhere."
-      }
-    },
-    {
       "id": "salt-burn",
       "name": "Salt and Burn the Bones",
       "suit": "undead",
@@ -425,6 +412,20 @@
         "text": "When any player passes, look at the cards left out this round."
       }
     },
+        {
+        "id": "horde",
+        "name": "Lead the Horde",
+        "suit": "undead",
+        "slot": "shift",
+        "sway": 3,
+        "action": "shove",
+        "round": 13,
+        "text": "Move the target group into an adjacent location; if that would make three factions there, the smaller group already there is shoved on to an adjacent location of your choice. Target: the horde. (Round 7 wording, first built in round 13.)",
+        "readings": {
+          "location": "any group at a ☾ location.",
+          "faction": "an Undead group anywhere."
+        }
+      },
     {
       "id": "summoning",
       "name": "Draw a Summoning Circle",
@@ -1327,6 +1328,19 @@
         "round": 10
       },
       {
+      "id": "light-cross",
+      "name": "Light of the Cross",
+      "suit": "demonic",
+      "slot": "shift",
+      "sway": 3,
+      "action": "split",
+      "text": "The cross is raised and the target group falls back from its light, split evenly between two adjacent locations that can take it (you choose where an odd token goes). Both must be paid for, or it can’t be played; a group of 1 can’t be split. Target: the group.",
+      "readings": {
+        "location": "any group at a ⎈ location.",
+        "faction": "a Demon group anywhere."
+      }
+    },
+        {
         "id": "drones",
         "name": "Reprogram the Drones",
         "suit": "sentients",
@@ -1526,20 +1540,6 @@
         "readings": {
           "location": "any group, from one ⏏ location to another.",
           "faction": "a Sentient group, to any location holding another Sentient group."
-        }
-      },
-      {
-        "id": "horde",
-        "name": "Lead the Horde",
-        "suit": "undead",
-        "slot": "shift",
-        "sway": 3,
-        "action": "shove",
-        "round": 13,
-        "text": "Move the target group into an adjacent location; if that would make three factions there, the smaller group already there is shoved on to an adjacent location of your choice. Target: the horde. (Round 7 wording, first built in round 13.)",
-        "readings": {
-          "location": "any group at a ☾ location.",
-          "faction": "an Undead group anywhere."
         }
       },
       {
