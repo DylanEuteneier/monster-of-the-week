@@ -269,14 +269,26 @@ test('Track Them in the Snow lights only groups you can chase, and counts the st
   assert.equal(step.kind === 'location' && step.left, 2);
 });
 
-test('Board Up the Windows never lets the last token make a one-location split', () => {
+test('Board Up the Windows splits a group evenly between two adjacent locations, both paid for (designer, 2026-10-15)', () => {
   const s = clear(newGame());
   const f = /** @type {string} */ (s.factions[3]); // the Undead faction
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
-  s.board[loc].tokens[f] = 2;
-  const first = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations)[loc].adjacent[0];
-  const c = nextChoice(s, 'ann', 'board-up', { mode: 'faction', location: loc, faction: f, split: { [first]: 1 } });
-  assert.ok(c.kind === 'split' && !c.options.includes(first));
+  const [p, q, r] = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations)[loc].adjacent;
+  s.board[loc].tokens[f] = 5;
+  const base = { mode: /** @type {const} */ ('faction'), location: loc, faction: f };
+  assert.equal(checkTarget(s, 'ann', cardById('board-up'), { ...base, split: { [p]: 3, [q]: 2 } }), null); // the odd token goes where the player sends it
+  assert.ok(checkTarget(s, 'ann', cardById('board-up'), { ...base, split: { [p]: 4, [q]: 1 } })); // not even
+  if (r) assert.ok(checkTarget(s, 'ann', cardById('board-up'), { ...base, split: { [p]: 2, [q]: 2, [r]: 1 } })); // exactly two locations
+  // Step by step: once one side has 3 of 5, the other takes the rest, and no third location is offered.
+  const c = nextChoice(s, 'ann', 'board-up', { ...base, split: { [p]: 3, [q]: 1 } });
+  assert.ok(c.kind === 'split' && c.options.length === 1 && c.options[0] === q);
+  const after = previewTarget(s, 'ann', 'board-up', { ...base, split: { [p]: 3, [q]: 2 } });
+  assert.deepEqual([after.board[p].tokens[f], after.board[q].tokens[f], after.board[loc].tokens[f], after.board[p].sway.ann, after.board[q].sway.ann], [3, 2, undefined, 1, 1]);
+  s.players.ann.standing[f] = 1;
+  assert.ok(checkTarget(s, 'ann', cardById('board-up'), { ...base, split: { [p]: 3, [q]: 2 } })); // can't pay both: can't play
+  s.players.ann.standing[f] = 10;
+  s.board[loc].tokens[f] = 1;
+  assert.ok(checkTarget(s, 'ann', cardById('board-up'), { ...base, split: { [p]: 1 } })); // a group of 1 can't be split
 });
 
 test('Broadcast a Signal offers only factions that can enter the target', () => {
@@ -621,8 +633,7 @@ test('IC1: a move goes only as far as the player can pay for the sway it places'
   s.board[from].tokens = { [A]: 5 };
   s.players.ann.standing[A] = 1;
   const [p, q] = map[from].adjacent;
-  const one = previewTarget(s, 'ann', 'board-up', { mode: 'faction', location: from, faction: A, split: { [p]: 2, [q]: 3 } });
-  assert.equal([p, q].filter((l) => one.board[l].tokens[A]).length, 1); // 1 standing: one location
+  assert.ok(checkTarget(s, 'ann', cardById('board-up'), { mode: 'faction', location: from, faction: A, split: { [p]: 2, [q]: 3 } })); // Board Up must pay both or not play
   const sci = /** @type {string} */ (factionOfArchetype(s, 'scifi'));
   s.board[from].tokens = { [sci]: 5 };
   s.players.ann.standing[sci] = 0;

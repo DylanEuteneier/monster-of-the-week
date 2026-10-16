@@ -398,7 +398,7 @@
       "slot": "shift",
       "sway": 3,
       "action": "split",
-      "text": "The target group is turned away, split across at least two adjacent locations. Target: the group.",
+      "text": "The target group is turned away, split evenly between two adjacent locations that can take it (you choose where an odd token goes). Both must be paid for, or it can’t be played; a group of 1 can’t be split. Target: the group.",
       "readings": {
         "location": "any group at a ☾ location.",
         "faction": "an Undead group anywhere."

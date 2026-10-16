@@ -858,10 +858,17 @@ function checkShape(state, pid, card, t) {
       if (card.action === 'halve-far') return tokensOf(state, loc, f) >= 2 && t.to && t.to !== loc && state.board[t.to] ? null : 'Half needs a group of 2 or more and a destination.';
       if (card.action === 'teleport') return t.to && t.to !== loc && state.board[t.to] ? null : 'Choose where to set it down.';
       if (card.action === 'split') {
+        // Board Up the Windows (designer, 2026-10-15): the group splits evenly between exactly two adjacent locations
+        // (the player chooses which takes an odd token); both must take the faction, and both must be paid for.
         const split = t.split ?? {};
         const dests = Object.keys(split).filter((d) => split[d] > 0);
-        if (dests.length < 2 || dests.some((d) => !MAP[loc].adjacent.includes(d))) return 'Split across at least two adjacent locations.';
-        if (dests.reduce((n, d) => n + split[d], 0) !== tokensOf(state, loc, f)) return 'Every token must go somewhere.';
+        const n = freeOf(state, loc, f, unpinnedCard(card));
+        if (n < 2) return 'A group of 1 can\'t be split.';
+        if (dests.length !== 2 || dests.some((d) => !MAP[loc].adjacent.includes(d) || !canEnter(state, d, f, state.pending?.blocked ?? []))) return 'Split between two adjacent locations that can take the group.';
+        const sizes = dests.map((d) => split[d]).sort((a, b) => a - b);
+        if (sizes[0] !== Math.floor(n / 2) || sizes[1] !== Math.ceil(n / 2)) return 'Split the group evenly.';
+        const cost = num(state, 'swayPerMove');
+        if (swayRequired(state) && cost > 0 && (state.players[pid].standing[f] ?? 0) < 2 * cost) return 'You need the sway to pay at both locations.';
       }
       return null;
     }
@@ -2233,11 +2240,11 @@ export function sampleTarget(state, pid, cardId, rng) {
       }
       case 'split': {
         if (!g) break;
-        const n = tokensOf(state, g.loc, g.f);
-        const dests = MAP[g.loc].adjacent.slice();
+        const n = freeOf(state, g.loc, g.f, unpinnedCard(card));
+        const dests = MAP[g.loc].adjacent.filter((d) => canEnter(state, d, g.f));
         if (n < 2 || dests.length < 2) break;
         const a = pick(dests), b = pick(dests.filter((d) => d !== a));
-        const na = 1 + Math.floor(rng() * (n - 1));
+        const na = Math.floor(n / 2) + (n % 2 && rng() < 0.5 ? 1 : 0);
         t = { mode, location: g.loc, faction: g.f, split: { [a]: na, [b]: n - na } };
         break;
       }
@@ -2483,13 +2490,20 @@ function nextShape(state, pid, cardId, t) {
       if (!t.faction) return { kind: 'faction', options: state.factions.slice() };
       return t.to ? { kind: 'done' } : { kind: 'faction', key: 'to', options: state.factions.filter((f) => f !== t.faction && (state.players[pid].standing[f] ?? 0) !== (state.players[pid].standing[/** @type {string} */ (t.faction)] ?? 0)) };
     case 'split': {
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => tokensOf(state, g.location, g.faction) >= 2 && exits(g, MAP[g.location].adjacent).length >= 2) };
-      const placedN = Object.values(t.split ?? {}).reduce((a, b) => a + b, 0);
-      const left = tokensOf(state, t.location, /** @type {string} */ (t.faction)) - placedN;
-      const dests = MAP[t.location].adjacent.filter((l) => canEnter(state, l, /** @type {string} */ (t.faction)));
-      // At least two locations: the last token can't join the only one used so far.
-      const used = Object.keys(t.split ?? {}).filter((d) => (t.split?.[d] ?? 0) > 0);
-      return left > 0 ? { kind: 'split', options: left === 1 && used.length === 1 ? dests.filter((d) => d !== used[0]) : dests, left } : { kind: 'done' };
+      // Evenly between exactly two adjacent locations; an odd token goes where the player sends it (designer, 2026-10-15).
+      const size = (/** @type {{ location: string, faction: string }} */ g) => freeOf(state, g.location, g.faction, unpinnedCard(card));
+      const pays = (/** @type {string} */ f) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= 2 * num(state, 'swayPerMove');
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => size(g) >= 2 && exits(g, MAP[g.location].adjacent).length >= 2 && pays(g.faction)) };
+      const f = /** @type {string} */ (t.faction);
+      const n = size({ location: t.location, faction: f });
+      const split = t.split ?? {};
+      const placedN = Object.values(split).reduce((a, b) => a + b, 0);
+      const left = n - placedN;
+      const used = Object.keys(split).filter((d) => (split[d] ?? 0) > 0);
+      const big = Math.ceil(n / 2);
+      const full = (/** @type {string} */ d) => (split[d] ?? 0) + 1 > big || (n % 2 === 1 && (split[d] ?? 0) + 1 === big && used.some((u) => u !== d && split[u] === big));
+      const dests = MAP[t.location].adjacent.filter((l) => canEnter(state, l, f) && (used.length < 2 || used.includes(l)) && !full(l));
+      return left > 0 ? { kind: 'split', options: dests, left } : { kind: 'done' };
     }
     case 'conveyor':
       if (mode === 'location' && !t.location) return { kind: 'location', key: 'location', options: suitLocations(card) };
