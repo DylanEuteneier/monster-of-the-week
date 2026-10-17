@@ -31,7 +31,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
     - *Faction reading:* the target is any location holding a lone group of another faction (the host), next to a lone Nocturnal group. The Nocturnals come in whole. 2 sway, from standing with the Nocturnals: 1 where they left and 1 at the new fight.
 - *Shifts:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
 - *Signatures:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
-  - *ↂ idea (designer, 2026-10-17: feels more appropriate for a signature than a strike; not a decision):* Hijack the Radio Station. Target a lone group; for the rest of the round, the next time any player moves a lone group of another faction, it goes to the target instead. Open: its sway; what happens if nobody takes the bait.
+  - *ↂ idea (designer, 2026-10-17: signature territory rather than a strike, but not good enough as it stands; not a decision):* Hijack the Radio Station. Target a lone group; for the rest of the round, the next time any player moves a lone group of another faction, it goes to the target instead. Open: its sway; what happens if nobody takes the bait.
 - *Unsuited:* A · B · C · D · two unmarked (not started)
 
 1. **First draft of the rules** *(drafted; Appendix G. What's left comes with the cards or with balancing).* In each decision area, start from the designer's favourite candidate. Where an idea has a close second, record it as that area's first variant. The draft is one ruleset, not a set of samples.
