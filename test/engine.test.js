@@ -601,6 +601,23 @@ test('Perform the Ritual: one faction next door is drawn in; lone groups whole, 
   assert.deepEqual(fa.board[centre].tokens, { [f]: 2, [dem]: 2 });
 });
 
+test('fightHalf (test lever, designer 2026-10-17): from a fight, a card moves at most half a group, rounded down', () => {
+  const s = clear(newGame());
+  const [f, g] = /** @type {string[]} */ (s.factions);
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const from = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
+  const to = map[from].adjacent[0];
+  s.board[from].tokens = { [f]: 5, [g]: 2 };
+  const horde = { mode: /** @type {const} */ ('location'), location: from, faction: f, to };
+  assert.equal(previewTarget(s, 'ann', 'horde', horde).board[to].tokens[f], 5); // off: the whole group
+  const on = { ...s, options: { ...s.options, fightHalf: 'on' } };
+  const after = previewTarget(on, 'ann', 'horde', horde);
+  assert.deepEqual([after.board[to].tokens[f], after.board[from].tokens[f]], [2, 3]); // half of 5, rounded down, leaves; the fight stays
+  s.board[from].tokens = { [f]: 5, [g]: 1 };
+  const lone = previewTarget({ ...s, options: { ...s.options, fightHalf: 'on' } }, 'ann', 'horde', { ...horde, faction: g });
+  assert.equal(lone.board[from].tokens[g], 1); // a single token in a fight can't be moved
+});
+
 test('payInFull (designer, 2026-10-15): a card that can\'t pay for every move can\'t be played for its action; off, it goes as far as it can pay (IC1)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);

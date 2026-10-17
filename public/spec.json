@@ -940,6 +940,24 @@
       ]
     },
     {
+      "id": "fightHalf",
+      "label": "Half from a fight",
+      "description": "Test lever (designer, 2026-10-17): from a location where a fight already exists, any card moves at most half of a faction's group, rounded down. At least half always stays, so no fight is emptied by movement; pulling some out still places the mover's sway there.",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "The first draft."
+        },
+        {
+          "id": "on",
+          "label": "On",
+          "description": "Test lever."
+        }
+      ]
+    },
+    {
       "id": "gatherSway",
       "label": "Gather sway where taken from",
       "description": "Test lever (designer, 2026-10-13): a gather (cards marked gather: Leave Out Fresh Meat, Set the Bait, Lay a Trail, Follow the Lights, Ring the Church Bell) places 1 sway on each location it takes tokens from, instead of the destination, paid from standing with the faction moved.",
