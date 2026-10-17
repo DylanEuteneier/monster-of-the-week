@@ -628,6 +628,15 @@ test('Half from a fight (D22, designer 2026-10-17): from a fight, a card moves a
   assert.equal(lone.board[from].tokens[g], 1); // a single token in a fight can't be moved
 });
 
+test('seeding=even (test lever, designer 2026-10-17): each faction starts with 3 on each of its aligned locations', () => {
+  const s = createGame({ seed: 3, players: PLAYERS, options: { seeding: 'even' } });
+  for (const f of s.factions) {
+    const arch = /** @type {string} */ (spec.factions.find((x) => x.id === f)?.archetype);
+    for (const l of spec.locations.filter((x) => x.archetype === arch)) assert.equal(s.board[l.id].tokens[f], 3);
+  }
+  assert.equal(totalPresence(s), 45);
+});
+
 test('payInFull (designer, 2026-10-15): a card that can\'t pay for every move can\'t be played for its action; off, it goes as far as it can pay (IC1)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);

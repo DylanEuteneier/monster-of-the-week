@@ -606,6 +606,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - `SD1` **Seeding (first draft):** each faction starts on its home territory. Every faction has a home location of its own, one of its archetype's three locations.
   - First draft: the home location is drawn at random from the three.
   - Provisional numbers: 5 tokens on the home location, and 1 token on each of the faction's other two aligned locations.
+  - *Test lever `seeding=even` (designer's seed, 2026-10-17):* 3 on each of the three aligned locations instead of 5, 1 and 1 (45 on the board instead of 35). Off by default; to be measured.
   - Starting presence and the total number of tokens per faction, including the supply, are left to balancing.
 - **Growth.** Candidates. These are separate ideas, need not be used together, and could be mutually exclusive:
   - `GR1` *At resolution (first draft):* at round end, after conflict resolution, every location where a faction has reached the growth threshold gains one token of that faction.
@@ -1186,6 +1187,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-09 | The tuned table confirmed over 40 games | Backers 18.1% a seat, trophy 21.3%; the invaders' ending 15 in 40 |
 | 2026-10-10 | Unattended experiment runner (designer: a repeatable script for several machines that jitters the tuned values, runs, judges and commits its results): `scripts/experiment.js`, one game pool per machine fed by several experiments at once, shared baselines, a testing log entry per attempt (`experiments/`); last night's 48 attempts backfilled. The play-outs-into-the-next-round switch (`deep`) removed: clearly worse | Standard bots unchanged (identical play checked) |
 | 2026-10-10 | Overnight bot tuning (designer: implement the research's best candidates and keep testing on short runs): bot games about 5× faster with identical play; tools for duplicate deals, placings and fitting the evaluation; about 30 variants tested | None adopted: no change measurably beats the standard profiles; 20-game runs only find large effects (F.9, Tuning method) |
+| 2026-10-17 | Test lever `seeding=even` added (designer's seed): 3 on each aligned location instead of 5, 1 and 1 | Off by default; to be measured. Every location starts held by its aligned faction, so Invite Them In (an empty ◐ location) has no target at the start |
 | 2026-10-17 | Half from a fight (D22, designer): from a location where a fight already exists, any card moves at most half of a faction's group, rounded down; a core rule for now (variant `fightHalf`, on by default) | Fights neither fully locked (pinning) nor emptied in one move. Bait the Herd's straggler scoop no longer applies |
 | 2026-10-17 | Test lever `fightHalf` added, off by default (designer) | Made the default the same day (D22) |
 | 2026-10-17 | The ⎈ strike, Perform the Ritual (working name), designed and built as a test card: a gravity well from next door, one faction, whole from lone groups and up to half from fights. All five strikes now have a design | |
