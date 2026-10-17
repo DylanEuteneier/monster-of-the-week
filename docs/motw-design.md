@@ -608,6 +608,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - `SD1` **Seeding (first draft):** each faction starts on its home territory: its archetype's three locations.
   - First draft (designer, 2026-10-17): 3 tokens on each of the three, 45 on the board in all. Every location starts held by its aligned faction.
   - Variant (`seeding=home`, as SD1 was first drafted): a home location drawn at random from the three gets 5 tokens, and each of the other two gets 1 (35 in all).
+  - *Measured (2026-10-17; 24 games each, seed 7, 5 players, mixed decks), island / invaders and presence at game end (threshold 20):* 5/1/1 without D22: 17 / 7, 16.6; 5/1/1 with D22: 22 / 2, 7.8; **3/3/3 with D22 (the first draft): 19 / 5, 14.9**; 3/3/3 without D22: 6 / 18, 30.7. The two changes pull in opposite directions; together they sit near the earlier balance with no fight ever made to disappear. Trophies per player 11.3 (about 6 to 7 before).
   - Starting presence and the total number of tokens per faction, including the supply, are left to balancing.
 - **Growth.** Candidates. These are separate ideas, need not be used together, and could be mutually exclusive:
   - `GR1` *At resolution (first draft):* at round end, after conflict resolution, every location where a faction has reached the growth threshold gains one token of that faction.
