@@ -942,18 +942,18 @@
     {
       "id": "fightHalf",
       "label": "Half from a fight",
-      "description": "Test lever (designer, 2026-10-17): from a location where a fight already exists, any card moves at most half of a faction's group, rounded down. At least half always stays, so no fight is emptied by movement; pulling some out still places the mover's sway there.",
-      "default": "off",
+      "description": "Core rule (designer, 2026-10-17; D22): from a location where a fight already exists, any card moves at most half of a faction's group, rounded down. At least half always stays, so no fight is emptied by movement; pulling some out still places the mover's sway there.",
+      "default": "on",
       "choices": [
         {
           "id": "off",
           "label": "Off",
-          "description": "The first draft."
+          "description": "Fights not protected: a card can move a whole group out (the first draft)."
         },
         {
           "id": "on",
           "label": "On",
-          "description": "Test lever."
+          "description": "The current rule (D22)."
         }
       ]
     },

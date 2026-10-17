@@ -381,6 +381,7 @@ test('Leak It to the Press sends half the group anywhere (round 9)', () => {
 
 test('Turn On the Tractor Beam carries both groups of a contest to an empty neighbour (round 10)', () => {
   const s = clear(newGame());
+  s.options = { ...s.options, fightHalf: 'off' }; // the first draft's movement: whole groups may leave a fight
   const [f, g] = /** @type {string[]} */ (s.factions);
   const adj = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'scifi')?.id);
@@ -410,6 +411,7 @@ test('Hear the Banshee Wail drives each neighbouring group one hex straight on, 
 
 test('Trade Souls swaps two groups of different factions anywhere (round 11)', () => {
   const s = clear(newGame());
+  s.options = { ...s.options, fightHalf: 'off' }; // the first draft's movement: whole groups may leave a fight
   const [f, g, h] = /** @type {string[]} */ (s.factions);
   const demonic = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'demonic')?.id);
   const far = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals')?.id);
@@ -547,6 +549,7 @@ test('Spoof the Signal: a lone group marches on the largest lone rival within tw
 
 test('Bait the Herd: a herd swells with its own kind along a trail, leaving nothing behind, and crashes into a lone rival (designer, 2026-10-17)', () => {
   const s = clear(newGame());
+  s.options = { ...s.options, fightHalf: 'off' }; // the straggler scoop (the core rule D22 forbids moving a single token out of a fight)
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const und = /** @type {string} */ (factionOfArchetype(s, 'undead'));
   const [f, g, h] = s.factions.filter((x) => x !== und);
@@ -569,6 +572,8 @@ test('Bait the Herd: a herd swells with its own kind along a trail, leaving noth
   s.players.ann.standing[und] = 4;
   s.board[scoop].tokens = { [und]: 2, [g]: 4 };
   assert.ok(checkTarget(s, 'ann', cardById('bait-trail'), t)); // more than a straggler in that fight: no stop there
+  s.board[scoop].tokens = { [und]: 1, [g]: 4 };
+  assert.ok(checkTarget({ ...s, options: { ...s.options, fightHalf: 'on' } }, 'ann', cardById('bait-trail'), t)); // under D22, a lone straggler can't leave its fight
   void f;
 });
 
@@ -601,7 +606,7 @@ test('Perform the Ritual: one faction next door is drawn in; lone groups whole, 
   assert.deepEqual(fa.board[centre].tokens, { [f]: 2, [dem]: 2 });
 });
 
-test('fightHalf (test lever, designer 2026-10-17): from a fight, a card moves at most half a group, rounded down', () => {
+test('Half from a fight (D22, designer 2026-10-17): from a fight, a card moves at most half a group, rounded down', () => {
   const s = clear(newGame());
   const [f, g] = /** @type {string[]} */ (s.factions);
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
@@ -609,7 +614,7 @@ test('fightHalf (test lever, designer 2026-10-17): from a fight, a card moves at
   const to = map[from].adjacent[0];
   s.board[from].tokens = { [f]: 5, [g]: 2 };
   const horde = { mode: /** @type {const} */ ('location'), location: from, faction: f, to };
-  assert.equal(previewTarget(s, 'ann', 'horde', horde).board[to].tokens[f], 5); // off: the whole group
+  assert.equal(previewTarget({ ...s, options: { ...s.options, fightHalf: 'off' } }, 'ann', 'horde', horde).board[to].tokens[f], 5); // off: the whole group
   const on = { ...s, options: { ...s.options, fightHalf: 'on' } };
   const after = previewTarget(on, 'ann', 'horde', horde);
   assert.deepEqual([after.board[to].tokens[f], after.board[from].tokens[f]], [2, 3]); // half of 5, rounded down, leaves; the fight stays
@@ -635,6 +640,7 @@ test('payInFull (designer, 2026-10-15): a card that can\'t pay for every move ca
 
 test('pinning (test lever): in a fight each token pins one enemy token; only the surplus leaves; a card that isn\'t movement (unpinned) is not held', () => {
   const s = clear(newGame());
+  s.options = { ...s.options, fightHalf: 'off' }; // the first draft's movement: whole groups may leave a fight
   const [f, g, h] = /** @type {string[]} */ (s.factions);
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const from = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);
@@ -700,6 +706,7 @@ test('Circle the Prey: the groups round the target each move one location on, al
 
 test('Lead the Horde shoves the smaller group on when it would make three factions (round 13)', () => {
   const s = clear(newGame());
+  s.options = { ...s.options, fightHalf: 'off' }; // the first draft's movement: whole groups may leave a fight
   const [f, g, h] = /** @type {string[]} */ (s.factions);
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const from = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id);

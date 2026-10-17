@@ -422,9 +422,9 @@ function freeOf(state, loc, faction, unpinned = false) {
   const other = factionsAt(state, loc).find((f) => f !== faction);
   if (!other) return n;
   let free = n;
-  // Test lever fightHalf (designer, 2026-10-17): from a location where a fight already exists, any card moves at most
-  // half of a faction's group, rounded down, so at least half stays and no fight is emptied by movement.
-  if ((state.options.fightHalf ?? 'off') === 'on') free = Math.min(free, Math.floor(n / 2));
+  // Half from a fight (D22, designer 2026-10-17; variant fightHalf): from a location where a fight already exists, any
+  // card moves at most half of a faction's group, rounded down, so at least half stays and no fight is emptied by movement.
+  if ((state.options.fightHalf ?? 'on') === 'on') free = Math.min(free, Math.floor(n / 2));
   if (!unpinned && state.options.pinning === 'on') free = Math.min(free, Math.max(0, n - tokensOf(state, loc, other)));
   return free;
 }
