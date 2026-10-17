@@ -1387,6 +1387,20 @@
           "round": 21
         },
         {
+          "id": "hack-targeting",
+          "name": "Hack the Targeting",
+          "suit": "sentients",
+          "slot": "strike",
+          "sway": 2,
+          "action": "threat",
+          "text": "The AV Club hacks a lone group’s threat assessment: it marches, whole, on the largest lone group of another faction within two locations of it (ties: your choice). Place 1 sway where it left and 1 at the fight, from your standing with the group that marched. All of it, or it can’t be played. Target: the group hacked.",
+          "readings": {
+            "location": "a lone group at a ⏏ location.",
+            "faction": "a lone Sentient group anywhere."
+          },
+          "round": 21
+        },
+        {
         "id": "drones",
         "name": "Reprogram the Drones",
         "suit": "sentients",

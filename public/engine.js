@@ -697,6 +697,21 @@ const gateEnd = (state, card, loc) => !!loc && !!state.board[loc] && !state.boar
 /** The factions present across two locations. @param {GameState} state @param {string} a @param {string} b */
 const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ...factionsAt(state, b)])];
 
+/**
+ * Hack the Targeting (⏏ strike, designer 2026-10-17): where a lone group at `loc` may march. Machine logic: the
+ * largest lone group of another faction within two locations of it (steps between neighbours, a Gate's ends as one;
+ * whatever lies between is ignored). Several tied for largest: any of them, the player's choice.
+ * @param {GameState} state @param {string} loc @param {string} f
+ */
+function threatsOf(state, loc, f) {
+  const ends = endsOf(state, loc);
+  const near = new Set(adj(state, loc));
+  for (const l of [...near]) for (const m of adj(state, l)) near.add(m);
+  const rivals = [...near].filter((l) => !ends.includes(l) && loneAt(state, l) && loneAt(state, l) !== f && canEnter(state, l, f));
+  const most = Math.max(0, ...rivals.map((l) => tokensOf(state, l, /** @type {string} */ (loneAt(state, l)))));
+  return rivals.filter((l) => tokensOf(state, l, /** @type {string} */ (loneAt(state, l))) === most);
+}
+
 /** The one faction at a location, if exactly one is there (a group not otherwise engaged), else null. @param {GameState} state @param {string} loc */
 const loneAt = (state, loc) => { const here = factionsAt(state, loc); return !state.board[loc].scorched && here.length === 1 ? here[0] : null; };
 
@@ -913,6 +928,13 @@ function checkShape(state, pid, card, t) {
   if (!t) return null; // a card with no legal target may be played for no effect (partial actions)
   switch (card.action) {
     case 'lure': return placeTarget(state, card, t);
+    case 'threat': {
+      const loc = t.location, f = t.faction, sf = suitFaction(state, card);
+      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      if (!loc || !f || !state.board[loc] || loneAt(state, loc) !== f || (t.mode === 'location' ? !suitLocations(card).includes(loc) : f !== sf)) return t.mode === 'location' ? 'Choose a lone group at a ⏏ location.' : 'Choose a lone Sentient group.';
+      if (!t.to || !threatsOf(state, loc, f).includes(t.to)) return 'It marches on the largest lone group of another faction within two locations.';
+      return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < 2 ? 'You need the sway to pay where it leaves and at the fight (all or nothing).' : null;
+    }
     case 'gate': {
       const a = t.location, b = t.to, sf = /** @type {string} */ (suitFaction(state, card));
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
@@ -1183,6 +1205,15 @@ function act(state, pid, card, t) {
         .filter((g) => g.n > 0 && canEnter(state, to, g.f, state.pending?.blocked)).sort((a, b) => b.n - a.n);
       const pick = (t.faction && t.from?.[0] ? groups.find((g) => g.f === t.faction && g.from === t.from?.[0] && g.n === groups[0].n) : null) ?? groups[0];
       if (pick) logLine(state, `${pid}: ${card.name} draws ${move(state, pid, pick.f, pick.from, to, pick.n, placed)} ${names(pick.f)} into ${lname(to)}.`);
+      break;
+    }
+    case 'threat': {
+      // The whole group marches on its target; 1 sway where it left and 1 at the fight, from standing with it.
+      const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
+      placed.add(`${to}:${f}`);
+      const n = move(state, pid, f, from, to, tokensOf(state, from, f), placed);
+      if (n) { placeOne(state, pid, f, from); placeOne(state, pid, f, to); }
+      logLine(state, `${pid}: ${card.name}: ${n} ${names(f)} march on ${lname(to)}.`);
       break;
     }
     case 'gate': {
@@ -1668,6 +1699,7 @@ export function pendingDestinations(state, pend) {
   switch (card.action) {
     case 'invite': return t.location ? [t.location] : [];
     case 'gate': return [t.location ?? '', t.to ?? ''].filter(Boolean);
+    case 'threat': return t.to ? [t.to] : [];
     case 'lure': case 'broadcast': case 'gather-region': case 'gather-neighbours': case 'call-home': case 'draw-adjacent': return t.location ? [t.location] : [];
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': case 'hack': return t.to ? [t.to] : [];
     case 'sow': return t.path ?? [];
@@ -2555,6 +2587,11 @@ function nextShape(state, pid, cardId, t) {
   /** The factions this reading may move: any (location target) or only the suit's (faction target). */
   const movers = card.suit && mode === 'faction' ? [/** @type {string} */ (sf)] : state.factions.slice();
   switch (card.action) {
+    case 'threat': {
+      const pays = (/** @type {string} */ f) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= 2;
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(/** @type {GameState} */ (state), g.location) === g.faction && pays(g.faction) && threatsOf(/** @type {GameState} */ (state), g.location, g.faction).length > 0) };
+      return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: threatsOf(/** @type {GameState} */ (state), t.location, /** @type {string} */ (t.faction)) };
+    }
     case 'gate': {
       const ends = LOCATION_IDS.filter((l) => gateEnd(/** @type {GameState} */ (state), card, l));
       const payers = (/** @type {string} */ x, /** @type {string} */ y) => [...new Set([/** @type {string} */ (sf), ...factionsAcross(/** @type {GameState} */ (state), x, y)])]
@@ -2825,6 +2862,7 @@ export function describeTarget(cardId, t) {
     case 'gather-region': case 'gather-neighbours': case 'call-home': return `${F(t.faction)} into ${L(t.location)}${how}`;
     case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
+    case 'threat': return `${F(t.faction)} at ${L(t.location)} march on ${L(t.to)}${how}`;
     case 'gate': return `${L(t.location)} and ${L(t.to)} joined${t.payer ? `, ${F(t.payer)} paying` : ''}${t.losses ? `; the winner's losses from ${L(t.losses)}` : ''}`;
     case 'invite': return `${(t.moves ?? []).map((g) => `${F(g.faction)} from ${L(g.location)}`).join(' and ')} into ${L(t.location)}${t.payer ? `, ${F(t.payer)} paying at the fight` : ''}`;
     case 'sow': return `${F(t.faction)} from ${L(t.location)} via ${(t.path ?? []).map(L).join(', ')}${how}`;

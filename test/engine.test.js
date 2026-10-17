@@ -522,6 +522,29 @@ test('The Gate: a group at both ends moves as one, and next door reaches through
   assert.ok(offered.kind === 'group' && offered.options.some((o) => o.faction === g));
 });
 
+test('Hack the Targeting: a lone group marches on the largest lone rival within two locations (designer, 2026-10-17)', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const sent = /** @type {string} */ (factionOfArchetype(s, 'sentients'));
+  const [f, g, h] = s.factions.filter((x) => x !== sent);
+  const from = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'sentients')?.id);
+  const one = map[from].adjacent[0];
+  const two = /** @type {string} */ (map[one].adjacent.find((l) => l !== from && !map[from].adjacent.includes(l)));
+  s.board[from].tokens = { [f]: 4 };
+  s.board[one].tokens = { [g]: 3 };
+  s.board[two].tokens = { [h]: 5 };
+  s.players.ann.standing[f] = 2;
+  const c = nextChoice(s, 'ann', 'hack-targeting', { mode: 'location', location: from, faction: f });
+  assert.ok(c.kind === 'location' && c.options.length === 1 && c.options[0] === two); // the largest in reach, two away
+  const t = { mode: /** @type {const} */ ('location'), location: from, faction: f, to: two };
+  assert.equal(checkTarget(s, 'ann', cardById('hack-targeting'), t), null);
+  assert.ok(checkTarget(s, 'ann', cardById('hack-targeting'), { ...t, to: one })); // not the largest
+  const after = previewTarget(s, 'ann', 'hack-targeting', t);
+  assert.deepEqual([after.board[two].tokens[f], after.board[from].tokens[f], after.board[from].sway.ann, after.board[two].sway.ann], [4, undefined, 1, 1]);
+  s.players.ann.standing[f] = 1;
+  assert.ok(checkTarget(s, 'ann', cardById('hack-targeting'), t)); // can't pay both: can't play
+});
+
 test('payInFull (designer, 2026-10-15): a card that can\'t pay for every move can\'t be played for its action; off, it goes as far as it can pay (IC1)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
