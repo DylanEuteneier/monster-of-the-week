@@ -971,6 +971,11 @@
    "height": 8,
    "src": "/assets/marks/swarm.png"
   },
+  "gate": {
+   "width": 8,
+   "height": 8,
+   "src": "/assets/marks/gate.png"
+  },
   "lock": {
    "width": 8,
    "height": 8,

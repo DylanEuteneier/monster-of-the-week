@@ -791,7 +791,9 @@ function renderTargeting(cardId) {
     from: 'Pick where they come from', group: 'Pick a group', faction: 'Pick a faction', direction: 'Pick a direction', done: 'Ready',
   });
   const key = choice.kind === 'location' || (choice.kind === 'group' && choice.key === 'lure') ? choice.key : choice.kind;
-  const words = choice.kind === 'split' ? `Send tokens: ${choice.left} left`
+  const gateWords = /** @type {Record<string, string>} */ ({ location: 'Pick one end of the Gate', to: 'Pick the other end', losses: 'Pick the end that takes the winner\'s losses' });
+  const words = card.action === 'gate' && choice.kind === 'location' && gateWords[choice.key] ? gateWords[choice.key]
+    : choice.kind === 'split' ? `Send tokens: ${choice.left} left`
     : choice.kind === 'location' && choice.key === 'from' && card.action === 'move-sway' ? `Pick your sway to move · ${3 - (ui.target.from ?? []).filter((l) => l !== '__stop').length} left`
     : choice.kind === 'location' && choice.key === 'path' ? `Pick the next step · ${choice.left} left` : WORDS[key] ?? '';
   const arrows = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';

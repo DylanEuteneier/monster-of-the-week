@@ -120,6 +120,7 @@ export const EFFECTS = /** @type {const} */ ({
   backdoor: 'Install a Backdoor: some players\' sway here counts 1 more per Sentient token at this fight',
   swarm: 'Link the Swarm: a faction here counts its tokens next door too at this fight',
   lock: 'Lock Down the Town: no group moves into or out of this region this round',
+  gate: 'The Gate: joined with another location this round; one location for movement, one fight',
 });
 
 /** A round token showing an effect on a location. @param {keyof typeof EFFECTS} id */

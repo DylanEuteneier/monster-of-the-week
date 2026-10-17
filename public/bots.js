@@ -27,7 +27,7 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, clone, memoising, memoOn, resolveFights, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthDue,
+  cardById, clone, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthDue,
 } from './engine.js';
 import evalFit from './eval-fit.json' with { type: 'json' };
 
@@ -88,7 +88,7 @@ const legal = (state, pid, move) => (validate(state, { playerId: pid, move }).ok
 
 /** @param {GameState} state */
 function contested(state) {
-  return Object.keys(state.board).filter((loc) => !state.board[loc].scorched && Object.values(state.board[loc].tokens).filter((n) => n > 0).length === 2);
+  return fightsDue(state); // the engine's: a Gate's two ends count as one location
 }
 
 /**

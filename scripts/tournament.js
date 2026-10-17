@@ -61,7 +61,7 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, listTargets, clone, validate, pulled } from '../public/engine.js';
+import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, listTargets, clone, validate, pulled, fightsDue } from '../public/engine.js';
 import { PROFILES, botMove, fast, features } from '../public/bots.js';
 import { seededRng, chance, measureState, play, MAX_MOVES, upgradeRecord } from './lib.js';
 
@@ -91,9 +91,9 @@ function reckon(state) {
   let s = state;
   /** @type {Record<string, { winner: string, lost: number }>} */
   const fights = {};
-  for (const loc of Object.keys(s.board)) {
+  for (const loc of fightsDue(state)) { // a Gate's two ends fight once, as one (the engine's fightsDue)
+    if (!fightsDue(s).includes(loc)) continue;
     const place = s.board[loc];
-    if (!contestedPlace(place)) continue;
     const here = Object.keys(place.tokens).filter((f) => place.tokens[f] > 0);
     const before = here.reduce((n, f) => n + place.tokens[f], 0);
     s = resolveFight(s, loc);
@@ -149,12 +149,19 @@ const BIG_FIGHT = 6;
 function fightsOn(s) {
   /** @type {Map<string, string>} */
   const out = new Map();
-  for (const [loc, place] of Object.entries(s.board)) if (contestedPlace(place) && !place.truce) out.set(loc, Object.keys(place.tokens).filter((f) => place.tokens[f] > 0).sort().join('+'));
+  for (const loc of fightsDue(s)) if (!s.board[loc].truce) out.set(loc, Object.keys(unionTokens(s, loc)).sort().join('+')); // a Gate's ends: one fight, listed at both
+  return out;
+}
+
+/** A location's tokens, with its Gate partner's while a Gate joins them. @param {GameState} s @param {string} loc @returns {Record<string, number>} */
+function unionTokens(s, loc) {
+  /** @type {Record<string, number>} */ const out = {};
+  for (const l of [loc, s.board[loc].gate].filter(Boolean)) for (const [f, n] of Object.entries(s.board[/** @type {string} */ (l)].tokens)) if (n > 0) out[f] = (out[f] ?? 0) + n;
   return out;
 }
 
 /** A fight's size: both groups' tokens together. @param {GameState} s @param {string} loc @param {string} pair */
-const fightSize = (s, loc, pair) => pair.split('+').reduce((n, f) => n + (s.board[loc].tokens[f] ?? 0), 0);
+const fightSize = (s, loc, pair) => { const t = unionTokens(s, loc); return pair.split('+').reduce((n, f) => n + (t[f] ?? 0), 0); };
 
 /** The players with a stake in a location's fight: sway there, or a hidden token there. @param {GameState['board'][string]} place */
 const stakeOf = (place) => [...new Set([...Object.entries(place.sway).filter(([, n]) => n > 0).map(([p]) => p), ...(place.token ? [place.token.owner] : [])])];

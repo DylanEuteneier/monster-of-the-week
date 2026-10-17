@@ -56,6 +56,8 @@ export { spec };
  * @property {Token | null} token
  * @property {boolean} scorched
  * @property {boolean} [truce]     Call a Truce (test card, round 15): no fight here this round
+ * @property {string} [gate]       The Gate (ↂ strike, designer 2026-10-17): the location joined to this one for the rest of the round
+ * @property {string} [gateLoss]   The Gate: the end the winner's losses come from first (the Gate's player's choice)
  * @property {string[]} [double]   Split Up, Gang! (test card, round 18): players whose sway here counts twice at this round's fight
  * @property {boolean} [wake]      Wake the Dead (test card, round 18): this round's fight can't scorch, and the loser's casualties rise as Undead
  * @property {string[]} [backdoor] Install a Backdoor (test card, round 20): players whose sway here counts 1 more per Sentient token at this round's fight
@@ -146,7 +148,8 @@ export { spec };
  * @property {boolean} [realOnly]  only one location was free: place the real token there (else the bluff)
  * @property {{ location: string, faction: string, to: string }[]} [moves]
  * @property {string} [lead]       the faction the player leads, on cards that move several factions (D15)
- * @property {string} [payer]      Invite Them In: the invited faction that pays the 1 sway at the new fight
+ * @property {string} [payer]      Invite Them In, the Gate: the faction whose standing pays the 1 sway at the fight
+ * @property {string} [losses]     the Gate: the end the winner's losses come from first
  */
 
 /**
@@ -173,7 +176,7 @@ export { spec };
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, picked: boolean }>} players
  * @property {{ faction: string, leaders: string[], next: number, due: Record<string, number> } | null} growing
  * @property {string[]} factions
- * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, token: { owner: string, kind?: string, real?: boolean } | null, scorched: boolean, truce?: boolean, double?: string[], wake?: boolean, swarm?: string | boolean, backdoor?: string[], lock?: boolean }>} board
+ * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, token: { owner: string, kind?: string, real?: boolean } | null, scorched: boolean, gate?: string, gateLoss?: string, truce?: boolean, double?: string[], wake?: boolean, swarm?: string | boolean, backdoor?: string[], lock?: boolean }>} board
  * @property {Record<string, number>} supply
  * @property {string[]} deck  this game's cards
  * @property {Record<string, number>} printed  this game's printed sway by card
@@ -301,8 +304,31 @@ export function shuffle(items, rngState) {
 // Board helpers
 // ---------------------------------------------------------------------------
 
-/** @param {GameState} state @param {string} loc */
-const factionsAt = (state, loc) => Object.keys(state.board[loc].tokens).filter((f) => state.board[loc].tokens[f] > 0);
+/**
+ * The Gate (ↂ strike, designer 2026-10-17): the location joined to this one for the rest of the round, if any. While
+ * it is open the two count as a single location for movement, and their fights act as one (joinedFight).
+ * @param {GameState | PlayerView} state @param {string} loc @returns {string | null}
+ */
+const gateOf = (state, loc) => /** @type {any} */ (state.board[loc])?.gate ?? null;
+/** The locations that make up this one: itself, and its Gate partner while the Gate is open. @param {GameState | PlayerView} state @param {string} loc */
+const endsOf = (state, loc) => { const g = gateOf(state, loc); return g ? [loc, g] : [loc]; };
+/** The factions at a location (both ends of a Gate together). @param {GameState} state @param {string} loc */
+const factionsAt = (state, loc) => [...new Set(endsOf(state, loc).flatMap((l) => Object.keys(state.board[l].tokens).filter((f) => state.board[l].tokens[f] > 0)))];
+/**
+ * A location's neighbours. Through an open Gate the two ends are one location: either end's neighbours are its
+ * neighbours, and a location next to one end is next to the other. Without a Gate, the map's adjacency.
+ * @param {GameState | PlayerView} state @param {string} loc
+ */
+function adj(state, loc) {
+  const base = MAP[loc].adjacent;
+  const g = gateOf(state, loc);
+  if (!g && !base.some((l) => gateOf(state, l))) return base;
+  const out = new Set(g ? [...base, ...MAP[g].adjacent] : base);
+  for (const l of [...out]) { const p = gateOf(state, l); if (p) out.add(p); }
+  out.delete(loc);
+  if (g) out.delete(g);
+  return [...out];
+}
 /** Every group on the board (memoised per state while a bot searches). @param {GameState} state @returns {{ location: string, faction: string }[]} */
 function groupsOf(state) {
   const hit = memoDepth ? GROUPS_MEMO.get(state) : undefined;
@@ -312,12 +338,29 @@ function groupsOf(state) {
   return out;
 }
 const GROUPS_MEMO = new WeakMap();
-/** @param {GameState} state @param {string} loc @param {string} faction */
-const tokensOf = (state, loc, faction) => state.board[loc].tokens[faction] ?? 0;
+/** A faction's tokens at a location (both ends of a Gate together: one group). @param {GameState} state @param {string} loc @param {string} faction */
+const tokensOf = (state, loc, faction) => endsOf(state, loc).reduce((n, l) => n + (state.board[l].tokens[faction] ?? 0), 0);
+/** A faction's tokens at one end only. @param {GameState} state @param {string} loc @param {string} faction */
+const rawTokens = (state, loc, faction) => state.board[loc].tokens[faction] ?? 0;
+/** Add tokens at one end. @param {GameState} state @param {string} loc @param {string} faction @param {number} n */
+function addTokens(state, loc, faction, n) {
+  if (n > 0) state.board[loc].tokens[faction] = rawTokens(state, loc, faction) + n;
+}
+/** Take tokens from a location: this end first, then its Gate partner. @param {GameState} state @param {string} loc @param {string} faction @param {number} n */
+function takeTokens(state, loc, faction, n) {
+  let left = n;
+  for (const l of endsOf(state, loc)) {
+    const k = Math.min(left, rawTokens(state, l, faction));
+    if (k <= 0) continue;
+    state.board[l].tokens[faction] -= k;
+    if (state.board[l].tokens[faction] <= 0) delete state.board[l].tokens[faction];
+    left -= k;
+  }
+}
 /** @param {string} loc */
 const regionOf = (loc) => MAP[loc].region;
 /** @param {GameState} state @param {string} faction */
-export const presenceOf = (state, faction) => LOCATION_IDS.reduce((n, loc) => n + tokensOf(state, loc, faction), 0);
+export const presenceOf = (state, faction) => LOCATION_IDS.reduce((n, loc) => n + rawTokens(state, loc, faction), 0);
 /** @param {GameState} state */
 export const totalPresence = (state) => state.factions.reduce((n, f) => n + presenceOf(state, f), 0);
 /** The faction in play for an archetype. @param {GameState | PlayerView} state @param {string} archetype */
@@ -408,9 +451,8 @@ function move(state, pid, faction, from, to, count, placedAt, freed = false) {
   const spot = state.options.gatherSway === 'origin' && placedAt.gather ? from : to;
   const key = spot === to ? `${to}:${faction}` : `${from}:${faction}:origin`;
   if (!free && swayRequired(state) && cost > 0 && !placedAt.has(key) && (state.players[pid].standing[faction] ?? 0) < cost) return 0;
-  state.board[from].tokens[faction] -= n;
-  if (state.board[from].tokens[faction] === 0) delete state.board[from].tokens[faction];
-  state.board[to].tokens[faction] = tokensOf(state, to, faction) + n;
+  takeTokens(state, from, faction, n);
+  addTokens(state, to, faction, n);
   const place = (/** @type {string} */ loc, /** @type {string} */ key, /** @type {number} */ amount) => {
     if (free || placedAt.has(key)) return;
     placedAt.add(key);
@@ -637,6 +679,24 @@ function placeTarget(state, card, t) {
 /** The factions a destination card may move: any (location mode) or only the suit's (faction mode). @param {GameState} state @param {Card} card @param {Target} t */
 const movable = (state, card, t) => (card.suit && t.mode === 'faction' ? [/** @type {string} */ (suitFaction(state, card))] : state.factions.slice());
 
+/** Place 1 of the player's sway at a location, spent from standing with a faction (if they have it). @param {GameState} state @param {string} pid @param {string} f @param {string} loc */
+function placeOne(state, pid, f, loc) {
+  if ((state.players[pid].standing[f] ?? 0) <= 0) return;
+  state.players[pid].standing[f] -= 1;
+  state.board[loc].sway[pid] = (state.board[loc].sway[pid] ?? 0) + 1;
+  state.events.push({ type: 'sway-placed', player: pid, faction: f, location: loc });
+}
+
+/**
+ * The Gate (designer, 2026-10-17): can this location be one of its ends? Any ↂ location, or any location holding the
+ * Sci-Fi faction; not scorched, and not already joined.
+ * @param {GameState} state @param {Card} card @param {string | undefined} loc
+ */
+const gateEnd = (state, card, loc) => !!loc && !!state.board[loc] && !state.board[loc].scorched && !gateOf(state, loc)
+  && (suitLocations(card).includes(loc) || factionsAt(state, loc).includes(/** @type {string} */ (suitFaction(state, card))));
+/** The factions present across two locations. @param {GameState} state @param {string} a @param {string} b */
+const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ...factionsAt(state, b)])];
+
 /** The one faction at a location, if exactly one is there (a group not otherwise engaged), else null. @param {GameState} state @param {string} loc */
 const loneAt = (state, loc) => { const here = factionsAt(state, loc); return !state.board[loc].scorched && here.length === 1 ? here[0] : null; };
 
@@ -648,7 +708,7 @@ const loneAt = (state, loc) => { const here = factionsAt(state, loc); return !st
  */
 function guestsOf(state, card, mode, to) {
   const sf = suitFaction(state, card);
-  return MAP[to].adjacent.map((l) => ({ location: l, faction: /** @type {string} */ (loneAt(state, l)) }))
+  return adj(state, to).map((l) => ({ location: l, faction: /** @type {string} */ (loneAt(state, l)) }))
     .filter((g) => g.faction && (mode === 'location' || g.faction === sf) && g.faction !== loneAt(state, to));
 }
 
@@ -664,7 +724,7 @@ const contestAt = (state, loc) => !state.board[loc].scorched && factionsAt(/** @
 /** Where each group next to `loc` would be pushed: one hex straight on, away from it (repel). @param {GameState} state @param {string} loc @param {string[]} factions */
 function pushes(state, loc, factions) {
   const { q, r } = MAP[loc];
-  return MAP[loc].adjacent.flatMap((from) => {
+  return adj(state, loc).flatMap((from) => {
     const d = spec.map.directions.find((x) => x.dq === MAP[from].q - q && x.dr === MAP[from].r - r);
     const to = d ? step(state, from, d.id) : null;
     return factionsAt(state, from).filter((f) => factions.includes(f)).map((f) => ({ from, f, to }));
@@ -711,7 +771,7 @@ function pitFalls(state, loc, f) {
 /** Where Install the Cameras places sway, with the faction it spends standing from (round 12). @param {GameState | PlayerView} state @param {string} pid @param {string} loc */
 function cameraSpots(state, pid, loc) {
   const standing = { ...state.players[pid].standing };
-  return [loc, ...MAP[loc].adjacent].flatMap((l) => {
+  return [loc, ...adj(state, loc)].flatMap((l) => {
     if (state.board[l].scorched) return [];
     const f = factionsAt(/** @type {GameState} */ (state), l).filter((x) => (standing[x] ?? 0) > 0).sort((a, b) => (standing[b] ?? 0) - (standing[a] ?? 0))[0];
     if (!f) return [];
@@ -721,7 +781,7 @@ function cameraSpots(state, pid, loc) {
 }
 /** Where a Howl draws a group two hexes out: a location next to both, already holding that faction if one does, else the first it can enter (round 13). @param {GameState} state @param {string} target @param {string} from @param {string} f */
 function howlStep(state, target, from, f) {
-  const between = MAP[from].adjacent.filter((m) => MAP[target].adjacent.includes(m) && canEnter(state, m, f));
+  const between = adj(state, from).filter((m) => adj(state, target).includes(m) && canEnter(state, m, f));
   return between.find((m) => tokensOf(state, m, f) > 0) ?? between[0] ?? null;
 }
 /** Lay a Trail: locations where the player alone has the most sway. @param {GameState | PlayerView} state @param {string} pid */
@@ -735,9 +795,9 @@ const trailSpots = (state, pid) => LOCATION_IDS.filter((l) => {
  */
 const copied = (state, card) => (card.action === 'copy' && 'lastPlayed' in state && state.lastPlayed ? cardById(state.lastPlayed) : card);
 /** Fall Back: the locations next to `to` holding the player's sway (`to` itself not scorched). @param {GameState | PlayerView} state @param {string} pid @param {string} to */
-const fallBackFrom = (state, pid, to) => (state.board[to].scorched ? [] : MAP[to].adjacent.filter((l) => (state.board[l].sway[pid] ?? 0) > 0));
+const fallBackFrom = (state, pid, to) => (state.board[to].scorched ? [] : adj(state, to).filter((l) => (state.board[l].sway[pid] ?? 0) > 0));
 /** Groups a Howl draws in (round 13). @param {GameState} state @param {string} target @param {string} f */
-const howlers = (state, target, f) => LOCATION_IDS.filter((l) => l !== target && !MAP[target].adjacent.includes(l) && twoHex(target).includes(l) && tokensOf(state, l, f) > 0)
+const howlers = (state, target, f) => LOCATION_IDS.filter((l) => l !== target && !adj(state, target).includes(l) && twoHex(target).includes(l) && tokensOf(state, l, f) > 0)
   .flatMap((from) => { const to = howlStep(state, target, from, f); return to ? [{ from, to }] : []; });
 /** Network jump destinations (round 13). @param {GameState} state @param {Card} card @param {Target} t */
 const networkSpots = (state, card, t) => (t.mode === 'location' ? suitLocations(card) : LOCATION_IDS.filter((l) => tokensOf(state, l, /** @type {string} */ (suitFaction(state, card))) > 0))
@@ -853,6 +913,16 @@ function checkShape(state, pid, card, t) {
   if (!t) return null; // a card with no legal target may be played for no effect (partial actions)
   switch (card.action) {
     case 'lure': return placeTarget(state, card, t);
+    case 'gate': {
+      const a = t.location, b = t.to, sf = /** @type {string} */ (suitFaction(state, card));
+      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      if (!gateEnd(state, card, a) || !gateEnd(state, card, b) || a === b) return 'Join two locations: each an ↂ location or one holding the Sci-Fi faction.';
+      const across = factionsAcross(state, /** @type {string} */ (a), /** @type {string} */ (b));
+      if (across.length > 2) return 'The Gate can\'t join locations holding three or more factions between them.';
+      if (!t.payer || ![sf, ...across].includes(t.payer)) return 'Choose the faction whose sway pays: the Sci-Fi faction or one at either end.';
+      if (swayRequired(state) && (state.players[pid].standing[t.payer] ?? 0) < 1) return 'You need the sway to pay (all or nothing).';
+      return t.losses === a || t.losses === b ? null : 'Choose the end the winner\'s losses come from.';
+    }
     case 'invite': {
       // Invite Them In: all of it, or it can't be played (designer).
       const to = t.location, sf = /** @type {string} */ (suitFaction(state, card));
@@ -889,7 +959,7 @@ function checkShape(state, pid, card, t) {
       const e = groupTarget(state, card, t);
       if (e) return e;
       const loc = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
-      if (card.action === 'halve') return tokensOf(state, loc, f) >= 2 && t.to && MAP[loc].adjacent.includes(t.to) ? null : 'Half needs a group of 2 or more and an adjacent destination.';
+      if (card.action === 'halve') return tokensOf(state, loc, f) >= 2 && t.to && adj(state, loc).includes(t.to) ? null : 'Half needs a group of 2 or more and an adjacent destination.';
       if (card.action === 'halve-far') return tokensOf(state, loc, f) >= 2 && t.to && t.to !== loc && state.board[t.to] ? null : 'Half needs a group of 2 or more and a destination.';
       if (card.action === 'teleport') return t.to && t.to !== loc && state.board[t.to] ? null : 'Choose where to set it down.';
       if (card.action === 'split') {
@@ -899,7 +969,7 @@ function checkShape(state, pid, card, t) {
         const dests = Object.keys(split).filter((d) => split[d] > 0);
         const n = freeOf(state, loc, f, unpinnedCard(card));
         if (n < 2) return 'A group of 1 can\'t be split.';
-        if (dests.length !== 2 || dests.some((d) => !MAP[loc].adjacent.includes(d) || !canEnter(state, d, f, state.pending?.blocked ?? []))) return 'Split between two adjacent locations that can take the group.';
+        if (dests.length !== 2 || dests.some((d) => !adj(state, loc).includes(d) || !canEnter(state, d, f, state.pending?.blocked ?? []))) return 'Split between two adjacent locations that can take the group.';
         const sizes = dests.map((d) => split[d]).sort((a, b) => a - b);
         if (sizes[0] !== Math.floor(n / 2) || sizes[1] !== Math.ceil(n / 2)) return 'Split the group evenly.';
         const cost = num(state, 'swayPerMove');
@@ -928,7 +998,7 @@ function checkShape(state, pid, card, t) {
       } else if (t.mode === 'faction') {
         if (t.faction !== suitFaction(state, card)) return 'Only the suit\'s faction.';
       } else return 'Choose a location target or a faction target.';
-      return t.to && MAP[t.location].adjacent.includes(t.to) ? null : 'Choose an adjacent location to drive them to.';
+      return t.to && adj(state, t.location).includes(t.to) ? null : 'Choose an adjacent location to drive them to.';
     }
     case 'reinforce': {
       const e = groupTarget(state, card, t);
@@ -939,7 +1009,7 @@ function checkShape(state, pid, card, t) {
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
       if (!t.location || !contestAt(state, t.location)) return 'Choose a contested location.';
       if (t.mode === 'location' ? !suitLocations(card).includes(t.location) : tokensOf(state, t.location, /** @type {string} */ (suitFaction(state, card))) <= 0) return 'That contest is not the suit\'s.';
-      return t.to && MAP[t.location].adjacent.includes(t.to) && factionsAt(state, t.to).length === 0 && canEnter(state, t.to, factionsAt(state, t.location)[0]) ? null : 'Choose an adjacent location with no tokens.';
+      return t.to && adj(state, t.location).includes(t.to) && factionsAt(state, t.to).length === 0 && canEnter(state, t.to, factionsAt(state, t.location)[0]) ? null : 'Choose an adjacent location with no tokens.';
     }
     case 'defect': case 'pit': {
       if (!t.location || !t.faction || tokensOf(state, t.location, t.faction) <= 0) return 'Choose a group on the board.';
@@ -973,9 +1043,9 @@ function checkShape(state, pid, card, t) {
       const e = groupTarget(state, card, t);
       if (e) return e;
       const from = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
-      if (!t.to || !MAP[from].adjacent.includes(t.to) || !canEnter(state, t.to, f)) return 'Choose an adjacent location it can enter.';
+      if (!t.to || !adj(state, from).includes(t.to) || !canEnter(state, t.to, f)) return 'Choose an adjacent location it can enter.';
       const g = t.moves?.[0];
-      if (g && (g.faction === f || !MAP[t.to].adjacent.includes(g.location) || g.location === t.to || tokensOf(state, g.location, g.faction) <= 0 || !canFollow(state, t.to, f, g.faction))) return 'That group can\'t follow it in.';
+      if (g && (g.faction === f || !adj(state, t.to).includes(g.location) || g.location === t.to || tokensOf(state, g.location, g.faction) <= 0 || !canFollow(state, t.to, f, g.faction))) return 'That group can\'t follow it in.';
       return null;
     }
     case 'leap': {
@@ -994,11 +1064,11 @@ function checkShape(state, pid, card, t) {
       const e = groupTarget(state, card, t);
       if (e) return e;
       const f = /** @type {string} */ (t.faction);
-      if (!t.to || !MAP[/** @type {string} */ (t.location)].adjacent.includes(t.to) || state.board[t.to].scorched) return 'Choose an adjacent location.';
+      if (!t.to || !adj(state, /** @type {string} */ (t.location)).includes(t.to) || state.board[t.to].scorched) return 'Choose an adjacent location.';
       const can = shoveable(state, t.to, f);
       if (!can) return canEnter(state, t.to, f) ? null : 'It can\'t enter there.';
       const g = t.moves?.[0];
-      if (!g || g.location !== t.to || !can.includes(g.faction) || !MAP[t.to].adjacent.includes(g.to) || !canEnter(state, g.to, g.faction)) return 'Shove the smaller group on to an adjacent location it can enter.';
+      if (!g || g.location !== t.to || !can.includes(g.faction) || !adj(state, t.to).includes(g.to) || !canEnter(state, g.to, g.faction)) return 'Shove the smaller group on to an adjacent location it can enter.';
       return null;
     }
     case 'howl': {
@@ -1037,7 +1107,7 @@ function checkShape(state, pid, card, t) {
     case 'bait': {
       if (!t.location || !state.board[t.location] || state.board[t.location].scorched) return 'Choose where to set the bait.';
       const from = t.from?.[0];
-      return t.faction && from && MAP[t.location].adjacent.includes(from) && tokensOf(state, from, t.faction) > 0 && canEnter(state, t.location, t.faction) ? null : 'Choose a group next to it.';
+      return t.faction && from && adj(state, t.location).includes(from) && tokensOf(state, from, t.faction) > 0 && canEnter(state, t.location, t.faction) ? null : 'Choose a group next to it.';
     }
     case 'allegiance': {
       if (!t.faction || (state.players[pid].standing[t.faction] ?? 0) <= 0) return 'Choose a faction you have standing with.';
@@ -1078,7 +1148,7 @@ function checkShape(state, pid, card, t) {
     case 'trail': {
       if (!t.location || !trailSpots(state, pid).includes(t.location)) return 'Choose a location where you have the most sway.';
       const from = t.from?.[0];
-      return t.faction && from && MAP[t.location].adjacent.includes(from) && tokensOf(state, from, t.faction) > 0 && canEnter(state, t.location, t.faction) ? null : 'Choose a group next to it.';
+      return t.faction && from && adj(state, t.location).includes(from) && tokensOf(state, from, t.faction) > 0 && canEnter(state, t.location, t.faction) ? null : 'Choose a group next to it.';
     }
     case 'stake': return t.location && state.board[t.location] && !state.board[t.location].scorched ? (state.players[pid].supply > 0 ? null : 'You have no cubes in your supply.') : 'Choose a location.';
     default: return 'Unknown card.';
@@ -1109,23 +1179,26 @@ function act(state, pid, card, t) {
   switch (card.action) {
     case 'lure': {
       const to = /** @type {string} */ (t.location);
-      const groups = MAP[to].adjacent.flatMap((from) => movable(state, card, t).map((f) => ({ from, f, n: tokensOf(state, from, f) })))
+      const groups = adj(state, to).flatMap((from) => movable(state, card, t).map((f) => ({ from, f, n: tokensOf(state, from, f) })))
         .filter((g) => g.n > 0 && canEnter(state, to, g.f, state.pending?.blocked)).sort((a, b) => b.n - a.n);
       const pick = (t.faction && t.from?.[0] ? groups.find((g) => g.f === t.faction && g.from === t.from?.[0] && g.n === groups[0].n) : null) ?? groups[0];
       if (pick) logLine(state, `${pid}: ${card.name} draws ${move(state, pid, pick.f, pick.from, to, pick.n, placed)} ${names(pick.f)} into ${lname(to)}.`);
+      break;
+    }
+    case 'gate': {
+      // The two ends are one location for movement, and fight as one, until the round's fights (joinedFight).
+      const a = /** @type {string} */ (t.location), b = /** @type {string} */ (t.to);
+      state.board[a].gate = b; state.board[b].gate = a;
+      state.board[a].gateLoss = t.losses; state.board[b].gateLoss = t.losses;
+      placeOne(state, pid, /** @type {string} */ (t.payer), a);
+      logLine(state, `${pid}: ${card.name} joins ${lname(a)} and ${lname(b)} for the rest of the round.`);
       break;
     }
     case 'invite': {
       // Each invited group comes in whole; 1 sway where each left and 1 at the new fight, from the factions moved.
       const to = /** @type {string} */ (t.location);
       const payer = t.mode === 'faction' ? /** @type {string} */ (suitFaction(state, card)) : /** @type {string} */ (t.payer);
-      const pay = (/** @type {string} */ f, /** @type {string} */ loc) => {
-        const k = Math.min(1, state.players[pid].standing[f] ?? 0);
-        if (k <= 0) return;
-        state.players[pid].standing[f] -= k;
-        state.board[loc].sway[pid] = (state.board[loc].sway[pid] ?? 0) + k;
-        state.events.push({ type: 'sway-placed', player: pid, faction: f, location: loc });
-      };
+      const pay = (/** @type {string} */ f, /** @type {string} */ loc) => placeOne(state, pid, f, loc);
       for (const g of t.moves ?? []) {
         placed.add(`${to}:${g.faction}`); // its sway goes where it left, not to the fight
         if (move(state, pid, g.faction, g.location, to, tokensOf(state, g.location, g.faction), placed)) pay(g.faction, g.location);
@@ -1141,13 +1214,12 @@ function act(state, pid, card, t) {
       // tokens stay together at the last location entered.
       const f = /** @type {string} */ (t.faction), start = /** @type {string} */ (t.location);
       let left = freeOf(state, start, f, placed.unpinned);
-      state.board[start].tokens[f] = tokensOf(state, start, f) - left;
-      if (state.board[start].tokens[f] <= 0) delete state.board[start].tokens[f];
+      takeTokens(state, start, f, left);
       let at = start;
       const visited = /** @type {string[]} */ ([]);
       for (const next of t.path ?? []) {
-        if (left <= 0 || next === start || visited.includes(next) || !MAP[at].adjacent.includes(next) || !canEnter(state, next, f, state.pending?.blocked) || (state.players[pid].standing[f] ?? 0) <= 0) break;
-        state.board[next].tokens[f] = tokensOf(state, next, f) + 1;
+        if (left <= 0 || next === start || visited.includes(next) || !adj(state, at).includes(next) || !canEnter(state, next, f, state.pending?.blocked) || (state.players[pid].standing[f] ?? 0) <= 0) break;
+        addTokens(state, next, f, 1);
         state.players[pid].standing[f] -= 1;
         state.board[next].sway[pid] = (state.board[next].sway[pid] ?? 0) + 1;
         state.events.push({ type: 'sway-placed', player: pid, faction: f, location: next });
@@ -1155,7 +1227,7 @@ function act(state, pid, card, t) {
         visited.push(next);
         at = next;
       }
-      if (left > 0) state.board[at].tokens[f] = tokensOf(state, at, f) + left;
+      if (left > 0) addTokens(state, at, f, left);
       logLine(state, visited.length ? `${pid}: ${card.name} chases ${names(f)} through ${visited.map(lname).join(', ')}.` : `${pid}: ${card.name} finds no trail.`);
       break;
     }
@@ -1206,7 +1278,7 @@ function act(state, pid, card, t) {
       break;
     }
     case 'surveil-supply': {
-      const at = [/** @type {string} */ (t.location), ...MAP[/** @type {string} */ (t.location)].adjacent].filter((l) => !state.board[l].scorched && factionsAt(state, l).length > 0);
+      const at = [/** @type {string} */ (t.location), ...adj(state, /** @type {string} */ (t.location))].filter((l) => !state.board[l].scorched && factionsAt(state, l).length > 0);
       const n = Math.min(at.length, state.players[pid].supply);
       for (const l of at.slice(0, n)) state.board[l].sway[pid] = (state.board[l].sway[pid] ?? 0) + 1;
       state.players[pid].supply -= n;
@@ -1258,7 +1330,7 @@ function act(state, pid, card, t) {
       const to = /** @type {string} */ (t.location);
       const led = placed.led;
       // The led faction comes first, then the largest of the rest (D15 reading).
-      const groups = MAP[to].adjacent.flatMap((from) => movable(state, card, t).map((f) => ({ from, f, n: tokensOf(state, from, f) }))).filter((g) => g.n > 0)
+      const groups = adj(state, to).flatMap((from) => movable(state, card, t).map((f) => ({ from, f, n: tokensOf(state, from, f) }))).filter((g) => g.n > 0)
         .sort((a, b) => Number(b.f === led) - Number(a.f === led) || b.n - a.n);
       let n = 0;
       for (const g of groups) n += move(state, pid, g.f, g.from, to, g.n, placed);
@@ -1294,7 +1366,7 @@ function act(state, pid, card, t) {
       const f = /** @type {string} */ (t.faction), loc = /** @type {string} */ (t.location);
       const n = Math.min(3, state.supply[f]);
       state.supply[f] -= n;
-      state.board[loc].tokens[f] = tokensOf(state, loc, f) + n;
+      addTokens(state, loc, f, n);
       logLine(state, `${pid}: ${card.name} adds ${n} ${names(f)} at ${lname(loc)} from the supply.`);
       break;
     }
@@ -1308,11 +1380,10 @@ function act(state, pid, card, t) {
       const f = /** @type {string} */ (t.faction), loc = /** @type {string} */ (t.location);
       const other = /** @type {string} */ (factionsAt(state, loc).find((x) => x !== f));
       const n = Math.min(3, tokensOf(state, loc, f), state.supply[other]);
-      state.board[loc].tokens[f] -= n;
-      if (state.board[loc].tokens[f] <= 0) delete state.board[loc].tokens[f];
+      takeTokens(state, loc, f, n);
       state.supply[f] += n;
       state.supply[other] -= n;
-      state.board[loc].tokens[other] += n;
+      addTokens(state, loc, other, n);
       logLine(state, `${pid}: ${card.name} turns ${n} ${names(f)} to the ${names(other)} at ${lname(loc)}.`);
       break;
     }
@@ -1354,19 +1425,19 @@ function act(state, pid, card, t) {
     case 'swap-far': {
       const a = { location: /** @type {string} */ (t.location), faction: /** @type {string} */ (t.faction) }, b = /** @type {{ location: string, faction: string }} */ (t.moves?.[0]);
       const nb = tokensOf(state, b.location, b.faction);
-      delete state.board[b.location].tokens[b.faction];
+      takeTokens(state, b.location, b.faction, nb);
       move(state, pid, a.faction, a.location, b.location, tokensOf(state, a.location, a.faction), placed, true);
-      state.board[b.location].tokens[b.faction] = nb;
+      addTokens(state, b.location, b.faction, nb);
       move(state, pid, b.faction, b.location, a.location, nb, placed, true);
       logLine(state, `${pid}: ${card.name}: ${names(a.faction)} at ${lname(a.location)} and ${names(b.faction)} at ${lname(b.location)} trade places.`);
       break;
     }
     case 'circle': {
       const moves = circlers(state, /** @type {string} */ (t.location), movable(state, card, t)).map((g) => ({ ...g, n: freeOf(state, g.from, g.f, placed.unpinned) }));
-      for (const g of moves) { state.board[g.from].tokens[g.f] -= g.n; if (state.board[g.from].tokens[g.f] <= 0) delete state.board[g.from].tokens[g.f]; } // all lift at once
+      for (const g of moves) takeTokens(state, g.from, g.f, g.n); // all lift at once
       let n = 0;
       for (const g of moves) {
-        state.board[g.from].tokens[g.f] = tokensOf(state, g.from, g.f) + g.n;
+        addTokens(state, g.from, g.f, g.n);
         n += move(state, pid, g.f, g.from, g.to, g.n, placed, true) ? 1 : 0; // a group that can't enter stays
       }
       logLine(state, `${pid}: ${card.name}: ${n} group${n === 1 ? '' : 's'} circle ${lname(/** @type {string} */ (t.location))}.`);
@@ -1596,6 +1667,7 @@ export function pendingDestinations(state, pend) {
   const card = copied(state, cardById(pend.card));
   switch (card.action) {
     case 'invite': return t.location ? [t.location] : [];
+    case 'gate': return [t.location ?? '', t.to ?? ''].filter(Boolean);
     case 'lure': case 'broadcast': case 'gather-region': case 'gather-neighbours': case 'call-home': case 'draw-adjacent': return t.location ? [t.location] : [];
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': case 'hack': return t.to ? [t.to] : [];
     case 'sow': return t.path ?? [];
@@ -1603,12 +1675,12 @@ export function pendingDestinations(state, pend) {
     case 'pit-fall': return t.to ? [t.to] : [];
     case 'carry-fight': return t.to ? [t.to] : [];
     case 'slide': case 'chain': return LOCATION_IDS;
-    case 'circle': return t.location ? MAP[t.location].adjacent : [];
+    case 'circle': return t.location ? adj(state, t.location) : [];
     case 'leap': case 'howl': return LOCATION_IDS;
     case 'network': case 'shove': return [t.to ?? '', t.moves?.[0]?.to ?? ''].filter(Boolean);
     case 'follow': return t.to ? [t.to] : [];
     case 'swap-far': return [t.location ?? '', t.moves?.[0]?.location ?? ''].filter(Boolean);
-    case 'repel': return t.location ? MAP[t.location].adjacent.flatMap((a) => MAP[a].adjacent) : [];
+    case 'repel': return t.location ? adj(state, t.location).flatMap((a) => adj(state, a)) : [];
     case 'conveyor': return LOCATION_IDS;
     default: return [];
   }
@@ -1873,8 +1945,8 @@ function endOfPlay(state) {
   state.pending = null;
   state.events = [];
   logLine(state, 'Everyone passed. Fights:');
-  for (const loc of LOCATION_IDS) if (!state.board[loc].scorched && factionsAt(state, loc).length === 2) fight(state, loc);
-  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.truce; delete p.double; delete p.wake; delete p.swarm; delete p.backdoor; delete p.lock; } // round 15, 18 and 19 test cards last the round
+  for (const loc of LOCATION_IDS) fightAt(state, loc);
+  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.gate; delete p.gateLoss; delete p.truce; delete p.double; delete p.wake; delete p.swarm; delete p.backdoor; delete p.lock; } // round 15, 18 and 19 test cards last the round
   state.tips = [];
   state.bounties = [];
   return beginGrowth(state);
@@ -1902,40 +1974,107 @@ export function clone(x) {
 /** Several locations' fights in turn, on one copy (as resolveFight one after another); `copy` false: on `state` itself, already a copy. @param {GameState} state @param {string[]} locs @returns {GameState} */
 export function resolveFights(state, locs, copy = true) {
   const next = copy ? clone(state) : state;
-  for (const loc of locs) fight(next, loc);
+  for (const loc of locs) fightAt(next, loc);
   return next;
 }
 
 /** One location's fight on a copy of the state, for tests and previews. @param {GameState} state @param {string} loc @returns {GameState} */
 export function resolveFight(state, loc) {
   const next = clone(state);
-  fight(next, loc);
+  fightAt(next, loc);
   return next;
 }
 
+/** The locations that will fight at round end as things stand: contested, not scorched (a Gate's ends together). @param {GameState} state */
+export const fightsDue = (state) => LOCATION_IDS.filter((loc) => !state.board[loc].scorched && factionsAt(state, loc).length === 2);
+
 /**
- * One fight (FR5, TF1, TD1, AF3 adjusted). Mutates state.
+ * A location's fight. A Gate's two ends fight once, as one (joinedFight), and the Gate closes; a location with no
+ * contest, or one already resolved through its Gate, has none. Mutates state.
  * @param {GameState} state @param {string} loc
  */
-function fight(state, loc) {
+function fightAt(state, loc) {
+  if (state.board[loc].scorched || factionsAt(state, loc).length !== 2) return;
+  const g = gateOf(state, loc);
+  if (g) joinedFight(state, loc, g);
+  else fight(state, loc);
+}
+
+/**
+ * The Gate's fight (designer, 2026-10-17): its two ends fight as one location. Strength and trophy sway are added
+ * across both, both ends' hidden tokens apply, alignment with either end breaks a tie, a true tie scorches both,
+ * and the winner's losses come from the end the Gate's player chose first. Afterwards each player's sway that
+ * stays (everyone but the leader and tied leaders) stays where it was. Mutates state.
+ * @param {GameState} state @param {string} a @param {string} b
+ */
+function joinedFight(state, a, b) {
+  const A = state.board[a], B = state.board[b];
+  const lossEnd = A.gateLoss ?? B.gateLoss ?? a;
+  const other = lossEnd === a ? b : a;
+  const fighters = factionsAt(state, a);
+  const before = { [a]: { ...A.tokens }, [b]: { ...B.tokens } };
+  const sway = { [a]: { ...A.sway }, [b]: { ...B.sway } };
+  const near = adj(state, a);
+  const name = `${locationById(a).name} and ${locationById(b).name}, through the Gate`;
+  const token = B.token;
+  for (const p of [A, B]) { delete p.gate; delete p.gateLoss; }
+  // Merge both ends into `a` for the fight.
+  const merge = (/** @type {Record<string, number>} */ x, /** @type {Record<string, number>} */ y) => { /** @type {Record<string, number>} */ const out = { ...x }; for (const [k, n] of Object.entries(y)) out[k] = (out[k] ?? 0) + n; return out; };
+  A.tokens = merge(A.tokens, B.tokens);
+  A.sway = merge(A.sway, B.sway);
+  if (B.swarm && !A.swarm) A.swarm = B.swarm;
+  if (B.wake) A.wake = true;
+  if (B.truce) A.truce = true;
+  if (B.double?.length) A.double = [...new Set([...(A.double ?? []), ...B.double])];
+  if (B.backdoor?.length) A.backdoor = [...new Set([...(A.backdoor ?? []), ...B.backdoor])];
+  B.tokens = {}; B.sway = {}; B.token = null;
+  fight(state, a, { token, other: b, near, name });
+  if (A.scorched) { B.scorched = true; return; } // a true tie: both ends scorched; everything already back in its supply
+  // Split what's left back to the two ends.
+  const after = A.tokens;
+  A.tokens = {}; B.tokens = {};
+  for (const [f, n] of Object.entries(after)) {
+    if (n <= 0) continue;
+    if (!fighters.includes(f)) { addTokens(state, lossEnd, f, n); continue; } // risen Undead (Wake the Dead)
+    let lost = (before[a][f] ?? 0) + (before[b][f] ?? 0) - n;
+    for (const end of [lossEnd, other]) {
+      const k = Math.min(Math.max(0, lost), before[end][f] ?? 0);
+      addTokens(state, end, f, (before[end][f] ?? 0) - k);
+      lost -= k;
+    }
+  }
+  const kept = A.sway;
+  A.sway = {}; B.sway = {};
+  for (const pid of Object.keys(kept)) for (const end of [a, b]) if (sway[end][pid]) state.board[end].sway[pid] = sway[end][pid];
+}
+
+/**
+ * One fight (FR5, TF1, TD1, AF3 adjusted). Mutates state. `joined`: a Gate's fight run on the merged location
+ * (joinedFight): the other end's hidden token, the other end (for alignment, AL2), and both ends' neighbours.
+ * @param {GameState} state @param {string} loc
+ * @param {{ token: Token | null, other: string, near: string[], name: string }} [joined]
+ */
+function fight(state, loc, joined = undefined) {
   const place = state.board[loc];
   const [a, b] = factionsAt(state, loc);
-  const name = locationById(loc).name;
+  const name = joined?.name ?? locationById(loc).name;
   if (place.truce) { logLine(state, `  ${name}: a truce; no fight this round.`); return; } // test card (round 15)
-  // A hidden token flips and takes part (IN1); its marker cube returns to its owner (MC3) after the fight.
-  const token = place.token;
+  // Hidden tokens flip and take part (IN1); a Gate's fight takes both ends' (designer, 2026-10-17).
+  const tokens = /** @type {Token[]} */ ([place.token, joined?.token ?? null].filter(Boolean));
   place.token = null;
-  const effect = token?.card ?? null;
-  if (token) logLine(state, `  ${name}: ${token.owner}'s token flips: ${effect ? cardById(effect).name : 'a bluff'}.`);
+  for (const tk of tokens) logLine(state, `  ${name}: ${tk.owner}'s token flips: ${tk.card ? cardById(tk.card).name : 'a bluff'}.`);
+  /** The real token with this effect, if one flipped here. @param {string} id */
+  const tokenWith = (id) => tokens.find((tk) => tk.card === id) ?? null;
+  const has = (/** @type {string} */ id) => !!tokenWith(id);
   const na = place.tokens[a], nb = place.tokens[b];
   // Link the Swarm (test card, round 20): the linked faction counts its tokens next door too, for who wins.
   const swarm = place.swarm === true ? factionOfArchetype(state, 'sentients') : place.swarm || null;
-  const next = (/** @type {string} */ f) => (f === swarm ? MAP[loc].adjacent.reduce((n, l) => n + tokensOf(state, l, f), 0) : 0);
+  const next = (/** @type {string} */ f) => (f === swarm ? (joined?.near ?? adj(state, loc)).reduce((n, l) => n + tokensOf(state, l, f), 0) : 0);
   const sa = na + next(a), sb = nb + next(b);
   // Install a Backdoor (test card, round 20): counted on the Sentients here as the fight starts.
   const hacked = place.backdoor?.length ? tokensOf(state, loc, /** @type {string} */ (factionOfArchetype(state, 'sentients'))) : 0;
-  const aligned = [a, b].find((f) => archetypeOf(f) === alignmentOf(loc));
-  const trueTie = effect === 'house-fire' || (sa === sb && !aligned);
+  const aligned = [a, b].find((f) => [loc, ...(joined ? [joined.other] : [])].some((l) => archetypeOf(f) === alignmentOf(l)));
+  const trueTie = has('house-fire') || (sa === sb && !aligned);
   if (trueTie && place.wake) {
     // Wake the Dead (test card, round 18): no scorching; both sides go back to their supplies.
     state.supply[a] += na;
@@ -1962,13 +2101,13 @@ function fight(state, loc) {
     winner = /** @type {string} */ (aligned);
     loser = winner === a ? b : a;
   } else [winner, loser] = sa > sb ? [a, b] : [b, a];
-  if (effect === 'invert' && sa !== sb) [winner, loser] = [loser, winner]; // test card (round 12): the smaller group wins
+  if (has('invert') && sa !== sb) [winner, loser] = [loser, winner]; // test card (round 12): the smaller group wins
   const nl = place.tokens[loser];
   const loserLoss = nl; // the loser always loses everything (FR5)
   let winnerLoss = Math.max(1, Math.floor(nl / 2));
-  if (effect === 'silver-bullets') winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
-  if (effect === 'salt-burn') winnerLoss = place.tokens[winner];
-  if (effect === 'force-field') winnerLoss = 0; // test card (round 8)
+  if (has('silver-bullets')) winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
+  if (has('salt-burn')) winnerLoss = place.tokens[winner];
+  if (has('force-field')) winnerLoss = 0; // test card (round 8)
   winnerLoss += (('bounties' in state && state.bounties) || []).filter((f) => f === winner).length; // Put a Bounty On It (test card, round 19): 1 more for each bounty
   winnerLoss = Math.min(winnerLoss, place.tokens[winner]);
   place.tokens[loser] -= loserLoss;
@@ -1977,7 +2116,7 @@ function fight(state, loc) {
   logLine(state, `  ${name}: ${factionById(winner).name} beat ${factionById(loser).name}; casualties ${loserLoss} and ${winnerLoss}.`);
   // Trophies (TD1): bigger pile to the leader, smaller to the runner-up.
   const piles = [{ faction: loser, n: loserLoss }, { faction: winner, n: winnerLoss }].filter((x) => x.n > 0).sort((x, y) => y.n - x.n);
-  if (effect === 'livestream') for (const pile of piles) { // test card (round 11): each pile doubled from its faction's supply
+  if (has('livestream')) for (const pile of piles) { // test card (round 11): each pile doubled from its faction's supply
     const extra = Math.min(pile.n, state.supply[pile.faction]);
     state.supply[pile.faction] -= extra;
     pile.n += extra;
@@ -2004,20 +2143,21 @@ function fight(state, loc) {
       logLine(state, `  ${pid} takes a pile of ${pile.n} ${factionById(pile.faction).name}.`);
     } else state.supply[pile.faction] += pile.n;
   };
-  if (effect === 'lay-to-rest' && token) { // test card (round 17 revision): the token's owner takes the smaller pile; the rest go back to their supplies
-    piles.forEach((pile, i) => give(pile, i === piles.length - 1 ? token.owner : null));
-  } else if (effect === 'sign-contract' && token) { // test card (round 17 revision): the owner takes the bigger pile, the leader only the smaller; the owner pays 2 standing with the Demons
-    piles.forEach((pile, i) => give(pile, i === 0 ? token.owner : collectors[0] ?? null));
+  const rest = tokenWith('lay-to-rest'), contract = tokenWith('sign-contract'), bullets = tokenWith('silver-bullets'), trap = tokenWith('set-trap');
+  if (rest) { // test card (round 17 revision): the token's owner takes the smaller pile; the rest go back to their supplies
+    piles.forEach((pile, i) => give(pile, i === piles.length - 1 ? rest.owner : null));
+  } else if (contract) { // test card (round 17 revision): the owner takes the bigger pile, the leader only the smaller; the owner pays 2 standing with the Demons
+    piles.forEach((pile, i) => give(pile, i === 0 ? contract.owner : collectors[0] ?? null));
     const demons = state.factions.find((f) => archetypeOf(f) === 'demonic');
-    if (demons) state.players[token.owner].standing[demons] = Math.max(0, (state.players[token.owner].standing[demons] ?? 0) - 2);
-  } else if (effect === 'silver-bullets' && token) { // round 17 revision (designer): the extra casualties go to the token's owner as their own pile
+    if (demons) state.players[contract.owner].standing[demons] = Math.max(0, (state.players[contract.owner].standing[demons] ?? 0) - 2);
+  } else if (bullets) { // round 17 revision (designer): the extra casualties go to the token's owner as their own pile
     const extra = piles.find((p) => p.faction === winner);
     const owed = Math.min(2, extra?.n ?? 0);
-    if (extra && owed) { extra.n -= owed; give({ faction: winner, n: owed }, token.owner); }
+    if (extra && owed) { extra.n -= owed; give({ faction: winner, n: owed }, bullets.owner); }
     const order = piles.filter((p) => p.n > 0).sort((x, y) => y.n - x.n);
     if (ranking.involved === 1 && collectors[0]) for (const pile of order) give(pile, collectors[0]);
     else order.forEach((pile, i) => give(pile, collectors[i] ?? null));
-  } else if (effect === 'set-trap' && token) for (const pile of piles) give(pile, token.owner); // Set a Trap (A, designer): the trap's owner takes every pile
+  } else if (trap) for (const pile of piles) give(pile, trap.owner); // Set a Trap (A, designer): the trap's owner takes every pile
   else if (ranking.involved === 1 && collectors[0]) {
     for (const pile of piles) give(pile, collectors[0]); // UP1
   } else {
@@ -2271,7 +2411,7 @@ export function sampleTarget(state, pid, cardId, rng) {
         const path = [];
         let at = g.loc;
         for (let i = 0; i < 4; i++) {
-          at = pick(MAP[at].adjacent);
+          at = pick(adj(state, at));
           path.push(at);
         }
         t = { mode, location: g.loc, faction: g.f, path };
@@ -2284,7 +2424,7 @@ export function sampleTarget(state, pid, cardId, rng) {
         t = { mode, location: loc, bluff: others.length && state.players[pid].bluffs > 0 ? pick(others) : undefined };
         break;
       }
-      case 'halve': case 'drive-out': case 'drive-out-either': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(MAP[g.loc].adjacent) }; break;
+      case 'halve': case 'drive-out': case 'drive-out-either': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(adj(state, g.loc)) }; break;
       case 'teleport': case 'halve-far': if (g) t = { mode, location: g.loc, faction: g.f, to: pick(LOCATION_IDS) }; break;
       case 'move-sway': {
         const mine = LOCATION_IDS.filter((l) => (state.board[l].sway[pid] ?? 0) > 0);
@@ -2296,7 +2436,7 @@ export function sampleTarget(state, pid, cardId, rng) {
       case 'split': {
         if (!g) break;
         const n = freeOf(state, g.loc, g.f, unpinnedCard(card));
-        const dests = MAP[g.loc].adjacent.filter((d) => canEnter(state, d, g.f));
+        const dests = adj(state, g.loc).filter((d) => canEnter(state, d, g.f));
         if (n < 2 || dests.length < 2) break;
         const a = pick(dests), b = pick(dests.filter((d) => d !== a));
         const na = Math.floor(n / 2) + (n % 2 && rng() < 0.5 ? 1 : 0);
@@ -2383,7 +2523,7 @@ const finishWalk = (t) => t;
  * For the table: the next choice in building a card's target, given what has
  * been chosen so far. Not a rule; it offers the legal options one step at a
  * time, and the server still checks the finished target (checkTarget).
- * @typedef {{ kind: 'mode' } | { kind: 'location', key: 'location' | 'to' | 'bluff' | 'path' | 'from', options: string[], optional?: boolean, left?: number }
+ * @typedef {{ kind: 'mode' } | { kind: 'location', key: 'location' | 'to' | 'bluff' | 'path' | 'from' | 'losses', options: string[], optional?: boolean, left?: number }
  *   | { kind: 'group', key: 'group' | 'move' | 'lure', options: { location: string, faction: string }[], optional?: boolean }
  *   | { kind: 'faction', key?: 'faction' | 'to' | 'lead' | 'payer', options: string[] } | { kind: 'direction', options: string[] }
  *   | { kind: 'split', options: string[], left: number } | { kind: 'done' }} Choice
@@ -2415,6 +2555,17 @@ function nextShape(state, pid, cardId, t) {
   /** The factions this reading may move: any (location target) or only the suit's (faction target). */
   const movers = card.suit && mode === 'faction' ? [/** @type {string} */ (sf)] : state.factions.slice();
   switch (card.action) {
+    case 'gate': {
+      const ends = LOCATION_IDS.filter((l) => gateEnd(/** @type {GameState} */ (state), card, l));
+      const payers = (/** @type {string} */ x, /** @type {string} */ y) => [...new Set([/** @type {string} */ (sf), ...factionsAcross(/** @type {GameState} */ (state), x, y)])]
+        .filter((f) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= 1);
+      const pairs = (/** @type {string} */ x) => ends.filter((y) => y !== x && factionsAcross(/** @type {GameState} */ (state), x, y).length <= 2 && payers(x, y).length > 0);
+      if (!t.location) return { kind: 'location', key: 'location', options: ends.filter((x) => pairs(x).length > 0) };
+      if (!t.to) return { kind: 'location', key: 'to', options: pairs(t.location) };
+      if (!t.payer) return { kind: 'faction', key: 'payer', options: payers(t.location, t.to) };
+      if (!t.losses) return { kind: 'location', key: 'losses', options: [t.location, t.to] };
+      return { kind: 'done' };
+    }
     case 'invite': {
       const need = mode === 'location' ? 2 : 1;
       const pays = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
@@ -2431,12 +2582,12 @@ function nextShape(state, pid, cardId, t) {
     }
     case 'lure': case 'draw-adjacent': {
       // Only where it would do something: a group of a faction that may come is adjacent and can enter.
-      const comes = (/** @type {string} */ loc) => MAP[loc].adjacent.some((from) => movers.some((f) => tokensOf(state, from, f) > 0 && canEnter(state, loc, f)));
+      const comes = (/** @type {string} */ loc) => adj(state, loc).some((from) => movers.some((f) => tokensOf(state, from, f) > 0 && canEnter(state, loc, f)));
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter(comes) };
       if (card.action === 'lure' && !t.faction) {
         // Fresh Meat: a tie for the largest group goes to the player's choice (G.8).
         const to = t.location;
-        const near = MAP[to].adjacent.flatMap((from) => movers.map((f) => ({ location: from, faction: f, n: tokensOf(state, from, f) }))).filter((g) => g.n > 0 && canEnter(state, to, g.faction));
+        const near = adj(state, to).flatMap((from) => movers.map((f) => ({ location: from, faction: f, n: tokensOf(state, from, f) }))).filter((g) => g.n > 0 && canEnter(state, to, g.faction));
         const most = Math.max(0, ...near.map((g) => g.n));
         const tied = near.filter((g) => g.n === most).map(({ location, faction }) => ({ location, faction }));
         if (tied.length > 1) return { kind: 'group', key: 'lure', options: tied };
@@ -2468,7 +2619,7 @@ function nextShape(state, pid, cardId, t) {
     }
     case 'sow': {
       // Only groups that can be chased at least one step: sway with the faction, and a bordering location it can enter.
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => (state.players[pid].standing[g.faction] ?? 0) > 0 && exits(g, MAP[g.location].adjacent).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => (state.players[pid].standing[g.faction] ?? 0) > 0 && exits(g, adj(state, g.location)).length > 0) };
       const path = t.path ?? [];
       if (path.includes('__stop')) return { kind: 'done' };
       const at = path.length ? path[path.length - 1] : t.location;
@@ -2476,17 +2627,17 @@ function nextShape(state, pid, cardId, t) {
       // Steps left: one token and one sway per location entered.
       const left = Math.min(tokensOf(state, t.location, f), state.players[pid].standing[f] ?? 0) - path.length;
       // The chase never enters a location twice, nor goes back to its start (G.8).
-      const opts = left > 0 ? MAP[at].adjacent.filter((l) => canEnter(state, l, f) && l !== t.location && !path.includes(l)) : [];
+      const opts = left > 0 ? adj(state, at).filter((l) => canEnter(state, l, f) && l !== t.location && !path.includes(l)) : [];
       return opts.length ? { kind: 'location', key: 'path', options: opts, optional: path.length > 0, left } : { kind: 'done' };
     }
     case 'halve': case 'halve-far': case 'drive-out': case 'drive-out-either': case 'teleport': {
       const far = card.action === 'teleport' || card.action === 'halve-far';
       if (!t.location) {
         const gs = groups().filter(groupOk).filter((g) => (!card.action.startsWith('halve') || tokensOf(state, g.location, g.faction) >= 2)
-          && exits(g, far ? LOCATION_IDS : MAP[g.location].adjacent).length > 0);
-        return { kind: 'group', key: 'group', options: card.action.startsWith('drive-out') ? gs.filter((g) => MAP[g.location].adjacent.some((to) => ok({ ...t, location: g.location, faction: g.faction, to }))) : gs };
+          && exits(g, far ? LOCATION_IDS : adj(state, g.location)).length > 0);
+        return { kind: 'group', key: 'group', options: card.action.startsWith('drive-out') ? gs.filter((g) => adj(state, g.location).some((to) => ok({ ...t, location: g.location, faction: g.faction, to }))) : gs };
       }
-      const reach = far ? LOCATION_IDS.filter((l) => l !== t.location) : MAP[t.location].adjacent;
+      const reach = far ? LOCATION_IDS.filter((l) => l !== t.location) : adj(state, t.location);
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: reach.filter((to) => canEnter(state, to, /** @type {string} */ (t.faction))) };
     }
     case 'reinforce':
@@ -2494,7 +2645,7 @@ function nextShape(state, pid, cardId, t) {
     case 'defect': case 'pit':
       return t.location ? { kind: 'done' } : { kind: 'group', key: 'group', options: groups().filter((g) => ok({ mode, location: g.location, faction: g.faction })) };
     case 'carry-fight': {
-      const dests = (/** @type {string} */ loc) => MAP[loc].adjacent.filter((to) => ok({ mode, location: loc, to }));
+      const dests = (/** @type {string} */ loc) => adj(state, loc).filter((to) => ok({ mode, location: loc, to }));
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((loc) => dests(loc).length > 0) };
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: dests(t.location) };
     }
@@ -2519,14 +2670,14 @@ function nextShape(state, pid, cardId, t) {
     }
     case 'shove': {
       const f = /** @type {string} */ (t.faction);
-      const tos = (/** @type {string} */ loc, /** @type {string} */ gf) => MAP[loc].adjacent.filter((to) => !state.board[to].scorched && (canEnter(state, to, gf) || (shoveable(state, to, gf) ?? []).some((x) => MAP[to].adjacent.some((d) => canEnter(state, d, x)))));
+      const tos = (/** @type {string} */ loc, /** @type {string} */ gf) => adj(state, loc).filter((to) => !state.board[to].scorched && (canEnter(state, to, gf) || (shoveable(state, to, gf) ?? []).some((x) => adj(state, to).some((d) => canEnter(state, d, x)))));
       if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => tos(g.location, g.faction).length > 0) };
       if (!t.to) return { kind: 'location', key: 'to', options: tos(t.location, f) };
       const can = shoveable(state, t.to, f);
       if (!can) return { kind: 'done' };
       const g = t.moves?.[0];
-      if (!g) return { kind: 'group', key: 'move', options: can.filter((x) => MAP[/** @type {string} */ (t.to)].adjacent.some((d) => canEnter(state, d, x))).map((x) => ({ location: /** @type {string} */ (t.to), faction: x })) };
-      return g.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: MAP[t.to].adjacent.filter((d) => canEnter(state, d, g.faction)) };
+      if (!g) return { kind: 'group', key: 'move', options: can.filter((x) => adj(state, /** @type {string} */ (t.to)).some((d) => canEnter(state, d, x))).map((x) => ({ location: /** @type {string} */ (t.to), faction: x })) };
+      return g.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: adj(state, t.to).filter((d) => canEnter(state, d, g.faction)) };
     }
     case 'howl':
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(placeOk).filter((loc) => movers.some((f) => howlers(state, loc, f).length > 0)) };
@@ -2536,12 +2687,12 @@ function nextShape(state, pid, cardId, t) {
     case 'surveil':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((loc) => cameraSpots(state, pid, loc).length > 0) };
     case 'follow': {
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => exits(g, MAP[g.location].adjacent).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => exits(g, adj(state, g.location)).length > 0) };
       const f = /** @type {string} */ (t.faction);
-      if (!t.to) return { kind: 'location', key: 'to', options: MAP[t.location].adjacent.filter((l) => canEnter(state, l, f)) };
+      if (!t.to) return { kind: 'location', key: 'to', options: adj(state, t.location).filter((l) => canEnter(state, l, f)) };
       if (t.moves?.length) return { kind: 'done' };
       const to = t.to;
-      const followers = groups().filter((g) => g.faction !== f && g.location !== to && MAP[to].adjacent.includes(g.location) && canFollow(state, to, f, g.faction));
+      const followers = groups().filter((g) => g.faction !== f && g.location !== to && adj(state, to).includes(g.location) && canFollow(state, to, f, g.faction));
       return followers.length ? { kind: 'group', key: 'move', options: followers, optional: true } : { kind: 'done' };
     }
     case 'repel':
@@ -2562,7 +2713,7 @@ function nextShape(state, pid, cardId, t) {
       // Evenly between exactly two adjacent locations; an odd token goes where the player sends it (designer, 2026-10-15).
       const size = (/** @type {{ location: string, faction: string }} */ g) => freeOf(state, g.location, g.faction, unpinnedCard(card));
       const pays = (/** @type {string} */ f) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= 2 * num(state, 'swayPerMove');
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => size(g) >= 2 && exits(g, MAP[g.location].adjacent).length >= 2 && pays(g.faction)) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => size(g) >= 2 && exits(g, adj(state, g.location)).length >= 2 && pays(g.faction)) };
       const f = /** @type {string} */ (t.faction);
       const n = size({ location: t.location, faction: f });
       const split = t.split ?? {};
@@ -2571,7 +2722,7 @@ function nextShape(state, pid, cardId, t) {
       const used = Object.keys(split).filter((d) => (split[d] ?? 0) > 0);
       const big = Math.ceil(n / 2);
       const full = (/** @type {string} */ d) => (split[d] ?? 0) + 1 > big || (n % 2 === 1 && (split[d] ?? 0) + 1 === big && used.some((u) => u !== d && split[u] === big));
-      const dests = MAP[t.location].adjacent.filter((l) => canEnter(state, l, f) && (used.length < 2 || used.includes(l)) && !full(l));
+      const dests = adj(state, t.location).filter((l) => canEnter(state, l, f) && (used.length < 2 || used.includes(l)) && !full(l));
       return left > 0 ? { kind: 'split', options: dests, left } : { kind: 'done' };
     }
     case 'conveyor':
@@ -2594,7 +2745,7 @@ function nextShape(state, pid, cardId, t) {
       return { kind: 'location', key: 'from', options: LOCATION_IDS.filter((l) => !state.board[l].scorched && !at.includes(l)), optional: at.length > 0 };
     }
     case 'bait': {
-      const into = (/** @type {string} */ to) => MAP[to].adjacent.flatMap((from) => factionsAt(state, from).filter((f) => canEnter(state, to, f)).map((f) => ({ location: from, faction: f })));
+      const into = (/** @type {string} */ to) => adj(state, to).flatMap((from) => factionsAt(state, from).filter((f) => canEnter(state, to, f)).map((f) => ({ location: from, faction: f })));
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched && into(l).length > 0) };
       return t.faction ? { kind: 'done' } : { kind: 'group', key: 'lure', options: into(t.location) };
     }
@@ -2623,7 +2774,7 @@ function nextShape(state, pid, cardId, t) {
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].scorched) };
     case 'copy': return { kind: 'location', key: 'location', options: [] };
     case 'trail': {
-      const into = (/** @type {string} */ to) => MAP[to].adjacent.flatMap((from) => factionsAt(state, from).filter((f) => canEnter(state, to, f)).map((f) => ({ location: from, faction: f })));
+      const into = (/** @type {string} */ to) => adj(state, to).flatMap((from) => factionsAt(state, from).filter((f) => canEnter(state, to, f)).map((f) => ({ location: from, faction: f })));
       if (!t.location) return { kind: 'location', key: 'location', options: trailSpots(state, pid).filter((l) => into(l).length > 0) };
       return t.faction ? { kind: 'done' } : { kind: 'group', key: 'lure', options: into(t.location) };
     }
@@ -2674,6 +2825,7 @@ export function describeTarget(cardId, t) {
     case 'gather-region': case 'gather-neighbours': case 'call-home': return `${F(t.faction)} into ${L(t.location)}${how}`;
     case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
+    case 'gate': return `${L(t.location)} and ${L(t.to)} joined${t.payer ? `, ${F(t.payer)} paying` : ''}${t.losses ? `; the winner's losses from ${L(t.losses)}` : ''}`;
     case 'invite': return `${(t.moves ?? []).map((g) => `${F(g.faction)} from ${L(g.location)}`).join(' and ')} into ${L(t.location)}${t.payer ? `, ${F(t.payer)} paying at the fight` : ''}`;
     case 'sow': return `${F(t.faction)} from ${L(t.location)} via ${(t.path ?? []).map(L).join(', ')}${how}`;
     case 'token': return `token at ${L(t.location)}${t.bluff ? `, bluff at ${L(t.bluff)}` : ''}${how}`;
@@ -2747,7 +2899,7 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: place.swarm } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
+      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: place.swarm } : {}), ...(place.gate ? { gate: place.gate, gateLoss: place.gateLoss } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),

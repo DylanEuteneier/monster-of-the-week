@@ -1373,6 +1373,20 @@
           "round": 21
         },
         {
+          "id": "gate",
+          "name": "The Gate",
+          "suit": "scifi",
+          "slot": "strike",
+          "sway": 2,
+          "action": "gate",
+          "text": "Join two locations for the rest of the round: they count as a single location for movement, and fight as one (strength and sway added across both; a true tie scorches both). Each end is an ↂ location or a location holding the Sci-Fi faction; never three factions across them. Place 1 sway there, from the Sci-Fi faction or one at either end. Target: the two ends.",
+          "readings": {
+            "location": "either end: an ↂ location, or a location holding the Sci-Fi faction.",
+            "faction": "either end: a location holding the Sci-Fi faction, or an ↂ location."
+          },
+          "round": 21
+        },
+        {
         "id": "drones",
         "name": "Reprogram the Drones",
         "suit": "sentients",

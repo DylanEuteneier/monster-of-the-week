@@ -63,7 +63,7 @@ export function targetSteps(state, pid, cardId, target) {
         else break;
         continue;
       }
-      const word = { location: 'at', to: 'to', from: 'from', path: 'via', bluff: 'bluff at' }[c.key] ?? 'at';
+      const word = { location: 'at', to: 'to', from: 'from', path: 'via', bluff: 'bluff at', losses: 'losses from' }[c.key] ?? 'at';
       steps.push({ kind: 'location', location: l, label: `${word} ${L(l)}` });
       if (c.key === 'path') t.path = [...(t.path ?? []), l];
       else if (c.key === 'from') t.from = [...(t.from ?? []), l];

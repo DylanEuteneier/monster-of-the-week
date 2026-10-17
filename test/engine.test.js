@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  fightsDue,
   spec, createGame, validate, applyMove, playerView, waitingOn, shuffle, resolveOptions, IllegalMoveError,
   totalPresence, presenceOf, resolveFight, growthDue, cardById, canEnter, nextChoice, previewTarget, checkTarget, printedOf, sampleTarget, deckOf, factionOfArchetype,
 } from '../public/engine.js';
@@ -464,6 +465,61 @@ test('Invite Them In: two lone groups next door come whole into an empty ◐ loc
   assert.deepEqual([fa.board[to].tokens[noct], fa.board[a].sway.ann, fa.board[to].sway.ann], [3, 1, 1]);
   q.players.ann.standing[noct] = 1;
   assert.ok(checkTarget(q, 'ann', cardById('invite-in'), ft));
+});
+
+test('The Gate joins two locations: one location for movement, one fight (designer, 2026-10-17)', () => {
+  const s = clear(newGame());
+  const sci = /** @type {string} */ (factionOfArchetype(s, 'scifi'));
+  const [f, g, h] = s.factions.filter((x) => x !== sci);
+  const a = 'military-facility', b = 'state-park';
+  s.board[a].tokens = { [f]: 3 };
+  s.board[b].tokens = { [g]: 2 };
+  s.players.ann.standing = Object.fromEntries(s.factions.map((x) => [x, 1]));
+  const t = { mode: /** @type {const} */ ('location'), location: a, to: b, payer: f, losses: a };
+  assert.equal(checkTarget(s, 'ann', cardById('gate'), t), null);
+  s.board[b].tokens = { [g]: 2, [h]: 1 };
+  assert.ok(checkTarget(s, 'ann', cardById('gate'), t)); // three factions across the two: no
+  s.board[b].tokens = { [g]: 2 };
+  s.players.ann.standing[f] = 0;
+  assert.ok(checkTarget(s, 'ann', cardById('gate'), t)); // can't pay: can't play
+  s.players.ann.standing[f] = 1;
+  const joined = /** @type {GameState} */ ({ ...s, ...previewTarget(s, 'ann', 'gate', t) });
+  assert.deepEqual([joined.board[a].gate, joined.board[b].gate, joined.board[a].sway.ann, joined.players.ann.standing[f]], [b, a, 1, 0]);
+  assert.deepEqual(fightsDue(joined).sort(), [a, b].sort()); // the two lone groups now fight
+  // The joined fight: 3 against 2; the winner's 1 loss from the chosen end; trophies by sway across both ends.
+  joined.board[a].sway = { ann: 2 };
+  joined.board[b].sway = { bob: 1 };
+  const fought = resolveFight(joined, a);
+  assert.deepEqual([fought.board[a].tokens, fought.board[b].tokens], [{ [f]: 2 }, {}]);
+  assert.deepEqual([fought.players.ann.trophies[g], fought.players.bob.trophies[f]], [2, 1]);
+  assert.deepEqual([fought.board[a].sway.ann, fought.board[b].sway.bob, fought.board[a].gate], [undefined, 1, undefined]); // the leader's sway converts; the runner-up's stays where it was
+  // A true tie on neutral ground scorches both ends.
+  const tie = structuredClone(joined);
+  tie.board[a].tokens = { [f]: 2 };
+  if (![f, g].some((x) => [a, b].some((l) => spec.locations.find((L) => L.id === l)?.archetype === spec.factions.find((F) => F.id === x)?.archetype))) {
+    const burnt = resolveFight(tie, b);
+    assert.deepEqual([burnt.board[a].scorched, burnt.board[b].scorched], [true, true]);
+  }
+});
+
+test('The Gate: a group at both ends moves as one, and next door reaches through it (designer, 2026-10-17)', () => {
+  const s = clear(newGame());
+  const sci = /** @type {string} */ (factionOfArchetype(s, 'scifi'));
+  const [f, g] = s.factions.filter((x) => x !== sci);
+  const a = 'military-facility', b = 'state-park';
+  s.board[a].tokens = { [f]: 3 };
+  s.board[b].tokens = { [f]: 2 };
+  s.board[a].gate = b; s.board[b].gate = a;
+  const far = /** @type {string} */ (Object.keys(s.board).find((l) => ![a, b].includes(l) && !/** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations)[a].adjacent.includes(l)));
+  const beamed = previewTarget(s, 'ann', 'beam', { mode: 'location', location: a, faction: f, to: far });
+  assert.deepEqual([beamed.board[far].tokens[f], beamed.board[a].tokens[f], beamed.board[b].tokens[f]], [5, undefined, undefined]);
+  // Invite Them In at the Ski Resort: the Military Facility is next door, so its Gate partner's group is too.
+  const q = clear(newGame());
+  q.board['military-facility'].gate = b; q.board[b].gate = 'military-facility';
+  q.board[b].tokens = { [g]: 2 };
+  q.board.junkyard.tokens = { [f]: 1 };
+  const offered = nextChoice(q, 'ann', 'invite-in', { mode: 'location', location: 'ski-resort' });
+  assert.ok(offered.kind === 'group' && offered.options.some((o) => o.faction === g));
 });
 
 test('payInFull (designer, 2026-10-15): a card that can\'t pay for every move can\'t be played for its action; off, it goes as far as it can pay (IC1)', () => {

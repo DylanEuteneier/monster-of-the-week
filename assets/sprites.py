@@ -861,6 +861,16 @@ MARKS = {
         "kck..kck",
         "kk....kk",
     ],
+    "gate": [
+        "..kkkk..",
+        ".kRrrRk.",
+        "kRrvvrRk",
+        "krvnnvrk",
+        "krvccvrk",
+        "kRrvvrRk",
+        ".kRrrRk.",
+        "..kkkk..",
+    ],
     "lock": [
         "..kkkk..",
         ".kgkkgk.",
