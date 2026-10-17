@@ -637,6 +637,33 @@ test('seeding=even, the first draft (designer 2026-10-17): each faction starts w
   assert.equal(totalPresence(s), 45);
 });
 
+test('The Big Chase: a lone group runs a chase, leaving 1 token and 1 sway at each location passed (designer, 2026-10-17)', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const sci = /** @type {string} */ (factionOfArchetype(s, 'scifi'));
+  const [f, g, h] = s.factions.filter((x) => x !== sci);
+  const start = 'military-facility';
+  const a = map[start].adjacent[0];
+  const b = /** @type {string} */ (map[a].adjacent.find((l) => l !== start && !map[start].adjacent.includes(l)));
+  const c = /** @type {string} */ (map[b].adjacent.find((l) => ![start, a].includes(l)));
+  s.board[start].tokens = { [f]: 5 };
+  s.board[b].tokens = { [g]: 2 }; // a lone rival passed: the dropped token starts a small contest there
+  s.players.ann.standing[f] = 3;
+  const t = { mode: /** @type {const} */ ('location'), location: start, faction: f, path: [a, b, c] };
+  assert.equal(checkTarget(s, 'ann', cardById('big-chase'), t), null);
+  const after = previewTarget(s, 'ann', 'big-chase', t);
+  assert.deepEqual([after.board[start].tokens[f], after.board[a].tokens[f], after.board[b].tokens, after.board[c].tokens[f]], [undefined, 1, { [g]: 2, [f]: 1 }, 3]);
+  assert.deepEqual([start, a, b, c].map((l) => after.board[l].sway.ann), [undefined, 1, 1, 1]);
+  s.players.ann.standing[f] = 2;
+  assert.ok(checkTarget(s, 'ann', cardById('big-chase'), t)); // 3 locations, 2 sway: can't play
+  s.players.ann.standing[f] = 9;
+  s.board[start].tokens = { [f]: 2 };
+  assert.ok(checkTarget(s, 'ann', cardById('big-chase'), t)); // 2 tokens can pass only 1 location and still arrive
+  s.board[start].tokens = { [f]: 5 };
+  s.board[a].tokens = { [g]: 1, [h]: 1 };
+  assert.ok(checkTarget(s, 'ann', cardById('big-chase'), t)); // never through a fight it isn't part of
+});
+
 test('payInFull (designer, 2026-10-15): a card that can\'t pay for every move can\'t be played for its action; off, it goes as far as it can pay (IC1)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);

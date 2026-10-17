@@ -1466,6 +1466,20 @@
           "round": 21
         },
         {
+          "id": "big-chase",
+          "name": "The Big Chase",
+          "suit": "scifi",
+          "slot": "shift",
+          "sway": 3,
+          "action": "chase",
+          "text": "The Kids on Bikes deliberately lead a lone group on a chase from neighbour to neighbour, across any region. The start keeps nothing; every location it passes keeps 1 of its tokens and 1 of your sway. It can pass empty ground, lone rivals, its own kind and fights it’s part of, and it ends wherever you choose that it can enter, with at least 1 token arriving and 1 sway there. Sway from your standing with the faction chased; all of it, or it can’t be played. Target: the group chased.",
+          "readings": {
+            "location": "a lone group at an ↂ location.",
+            "faction": "a lone Sci-Fi group anywhere."
+          },
+          "round": 21
+        },
+        {
         "id": "drones",
         "name": "Reprogram the Drones",
         "suit": "sentients",

@@ -705,6 +705,15 @@ const gateEnd = (state, card, loc) => !!loc && !!state.board[loc] && !state.boar
 const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ...factionsAt(state, b)])];
 
 /**
+ * The Big Chase (ↂ shift, designer 2026-10-17): where a chased group of `f` may go next from `at`: a neighbour it can
+ * enter (empty, its own kind, a lone rival, or a fight it's part of), not one already on the chase, not scorched;
+ * Lock Down's borders hold.
+ * @param {GameState} state @param {string} at @param {string} f @param {string[]} chase  the start and the steps so far
+ */
+const chaseSteps = (state, at, f, chase) => adj(state, at).filter((l) => !chase.some((x) => endsOf(state, x).includes(l)) && !state.board[l].scorched
+  && canEnter(state, l, f) && !((state.board[at].lock || state.board[l].lock) && regionOf(at) !== regionOf(l)));
+
+/**
  * Perform the Ritual (⎈ strike, designer 2026-10-17): a gravity well from next door. The groups of `f` next to the
  * centre: lone ones come whole; one in a fight may send up to half, rounded down (at least half stays, so no fight
  * ends). Lock Down's borders hold.
@@ -966,6 +975,21 @@ function checkShape(state, pid, card, t) {
   if (!t) return null; // a card with no legal target may be played for no effect (partial actions)
   switch (card.action) {
     case 'lure': return placeTarget(state, card, t);
+    case 'chase': {
+      const start = t.location, f = t.faction, sf = suitFaction(state, card);
+      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      if (!start || !f || !state.board[start] || loneAt(state, start) !== f || (t.mode === 'location' ? !suitLocations(card).includes(start) : f !== sf)) return t.mode === 'location' ? 'Choose a lone group at an ↂ location.' : 'Choose a lone Sci-Fi group.';
+      const path = (t.path ?? []).filter((l) => l !== '__stop');
+      if (!path.length) return 'Lead the chase at least one step.';
+      const chase = [start];
+      for (const l of path) {
+        if (!chaseSteps(state, chase[chase.length - 1], f, chase).includes(l)) return 'The chase goes from neighbour to neighbour, where the group can enter, never back.';
+        chase.push(l);
+      }
+      // 1 token and 1 sway stay at each location passed; at least 1 token arrives; 1 sway at the end too.
+      if (path.length > tokensOf(state, start, f)) return 'At least 1 token must arrive: a token stays at every location passed.';
+      return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < path.length ? 'You need the sway to pay at every location on the chase (all or nothing).' : null;
+    }
     case 'well': {
       const centre = t.location, f = t.faction, sf = /** @type {string} */ (suitFaction(state, card));
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
@@ -1271,6 +1295,19 @@ function act(state, pid, card, t) {
         .filter((g) => g.n > 0 && canEnter(state, to, g.f, state.pending?.blocked)).sort((a, b) => b.n - a.n);
       const pick = (t.faction && t.from?.[0] ? groups.find((g) => g.f === t.faction && g.from === t.from?.[0] && g.n === groups[0].n) : null) ?? groups[0];
       if (pick) logLine(state, `${pid}: ${card.name} draws ${move(state, pid, pick.f, pick.from, to, pick.n, placed)} ${names(pick.f)} into ${lname(to)}.`);
+      break;
+    }
+    case 'chase': {
+      // The group runs the chase, leaving 1 token and 1 sway at each location passed; the rest arrive at the end.
+      const f = /** @type {string} */ (t.faction), start = /** @type {string} */ (t.location);
+      const path = (t.path ?? []).filter((l) => l !== '__stop');
+      const n = tokensOf(state, start, f);
+      takeTokens(state, start, f, n);
+      for (const l of path.slice(0, -1)) { addTokens(state, l, f, 1); placeOne(state, pid, f, l); }
+      const end = /** @type {string} */ (path[path.length - 1]);
+      addTokens(state, end, f, n - (path.length - 1));
+      placeOne(state, pid, f, end);
+      logLine(state, `${pid}: ${card.name}: ${names(f)} chased from ${lname(start)} to ${lname(end)}${path.length > 1 ? `, leaving stragglers at ${path.slice(0, -1).map(lname).join(', ')}` : ''}.`);
       break;
     }
     case 'well': {
@@ -1802,6 +1839,7 @@ export function pendingDestinations(state, pend) {
     case 'threat': return t.to ? [t.to] : [];
     case 'herd': return (t.path ?? []).filter((l) => l !== '__stop');
     case 'well': return t.location ? [t.location] : [];
+    case 'chase': return (t.path ?? []).filter((l) => l !== '__stop');
     case 'lure': case 'broadcast': case 'gather-region': case 'gather-neighbours': case 'call-home': case 'draw-adjacent': return t.location ? [t.location] : [];
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': case 'hack': return t.to ? [t.to] : [];
     case 'sow': return t.path ?? [];
@@ -2689,6 +2727,19 @@ function nextShape(state, pid, cardId, t) {
   /** The factions this reading may move: any (location target) or only the suit's (faction target). */
   const movers = card.suit && mode === 'faction' ? [/** @type {string} */ (sf)] : state.factions.slice();
   switch (card.action) {
+    case 'chase': {
+      const st = /** @type {GameState} */ (state);
+      const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(st, g.location) === g.faction && can(g.faction, 1) && chaseSteps(st, g.location, g.faction, [g.location]).length > 0) };
+      const f = /** @type {string} */ (t.faction);
+      const path = t.path ?? [];
+      if (path.includes('__stop')) return { kind: 'done' };
+      const chase = [t.location, ...path];
+      // Another step: one more location passed (a token and a sway stay there), and still at least 1 token arriving.
+      const options = path.length + 1 <= tokensOf(st, t.location, f) && can(f, path.length + 1) ? chaseSteps(st, chase[chase.length - 1], f, chase) : [];
+      if (!options.length && path.length) return { kind: 'done' };
+      return { kind: 'location', key: 'path', options, optional: path.length > 0, left: Math.max(0, Math.min(tokensOf(st, t.location, f), state.players[pid].standing[f] ?? 0) - path.length) };
+    }
     case 'well': {
       const st = /** @type {GameState} */ (state);
       const pay = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
@@ -3000,6 +3051,7 @@ export function describeTarget(cardId, t) {
     case 'gather-region': case 'gather-neighbours': case 'call-home': return `${F(t.faction)} into ${L(t.location)}${how}`;
     case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
+    case 'chase': { const p = (t.path ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} chased from ${L(t.location)} to ${L(p[p.length - 1])}${p.length > 1 ? ` via ${p.slice(0, -1).map(L).join(', ')}` : ''}${how}`; }
     case 'well': return `${F(t.faction)} drawn into ${L(t.location)}${(t.from ?? []).filter((l) => l !== '__stop').length ? `, ${(t.from ?? []).filter((l) => l !== '__stop').length} out of fights next door` : ''}${how}`;
     case 'herd': { const p = (t.path ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} from ${L(t.location)}${p.length > 1 ? ` via ${p.slice(0, -1).map(L).join(', ')}` : ''} to ${L(p[p.length - 1])}${how}`; }
     case 'threat': return `${F(t.faction)} at ${L(t.location)} march on ${L(t.to)}${how}`;
