@@ -698,7 +698,7 @@ const gateEnd = (state, card, loc) => !!loc && !!state.board[loc] && !state.boar
 const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ...factionsAt(state, b)])];
 
 /**
- * Bait Trail (☾ strike, designer 2026-10-17): the next steps a herd of `f` may take from `at`. A pick-up: a neighbour
+ * Bait the Herd (☾ strike, designer 2026-10-17): the next steps a herd of `f` may take from `at`. A pick-up: a neighbour
  * holding its own kind, either a lone group (all of it comes) or a single straggler in someone else's fight (scooped
  * out); never a location already on the trail. The crash: a neighbour held by a lone group of another faction.
  * Lock Down's borders hold.

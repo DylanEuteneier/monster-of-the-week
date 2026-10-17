@@ -545,7 +545,7 @@ test('Spoof the Signal: a lone group marches on the largest lone rival within tw
   assert.ok(checkTarget(s, 'ann', cardById('hack-targeting'), t)); // can't pay both: can't play
 });
 
-test('Bait Trail: a herd swells with its own kind along a trail, leaving nothing behind, and crashes into a lone rival (designer, 2026-10-17)', () => {
+test('Bait the Herd: a herd swells with its own kind along a trail, leaving nothing behind, and crashes into a lone rival (designer, 2026-10-17)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const und = /** @type {string} */ (factionOfArchetype(s, 'undead'));
