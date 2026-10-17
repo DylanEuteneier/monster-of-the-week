@@ -562,6 +562,8 @@ test('Bait Trail: a herd swells with its own kind along a trail, leaving nothing
   const after = previewTarget(s, 'ann', 'bait-trail', t);
   assert.deepEqual([after.board[crash].tokens[und], after.board[start].tokens[und], after.board[stop].tokens[und], after.board[scoop].tokens], [6, undefined, undefined, { [g]: 4 }]);
   assert.deepEqual([start, stop, scoop, crash].map((l) => after.board[l].sway.ann), [1, 1, 1, 1]);
+  const moved = previewTarget(s, 'ann', 'bait-trail', { ...t, path: [stop] }); // plain movement: it stops at its first stop
+  assert.deepEqual([moved.board[stop].tokens[und], moved.board[start].tokens[und], moved.board[start].sway.ann, moved.board[stop].sway.ann], [5, undefined, 1, 1]);
   s.players.ann.standing[und] = 3;
   assert.ok(checkTarget(s, 'ann', cardById('bait-trail'), t)); // 4 locations, 3 sway: can't play
   s.players.ann.standing[und] = 4;

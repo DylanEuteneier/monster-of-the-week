@@ -948,11 +948,12 @@ function checkShape(state, pid, card, t) {
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
       if (!start || !f || !state.board[start] || loneAt(state, start) !== f || (t.mode === 'location' ? !suitLocations(card).includes(start) : f !== sf)) return t.mode === 'location' ? 'Choose a lone group at a ☾ location.' : 'Choose a lone Undead group.';
       const path = (t.path ?? []).filter((l) => l !== '__stop');
-      if (!path.length) return 'Lay the trail: its stops, then the group it crashes into.';
+      if (!path.length) return 'Lay the trail: at least one stop, or a group to crash into.';
+      // Every stop picks up its own kind; it may end at its last stop (plain movement, designer) or crash into a lone rival.
       const trail = [start];
       for (const [i, l] of path.entries()) {
         const { pickups, crashes } = trailSteps(state, trail[trail.length - 1], f, trail);
-        if (i < path.length - 1 ? !pickups.includes(l) : !crashes.includes(l)) return i < path.length - 1 ? 'Each stop must hold its own kind: a lone group, or a single straggler in a fight.' : 'The trail ends crashing into a lone group of another faction.';
+        if (!pickups.includes(l) && !(i === path.length - 1 && crashes.includes(l))) return i < path.length - 1 ? 'Each stop must hold its own kind: a lone group, or a single straggler in a fight.' : 'The trail ends at a stop, or crashing into a lone group of another faction.';
         trail.push(l);
       }
       return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < path.length + 1 ? 'You need the sway to pay at every location on the trail (all or nothing).' : null;
@@ -1240,19 +1241,20 @@ function act(state, pid, card, t) {
       // The herd swells along the trail, leaving nothing behind, and crashes into the rival at its end.
       const f = /** @type {string} */ (t.faction), start = /** @type {string} */ (t.location);
       const path = (t.path ?? []).filter((l) => l !== '__stop');
-      const crash = /** @type {string} */ (path[path.length - 1]);
+      const end = /** @type {string} */ (path[path.length - 1]);
+      const crashes = !factionsAt(state, end).includes(f); // the last location holds a rival, not its own kind
       let n = tokensOf(state, start, f);
       takeTokens(state, start, f, n);
       placeOne(state, pid, f, start);
-      for (const l of path.slice(0, -1)) {
+      for (const l of crashes ? path.slice(0, -1) : path) {
         const k = factionsAt(state, l).length === 2 ? 1 : tokensOf(state, l, f);
         takeTokens(state, l, f, k);
         n += k;
         placeOne(state, pid, f, l);
       }
-      addTokens(state, crash, f, n);
-      placeOne(state, pid, f, crash);
-      logLine(state, `${pid}: ${card.name}: ${n} ${names(f)} follow the trail${path.length > 1 ? ` through ${path.slice(0, -1).map(lname).join(', ')}` : ''} into ${lname(crash)}.`);
+      addTokens(state, end, f, n);
+      if (crashes) placeOne(state, pid, f, end);
+      logLine(state, `${pid}: ${card.name}: ${n} ${names(f)} follow the trail ${crashes ? 'and crash into' : 'to'} ${lname(end)}.`);
       break;
     }
     case 'threat': {
@@ -2639,17 +2641,18 @@ function nextShape(state, pid, cardId, t) {
     case 'herd': {
       const st = /** @type {GameState} */ (state);
       const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(st, g.location) === g.faction && can(g.faction, 2) && trailSteps(st, g.location, g.faction, [g.location]).crashes.length + trailSteps(st, g.location, g.faction, [g.location]).pickups.length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(st, g.location) === g.faction && can(g.faction, 2) && (({ pickups, crashes }) => pickups.length + crashes.length > 0)(trailSteps(st, g.location, g.faction, [g.location]))) };
       const f = /** @type {string} */ (t.faction);
       const path = t.path ?? [];
       const trail = [t.location, ...path];
       const at = trail[trail.length - 1];
-      // A crash ends the trail.
-      if (path.length && loneAt(st, at) && loneAt(st, at) !== f) return { kind: 'done' };
+      // A crash, or the player stopping (Done), ends the trail.
+      if (path.includes('__stop') || (path.length && loneAt(st, at) && loneAt(st, at) !== f)) return { kind: 'done' };
       const { pickups, crashes } = trailSteps(st, at, f, trail);
-      // Sway so far: the start and each stop; a pick-up needs one more and still a crash after it.
-      const options = [...pickups.filter(() => can(f, path.length + 3)), ...crashes.filter(() => can(f, path.length + 2))];
-      return { kind: 'location', key: 'path', options, left: Math.max(0, (state.players[pid].standing[f] ?? 0) - path.length - 2) };
+      // Sway so far: the start and each stop; each further location needs 1 more.
+      const options = can(f, path.length + 2) ? [...pickups, ...crashes] : [];
+      if (!options.length && path.length) return { kind: 'done' };
+      return { kind: 'location', key: 'path', options, optional: path.length > 0, left: Math.max(0, (state.players[pid].standing[f] ?? 0) - path.length - 1) };
     }
     case 'threat': {
       const pays = (/** @type {string} */ f) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= 2;
@@ -2926,7 +2929,7 @@ export function describeTarget(cardId, t) {
     case 'gather-region': case 'gather-neighbours': case 'call-home': return `${F(t.faction)} into ${L(t.location)}${how}`;
     case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
-    case 'herd': { const p = (t.path ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} from ${L(t.location)}${p.length > 1 ? ` via ${p.slice(0, -1).map(L).join(', ')}` : ''} into ${L(p[p.length - 1])}${how}`; }
+    case 'herd': { const p = (t.path ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} from ${L(t.location)}${p.length > 1 ? ` via ${p.slice(0, -1).map(L).join(', ')}` : ''} to ${L(p[p.length - 1])}${how}`; }
     case 'threat': return `${F(t.faction)} at ${L(t.location)} march on ${L(t.to)}${how}`;
     case 'gate': return `${L(t.location)} and ${L(t.to)} joined${t.payer ? `, ${F(t.payer)} paying` : ''}${t.losses ? `; the winner's losses from ${L(t.losses)}` : ''}`;
     case 'invite': return `${(t.moves ?? []).map((g) => `${F(g.faction)} from ${L(g.location)}`).join(' and ')} into ${L(t.location)}${t.payer ? `, ${F(t.payer)} paying at the fight` : ''}`;
