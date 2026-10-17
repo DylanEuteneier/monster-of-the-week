@@ -698,6 +698,22 @@ const gateEnd = (state, card, loc) => !!loc && !!state.board[loc] && !state.boar
 const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ...factionsAt(state, b)])];
 
 /**
+ * Perform the Ritual (⎈ strike, designer 2026-10-17): a gravity well from next door. The groups of `f` next to the
+ * centre: lone ones come whole; one in a fight may send up to half, rounded down (at least half stays, so no fight
+ * ends). Lock Down's borders hold.
+ * @param {GameState} state @param {string} centre @param {string} f
+ */
+function wellSources(state, centre, f) {
+  const near = adj(state, centre).filter((l) => !state.board[l].scorched && !((state.board[l].lock || state.board[centre].lock) && regionOf(l) !== regionOf(centre)) && tokensOf(state, l, f) > 0);
+  return {
+    lone: near.filter((l) => loneAt(state, l) === f),
+    fights: near.filter((l) => factionsAt(state, l).length === 2 && Math.floor(tokensOf(state, l, f) / 2) > 0),
+  };
+}
+/** How many of `f` a fight next door may send: half, rounded down. @param {GameState} state @param {string} l @param {string} f */
+const wellShare = (state, l, f) => Math.floor(tokensOf(state, l, f) / 2);
+
+/**
  * Bait the Herd (☾ strike, designer 2026-10-17): the next steps a herd of `f` may take from `at`. A pick-up: a neighbour
  * holding its own kind, either a lone group (all of it comes) or a single straggler in someone else's fight (scooped
  * out); never a location already on the trail. The crash: a neighbour held by a lone group of another faction.
@@ -943,6 +959,19 @@ function checkShape(state, pid, card, t) {
   if (!t) return null; // a card with no legal target may be played for no effect (partial actions)
   switch (card.action) {
     case 'lure': return placeTarget(state, card, t);
+    case 'well': {
+      const centre = t.location, f = t.faction, sf = /** @type {string} */ (suitFaction(state, card));
+      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      if (!centre || !state.board[centre] || state.board[centre].scorched || factionsAt(state, centre).length > 1) return 'Choose a centre that is empty or holds one faction.';
+      if (t.mode === 'location' ? !suitLocations(card).includes(centre) : f !== sf) return t.mode === 'location' ? 'The centre is a ⎈ location.' : 'The ritual calls the Demon faction.';
+      if (!f || (factionsAt(state, centre).length === 1 && !canEnter(state, centre, f))) return 'Choose the faction the ritual calls.';
+      const { lone, fights } = wellSources(state, centre, f);
+      const picks = (t.from ?? []).filter((l) => l !== '__stop');
+      for (const l of new Set(picks)) if (!fights.includes(l) || picks.filter((x) => x === l).length > wellShare(state, l, f)) return 'From a fight, up to half of the group, rounded down.';
+      const origins = lone.length + new Set(picks).size;
+      if (!origins) return 'Nothing of that faction is next door to answer.';
+      return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < origins + 1 ? 'You need the sway to pay at every location pulled from and at the centre (all or nothing).' : null;
+    }
     case 'herd': {
       const start = t.location, f = t.faction, sf = suitFaction(state, card);
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
@@ -1235,6 +1264,20 @@ function act(state, pid, card, t) {
         .filter((g) => g.n > 0 && canEnter(state, to, g.f, state.pending?.blocked)).sort((a, b) => b.n - a.n);
       const pick = (t.faction && t.from?.[0] ? groups.find((g) => g.f === t.faction && g.from === t.from?.[0] && g.n === groups[0].n) : null) ?? groups[0];
       if (pick) logLine(state, `${pid}: ${card.name} draws ${move(state, pid, pick.f, pick.from, to, pick.n, placed)} ${names(pick.f)} into ${lname(to)}.`);
+      break;
+    }
+    case 'well': {
+      // Every lone group of the faction next door comes whole; fights next door send what the player chose.
+      const centre = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
+      const { lone } = wellSources(state, centre, f);
+      const picks = (t.from ?? []).filter((l) => l !== '__stop');
+      /** @type {[string, number][]} */
+      const pulls = [...lone.map((l) => /** @type {[string, number]} */ ([l, tokensOf(state, l, f)])), ...[...new Set(picks)].map((l) => /** @type {[string, number]} */ ([l, picks.filter((x) => x === l).length]))];
+      placed.add(`${centre}:${f}`);
+      let n = 0;
+      for (const [l, k] of pulls) { const m = move(state, pid, f, l, centre, k, placed); if (m) { n += m; placeOne(state, pid, f, l); } }
+      if (n) placeOne(state, pid, f, centre);
+      logLine(state, `${pid}: ${card.name}: ${n} ${names(f)} are drawn into ${lname(centre)}.`);
       break;
     }
     case 'herd': {
@@ -1751,6 +1794,7 @@ export function pendingDestinations(state, pend) {
     case 'gate': return [t.location ?? '', t.to ?? ''].filter(Boolean);
     case 'threat': return t.to ? [t.to] : [];
     case 'herd': return (t.path ?? []).filter((l) => l !== '__stop');
+    case 'well': return t.location ? [t.location] : [];
     case 'lure': case 'broadcast': case 'gather-region': case 'gather-neighbours': case 'call-home': case 'draw-adjacent': return t.location ? [t.location] : [];
     case 'halve': case 'halve-far': case 'teleport': case 'drive-out': case 'drive-out-either': case 'hack': return t.to ? [t.to] : [];
     case 'sow': return t.path ?? [];
@@ -2638,6 +2682,26 @@ function nextShape(state, pid, cardId, t) {
   /** The factions this reading may move: any (location target) or only the suit's (faction target). */
   const movers = card.suit && mode === 'faction' ? [/** @type {string} */ (sf)] : state.factions.slice();
   switch (card.action) {
+    case 'well': {
+      const st = /** @type {GameState} */ (state);
+      const pay = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
+      const callable = (/** @type {string} */ c) => (mode === 'faction' ? [/** @type {string} */ (sf)] : state.factions.slice()).filter((f) => {
+        if (factionsAt(st, c).length === 1 && !canEnter(st, c, f)) return false;
+        const { lone, fights } = wellSources(st, c, f);
+        return lone.length + fights.length > 0 && pay(f, (lone.length || 1) + 1);
+      });
+      const centreOk = (/** @type {string} */ c) => !state.board[c].scorched && factionsAt(st, c).length <= 1 && (mode === 'faction' || suitLocations(card).includes(c)) && callable(c).length > 0;
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter(centreOk) };
+      if (!t.faction) return { kind: 'faction', options: callable(t.location) };
+      const f = t.faction;
+      const { lone, fights } = wellSources(st, t.location, f);
+      const picks = t.from ?? [];
+      if (picks.includes('__stop')) return { kind: 'done' };
+      const chosen = new Set(picks);
+      const more = fights.filter((l) => picks.filter((x) => x === l).length < wellShare(st, l, f) && pay(f, lone.length + chosen.size + (chosen.has(l) ? 0 : 1) + 1));
+      if (!more.length) return lone.length || chosen.size ? { kind: 'done' } : { kind: 'location', key: 'from', options: [] };
+      return { kind: 'location', key: 'from', options: more, optional: lone.length + chosen.size > 0 };
+    }
     case 'herd': {
       const st = /** @type {GameState} */ (state);
       const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
@@ -2929,6 +2993,7 @@ export function describeTarget(cardId, t) {
     case 'gather-region': case 'gather-neighbours': case 'call-home': return `${F(t.faction)} into ${L(t.location)}${how}`;
     case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
+    case 'well': return `${F(t.faction)} drawn into ${L(t.location)}${(t.from ?? []).filter((l) => l !== '__stop').length ? `, ${(t.from ?? []).filter((l) => l !== '__stop').length} out of fights next door` : ''}${how}`;
     case 'herd': { const p = (t.path ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} from ${L(t.location)}${p.length > 1 ? ` via ${p.slice(0, -1).map(L).join(', ')}` : ''} to ${L(p[p.length - 1])}${how}`; }
     case 'threat': return `${F(t.faction)} at ${L(t.location)} march on ${L(t.to)}${how}`;
     case 'gate': return `${L(t.location)} and ${L(t.to)} joined${t.payer ? `, ${F(t.payer)} paying` : ''}${t.losses ? `; the winner's losses from ${L(t.losses)}` : ''}`;

@@ -1415,6 +1415,20 @@
           "round": 21
         },
         {
+          "id": "ritual",
+          "name": "Perform the Ritual",
+          "suit": "demonic",
+          "slot": "strike",
+          "sway": 2,
+          "action": "well",
+          "text": "Father and the Flock begin the rite, and one faction next door is drawn to it: every lone group of it comes whole; a group of it in a fight sends up to half (rounded down; you choose), so the fight goes on. The centre is empty or holds one faction. Place 1 sway at each location pulled from and 1 at the centre, from your standing with the faction called. All of it, or it can’t be played. Target: the centre, then the faction called.",
+          "readings": {
+            "location": "a ⎈ location; any faction is called.",
+            "faction": "any location next to the Demon faction; the Demons are called."
+          },
+          "round": 21
+        },
+        {
         "id": "drones",
         "name": "Reprogram the Drones",
         "suit": "sentients",

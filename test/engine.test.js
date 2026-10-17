@@ -572,6 +572,35 @@ test('Bait the Herd: a herd swells with its own kind along a trail, leaving noth
   void f;
 });
 
+test('Perform the Ritual: one faction next door is drawn in; lone groups whole, up to half out of fights (designer, 2026-10-17)', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const dem = /** @type {string} */ (factionOfArchetype(s, 'demonic'));
+  const [f, g, h] = s.factions.filter((x) => x !== dem);
+  const centre = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'demonic' && map[l.id].adjacent.length >= 3)?.id);
+  const [x, y, z] = map[centre].adjacent;
+  s.board[x].tokens = { [f]: 3 };
+  s.board[y].tokens = { [f]: 3, [g]: 2 }; // a fight: up to 1 of the 3 may answer
+  s.board[z].tokens = { [h]: 2 };
+  s.players.ann.standing[f] = 3;
+  const t = { mode: /** @type {const} */ ('location'), location: centre, faction: f, from: [y] };
+  assert.equal(checkTarget(s, 'ann', cardById('ritual'), t), null);
+  assert.ok(checkTarget(s, 'ann', cardById('ritual'), { ...t, from: [y, y] })); // more than half
+  const after = previewTarget(s, 'ann', 'ritual', t);
+  assert.deepEqual([after.board[centre].tokens[f], after.board[x].tokens[f], after.board[y].tokens[f], after.board[z].tokens[h]], [4, undefined, 2, 2]);
+  assert.deepEqual([x, y, centre].map((l) => after.board[l].sway.ann), [1, 1, 1]);
+  s.players.ann.standing[f] = 2;
+  assert.ok(checkTarget(s, 'ann', cardById('ritual'), t)); // 3 locations, 2 sway: can't play
+  assert.equal(checkTarget(s, 'ann', cardById('ritual'), { ...t, from: [] }), null); // the lone group alone: 2 sway
+  // Faction reading: the Demons next door, into any location.
+  const q = clear(newGame());
+  q.board[x].tokens = { [dem]: 2 };
+  q.board[centre].tokens = { [f]: 2 };
+  q.players.ann.standing[dem] = 2;
+  const fa = previewTarget(q, 'ann', 'ritual', { mode: 'faction', location: centre, faction: dem });
+  assert.deepEqual(fa.board[centre].tokens, { [f]: 2, [dem]: 2 });
+});
+
 test('payInFull (designer, 2026-10-15): a card that can\'t pay for every move can\'t be played for its action; off, it goes as far as it can pay (IC1)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
