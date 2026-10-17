@@ -698,7 +698,7 @@ const gateEnd = (state, card, loc) => !!loc && !!state.board[loc] && !state.boar
 const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ...factionsAt(state, b)])];
 
 /**
- * Hack the Targeting (⏏ strike, designer 2026-10-17): where a lone group at `loc` may march. Machine logic: the
+ * Spoof the Signal (⏏ strike, designer 2026-10-17): where a lone group at `loc` may march. The spoofed order: the
  * largest lone group of another faction within two locations of it (steps between neighbours, a Gate's ends as one;
  * whatever lies between is ignored). Several tied for largest: any of them, the player's choice.
  * @param {GameState} state @param {string} loc @param {string} f

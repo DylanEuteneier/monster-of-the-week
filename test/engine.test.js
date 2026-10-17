@@ -522,7 +522,7 @@ test('The Gate: a group at both ends moves as one, and next door reaches through
   assert.ok(offered.kind === 'group' && offered.options.some((o) => o.faction === g));
 });
 
-test('Hack the Targeting: a lone group marches on the largest lone rival within two locations (designer, 2026-10-17)', () => {
+test('Spoof the Signal: a lone group marches on the largest lone rival within two locations (designer, 2026-10-17)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const sent = /** @type {string} */ (factionOfArchetype(s, 'sentients'));
