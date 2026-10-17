@@ -545,6 +545,31 @@ test('Spoof the Signal: a lone group marches on the largest lone rival within tw
   assert.ok(checkTarget(s, 'ann', cardById('hack-targeting'), t)); // can't pay both: can't play
 });
 
+test('Bait Trail: a herd swells with its own kind along a trail, leaving nothing behind, and crashes into a lone rival (designer, 2026-10-17)', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const und = /** @type {string} */ (factionOfArchetype(s, 'undead'));
+  const [f, g, h] = s.factions.filter((x) => x !== und);
+  const start = 'sawmill', stop = 'lake-house', scoop = 'mine';
+  const crash = /** @type {string} */ (map[scoop].adjacent.find((l) => ![start, stop].includes(l) && !map[start].adjacent.includes(l) && !map[stop].adjacent.includes(l)) ?? map[scoop].adjacent.find((l) => ![start, stop].includes(l)));
+  s.board[start].tokens = { [und]: 2 };
+  s.board[stop].tokens = { [und]: 3 };
+  s.board[scoop].tokens = { [und]: 1, [g]: 4 }; // a lone straggler in a fight: scooped out
+  s.board[crash].tokens = { [h]: 2 };
+  s.players.ann.standing[und] = 4;
+  const t = { mode: /** @type {const} */ ('location'), location: start, faction: und, path: [stop, scoop, crash] };
+  assert.equal(checkTarget(s, 'ann', cardById('bait-trail'), t), null);
+  const after = previewTarget(s, 'ann', 'bait-trail', t);
+  assert.deepEqual([after.board[crash].tokens[und], after.board[start].tokens[und], after.board[stop].tokens[und], after.board[scoop].tokens], [6, undefined, undefined, { [g]: 4 }]);
+  assert.deepEqual([start, stop, scoop, crash].map((l) => after.board[l].sway.ann), [1, 1, 1, 1]);
+  s.players.ann.standing[und] = 3;
+  assert.ok(checkTarget(s, 'ann', cardById('bait-trail'), t)); // 4 locations, 3 sway: can't play
+  s.players.ann.standing[und] = 4;
+  s.board[scoop].tokens = { [und]: 2, [g]: 4 };
+  assert.ok(checkTarget(s, 'ann', cardById('bait-trail'), t)); // more than a straggler in that fight: no stop there
+  void f;
+});
+
 test('payInFull (designer, 2026-10-15): a card that can\'t pay for every move can\'t be played for its action; off, it goes as far as it can pay (IC1)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
