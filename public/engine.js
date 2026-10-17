@@ -720,15 +720,15 @@ const wellShare = (state, l, f) => Math.floor(tokensOf(state, l, f) / 2);
 
 /**
  * Bait the Herd (☾ strike, designer 2026-10-17): the next steps a herd of `f` may take from `at`. A pick-up: a neighbour
- * holding its own kind, either a lone group (all of it comes) or a single straggler in someone else's fight (scooped
- * out); never a location already on the trail. The crash: a neighbour held by a lone group of another faction.
+ * holding its own kind, either a lone group (all of it comes) or its kind in a fight (as much as may leave a fight,
+ * D22: half, rounded down); never a location already on the trail. The crash: a neighbour held by a lone group of another faction.
  * Lock Down's borders hold.
  * @param {GameState} state @param {string} at @param {string} f @param {string[]} trail  the start and the stops so far
  */
 function trailSteps(state, at, f, trail) {
   const locked = (/** @type {string} */ to) => (state.board[at].lock || state.board[to].lock) && regionOf(at) !== regionOf(to);
   const open = adj(state, at).filter((l) => !trail.some((x) => endsOf(state, x).includes(l)) && !state.board[l].scorched && !locked(l));
-  const pickups = open.filter((l) => loneAt(state, l) === f || (factionsAt(state, l).length === 2 && tokensOf(state, l, f) === 1 && freeOf(state, l, f) === 1));
+  const pickups = open.filter((l) => loneAt(state, l) === f || (factionsAt(state, l).length === 2 && tokensOf(state, l, f) > 0 && freeOf(state, l, f) > 0));
   const crashes = open.filter((l) => loneAt(state, l) && loneAt(state, l) !== f);
   return { pickups, crashes };
 }
@@ -987,7 +987,7 @@ function checkShape(state, pid, card, t) {
       const trail = [start];
       for (const [i, l] of path.entries()) {
         const { pickups, crashes } = trailSteps(state, trail[trail.length - 1], f, trail);
-        if (!pickups.includes(l) && !(i === path.length - 1 && crashes.includes(l))) return i < path.length - 1 ? 'Each stop must hold its own kind: a lone group, or a single straggler in a fight.' : 'The trail ends at a stop, or crashing into a lone group of another faction.';
+        if (!pickups.includes(l) && !(i === path.length - 1 && crashes.includes(l))) return i < path.length - 1 ? 'Each stop must hold its own kind: a lone group, or its kind in a fight that some can leave.' : 'The trail ends at a stop, or crashing into a lone group of another faction.';
         trail.push(l);
       }
       return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < path.length + 1 ? 'You need the sway to pay at every location on the trail (all or nothing).' : null;
@@ -1295,7 +1295,7 @@ function act(state, pid, card, t) {
       takeTokens(state, start, f, n);
       placeOne(state, pid, f, start);
       for (const l of crashes ? path.slice(0, -1) : path) {
-        const k = factionsAt(state, l).length === 2 ? 1 : tokensOf(state, l, f);
+        const k = factionsAt(state, l).length === 2 ? freeOf(state, l, f) : tokensOf(state, l, f); // from a fight: as much as may leave (D22)
         takeTokens(state, l, f, k);
         n += k;
         placeOne(state, pid, f, l);

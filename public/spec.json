@@ -1425,7 +1425,7 @@
           "slot": "strike",
           "sway": 2,
           "action": "herd",
-          "text": "Lay a trail of bait: a lone group follows it from neighbour to neighbour, picking up its own kind at every stop (a lone group of them, or a single straggler out of someone else’s fight) and leaving nothing behind. It stops where you choose, or crashes into a lone group of another faction. Place 1 sway on every location on the trail, from your standing with the faction that moved. All of it, or it can’t be played. Target: the herd.",
+          "text": "Lay a trail of bait: a lone group follows it from neighbour to neighbour, picking up its own kind at every stop (a lone group of them comes whole; from a fight they’re in, half, rounded down) and leaving nothing behind. It stops where you choose, or crashes into a lone group of another faction. Place 1 sway on every location on the trail, from your standing with the faction that moved. All of it, or it can’t be played. Target: the herd.",
           "readings": {
             "location": "a lone group at a ☾ location.",
             "faction": "a lone Undead group anywhere."

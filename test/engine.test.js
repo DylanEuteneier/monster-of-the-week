@@ -571,9 +571,14 @@ test('Bait the Herd: a herd swells with its own kind along a trail, leaving noth
   assert.ok(checkTarget(s, 'ann', cardById('bait-trail'), t)); // 4 locations, 3 sway: can't play
   s.players.ann.standing[und] = 4;
   s.board[scoop].tokens = { [und]: 2, [g]: 4 };
-  assert.ok(checkTarget(s, 'ann', cardById('bait-trail'), t)); // more than a straggler in that fight: no stop there
-  s.board[scoop].tokens = { [und]: 1, [g]: 4 };
-  assert.ok(checkTarget({ ...s, options: { ...s.options, fightHalf: 'on' } }, 'ann', cardById('bait-trail'), t)); // under D22, a lone straggler can't leave its fight
+  assert.deepEqual(previewTarget(s, 'ann', 'bait-trail', t).board[scoop].tokens, { [g]: 4 }); // D22 off: the card takes all of its kind
+  // Under D22 (the default): from a fight its kind is in, the herd takes half, rounded down; a lone straggler can't leave.
+  const d22 = { ...s, options: { ...s.options, fightHalf: 'on' } };
+  d22.board[scoop].tokens = { [und]: 1, [g]: 4 };
+  assert.ok(checkTarget(d22, 'ann', cardById('bait-trail'), t));
+  d22.board[scoop].tokens = { [und]: 5, [g]: 4 };
+  assert.equal(checkTarget(d22, 'ann', cardById('bait-trail'), t), null);
+  assert.deepEqual(previewTarget(d22, 'ann', 'bait-trail', t).board[scoop].tokens, { [und]: 3, [g]: 4 }); // 2 of 5 come; the fight goes on
   void f;
 });
 
