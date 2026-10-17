@@ -75,8 +75,8 @@ test('createGame enforces 3–5 seats and unique names (3.16)', () => {
   assert.throws(() => newGame(1, ['a', 'a', 'b']));
 });
 
-test('seeding puts 5 + 1 + 1 of each faction on its own locations (SD1)', () => {
-  const s = newGame(4);
+test('seeding=home puts 5 + 1 + 1 of each faction on its own locations (SD1 as first drafted)', () => {
+  const s = createGame({ seed: 4, players: PLAYERS, options: { seeding: 'home' } });
   assert.equal(totalPresence(s), 35);
   for (const f of s.factions) {
     assert.equal(presenceOf(s, f), 7);
@@ -628,8 +628,8 @@ test('Half from a fight (D22, designer 2026-10-17): from a fight, a card moves a
   assert.equal(lone.board[from].tokens[g], 1); // a single token in a fight can't be moved
 });
 
-test('seeding=even (test lever, designer 2026-10-17): each faction starts with 3 on each of its aligned locations', () => {
-  const s = createGame({ seed: 3, players: PLAYERS, options: { seeding: 'even' } });
+test('seeding=even, the first draft (designer 2026-10-17): each faction starts with 3 on each of its aligned locations', () => {
+  const s = newGame(3);
   for (const f of s.factions) {
     const arch = /** @type {string} */ (spec.factions.find((x) => x.id === f)?.archetype);
     for (const l of spec.locations.filter((x) => x.archetype === arch)) assert.equal(s.board[l.id].tokens[f], 3);

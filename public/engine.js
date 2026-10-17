@@ -522,12 +522,12 @@ export function createGame(input) {
   /** @type {Record<string, number>} */
   const supply = {};
   for (const faction of factions) {
-    // SD1: a random home location of the archetype's three gets 5; the others 1. Test lever seeding=even (designer,
-    // 2026-10-17): 3 on each of the three instead.
+    // SD1, first draft (designer, 2026-10-17): 3 on each of the archetype's three locations (variant seeding=even).
+    // seeding=home: a random home location gets 5, the others 1.
     const locs = spec.locations.filter((l) => l.archetype === archetypeOf(faction)).map((l) => l.id);
     const s = shuffle(locs, rngState);
     rngState = s.rngState;
-    const even = (options.seeding ?? 'home') === 'even';
+    const even = (options.seeding ?? 'even') === 'even';
     let placed = 0;
     for (const loc of s.items) {
       const n = even ? spec.constants.seeding.even : loc === s.items[0] ? spec.constants.seeding.home : spec.constants.seeding.other;

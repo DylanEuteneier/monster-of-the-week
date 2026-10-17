@@ -961,18 +961,18 @@
     {
       "id": "seeding",
       "label": "Starting tokens",
-      "description": "Test lever (designer, 2026-10-17): how each faction's tokens start on its three aligned locations.",
-      "default": "home",
+      "description": "First draft (designer, 2026-10-17): how each faction's tokens start on its three aligned locations.",
+      "default": "even",
       "choices": [
         {
           "id": "home",
           "label": "5, 1 and 1",
-          "description": "SD1, the first draft: 5 on a random home location, 1 on each of the other two."
+          "description": "SD1 as first drafted: 5 on a random home location, 1 on each of the other two."
         },
         {
           "id": "even",
           "label": "3 on each",
-          "description": "Test lever: 3 on each of the three."
+          "description": "The first draft (designer, 2026-10-17): 3 on each of the three."
         }
       ]
     },

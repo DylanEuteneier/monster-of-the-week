@@ -150,7 +150,7 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 | 3.2 Location control | `LC1` factions control, players never do; `LC2` control by token count | None |
 | 3.3 Location-archetype alignment | `AL2` tied fights on aligned ground; `AL3` boosted growth. (`AL1`, spread archetypes, holds through the layout D map) | None |
 | 3.4 Invader forces | The decisions only (one random faction per archetype, as tokens). No archetype or faction powers: every faction plays the same; powers (`AP1`–`AP6`) stay ideas for later | None |
-| 3.5 Invader population | `SD1` seeding (provisional 5 + 1 + 1, home location random of the three); growth by `GR1` at resolution, which is the game's own growth system (`GR3`); growth always comes after fights, so each growing location holds one faction | None |
+| 3.5 Invader population | `SD1` seeding (3 on each of the archetype's three locations; designer, 2026-10-17); growth by `GR1` at resolution, which is the game's own growth system (`GR3`); growth always comes after fights, so each growing location holds one faction | None |
 | 3.6 Action acquisition | All of `DR1`–`DR6`: a draft at the start of each round; unplayed cards lost back to the pool; pick and pass with the put-back rule; the same pool every round; the undealt cards left out unseen; the pool is the whole action set. Hand size 6/5/4 at 3/4/5 players (`PS1`) | None |
 | 3.7 Player actions | Cards are played once. Every suit card can be spent for sway with its affinity faction instead of its own action or response, for an amount printed on the card, more than 1 (`CU1`); the six unsuited extras have no sway use and offer wild, powerful or flexible actions; some cards also offer a choice of actions, all held to `AC1` (distinct and precious) and to theme above all. `SU1` five archetype suits of three cards (15), plus 6 others (A to D and two unmarked); `LK1` location cards set aside. `CU2` out. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out. The rest is being designed with the cards | None |
 | 3.8 Timing and passing | `TU1` play or pass, passing is not final; `FP1` first player by marked cards, with four marked cards A to D under the fixed pool (`FP2`); the round ends when everyone passes in a row (`RE3`, 3.12) | None |
@@ -603,10 +603,9 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- `SD1` **Seeding (first draft):** each faction starts on its home territory. Every faction has a home location of its own, one of its archetype's three locations.
-  - First draft: the home location is drawn at random from the three.
-  - Provisional numbers: 5 tokens on the home location, and 1 token on each of the faction's other two aligned locations.
-  - *Test lever `seeding=even` (designer's seed, 2026-10-17):* 3 on each of the three aligned locations instead of 5, 1 and 1 (45 on the board instead of 35). Off by default; to be measured.
+- `SD1` **Seeding (first draft):** each faction starts on its home territory: its archetype's three locations.
+  - First draft (designer, 2026-10-17): 3 tokens on each of the three, 45 on the board in all. Every location starts held by its aligned faction.
+  - Variant (`seeding=home`, as SD1 was first drafted): a home location drawn at random from the three gets 5 tokens, and each of the other two gets 1 (35 in all).
   - Starting presence and the total number of tokens per faction, including the supply, are left to balancing.
 - **Growth.** Candidates. These are separate ideas, need not be used together, and could be mutually exclusive:
   - `GR1` *At resolution (first draft):* at round end, after conflict resolution, every location where a faction has reached the growth threshold gains one token of that faction.
@@ -1187,7 +1186,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-09 | The tuned table confirmed over 40 games | Backers 18.1% a seat, trophy 21.3%; the invaders' ending 15 in 40 |
 | 2026-10-10 | Unattended experiment runner (designer: a repeatable script for several machines that jitters the tuned values, runs, judges and commits its results): `scripts/experiment.js`, one game pool per machine fed by several experiments at once, shared baselines, a testing log entry per attempt (`experiments/`); last night's 48 attempts backfilled. The play-outs-into-the-next-round switch (`deep`) removed: clearly worse | Standard bots unchanged (identical play checked) |
 | 2026-10-10 | Overnight bot tuning (designer: implement the research's best candidates and keep testing on short runs): bot games about 5× faster with identical play; tools for duplicate deals, placings and fitting the evaluation; about 30 variants tested | None adopted: no change measurably beats the standard profiles; 20-game runs only find large effects (F.9, Tuning method) |
-| 2026-10-17 | Test lever `seeding=even` added (designer's seed): 3 on each aligned location instead of 5, 1 and 1 | Off by default; to be measured. Every location starts held by its aligned faction, so Invite Them In (an empty ◐ location) has no target at the start |
+| 2026-10-17 | Seeding (SD1): 3 on each aligned location instead of 5, 1 and 1, now the first draft (designer); `seeding=home` keeps 5, 1 and 1 | Starting presence 45 instead of 35. Every location starts held by its aligned faction, so Invite Them In (an empty ◐ location) has no target at the start, and every uncontested location is over the growth threshold from round 1 |
 | 2026-10-17 | Half from a fight (D22, designer): from a location where a fight already exists, any card moves at most half of a faction's group, rounded down; a core rule for now (variant `fightHalf`, on by default) | Fights neither fully locked (pinning) nor emptied in one move. Bait the Herd's straggler scoop no longer applies |
 | 2026-10-17 | Test lever `fightHalf` added, off by default (designer) | Made the default the same day (D22) |
 | 2026-10-17 | The ⎈ strike, Perform the Ritual (working name), designed and built as a test card: a gravity well from next door, one faction, whole from lone groups and up to half from fights. All five strikes now have a design | |
@@ -2789,7 +2788,7 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
 ### G.3 Setup
 
 1. Draw one faction from each archetype.
-2. **Seed the board (SD1):** each faction places [5] tokens on its home location, one of its archetype's three locations, and [1] token on each of the other two. Each faction's home location is drawn at random from its archetype's three. Every location starts with exactly one faction.
+2. **Seed the board (SD1):** each faction places [3] tokens on each of its archetype's three locations. Every location starts with exactly one faction: its aligned one.
 3. Each player takes a slayer group and their cubes [number to balance].
 4. Each player starts with [some] sway with their linked archetype's faction. Factions with no linked player in the game start with every player at 0, so every player is their sway leader.
 5. Shuffle the card pool (all 21 cards).
@@ -2860,7 +2859,7 @@ Educated first guesses, made at the designer's request so bots can run simulatio
 |---|---|---|
 | Rounds (GL1) | 5 | Enough for presence to swing from the start to the threshold band. |
 | Presence threshold (TH1) | more than 20 | With about 10 presence moves a round, an earlier simulation put total presence at about 15–25 by round 3 and 10–17 by round 5; 20 sits in that band so the last round decides it. |
-| Seeding (SD1) | 5 + 1 + 1 | As recorded; 35 tokens in all. |
+| Seeding (SD1) | 3 + 3 + 3 | Designer, 2026-10-17; 45 tokens in all (5 + 1 + 1, 35 in all, is the variant `seeding=home`). |
 | Growth threshold (GR1) | 2 | As recorded. |
 | Tokens per faction | 20 | 7 on the board at setup, 13 in supply; trophies draining a supply still matters. |
 | Each player's starting cubes | 20 | Moves place about 1–3 sway a turn and half comes back after a fight. *While the cards are designed (designer, 2026-10-07): 30 in the prototype, a bump so the supply rarely limits play; supply is a balancing concern for later.* |
