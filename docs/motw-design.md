@@ -47,7 +47,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 - *Signatures:* ◐ · ↂ · ⏏ · ☾ · ⎈ (not started)
   - *Designer (2026-10-17):* the archetype's rule-bend is just an idea for a signature, not a requirement, and the rule-bends themselves (AP1–AP5) aren't set either: they are ideas (3.4).
   - *Designer (2026-10-17):* backing a faction is never served by a single card or card type; it comes from how the cards are played.
-  - *Designer (2026-10-17):* every signature includes the ability to bid sway on locations, more than the single sway at a time the strikes and shifts place. How much, from where and onto which locations is open.
+  - *Designer (2026-10-17):* every signature includes the ability to bid sway on locations, more than the single sway at a time the strikes and shifts place. The bid is spent from standing with the suit's faction (faction reading) or with the faction at a suit location (location reading). How much, and onto which locations, is open.
   - *ↂ signature candidate (designer, 2026-10-17): Run the Blood Test.* The kids expose the impostors in a lone group: half of it, rounded down, is revealed as the Sci-Fi faction in disguise (swapped through the supplies), and the location becomes a contest. 1 sway there, from Sci-Fi standing. (The Thing, They Live: "they're among us".)
   - *ↂ idea (designer, 2026-10-17: signature territory rather than a strike, but not good enough as it stands; not a decision):* Hijack the Radio Station. Target a lone group; for the rest of the round, the next time any player moves a lone group of another faction, it goes to the target instead. Open: its sway; what happens if nobody takes the bait.
 - *Unsuited:* A · B · C · D · two unmarked (not started)
