@@ -684,6 +684,37 @@ test('Crash the Party: a lone group bursts, 1 token to each chosen neighbour, th
   assert.ok(checkTarget(s, 'ann', cardById('crash-party'), t)); // 3 locations, 2 sway: can't play
 });
 
+test('Cut the Powerlines: a group rejoins its kin 1 at a time round them all; from a fight, exactly half (designer, 2026-10-17)', () => {
+  const s = clear(newGame());
+  const sent = /** @type {string} */ (factionOfArchetype(s, 'sentients'));
+  const g = /** @type {string} */ (s.factions.find((x) => x !== sent));
+  const [loc, a, b, c] = spec.locations.map((l) => l.id).filter((l) => !s.board[l].scorched);
+  s.board[loc].tokens = { [sent]: 5 };
+  s.board[a].tokens = { [sent]: 1 };
+  s.board[b].tokens = { [sent]: 2, [g]: 2 }; // a fight: still kin
+  s.board[c].tokens = { [sent]: 1 };
+  s.players.ann.standing[sent] = 3;
+  const t = { mode: /** @type {const} */ ('faction'), location: loc, faction: sent, from: [a, c] }; // 5 over 3: 2 / 1 / 2
+  assert.equal(checkTarget(s, 'ann', cardById('cut-powerlines'), t), null);
+  const after = previewTarget(s, 'ann', 'cut-powerlines', t);
+  assert.deepEqual([loc, a, b, c].map((l) => after.board[l].tokens[sent] ?? 0), [0, 3, 3, 3]);
+  assert.deepEqual([a, b, c].map((l) => after.board[l].sway.ann), [1, 1, 1]);
+  assert.ok(checkTarget(s, 'ann', cardById('cut-powerlines'), { ...t, from: [a] })); // the player names both extras
+  assert.ok(checkTarget(s, 'ann', cardById('cut-powerlines'), { ...t, from: [a, a] }));
+  s.players.ann.standing[sent] = 2;
+  assert.ok(checkTarget(s, 'ann', cardById('cut-powerlines'), t)); // 3 locations, 2 sway: can't play
+  // From a fight, exactly half leaves: 5 → 2 go, to 2 of the 3 kin (the player picks which).
+  s.players.ann.standing[sent] = 3;
+  s.board[loc].tokens = { [sent]: 5, [g]: 1 };
+  const fought = { ...t, from: [b, c] };
+  assert.equal(checkTarget(s, 'ann', cardById('cut-powerlines'), fought), null);
+  const half = previewTarget(s, 'ann', 'cut-powerlines', fought);
+  assert.deepEqual([loc, a, b, c].map((l) => half.board[l].tokens[sent] ?? 0), [3, 1, 3, 2]);
+  // No kin anywhere: can't be played.
+  for (const l of [a, b, c]) s.board[l].tokens = {};
+  assert.ok(checkTarget(s, 'ann', cardById('cut-powerlines'), { ...t, from: [] }));
+});
+
 test('payInFull (designer, 2026-10-15): a card that can\'t pay for every move can\'t be played for its action; off, it goes as far as it can pay (IC1)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);

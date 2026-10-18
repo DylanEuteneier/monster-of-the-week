@@ -1494,6 +1494,20 @@
           "round": 21
         },
         {
+          "id": "cut-powerlines",
+          "name": "Cut the Powerlines",
+          "suit": "sentients",
+          "slot": "shift",
+          "sway": 3,
+          "action": "rejoin",
+          "text": "The Watch cuts the powerlines. A group scatters to its faction’s other groups anywhere on the island, 1 token at a time: no group gets a second until every group has one (you choose which get the extras). A lone group leaves entirely; from a fight, exactly half (rounded down). Place 1 sway at each location a token reaches, from your standing with that faction. All of it, or it can’t be played. Target: the group.",
+          "readings": {
+            "location": "any group at a ⏏ location.",
+            "faction": "a Sentients group anywhere."
+          },
+          "round": 21
+        },
+        {
         "id": "drones",
         "name": "Reprogram the Drones",
         "suit": "sentients",

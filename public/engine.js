@@ -712,6 +712,27 @@ const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ..
 const burstSpots = (state, loc, f) => adj(state, loc).filter((l) => !state.board[l].scorched && canEnter(state, l, f) && !((state.board[loc].lock || state.board[l].lock) && regionOf(loc) !== regionOf(l)));
 
 /**
+ * Cut the Powerlines (⏏ shift, designer 2026-10-17): the faction's other groups a group of `f` at `loc` can rejoin,
+ * anywhere on the island (fights too): locations holding `f` it can enter, not scorched; Lock Down's borders hold. Both
+ * ends of a Gate are one group, listed once.
+ * @param {GameState} state @param {string} loc @param {string} f
+ */
+const kinOf = (state, loc, f) => {
+  const ends = endsOf(state, loc);
+  return LOCATION_IDS.filter((l) => !ends.includes(l) && rawTokens(state, l, f) > 0 && !(gateOf(state, l) && /** @type {string} */ (gateOf(state, l)) < l && rawTokens(state, /** @type {string} */ (gateOf(state, l)), f) > 0)
+    && !state.board[l].scorched && canEnter(state, l, f) && !((state.board[loc].lock || state.board[l].lock) && regionOf(loc) !== regionOf(l)));
+};
+/**
+ * Cut the Powerlines: how the tokens share out. A lone group leaves entirely; from a fight exactly half, rounded down
+ * (D22). 1 at a time round the kin: each gets `each`, and `extra` of them (the player's choice) one more.
+ * @param {GameState} state @param {string} loc @param {string} f
+ */
+const powerShare = (state, loc, f) => {
+  const kin = kinOf(state, loc, f), n = freeOf(state, loc, f);
+  return { kin, n, each: kin.length ? Math.floor(n / kin.length) : 0, extra: kin.length ? n % kin.length : 0, reached: Math.min(n, kin.length) };
+};
+
+/**
  * The Big Chase (ↂ shift, designer 2026-10-17): where a chased group of `f` may go next from `at`: a neighbour it can
  * enter (empty, its own kind, a lone rival, or a fight it's part of), not one already on the chase, not scorched;
  * Lock Down's borders hold.
@@ -991,6 +1012,16 @@ function checkShape(state, pid, card, t) {
       if (to.length < 2 || new Set(to).size !== to.length || to.some((l) => !spots.includes(l))) return 'It bursts to at least two neighbouring locations it can enter, 1 token each.';
       if (to.length > tokensOf(state, loc, f)) return 'One token to each: not more locations than tokens.';
       return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < to.length ? 'You need the sway to pay at every location a token reaches (all or nothing).' : null;
+    }
+    case 'rejoin': {
+      const loc = t.location, f = t.faction, sf = suitFaction(state, card);
+      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      if (!loc || !f || !state.board[loc] || !factionsAt(state, loc).includes(f) || (t.mode === 'location' ? !suitLocations(card).includes(loc) : f !== sf)) return t.mode === 'location' ? 'Choose a group at a ⏏ location.' : 'Choose a Sentients group.';
+      const { kin, n, extra, reached } = powerShare(state, loc, f);
+      if (!kin.length || n <= 0) return 'It needs another group of its faction to rejoin, and tokens free to leave.';
+      const to = (t.from ?? []).filter((l) => l !== '__stop');
+      if (to.length !== extra || new Set(to).size !== to.length || to.some((l) => !kin.includes(l))) return `Choose ${extra} of its other groups to get one more token each (1 at a time round them all).`;
+      return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < reached ? 'You need the sway to pay at every location a token reaches (all or nothing).' : null;
     }
     case 'chase': {
       const start = t.location, f = t.faction, sf = suitFaction(state, card);
@@ -1321,6 +1352,16 @@ function act(state, pid, card, t) {
       let n = 0;
       for (const l of to) n += move(state, pid, f, loc, l, 1, placed);
       logLine(state, `${pid}: ${card.name}: the ${names(f)} at ${lname(loc)} scatter${n ? ` to ${to.map(lname).join(', ')}` : ''}.`);
+      break;
+    }
+    case 'rejoin': {
+      // The whole group (from a fight, half) rejoins its kin 1 at a time round them all; 1 sway where tokens land.
+      const f = /** @type {string} */ (t.faction), loc = /** @type {string} */ (t.location);
+      const { kin, each } = powerShare(state, loc, f);
+      const extra = (t.from ?? []).filter((l) => l !== '__stop');
+      const went = kin.map((l) => ({ l, k: each + (extra.includes(l) ? 1 : 0) })).filter((x) => x.k > 0);
+      for (const { l, k } of went) move(state, pid, f, loc, l, k, placed, true);
+      logLine(state, `${pid}: ${card.name}: the ${names(f)} at ${lname(loc)} scatter to their own at ${went.map((x) => lname(x.l)).join(', ')}.`);
       break;
     }
     case 'chase': {
@@ -1865,6 +1906,11 @@ export function pendingDestinations(state, pend) {
     case 'threat': return t.to ? [t.to] : [];
     case 'herd': return (t.path ?? []).filter((l) => l !== '__stop');
     case 'well': return t.location ? [t.location] : [];
+    case 'rejoin': {
+      if (!t.location || !t.faction || !('factions' in state)) return [];
+      const { kin, each } = powerShare(/** @type {GameState} */ (state), t.location, t.faction);
+      return each > 0 ? kin : (t.from ?? []).filter((l) => l !== '__stop');
+    }
     case 'chase': return (t.path ?? []).filter((l) => l !== '__stop');
     case 'burst': return (t.from ?? []).filter((l) => l !== '__stop');
     case 'lure': case 'broadcast': case 'gather-region': case 'gather-neighbours': case 'call-home': case 'draw-adjacent': return t.location ? [t.location] : [];
@@ -2765,6 +2811,15 @@ function nextShape(state, pid, cardId, t) {
       if (!more.length && to.length >= 2) return { kind: 'done' };
       return { kind: 'location', key: 'from', options: more, optional: to.length >= 2 };
     }
+    case 'rejoin': {
+      const st = /** @type {GameState} */ (state);
+      const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => { const p = powerShare(st, g.location, g.faction); return p.kin.length > 0 && p.n > 0 && can(g.faction, p.reached); }) };
+      const { kin, extra } = powerShare(st, t.location, /** @type {string} */ (t.faction));
+      const to = t.from ?? [];
+      if (to.length >= extra) return { kind: 'done' };
+      return { kind: 'location', key: 'from', options: kin.filter((l) => !to.includes(l)), left: extra - to.length };
+    }
     case 'chase': {
       const st = /** @type {GameState} */ (state);
       const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
@@ -3090,6 +3145,7 @@ export function describeTarget(cardId, t) {
     case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
     case 'burst': return `${F(t.faction)} at ${L(t.location)} scatter to ${(t.from ?? []).filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
+    case 'rejoin': { const x = (t.from ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} at ${L(t.location)} scatter to their own${x.length ? `, extras to ${x.map(L).join(', ')}` : ''}${how}`; }
     case 'chase': { const p = (t.path ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} chased from ${L(t.location)} to ${L(p[p.length - 1])}${p.length > 1 ? ` via ${p.slice(0, -1).map(L).join(', ')}` : ''}${how}`; }
     case 'well': return `${F(t.faction)} drawn into ${L(t.location)}${(t.from ?? []).filter((l) => l !== '__stop').length ? `, ${(t.from ?? []).filter((l) => l !== '__stop').length} out of fights next door` : ''}${how}`;
     case 'herd': { const p = (t.path ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} from ${L(t.location)}${p.length > 1 ? ` via ${p.slice(0, -1).map(L).join(', ')}` : ''} to ${L(p[p.length - 1])}${how}`; }
