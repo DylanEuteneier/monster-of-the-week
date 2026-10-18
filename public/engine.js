@@ -497,7 +497,9 @@ export function resolveOptions(raw = {}) {
 }
 
 /** An unsuited card with an action and no mark: it can fill an open unsuited slot. @param {Card} c */
-const unmarkedExtra = (c) => !c.suit && !('marked' in c && c.marked) && !!c.action;
+const unmarkedExtra = (c) => !c.suit && !('marked' in c && c.marked) && !!c.action && !standIn(c);
+/** A stand-in for an undesigned slot of the new core (spec: standIn); only the core deck deals it. Not a rule. @param {Card} c */
+const standIn = (c) => 'standIn' in c && !!c.standIn;
 /** A card pulled from the playtesting deck (spec: pulled): still built, never dealt (designer, 2026-10-15). Not a rule. @param {Card} c */
 export const pulled = (c) => 'pulled' in c && !!c.pulled;
 
@@ -571,8 +573,10 @@ export function createGame(input) {
   // unsuited extras stay. Fixed: Set v2.
   /** @type {string[]} */
   let deck = spec.cards.map((c) => c.id);
-  if (options.deck === 'mixed') {
-    const pool = /** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action && !pulled(c));
+  // The new core (designer, 2026-10-18; the default): the slot-first cards, with stand-ins in the undesigned slots.
+  if (options.deck === 'core') deck = /** @type {string[]} */ (spec.constants.coreDeck).slice();
+  else if (options.deck === 'mixed') {
+    const pool = /** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action && !pulled(c) && !standIn(c));
     deck = [];
     for (const arch of spec.archetypes) {
       for (const slot of ['strike', 'shift', 'signature']) {
@@ -597,7 +601,7 @@ export function createGame(input) {
   /** @type {Record<string, number>} */
   const printed = {};
   const strength = (/** @type {string} */ id) => /** @type {Record<string, number>} */ (cardStrength.strength)[id] ?? -Infinity;
-  for (const arch of spec.archetypes) {
+  for (const arch of options.deck === 'core' ? [] : spec.archetypes) { // the core prints each card's own sway
     const s = shuffle(deck.filter((id) => cardById(id).suit === arch.id), rngState);
     rngState = s.rngState;
     const byStrength = s.items.slice().sort((a, b) => strength(b) - strength(a));
@@ -728,6 +732,22 @@ const burstSpots = (state, loc, f) => adj(state, loc).filter((l) => !state.board
 const swarmFaction = (state, t) => (t.mode === 'location' ? t.faction : factionOfArchetype(state, 'sentients'));
 /** Link the Swarm: the faction's groups next to the hub that can be linked in. @param {GameState} state @param {string} hub @param {string} f */
 const swarmSpots = (state, hub, f) => adj(state, hub).filter((l) => !state.board[l].scorched && tokensOf(state, l, f) > 0);
+
+/** Is this player a sway leader of the faction (AB1)? @param {GameState} state @param {string} pid @param {string} f */
+const leadsSway = (state, pid, f) => swayLeaders(state.seating ? state : { ...state, seating: Object.keys(state.players) }, f).includes(pid); // previews copy no seating
+/**
+ * The unsuited stand-ins' spots (designer's seeds, 2026-10-18; prototype only): Rally Behind Them, each location
+ * controlled by a faction you lead in sway; Dig In, each fight where you're the leader; Back the Underdog, each fight
+ * where a faction you lead in sway is the smaller side.
+ * @param {GameState} state @param {string} pid @param {string} action
+ */
+function standInSpots(state, pid, action) {
+  if (action === 'rally') return LOCATION_IDS.filter((l) => { const c = controllerOf(state, l); return !state.board[l].scorched && !!c && leadsSway(state, pid, c); });
+  if (action === 'dig-in') return fightsDue(state).filter((l) => rankAt(state, l).places[0] === pid);
+  return fightsDue(state).filter((l) => { const here = factionsAt(state, l); const most = Math.max(...here.map((f) => tokensOf(state, l, f))); return here.some((f) => tokensOf(state, l, f) < most && leadsSway(state, pid, f)); });
+}
+/** Neighbours your sway may move to (not scorched). @param {GameState} state @param {string} loc */
+const swayExits = (state, loc) => adj(state, loc).filter((l) => !state.board[l].scorched);
 
 /**
  * Take Control (⏏ signature, working name; designer 2026-10-18): how many of `f`'s tokens you may turn into trophies at
@@ -1096,6 +1116,34 @@ function checkShape(state, pid, card, t) {
       if (to.length < 2 || new Set(to).size !== to.length || to.some((l) => !spots.includes(l))) return 'It bursts to at least two neighbouring locations it can enter, 1 token each.';
       if (to.length > tokensOf(state, loc, f)) return 'One token to each: not more locations than tokens.';
       return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < to.length + 1 ? 'You need the sway to pay where it leaves and at every location a token reaches (all or nothing).' : null;
+    }
+    case 'standin-sig': {
+      // Signature stand-in: a plain move to a neighbour, then a bid there up to the card's sway, the move's 1 included.
+      const e = groupTarget(state, card, t);
+      if (e) return e;
+      const loc = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
+      if (freeOf(state, loc, f) <= 0) return 'None of that group is free to leave (half from a fight, D22).';
+      if (!t.to || !burstSpots(state, loc, f).includes(t.to)) return 'Move it to a neighbouring location it can enter.';
+      const bid = 1 + (t.from ?? []).filter((l) => l === t.to).length;
+      if (bid > swayFor(state, pid, card.id)) return 'Bid no more than the card\'s sway there.';
+      return (state.players[pid].standing[f] ?? 0) < 1 + bid ? 'You need the standing with that faction: 1 where it leaves and the bid where it goes (all or nothing).' : null;
+    }
+    case 'rally': case 'dig-in': case 'underdog': {
+      const n = standInSpots(state, pid, card.action).length;
+      if (!n) return 'There is nowhere for it to place sway.';
+      return state.players[pid].supply < n ? 'You need the cubes in your supply for every location (all or nothing).' : null;
+    }
+    case 'shift-bet': case 'pull-back': case 'spread-word': {
+      const loc = t.location, have = loc ? state.board[loc]?.sway[pid] ?? 0 : 0;
+      if (!loc || have <= 0) return 'Choose a location where you have sway.';
+      if (card.action === 'spread-word') {
+        const to = (t.from ?? []).filter((l) => l !== '__stop');
+        return to.length >= 1 && to.length <= Math.min(2, have) && new Set(to).size === to.length && to.every((l) => swayExits(state, loc).includes(l)) ? null : 'Move 1 sway to each of up to two neighbouring locations.';
+      }
+      if (!t.to || !swayExits(state, loc).includes(t.to)) return 'Move it to a neighbouring location.';
+      if (card.action === 'pull-back') return null;
+      const n = (t.from ?? []).filter((l) => l === t.to).length;
+      return n >= 1 && n <= Math.min(3, have) ? null : 'Move from 1 to 3 of your sway there.';
     }
     case 'control': {
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
@@ -1468,6 +1516,35 @@ function act(state, pid, card, t) {
       for (const l of to) n += move(state, pid, f, loc, l, 1, placed);
       placeOne(state, pid, f, loc);
       logLine(state, `${pid}: ${card.name}: the ${names(f)} at ${lname(loc)} scatter${n ? ` to ${to.map(lname).join(', ')}` : ''}.`);
+      break;
+    }
+    case 'standin-sig': {
+      const f = /** @type {string} */ (t.faction), loc = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
+      const n = freeOf(state, loc, f);
+      takeTokens(state, loc, f, n);
+      addTokens(state, to, f, n);
+      placeOne(state, pid, f, loc);
+      const bid = 1 + (t.from ?? []).filter((l) => l === to).length;
+      for (let i = 0; i < bid; i++) placeOne(state, pid, f, to);
+      logLine(state, `${pid}: ${card.name}: ${n} ${names(f)} from ${lname(loc)} to ${lname(to)}, with a bid of ${bid}.`);
+      break;
+    }
+    case 'rally': case 'dig-in': case 'underdog': {
+      const spots = standInSpots(state, pid, card.action);
+      for (const l of spots) { state.players[pid].supply -= 1; state.board[l].sway[pid] = (state.board[l].sway[pid] ?? 0) + 1; }
+      logLine(state, `${pid}: ${card.name}: 1 sway at ${spots.map(lname).join(', ')}.`);
+      break;
+    }
+    case 'shift-bet': case 'pull-back': case 'spread-word': {
+      const loc = /** @type {string} */ (t.location);
+      const moves = card.action === 'spread-word' ? (t.from ?? []).filter((l) => l !== '__stop').map((l) => ({ l, n: 1 }))
+        : [{ l: /** @type {string} */ (t.to), n: card.action === 'pull-back' ? state.board[loc].sway[pid] ?? 0 : (t.from ?? []).filter((l) => l === t.to).length }];
+      for (const { l, n } of moves) {
+        state.board[loc].sway[pid] -= n;
+        state.board[l].sway[pid] = (state.board[l].sway[pid] ?? 0) + n;
+      }
+      if ((state.board[loc].sway[pid] ?? 0) <= 0) delete state.board[loc].sway[pid];
+      logLine(state, `${pid}: ${card.name}: sway from ${lname(loc)} to ${moves.map((m) => lname(m.l)).join(', ')}.`);
       break;
     }
     case 'control': {
@@ -2065,6 +2142,8 @@ export function pendingDestinations(state, pend) {
     case 'threat': return t.to ? [t.to] : [];
     case 'herd': return (t.path ?? []).filter((l) => l !== '__stop');
     case 'well': return t.location ? [t.location] : [];
+    case 'standin-sig': return t.to ? [t.to] : [];
+    case 'rally': case 'dig-in': case 'underdog': case 'shift-bet': case 'pull-back': case 'spread-word': return [];
     case 'control': return [];
     case 'raise': return t.location ? [t.location] : [];
     case 'plough': return [...new Set((t.from ?? []).filter((l) => l !== '__stop'))];
@@ -2977,6 +3056,33 @@ function nextShape(state, pid, cardId, t) {
       if (!more.length && to.length >= 2) return { kind: 'done' };
       return { kind: 'location', key: 'from', options: more, optional: to.length >= 2 };
     }
+    case 'standin-sig': {
+      const st = /** @type {GameState} */ (state);
+      const stand = (/** @type {string} */ f) => (state.players[pid].standing[f] ?? 0);
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => freeOf(st, g.location, g.faction) > 0 && burstSpots(st, g.location, g.faction).length > 0 && stand(g.faction) >= 2) };
+      const f = /** @type {string} */ (t.faction);
+      if (!t.to) return { kind: 'location', key: 'to', options: burstSpots(st, t.location, f) };
+      const from = t.from ?? [];
+      const room = Math.min(swayFor(st, pid, card.id), stand(f) - 1) - 1 - from.length; // the bid beyond the move's 1
+      if (from.includes('__stop') || room <= 0) return { kind: 'done' };
+      return { kind: 'location', key: 'from', options: [t.to], optional: true, left: room };
+    }
+    case 'rally': case 'dig-in': case 'underdog': return { kind: 'done' };
+    case 'shift-bet': case 'pull-back': case 'spread-word': {
+      const have = (/** @type {string} */ l) => state.board[l].sway[pid] ?? 0;
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => have(l) > 0 && swayExits(state, l).length > 0) };
+      if (card.action === 'spread-word') {
+        const to = t.from ?? [];
+        if (to.includes('__stop') || to.length >= Math.min(2, have(t.location))) return { kind: 'done' };
+        return { kind: 'location', key: 'from', options: swayExits(state, t.location).filter((l) => !to.includes(l)), optional: to.length >= 1 };
+      }
+      if (!t.to) return { kind: 'location', key: 'to', options: swayExits(state, t.location) };
+      if (card.action === 'pull-back') return { kind: 'done' };
+      const from = t.from ?? [];
+      const room = Math.min(3, have(t.location)) - from.length;
+      if (from.includes('__stop') || room <= 0) return { kind: 'done' };
+      return { kind: 'location', key: 'from', options: [t.to], optional: from.length >= 1, left: room };
+    }
     case 'control': {
       const st = /** @type {GameState} */ (state);
       const hits = (/** @type {string} */ l) => factionsAt(st, l).filter((f) => controlRoom(st, pid, card, { mode, location: l, faction: f }) > 0);
@@ -3353,6 +3459,11 @@ export function describeTarget(cardId, t) {
     case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
     case 'burst': return `${F(t.faction)} at ${L(t.location)} scatter to ${(t.from ?? []).filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
+    case 'standin-sig': return `${F(t.faction)} from ${L(t.location)} to ${L(t.to)}, bidding ${1 + (t.from ?? []).filter((l) => l === t.to).length}${how}`;
+    case 'rally': case 'dig-in': case 'underdog': return 'sway where it applies';
+    case 'shift-bet': return `${(t.from ?? []).filter((l) => l !== '__stop').length} sway from ${L(t.location)} to ${L(t.to)}`;
+    case 'pull-back': return `your sway from ${L(t.location)} to ${L(t.to)}`;
+    case 'spread-word': return `1 sway from ${L(t.location)} to ${(t.from ?? []).filter((l) => l !== '__stop').map(L).join(' and ')}`;
     case 'control': return `${(t.from ?? []).filter((l) => l !== '__stop').length} ${F(t.faction)} cut down at ${L(t.location)}${how}`;
     case 'raise': return `${(t.from ?? []).filter((l) => l !== '__stop').length} of the dead rise at ${L(t.location)}${how}`;
     case 'plough': return `the fight at ${L(t.location)} scatters to ${[...new Set((t.from ?? []).filter((l) => l !== '__stop'))].map(L).join(', ')}${how}`;

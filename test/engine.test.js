@@ -684,6 +684,39 @@ test('Draw Them Away: a lone group bursts, 1 token to each chosen neighbour, the
   assert.ok(checkTarget(s, 'ann', cardById('draw-away'), t)); // 4 locations, where it leaves included, 3 sway: can't play
 });
 
+test('the new core deck is the default: the slot-first cards and stand-ins, 21 in all, A to D marked (designer, 2026-10-18)', () => {
+  const g = newGame();
+  const deck = deckOf(g);
+  assert.equal(deck.length, 21);
+  assert.deepEqual(deck.map((id) => cardById(id).marked).filter(Boolean).sort(), ['A', 'B', 'C', 'D']);
+  assert.equal(cardById('rally').marked, 'A');
+  assert.deepEqual([printedOf(g, 'invite-in'), printedOf(g, 'plough')], [2, 3]);
+  // Stand-ins: Pull Back moves all your sway to a neighbour; Rally places 1 at each location a faction you lead controls.
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const [a] = Object.keys(map), [b] = map[a].adjacent;
+  s.board[a].sway = { ann: 3 };
+  const pulled = previewTarget(s, 'ann', 'pull-back', { location: a, to: b });
+  assert.deepEqual([pulled.board[a].sway.ann, pulled.board[b].sway.ann], [undefined, 3]);
+  const f = s.factions[0];
+  for (const pid of Object.keys(s.players)) s.players[pid].standing[f] = pid === 'ann' ? 9 : 1;
+  s.board[a].tokens = { [f]: 3 };
+  s.board[b].tokens = { [f]: 2 };
+  assert.equal(checkTarget(s, 'ann', cardById('rally'), {}), null);
+  const rallied = previewTarget(s, 'ann', 'rally', {});
+  assert.deepEqual([rallied.board[a].sway.ann, rallied.board[b].sway.ann], [4, 1]);
+  // A signature stand-in: a plain move to a neighbour, then a bid there (the move's 1 included), up to the card's sway.
+  s.players.ann.hand = ['standin-demonic', 'invite-in', 'gate'];
+  const dem = /** @type {string} */ (factionOfArchetype(s, 'demonic'));
+  s.board[a].tokens = { [dem]: 2 };
+  s.board[b].tokens = {};
+  const t = { mode: /** @type {const} */ ('faction'), location: a, faction: dem, to: b, from: [b, b] };
+  assert.equal(checkTarget(s, 'ann', cardById('standin-demonic'), t), null);
+  assert.ok(checkTarget(s, 'ann', cardById('standin-demonic'), { ...t, from: [b, b, b] })); // a bid of 4 with 3 cards in hand
+  const moved = previewTarget(s, 'ann', 'standin-demonic', t);
+  assert.deepEqual([moved.board[b].tokens[dem], moved.board[b].sway.ann, moved.board[a].sway.ann], [2, 3, 4]); // 3 already there, plus the 1 where it left
+});
+
 test('Take Control (⏏ signature): spend your sway at a fight to cut down a faction there, taking them as trophies (designer, 2026-10-18)', () => {
   const s = clear(newGame());
   const sent = /** @type {string} */ (factionOfArchetype(s, 'sentients'));

@@ -10,6 +10,7 @@
     "notes": "Seat limits are decision D3 (3.16). Rules: the first draft (Appendix G). Cards: Set v2 (H.8) plus scaffold placeholders for the six extras (H.6). Numbers: first-draft guesses (G.7), each a variant. Map: the prototype board, layout D (testing only)."
   },
   "constants": {
+    "coreDeck": ["invite-in", "gate", "hack-targeting", "bait-trail", "ritual", "draw-away", "big-chase", "cut-powerlines", "plough", "light-cross", "wake-the-dead", "take-control", "standin-nocturnals", "standin-scifi", "standin-demonic", "rally", "dig-in", "shift-bet", "spread-word", "pull-back", "underdog"],
     "handSize": {
       "3": 6,
       "4": 5,
@@ -1034,8 +1035,13 @@
       "id": "deck",
       "label": "Deck",
       "description": "Prototype test plumbing, not a rule. Mixed: when the game is created, each suit draws one Strike, one Shift and one Signature at random from the deck and the test cards, printed 2, 3 and 4 sway by measured strength, the strongest 2 and the weakest 4 (9 per suit, D12); the marked unsuited cards (A, C, D) stay and the other three unsuited slots draw at random from the unmarked unsuited cards. Fixed: Set v2, its unsuited slots filled at random to six.",
-      "default": "mixed",
+      "default": "core",
       "choices": [
+        {
+          "id": "core",
+          "label": "New core",
+          "description": "The slot-first core set (designer, 2026-10-18): the five new strikes and shifts, Wake the Dead and Take Control, stand-ins for the undesigned signatures and the six unsuited cards (A to D marked). Printed sway: strikes 2, shifts 3, signatures your hand (D24)."
+        },
         {
           "id": "mixed",
           "label": "Mixed",
@@ -1478,6 +1484,121 @@
             "faction": "a lone Sci-Fi group anywhere."
           },
           "round": 21
+        },
+        {
+          "id": "standin-nocturnals",
+          "name": "Nocturnal Stand-in",
+          "suit": "nocturnals",
+          "slot": "signature",
+          "sway": 4,
+          "action": "standin-sig",
+          "standIn": true,
+          "round": 21,
+          "text": "Stand-in (prototype only, until this suit's signature is designed). Move a group to a neighbouring location it can enter, then bid up to the card's sway at the location it reached, the move's 1 included. Target: the group, then where it goes.",
+          "readings": {
+            "location": "a group at a ◐ location.",
+            "faction": "a Nocturnal group anywhere."
+          }
+        },
+        {
+          "id": "standin-scifi",
+          "name": "Sci-Fi Stand-in",
+          "suit": "scifi",
+          "slot": "signature",
+          "sway": 4,
+          "action": "standin-sig",
+          "standIn": true,
+          "round": 21,
+          "text": "Stand-in (prototype only, until this suit's signature is designed). Move a group to a neighbouring location it can enter, then bid up to the card's sway at the location it reached, the move's 1 included. Target: the group, then where it goes.",
+          "readings": {
+            "location": "a group at a ↂ location.",
+            "faction": "a Sci-Fi group anywhere."
+          }
+        },
+        {
+          "id": "standin-demonic",
+          "name": "Demon Stand-in",
+          "suit": "demonic",
+          "slot": "signature",
+          "sway": 4,
+          "action": "standin-sig",
+          "standIn": true,
+          "round": 21,
+          "text": "Stand-in (prototype only, until this suit's signature is designed). Move a group to a neighbouring location it can enter, then bid up to the card's sway at the location it reached, the move's 1 included. Target: the group, then where it goes.",
+          "readings": {
+            "location": "a group at a ⎈ location.",
+            "faction": "a Demon group anywhere."
+          }
+        },
+        {
+          "id": "rally",
+          "name": "Rally Behind Them",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "rally",
+          "standIn": true,
+          "round": 21,
+          "text": "Stand-in (prototype only, until the unsuited cards are designed). Place 1 sway from your supply at each location controlled by a faction you're the sway leader of. All of it, or it can't be played.",
+          "marked": "A"
+        },
+        {
+          "id": "dig-in",
+          "name": "Dig In",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "dig-in",
+          "standIn": true,
+          "round": 21,
+          "text": "Stand-in (prototype only, until the unsuited cards are designed). Place 1 sway from your supply at each fight where you're the leader. All of it, or it can't be played.",
+          "marked": "B"
+        },
+        {
+          "id": "shift-bet",
+          "name": "Shift the Bet",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "shift-bet",
+          "standIn": true,
+          "round": 21,
+          "text": "Stand-in (prototype only, until the unsuited cards are designed). Move up to 3 of your sway from one location to a neighbouring one. Target: where it leaves, then where it goes.",
+          "marked": "C"
+        },
+        {
+          "id": "spread-word",
+          "name": "Spread the Word",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "spread-word",
+          "standIn": true,
+          "round": 21,
+          "text": "Stand-in (prototype only, until the unsuited cards are designed). Move 1 of your sway from one location to each of up to two neighbouring locations. Target: where it leaves, then where it goes.",
+          "marked": "D"
+        },
+        {
+          "id": "pull-back",
+          "name": "Pull Back",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "pull-back",
+          "standIn": true,
+          "round": 21,
+          "text": "Stand-in (prototype only, until the unsuited cards are designed). Move all your sway at one location to a neighbouring location. Target: where it leaves, then where it goes."
+        },
+        {
+          "id": "underdog",
+          "name": "Back the Underdog",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "underdog",
+          "standIn": true,
+          "round": 21,
+          "text": "Stand-in (prototype only, until the unsuited cards are designed). Place 1 sway from your supply at each fight where a faction you're the sway leader of is the smaller side. All of it, or it can't be played."
         },
         {
           "id": "take-control",
