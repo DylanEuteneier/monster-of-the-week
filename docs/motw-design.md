@@ -1317,10 +1317,10 @@ Actual changes to mechanisms and game structure.
 | **Slot** | A question the game has to answer, such as how a fight resolves. Candidates in the same slot share a two-letter prefix. |
 | **Supply** | *(First draft.)* Where a cube or token waits off the board. Each colour has one supply: a player's cubes return to that player, to be placed again with later actions; a faction's tokens return to that faction, to be placed again later. No piece is ever removed from the game entirely. |
 | **Standing tie** | *(Idea.)* A tie between players that is not broken. |
+| **Signature sway** | *(First draft; D24.)* A signature's sway: 1 for each card in your hand, itself included, with no cap. |
 | **Sway** | *(Idea.)* A player's standing with a faction: how much the faction has noticed their group, the pull the group's gambits (bait, traps, plans) have on it, and, for a group that backs the faction, its claim if that faction wins. Public. Held with several factions at once. It can be spent from a faction and placed on a location, where it counts as a bid for the trophies of a fight there. Never control: players don't command factions. |
 | **Sway cube** | *(Idea.)* A cube representing a player's sway with a faction. Cubes are only ever players'; factions have tokens; may be spent to take board actions. |
 | **Sway leader** | *(Idea.)* The player with the most sway with a faction. Affinity breaks a tie for the most (AB1); otherwise players tied for the most are all sway leaders. A player is never called a faction's leader. |
-| **Signature sway** | *(First draft; D24.)* A signature's sway: 1 for each card in your hand, itself included, with no cap. |
 | **Three-way fight** | *(First draft, through one card.)* A fight between three factions at one location, which only Wake the Dead (the ☾ signature) can cause: the largest wins, both losers lose everything, and the leader takes the two larger piles. |
 | **Tied fight** | *(Idea.)* A fight between two groups of the same size. Both are wiped out, unless one of the factions has affinity for the location, in which case it wins. |
 | **Token** | The physical piece representing invaders on the board: faction presence. Always represents a specific faction. Cubes are the players' pieces (sway); tokens are the factions'. Hidden tokens and bluff tokens are separate pieces. |
