@@ -1151,6 +1151,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Exceptions on the new cards:** The Gate places only 1 sway, from the Sci-Fi faction or one at either end. Plough Through moves half rounded up from every side, and you choose which side pays at the fight. Cut the Powerlines moves exactly half from a fight.
 - **Why (designer):** the new cards were averaging 72 words, mostly repeating shared rules.
 - **Consequence:** rule 4 is one rule for strikes and shifts alike (designer), so the shifts now also place 1 sway where the group leaves (before, only where tokens reached).
+- **Measured (2026-10-17; 24 games, 5 players, mixed decks, 3/3/3 with D22; with the new shifts in the pool too, so not D23 alone):** island / invaders 13 / 11 (seed 7) and 16 / 8 (seed 8), against 19 / 5 before (seed 7); presence at game end 19.8 and 17.6, against 14.9 (threshold 20); presence after round 1 rose (49.3 and 47.5, against 41.8). Fights made per round 3.98 and 3.88, as before; made to disappear 0 and 0.02 (one, Plough Through breaking a Gate fight, as designed). Trophies per player about the same (11.8, 11.2 against 11.3). Small samples: the swing towards the invaders is suggestive, not proven.
 - **Affects:** Appendix G (G.2), the ten new strikes and shifts (their text shortened to about 44 words on average), the prototype (each shift's sway where it leaves).
 - **Date:** 2026-10-17
 
