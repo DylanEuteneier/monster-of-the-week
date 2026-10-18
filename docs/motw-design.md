@@ -1191,8 +1191,9 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 #### D26. Signatures create fights
 
 - **Decided (designer):** every signature can create a fight, on both its readings (location and faction). A new fight counts, and so does a new side at a fight already there (as Wake the Dead's three-way fight).
+- **Exception (designer):** Take Control (⏏) acts only on fights already there.
 - **Why (designer):** round 1 is short of fights in the new core, and signatures should open play up.
-- **Affects:** 3.7 (the signature slot), alongside the open bid every signature carries and D24. Checked against the signatures so far: Wake the Dead's location reading creates one (against a lone group, or as a third side), its faction reading does not (the risen join the Undead); Take Control acts only on fights already there, so neither reading does. The stand-ins can (the move may land on a lone rival). Wake the Dead's faction reading and Take Control need rework.
+- **Affects:** 3.7 (the signature slot), alongside the open bid every signature carries and D24. Checked against the signatures so far: Wake the Dead's location reading creates one (against a lone group, or as a third side), its faction reading does not (the risen join the Undead); Take Control acts only on fights already there (the exception). The stand-ins can (the move may land on a lone rival). Wake the Dead's faction reading needs rework.
 - **Date:** 2026-10-18
 
 #### D14. Tokens and cubes
@@ -1251,7 +1252,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-09 | The tuned table confirmed over 40 games | Backers 18.1% a seat, trophy 21.3%; the invaders' ending 15 in 40 |
 | 2026-10-10 | Unattended experiment runner (designer: a repeatable script for several machines that jitters the tuned values, runs, judges and commits its results): `scripts/experiment.js`, one game pool per machine fed by several experiments at once, shared baselines, a testing log entry per attempt (`experiments/`); last night's 48 attempts backfilled. The play-outs-into-the-next-round switch (`deep`) removed: clearly worse | Standard bots unchanged (identical play checked) |
 | 2026-10-10 | Overnight bot tuning (designer: implement the research's best candidates and keep testing on short runs): bot games about 5× faster with identical play; tools for duplicate deals, placings and fitting the evaluation; about 30 variants tested | None adopted: no change measurably beats the standard profiles; 20-game runs only find large effects (F.9, Tuning method) |
-| 2026-10-18 | Signatures create fights (D26, designer): every signature can create a fight, or a new side at one, on both readings. Wake the Dead's faction reading and Take Control don't yet | |
+| 2026-10-18 | Signatures create fights (D26, designer): every signature can create a fight, or a new side at one, on both readings. Take Control is the exception (designer); Wake the Dead's faction reading doesn't yet | |
 | 2026-10-18 | The winner loses half the loser's number, rounded up (D25, designer, for now), not rounded down with a minimum of 1 | Variant `winnerLoss` |
 | 2026-10-18 | Half from a fight is global and cards' lone-group targets go (D22, designer): a group in a fight can be moved, half of it. The Big Chase, Bait the Herd, Draw Them Away, Spoof the Signal and Invite Them In changed; Plough Through kept as it is (designer). Measured first: swapping one part of the new core into the mixed deck (10 games each, seed 5), only the new strikes and shifts quieten round 1 (fights 6.4 to 3.9, presence 45 to 56 after round 1); the other parts each move about one game in ten to the invaders | Test option `coreParts` (plumbing) |
 | 2026-10-18 | The new core deck is the prototype's default (designer): the slot-first cards with stand-ins for the undesigned signatures and unsuited cards; the mixed deck stays an option. First run: invaders 8 of 8, presence ending at 36.8 | |
