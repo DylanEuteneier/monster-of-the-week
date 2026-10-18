@@ -712,6 +712,40 @@ const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ..
 const burstSpots = (state, loc, f) => adj(state, loc).filter((l) => !state.board[l].scorched && canEnter(state, l, f) && !((state.board[loc].lock || state.board[l].lock) && regionOf(loc) !== regionOf(l)));
 
 /**
+ * Plough Through (◐ shift, designer 2026-10-17): the sides of the fight at `loc` and their exits. Every side sends out
+ * half, rounded up (the card's deliberate exception to D22: a side of 1 leaves entirely, and the fight can break), to
+ * neighbours it can enter. Sides in the order of state.factions; a target lists one exit per token, side by side.
+ * @param {GameState} state @param {string} loc
+ */
+const ploughSides = (state, loc) => state.factions.filter((f) => factionsAt(state, loc).includes(f))
+  .map((f) => ({ f, n: Math.ceil(tokensOf(state, loc, f) / 2), spots: burstSpots(state, loc, f) }));
+/**
+ * Plough Through: can the exits chosen so far (`from`) be finished? No location takes two sides, and under D21 each side
+ * opens no more exits than your standing with it pays for.
+ * @param {GameState} state @param {string} pid @param {string} loc @param {string[]} from
+ */
+function ploughFits(state, pid, loc, from) {
+  const sides = ploughSides(state, loc);
+  const pay = (/** @type {string} */ f) => (swayRequired(state) ? state.players[pid].standing[f] ?? 0 : Infinity);
+  /** @type {string[][]} */ const used = [];
+  let i = 0;
+  for (const side of sides) { used.push(from.slice(i, i + side.n)); i += side.n; }
+  if (from.length > i) return false;
+  const taken = (/** @type {number} */ k) => new Set(used.flatMap((u, j) => (j === k ? [] : u)));
+  for (const [k, side] of sides.entries()) {
+    const mine = new Set(used[k]);
+    if ([...mine].some((l) => !side.spots.includes(l) || taken(k).has(l)) || mine.size > pay(side.f)) return false;
+  }
+  // The sides still to open an exit each need one free location, distinct from the others' (a small matching).
+  const need = sides.map((side, k) => ({ side, k })).filter(({ side, k }) => used[k].length < side.n && !used[k].length);
+  const held = new Set(used.flat());
+  /** @type {(j: number, busy: Set<string>) => boolean} */
+  const match = (j, busy) => j === need.length
+    || need[j].side.spots.some((l) => !busy.has(l) && pay(need[j].side.f) >= 1 && match(j + 1, new Set([...busy, l])));
+  return match(0, held);
+}
+
+/**
  * Cut the Powerlines (⏏ shift, designer 2026-10-17): the faction's other groups a group of `f` at `loc` can rejoin,
  * anywhere on the island (fights too): locations holding `f` it can enter, not scorched; Lock Down's borders hold. Both
  * ends of a Gate are one group, listed once.
@@ -1012,6 +1046,15 @@ function checkShape(state, pid, card, t) {
       if (to.length < 2 || new Set(to).size !== to.length || to.some((l) => !spots.includes(l))) return 'It bursts to at least two neighbouring locations it can enter, 1 token each.';
       if (to.length > tokensOf(state, loc, f)) return 'One token to each: not more locations than tokens.';
       return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < to.length ? 'You need the sway to pay at every location a token reaches (all or nothing).' : null;
+    }
+    case 'plough': {
+      const loc = t.location, sf = suitFaction(state, card);
+      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      if (!loc || !state.board[loc] || state.board[loc].scorched || factionsAt(state, loc).length < 2 || (t.mode === 'location' ? !suitLocations(card).includes(loc) : !factionsAt(state, loc).includes(/** @type {string} */ (sf)))) return t.mode === 'location' ? 'Choose a fight at a ◐ location.' : 'Choose a fight the Nocturnals are in.';
+      const from = (t.from ?? []).filter((l) => l !== '__stop');
+      const total = ploughSides(state, loc).reduce((n, side) => n + side.n, 0);
+      if (from.length !== total) return `Every side leaves by half, rounded up: choose ${total} exits, one per token.`;
+      return ploughFits(state, pid, loc, from) ? null : 'Each side goes out to neighbours it can enter, never where another side goes, and you need the sway for every exit (all or nothing).';
     }
     case 'rejoin': {
       const loc = t.location, f = t.faction, sf = suitFaction(state, card);
@@ -1352,6 +1395,18 @@ function act(state, pid, card, t) {
       let n = 0;
       for (const l of to) n += move(state, pid, f, loc, l, 1, placed);
       logLine(state, `${pid}: ${card.name}: the ${names(f)} at ${lname(loc)} scatter${n ? ` to ${to.map(lname).join(', ')}` : ''}.`);
+      break;
+    }
+    case 'plough': {
+      // Every side leaves by half, rounded up, through its own exits; 1 sway where each faction lands.
+      const loc = /** @type {string} */ (t.location);
+      const from = (t.from ?? []).filter((l) => l !== '__stop');
+      let i = 0;
+      for (const side of ploughSides(state, loc)) {
+        const mine = from.slice(i, i + side.n); i += side.n;
+        for (const l of new Set(mine)) move(state, pid, side.f, loc, l, mine.filter((x) => x === l).length, placed, true);
+      }
+      logLine(state, `${pid}: ${card.name}: the fight at ${lname(loc)} scatters to ${[...new Set(from)].map(lname).join(', ')}.`);
       break;
     }
     case 'rejoin': {
@@ -1906,6 +1961,7 @@ export function pendingDestinations(state, pend) {
     case 'threat': return t.to ? [t.to] : [];
     case 'herd': return (t.path ?? []).filter((l) => l !== '__stop');
     case 'well': return t.location ? [t.location] : [];
+    case 'plough': return [...new Set((t.from ?? []).filter((l) => l !== '__stop'))];
     case 'rejoin': {
       if (!t.location || !t.faction || !('factions' in state)) return [];
       const { kin, each } = powerShare(/** @type {GameState} */ (state), t.location, t.faction);
@@ -2811,6 +2867,18 @@ function nextShape(state, pid, cardId, t) {
       if (!more.length && to.length >= 2) return { kind: 'done' };
       return { kind: 'location', key: 'from', options: more, optional: to.length >= 2 };
     }
+    case 'plough': {
+      const st = /** @type {GameState} */ (state);
+      const fightOk = (/** @type {string} */ l) => !st.board[l].scorched && factionsAt(st, l).length >= 2 && (mode === 'location' ? suitLocations(card).includes(l) : factionsAt(st, l).includes(/** @type {string} */ (sf)));
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => fightOk(l) && ploughFits(st, pid, l, [])) };
+      const sides = ploughSides(st, t.location);
+      const from = t.from ?? [];
+      const total = sides.reduce((n, side) => n + side.n, 0);
+      if (from.length >= total) return { kind: 'done' };
+      let i = 0, side = sides[0];
+      for (const x of sides) { if (from.length < i + x.n) { side = x; break; } i += x.n; }
+      return { kind: 'location', key: 'from', options: side.spots.filter((l) => ploughFits(st, pid, t.location ?? '', [...from, l])), left: total - from.length };
+    }
     case 'rejoin': {
       const st = /** @type {GameState} */ (state);
       const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
@@ -3145,6 +3213,7 @@ export function describeTarget(cardId, t) {
     case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
     case 'burst': return `${F(t.faction)} at ${L(t.location)} scatter to ${(t.from ?? []).filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
+    case 'plough': return `the fight at ${L(t.location)} scatters to ${[...new Set((t.from ?? []).filter((l) => l !== '__stop'))].map(L).join(', ')}${how}`;
     case 'rejoin': { const x = (t.from ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} at ${L(t.location)} scatter to their own${x.length ? `, extras to ${x.map(L).join(', ')}` : ''}${how}`; }
     case 'chase': { const p = (t.path ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} chased from ${L(t.location)} to ${L(p[p.length - 1])}${p.length > 1 ? ` via ${p.slice(0, -1).map(L).join(', ')}` : ''}${how}`; }
     case 'well': return `${F(t.faction)} drawn into ${L(t.location)}${(t.from ?? []).filter((l) => l !== '__stop').length ? `, ${(t.from ?? []).filter((l) => l !== '__stop').length} out of fights next door` : ''}${how}`;

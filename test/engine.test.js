@@ -684,6 +684,33 @@ test('Draw Them Away: a lone group bursts, 1 token to each chosen neighbour, the
   assert.ok(checkTarget(s, 'ann', cardById('draw-away'), t)); // 3 locations, 2 sway: can't play
 });
 
+test('Plough Through: every side of a fight leaves by half rounded up, through its own exits; a side of 1 leaves entirely (designer, 2026-10-17)', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const noct = /** @type {string} */ (factionOfArchetype(s, 'nocturnals'));
+  const g = /** @type {string} */ (s.factions.find((x) => x !== noct));
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals' && map[l.id].adjacent.length >= 3)?.id);
+  const [a, b, c] = map[loc].adjacent;
+  s.board[loc].tokens = { [noct]: 5, [g]: 1 };
+  s.players.ann.standing[noct] = 2;
+  s.players.ann.standing[g] = 1;
+  const [first, second] = s.factions.filter((f) => f === noct || f === g); // sides in seat order of factions
+  const exits = first === noct ? [a, a, b, c] : [c, a, a, b]; // the Nocturnals: 3 out (2 to a, 1 to b); the other: 1 to c
+  const t = { mode: /** @type {const} */ ('faction'), location: loc, from: exits };
+  assert.equal(checkTarget(s, 'ann', cardById('plough'), t), null);
+  const after = previewTarget(s, 'ann', 'plough', t);
+  assert.deepEqual([after.board[loc].tokens[noct], after.board[loc].tokens[g] ?? 0, after.board[a].tokens[noct], after.board[b].tokens[noct], after.board[c].tokens[g]], [2, 0, 2, 1, 1]);
+  assert.deepEqual([a, b, c].map((l) => after.board[l].sway.ann), [1, 1, 1]);
+  assert.ok(second);
+  const clash = first === noct ? [a, a, b, a] : [a, a, a, b];
+  assert.ok(checkTarget(s, 'ann', cardById('plough'), { ...t, from: clash })); // never two sides to one location
+  assert.ok(checkTarget(s, 'ann', cardById('plough'), { ...t, from: exits.slice(1) })); // every side leaves in full
+  s.players.ann.standing[noct] = 1;
+  assert.ok(checkTarget(s, 'ann', cardById('plough'), t)); // two Nocturnal exits, 1 sway: can't play
+  s.board[loc].tokens = { [noct]: 5 };
+  assert.ok(checkTarget(s, 'ann', cardById('plough'), t)); // not a fight
+});
+
 test('Cut the Powerlines: a group rejoins its kin 1 at a time round them all; from a fight, exactly half (designer, 2026-10-17)', () => {
   const s = clear(newGame());
   const sent = /** @type {string} */ (factionOfArchetype(s, 'sentients'));
