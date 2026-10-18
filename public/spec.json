@@ -942,6 +942,16 @@
       ]
     },
     {
+      "id": "winnerLoss",
+      "label": "Winner's losses",
+      "description": "D25 (designer, 2026-10-18, for now): the winner of a fight loses half the loser's number, rounded up (in a three-way fight, the larger loser's).",
+      "default": "up",
+      "choices": [
+        { "id": "up", "label": "Half, rounded up", "description": "D25: half the loser's number, rounded up." },
+        { "id": "down", "label": "Half, rounded down", "description": "FR5 as first drafted: half the loser's number, rounded down, at least 1." }
+      ]
+    },
+    {
       "id": "fightHalf",
       "label": "Half from a fight",
       "description": "Core rule (designer, 2026-10-17; D22): from a location where a fight already exists, any card moves at most half of a faction's group, rounded down. At least half always stays, so no fight is emptied by movement; pulling some out still places the mover's sway there.",

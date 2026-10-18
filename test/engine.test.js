@@ -184,7 +184,7 @@ test('on aligned ground the aligned faction wins a tie (AL2)', () => {
   const home = spec.locations.find((l) => l.archetype === spec.factions.find((f) => f.id === A)?.archetype)?.id ?? '';
   s.board[home].tokens = { [A]: 3, [B]: 3 };
   const r = resolveFight(s, home);
-  assert.deepEqual(r.board[home].tokens, { [A]: 2 });
+  assert.deepEqual(r.board[home].tokens, { [A]: 1 }); // loses half the loser's 3, rounded up (D25)
   assert.equal(r.board[home].scorched, false);
 });
 
@@ -799,10 +799,10 @@ test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-
   assert.deepEqual(fightsDue(after).includes(loc), true);
   // The fight: 6 beat 3 and 3; both losers lose everything; the winner loses half the larger loser's number.
   const fought = resolveFight(after, loc);
-  assert.deepEqual(fought.board[loc].tokens, { [f]: 5 });
-  // Piles 3, 3 and 1: ann leads (3 sway) and takes the two larger; bob, runner-up, the smallest.
+  assert.deepEqual(fought.board[loc].tokens, { [f]: 4 }); // half of 3, rounded up (D25)
+  // Piles 3, 3 and 2: ann leads (3 sway) and takes the two larger; bob, runner-up, the smallest.
   assert.equal(Object.values(fought.players.ann.trophies).reduce((x, y) => x + y, 0), 6);
-  assert.equal(fought.players.bob.trophies[f], 1);
+  assert.equal(fought.players.bob.trophies[f], 2);
   // Two largest tied and neither aligned: a true tie, all three wiped out and the location scorched.
   const tie = clear(newGame());
   const open = /** @type {string} */ (spec.locations.find((l) => ![arch(f), arch(g), 'undead'].includes(l.archetype))?.id);

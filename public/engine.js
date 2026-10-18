@@ -2604,7 +2604,8 @@ function fight(state, loc, joined = undefined) {
   const lost = Object.fromEntries(losers.map((f) => [f, place.tokens[f]])); // every loser loses everything (FR5)
   const nl = place.tokens[loser];
   // The winner loses half the loser's number; in a three-way fight, half the larger loser's (designer, 2026-10-18).
-  let winnerLoss = Math.max(1, Math.floor(nl / 2));
+  // Rounded up (D25, designer 2026-10-18, for now); variant winnerLoss=down: rounded down, at least 1 (FR5 as first drafted).
+  let winnerLoss = state.options.winnerLoss === 'down' ? Math.max(1, Math.floor(nl / 2)) : Math.ceil(nl / 2);
   if (has('silver-bullets')) winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
   if (has('salt-burn')) winnerLoss = place.tokens[winner];
   if (has('force-field')) winnerLoss = 0; // test card (round 8)

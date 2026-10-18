@@ -371,8 +371,8 @@ const op = (/** @type {string} */ s) => `<span class="tut-op">${s}</span>`;
 const chip = (/** @type {string} */ s) => `<span class="tut-chip">${s}</span>`;
 const frame = (/** @type {string} */ mechanic, /** @type {string} */ strategy) => `<dl class="tut-frame"><dt>Mechanic</dt><dd>${mechanic}</dd><dt>Strategy</dt><dd>${strategy}</dd></dl>`;
 const more = (/** @type {string} */ label, /** @type {string} */ html) => `<details class="tut-more"><summary>${label}</summary>${html}</details>`;
-/** How a fight's losses are counted, in pieces: the loser's whole group, then half that (rounded down, at least 1) of the winners. @param {string} win @param {number} w @param {string} lose @param {number} l */
-const fightMath = (win, w, lose, l) => `${eq(tokens(win, w), op('vs'), tokens(lose, l), op('→'), 'the bigger group wins')}${eq('the loser loses all', op('='), tokens(lose, l))}${eq(`the winner loses half that, rounded down, at least 1`, op('='), tokens(win, Math.max(1, Math.floor(l / 2))))}${more('More examples', '<p>5 vs 2: the 2 die, the winners lose 1. 6 vs 5: the 5 die, the winners lose 2. 2 vs 1: the 1 dies, the winners still lose 1.</p>')}`;
+/** How a fight's losses are counted, in pieces: the loser's whole group, then half that (rounded up) of the winners. @param {string} win @param {number} w @param {string} lose @param {number} l */
+const fightMath = (win, w, lose, l) => `${eq(tokens(win, w), op('vs'), tokens(lose, l), op('→'), 'the bigger group wins')}${eq('the loser loses all', op('='), tokens(lose, l))}${eq(`the winner loses half that, rounded up`, op('='), tokens(win, Math.ceil(l / 2)))}${more('More examples', '<p>5 vs 2: the 2 die, the winners lose 1. 6 vs 5: the 5 die, the winners lose 3. 2 vs 1: the 1 dies, the winners lose 1.</p>')}`;
 /** A small gauge like the island's: a count against the mark. @param {number} n @param {number} mark */
 const miniGauge = (n, mark) => { const top = Math.max(n, mark * 2); return `<span class="tut-gauge${n > mark ? ' is-over' : ''}" style="--now:${(100 * n) / top}%;--mark:${(100 * mark) / top}%"><span class="tut-gauge-fill"></span><span class="tut-gauge-mark"></span></span>`; };
 /** One of a faction ("Werewolves" → "Werewolf"). @param {string} name */
@@ -1007,12 +1007,12 @@ function countDead(a, b, loc) {
       const home = sides.find((t) => factionById(t.f).archetype === locationById(loc).archetype);
       if (b.board[loc].scorched || !home) return `${eq(tokens(x.f, x.n), op('vs'), tokens(y.f, y.n), op('→'), 'level')}<p>A true tie on ground neither calls home: both groups wiped out, nobody collects, and ${L(loc)} is gone for good.</p>`;
       const away = /** @type {typeof home} */ (sides.find((t) => t !== home));
-      return `${eq(tokens(x.f, x.n), op('vs'), tokens(y.f, y.n), op('→'), 'level')}<p>Level, but ${L(loc)} is ${suitIcon(locationById(loc).archetype)} ground, the ${F(home.f)}' own: they win, as in any fight.</p>${eq(`the ${F(away.f)} lose all`, op('='), tokens(away.f, away.n))}${eq('the winners lose half that, rounded down, at least 1', op('='), tokens(home.f, Math.max(1, Math.floor(away.n / 2))))}`;
+      return `${eq(tokens(x.f, x.n), op('vs'), tokens(y.f, y.n), op('→'), 'level')}<p>Level, but ${L(loc)} is ${suitIcon(locationById(loc).archetype)} ground, the ${F(home.f)}' own: they win, as in any fight.</p>${eq(`the ${F(away.f)} lose all`, op('='), tokens(away.f, away.n))}${eq('the winners lose half that, rounded up', op('='), tokens(home.f, Math.ceil(away.n / 2)))}`;
     }
     const [win, lose] = x.n > y.n ? [x, y] : [y, x];
     return fightMath(win.f, win.n, lose.f, lose.n);
   }
-  return `${flip}${sides.map((s) => eq(`the ${F(s.f)} lose`, op('='), s.lost ? tokens(s.f, s.lost) : '0')).join('')}${recall('Bigger group wins; the loser loses all, the winner half that, rounded down, at least 1.')}`;
+  return `${flip}${sides.map((s) => eq(`the ${F(s.f)} lose`, op('='), s.lost ? tokens(s.f, s.lost) : '0')).join('')}${recall('Bigger group wins; the loser loses all, the winner half that, rounded up.')}`;
 }
 
 /** A fight before it happens. @param {GameState} s @param {string} loc */
