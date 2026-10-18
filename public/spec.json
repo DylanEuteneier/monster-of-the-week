@@ -1916,10 +1916,10 @@
         "name": "Link the Swarm",
         "suit": "sentients",
         "slot": "signature",
-        "sway": 3,
+        "sway": 4,
         "action": "swarm",
         "round": 20,
-        "text": "At this round’s fight at the target, the target faction counts its tokens in every location next to it too, for who wins (casualties and trophies as usual). Target: the hub, then the faction linked.",
+        "text": "The AV Club links the swarm. At this round’s fight at the target, the linked faction also counts its groups next door that you link in, for who wins (casualties and trophies as usual). Place 1 sway at each linked group and 1 at the target, up to the card’s sway in all, from your standing with the linked faction. Target: the hub, the faction linked, then its groups.",
         "readings": {
           "location": "any faction at a ⏏ location.",
           "faction": "the Sentients, at a location holding them."

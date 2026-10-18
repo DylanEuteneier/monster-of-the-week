@@ -62,6 +62,7 @@ export { spec };
  * @property {boolean} [wake]      Wake the Dead (test card, round 18): this round's fight can't scorch, and the loser's casualties rise as Undead
  * @property {string[]} [backdoor] Install a Backdoor (test card, round 20): players whose sway here counts 1 more per Sentient token at this round's fight
  * @property {string | boolean} [swarm]  Link the Swarm (test card, round 20): at this round's fight, this faction here counts its tokens next door too (true, from older games: the Sentients)
+ * @property {string[]} [links]  Link the Swarm (⏏ signature, designer 2026-10-18): the neighbouring groups linked in; absent, every neighbour (older games)
  * @property {boolean} [lock]      Lock Down the Town (test card, round 19): this round, no group moves into or out of this location's region
  */
 
@@ -711,6 +712,11 @@ const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ..
  */
 const burstSpots = (state, loc, f) => adj(state, loc).filter((l) => !state.board[l].scorched && canEnter(state, l, f) && !((state.board[loc].lock || state.board[l].lock) && regionOf(loc) !== regionOf(l)));
 
+/** Link the Swarm: the faction linked (location reading: the one chosen; faction reading: the Sentients). @param {GameState} state @param {Target} t */
+const swarmFaction = (state, t) => (t.mode === 'location' ? t.faction : factionOfArchetype(state, 'sentients'));
+/** Link the Swarm: the faction's groups next to the hub that can be linked in. @param {GameState} state @param {string} hub @param {string} f */
+const swarmSpots = (state, hub, f) => adj(state, hub).filter((l) => !state.board[l].scorched && tokensOf(state, l, f) > 0);
+
 /**
  * Wake the Dead (☾ signature, designer 2026-10-18; first named Raise the Dead): how many of the dead you may raise at `loc`, a fight the Undead
  * aren't in (any fight; not a Gate's end): up to the card's printed sway, your standing with the Undead, and their supply.
@@ -1357,7 +1363,14 @@ function checkShape(state, pid, card, t) {
     case 'swarm': {
       // Location reading: any faction at a ⏏ location (designer, 2026-10-15); faction reading: the Sentients, where they are.
       if ((t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode).includes(t.location)) return 'Choose the target location.';
-      return t.mode === 'faction' || (t.faction && tokensOf(state, t.location, t.faction) > 0) ? null : 'Choose a faction there.';
+      if (t.mode === 'location' && !(t.faction && tokensOf(state, t.location, t.faction) > 0)) return 'Choose a faction there.';
+      // The groups linked in, your choice of its groups next door; the bid: 1 sway at each linked group and 1 at the hub,
+      // up to the card's sway in all, from standing with the linked faction (designer, 2026-10-18).
+      const f = /** @type {string} */ (swarmFaction(state, t)), hub = t.location;
+      const links = (t.path ?? []).filter((l) => l !== '__stop');
+      if (!links.length || new Set(links).size !== links.length || links.some((l) => !swarmSpots(state, hub, f).includes(l))) return 'Link at least one of its groups next door.';
+      if (links.length + 1 > printedOf(state, card.id)) return 'Link no more groups than the card\'s sway allows: 1 sway at each and 1 at the hub.';
+      return links.length + 1 > (state.players[pid].standing[f] ?? 0) ? 'You need the standing with the linked faction: 1 sway at each linked group and 1 at the hub (all or nothing).' : null;
     }
     case 'wake-dead': case 'backdoor': return (t.mode === 'location' || t.mode === 'faction') && t.location && holdingSpots(state, card, t.mode).includes(t.location) ? null : 'Choose the target location.';
     case 'hack': {
@@ -1931,7 +1944,11 @@ function act(state, pid, card, t) {
       break;
     }
     case 'swarm': {
-      state.board[/** @type {string} */ (t.location)].swarm = t.mode === 'location' ? /** @type {string} */ (t.faction) : /** @type {string} */ (factionOfArchetype(state, 'sentients'));
+      const f = /** @type {string} */ (swarmFaction(state, t));
+      state.board[/** @type {string} */ (t.location)].swarm = f;
+      const links = (t.path ?? []).filter((l) => l !== '__stop');
+      state.board[/** @type {string} */ (t.location)].links = links;
+      for (const l of [/** @type {string} */ (t.location), ...links]) placeOne(state, pid, f, l); // the bid: 1 at the hub and at each linked group
       logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}.`);
       break;
     }
@@ -2283,7 +2300,7 @@ function endOfPlay(state) {
   state.events = [];
   logLine(state, 'Everyone passed. Fights:');
   for (const loc of LOCATION_IDS) fightAt(state, loc);
-  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.gate; delete p.gateLoss; delete p.truce; delete p.double; delete p.wake; delete p.swarm; delete p.backdoor; delete p.lock; } // round 15, 18 and 19 test cards last the round
+  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.gate; delete p.gateLoss; delete p.truce; delete p.double; delete p.wake; delete p.swarm; delete p.links; delete p.backdoor; delete p.lock; } // round 15, 18 and 19 test cards last the round
   state.tips = [];
   state.bounties = [];
   return beginGrowth(state);
@@ -2359,7 +2376,7 @@ function joinedFight(state, a, b) {
   const merge = (/** @type {Record<string, number>} */ x, /** @type {Record<string, number>} */ y) => { /** @type {Record<string, number>} */ const out = { ...x }; for (const [k, n] of Object.entries(y)) out[k] = (out[k] ?? 0) + n; return out; };
   A.tokens = merge(A.tokens, B.tokens);
   A.sway = merge(A.sway, B.sway);
-  if (B.swarm && !A.swarm) A.swarm = B.swarm;
+  if (B.swarm && !A.swarm) { A.swarm = B.swarm; if (B.links) A.links = B.links; }
   if (B.wake) A.wake = true;
   if (B.truce) A.truce = true;
   if (B.double?.length) A.double = [...new Set([...(A.double ?? []), ...B.double])];
@@ -2405,7 +2422,7 @@ function fight(state, loc, joined = undefined) {
   const has = (/** @type {string} */ id) => !!tokenWith(id);
   // Link the Swarm (test card, round 20): the linked faction counts its tokens next door too, for who wins.
   const swarm = place.swarm === true ? factionOfArchetype(state, 'sentients') : place.swarm || null;
-  const next = (/** @type {string} */ f) => (f === swarm ? (joined?.near ?? adj(state, loc)).reduce((n, l) => n + tokensOf(state, l, f), 0) : 0);
+  const next = (/** @type {string} */ f) => (f === swarm ? (place.links ?? joined?.near ?? adj(state, loc)).reduce((n, l) => n + tokensOf(state, l, f), 0) : 0);
   // Strength of every side: two, or three after Wake the Dead, the ☾ signature (designer, 2026-10-18).
   const strength = Object.fromEntries(sides.map((f) => [f, place.tokens[f] + next(f)]));
   const ranked = sides.slice().sort((x, y) => strength[y] - strength[x]);
@@ -3199,9 +3216,18 @@ function nextShape(state, pid, cardId, t) {
       return t.faction ? { kind: 'done' } : { kind: 'faction', options: state.factions.slice() };
     case 'lockdown':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].lock) };
-    case 'swarm':
-      if (!t.location) return { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((l) => mode === 'faction' || factionsAt(state, l).length > 0) };
-      return mode === 'faction' || t.faction ? { kind: 'done' } : { kind: 'faction', key: 'faction', options: factionsAt(state, t.location) };
+    case 'swarm': {
+      const linkable = (/** @type {string} */ l, /** @type {string} */ f) => swarmSpots(state, l, f).length > 0 && Math.min(printedOf(state, card.id), state.players[pid].standing[f] ?? 0) >= 2;
+      if (!t.location) return { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((l) => factionsAt(state, l).some((f) => (mode === 'location' || f === sf) && linkable(l, f))) };
+      if (mode === 'location' && !t.faction) return { kind: 'faction', key: 'faction', options: factionsAt(state, t.location).filter((f) => linkable(/** @type {string} */ (t.location), f)) };
+      const f = /** @type {string} */ (swarmFaction(state, t));
+      const links = t.path ?? [];
+      const cap = Math.min(printedOf(state, card.id), state.players[pid].standing[f] ?? 0) - 1; // groups you can link: 1 sway each, and 1 at the hub
+      if (links.includes('__stop') || links.length >= cap) return { kind: 'done' };
+      const more = swarmSpots(state, t.location, f).filter((l) => !links.includes(l));
+      if (!more.length) return { kind: 'done' };
+      return { kind: 'location', key: 'path', options: more, optional: links.length > 0, left: cap - links.length };
+    }
     case 'wake-dead': case 'backdoor':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: holdingSpots(state, card, mode) };
     case 'hack':
@@ -3344,7 +3370,7 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: place.swarm } : {}), ...(place.gate ? { gate: place.gate, gateLoss: place.gateLoss } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
+      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: place.swarm, ...(place.links ? { links: place.links.slice() } : {}) } : {}), ...(place.gate ? { gate: place.gate, gateLoss: place.gateLoss } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),

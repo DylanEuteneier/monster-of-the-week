@@ -1137,16 +1137,19 @@ test('Link the Swarm: the location reading links any faction at a Sentients loca
   s.board[hub].tokens = { [f]: 2, [g]: 3 };
   s.board[x].tokens = { [f]: 2 };
   const c = nextChoice(s, 'ann', 'link-swarm', { mode: 'location', location: hub });
-  assert.ok(c.kind === 'faction' && c.options.includes(f) && c.options.includes(g));
+  assert.ok(c.kind === 'faction' && c.options.includes(f) && !c.options.includes(g)); // g has no group next door to link
   assert.ok(checkTarget(s, 'ann', cardById('link-swarm'), { mode: 'location', location: hub })); // a faction must be chosen
-  const t = { mode: /** @type {const} */ ('location'), location: hub, faction: f };
+  const t = { mode: /** @type {const} */ ('location'), location: hub, faction: f, path: [x] };
   assert.equal(checkTarget(s, 'ann', cardById('link-swarm'), t), null);
+  assert.ok(checkTarget(s, 'ann', cardById('link-swarm'), { ...t, path: [] })); // at least one group linked in (designer, 2026-10-18)
   const linked = previewTarget(s, 'ann', 'link-swarm', t);
   assert.equal(linked.board[hub].swarm, f);
+  assert.deepEqual([linked.board[hub].sway.ann, linked.board[x].sway.ann], [1, 1]); // the bid: 1 at the hub and 1 at each linked group
   const fought = resolveFight(/** @type {GameState} */ ({ ...s, board: linked.board }), hub);
   assert.equal(fought.board[hub].tokens[g], undefined); // 2 here and 2 next door beat 3
   s.board[hub].tokens = { [sent]: 1 };
-  assert.equal(previewTarget(s, 'ann', 'link-swarm', { mode: 'faction', location: hub }).board[hub].swarm, sent);
+  s.board[x].tokens = { [sent]: 1 };
+  assert.equal(previewTarget(s, 'ann', 'link-swarm', { mode: 'faction', location: hub, path: [x] }).board[hub].swarm, sent);
 });
 
 test('round 20 Sentients: Call Home pulls 1 token from every location holding the faction; Install a Backdoor counts the Sentients there as your sway', () => {
