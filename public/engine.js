@@ -412,6 +412,13 @@ export function swayLeaders(state, faction) {
 }
 
 /**
+ * A group that can set off: a lone group, or its side of a fight with some free to leave (half from a fight, D22;
+ * The Big Chase and Bait the Herd, designer 2026-10-18).
+ * @param {GameState} state @param {string} loc @param {string} faction
+ */
+const canLeave = (state, loc, faction) => factionsAt(state, loc).includes(faction) && freeOf(state, loc, faction) > 0;
+
+/**
  * Tokens of a faction free to leave a location (test levers fightHalf and pinning). Pinning (designer, 2026-10-13): at a contested location
  * each token pins one enemy token, so only the larger group's surplus can leave; off, every token is free. Pinning
  * stops movement only: a card marked unpinned in the spec does something other than move tokens (designer: Trade
@@ -578,15 +585,20 @@ export function createGame(input) {
   else if (options.deck === 'mixed') {
     const pool = /** @type {Card[]} */ (/** @type {unknown} */ ([...spec.cards, ...spec.testCards.cards])).filter((c) => c.action && !pulled(c) && !standIn(c));
     deck = [];
+    // coreParts (test plumbing, not a rule): one part of the new core swapped into the mixed deck.
+    const core = /** @type {string[]} */ (spec.constants.coreDeck).map(cardById);
+    const swap = String(options.coreParts ?? 'none');
     for (const arch of spec.archetypes) {
       for (const slot of ['strike', 'shift', 'signature']) {
-        const s = shuffle(pool.filter((c) => c.suit === arch.id && c.slot === slot).map((c) => c.id), rngState);
+        const fromCore = swap === 'signatures' ? slot === 'signature' : swap === 'strikes-shifts' && slot !== 'signature';
+        const s = shuffle((fromCore ? core : pool).filter((c) => c.suit === arch.id && c.slot === slot).map((c) => c.id), rngState);
         rngState = s.rngState;
         if (s.items[0]) deck.push(s.items[0]);
       }
     }
     // Unsuited: the marked cards stay; the other slots draw from every unmarked unsuited card.
-    deck.push(...spec.cards.filter((c) => !c.suit && !unmarkedExtra(c)).map((c) => c.id));
+    if (swap === 'unsuited') deck.push(...core.filter((c) => !c.suit).map((c) => c.id));
+    else deck.push(...spec.cards.filter((c) => !c.suit && !unmarkedExtra(c)).map((c) => c.id));
   }
   // Six unsuited slots (PS1). While some have no card yet (prototype), they
   // are filled at random from the unmarked unsuited cards, so the pool stays 21.
@@ -601,7 +613,7 @@ export function createGame(input) {
   /** @type {Record<string, number>} */
   const printed = {};
   const strength = (/** @type {string} */ id) => /** @type {Record<string, number>} */ (cardStrength.strength)[id] ?? -Infinity;
-  for (const arch of options.deck === 'core' ? [] : spec.archetypes) { // the core prints each card's own sway
+  for (const arch of options.deck === 'core' || options.coreParts === 'sway' ? [] : spec.archetypes) { // the core prints each card's own sway
     const s = shuffle(deck.filter((id) => cardById(id).suit === arch.id), rngState);
     rngState = s.rngState;
     const byStrength = s.items.slice().sort((a, b) => strength(b) - strength(a));
@@ -877,7 +889,7 @@ function trailSteps(state, at, f, trail) {
 }
 
 /**
- * Spoof the Signal (⏏ strike, designer 2026-10-17): where a lone group at `loc` may march. The spoofed order: the
+ * Spoof the Signal (⏏ strike, designer 2026-10-17): where a group at `loc` may march (from a fight, half; 2026-10-18). The spoofed order: the
  * largest lone group of another faction within two locations of it (steps between neighbours, a Gate's ends as one;
  * whatever lies between is ignored). Several tied for largest: any of them, the player's choice.
  * @param {GameState} state @param {string} loc @param {string} f
@@ -895,15 +907,15 @@ function threatsOf(state, loc, f) {
 const loneAt = (state, loc) => { const here = factionsAt(state, loc); return !state.board[loc].scorched && here.length === 1 ? here[0] : null; };
 
 /**
- * Invite Them In (designer, 2026-10-15): the groups that may be invited into `to`. Location reading: lone groups next
- * door, any faction, into an empty location. Faction reading: a lone Nocturnal group next door, into a location held
+ * Invite Them In (designer, 2026-10-15): the groups that may be invited into `to`. Location reading: groups next
+ * door, any faction, into an empty location. Faction reading: a Nocturnal group next door, into a location held
  * by a lone group of another faction (the host).
  * @param {GameState} state @param {Card} card @param {'location' | 'faction'} mode @param {string} to
  */
 function guestsOf(state, card, mode, to) {
   const sf = suitFaction(state, card);
-  return adj(state, to).map((l) => ({ location: l, faction: /** @type {string} */ (loneAt(state, l)) }))
-    .filter((g) => g.faction && (mode === 'location' || g.faction === sf) && g.faction !== loneAt(state, to));
+  return adj(state, to).flatMap((l) => factionsAt(state, l).map((f) => ({ location: l, faction: f })))
+    .filter((g) => canLeave(state, g.location, g.faction) && (mode === 'location' || g.faction === sf) && g.faction !== loneAt(state, to));
 }
 
 /** Locations under the two-target rule: a suit location, or one holding the suit's faction. @param {GameState} state @param {Card} card @param {'location' | 'faction'} mode */
@@ -1110,11 +1122,11 @@ function checkShape(state, pid, card, t) {
     case 'burst': {
       const loc = t.location, f = t.faction, sf = suitFaction(state, card);
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
-      if (!loc || !f || !state.board[loc] || loneAt(state, loc) !== f || (t.mode === 'location' ? !suitLocations(card).includes(loc) : f !== sf)) return t.mode === 'location' ? 'Choose a lone group at a ☾ location.' : 'Choose a lone Undead group.';
+      if (!loc || !f || !state.board[loc] || !canLeave(state, loc, f) || (t.mode === 'location' ? !suitLocations(card).includes(loc) : f !== sf)) return t.mode === 'location' ? 'Choose a group at a ☾ location.' : 'Choose an Undead group.';
       const to = (t.from ?? []).filter((l) => l !== '__stop');
       const spots = burstSpots(state, loc, f);
       if (to.length < 2 || new Set(to).size !== to.length || to.some((l) => !spots.includes(l))) return 'It bursts to at least two neighbouring locations it can enter, 1 token each.';
-      if (to.length > tokensOf(state, loc, f)) return 'One token to each: not more locations than tokens.';
+      if (to.length > freeOf(state, loc, f)) return 'One token to each: not more locations than tokens free to leave (from a fight, half).';
       return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < to.length + 1 ? 'You need the sway to pay where it leaves and at every location a token reaches (all or nothing).' : null;
     }
     case 'standin-sig': {
@@ -1182,7 +1194,7 @@ function checkShape(state, pid, card, t) {
     case 'chase': {
       const start = t.location, f = t.faction, sf = suitFaction(state, card);
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
-      if (!start || !f || !state.board[start] || loneAt(state, start) !== f || (t.mode === 'location' ? !suitLocations(card).includes(start) : f !== sf)) return t.mode === 'location' ? 'Choose a lone group at an ↂ location.' : 'Choose a lone Sci-Fi group.';
+      if (!start || !f || !state.board[start] || !canLeave(state, start, f) || (t.mode === 'location' ? !suitLocations(card).includes(start) : f !== sf)) return t.mode === 'location' ? 'Choose a group at an ↂ location (from a fight, half of it).' : 'Choose a Sci-Fi group (from a fight, half of it).';
       const path = (t.path ?? []).filter((l) => l !== '__stop');
       if (!path.length) return 'Lead the chase at least one step.';
       const chase = [start];
@@ -1191,7 +1203,7 @@ function checkShape(state, pid, card, t) {
         chase.push(l);
       }
       // 1 token and 1 sway stay at each location passed; at least 1 token arrives; 1 sway at the end too.
-      if (path.length > tokensOf(state, start, f)) return 'At least 1 token must arrive: a token stays at every location passed.';
+      if (path.length > freeOf(state, start, f)) return 'At least 1 token must arrive: a token stays at every location passed.';
       return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < path.length + 1 ? 'You need the sway to pay at every location on the chase, the start too (all or nothing).' : null;
     }
     case 'well': {
@@ -1210,7 +1222,7 @@ function checkShape(state, pid, card, t) {
     case 'herd': {
       const start = t.location, f = t.faction, sf = suitFaction(state, card);
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
-      if (!start || !f || !state.board[start] || loneAt(state, start) !== f || (t.mode === 'location' ? !suitLocations(card).includes(start) : f !== sf)) return t.mode === 'location' ? 'Choose a lone group at a ☾ location.' : 'Choose a lone Undead group.';
+      if (!start || !f || !state.board[start] || !canLeave(state, start, f) || (t.mode === 'location' ? !suitLocations(card).includes(start) : f !== sf)) return t.mode === 'location' ? 'Choose a group at a ☾ location (from a fight, half of it).' : 'Choose an Undead group (from a fight, half of it).';
       const path = (t.path ?? []).filter((l) => l !== '__stop');
       if (!path.length) return 'Lay the trail: at least one stop, or a group to crash into.';
       // Every stop picks up its own kind; it may end at its last stop (plain movement, designer) or crash into a lone rival.
@@ -1225,7 +1237,7 @@ function checkShape(state, pid, card, t) {
     case 'threat': {
       const loc = t.location, f = t.faction, sf = suitFaction(state, card);
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
-      if (!loc || !f || !state.board[loc] || loneAt(state, loc) !== f || (t.mode === 'location' ? !suitLocations(card).includes(loc) : f !== sf)) return t.mode === 'location' ? 'Choose a lone group at a ⏏ location.' : 'Choose a lone Sentient group.';
+      if (!loc || !f || !state.board[loc] || !canLeave(state, loc, f) || (t.mode === 'location' ? !suitLocations(card).includes(loc) : f !== sf)) return t.mode === 'location' ? 'Choose a group at a ⏏ location.' : 'Choose a Sentient group.';
       if (!t.to || !threatsOf(state, loc, f).includes(t.to)) return 'It marches on the largest lone group of another faction within two locations.';
       return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < 2 ? 'You need the sway to pay where it leaves and at the fight (all or nothing).' : null;
     }
@@ -1598,7 +1610,7 @@ function act(state, pid, card, t) {
       // The group runs the chase, leaving 1 token and 1 sway at each location passed; the rest arrive at the end.
       const f = /** @type {string} */ (t.faction), start = /** @type {string} */ (t.location);
       const path = (t.path ?? []).filter((l) => l !== '__stop');
-      const n = tokensOf(state, start, f);
+      const n = freeOf(state, start, f); // from a fight, half (D22)
       takeTokens(state, start, f, n);
       placeOne(state, pid, f, start);
       for (const l of path.slice(0, -1)) { addTokens(state, l, f, 1); placeOne(state, pid, f, l); }
@@ -1628,7 +1640,7 @@ function act(state, pid, card, t) {
       const path = (t.path ?? []).filter((l) => l !== '__stop');
       const end = /** @type {string} */ (path[path.length - 1]);
       const crashes = !factionsAt(state, end).includes(f); // the last location holds a rival, not its own kind
-      let n = tokensOf(state, start, f);
+      let n = freeOf(state, start, f); // from a fight, half (D22)
       takeTokens(state, start, f, n);
       placeOne(state, pid, f, start);
       for (const l of crashes ? path.slice(0, -1) : path) {
@@ -1643,7 +1655,7 @@ function act(state, pid, card, t) {
       break;
     }
     case 'threat': {
-      // The whole group marches on its target; 1 sway where it left and 1 at the fight, from standing with it.
+      // The group marches on its target (from a fight, half: move holds D22); 1 sway where it left and 1 at the fight.
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
       placed.add(`${to}:${f}`);
       const n = move(state, pid, f, from, to, tokensOf(state, from, f), placed);
@@ -1661,7 +1673,7 @@ function act(state, pid, card, t) {
       break;
     }
     case 'invite': {
-      // Each invited group comes in whole; 1 sway where each left and 1 at the new fight, from the factions moved.
+      // Each invited group comes in (from a fight, half: move holds D22); 1 sway where each left and 1 at the new fight.
       const to = /** @type {string} */ (t.location);
       const payer = t.mode === 'faction' ? /** @type {string} */ (suitFaction(state, card)) : /** @type {string} */ (t.payer);
       const pay = (/** @type {string} */ f, /** @type {string} */ loc) => placeOne(state, pid, f, loc);
@@ -3048,11 +3060,11 @@ function nextShape(state, pid, cardId, t) {
     case 'burst': {
       const st = /** @type {GameState} */ (state);
       const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(st, g.location) === g.faction && tokensOf(st, g.location, g.faction) >= 2 && can(g.faction, 3) && burstSpots(st, g.location, g.faction).length >= 2) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => freeOf(st, g.location, g.faction) >= 2 && can(g.faction, 3) && burstSpots(st, g.location, g.faction).length >= 2) };
       const f = /** @type {string} */ (t.faction);
       const to = t.from ?? [];
       if (to.includes('__stop')) return { kind: 'done' };
-      const more = to.length < tokensOf(st, t.location, f) && can(f, to.length + 2) ? burstSpots(st, t.location, f).filter((l) => !to.includes(l)) : [];
+      const more = to.length < freeOf(st, t.location, f) && can(f, to.length + 2) ? burstSpots(st, t.location, f).filter((l) => !to.includes(l)) : [];
       if (!more.length && to.length >= 2) return { kind: 'done' };
       return { kind: 'location', key: 'from', options: more, optional: to.length >= 2 };
     }
@@ -3128,15 +3140,15 @@ function nextShape(state, pid, cardId, t) {
     case 'chase': {
       const st = /** @type {GameState} */ (state);
       const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(st, g.location) === g.faction && can(g.faction, 2) && chaseSteps(st, g.location, g.faction, [g.location]).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => canLeave(st, g.location, g.faction) && can(g.faction, 2) && chaseSteps(st, g.location, g.faction, [g.location]).length > 0) };
       const f = /** @type {string} */ (t.faction);
       const path = t.path ?? [];
       if (path.includes('__stop')) return { kind: 'done' };
       const chase = [t.location, ...path];
       // Another step: one more location passed (a token and a sway stay there), and still at least 1 token arriving.
-      const options = path.length + 1 <= tokensOf(st, t.location, f) && can(f, path.length + 2) ? chaseSteps(st, chase[chase.length - 1], f, chase) : [];
+      const options = path.length + 1 <= freeOf(st, t.location, f) && can(f, path.length + 2) ? chaseSteps(st, chase[chase.length - 1], f, chase) : [];
       if (!options.length && path.length) return { kind: 'done' };
-      return { kind: 'location', key: 'path', options, optional: path.length > 0, left: Math.max(0, Math.min(tokensOf(st, t.location, f), state.players[pid].standing[f] ?? 0) - path.length) };
+      return { kind: 'location', key: 'path', options, optional: path.length > 0, left: Math.max(0, Math.min(freeOf(st, t.location, f), state.players[pid].standing[f] ?? 0) - path.length) };
     }
     case 'well': {
       const st = /** @type {GameState} */ (state);
@@ -3161,7 +3173,7 @@ function nextShape(state, pid, cardId, t) {
     case 'herd': {
       const st = /** @type {GameState} */ (state);
       const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(st, g.location) === g.faction && can(g.faction, 2) && (({ pickups, crashes }) => pickups.length + crashes.length > 0)(trailSteps(st, g.location, g.faction, [g.location]))) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => canLeave(st, g.location, g.faction) && can(g.faction, 2) && (({ pickups, crashes }) => pickups.length + crashes.length > 0)(trailSteps(st, g.location, g.faction, [g.location]))) };
       const f = /** @type {string} */ (t.faction);
       const path = t.path ?? [];
       const trail = [t.location, ...path];
@@ -3176,7 +3188,7 @@ function nextShape(state, pid, cardId, t) {
     }
     case 'threat': {
       const pays = (/** @type {string} */ f) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= 2;
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(/** @type {GameState} */ (state), g.location) === g.faction && pays(g.faction) && threatsOf(/** @type {GameState} */ (state), g.location, g.faction).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => canLeave(/** @type {GameState} */ (state), g.location, g.faction) && pays(g.faction) && threatsOf(/** @type {GameState} */ (state), g.location, g.faction).length > 0) };
       return t.to ? { kind: 'done' } : { kind: 'location', key: 'to', options: threatsOf(/** @type {GameState} */ (state), t.location, /** @type {string} */ (t.faction)) };
     }
     case 'gate': {

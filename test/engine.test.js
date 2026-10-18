@@ -436,7 +436,7 @@ test('a pulled card (spec: pulled) stays built but is never dealt in the mixed p
   assert.ok(cardById('trade-souls') && cardById('call-truce')); // still built
 });
 
-test('Invite Them In: two lone groups next door come whole into an empty ◐ location; 1 sway where each left and 1 at the fight (designer, 2026-10-15)', () => {
+test('Invite Them In: two groups next door come into an empty ◐ location, half from a fight; 1 sway where each left and 1 at the fight (designer, 2026-10-15, 2026-10-18)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const noct = /** @type {string} */ (factionOfArchetype(s, 'nocturnals'));
@@ -445,11 +445,17 @@ test('Invite Them In: two lone groups next door come whole into an empty ◐ loc
   const [a, b, c] = map[to].adjacent;
   s.board[a].tokens = { [f]: 3 };
   s.board[b].tokens = { [g]: 4 };
-  s.board[c].tokens = { [f]: 2, [h]: 2 }; // engaged: never invited
+  s.board[c].tokens = { [f]: 2, [h]: 2 }; // in a fight: half may come (D22, designer 2026-10-18)
   s.players.ann.standing = Object.fromEntries(s.factions.map((x) => [x, 0]));
-  s.players.ann.standing[f] = 2; s.players.ann.standing[g] = 1;
+  s.players.ann.standing[f] = 2; s.players.ann.standing[g] = 1; s.players.ann.standing[h] = 1;
   const offered = nextChoice(s, 'ann', 'invite-in', { mode: 'location', location: to });
-  assert.ok(offered.kind === 'group' && offered.options.every((o) => o.location !== c));
+  assert.ok(offered.kind === 'group' && offered.options.some((o) => o.location === c && o.faction === h));
+  const half = { mode: /** @type {const} */ ('location'), location: to, moves: [{ location: c, faction: h, to: '' }, { location: b, faction: g, to: '' }], payer: g };
+  s.players.ann.standing[h] = 1; s.players.ann.standing[g] = 2;
+  assert.equal(checkTarget(s, 'ann', cardById('invite-in'), half), null);
+  const halfAfter = previewTarget(s, 'ann', 'invite-in', half);
+  assert.deepEqual([halfAfter.board[to].tokens[h], halfAfter.board[c].tokens[h]], [1, 1]);
+  s.players.ann.standing[h] = 0; s.players.ann.standing[g] = 1;
   const t = { mode: /** @type {const} */ ('location'), location: to, moves: [{ location: a, faction: f, to: '' }, { location: b, faction: g, to: '' }], payer: f };
   assert.equal(checkTarget(s, 'ann', cardById('invite-in'), t), null);
   const after = previewTarget(s, 'ann', 'invite-in', t);
@@ -662,6 +668,28 @@ test('The Big Chase: a lone group runs a chase, leaving 1 token and 1 sway at ea
   s.board[start].tokens = { [f]: 5 };
   s.board[a].tokens = { [g]: 1, [h]: 1 };
   assert.ok(checkTarget(s, 'ann', cardById('big-chase'), t)); // never through a fight it isn't part of
+});
+
+test('The Big Chase sets off from a fight too, with half (D22 is global; no lone-group targets; designer, 2026-10-18)', () => {
+  const s = clear(newGame());
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const sci = /** @type {string} */ (factionOfArchetype(s, 'scifi'));
+  const [f, g] = s.factions.filter((x) => x !== sci);
+  const start = 'military-facility';
+  const a = map[start].adjacent[0];
+  s.board[start].tokens = { [f]: 5, [g]: 4 }; // a fight: 2 of the 5 may leave
+  s.players.ann.standing[f] = 9;
+  const chase = { mode: /** @type {const} */ ('location'), location: start, faction: f, path: [a] };
+  assert.equal(checkTarget(s, 'ann', cardById('big-chase'), chase), null);
+  assert.deepEqual(previewTarget(s, 'ann', 'big-chase', chase).board[start].tokens, { [f]: 3, [g]: 4 });
+  const c = /** @type {string} */ (map[a].adjacent.find((l) => l !== start && !map[start].adjacent.includes(l)));
+  assert.ok(checkTarget(s, 'ann', cardById('big-chase'), { ...chase, path: [a, c] }) === null);
+  const d = /** @type {string} */ (map[c].adjacent.find((l) => ![start, a].includes(l) && !map[start].adjacent.includes(l)));
+  assert.ok(checkTarget(s, 'ann', cardById('big-chase'), { ...chase, path: [a, c, d] })); // 2 free: at most 1 location passed
+  s.board[start].tokens = { [sci]: 4, [g]: 4 };
+  s.players.ann.standing[sci] = 9;
+  const sciChase = { mode: /** @type {const} */ ('faction'), location: start, faction: sci, path: [a] };
+  assert.equal(checkTarget(s, 'ann', cardById('big-chase'), sciChase), null);
 });
 
 test('Draw Them Away: a lone group bursts, 1 token to each chosen neighbour, the rest stay (designer, 2026-10-17)', () => {

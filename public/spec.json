@@ -1032,6 +1032,19 @@
       ]
     },
     {
+      "id": "coreParts",
+      "label": "Core part",
+      "description": "Prototype test plumbing, not a rule: with the mixed deck, swap in one part of the new core.",
+      "default": "none",
+      "choices": [
+        { "id": "none", "label": "None", "description": "The mixed deck as it is." },
+        { "id": "strikes-shifts", "label": "Strikes and shifts", "description": "Each suit's strike and shift are the core's." },
+        { "id": "signatures", "label": "Signatures", "description": "Each suit's signature is the core's (stand-ins included)." },
+        { "id": "unsuited", "label": "Unsuited", "description": "The six unsuited cards are the core's stand-ins." },
+        { "id": "sway", "label": "Printed sway", "description": "Each card prints its own sway, not the mixed deck's weighting." }
+      ]
+    },
+    {
       "id": "deck",
       "label": "Deck",
       "description": "Prototype test plumbing, not a rule. Mixed: when the game is created, each suit draws one Strike, one Shift and one Signature at random from the deck and the test cards, printed 2, 3 and 4 sway by measured strength, the strongest 2 and the weakest 4 (9 per suit, D12); the marked unsuited cards (A, C, D) stay and the other three unsuited slots draw at random from the unmarked unsuited cards. Fixed: Set v2, its unsuited slots filled at random to six.",
@@ -1408,10 +1421,10 @@
           "slot": "strike",
           "sway": 2,
           "action": "invite",
-          "text": "Two groups of different factions, each alone next door, are invited into an empty location and come in whole. You choose which of them pays at the fight. Target: where they’re invited.",
+          "text": "Two groups of different factions next door are invited into an empty location. You choose which of them pays at the fight. Target: where they’re invited.",
           "readings": {
-            "location": "an empty ◐ location; any two lone groups next to it.",
-            "faction": "a location held by a lone group of another faction, next to a lone Nocturnal group: only the Nocturnals come (1 sway where they left, 1 at the fight)."
+            "location": "an empty ◐ location; any two groups next to it.",
+            "faction": "a location held by a lone group of another faction, next to a Nocturnal group: only the Nocturnals come (1 sway where they left, 1 at the fight)."
           },
           "round": 21
         },
@@ -1436,10 +1449,10 @@
           "slot": "strike",
           "sway": 2,
           "action": "threat",
-          "text": "The AV Club spoofs a command signal to a lone group: ordered to engage the strongest hostile force in range, it marches, whole, on the largest lone group of another faction within two locations of it (ties: your choice). Target: the group fooled.",
+          "text": "The AV Club spoofs a command signal to a group: ordered to engage the strongest hostile force in range, it marches on the largest lone group of another faction within two locations of it (ties: your choice). Target: the group fooled.",
           "readings": {
-            "location": "a lone group at a ⏏ location.",
-            "faction": "a lone Sentient group anywhere."
+            "location": "a group at a ⏏ location.",
+            "faction": "a Sentient group anywhere."
           },
           "round": 21
         },
@@ -1450,10 +1463,10 @@
           "slot": "strike",
           "sway": 2,
           "action": "herd",
-          "text": "Lay a trail of bait: a lone group follows it from neighbour to neighbour, picking up its own kind at every stop and leaving nothing behind. It stops where you choose, or crashes into a lone group of another faction. Target: the herd.",
+          "text": "Lay a trail of bait: a group follows it from neighbour to neighbour, picking up its own kind at every stop and leaving nothing behind. It stops where you choose, or crashes into a lone group of another faction. Target: the herd.",
           "readings": {
-            "location": "a lone group at a ☾ location.",
-            "faction": "a lone Undead group anywhere."
+            "location": "a group at a ☾ location.",
+            "faction": "an Undead group anywhere."
           },
           "round": 21
         },
@@ -1478,10 +1491,10 @@
           "slot": "shift",
           "sway": 3,
           "action": "chase",
-          "text": "The Kids on Bikes lead a lone group on a chase from neighbour to neighbour, across any region, through empty ground, lone rivals, its own kind and fights it’s part of. Every location it passes keeps 1 token; the rest, at least 1, arrive wherever you end it. Target: the group chased.",
+          "text": "The Kids on Bikes lead a group on a chase from neighbour to neighbour, across any region, through empty ground, lone rivals, its own kind and fights it’s part of. Every location it passes keeps 1 token; the rest, at least 1, arrive wherever you end it. Target: the group chased.",
           "readings": {
-            "location": "a lone group at an ↂ location.",
-            "faction": "a lone Sci-Fi group anywhere."
+            "location": "a group at an ↂ location.",
+            "faction": "a Sci-Fi group anywhere."
           },
           "round": 21
         },
@@ -1649,10 +1662,10 @@
           "slot": "shift",
           "sway": 3,
           "action": "burst",
-          "text": "The Watch sets out distractions all round the location, and one of the dead shambles off to check each. A lone group sends 1 token to each of at least two neighbours; the rest stay. Target: the group.",
+          "text": "The Watch sets out distractions all round the location, and one of the dead shambles off to check each. A group sends 1 token to each of at least two neighbours; the rest stay. Target: the group.",
           "readings": {
-            "location": "a lone group at a ☾ location.",
-            "faction": "a lone Undead group anywhere."
+            "location": "a group at a ☾ location.",
+            "faction": "an Undead group anywhere."
           },
           "round": 21
         },
