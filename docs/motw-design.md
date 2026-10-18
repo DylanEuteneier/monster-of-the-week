@@ -1184,6 +1184,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Decided (designer, for now):** the winner of a fight loses half the loser's number, rounded up (in a three-way fight, half the larger loser's). It replaces FR5's "rounded down, minimum 1".
 - **Why (designer):** the winner was losing too few. The pile balance stays: the leader takes the loser's whole group, the runner-up the winner's losses, about half that. The designer may rethink losses later.
 - **Examples:** 6 beats 2: the winner loses 1. 5 beats 4: 2. 6 beats 5: 3 (before, 2). 3 v 3 won on aligned ground: 2 (before, 1).
+- **Measured (2026-10-18; core deck, 10 games each, seed 5, 5 players, with D22 global):** rounded up / rounded down: island 3 / 1, invaders 7 / 9; presence 45 → 54 / 63 after round 1, 29.5 / 30.5 at game end (threshold 15); round-1 fights 4.7 / 3.6. D22 global alone (rounded down) left the outcome as before (invaders 9 of 10) but raised the loosened cards' playability: The Big Chase 40% → 45%, Spoof the Signal 66% → 77%, Draw Them Away 53% → 69%, Bait the Herd 57% → 64%, Invite Them In 52% → 62%. Small samples.
 - **Affects:** FR5 (G.4), the three-way fight, the tutorial's fight sums, the prototype (variant `winnerLoss`, `up` by default; `down` restores FR5 as first drafted).
 - **Date:** 2026-10-18
 
