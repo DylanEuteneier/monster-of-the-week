@@ -617,6 +617,18 @@ export const deckOf = (state) => ('deck' in state && state.deck ? state.deck.sli
 /** A card's printed sway in this game. @param {GameState | PlayerView} state @param {string} cardId */
 export const printedOf = (state, cardId) => (('printed' in state && state.printed?.[cardId]) || cardById(cardId).sway)
   + (cardById(cardId).suit ? num(state, 'swayBonus') : 0); // test lever: more sway from cards (designer, 2026-10-07)
+/**
+ * A card's sway for a player now (D24, designer 2026-10-18): a signature's is 1 for each card in that player's hand,
+ * itself included (while it is being played, it has already left the hand), with no cap, for its action and for
+ * playing it for sway alike; any other card's is its printed sway.
+ * @param {GameState | PlayerView} state @param {string} pid @param {string} cardId
+ */
+export function swayFor(state, pid, cardId) {
+  const p = state.players[pid];
+  const hand = p && 'hand' in p ? p.hand : null;
+  if (cardById(cardId).slot !== 'signature' || !Array.isArray(hand)) return printedOf(state, cardId);
+  return hand.length + (hand.includes(cardId) ? 0 : 1);
+}
 
 /** Start a round's draft: shuffle all 21 cards, deal hands, leave the rest out (PS1, DR4, DR5). @param {GameState} state */
 function deal(state) {
@@ -725,7 +737,7 @@ const swarmSpots = (state, hub, f) => adj(state, hub).filter((l) => !state.board
 function raiseRoom(state, pid, loc) {
   const undead = factionOfArchetype(state, 'undead');
   if (!undead || !state.board[loc] || state.board[loc].scorched || gateOf(state, loc) || factionsAt(state, loc).length !== 2 || factionsAt(state, loc).includes(undead)) return { undead, max: 0 };
-  return { undead, max: Math.min(printedOf(state, 'wake-the-dead'), state.players[pid].standing[undead] ?? 0, state.supply[undead] ?? 0) };
+  return { undead, max: Math.min(swayFor(state, pid, 'wake-the-dead'), state.players[pid].standing[undead] ?? 0, state.supply[undead] ?? 0) };
 }
 
 /**
@@ -1369,7 +1381,7 @@ function checkShape(state, pid, card, t) {
       const f = /** @type {string} */ (swarmFaction(state, t)), hub = t.location;
       const links = (t.path ?? []).filter((l) => l !== '__stop');
       if (!links.length || new Set(links).size !== links.length || links.some((l) => !swarmSpots(state, hub, f).includes(l))) return 'Link at least one of its groups next door.';
-      if (links.length + 1 > printedOf(state, card.id)) return 'Link no more groups than the card\'s sway allows: 1 sway at each and 1 at the hub.';
+      if (links.length + 1 > swayFor(state, pid, card.id)) return 'Link no more groups than the card\'s sway allows: 1 sway at each and 1 at the hub.';
       return links.length + 1 > (state.players[pid].standing[f] ?? 0) ? 'You need the standing with the linked faction: 1 sway at each linked group and 1 at the hub (all or nothing).' : null;
     }
     case 'wake-dead': case 'backdoor': return (t.mode === 'location' || t.mode === 'faction') && t.location && holdingSpots(state, card, t.mode).includes(t.location) ? null : 'Choose the target location.';
@@ -2154,7 +2166,7 @@ export function applyMove(state, submission) {
       const card = cardById(m.card);
       if (m.use === 'sway') {
         const faction = factionOfArchetype(next, /** @type {string} */ (card.suit));
-        const gain = Math.min(printedOf(state, card.id), p.supply);
+        const gain = Math.min(swayFor(state, pid, card.id), p.supply);
         p.supply -= gain;
         p.standing[faction] += gain;
         next.events.push({ type: 'sway-spent', player: pid, faction, amount: gain });
@@ -3217,12 +3229,12 @@ function nextShape(state, pid, cardId, t) {
     case 'lockdown':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].lock) };
     case 'swarm': {
-      const linkable = (/** @type {string} */ l, /** @type {string} */ f) => swarmSpots(state, l, f).length > 0 && Math.min(printedOf(state, card.id), state.players[pid].standing[f] ?? 0) >= 2;
+      const linkable = (/** @type {string} */ l, /** @type {string} */ f) => swarmSpots(state, l, f).length > 0 && Math.min(swayFor(state, pid, card.id), state.players[pid].standing[f] ?? 0) >= 2;
       if (!t.location) return { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((l) => factionsAt(state, l).some((f) => (mode === 'location' || f === sf) && linkable(l, f))) };
       if (mode === 'location' && !t.faction) return { kind: 'faction', key: 'faction', options: factionsAt(state, t.location).filter((f) => linkable(/** @type {string} */ (t.location), f)) };
       const f = /** @type {string} */ (swarmFaction(state, t));
       const links = t.path ?? [];
-      const cap = Math.min(printedOf(state, card.id), state.players[pid].standing[f] ?? 0) - 1; // groups you can link: 1 sway each, and 1 at the hub
+      const cap = Math.min(swayFor(state, pid, card.id), state.players[pid].standing[f] ?? 0) - 1; // groups you can link: 1 sway each, and 1 at the hub
       if (links.includes('__stop') || links.length >= cap) return { kind: 'done' };
       const more = swarmSpots(state, t.location, f).filter((l) => !links.includes(l));
       if (!more.length) return { kind: 'done' };
@@ -3377,7 +3389,7 @@ export function playerView(state, playerId) {
     lastPlayed: state.lastPlayed ?? null,
     tips: (state.tips ?? []).map((x) => ({ ...x })),
     bounties: (state.bounties ?? []).slice(),
-    printed: Object.fromEntries(deckOf(state).map((id) => [id, printedOf(state, id)])),
+    printed: Object.fromEntries(deckOf(state).map((id) => [id, swayFor(state, playerId, id)])),
     growing: state.growing ? clone(state.growing) : null,
     first: state.first,
     opened: state.opened,

@@ -693,9 +693,13 @@ test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-
   s.board[loc].tokens = { [f]: 6, [g]: 3 };
   s.board[loc].sway = { bob: 2 };
   s.players.ann.standing[dead] = 3;
+  s.players.ann.hand = ['wake-the-dead', 'fresh-meat', 'track-snow', 'broadcast']; // a signature's sway: 1 per card in hand, itself included (D24)
   const t = { mode: /** @type {const} */ ('location'), location: loc, from: [loc, loc, loc] };
   assert.equal(checkTarget(s, 'ann', cardById('wake-the-dead'), t), null);
   assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), { ...t, from: [loc, loc, loc, loc] })); // only 3 standing
+  const late = { ...s, players: { ...s.players, ann: { ...s.players.ann, hand: ['wake-the-dead', 'fresh-meat'] } } };
+  assert.ok(checkTarget(late, 'ann', cardById('wake-the-dead'), t)); // 2 cards in hand: up to 2 rise (D24)
+  assert.equal(checkTarget(late, 'ann', cardById('wake-the-dead'), { ...t, from: [loc, loc] }), null);
   const after = { ...s, ...previewTarget(s, 'ann', 'wake-the-dead', t) };
   assert.deepEqual(after.board[loc].tokens, { [f]: 6, [g]: 3, [dead]: 3 });
   assert.equal(after.board[loc].sway.ann, 3); // the bid: one sway for each risen
@@ -1136,6 +1140,7 @@ test('Link the Swarm: the location reading links any faction at a Sentients loca
   const [x] = map[hub].adjacent;
   s.board[hub].tokens = { [f]: 2, [g]: 3 };
   s.board[x].tokens = { [f]: 2 };
+  s.players.ann.hand = ['link-swarm', 'fresh-meat', 'track-snow']; // D24: a signature's sway is the hand
   const c = nextChoice(s, 'ann', 'link-swarm', { mode: 'location', location: hub });
   assert.ok(c.kind === 'faction' && c.options.includes(f) && !c.options.includes(g)); // g has no group next door to link
   assert.ok(checkTarget(s, 'ann', cardById('link-swarm'), { mode: 'location', location: hub })); // a faction must be chosen

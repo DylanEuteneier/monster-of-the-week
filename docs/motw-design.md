@@ -53,7 +53,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
   - *Designer (2026-10-18):* signatures, in general, can add new faction tokens to the board, but only in an interesting way (as Wake the Dead's new side does), never a plain +N to a group. The balance this shifts (invaders 40% in the latest runs, against 21% before) is for the threshold and growth numbers to absorb.
   - *Designer (2026-10-18):* keep the cognitive load low: a card whose effect players have to work through across several fights (Link the Swarm's network) is too much.
   - *Designer (2026-10-18):* signatures should be exciting and interesting to use, but not so powerful that they're used the same way every time. Open the Hellmouth had much too obvious a play.
-  - *Designer (2026-10-17):* every signature includes the ability to bid sway on locations, more than the single sway at a time the strikes and shifts place. The bid is spent from standing with the suit's faction (faction reading) or with the faction at a suit location (location reading). The player bids up to the card's printed sway (provisionally 4), always openly; each card says which locations the bid can go on, and, at a suit location, how the faction whose standing pays is picked.
+  - *Designer (2026-10-17):* every signature includes the ability to bid sway on locations, more than the single sway at a time the strikes and shifts place. The bid is spent from standing with the suit's faction (faction reading) or with the faction at a suit location (location reading). The player bids up to the card's sway (D24: 1 per card in hand, itself included), always openly; each card says which locations the bid can go on, and, at a suit location, how the faction whose standing pays is picked.
   - *ↂ signature idea (designer, 2026-10-17; 2026-10-18: "not very interesting", no longer a candidate): Run the Blood Test.* The kids expose the impostors in a lone group: half of it, rounded down, is revealed as the Sci-Fi faction in disguise (swapped through the supplies), and the location becomes a contest. 1 sway there, from Sci-Fi standing. (The Thing, They Live: "they're among us".)
   - *ↂ idea (designer, 2026-10-17: signature territory rather than a strike, but not good enough as it stands; not a decision):* Hijack the Radio Station. Target a lone group; for the rest of the round, the next time any player moves a lone group of another faction, it goes to the target instead. Open: its sway; what happens if nobody takes the bait.
 - *Unsuited:* A · B · C · D · two unmarked (not started)
@@ -1148,6 +1148,13 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** 3.7 (principle 10), every card that moves tokens; Bait the Herd's straggler scoop no longer applies; the prototype (variant `fightHalf`, on by default; off restores whole groups leaving fights).
 - **Date:** 2026-10-17
 
+#### D24. A signature's sway is your hand
+
+- **Decided (designer):** a signature's printed sway is 1 for each card in your hand, itself included, with no cap. It sets the action's limit (the bid) and what the card gives when played for sway alike.
+- **Why (designer):** signatures were best played last, when nobody can answer them, so they risked becoming the last play every round. Now the last card in hand is the weakest moment to play one.
+- **Affects:** 3.7 (the signature slot, its sway provisionally 4 before), every signature (Wake the Dead raises up to your hand size), the prototype (the engine's `swayFor`; the table shows a signature's sway as your hand size).
+- **Date:** 2026-10-18
+
 #### D23. Common card rules
 
 - **Decided (designer):** the rules the cards share are common rules. They apply to every card unless the card says otherwise, so a card's text states only what is particular to it:
@@ -1220,6 +1227,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-09 | The tuned table confirmed over 40 games | Backers 18.1% a seat, trophy 21.3%; the invaders' ending 15 in 40 |
 | 2026-10-10 | Unattended experiment runner (designer: a repeatable script for several machines that jitters the tuned values, runs, judges and commits its results): `scripts/experiment.js`, one game pool per machine fed by several experiments at once, shared baselines, a testing log entry per attempt (`experiments/`); last night's 48 attempts backfilled. The play-outs-into-the-next-round switch (`deep`) removed: clearly worse | Standard bots unchanged (identical play checked) |
 | 2026-10-10 | Overnight bot tuning (designer: implement the research's best candidates and keep testing on short runs): bot games about 5× faster with identical play; tools for duplicate deals, placings and fitting the evaluation; about 30 variants tested | None adopted: no change measurably beats the standard profiles; 20-game runs only find large effects (F.9, Tuning method) |
+| 2026-10-18 | A signature's sway is your hand (D24, designer): 1 per card in hand, itself included, no cap, for its action and for sway | Signatures were best played last |
 | 2026-10-18 | The ☾ signature renamed Wake the Dead (designer); the pulled round-18 card of that name becomes Wake the Dead (round 18) | |
 | 2026-10-18 | The ☾ signature, Raise the Dead, designed and built as a test card: the dead rise as a third side at a fight, the standing spent placed there as the bid; the three-way fight's rules (designer). The tournament counts a fight that gains a side as the same fight | |
 | 2026-10-17 | Common card rules (D23, designer): shared rules apply to every card unless it says otherwise; the ten new cards' text shortened to match; shifts now also place 1 sway where the group leaves | Card text averaged 72 words, mostly repeated rules |
@@ -1312,6 +1320,7 @@ Actual changes to mechanisms and game structure.
 | **Sway** | *(Idea.)* A player's standing with a faction: how much the faction has noticed their group, the pull the group's gambits (bait, traps, plans) have on it, and, for a group that backs the faction, its claim if that faction wins. Public. Held with several factions at once. It can be spent from a faction and placed on a location, where it counts as a bid for the trophies of a fight there. Never control: players don't command factions. |
 | **Sway cube** | *(Idea.)* A cube representing a player's sway with a faction. Cubes are only ever players'; factions have tokens; may be spent to take board actions. |
 | **Sway leader** | *(Idea.)* The player with the most sway with a faction. Affinity breaks a tie for the most (AB1); otherwise players tied for the most are all sway leaders. A player is never called a faction's leader. |
+| **Signature sway** | *(First draft; D24.)* A signature's sway: 1 for each card in your hand, itself included, with no cap. |
 | **Three-way fight** | *(First draft, through one card.)* A fight between three factions at one location, which only Wake the Dead (the ☾ signature) can cause: the largest wins, both losers lose everything, and the leader takes the two larger piles. |
 | **Tied fight** | *(Idea.)* A fight between two groups of the same size. Both are wiped out, unless one of the factions has affinity for the location, in which case it wins. |
 | **Token** | The physical piece representing invaders on the board: faction presence. Always represents a specific faction. Cubes are the players' pieces (sway); tokens are the factions'. Hidden tokens and bluff tokens are separate pieces. |
