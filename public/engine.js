@@ -730,13 +730,19 @@ const swarmFaction = (state, t) => (t.mode === 'location' ? t.faction : factionO
 const swarmSpots = (state, hub, f) => adj(state, hub).filter((l) => !state.board[l].scorched && tokensOf(state, l, f) > 0);
 
 /**
- * Wake the Dead (☾ signature, designer 2026-10-18; first named Raise the Dead): how many of the dead you may raise at `loc`, a fight the Undead
- * aren't in (any fight; not a Gate's end): up to the card's printed sway, your standing with the Undead, and their supply.
- * @param {GameState} state @param {string} pid @param {string} loc
+ * Wake the Dead (☾ signature, designer 2026-10-18; first named Raise the Dead): how many of the dead you may raise at
+ * `loc`, up to the card's sway (D24), your standing with the Undead and their supply. Location reading: any ☾
+ * location: empty, a lone group (a fight with the Undead), or a fight without them (a three-way fight, the only way one
+ * happens). Faction reading: anywhere the Undead are; the risen join their group. A Gate's ends never hold three factions.
+ * @param {GameState} state @param {string} pid @param {string} loc @param {'location' | 'faction' | undefined} mode
  */
-function raiseRoom(state, pid, loc) {
+function raiseRoom(state, pid, loc, mode) {
   const undead = factionOfArchetype(state, 'undead');
-  if (!undead || !state.board[loc] || state.board[loc].scorched || gateOf(state, loc) || factionsAt(state, loc).length !== 2 || factionsAt(state, loc).includes(undead)) return { undead, max: 0 };
+  const place = state.board[loc];
+  if (!undead || !place || place.scorched) return { undead, max: 0 };
+  const here = factionsAt(state, loc);
+  const ok = mode === 'faction' ? here.includes(undead) : alignmentOf(loc) === 'undead' && (here.includes(undead) || here.length < 2 || !gateOf(state, loc));
+  if (!ok) return { undead, max: 0 };
   return { undead, max: Math.min(swayFor(state, pid, 'wake-the-dead'), state.players[pid].standing[undead] ?? 0, state.supply[undead] ?? 0) };
 }
 
@@ -1078,8 +1084,8 @@ function checkShape(state, pid, card, t) {
     }
     case 'raise': {
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
-      const { max } = raiseRoom(state, pid, t.location ?? '');
-      if (!t.location || max <= 0) return 'Choose a fight the Undead aren\'t in, with standing with the Undead to raise them.';
+      const { max } = raiseRoom(state, pid, t.location ?? '', t.mode);
+      if (!t.location || max <= 0) return t.mode === 'location' ? 'Choose a ☾ location, with standing with the Undead to raise them.' : 'Choose a location holding the Undead, with standing with them to raise more.';
       const n = (t.from ?? []).filter((l) => l === t.location).length;
       return n >= 1 && n <= max ? null : `Raise from 1 to ${max} of the dead: up to the card's sway, your standing with the Undead and their supply.`;
     }
@@ -1450,7 +1456,7 @@ function act(state, pid, card, t) {
       state.supply[undead] -= n;
       addTokens(state, loc, undead, n);
       for (let i = 0; i < n; i++) placeOne(state, pid, undead, loc);
-      logLine(state, `${pid}: ${card.name}: ${n} ${names(undead)} rise in the fight at ${lname(loc)}.`);
+      logLine(state, `${pid}: ${card.name}: ${n} ${names(undead)} rise at ${lname(loc)}.`);
       break;
     }
     case 'plough': {
@@ -2938,10 +2944,10 @@ function nextShape(state, pid, cardId, t) {
     }
     case 'raise': {
       const st = /** @type {GameState} */ (state);
-      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => raiseRoom(st, pid, l).max > 0) };
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => raiseRoom(st, pid, l, mode).max > 0) };
       const from = t.from ?? [];
       if (from.includes('__stop')) return { kind: 'done' };
-      const n = from.length, { max } = raiseRoom(st, pid, t.location);
+      const n = from.length, { max } = raiseRoom(st, pid, t.location, mode);
       if (n >= max) return { kind: 'done' };
       return { kind: 'location', key: 'from', options: [t.location], optional: n >= 1, left: max - n };
     }

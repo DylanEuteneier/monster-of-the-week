@@ -689,7 +689,7 @@ test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-
   const dead = /** @type {string} */ (factionOfArchetype(s, 'undead'));
   const [f, g] = s.factions.filter((x) => x !== dead);
   const arch = (/** @type {string} */ x) => spec.factions.find((y) => y.id === x)?.archetype;
-  const loc = /** @type {string} */ (spec.locations.find((l) => ![arch(f), arch(g), 'undead'].includes(l.archetype))?.id);
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead')?.id); // location reading: a ☾ location (designer, 2026-10-18)
   s.board[loc].tokens = { [f]: 6, [g]: 3 };
   s.board[loc].sway = { bob: 2 };
   s.players.ann.standing[dead] = 3;
@@ -713,15 +713,24 @@ test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-
   assert.equal(fought.players.bob.trophies[f], 1);
   // Two largest tied and neither aligned: a true tie, all three wiped out and the location scorched.
   const tie = clear(newGame());
-  tie.board[loc].tokens = { [f]: 4, [g]: 4, [dead]: 2 };
-  const burnt = resolveFight(tie, loc);
-  assert.equal(burnt.board[loc].scorched, true);
-  assert.deepEqual(burnt.board[loc].tokens, {});
-  // Not a fight the Undead are already in, and not a lone group.
-  s.board[loc].tokens = { [f]: 6, [dead]: 3 };
-  assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), t));
+  const open = /** @type {string} */ (spec.locations.find((l) => ![arch(f), arch(g), 'undead'].includes(l.archetype))?.id);
+  tie.board[open].tokens = { [f]: 4, [g]: 4, [dead]: 2 };
+  const burnt = resolveFight(tie, open);
+  assert.equal(burnt.board[open].scorched, true);
+  assert.deepEqual(burnt.board[open].tokens, {});
+  // At a ☾ location the dead can also rise on empty ground or against a lone group.
+  s.board[loc].tokens = {};
+  assert.equal(checkTarget(s, 'ann', cardById('wake-the-dead'), t), null);
   s.board[loc].tokens = { [f]: 6 };
-  assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), t));
+  assert.equal(checkTarget(s, 'ann', cardById('wake-the-dead'), t), null);
+  // Not at a fight elsewhere ("any fight" is gone); the faction reading raises them wherever the Undead are, joining them.
+  s.board[open].tokens = { [f]: 6, [g]: 3 };
+  assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), { ...t, location: open, from: [open] }));
+  s.board[open].tokens = { [f]: 6, [dead]: 2 };
+  const joined = { mode: /** @type {const} */ ('faction'), location: open, from: [open, open] };
+  assert.equal(checkTarget(s, 'ann', cardById('wake-the-dead'), joined), null);
+  assert.equal(previewTarget(s, 'ann', 'wake-the-dead', joined).board[open].tokens[dead], 4);
+  assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), { ...joined, location: loc, from: [loc] })); // no Undead there
 });
 
 test('Plough Through: every side of a fight leaves by half rounded up, through its own exits; a side of 1 leaves entirely (designer, 2026-10-17)', () => {

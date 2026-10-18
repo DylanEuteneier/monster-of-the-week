@@ -1486,10 +1486,10 @@
           "slot": "signature",
           "sway": 4,
           "action": "raise",
-          "text": "The Watch chases the fight into the old cemetery, and the dead rise in the middle of it. At a fight the Undead aren’t in, they rise as a third side: as many from the Undead supply as you choose, up to the card’s sway. Each one risen places 1 of your sway there. Target: the fight.",
+          "text": "The Watch chases the fight into the old cemetery, and the dead rise: as many from the Undead supply as you choose, up to the card’s sway. At a ☾ location they rise as a group of their own, and if two factions are already fighting there, as a third side. Each one risen places 1 of your sway there. Target: where they rise.",
           "readings": {
-            "location": "any fight the Undead aren’t in.",
-            "faction": "any fight the Undead aren’t in."
+            "location": "any ☾ location; at a fight there, the dead rise as a third side.",
+            "faction": "any location holding the Undead; the risen join them."
           },
           "round": 21
         },
