@@ -648,14 +648,14 @@ test('The Big Chase: a lone group runs a chase, leaving 1 token and 1 sway at ea
   const c = /** @type {string} */ (map[b].adjacent.find((l) => ![start, a].includes(l)));
   s.board[start].tokens = { [f]: 5 };
   s.board[b].tokens = { [g]: 2 }; // a lone rival passed: the dropped token starts a small contest there
-  s.players.ann.standing[f] = 3;
+  s.players.ann.standing[f] = 4;
   const t = { mode: /** @type {const} */ ('location'), location: start, faction: f, path: [a, b, c] };
   assert.equal(checkTarget(s, 'ann', cardById('big-chase'), t), null);
   const after = previewTarget(s, 'ann', 'big-chase', t);
   assert.deepEqual([after.board[start].tokens[f], after.board[a].tokens[f], after.board[b].tokens, after.board[c].tokens[f]], [undefined, 1, { [g]: 2, [f]: 1 }, 3]);
-  assert.deepEqual([start, a, b, c].map((l) => after.board[l].sway.ann), [undefined, 1, 1, 1]);
-  s.players.ann.standing[f] = 2;
-  assert.ok(checkTarget(s, 'ann', cardById('big-chase'), t)); // 3 locations, 2 sway: can't play
+  assert.deepEqual([start, a, b, c].map((l) => after.board[l].sway.ann), [1, 1, 1, 1]);
+  s.players.ann.standing[f] = 3;
+  assert.ok(checkTarget(s, 'ann', cardById('big-chase'), t)); // 4 locations, start included, 3 sway: can't play
   s.players.ann.standing[f] = 9;
   s.board[start].tokens = { [f]: 2 };
   assert.ok(checkTarget(s, 'ann', cardById('big-chase'), t)); // 2 tokens can pass only 1 location and still arrive
@@ -673,15 +673,15 @@ test('Draw Them Away: a lone group bursts, 1 token to each chosen neighbour, the
   const [a, b, c] = map[loc].adjacent;
   s.board[loc].tokens = { [f]: 4 };
   s.board[c].tokens = { [g]: 2 };
-  s.players.ann.standing[f] = 3;
+  s.players.ann.standing[f] = 4;
   const t = { mode: /** @type {const} */ ('location'), location: loc, faction: f, from: [a, b, c] };
   assert.equal(checkTarget(s, 'ann', cardById('draw-away'), t), null);
   const after = previewTarget(s, 'ann', 'draw-away', t);
   assert.deepEqual([after.board[loc].tokens[f], after.board[a].tokens[f], after.board[b].tokens[f], after.board[c].tokens], [1, 1, 1, { [g]: 2, [f]: 1 }]);
-  assert.deepEqual([a, b, c].map((l) => after.board[l].sway.ann), [1, 1, 1]);
+  assert.deepEqual([loc, a, b, c].map((l) => after.board[l].sway.ann), [1, 1, 1, 1]);
   assert.ok(checkTarget(s, 'ann', cardById('draw-away'), { ...t, from: [a] })); // at least two
-  s.players.ann.standing[f] = 2;
-  assert.ok(checkTarget(s, 'ann', cardById('draw-away'), t)); // 3 locations, 2 sway: can't play
+  s.players.ann.standing[f] = 3;
+  assert.ok(checkTarget(s, 'ann', cardById('draw-away'), t)); // 4 locations, where it leaves included, 3 sway: can't play
 });
 
 test('Plough Through: every side of a fight leaves by half rounded up, through its own exits; a side of 1 leaves entirely (designer, 2026-10-17)', () => {
@@ -693,14 +693,17 @@ test('Plough Through: every side of a fight leaves by half rounded up, through i
   const [a, b, c] = map[loc].adjacent;
   s.board[loc].tokens = { [noct]: 5, [g]: 1 };
   s.players.ann.standing[noct] = 2;
-  s.players.ann.standing[g] = 1;
+  s.players.ann.standing[g] = 2;
   const [first, second] = s.factions.filter((f) => f === noct || f === g); // sides in seat order of factions
   const exits = first === noct ? [a, a, b, c] : [c, a, a, b]; // the Nocturnals: 3 out (2 to a, 1 to b); the other: 1 to c
-  const t = { mode: /** @type {const} */ ('faction'), location: loc, from: exits };
+  const t = { mode: /** @type {const} */ ('faction'), location: loc, payer: g, from: exits }; // the other side pays the 1 at the fight
   assert.equal(checkTarget(s, 'ann', cardById('plough'), t), null);
   const after = previewTarget(s, 'ann', 'plough', t);
   assert.deepEqual([after.board[loc].tokens[noct], after.board[loc].tokens[g] ?? 0, after.board[a].tokens[noct], after.board[b].tokens[noct], after.board[c].tokens[g]], [2, 0, 2, 1, 1]);
-  assert.deepEqual([a, b, c].map((l) => after.board[l].sway.ann), [1, 1, 1]);
+  assert.deepEqual([loc, a, b, c].map((l) => after.board[l].sway.ann), [1, 1, 1, 1]);
+  s.players.ann.standing[g] = 1;
+  assert.ok(checkTarget(s, 'ann', cardById('plough'), t)); // the payer needs 2: its exit and the fight
+  s.players.ann.standing[g] = 2;
   assert.ok(second);
   const clash = first === noct ? [a, a, b, a] : [a, a, a, b];
   assert.ok(checkTarget(s, 'ann', cardById('plough'), { ...t, from: clash })); // never two sides to one location
@@ -720,18 +723,18 @@ test('Cut the Powerlines: a group rejoins its kin 1 at a time round them all; fr
   s.board[a].tokens = { [sent]: 1 };
   s.board[b].tokens = { [sent]: 2, [g]: 2 }; // a fight: still kin
   s.board[c].tokens = { [sent]: 1 };
-  s.players.ann.standing[sent] = 3;
+  s.players.ann.standing[sent] = 4;
   const t = { mode: /** @type {const} */ ('faction'), location: loc, faction: sent, from: [a, c] }; // 5 over 3: 2 / 1 / 2
   assert.equal(checkTarget(s, 'ann', cardById('cut-powerlines'), t), null);
   const after = previewTarget(s, 'ann', 'cut-powerlines', t);
   assert.deepEqual([loc, a, b, c].map((l) => after.board[l].tokens[sent] ?? 0), [0, 3, 3, 3]);
-  assert.deepEqual([a, b, c].map((l) => after.board[l].sway.ann), [1, 1, 1]);
+  assert.deepEqual([loc, a, b, c].map((l) => after.board[l].sway.ann), [1, 1, 1, 1]);
   assert.ok(checkTarget(s, 'ann', cardById('cut-powerlines'), { ...t, from: [a] })); // the player names both extras
   assert.ok(checkTarget(s, 'ann', cardById('cut-powerlines'), { ...t, from: [a, a] }));
-  s.players.ann.standing[sent] = 2;
-  assert.ok(checkTarget(s, 'ann', cardById('cut-powerlines'), t)); // 3 locations, 2 sway: can't play
-  // From a fight, exactly half leaves: 5 → 2 go, to 2 of the 3 kin (the player picks which).
   s.players.ann.standing[sent] = 3;
+  assert.ok(checkTarget(s, 'ann', cardById('cut-powerlines'), t)); // 4 locations, where it leaves included, 3 sway: can't play
+  // From a fight, exactly half leaves: 5 → 2 go, to 2 of the 3 kin (the player picks which).
+  s.players.ann.standing[sent] = 4;
   s.board[loc].tokens = { [sent]: 5, [g]: 1 };
   const fought = { ...t, from: [b, c] };
   assert.equal(checkTarget(s, 'ann', cardById('cut-powerlines'), fought), null);

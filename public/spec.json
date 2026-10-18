@@ -1389,7 +1389,7 @@
       "slot": "shift",
       "sway": 3,
       "action": "split",
-      "text": "The cross is raised and the target group falls back from its light, split evenly between two adjacent locations that can take it (you choose where an odd token goes). Both must be paid for, or it can’t be played; a group of 1 can’t be split. Target: the group.",
+      "text": "The cross is raised and the target group falls back from its light, split evenly between two neighbours. A group of 1 can’t be split. Target: the group.",
       "readings": {
         "location": "any group at a ⎈ location.",
         "faction": "a Demon group anywhere."
@@ -1402,7 +1402,7 @@
           "slot": "strike",
           "sway": 2,
           "action": "invite",
-          "text": "Two groups of different factions, each alone next door, are invited into an empty location and come in whole. Place 1 sway where each left and 1 at the new fight, from your standing with the factions moved. All of it, or it can’t be played. Target: where they’re invited.",
+          "text": "Two groups of different factions, each alone next door, are invited into an empty location and come in whole. You choose which of them pays at the fight. Target: where they’re invited.",
           "readings": {
             "location": "an empty ◐ location; any two lone groups next to it.",
             "faction": "a location held by a lone group of another faction, next to a lone Nocturnal group: only the Nocturnals come (1 sway where they left, 1 at the fight)."
@@ -1416,7 +1416,7 @@
           "slot": "strike",
           "sway": 2,
           "action": "gate",
-          "text": "Join two locations for the rest of the round: they count as a single location for movement, and fight as one (strength and sway added across both; a true tie scorches both). Each end is an ↂ location or a location holding the Sci-Fi faction; never three factions across them. Place 1 sway there, from the Sci-Fi faction or one at either end. Target: the two ends.",
+          "text": "Join two locations for the rest of the round: they count as a single location for movement, and fight as one (strength and sway added across both; a true tie scorches both). Each end is an ↂ location or a location holding the Sci-Fi faction; never three factions across them. Only 1 sway, there, from the Sci-Fi faction or one at either end. Target: the two ends.",
           "readings": {
             "location": "either end: an ↂ location, or a location holding the Sci-Fi faction.",
             "faction": "either end: a location holding the Sci-Fi faction, or an ↂ location."
@@ -1430,7 +1430,7 @@
           "slot": "strike",
           "sway": 2,
           "action": "threat",
-          "text": "The AV Club spoofs a command signal to a lone group: ordered to engage the strongest hostile force in range, it marches, whole, on the largest lone group of another faction within two locations of it (ties: your choice). Place 1 sway where it left and 1 at the fight, from your standing with the group that marched. All of it, or it can’t be played. Target: the group fooled.",
+          "text": "The AV Club spoofs a command signal to a lone group: ordered to engage the strongest hostile force in range, it marches, whole, on the largest lone group of another faction within two locations of it (ties: your choice). Target: the group fooled.",
           "readings": {
             "location": "a lone group at a ⏏ location.",
             "faction": "a lone Sentient group anywhere."
@@ -1444,7 +1444,7 @@
           "slot": "strike",
           "sway": 2,
           "action": "herd",
-          "text": "Lay a trail of bait: a lone group follows it from neighbour to neighbour, picking up its own kind at every stop (a lone group of them comes whole; from a fight they’re in, half, rounded down) and leaving nothing behind. It stops where you choose, or crashes into a lone group of another faction. Place 1 sway on every location on the trail, from your standing with the faction that moved. All of it, or it can’t be played. Target: the herd.",
+          "text": "Lay a trail of bait: a lone group follows it from neighbour to neighbour, picking up its own kind at every stop and leaving nothing behind. It stops where you choose, or crashes into a lone group of another faction. Target: the herd.",
           "readings": {
             "location": "a lone group at a ☾ location.",
             "faction": "a lone Undead group anywhere."
@@ -1458,7 +1458,7 @@
           "slot": "strike",
           "sway": 2,
           "action": "well",
-          "text": "Father and the Flock begin the rite, and one faction next door is drawn to it: every lone group of it comes whole; a group of it in a fight sends up to half (rounded down; you choose), so the fight goes on. The centre is empty or holds one faction. Place 1 sway at each location pulled from and 1 at the centre, from your standing with the faction called. All of it, or it can’t be played. Target: the centre, then the faction called.",
+          "text": "Father and the Flock begin the rite, and one faction next door is drawn to it: every group of it comes, whole if it’s alone, as many as you choose if it’s in a fight. The centre is empty or holds one faction. Target: the centre, then the faction called.",
           "readings": {
             "location": "a ⎈ location; any faction is called.",
             "faction": "any location next to the Demon faction; the Demons are called."
@@ -1472,7 +1472,7 @@
           "slot": "shift",
           "sway": 3,
           "action": "chase",
-          "text": "The Kids on Bikes deliberately lead a lone group on a chase from neighbour to neighbour, across any region. The start keeps nothing; every location it passes keeps 1 of its tokens and 1 of your sway. It can pass empty ground, lone rivals, its own kind and fights it’s part of, and it ends wherever you choose that it can enter, with at least 1 token arriving and 1 sway there. Sway from your standing with the faction chased; all of it, or it can’t be played. Target: the group chased.",
+          "text": "The Kids on Bikes lead a lone group on a chase from neighbour to neighbour, across any region, through empty ground, lone rivals, its own kind and fights it’s part of. Every location it passes keeps 1 token; the rest, at least 1, arrive wherever you end it. Target: the group chased.",
           "readings": {
             "location": "a lone group at an ↂ location.",
             "faction": "a lone Sci-Fi group anywhere."
@@ -1486,7 +1486,7 @@
           "slot": "shift",
           "sway": 3,
           "action": "plough",
-          "text": "The Slayerettes plough a truck straight through the middle of the brawl. Every side of the fight leaves by half, rounded up, split however you choose among the neighbouring locations it can enter, but never two sides to the same location. A side of 1 leaves entirely. Place 1 sway at each location a faction reaches, from your standing with that faction. All of it, or it can’t be played. Target: the fight.",
+          "text": "The Slayerettes plough a truck straight through the middle of the brawl. Every side leaves by half, rounded up, split as you choose among its neighbours, never two sides to the same location. You choose which side pays at the fight. Target: the fight.",
           "readings": {
             "location": "a fight at a ◐ location.",
             "faction": "a fight the Nocturnals are in."
@@ -1500,7 +1500,7 @@
           "slot": "shift",
           "sway": 3,
           "action": "burst",
-          "text": "The Watch sets out distractions all round the location, and one of the dead shambles off to check each. A lone group sends 1 token to each neighbouring location it can enter, as many as you choose (at least 2); the rest stay. Place 1 sway at each location a token reaches, from your standing with that faction. All of it, or it can’t be played. Target: the group.",
+          "text": "The Watch sets out distractions all round the location, and one of the dead shambles off to check each. A lone group sends 1 token to each of at least two neighbours; the rest stay. Target: the group.",
           "readings": {
             "location": "a lone group at a ☾ location.",
             "faction": "a lone Undead group anywhere."
@@ -1514,7 +1514,7 @@
           "slot": "shift",
           "sway": 3,
           "action": "rejoin",
-          "text": "The AV Club cuts the powerlines. A group scatters to its faction’s other groups anywhere on the island, 1 token at a time: no group gets a second until every group has one (you choose which get the extras). A lone group leaves entirely; from a fight, exactly half (rounded down). Place 1 sway at each location a token reaches, from your standing with that faction. All of it, or it can’t be played. Target: the group.",
+          "text": "The AV Club cuts the powerlines. A group scatters to its faction’s other groups anywhere on the island, 1 token at a time: no group gets a second until every group has one. A lone group leaves entirely; from a fight, exactly half. Target: the group.",
           "readings": {
             "location": "any group at a ⏏ location.",
             "faction": "a Sentients group anywhere."

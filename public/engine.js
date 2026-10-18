@@ -148,7 +148,7 @@ export { spec };
  * @property {boolean} [realOnly]  only one location was free: place the real token there (else the bluff)
  * @property {{ location: string, faction: string, to: string }[]} [moves]
  * @property {string} [lead]       the faction the player leads, on cards that move several factions (D15)
- * @property {string} [payer]      Invite Them In, the Gate: the faction whose standing pays the 1 sway at the fight
+ * @property {string} [payer]      Invite Them In, the Gate, Plough Through: the faction whose standing pays the 1 sway at the fight
  * @property {string} [losses]     the Gate: the end the winner's losses come from first
  */
 
@@ -721,12 +721,12 @@ const ploughSides = (state, loc) => state.factions.filter((f) => factionsAt(stat
   .map((f) => ({ f, n: Math.ceil(tokensOf(state, loc, f) / 2), spots: burstSpots(state, loc, f) }));
 /**
  * Plough Through: can the exits chosen so far (`from`) be finished? No location takes two sides, and under D21 each side
- * opens no more exits than your standing with it pays for.
- * @param {GameState} state @param {string} pid @param {string} loc @param {string[]} from
+ * opens no more exits than your standing with it pays for, the payer's 1 at the fight included.
+ * @param {GameState} state @param {string} pid @param {string} loc @param {string[]} from @param {string | undefined} payer
  */
-function ploughFits(state, pid, loc, from) {
+function ploughFits(state, pid, loc, from, payer) {
   const sides = ploughSides(state, loc);
-  const pay = (/** @type {string} */ f) => (swayRequired(state) ? state.players[pid].standing[f] ?? 0 : Infinity);
+  const pay = (/** @type {string} */ f) => (swayRequired(state) ? (state.players[pid].standing[f] ?? 0) - (f === payer ? 1 : 0) : Infinity);
   /** @type {string[][]} */ const used = [];
   let i = 0;
   for (const side of sides) { used.push(from.slice(i, i + side.n)); i += side.n; }
@@ -1045,7 +1045,7 @@ function checkShape(state, pid, card, t) {
       const spots = burstSpots(state, loc, f);
       if (to.length < 2 || new Set(to).size !== to.length || to.some((l) => !spots.includes(l))) return 'It bursts to at least two neighbouring locations it can enter, 1 token each.';
       if (to.length > tokensOf(state, loc, f)) return 'One token to each: not more locations than tokens.';
-      return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < to.length ? 'You need the sway to pay at every location a token reaches (all or nothing).' : null;
+      return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < to.length + 1 ? 'You need the sway to pay where it leaves and at every location a token reaches (all or nothing).' : null;
     }
     case 'plough': {
       const loc = t.location, sf = suitFaction(state, card);
@@ -1053,8 +1053,9 @@ function checkShape(state, pid, card, t) {
       if (!loc || !state.board[loc] || state.board[loc].scorched || factionsAt(state, loc).length < 2 || (t.mode === 'location' ? !suitLocations(card).includes(loc) : !factionsAt(state, loc).includes(/** @type {string} */ (sf)))) return t.mode === 'location' ? 'Choose a fight at a ◐ location.' : 'Choose a fight the Nocturnals are in.';
       const from = (t.from ?? []).filter((l) => l !== '__stop');
       const total = ploughSides(state, loc).reduce((n, side) => n + side.n, 0);
+      if (!t.payer || !factionsAt(state, loc).includes(t.payer)) return 'Choose which faction leaving pays the 1 sway at the fight.';
       if (from.length !== total) return `Every side leaves by half, rounded up: choose ${total} exits, one per token.`;
-      return ploughFits(state, pid, loc, from) ? null : 'Each side goes out to neighbours it can enter, never where another side goes, and you need the sway for every exit (all or nothing).';
+      return ploughFits(state, pid, loc, from, t.payer) ? null : 'Each side goes out to neighbours it can enter, never where another side goes, and you need the sway for every exit (all or nothing).';
     }
     case 'rejoin': {
       const loc = t.location, f = t.faction, sf = suitFaction(state, card);
@@ -1064,7 +1065,7 @@ function checkShape(state, pid, card, t) {
       if (!kin.length || n <= 0) return 'It needs another group of its faction to rejoin, and tokens free to leave.';
       const to = (t.from ?? []).filter((l) => l !== '__stop');
       if (to.length !== extra || new Set(to).size !== to.length || to.some((l) => !kin.includes(l))) return `Choose ${extra} of its other groups to get one more token each (1 at a time round them all).`;
-      return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < reached ? 'You need the sway to pay at every location a token reaches (all or nothing).' : null;
+      return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < reached + 1 ? 'You need the sway to pay where it leaves and at every location a token reaches (all or nothing).' : null;
     }
     case 'chase': {
       const start = t.location, f = t.faction, sf = suitFaction(state, card);
@@ -1079,7 +1080,7 @@ function checkShape(state, pid, card, t) {
       }
       // 1 token and 1 sway stay at each location passed; at least 1 token arrives; 1 sway at the end too.
       if (path.length > tokensOf(state, start, f)) return 'At least 1 token must arrive: a token stays at every location passed.';
-      return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < path.length ? 'You need the sway to pay at every location on the chase (all or nothing).' : null;
+      return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < path.length + 1 ? 'You need the sway to pay at every location on the chase, the start too (all or nothing).' : null;
     }
     case 'well': {
       const centre = t.location, f = t.faction, sf = /** @type {string} */ (suitFaction(state, card));
@@ -1176,7 +1177,7 @@ function checkShape(state, pid, card, t) {
         const sizes = dests.map((d) => split[d]).sort((a, b) => a - b);
         if (sizes[0] !== Math.floor(n / 2) || sizes[1] !== Math.ceil(n / 2)) return 'Split the group evenly.';
         const cost = num(state, 'swayPerMove');
-        if (swayRequired(state) && cost > 0 && (state.players[pid].standing[f] ?? 0) < 2 * cost) return 'You need the sway to pay at both locations.';
+        if (swayRequired(state) && cost > 0 && (state.players[pid].standing[f] ?? 0) < 2 * cost + 1) return 'You need the sway to pay where it leaves and at both locations.';
       }
       return null;
     }
@@ -1394,6 +1395,7 @@ function act(state, pid, card, t) {
       const to = (t.from ?? []).filter((l) => l !== '__stop');
       let n = 0;
       for (const l of to) n += move(state, pid, f, loc, l, 1, placed);
+      placeOne(state, pid, f, loc);
       logLine(state, `${pid}: ${card.name}: the ${names(f)} at ${lname(loc)} scatter${n ? ` to ${to.map(lname).join(', ')}` : ''}.`);
       break;
     }
@@ -1406,6 +1408,7 @@ function act(state, pid, card, t) {
         const mine = from.slice(i, i + side.n); i += side.n;
         for (const l of new Set(mine)) move(state, pid, side.f, loc, l, mine.filter((x) => x === l).length, placed, true);
       }
+      placeOne(state, pid, /** @type {string} */ (t.payer), loc);
       logLine(state, `${pid}: ${card.name}: the fight at ${lname(loc)} scatters to ${[...new Set(from)].map(lname).join(', ')}.`);
       break;
     }
@@ -1416,6 +1419,7 @@ function act(state, pid, card, t) {
       const extra = (t.from ?? []).filter((l) => l !== '__stop');
       const went = kin.map((l) => ({ l, k: each + (extra.includes(l) ? 1 : 0) })).filter((x) => x.k > 0);
       for (const { l, k } of went) move(state, pid, f, loc, l, k, placed, true);
+      placeOne(state, pid, f, loc);
       logLine(state, `${pid}: ${card.name}: the ${names(f)} at ${lname(loc)} scatter to their own at ${went.map((x) => lname(x.l)).join(', ')}.`);
       break;
     }
@@ -1425,6 +1429,7 @@ function act(state, pid, card, t) {
       const path = (t.path ?? []).filter((l) => l !== '__stop');
       const n = tokensOf(state, start, f);
       takeTokens(state, start, f, n);
+      placeOne(state, pid, f, start);
       for (const l of path.slice(0, -1)) { addTokens(state, l, f, 1); placeOne(state, pid, f, l); }
       const end = /** @type {string} */ (path[path.length - 1]);
       addTokens(state, end, f, n - (path.length - 1));
@@ -1630,6 +1635,7 @@ function act(state, pid, card, t) {
     case 'split': {
       const f = /** @type {string} */ (t.faction), from = /** @type {string} */ (t.location);
       for (const [to, n] of Object.entries(t.split ?? {})) move(state, pid, f, from, to, n, placed);
+      placeOne(state, pid, f, from);
       logLine(state, `${pid}: ${card.name} turns ${names(f)} away from ${lname(from)}.`);
       break;
     }
@@ -2859,30 +2865,31 @@ function nextShape(state, pid, cardId, t) {
     case 'burst': {
       const st = /** @type {GameState} */ (state);
       const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(st, g.location) === g.faction && tokensOf(st, g.location, g.faction) >= 2 && can(g.faction, 2) && burstSpots(st, g.location, g.faction).length >= 2) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(st, g.location) === g.faction && tokensOf(st, g.location, g.faction) >= 2 && can(g.faction, 3) && burstSpots(st, g.location, g.faction).length >= 2) };
       const f = /** @type {string} */ (t.faction);
       const to = t.from ?? [];
       if (to.includes('__stop')) return { kind: 'done' };
-      const more = to.length < tokensOf(st, t.location, f) && can(f, to.length + 1) ? burstSpots(st, t.location, f).filter((l) => !to.includes(l)) : [];
+      const more = to.length < tokensOf(st, t.location, f) && can(f, to.length + 2) ? burstSpots(st, t.location, f).filter((l) => !to.includes(l)) : [];
       if (!more.length && to.length >= 2) return { kind: 'done' };
       return { kind: 'location', key: 'from', options: more, optional: to.length >= 2 };
     }
     case 'plough': {
       const st = /** @type {GameState} */ (state);
       const fightOk = (/** @type {string} */ l) => !st.board[l].scorched && factionsAt(st, l).length >= 2 && (mode === 'location' ? suitLocations(card).includes(l) : factionsAt(st, l).includes(/** @type {string} */ (sf)));
-      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => fightOk(l) && ploughFits(st, pid, l, [])) };
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => fightOk(l) && factionsAt(st, l).some((f) => ploughFits(st, pid, l, [], f))) };
+      if (!t.payer) return { kind: 'faction', key: 'payer', options: factionsAt(st, t.location).filter((f) => ploughFits(st, pid, /** @type {string} */ (t.location), [], f)) };
       const sides = ploughSides(st, t.location);
       const from = t.from ?? [];
       const total = sides.reduce((n, side) => n + side.n, 0);
       if (from.length >= total) return { kind: 'done' };
       let i = 0, side = sides[0];
       for (const x of sides) { if (from.length < i + x.n) { side = x; break; } i += x.n; }
-      return { kind: 'location', key: 'from', options: side.spots.filter((l) => ploughFits(st, pid, t.location ?? '', [...from, l])), left: total - from.length };
+      return { kind: 'location', key: 'from', options: side.spots.filter((l) => ploughFits(st, pid, t.location ?? '', [...from, l], t.payer)), left: total - from.length };
     }
     case 'rejoin': {
       const st = /** @type {GameState} */ (state);
       const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => { const p = powerShare(st, g.location, g.faction); return p.kin.length > 0 && p.n > 0 && can(g.faction, p.reached); }) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => { const p = powerShare(st, g.location, g.faction); return p.kin.length > 0 && p.n > 0 && can(g.faction, p.reached + 1); }) };
       const { kin, extra } = powerShare(st, t.location, /** @type {string} */ (t.faction));
       const to = t.from ?? [];
       if (to.length >= extra) return { kind: 'done' };
@@ -2891,13 +2898,13 @@ function nextShape(state, pid, cardId, t) {
     case 'chase': {
       const st = /** @type {GameState} */ (state);
       const can = (/** @type {string} */ f, /** @type {number} */ n) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= n;
-      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(st, g.location) === g.faction && can(g.faction, 1) && chaseSteps(st, g.location, g.faction, [g.location]).length > 0) };
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => loneAt(st, g.location) === g.faction && can(g.faction, 2) && chaseSteps(st, g.location, g.faction, [g.location]).length > 0) };
       const f = /** @type {string} */ (t.faction);
       const path = t.path ?? [];
       if (path.includes('__stop')) return { kind: 'done' };
       const chase = [t.location, ...path];
       // Another step: one more location passed (a token and a sway stay there), and still at least 1 token arriving.
-      const options = path.length + 1 <= tokensOf(st, t.location, f) && can(f, path.length + 1) ? chaseSteps(st, chase[chase.length - 1], f, chase) : [];
+      const options = path.length + 1 <= tokensOf(st, t.location, f) && can(f, path.length + 2) ? chaseSteps(st, chase[chase.length - 1], f, chase) : [];
       if (!options.length && path.length) return { kind: 'done' };
       return { kind: 'location', key: 'path', options, optional: path.length > 0, left: Math.max(0, Math.min(tokensOf(st, t.location, f), state.players[pid].standing[f] ?? 0) - path.length) };
     }
@@ -3099,7 +3106,7 @@ function nextShape(state, pid, cardId, t) {
     case 'split': {
       // Evenly between exactly two adjacent locations; an odd token goes where the player sends it (designer, 2026-10-15).
       const size = (/** @type {{ location: string, faction: string }} */ g) => freeOf(state, g.location, g.faction, unpinnedCard(card));
-      const pays = (/** @type {string} */ f) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= 2 * num(state, 'swayPerMove');
+      const pays = (/** @type {string} */ f) => !swayRequired(state) || (state.players[pid].standing[f] ?? 0) >= 2 * num(state, 'swayPerMove') + 1;
       if (!t.location) return { kind: 'group', key: 'group', options: groups().filter(groupOk).filter((g) => size(g) >= 2 && exits(g, adj(state, g.location)).length >= 2 && pays(g.faction)) };
       const f = /** @type {string} */ (t.faction);
       const n = size({ location: t.location, faction: f });
