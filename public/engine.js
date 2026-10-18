@@ -705,7 +705,7 @@ const gateEnd = (state, card, loc) => !!loc && !!state.board[loc] && !state.boar
 const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ...factionsAt(state, b)])];
 
 /**
- * Set Off the Fireworks (◐ shift, designer 2026-10-17; was Crash the Party): the neighbours a bursting group of `f` at `loc` can send a token to:
+ * Draw Them Away (◐ shift, designer 2026-10-17; was Crash the Party, then Set Off the Fireworks): the neighbours a bursting group of `f` at `loc` can send a token to:
  * ones it can enter, not scorched; Lock Down's borders hold.
  * @param {GameState} state @param {string} loc @param {string} f
  */
