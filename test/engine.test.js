@@ -684,7 +684,7 @@ test('Draw Them Away: a lone group bursts, 1 token to each chosen neighbour, the
   assert.ok(checkTarget(s, 'ann', cardById('draw-away'), t)); // 4 locations, where it leaves included, 3 sway: can't play
 });
 
-test('Raise the Dead: the dead rise as a third side, and a three-way fight pays the leader the two larger piles (designer, 2026-10-18)', () => {
+test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-way fight pays the leader the two larger piles (designer, 2026-10-18)', () => {
   const s = clear(newGame());
   const dead = /** @type {string} */ (factionOfArchetype(s, 'undead'));
   const [f, g] = s.factions.filter((x) => x !== dead);
@@ -694,9 +694,9 @@ test('Raise the Dead: the dead rise as a third side, and a three-way fight pays 
   s.board[loc].sway = { bob: 2 };
   s.players.ann.standing[dead] = 3;
   const t = { mode: /** @type {const} */ ('location'), location: loc, from: [loc, loc, loc] };
-  assert.equal(checkTarget(s, 'ann', cardById('raise-dead'), t), null);
-  assert.ok(checkTarget(s, 'ann', cardById('raise-dead'), { ...t, from: [loc, loc, loc, loc] })); // only 3 standing
-  const after = { ...s, ...previewTarget(s, 'ann', 'raise-dead', t) };
+  assert.equal(checkTarget(s, 'ann', cardById('wake-the-dead'), t), null);
+  assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), { ...t, from: [loc, loc, loc, loc] })); // only 3 standing
+  const after = { ...s, ...previewTarget(s, 'ann', 'wake-the-dead', t) };
   assert.deepEqual(after.board[loc].tokens, { [f]: 6, [g]: 3, [dead]: 3 });
   assert.equal(after.board[loc].sway.ann, 3); // the bid: one sway for each risen
   assert.equal(after.players.ann.standing[dead], 0);
@@ -715,9 +715,9 @@ test('Raise the Dead: the dead rise as a third side, and a three-way fight pays 
   assert.deepEqual(burnt.board[loc].tokens, {});
   // Not a fight the Undead are already in, and not a lone group.
   s.board[loc].tokens = { [f]: 6, [dead]: 3 };
-  assert.ok(checkTarget(s, 'ann', cardById('raise-dead'), t));
+  assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), t));
   s.board[loc].tokens = { [f]: 6 };
-  assert.ok(checkTarget(s, 'ann', cardById('raise-dead'), t));
+  assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), t));
 });
 
 test('Plough Through: every side of a fight leaves by half rounded up, through its own exits; a side of 1 leaves entirely (designer, 2026-10-17)', () => {

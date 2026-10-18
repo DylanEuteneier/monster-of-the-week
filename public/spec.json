@@ -1480,8 +1480,8 @@
           "round": 21
         },
         {
-          "id": "raise-dead",
-          "name": "Raise the Dead",
+          "id": "wake-the-dead",
+          "name": "Wake the Dead",
           "suit": "undead",
           "slot": "signature",
           "sway": 4,
@@ -1898,7 +1898,7 @@
       },
       {
         "id": "wake-dead",
-        "name": "Wake the Dead",
+        "name": "Wake the Dead (round 18)",
         "suit": "undead",
         "slot": "signature",
         "sway": 3,

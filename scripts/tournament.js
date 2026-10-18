@@ -162,7 +162,7 @@ function unionTokens(s, loc) {
 
 /**
  * Whether the fight `now` at a location is the one that was there: every faction that fought there still does (a third
- * side joining, as Raise the Dead's risen Undead do, keeps the fight; it doesn't make it disappear).
+ * side joining, as the ☾ signature Wake the Dead's risen Undead do, keeps the fight; it doesn't make it disappear).
  * @param {string | undefined} was @param {string | undefined} now
  */
 const sameFight = (was, now) => !!was && !!now && was.split('+').every((f) => now.split('+').includes(f));

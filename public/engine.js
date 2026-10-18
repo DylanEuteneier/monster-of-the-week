@@ -712,14 +712,14 @@ const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ..
 const burstSpots = (state, loc, f) => adj(state, loc).filter((l) => !state.board[l].scorched && canEnter(state, l, f) && !((state.board[loc].lock || state.board[l].lock) && regionOf(loc) !== regionOf(l)));
 
 /**
- * Raise the Dead (☾ signature, designer 2026-10-18): how many of the dead you may raise at `loc`, a fight the Undead
+ * Wake the Dead (☾ signature, designer 2026-10-18; first named Raise the Dead): how many of the dead you may raise at `loc`, a fight the Undead
  * aren't in (any fight; not a Gate's end): up to the card's printed sway, your standing with the Undead, and their supply.
  * @param {GameState} state @param {string} pid @param {string} loc
  */
 function raiseRoom(state, pid, loc) {
   const undead = factionOfArchetype(state, 'undead');
   if (!undead || !state.board[loc] || state.board[loc].scorched || gateOf(state, loc) || factionsAt(state, loc).length !== 2 || factionsAt(state, loc).includes(undead)) return { undead, max: 0 };
-  return { undead, max: Math.min(printedOf(state, 'raise-dead'), state.players[pid].standing[undead] ?? 0, state.supply[undead] ?? 0) };
+  return { undead, max: Math.min(printedOf(state, 'wake-the-dead'), state.players[pid].standing[undead] ?? 0, state.supply[undead] ?? 0) };
 }
 
 /**
@@ -2406,7 +2406,7 @@ function fight(state, loc, joined = undefined) {
   // Link the Swarm (test card, round 20): the linked faction counts its tokens next door too, for who wins.
   const swarm = place.swarm === true ? factionOfArchetype(state, 'sentients') : place.swarm || null;
   const next = (/** @type {string} */ f) => (f === swarm ? (joined?.near ?? adj(state, loc)).reduce((n, l) => n + tokensOf(state, l, f), 0) : 0);
-  // Strength of every side: two, or three after Raise the Dead (designer, 2026-10-18).
+  // Strength of every side: two, or three after Wake the Dead, the ☾ signature (designer, 2026-10-18).
   const strength = Object.fromEntries(sides.map((f) => [f, place.tokens[f] + next(f)]));
   const ranked = sides.slice().sort((x, y) => strength[y] - strength[x]);
   const top = ranked.filter((f) => strength[f] === strength[ranked[0]]);
