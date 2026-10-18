@@ -84,7 +84,7 @@ import { seededRng, chance, measureState, play, MAX_MOVES, upgradeRecord } from 
 // ---------------------------------------------------------------------------
 
 /** @param {GameState['board'][string]} place */
-const contestedPlace = (place) => !place.scorched && Object.values(place.tokens).filter((n) => n > 0).length === 2;
+const contestedPlace = (place) => !place.scorched && Object.values(place.tokens).filter((n) => n > 0).length >= 2;
 
 /** This round's fights and growth on a copy: presence after, trophies per player, each fight's winner and losses. @param {GameState} state */
 function reckon(state) {
@@ -132,7 +132,7 @@ function effectOf(was, now, pid) {
   // fight made in a single move is as lazy as one undone (designer, 2026-10-13).
   let made = 0;
   for (const [loc, pair] of fightsOn(now)) {
-    const before = fightsOn(was).get(loc) === pair ? fightSize(was, loc, pair) : 0;
+    const before = sameFight(fightsOn(was).get(loc), pair) ? fightSize(was, loc, pair) : 0;
     if (fightSize(now, loc, pair) > before) made = Math.max(made, fightSize(now, loc, pair));
   }
   return { trophies, flips, control, moved, placed, presence: b.presence - a.presence, made, big: made >= BIG_FIGHT ? 1 : 0 };
@@ -160,6 +160,13 @@ function unionTokens(s, loc) {
   return out;
 }
 
+/**
+ * Whether the fight `now` at a location is the one that was there: every faction that fought there still does (a third
+ * side joining, as Raise the Dead's risen Undead do, keeps the fight; it doesn't make it disappear).
+ * @param {string | undefined} was @param {string | undefined} now
+ */
+const sameFight = (was, now) => !!was && !!now && was.split('+').every((f) => now.split('+').includes(f));
+
 /** A fight's size: both groups' tokens together. @param {GameState} s @param {string} loc @param {string} pair */
 const fightSize = (s, loc, pair) => { const t = unionTokens(s, loc); return pair.split('+').reduce((n, f) => n + (t[f] ?? 0), 0); };
 
@@ -169,9 +176,9 @@ const stakeOf = (place) => [...new Set([...Object.entries(place.sway).filter(([,
 /** What one play did to the fights: those that disappeared (with their stakes; moved: the same pair now fights at a new location) and those it made. @param {GameState} was @param {GameState} now */
 function fightChange(was, now) {
   const a = fightsOn(was), b = fightsOn(now);
-  const made = [...b].filter(([loc, pair]) => a.get(loc) !== pair).map(([loc]) => loc);
+  const made = [...b].filter(([loc, pair]) => !sameFight(a.get(loc), pair)).map(([loc]) => loc);
   const pairsMade = new Set(made.map((loc) => b.get(loc)));
-  const gone = [...a].filter(([loc, pair]) => b.get(loc) !== pair).map(([loc, pair]) => ({ loc, stake: stakeOf(was.board[loc]), moved: pairsMade.has(pair) }));
+  const gone = [...a].filter(([loc, pair]) => !sameFight(pair, b.get(loc))).map(([loc, pair]) => ({ loc, stake: stakeOf(was.board[loc]), moved: pairsMade.has(pair) }));
   return { gone, made };
 }
 

@@ -684,6 +684,42 @@ test('Draw Them Away: a lone group bursts, 1 token to each chosen neighbour, the
   assert.ok(checkTarget(s, 'ann', cardById('draw-away'), t)); // 4 locations, where it leaves included, 3 sway: can't play
 });
 
+test('Raise the Dead: the dead rise as a third side, and a three-way fight pays the leader the two larger piles (designer, 2026-10-18)', () => {
+  const s = clear(newGame());
+  const dead = /** @type {string} */ (factionOfArchetype(s, 'undead'));
+  const [f, g] = s.factions.filter((x) => x !== dead);
+  const arch = (/** @type {string} */ x) => spec.factions.find((y) => y.id === x)?.archetype;
+  const loc = /** @type {string} */ (spec.locations.find((l) => ![arch(f), arch(g), 'undead'].includes(l.archetype))?.id);
+  s.board[loc].tokens = { [f]: 6, [g]: 3 };
+  s.board[loc].sway = { bob: 2 };
+  s.players.ann.standing[dead] = 3;
+  const t = { mode: /** @type {const} */ ('location'), location: loc, from: [loc, loc, loc] };
+  assert.equal(checkTarget(s, 'ann', cardById('raise-dead'), t), null);
+  assert.ok(checkTarget(s, 'ann', cardById('raise-dead'), { ...t, from: [loc, loc, loc, loc] })); // only 3 standing
+  const after = { ...s, ...previewTarget(s, 'ann', 'raise-dead', t) };
+  assert.deepEqual(after.board[loc].tokens, { [f]: 6, [g]: 3, [dead]: 3 });
+  assert.equal(after.board[loc].sway.ann, 3); // the bid: one sway for each risen
+  assert.equal(after.players.ann.standing[dead], 0);
+  assert.deepEqual(fightsDue(after).includes(loc), true);
+  // The fight: 6 beat 3 and 3; both losers lose everything; the winner loses half the larger loser's number.
+  const fought = resolveFight(after, loc);
+  assert.deepEqual(fought.board[loc].tokens, { [f]: 5 });
+  // Piles 3, 3 and 1: ann leads (3 sway) and takes the two larger; bob, runner-up, the smallest.
+  assert.equal(Object.values(fought.players.ann.trophies).reduce((x, y) => x + y, 0), 6);
+  assert.equal(fought.players.bob.trophies[f], 1);
+  // Two largest tied and neither aligned: a true tie, all three wiped out and the location scorched.
+  const tie = clear(newGame());
+  tie.board[loc].tokens = { [f]: 4, [g]: 4, [dead]: 2 };
+  const burnt = resolveFight(tie, loc);
+  assert.equal(burnt.board[loc].scorched, true);
+  assert.deepEqual(burnt.board[loc].tokens, {});
+  // Not a fight the Undead are already in, and not a lone group.
+  s.board[loc].tokens = { [f]: 6, [dead]: 3 };
+  assert.ok(checkTarget(s, 'ann', cardById('raise-dead'), t));
+  s.board[loc].tokens = { [f]: 6 };
+  assert.ok(checkTarget(s, 'ann', cardById('raise-dead'), t));
+});
+
 test('Plough Through: every side of a fight leaves by half rounded up, through its own exits; a side of 1 leaves entirely (designer, 2026-10-17)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);

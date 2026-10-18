@@ -1480,6 +1480,20 @@
           "round": 21
         },
         {
+          "id": "raise-dead",
+          "name": "Raise the Dead",
+          "suit": "undead",
+          "slot": "signature",
+          "sway": 4,
+          "action": "raise",
+          "text": "The Watch chases the fight into the old cemetery, and the dead rise in the middle of it. At a fight the Undead aren’t in, they rise as a third side: as many from the Undead supply as you choose, up to the card’s sway. Each one risen places 1 of your sway there. Target: the fight.",
+          "readings": {
+            "location": "any fight the Undead aren’t in.",
+            "faction": "any fight the Undead aren’t in."
+          },
+          "round": 21
+        },
+        {
           "id": "plough",
           "name": "Plough Through",
           "suit": "nocturnals",

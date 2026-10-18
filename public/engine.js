@@ -712,6 +712,17 @@ const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ..
 const burstSpots = (state, loc, f) => adj(state, loc).filter((l) => !state.board[l].scorched && canEnter(state, l, f) && !((state.board[loc].lock || state.board[l].lock) && regionOf(loc) !== regionOf(l)));
 
 /**
+ * Raise the Dead (☾ signature, designer 2026-10-18): how many of the dead you may raise at `loc`, a fight the Undead
+ * aren't in (any fight; not a Gate's end): up to the card's printed sway, your standing with the Undead, and their supply.
+ * @param {GameState} state @param {string} pid @param {string} loc
+ */
+function raiseRoom(state, pid, loc) {
+  const undead = factionOfArchetype(state, 'undead');
+  if (!undead || !state.board[loc] || state.board[loc].scorched || gateOf(state, loc) || factionsAt(state, loc).length !== 2 || factionsAt(state, loc).includes(undead)) return { undead, max: 0 };
+  return { undead, max: Math.min(printedOf(state, 'raise-dead'), state.players[pid].standing[undead] ?? 0, state.supply[undead] ?? 0) };
+}
+
+/**
  * Plough Through (◐ shift, designer 2026-10-17): the sides of the fight at `loc` and their exits. Every side sends out
  * half, rounded up (the card's deliberate exception to D22: a side of 1 leaves entirely, and the fight can break), to
  * neighbours it can enter. Sides in the order of state.factions; a target lists one exit per token, side by side.
@@ -785,7 +796,7 @@ function wellSources(state, centre, f) {
   const near = adj(state, centre).filter((l) => !state.board[l].scorched && !((state.board[l].lock || state.board[centre].lock) && regionOf(l) !== regionOf(centre)) && tokensOf(state, l, f) > 0);
   return {
     lone: near.filter((l) => loneAt(state, l) === f),
-    fights: near.filter((l) => factionsAt(state, l).length === 2 && Math.floor(tokensOf(state, l, f) / 2) > 0),
+    fights: near.filter((l) => factionsAt(state, l).length >= 2 && Math.floor(tokensOf(state, l, f) / 2) > 0),
   };
 }
 /** How many of `f` a fight next door may send: half, rounded down. @param {GameState} state @param {string} l @param {string} f */
@@ -801,7 +812,7 @@ const wellShare = (state, l, f) => Math.floor(tokensOf(state, l, f) / 2);
 function trailSteps(state, at, f, trail) {
   const locked = (/** @type {string} */ to) => (state.board[at].lock || state.board[to].lock) && regionOf(at) !== regionOf(to);
   const open = adj(state, at).filter((l) => !trail.some((x) => endsOf(state, x).includes(l)) && !state.board[l].scorched && !locked(l));
-  const pickups = open.filter((l) => loneAt(state, l) === f || (factionsAt(state, l).length === 2 && tokensOf(state, l, f) > 0 && freeOf(state, l, f) > 0));
+  const pickups = open.filter((l) => loneAt(state, l) === f || (factionsAt(state, l).length >= 2 && tokensOf(state, l, f) > 0 && freeOf(state, l, f) > 0));
   const crashes = open.filter((l) => loneAt(state, l) && loneAt(state, l) !== f);
   return { pickups, crashes };
 }
@@ -844,7 +855,7 @@ function holdingSpots(state, card, mode) {
 }
 
 /** Round 10 test cards. @param {GameState | PlayerView} state @param {string} loc */
-const contestAt = (state, loc) => !state.board[loc].scorched && factionsAt(/** @type {GameState} */ (state), loc).length === 2;
+const contestAt = (state, loc) => !state.board[loc].scorched && factionsAt(/** @type {GameState} */ (state), loc).length >= 2;
 /** Where each group next to `loc` would be pushed: one hex straight on, away from it (repel). @param {GameState} state @param {string} loc @param {string[]} factions */
 function pushes(state, loc, factions) {
   const { q, r } = MAP[loc];
@@ -1046,6 +1057,13 @@ function checkShape(state, pid, card, t) {
       if (to.length < 2 || new Set(to).size !== to.length || to.some((l) => !spots.includes(l))) return 'It bursts to at least two neighbouring locations it can enter, 1 token each.';
       if (to.length > tokensOf(state, loc, f)) return 'One token to each: not more locations than tokens.';
       return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < to.length + 1 ? 'You need the sway to pay where it leaves and at every location a token reaches (all or nothing).' : null;
+    }
+    case 'raise': {
+      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      const { max } = raiseRoom(state, pid, t.location ?? '');
+      if (!t.location || max <= 0) return 'Choose a fight the Undead aren\'t in, with standing with the Undead to raise them.';
+      const n = (t.from ?? []).filter((l) => l === t.location).length;
+      return n >= 1 && n <= max ? null : `Raise from 1 to ${max} of the dead: up to the card's sway, your standing with the Undead and their supply.`;
     }
     case 'plough': {
       const loc = t.location, sf = suitFaction(state, card);
@@ -1399,6 +1417,17 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name}: the ${names(f)} at ${lname(loc)} scatter${n ? ` to ${to.map(lname).join(', ')}` : ''}.`);
       break;
     }
+    case 'raise': {
+      // The dead rise as a third side; each one risen places 1 of your sway there, from your standing with the Undead (the bid).
+      const loc = /** @type {string} */ (t.location);
+      const undead = /** @type {string} */ (factionOfArchetype(state, 'undead'));
+      const n = (t.from ?? []).filter((l) => l === loc).length;
+      state.supply[undead] -= n;
+      addTokens(state, loc, undead, n);
+      for (let i = 0; i < n; i++) placeOne(state, pid, undead, loc);
+      logLine(state, `${pid}: ${card.name}: ${n} ${names(undead)} rise in the fight at ${lname(loc)}.`);
+      break;
+    }
     case 'plough': {
       // Every side leaves by half, rounded up, through its own exits; 1 sway where each faction lands.
       const loc = /** @type {string} */ (t.location);
@@ -1461,7 +1490,7 @@ function act(state, pid, card, t) {
       takeTokens(state, start, f, n);
       placeOne(state, pid, f, start);
       for (const l of crashes ? path.slice(0, -1) : path) {
-        const k = factionsAt(state, l).length === 2 ? freeOf(state, l, f) : tokensOf(state, l, f); // from a fight: as much as may leave (D22)
+        const k = factionsAt(state, l).length >= 2 ? freeOf(state, l, f) : tokensOf(state, l, f); // from a fight: as much as may leave (D22)
         takeTokens(state, l, f, k);
         n += k;
         placeOne(state, pid, f, l);
@@ -1967,6 +1996,7 @@ export function pendingDestinations(state, pend) {
     case 'threat': return t.to ? [t.to] : [];
     case 'herd': return (t.path ?? []).filter((l) => l !== '__stop');
     case 'well': return t.location ? [t.location] : [];
+    case 'raise': return t.location ? [t.location] : [];
     case 'plough': return [...new Set((t.from ?? []).filter((l) => l !== '__stop'))];
     case 'rejoin': {
       if (!t.location || !t.faction || !('factions' in state)) return [];
@@ -2293,7 +2323,7 @@ export function resolveFight(state, loc) {
 }
 
 /** The locations that will fight at round end as things stand: contested, not scorched (a Gate's ends together). @param {GameState} state */
-export const fightsDue = (state) => LOCATION_IDS.filter((loc) => !state.board[loc].scorched && factionsAt(state, loc).length === 2);
+export const fightsDue = (state) => LOCATION_IDS.filter((loc) => !state.board[loc].scorched && factionsAt(state, loc).length >= 2);
 
 /**
  * A location's fight. A Gate's two ends fight once, as one (joinedFight), and the Gate closes; a location with no
@@ -2301,7 +2331,7 @@ export const fightsDue = (state) => LOCATION_IDS.filter((loc) => !state.board[lo
  * @param {GameState} state @param {string} loc
  */
 function fightAt(state, loc) {
-  if (state.board[loc].scorched || factionsAt(state, loc).length !== 2) return;
+  if (state.board[loc].scorched || factionsAt(state, loc).length < 2) return;
   const g = gateOf(state, loc);
   if (g) joinedFight(state, loc, g);
   else fight(state, loc);
@@ -2363,7 +2393,7 @@ function joinedFight(state, a, b) {
  */
 function fight(state, loc, joined = undefined) {
   const place = state.board[loc];
-  const [a, b] = factionsAt(state, loc);
+  const sides = factionsAt(state, loc);
   const name = joined?.name ?? locationById(loc).name;
   if (place.truce) { logLine(state, `  ${name}: a truce; no fight this round.`); return; } // test card (round 15)
   // Hidden tokens flip and take part (IN1); a Gate's fight takes both ends' (designer, 2026-10-17).
@@ -2373,19 +2403,21 @@ function fight(state, loc, joined = undefined) {
   /** The real token with this effect, if one flipped here. @param {string} id */
   const tokenWith = (id) => tokens.find((tk) => tk.card === id) ?? null;
   const has = (/** @type {string} */ id) => !!tokenWith(id);
-  const na = place.tokens[a], nb = place.tokens[b];
   // Link the Swarm (test card, round 20): the linked faction counts its tokens next door too, for who wins.
   const swarm = place.swarm === true ? factionOfArchetype(state, 'sentients') : place.swarm || null;
   const next = (/** @type {string} */ f) => (f === swarm ? (joined?.near ?? adj(state, loc)).reduce((n, l) => n + tokensOf(state, l, f), 0) : 0);
-  const sa = na + next(a), sb = nb + next(b);
+  // Strength of every side: two, or three after Raise the Dead (designer, 2026-10-18).
+  const strength = Object.fromEntries(sides.map((f) => [f, place.tokens[f] + next(f)]));
+  const ranked = sides.slice().sort((x, y) => strength[y] - strength[x]);
+  const top = ranked.filter((f) => strength[f] === strength[ranked[0]]);
   // Install a Backdoor (test card, round 20): counted on the Sentients here as the fight starts.
   const hacked = place.backdoor?.length ? tokensOf(state, loc, /** @type {string} */ (factionOfArchetype(state, 'sentients'))) : 0;
-  const aligned = [a, b].find((f) => [loc, ...(joined ? [joined.other] : [])].some((l) => archetypeOf(f) === alignmentOf(l)));
-  const trueTie = has('house-fire') || (sa === sb && !aligned);
+  const aligned = top.find((f) => [loc, ...(joined ? [joined.other] : [])].some((l) => archetypeOf(f) === alignmentOf(l)));
+  const trueTie = has('house-fire') || (top.length > 1 && !aligned);
+  const wipe = () => { for (const f of sides) state.supply[f] += place.tokens[f]; };
   if (trueTie && place.wake) {
     // Wake the Dead (test card, round 18): no scorching; both sides go back to their supplies.
-    state.supply[a] += na;
-    state.supply[b] += nb;
+    wipe();
     for (const [pid, n] of Object.entries(place.sway)) state.players[pid].supply += n;
     place.tokens = {};
     place.sway = {};
@@ -2394,35 +2426,37 @@ function fight(state, loc, joined = undefined) {
   }
   if (trueTie) {
     // TF1 + TM1: both wiped, the location scorched, nothing rewarded; everything back to its supply.
-    state.supply[a] += na;
-    state.supply[b] += nb;
+    wipe();
     for (const [pid, n] of Object.entries(place.sway)) state.players[pid].supply += n;
     place.tokens = {};
     place.sway = {};
     place.scorched = true;
-    logLine(state, `  ${name}: a true tie. Both sides are wiped out and ${name} is scorched.`);
+    logLine(state, `  ${name}: a true tie. ${sides.length > 2 ? 'Every side is' : 'Both sides are'} wiped out and ${name} is scorched.`);
     return;
   }
-  let winner, loser;
-  if (sa === sb) {
-    winner = /** @type {string} */ (aligned);
-    loser = winner === a ? b : a;
-  } else [winner, loser] = sa > sb ? [a, b] : [b, a];
-  if (has('invert') && sa !== sb) [winner, loser] = [loser, winner]; // test card (round 12): the smaller group wins
+  let winner = top.length > 1 ? /** @type {string} */ (aligned) : ranked[0];
+  // Invert the Pentagram (test card, round 12): the smaller group wins (the smallest, if one side is).
+  const bottom = ranked.filter((f) => strength[f] === strength[ranked[ranked.length - 1]]);
+  if (has('invert') && bottom.length === 1 && strength[bottom[0]] !== strength[ranked[0]]) winner = bottom[0];
+  const losers = sides.filter((f) => f !== winner);
+  const loser = losers.slice().sort((x, y) => place.tokens[y] - place.tokens[x])[0]; // the larger loser
+  const lost = Object.fromEntries(losers.map((f) => [f, place.tokens[f]])); // every loser loses everything (FR5)
   const nl = place.tokens[loser];
-  const loserLoss = nl; // the loser always loses everything (FR5)
+  // The winner loses half the loser's number; in a three-way fight, half the larger loser's (designer, 2026-10-18).
   let winnerLoss = Math.max(1, Math.floor(nl / 2));
   if (has('silver-bullets')) winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
   if (has('salt-burn')) winnerLoss = place.tokens[winner];
   if (has('force-field')) winnerLoss = 0; // test card (round 8)
   winnerLoss += (('bounties' in state && state.bounties) || []).filter((f) => f === winner).length; // Put a Bounty On It (test card, round 19): 1 more for each bounty
   winnerLoss = Math.min(winnerLoss, place.tokens[winner]);
-  place.tokens[loser] -= loserLoss;
+  for (const f of losers) place.tokens[f] -= lost[f];
   place.tokens[winner] -= winnerLoss;
-  for (const f of [winner, loser]) if (place.tokens[f] <= 0) delete place.tokens[f];
-  logLine(state, `  ${name}: ${factionById(winner).name} beat ${factionById(loser).name}; casualties ${loserLoss} and ${winnerLoss}.`);
-  // Trophies (TD1): bigger pile to the leader, smaller to the runner-up.
-  const piles = [{ faction: loser, n: loserLoss }, { faction: winner, n: winnerLoss }].filter((x) => x.n > 0).sort((x, y) => y.n - x.n);
+  for (const f of sides) if (place.tokens[f] <= 0) delete place.tokens[f];
+  logLine(state, `  ${name}: ${factionById(winner).name} beat ${losers.map((f) => factionById(f).name).join(' and ')}; casualties ${losers.map((f) => lost[f]).join(', ')} and ${winnerLoss}.`);
+  // Trophies (TD1): bigger pile to the leader, smaller to the runner-up; with three piles, the leader takes the two larger (designer, 2026-10-18).
+  const piles = [...losers.map((f) => ({ faction: f, n: lost[f] })), { faction: winner, n: winnerLoss }].filter((x) => x.n > 0).sort((x, y) => y.n - x.n);
+  /** Who takes the i-th largest of n piles: the runner-up the smallest, the leader the rest. @param {number} i @param {number} n */
+  const placeFor = (i, n) => (n > 1 && i === n - 1 ? 1 : 0);
   if (has('livestream')) for (const pile of piles) { // test card (round 11): each pile doubled from its faction's supply
     const extra = Math.min(pile.n, state.supply[pile.faction]);
     state.supply[pile.faction] -= extra;
@@ -2432,7 +2466,7 @@ function fight(state, loc, joined = undefined) {
     // Wake the Dead (test card, round 18): the loser's casualties rise as Undead here instead of becoming trophies.
     const undead = state.factions.find((f) => archetypeOf(f) === 'undead');
     const lp = piles.find((p) => p.faction === loser);
-    if (undead && lp) {
+    if (undead && lp && !sides.includes(undead)) {
       const rise = Math.min(lp.n, state.supply[undead]);
       state.supply[undead] -= rise;
       state.supply[loser] += lp.n;
@@ -2463,12 +2497,12 @@ function fight(state, loc, joined = undefined) {
     if (extra && owed) { extra.n -= owed; give({ faction: winner, n: owed }, bullets.owner); }
     const order = piles.filter((p) => p.n > 0).sort((x, y) => y.n - x.n);
     if (ranking.involved === 1 && collectors[0]) for (const pile of order) give(pile, collectors[0]);
-    else order.forEach((pile, i) => give(pile, collectors[i] ?? null));
+    else order.forEach((pile, i) => give(pile, collectors[placeFor(i, order.length)] ?? null));
   } else if (trap) for (const pile of piles) give(pile, trap.owner); // Set a Trap (A, designer): the trap's owner takes every pile
   else if (ranking.involved === 1 && collectors[0]) {
     for (const pile of piles) give(pile, collectors[0]); // UP1
   } else {
-    piles.forEach((pile, i) => give(pile, collectors[i] ?? null));
+    piles.forEach((pile, i) => give(pile, collectors[placeFor(i, piles.length)] ?? null));
   }
   // Sway after the fight (AF3 adjusted, AS1).
   const leader = collectors[0];
@@ -2873,6 +2907,15 @@ function nextShape(state, pid, cardId, t) {
       if (!more.length && to.length >= 2) return { kind: 'done' };
       return { kind: 'location', key: 'from', options: more, optional: to.length >= 2 };
     }
+    case 'raise': {
+      const st = /** @type {GameState} */ (state);
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => raiseRoom(st, pid, l).max > 0) };
+      const from = t.from ?? [];
+      if (from.includes('__stop')) return { kind: 'done' };
+      const n = from.length, { max } = raiseRoom(st, pid, t.location);
+      if (n >= max) return { kind: 'done' };
+      return { kind: 'location', key: 'from', options: [t.location], optional: n >= 1, left: max - n };
+    }
     case 'plough': {
       const st = /** @type {GameState} */ (state);
       const fightOk = (/** @type {string} */ l) => !st.board[l].scorched && factionsAt(st, l).length >= 2 && (mode === 'location' ? suitLocations(card).includes(l) : factionsAt(st, l).includes(/** @type {string} */ (sf)));
@@ -3220,6 +3263,7 @@ export function describeTarget(cardId, t) {
     case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
     case 'burst': return `${F(t.faction)} at ${L(t.location)} scatter to ${(t.from ?? []).filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
+    case 'raise': return `${(t.from ?? []).filter((l) => l !== '__stop').length} of the dead rise at ${L(t.location)}${how}`;
     case 'plough': return `the fight at ${L(t.location)} scatters to ${[...new Set((t.from ?? []).filter((l) => l !== '__stop'))].map(L).join(', ')}${how}`;
     case 'rejoin': { const x = (t.from ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} at ${L(t.location)} scatter to their own${x.length ? `, extras to ${x.map(L).join(', ')}` : ''}${how}`; }
     case 'chase': { const p = (t.path ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} chased from ${L(t.location)} to ${L(p[p.length - 1])}${p.length > 1 ? ` via ${p.slice(0, -1).map(L).join(', ')}` : ''}${how}`; }
