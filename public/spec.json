@@ -1480,6 +1480,20 @@
           "round": 21
         },
         {
+          "id": "take-control",
+          "name": "Take Control",
+          "suit": "sentients",
+          "slot": "signature",
+          "sway": 4,
+          "action": "control",
+          "text": "The AV Club takes control of the machines and turns them on the enemy. At the target fight, spend your sway there, 1 for each, to cut down up to the card’s sway of a faction’s tokens there: you take them as trophies, and the sway spent goes back to your supply. Target: the fight, then the faction hit.",
+          "readings": {
+            "location": "any fight at a ⏏ location; you choose the faction hit.",
+            "faction": "any fight the Sentients are in; their rival is hit."
+          },
+          "round": 21
+        },
+        {
           "id": "wake-the-dead",
           "name": "Wake the Dead",
           "suit": "undead",

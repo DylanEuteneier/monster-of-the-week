@@ -796,6 +796,8 @@ function renderTargeting(cardId) {
     : card.action === 'burst' && choice.kind === 'location' && choice.key === 'from' ? 'Pick where a token bursts to'
     : card.action === 'rejoin' && choice.kind === 'location' && choice.key === 'from' ? 'Pick a group to get one more token'
     : card.action === 'swarm' && choice.kind === 'location' && choice.key === 'path' ? `Pick a group next door to link in · up to ${choice.left} more`
+    : card.action === 'control' && choice.kind === 'location' && choice.key === 'from' ? `Spend 1 of your sway there to cut down one more · up to ${choice.left} more`
+    : card.action === 'control' && choice.kind === 'faction' ? 'Pick the faction the machines turn on'
     : card.action === 'raise' && choice.kind === 'location' && choice.key === 'from' ? `Raise one more of the dead · up to ${choice.left} more`
     : card.action === 'plough' && choice.kind === 'faction' && choice.key === 'payer' ? 'Pick which side pays at the fight'
     : card.action === 'plough' && choice.kind === 'location' && choice.key === 'from' ? `Pick an exit for the next token · ${choice.left} left`

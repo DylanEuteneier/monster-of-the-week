@@ -684,6 +684,37 @@ test('Draw Them Away: a lone group bursts, 1 token to each chosen neighbour, the
   assert.ok(checkTarget(s, 'ann', cardById('draw-away'), t)); // 4 locations, where it leaves included, 3 sway: can't play
 });
 
+test('Take Control (⏏ signature): spend your sway at a fight to cut down a faction there, taking them as trophies (designer, 2026-10-18)', () => {
+  const s = clear(newGame());
+  const sent = /** @type {string} */ (factionOfArchetype(s, 'sentients'));
+  const [f, g] = s.factions.filter((x) => x !== sent);
+  const hub = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'sentients')?.id);
+  const away = /** @type {string} */ (spec.locations.find((l) => l.archetype !== 'sentients')?.id);
+  s.players.ann.hand = ['take-control', 'fresh-meat', 'track-snow']; // the card's sway: 3 (D24)
+  // Faction reading: a fight the Sentients are in; their rival is hit.
+  s.board[away].tokens = { [sent]: 2, [f]: 5 };
+  s.board[away].sway = { ann: 4, bob: 2 };
+  const t = { mode: /** @type {const} */ ('faction'), location: away, faction: f, from: [away, away, away] };
+  assert.equal(checkTarget(s, 'ann', cardById('take-control'), t), null);
+  assert.ok(checkTarget(s, 'ann', cardById('take-control'), { ...t, from: [away, away, away, away] })); // up to the card's sway
+  assert.ok(checkTarget(s, 'ann', cardById('take-control'), { ...t, faction: sent })); // not the Sentients themselves
+  const after = previewTarget(s, 'ann', 'take-control', t);
+  assert.deepEqual(after.board[away].tokens, { [sent]: 2, [f]: 2 });
+  assert.equal(after.players.ann.trophies[f], 3);
+  assert.equal(after.board[away].sway.ann, 1); // 1 of your sway there for each
+  assert.equal(after.players.ann.supply, s.players.ann.supply + 3); // back to your supply
+  // Wiping the rival out is allowed (designer).
+  s.board[away].tokens = { [sent]: 2, [f]: 2 };
+  assert.equal(checkTarget(s, 'ann', cardById('take-control'), { ...t, from: [away, away] }), null);
+  // Location reading: any fight at a ⏏ location, any faction there; you need sway there to spend.
+  s.board[hub].tokens = { [f]: 3, [g]: 3 };
+  const loc = { mode: /** @type {const} */ ('location'), location: hub, faction: g, from: [hub] };
+  assert.ok(checkTarget(s, 'ann', cardById('take-control'), loc));
+  s.board[hub].sway = { ann: 1 };
+  assert.equal(checkTarget(s, 'ann', cardById('take-control'), loc), null);
+  assert.ok(checkTarget(s, 'ann', cardById('take-control'), { ...loc, location: away })); // not a ⏏ location
+});
+
 test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-way fight pays the leader the two larger piles (designer, 2026-10-18)', () => {
   const s = clear(newGame());
   const dead = /** @type {string} */ (factionOfArchetype(s, 'undead'));

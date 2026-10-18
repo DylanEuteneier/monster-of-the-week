@@ -730,6 +730,21 @@ const swarmFaction = (state, t) => (t.mode === 'location' ? t.faction : factionO
 const swarmSpots = (state, hub, f) => adj(state, hub).filter((l) => !state.board[l].scorched && tokensOf(state, l, f) > 0);
 
 /**
+ * Take Control (⏏ signature, working name; designer 2026-10-18): how many of `f`'s tokens you may turn into trophies at
+ * `loc`: 1 of your sway there for each, up to the card's sway (D24) and the tokens there. Location reading: any fight
+ * at a ⏏ location, any faction there hit. Faction reading: any fight the Sentients are in, a rival of theirs hit.
+ * @param {GameState} state @param {string} pid @param {Card} card @param {Target} t
+ */
+function controlRoom(state, pid, card, t) {
+  const loc = t.location, f = t.faction, sent = factionOfArchetype(state, 'sentients');
+  if (!loc || !f || !state.board[loc] || state.board[loc].scorched) return 0;
+  const here = factionsAt(state, loc);
+  if (here.length < 2 || !here.includes(f)) return 0;
+  if (t.mode === 'location' ? !suitLocations(card).includes(loc) : !sent || !here.includes(sent) || f === sent) return 0;
+  return Math.min(swayFor(state, pid, card.id), state.board[loc].sway[pid] ?? 0, tokensOf(state, loc, f));
+}
+
+/**
  * Wake the Dead (☾ signature, designer 2026-10-18; first named Raise the Dead): how many of the dead you may raise at
  * `loc`, up to the card's sway (D24), your standing with the Undead and their supply. Location reading: any ☾
  * location: empty, a lone group (a fight with the Undead), or a fight without them (a three-way fight, the only way one
@@ -1081,6 +1096,13 @@ function checkShape(state, pid, card, t) {
       if (to.length < 2 || new Set(to).size !== to.length || to.some((l) => !spots.includes(l))) return 'It bursts to at least two neighbouring locations it can enter, 1 token each.';
       if (to.length > tokensOf(state, loc, f)) return 'One token to each: not more locations than tokens.';
       return swayRequired(state) && (state.players[pid].standing[f] ?? 0) < to.length + 1 ? 'You need the sway to pay where it leaves and at every location a token reaches (all or nothing).' : null;
+    }
+    case 'control': {
+      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      const max = controlRoom(state, pid, card, t);
+      if (max <= 0) return t.mode === 'location' ? 'Choose a fight at a ⏏ location where you have sway, then the faction hit.' : 'Choose a fight the Sentients are in where you have sway, then their rival.';
+      const n = (t.from ?? []).filter((l) => l === t.location).length;
+      return n >= 1 && n <= max ? null : `Turn 1 to ${max} tokens into trophies: 1 of your sway there for each, up to the card's sway.`;
     }
     case 'raise': {
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
@@ -1446,6 +1468,18 @@ function act(state, pid, card, t) {
       for (const l of to) n += move(state, pid, f, loc, l, 1, placed);
       placeOne(state, pid, f, loc);
       logLine(state, `${pid}: ${card.name}: the ${names(f)} at ${lname(loc)} scatter${n ? ` to ${to.map(lname).join(', ')}` : ''}.`);
+      break;
+    }
+    case 'control': {
+      // The machines turn on their rival: each token falls as your trophy, paid with 1 of your sway there (back to your supply).
+      const loc = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
+      const n = (t.from ?? []).filter((l) => l === loc).length;
+      takeTokens(state, loc, f, n);
+      state.players[pid].trophies[f] += n;
+      state.board[loc].sway[pid] -= n;
+      if (state.board[loc].sway[pid] <= 0) delete state.board[loc].sway[pid];
+      state.players[pid].supply += n;
+      logLine(state, `${pid}: ${card.name}: the machines cut down ${n} ${names(f)} at ${lname(loc)}.`);
       break;
     }
     case 'raise': {
@@ -2031,6 +2065,7 @@ export function pendingDestinations(state, pend) {
     case 'threat': return t.to ? [t.to] : [];
     case 'herd': return (t.path ?? []).filter((l) => l !== '__stop');
     case 'well': return t.location ? [t.location] : [];
+    case 'control': return [];
     case 'raise': return t.location ? [t.location] : [];
     case 'plough': return [...new Set((t.from ?? []).filter((l) => l !== '__stop'))];
     case 'rejoin': {
@@ -2942,6 +2977,17 @@ function nextShape(state, pid, cardId, t) {
       if (!more.length && to.length >= 2) return { kind: 'done' };
       return { kind: 'location', key: 'from', options: more, optional: to.length >= 2 };
     }
+    case 'control': {
+      const st = /** @type {GameState} */ (state);
+      const hits = (/** @type {string} */ l) => factionsAt(st, l).filter((f) => controlRoom(st, pid, card, { mode, location: l, faction: f }) > 0);
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => hits(l).length > 0) };
+      if (!t.faction) return { kind: 'faction', key: 'faction', options: hits(t.location) };
+      const from = t.from ?? [];
+      if (from.includes('__stop')) return { kind: 'done' };
+      const max = controlRoom(st, pid, card, t);
+      if (from.length >= max) return { kind: 'done' };
+      return { kind: 'location', key: 'from', options: [t.location], optional: from.length >= 1, left: max - from.length };
+    }
     case 'raise': {
       const st = /** @type {GameState} */ (state);
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => raiseRoom(st, pid, l, mode).max > 0) };
@@ -3307,6 +3353,7 @@ export function describeTarget(cardId, t) {
     case 'backdoor': return `at ${L(t.location)}${how}`;
     case 'broadcast': return `${F(t.faction)} from ${(t.from ?? []).map(L).join(' and ')} into ${L(t.location)}${how}`;
     case 'burst': return `${F(t.faction)} at ${L(t.location)} scatter to ${(t.from ?? []).filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
+    case 'control': return `${(t.from ?? []).filter((l) => l !== '__stop').length} ${F(t.faction)} cut down at ${L(t.location)}${how}`;
     case 'raise': return `${(t.from ?? []).filter((l) => l !== '__stop').length} of the dead rise at ${L(t.location)}${how}`;
     case 'plough': return `the fight at ${L(t.location)} scatters to ${[...new Set((t.from ?? []).filter((l) => l !== '__stop'))].map(L).join(', ')}${how}`;
     case 'rejoin': { const x = (t.from ?? []).filter((l) => l !== '__stop'); return `${F(t.faction)} at ${L(t.location)} scatter to their own${x.length ? `, extras to ${x.map(L).join(', ')}` : ''}${how}`; }
