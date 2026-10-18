@@ -667,9 +667,9 @@ test('The Big Chase: a lone group runs a chase, leaving 1 token and 1 sway at ea
 test('Draw Them Away: a lone group bursts, 1 token to each chosen neighbour, the rest stay (designer, 2026-10-17)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
-  const noct = /** @type {string} */ (factionOfArchetype(s, 'nocturnals'));
-  const [f, g] = s.factions.filter((x) => x !== noct);
-  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals' && map[l.id].adjacent.length >= 3)?.id);
+  const dead = /** @type {string} */ (factionOfArchetype(s, 'undead'));
+  const [f, g] = s.factions.filter((x) => x !== dead);
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'undead' && map[l.id].adjacent.length >= 3)?.id);
   const [a, b, c] = map[loc].adjacent;
   s.board[loc].tokens = { [f]: 4 };
   s.board[c].tokens = { [g]: 2 };

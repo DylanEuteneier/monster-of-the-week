@@ -705,7 +705,7 @@ const gateEnd = (state, card, loc) => !!loc && !!state.board[loc] && !state.boar
 const factionsAcross = (state, a, b) => [...new Set([...factionsAt(state, a), ...factionsAt(state, b)])];
 
 /**
- * Draw Them Away (◐ shift, designer 2026-10-17; was Crash the Party, then Set Off the Fireworks): the neighbours a bursting group of `f` at `loc` can send a token to:
+ * Draw Them Away (☾ shift, designer 2026-10-17; was the ◐ shift Crash the Party, then Set Off the Fireworks): the neighbours a bursting group of `f` at `loc` can send a token to:
  * ones it can enter, not scorched; Lock Down's borders hold.
  * @param {GameState} state @param {string} loc @param {string} f
  */
@@ -1006,7 +1006,7 @@ function checkShape(state, pid, card, t) {
     case 'burst': {
       const loc = t.location, f = t.faction, sf = suitFaction(state, card);
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
-      if (!loc || !f || !state.board[loc] || loneAt(state, loc) !== f || (t.mode === 'location' ? !suitLocations(card).includes(loc) : f !== sf)) return t.mode === 'location' ? 'Choose a lone group at a ◐ location.' : 'Choose a lone Nocturnal group.';
+      if (!loc || !f || !state.board[loc] || loneAt(state, loc) !== f || (t.mode === 'location' ? !suitLocations(card).includes(loc) : f !== sf)) return t.mode === 'location' ? 'Choose a lone group at a ☾ location.' : 'Choose a lone Undead group.';
       const to = (t.from ?? []).filter((l) => l !== '__stop');
       const spots = burstSpots(state, loc, f);
       if (to.length < 2 || new Set(to).size !== to.length || to.some((l) => !spots.includes(l))) return 'It bursts to at least two neighbouring locations it can enter, 1 token each.';
