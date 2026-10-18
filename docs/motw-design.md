@@ -28,6 +28,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
   - *Designer (2026-10-15):* a strike should feel like a climax: whole groups colliding is fine.
   - *Designer (2026-10-17):* strikes move existing tokens; they never add new ones (so no conversion).
   - *Designer (2026-10-17):* delaying the movement (declared now, moving later) isn't a fun mechanic.
+  - *Designer (2026-10-17):* the geometric movement cards in the pool (Crash-Land the Saucer's push chain, Hear the Banshee Wail, Chase Them Down the Slope, Read from the Book's leap, Lead the Horde's shove, Trade Souls' swap) aren't liked, high impact or not; direction and straight lines are not a gap to fill.
   - *◐ Nocturnal strike: Invite Them In* (designer: settled and built, 2026-10-15). All or nothing: without the full sway, it can't be played. The invitation reaches next door only.
     - *Location reading:* the target is an empty ◐ location. Two groups of different factions, each alone at a location next to it, come in whole. 3 sway: 1 at each location they left and 1 at the new fight, paid from standing with the factions moved (each at the location it left; the 1 at the fight from either, the player's choice).
     - *Faction reading:* the target is any location holding a lone group of another faction (the host), next to a lone Nocturnal group. The Nocturnals come in whole. 2 sway, from standing with the Nocturnals: 1 where they left and 1 at the new fight.
