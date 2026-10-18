@@ -664,7 +664,7 @@ test('The Big Chase: a lone group runs a chase, leaving 1 token and 1 sway at ea
   assert.ok(checkTarget(s, 'ann', cardById('big-chase'), t)); // never through a fight it isn't part of
 });
 
-test('Crash the Party: a lone group bursts, 1 token to each chosen neighbour, the rest stay (designer, 2026-10-17)', () => {
+test('Set Off the Fireworks: a lone group bursts, 1 token to each chosen neighbour, the rest stay (designer, 2026-10-17)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const noct = /** @type {string} */ (factionOfArchetype(s, 'nocturnals'));
@@ -675,13 +675,13 @@ test('Crash the Party: a lone group bursts, 1 token to each chosen neighbour, th
   s.board[c].tokens = { [g]: 2 };
   s.players.ann.standing[f] = 3;
   const t = { mode: /** @type {const} */ ('location'), location: loc, faction: f, from: [a, b, c] };
-  assert.equal(checkTarget(s, 'ann', cardById('crash-party'), t), null);
-  const after = previewTarget(s, 'ann', 'crash-party', t);
+  assert.equal(checkTarget(s, 'ann', cardById('fireworks'), t), null);
+  const after = previewTarget(s, 'ann', 'fireworks', t);
   assert.deepEqual([after.board[loc].tokens[f], after.board[a].tokens[f], after.board[b].tokens[f], after.board[c].tokens], [1, 1, 1, { [g]: 2, [f]: 1 }]);
   assert.deepEqual([a, b, c].map((l) => after.board[l].sway.ann), [1, 1, 1]);
-  assert.ok(checkTarget(s, 'ann', cardById('crash-party'), { ...t, from: [a] })); // at least two
+  assert.ok(checkTarget(s, 'ann', cardById('fireworks'), { ...t, from: [a] })); // at least two
   s.players.ann.standing[f] = 2;
-  assert.ok(checkTarget(s, 'ann', cardById('crash-party'), t)); // 3 locations, 2 sway: can't play
+  assert.ok(checkTarget(s, 'ann', cardById('fireworks'), t)); // 3 locations, 2 sway: can't play
 });
 
 test('Cut the Powerlines: a group rejoins its kin 1 at a time round them all; from a fight, exactly half (designer, 2026-10-17)', () => {

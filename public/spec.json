@@ -1480,13 +1480,13 @@
           "round": 21
         },
         {
-          "id": "crash-party",
-          "name": "Crash the Party",
+          "id": "fireworks",
+          "name": "Set Off the Fireworks",
           "suit": "nocturnals",
           "slot": "shift",
           "sway": 3,
           "action": "burst",
-          "text": "The Slayerettes crash the nest. A lone group bursts apart: 1 token to each neighbouring location it can enter, as many as you choose (at least 2); the rest stay. Place 1 sway at each location a token reaches, from your standing with that faction. All of it, or it can’t be played. Target: the group.",
+          "text": "The Slayerettes set off the fireworks over the nest, and in the commotion a lone group bolts in every direction: 1 token to each neighbouring location it can enter, as many as you choose (at least 2); the rest stay. Place 1 sway at each location a token reaches, from your standing with that faction. All of it, or it can’t be played. Target: the group.",
           "readings": {
             "location": "a lone group at a ◐ location.",
             "faction": "a lone Nocturnal group anywhere."
