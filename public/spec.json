@@ -10,7 +10,7 @@
     "notes": "Seat limits are decision D3 (3.16). Rules: the first draft (Appendix G). Cards: Set v2 (H.8) plus scaffold placeholders for the six extras (H.6). Numbers: first-draft guesses (G.7), each a variant. Map: the prototype board, layout D (testing only)."
   },
   "constants": {
-    "coreDeck": ["invite-in", "gate", "hack-targeting", "bait-trail", "ritual", "draw-away", "big-chase", "cut-powerlines", "plough", "light-cross", "wake-the-dead", "take-control", "standin-nocturnals", "standin-scifi", "standin-demonic", "rally", "dig-in", "shift-bet", "spread-word", "pull-back", "underdog"],
+    "coreDeck": ["invite-in", "gate", "hack-targeting", "bait-trail", "ritual", "draw-away", "big-chase", "cut-powerlines", "plough", "light-cross", "wake-the-dead", "take-control", "standin-nocturnals", "standin-scifi", "spill-blood", "rally", "dig-in", "shift-bet", "spread-word", "pull-back", "underdog"],
     "handSize": {
       "3": 6,
       "4": 5,
@@ -1634,6 +1634,20 @@
           "readings": {
             "location": "any fight at a ⏏ location; you choose the faction hit.",
             "faction": "any fight the Sentients are in; their rival is hit."
+          },
+          "round": 21
+        },
+        {
+          "id": "spill-blood",
+          "name": "Spill Blood on the Altar",
+          "suit": "demonic",
+          "slot": "signature",
+          "sway": 4,
+          "action": "altar",
+          "text": "Father and the Flock spill blood on the altar. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, the winner loses as many as the loser. Target: the locations marked.",
+          "readings": {
+            "location": "⎈ locations; each mark paid by a faction there (an empty one: the Demons).",
+            "faction": "locations holding the Demons; paid by the Demons."
           },
           "round": 21
         },

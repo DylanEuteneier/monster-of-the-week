@@ -795,6 +795,8 @@ function renderTargeting(cardId) {
   const words = card.action === 'gate' && choice.kind === 'location' && gateWords[choice.key] ? gateWords[choice.key]
     : card.action === 'burst' && choice.kind === 'location' && choice.key === 'from' ? 'Pick where a token bursts to'
     : card.action === 'rejoin' && choice.kind === 'location' && choice.key === 'from' ? 'Pick a group to get one more token'
+    : card.action === 'altar' && choice.kind === 'group' ? 'Pick a location to mark, by the group whose standing pays · Skip to finish'
+    : card.action === 'altar' && choice.kind === 'location' ? 'Pick an empty ⎈ location to mark (the Demons pay) · Skip to finish'
     : card.action === 'swarm' && choice.kind === 'location' && choice.key === 'path' ? `Pick a group next door to link in · up to ${choice.left} more`
     : card.action === 'control' && choice.kind === 'location' && choice.key === 'from' ? `Spend 1 of your sway there to cut down one more · up to ${choice.left} more`
     : card.action === 'control' && choice.kind === 'faction' ? 'Pick the faction the machines turn on'

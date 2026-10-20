@@ -776,6 +776,36 @@ test('Take Control (⏏ signature): spend your sway at a fight to cut down a fac
   assert.ok(checkTarget(s, 'ann', cardById('take-control'), { ...loc, location: away })); // not a ⏏ location
 });
 
+test('Spill Blood on the Altar (⎈ signature): marks up to the hand, 1 sway each; at a marked fight the winner loses as many as the loser (designer, 2026-10-18)', () => {
+  const s = clear(newGame());
+  const demon = /** @type {string} */ (factionOfArchetype(s, 'demonic'));
+  const [f, g] = s.factions.filter((x) => x !== demon);
+  const arch = (/** @type {string} */ x) => spec.factions.find((y) => y.id === x)?.archetype;
+  const [x, y, z] = spec.locations.filter((l) => ![arch(f), arch(g), 'demonic'].includes(l.archetype)).map((l) => l.id);
+  s.board[x].tokens = { [demon]: 5, [f]: 3 };
+  s.board[y].tokens = { [demon]: 2 };
+  s.board[z].tokens = { [demon]: 1 };
+  s.players.ann.standing[demon] = 3;
+  s.players.ann.hand = ['spill-blood', 'fresh-meat']; // a signature's sway: the hand (D24): 2 marks
+  const t = { mode: /** @type {const} */ ('faction'), moves: [{ location: x, faction: demon, to: '' }, { location: y, faction: demon, to: '' }] };
+  assert.equal(checkTarget(s, 'ann', cardById('spill-blood'), t), null);
+  assert.ok(checkTarget(s, 'ann', cardById('spill-blood'), { ...t, moves: [...t.moves, { location: z, faction: demon, to: '' }] })); // 3 marks, 2 cards in hand
+  const after = { ...s, ...previewTarget(s, 'ann', 'spill-blood', t) };
+  assert.deepEqual([after.board[x].altar, after.board[y].altar, after.board[x].sway.ann, after.board[y].sway.ann, after.players.ann.standing[demon]], [true, true, 1, 1, 1]);
+  // 5 beat 3 at the marked fight: the winner loses 3, not 2.
+  assert.deepEqual(resolveFight(after, x).board[x].tokens, { [demon]: 2 });
+  // Location reading: an empty ⎈ location is marked from Demon standing; one held is paid by a faction there.
+  const q = clear(newGame());
+  const [home, other] = spec.locations.filter((l) => l.archetype === 'demonic').map((l) => l.id);
+  q.board[other].tokens = { [f]: 2 };
+  q.players.ann.standing[demon] = 1; q.players.ann.standing[f] = 1;
+  q.players.ann.hand = ['spill-blood', 'fresh-meat', 'broadcast'];
+  const lt = { mode: /** @type {const} */ ('location'), moves: [{ location: other, faction: f, to: '' }], from: [home] };
+  assert.equal(checkTarget(q, 'ann', cardById('spill-blood'), lt), null);
+  const la = previewTarget(q, 'ann', 'spill-blood', lt);
+  assert.deepEqual([la.board[home].altar, la.board[other].altar, la.players.ann.standing[demon], la.players.ann.standing[f]], [true, true, 0, 0]);
+});
+
 test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-way fight pays the leader the two larger piles (designer, 2026-10-18)', () => {
   const s = clear(newGame());
   const dead = /** @type {string} */ (factionOfArchetype(s, 'undead'));

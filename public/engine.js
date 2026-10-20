@@ -64,6 +64,7 @@ export { spec };
  * @property {string | boolean} [swarm]  Link the Swarm (test card, round 20): at this round's fight, this faction here counts its tokens next door too (true, from older games: the Sentients)
  * @property {string[]} [links]  Link the Swarm (⏏ signature, designer 2026-10-18): the neighbouring groups linked in; absent, every neighbour (older games)
  * @property {boolean} [lock]      Lock Down the Town (test card, round 19): this round, no group moves into or out of this location's region
+ * @property {boolean} [altar]     Spill Blood on the Altar (⎈ signature, designer 2026-10-18): at this round's fight here, the winner loses as many as the loser
  */
 
 /**
@@ -722,6 +723,26 @@ function placeOne(state, pid, f, loc) {
   state.board[loc].sway[pid] = (state.board[loc].sway[pid] ?? 0) + 1;
   state.events.push({ type: 'sway-placed', player: pid, faction: f, location: loc });
 }
+
+/**
+ * Spill Blood on the Altar (⎈ signature, designer 2026-10-18): the locations it can mark, each with the faction whose
+ * standing pays its 1 sway. Faction reading: any location holding the Demons, paid by them. Location reading: any ⎈
+ * location, paid by a faction there (the player's choice), or by the Demons when it is empty (`empty`).
+ * @param {GameState} state @param {Card} card @param {'location' | 'faction'} mode
+ */
+function altarMarks(state, card, mode) {
+  const sf = /** @type {string} */ (suitFaction(state, card));
+  const open = LOCATION_IDS.filter((l) => !state.board[l].scorched);
+  if (mode === 'faction') return { held: open.filter((l) => tokensOf(state, l, sf) > 0).map((l) => ({ location: l, faction: sf })), empty: /** @type {string[]} */ ([]) };
+  const spots = open.filter((l) => suitLocations(card).includes(l));
+  return { held: spots.flatMap((l) => factionsAt(state, l).map((f) => ({ location: l, faction: f }))), empty: spots.filter((l) => !factionsAt(state, l).length) };
+}
+
+/** The marks a Spill Blood target names: the held locations with their payers, then the empty ones (the Demons pay). @param {GameState} state @param {Card} card @param {Target} t */
+const altarChosen = (state, card, t) => [
+  ...(t.moves ?? []).filter((m) => m.location !== '__stop').map((m) => ({ location: m.location, faction: m.faction })),
+  ...(t.from ?? []).filter((l) => l !== '__stop').map((l) => ({ location: l, faction: /** @type {string} */ (suitFaction(state, card)) })),
+];
 
 /**
  * The Gate (designer, 2026-10-17): can this location be one of its ends? Any ↂ location, or any location holding the
@@ -1460,6 +1481,18 @@ function checkShape(state, pid, card, t) {
     }
     case 'tipoff': case 'bounty': return t.faction && state.factions.includes(t.faction) ? null : 'Choose a faction.';
     case 'lockdown': return t.location && state.board[t.location] && !state.board[t.location].lock ? null : 'Choose a location in a region not already locked down.';
+    case 'altar': {
+      if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
+      const { held, empty } = altarMarks(state, card, t.mode);
+      const marks = altarChosen(state, card, t);
+      if (!marks.length) return 'Mark at least one location.';
+      if (new Set(marks.map((m) => m.location)).size !== marks.length) return 'Each location takes one mark.';
+      if (marks.some((m) => !held.some((h) => h.location === m.location && h.faction === m.faction) && !(empty.includes(m.location) && (t.from ?? []).includes(m.location)))) return t.mode === 'location' ? 'Mark ⎈ locations, each paid by a faction there (an empty one by the Demons).' : 'Mark locations holding the Demons.';
+      if (marks.length > swayFor(state, pid, card.id)) return 'Mark no more locations than the card\'s sway: 1 sway on each.';
+      const owed = /** @type {Record<string, number>} */ ({});
+      for (const m of marks) owed[m.faction] = (owed[m.faction] ?? 0) + 1;
+      return swayRequired(state) && Object.entries(owed).some(([f, n]) => (state.players[pid].standing[f] ?? 0) < n) ? 'You need the standing for every mark: 1 sway on each (all or nothing).' : null;
+    }
     case 'swarm': {
       // Location reading: any faction at a ⏏ location (designer, 2026-10-15); faction reading: the Sentients, where they are.
       if ((t.mode !== 'location' && t.mode !== 'faction') || !t.location || !holdingSpots(state, card, t.mode).includes(t.location)) return 'Choose the target location.';
@@ -2084,6 +2117,13 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}.`);
       break;
     }
+    case 'altar': {
+      // Each marked location takes 1 sway, the bid; at its fight this round, the winner loses as many as the loser.
+      const marks = altarChosen(state, card, t);
+      for (const m of marks) { state.board[m.location].altar = true; placeOne(state, pid, m.faction, m.location); }
+      logLine(state, `${pid}: ${card.name}: blood on ${marks.map((m) => lname(m.location)).join(', ')}.`);
+      break;
+    }
     case 'swarm': {
       const f = /** @type {string} */ (swarmFaction(state, t));
       state.board[/** @type {string} */ (t.location)].swarm = f;
@@ -2157,6 +2197,7 @@ export function pendingDestinations(state, pend) {
     case 'standin-sig': return t.to ? [t.to] : [];
     case 'rally': case 'dig-in': case 'underdog': case 'shift-bet': case 'pull-back': case 'spread-word': return [];
     case 'control': return [];
+    case 'altar': return [];
     case 'raise': return t.location ? [t.location] : [];
     case 'plough': return [...new Set((t.from ?? []).filter((l) => l !== '__stop'))];
     case 'rejoin': {
@@ -2444,7 +2485,7 @@ function endOfPlay(state) {
   state.events = [];
   logLine(state, 'Everyone passed. Fights:');
   for (const loc of LOCATION_IDS) fightAt(state, loc);
-  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.gate; delete p.gateLoss; delete p.truce; delete p.double; delete p.wake; delete p.swarm; delete p.links; delete p.backdoor; delete p.lock; } // round 15, 18 and 19 test cards last the round
+  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.gate; delete p.gateLoss; delete p.truce; delete p.double; delete p.wake; delete p.swarm; delete p.links; delete p.backdoor; delete p.lock; delete p.altar; } // round 15, 18 and 19 test cards last the round
   state.tips = [];
   state.bounties = [];
   return beginGrowth(state);
@@ -2522,6 +2563,7 @@ function joinedFight(state, a, b) {
   A.sway = merge(A.sway, B.sway);
   if (B.swarm && !A.swarm) { A.swarm = B.swarm; if (B.links) A.links = B.links; }
   if (B.wake) A.wake = true;
+  if (B.altar) A.altar = true;
   if (B.truce) A.truce = true;
   if (B.double?.length) A.double = [...new Set([...(A.double ?? []), ...B.double])];
   if (B.backdoor?.length) A.backdoor = [...new Set([...(A.backdoor ?? []), ...B.backdoor])];
@@ -2606,6 +2648,7 @@ function fight(state, loc, joined = undefined) {
   // The winner loses half the loser's number; in a three-way fight, half the larger loser's (designer, 2026-10-18).
   // Rounded up (D25, designer 2026-10-18, for now); variant winnerLoss=down: rounded down, at least 1 (FR5 as first drafted).
   let winnerLoss = state.options.winnerLoss === 'down' ? Math.max(1, Math.floor(nl / 2)) : Math.ceil(nl / 2);
+  if (place.altar) winnerLoss = nl; // Spill Blood on the Altar (⎈ signature): as many as the (larger) loser
   if (has('silver-bullets')) winnerLoss += 2; // each group loses 2 more; the loser has none left to lose
   if (has('salt-burn')) winnerLoss = place.tokens[winner];
   if (has('force-field')) winnerLoss = 0; // test card (round 8)
@@ -3399,6 +3442,24 @@ function nextShape(state, pid, cardId, t) {
       return t.faction ? { kind: 'done' } : { kind: 'faction', options: state.factions.slice() };
     case 'lockdown':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].lock) };
+    case 'altar': {
+      // First the held locations (pick the group whose standing pays), then the empty ⎈ ones (the Demons pay).
+      const st = /** @type {GameState} */ (state);
+      const { held, empty } = altarMarks(st, card, mode);
+      const marks = altarChosen(st, card, t);
+      const cap = swayFor(state, pid, card.id);
+      const left = (/** @type {string} */ f) => !swayRequired(state) ? Infinity : (state.players[pid].standing[f] ?? 0) - marks.filter((m) => m.faction === f).length;
+      const free = (/** @type {string} */ l) => !marks.some((m) => m.location === l);
+      if (marks.length >= cap || (t.from ?? []).includes('__stop')) return { kind: 'done' };
+      const groupsDone = (t.moves ?? []).some((m) => m.location === '__stop') || (t.from ?? []).length > 0;
+      const empties = empty.filter((l) => free(l) && left(/** @type {string} */ (sf)) >= 1);
+      if (!groupsDone) {
+        const options = held.filter((h) => free(h.location) && left(h.faction) >= 1);
+        if (options.length) return { kind: 'group', key: 'move', options, optional: marks.length > 0 || empties.length > 0 };
+      }
+      if (!empties.length) return marks.length ? { kind: 'done' } : { kind: 'group', key: 'move', options: [] };
+      return { kind: 'location', key: 'from', options: empties, optional: marks.length > 0 };
+    }
     case 'swarm': {
       const linkable = (/** @type {string} */ l, /** @type {string} */ f) => swarmSpots(state, l, f).length > 0 && Math.min(swayFor(state, pid, card.id), state.players[pid].standing[f] ?? 0) >= 2;
       if (!t.location) return { kind: 'location', key: 'location', options: holdingSpots(state, card, mode).filter((l) => factionsAt(state, l).some((f) => (mode === 'location' || f === sf) && linkable(l, f))) };
@@ -3494,6 +3555,7 @@ export function describeTarget(cardId, t) {
     case 'surveil-supply': case 'raise-stakes': return `at ${L(t.location)}${how}`;
     case 'split-up': return `at ${(t.from ?? []).map(L).join(', ')}`;
     case 'wake-dead': return `at ${L(t.location)}${how}`;
+    case 'altar': return `blood on ${[...(t.moves ?? []).map((m) => m.location), ...(t.from ?? [])].filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
     case 'swarm': return `${t.mode === 'location' && t.faction ? `${F(t.faction)} ` : ''}at ${L(t.location)}${how}`;
     case 'hack': return `${F(t.faction)} at ${L(t.location)} to ${L(t.to)}${how}`;
     case 'tipoff': case 'bounty': return `on ${F(t.faction)}`;
@@ -3559,7 +3621,7 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: place.swarm, ...(place.links ? { links: place.links.slice() } : {}) } : {}), ...(place.gate ? { gate: place.gate, gateLoss: place.gateLoss } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}) }];
+      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: place.swarm, ...(place.links ? { links: place.links.slice() } : {}) } : {}), ...(place.gate ? { gate: place.gate, gateLoss: place.gateLoss } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}), ...(place.altar ? { altar: true } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),
