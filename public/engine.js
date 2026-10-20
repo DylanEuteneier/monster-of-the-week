@@ -65,6 +65,7 @@ export { spec };
  * @property {string[]} [links]  Link the Swarm (⏏ signature, designer 2026-10-18): the neighbouring groups linked in; absent, every neighbour (older games)
  * @property {boolean} [lock]      Lock Down the Town (test card, round 19): this round, no group moves into or out of this location's region
  * @property {boolean} [altar]     Spill Blood on the Altar (⎈ signature, designer 2026-10-18): at this round's fight here, the winner loses as many as the loser
+ * @property {string} [study]      Study the Bodies (ↂ signature, designer 2026-10-19): after this round's fight here, this player takes 1 of the winner's losses
  */
 
 /**
@@ -725,9 +726,10 @@ function placeOne(state, pid, f, loc) {
 }
 
 /**
- * Spill Blood on the Altar (⎈ signature, designer 2026-10-18): the locations it can mark, each with the faction whose
- * standing pays its 1 sway. Faction reading: any location holding the Demons, paid by them. Location reading: any ⎈
- * location, paid by a faction there (the player's choice), or by the Demons when it is empty (`empty`).
+ * Spill Blood on the Altar (⎈ signature, designer 2026-10-18) and Study the Bodies (ↂ, 2026-10-19): the locations
+ * they can mark, each with the faction whose standing pays its 1 sway. Faction reading: any location holding the suit's
+ * faction, paid by it. Location reading: any suit location, paid by a faction there (the player's choice), or by the
+ * suit's faction when it is empty (`empty`).
  * @param {GameState} state @param {Card} card @param {'location' | 'faction'} mode
  */
 function altarMarks(state, card, mode) {
@@ -738,7 +740,7 @@ function altarMarks(state, card, mode) {
   return { held: spots.flatMap((l) => factionsAt(state, l).map((f) => ({ location: l, faction: f }))), empty: spots.filter((l) => !factionsAt(state, l).length) };
 }
 
-/** The marks a Spill Blood target names: the held locations with their payers, then the empty ones (the Demons pay). @param {GameState} state @param {Card} card @param {Target} t */
+/** The marks a Spill Blood or Study the Bodies target names: the held locations with their payers, then the empty ones (the Demons pay). @param {GameState} state @param {Card} card @param {Target} t */
 const altarChosen = (state, card, t) => [
   ...(t.moves ?? []).filter((m) => m.location !== '__stop').map((m) => ({ location: m.location, faction: m.faction })),
   ...(t.from ?? []).filter((l) => l !== '__stop').map((l) => ({ location: l, faction: /** @type {string} */ (suitFaction(state, card)) })),
@@ -1481,13 +1483,13 @@ function checkShape(state, pid, card, t) {
     }
     case 'tipoff': case 'bounty': return t.faction && state.factions.includes(t.faction) ? null : 'Choose a faction.';
     case 'lockdown': return t.location && state.board[t.location] && !state.board[t.location].lock ? null : 'Choose a location in a region not already locked down.';
-    case 'altar': {
+    case 'altar': case 'study': {
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
       const { held, empty } = altarMarks(state, card, t.mode);
       const marks = altarChosen(state, card, t);
       if (!marks.length) return 'Mark at least one location.';
       if (new Set(marks.map((m) => m.location)).size !== marks.length) return 'Each location takes one mark.';
-      if (marks.some((m) => !held.some((h) => h.location === m.location && h.faction === m.faction) && !(empty.includes(m.location) && (t.from ?? []).includes(m.location)))) return t.mode === 'location' ? 'Mark ⎈ locations, each paid by a faction there (an empty one by the Demons).' : 'Mark locations holding the Demons.';
+      if (marks.some((m) => !held.some((h) => h.location === m.location && h.faction === m.faction) && !(empty.includes(m.location) && (t.from ?? []).includes(m.location)))) return t.mode === 'location' ? `Mark ${card.action === 'altar' ? '⎈' : 'ↂ'} locations, each paid by a faction there (an empty one by the suit's faction).` : 'Mark locations holding the suit\'s faction.';
       if (marks.length > swayFor(state, pid, card.id)) return 'Mark no more locations than the card\'s sway: 1 sway on each.';
       const owed = /** @type {Record<string, number>} */ ({});
       for (const m of marks) owed[m.faction] = (owed[m.faction] ?? 0) + 1;
@@ -2124,6 +2126,13 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name}: blood on ${marks.map((m) => lname(m.location)).join(', ')}.`);
       break;
     }
+    case 'study': {
+      // Each marked location takes 1 sway, the bid; after its fight this round, the player takes 1 of the winner's losses.
+      const marks = altarChosen(state, card, t);
+      for (const m of marks) { state.board[m.location].study = pid; placeOne(state, pid, m.faction, m.location); }
+      logLine(state, `${pid}: ${card.name}: the kids will study the bodies at ${marks.map((m) => lname(m.location)).join(', ')}.`);
+      break;
+    }
     case 'swarm': {
       const f = /** @type {string} */ (swarmFaction(state, t));
       state.board[/** @type {string} */ (t.location)].swarm = f;
@@ -2197,7 +2206,7 @@ export function pendingDestinations(state, pend) {
     case 'standin-sig': return t.to ? [t.to] : [];
     case 'rally': case 'dig-in': case 'underdog': case 'shift-bet': case 'pull-back': case 'spread-word': return [];
     case 'control': return [];
-    case 'altar': return [];
+    case 'altar': case 'study': return [];
     case 'raise': return t.location ? [t.location] : [];
     case 'plough': return [...new Set((t.from ?? []).filter((l) => l !== '__stop'))];
     case 'rejoin': {
@@ -2485,7 +2494,7 @@ function endOfPlay(state) {
   state.events = [];
   logLine(state, 'Everyone passed. Fights:');
   for (const loc of LOCATION_IDS) fightAt(state, loc);
-  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.gate; delete p.gateLoss; delete p.truce; delete p.double; delete p.wake; delete p.swarm; delete p.links; delete p.backdoor; delete p.lock; delete p.altar; } // round 15, 18 and 19 test cards last the round
+  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.gate; delete p.gateLoss; delete p.truce; delete p.double; delete p.wake; delete p.swarm; delete p.links; delete p.backdoor; delete p.lock; delete p.altar; delete p.study; } // round 15, 18 and 19 test cards last the round
   state.tips = [];
   state.bounties = [];
   return beginGrowth(state);
@@ -2564,6 +2573,7 @@ function joinedFight(state, a, b) {
   if (B.swarm && !A.swarm) { A.swarm = B.swarm; if (B.links) A.links = B.links; }
   if (B.wake) A.wake = true;
   if (B.altar) A.altar = true;
+  if (B.study && !A.study) A.study = B.study;
   if (B.truce) A.truce = true;
   if (B.double?.length) A.double = [...new Set([...(A.double ?? []), ...B.double])];
   if (B.backdoor?.length) A.backdoor = [...new Set([...(A.backdoor ?? []), ...B.backdoor])];
@@ -2678,6 +2688,17 @@ function fight(state, loc, joined = undefined) {
       place.tokens[undead] = (place.tokens[undead] ?? 0) + rise;
       piles.splice(piles.indexOf(lp), 1);
       logLine(state, `  ${name}: ${rise} of the fallen rise as ${factionById(undead).name}.`);
+    }
+  }
+  if (place.study) {
+    // Study the Bodies (ↂ signature): the player takes 1 of the winner's dead before the piles go out.
+    const wp = piles.find((p) => p.faction === winner);
+    if (wp && wp.n > 0) {
+      wp.n -= 1;
+      state.players[place.study].trophies[winner] += 1;
+      logLine(state, `  ${place.study} studies one of the ${factionById(winner).name} dead.`);
+      if (!wp.n) piles.splice(piles.indexOf(wp), 1);
+      piles.sort((x, y) => y.n - x.n);
     }
   }
   const ranking = rankAt(state, loc, hacked);
@@ -3442,7 +3463,7 @@ function nextShape(state, pid, cardId, t) {
       return t.faction ? { kind: 'done' } : { kind: 'faction', options: state.factions.slice() };
     case 'lockdown':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].lock) };
-    case 'altar': {
+    case 'altar': case 'study': {
       // First the held locations (pick the group whose standing pays), then the empty ⎈ ones (the Demons pay).
       const st = /** @type {GameState} */ (state);
       const { held, empty } = altarMarks(st, card, mode);
@@ -3555,6 +3576,7 @@ export function describeTarget(cardId, t) {
     case 'surveil-supply': case 'raise-stakes': return `at ${L(t.location)}${how}`;
     case 'split-up': return `at ${(t.from ?? []).map(L).join(', ')}`;
     case 'wake-dead': return `at ${L(t.location)}${how}`;
+    case 'study': return `bodies studied at ${[...(t.moves ?? []).map((m) => m.location), ...(t.from ?? [])].filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
     case 'altar': return `blood on ${[...(t.moves ?? []).map((m) => m.location), ...(t.from ?? [])].filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
     case 'swarm': return `${t.mode === 'location' && t.faction ? `${F(t.faction)} ` : ''}at ${L(t.location)}${how}`;
     case 'hack': return `${F(t.faction)} at ${L(t.location)} to ${L(t.to)}${how}`;
@@ -3621,7 +3643,7 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: place.swarm, ...(place.links ? { links: place.links.slice() } : {}) } : {}), ...(place.gate ? { gate: place.gate, gateLoss: place.gateLoss } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}), ...(place.altar ? { altar: true } : {}) }];
+      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: place.swarm, ...(place.links ? { links: place.links.slice() } : {}) } : {}), ...(place.gate ? { gate: place.gate, gateLoss: place.gateLoss } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}), ...(place.altar ? { altar: true } : {}), ...(place.study ? { study: place.study } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),
