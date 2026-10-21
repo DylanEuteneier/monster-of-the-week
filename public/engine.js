@@ -65,7 +65,7 @@ export { spec };
  * @property {string[]} [links]  Link the Swarm (⏏ signature, designer 2026-10-18): the neighbouring groups linked in; absent, every neighbour (older games)
  * @property {boolean} [lock]      Lock Down the Town (test card, round 19): this round, no group moves into or out of this location's region
  * @property {boolean} [altar]     Spill Blood on the Altar (⎈ signature, designer 2026-10-18): at this round's fight here, the winner loses as many as the loser
- * @property {string} [study]      Study the Bodies (ↂ signature, designer 2026-10-19): at this round's fight here, this player, if they lead, takes 1 of the winner's losses too
+ * @property {string} [study]      Study the Bodies (ↂ signature, designer 2026-10-19): at this round's fight here, this player, if they lead, takes 1 from the runner-up's pile too
  */
 
 /**
@@ -2692,16 +2692,14 @@ function fight(state, loc, joined = undefined) {
   }
   const ranking = rankAt(state, loc, hacked);
   const collectors = ranking.places;
-  if (place.study && collectors[0] === place.study) {
-    // Study the Bodies (ↂ signature): if the player leads here, they take 1 of the winner's dead before the piles go out (designer, 2026-10-20).
-    const wp = piles.find((p) => p.faction === winner);
-    if (wp && wp.n > 0) {
-      wp.n -= 1;
-      state.players[place.study].trophies[winner] += 1;
-      logLine(state, `  ${place.study} studies one of the ${factionById(winner).name} dead.`);
-      if (!wp.n) piles.splice(piles.indexOf(wp), 1);
-      piles.sort((x, y) => y.n - x.n);
-    }
+  if (place.study && collectors[0] === place.study && ranking.involved > 1 && piles.length > 1) {
+    // Study the Bodies (ↂ signature): if the player leads here, they also take 1 from the runner-up's pile, the
+    // smallest, before the piles go out (designer, 2026-10-20).
+    const rp = piles[piles.length - 1];
+    rp.n -= 1;
+    state.players[place.study].trophies[rp.faction] += 1;
+    logLine(state, `  ${place.study} studies one of the ${factionById(rp.faction).name} dead.`);
+    if (!rp.n) piles.pop();
   }
   /** @param {{ faction: string, n: number }} pile @param {string | null} pid */
   const give = (pile, pid) => {

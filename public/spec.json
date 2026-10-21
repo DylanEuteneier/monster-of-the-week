@@ -1644,7 +1644,7 @@
           "slot": "signature",
           "sway": 4,
           "action": "study",
-          "text": "The Kids on Bikes sneak in after the fight to study the bodies. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, if you lead there, you also take 1 of the winner’s losses as a trophy. Target: the locations marked.",
+          "text": "The Kids on Bikes sneak in after the fight to study the bodies. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, if you lead there, you also take 1 trophy from the runner-up’s pile. Target: the locations marked.",
           "readings": {
             "location": "ↂ locations; each mark paid by a faction there (an empty one: the Sci-Fi faction).",
             "faction": "locations holding the Sci-Fi faction; paid by them."

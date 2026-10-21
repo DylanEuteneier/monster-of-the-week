@@ -806,7 +806,7 @@ test('Spill Blood on the Altar (⎈ signature): marks up to the hand, 1 sway eac
   assert.deepEqual([la.board[home].altar, la.board[other].altar, la.players.ann.standing[demon], la.players.ann.standing[f]], [true, true, 0, 0]);
 });
 
-test('Study the Bodies (ↂ signature): marks like the Altar; at a marked fight, if you lead, you also take 1 of the winner\'s losses (designer, 2026-10-19, 2026-10-20)', () => {
+test('Study the Bodies (ↂ signature): marks like the Altar; at a marked fight, if you lead, you also take 1 from the runner-up\'s pile (designer, 2026-10-19, 2026-10-20)', () => {
   const s = clear(newGame());
   const sci = /** @type {string} */ (factionOfArchetype(s, 'scifi'));
   const [f] = s.factions.filter((x) => x !== sci);
