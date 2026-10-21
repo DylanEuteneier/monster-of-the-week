@@ -65,7 +65,7 @@ export { spec };
  * @property {string[]} [links]  Link the Swarm (⏏ signature, designer 2026-10-18): the neighbouring groups linked in; absent, every neighbour (older games)
  * @property {boolean} [lock]      Lock Down the Town (test card, round 19): this round, no group moves into or out of this location's region
  * @property {boolean} [altar]     Spill Blood on the Altar (⎈ signature, designer 2026-10-18): at this round's fight here, the winner loses as many as the loser
- * @property {string} [study]      Study the Bodies (ↂ signature, designer 2026-10-19): after this round's fight here, this player takes 1 of the winner's losses
+ * @property {string} [study]      Study the Bodies (ↂ signature, designer 2026-10-19): at this round's fight here, this player, if they lead, takes 1 of the winner's losses too
  */
 
 /**
@@ -2690,8 +2690,10 @@ function fight(state, loc, joined = undefined) {
       logLine(state, `  ${name}: ${rise} of the fallen rise as ${factionById(undead).name}.`);
     }
   }
-  if (place.study) {
-    // Study the Bodies (ↂ signature): the player takes 1 of the winner's dead before the piles go out.
+  const ranking = rankAt(state, loc, hacked);
+  const collectors = ranking.places;
+  if (place.study && collectors[0] === place.study) {
+    // Study the Bodies (ↂ signature): if the player leads here, they take 1 of the winner's dead before the piles go out (designer, 2026-10-20).
     const wp = piles.find((p) => p.faction === winner);
     if (wp && wp.n > 0) {
       wp.n -= 1;
@@ -2701,8 +2703,6 @@ function fight(state, loc, joined = undefined) {
       piles.sort((x, y) => y.n - x.n);
     }
   }
-  const ranking = rankAt(state, loc, hacked);
-  const collectors = ranking.places;
   /** @param {{ faction: string, n: number }} pile @param {string | null} pid */
   const give = (pile, pid) => {
     if (pid) {

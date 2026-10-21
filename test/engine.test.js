@@ -806,23 +806,27 @@ test('Spill Blood on the Altar (⎈ signature): marks up to the hand, 1 sway eac
   assert.deepEqual([la.board[home].altar, la.board[other].altar, la.players.ann.standing[demon], la.players.ann.standing[f]], [true, true, 0, 0]);
 });
 
-test('Study the Bodies (ↂ signature): marks like the Altar; after a marked fight you take 1 of the winner\'s losses before the piles go out (designer, 2026-10-19)', () => {
+test('Study the Bodies (ↂ signature): marks like the Altar; at a marked fight, if you lead, you also take 1 of the winner\'s losses (designer, 2026-10-19, 2026-10-20)', () => {
   const s = clear(newGame());
   const sci = /** @type {string} */ (factionOfArchetype(s, 'scifi'));
   const [f] = s.factions.filter((x) => x !== sci);
   const arch = (/** @type {string} */ x) => spec.factions.find((y) => y.id === x)?.archetype;
   const loc = /** @type {string} */ (spec.locations.find((l) => ![arch(f), 'scifi'].includes(l.archetype))?.id);
   s.board[loc].tokens = { [sci]: 6, [f]: 4 };
-  s.board[loc].sway = { bob: 3, cat: 2 }; // ann's bid makes 1
+  s.board[loc].sway = { ann: 2, cat: 2 }; // ann's bid makes 3: ann leads
   s.players.ann.standing[sci] = 2;
   s.players.ann.hand = ['study-bodies', 'fresh-meat'];
   const t = { mode: /** @type {const} */ ('faction'), moves: [{ location: loc, faction: sci, to: '' }] };
   assert.equal(checkTarget(s, 'ann', cardById('study-bodies'), t), null);
   const after = { ...s, ...previewTarget(s, 'ann', 'study-bodies', t) };
   assert.equal(after.board[loc].study, 'ann');
-  // 6 beat 4: the winner loses 2; ann takes 1 of them; bob (leader) takes the 4, cat (runner-up) the 1 left.
+  // 6 beat 4: the winner loses 2. ann leads: the 4, and 1 of the 2; cat, runner-up, the 1 left.
   const fought = resolveFight(after, loc);
-  assert.deepEqual([fought.players.ann.trophies[sci], fought.players.bob.trophies[f], fought.players.cat.trophies[sci]], [1, 4, 1]);
+  assert.deepEqual([fought.players.ann.trophies[f], fought.players.ann.trophies[sci], fought.players.cat.trophies[sci]], [4, 1, 1]);
+  // Not leading: nothing extra. bob leads with 5; ann (3) is runner-up and takes the 2 as usual.
+  after.board[loc].sway = { ...after.board[loc].sway, bob: 5 };
+  const lost = resolveFight(after, loc);
+  assert.deepEqual([lost.players.bob.trophies[f], lost.players.ann.trophies[sci]], [4, 2]);
 });
 
 test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-way fight pays the leader the two larger piles (designer, 2026-10-18)', () => {
