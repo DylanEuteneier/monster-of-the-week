@@ -814,6 +814,7 @@ function renderTargeting(cardId) {
     : card.action === 'control' && choice.kind === 'faction' ? 'Pick the faction the machines turn on'
     : card.action === 'raise' && choice.kind === 'location' && choice.key === 'from' ? `Raise one more of the dead · up to ${choice.left} more`
     : card.action === 'plough' && choice.kind === 'faction' && choice.key === 'payer' ? 'Pick which side pays at the fight'
+    : card.action === 'raise' && choice.kind === 'faction' && choice.key === 'payer' ? 'Pick whose standing pays for the dead (a faction there, or the Undead)'
     : card.action === 'plough' && choice.kind === 'location' && choice.key === 'from' ? `Pick an exit for the next token · ${choice.left} left`
     : choice.kind === 'split' ? `Send tokens: ${choice.left} left`
     : choice.kind === 'location' && choice.key === 'from' && card.action === 'move-sway' ? `Pick your sway to move · ${3 - (ui.target.from ?? []).filter((l) => l !== '__stop').length} left`

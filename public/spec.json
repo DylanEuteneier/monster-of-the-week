@@ -1431,10 +1431,10 @@
           "slot": "strike",
           "sway": 2,
           "action": "invite",
-          "text": "Two groups of different factions next door are invited into an empty location. You choose which of them pays at the fight. Target: where they’re invited.",
+          "text": "Two groups of different factions next door are invited into an empty location. Target: where they’re invited.",
           "readings": {
             "location": "an empty ◐ location; any two groups next to it.",
-            "faction": "a location held by a lone group of another faction, next to a Nocturnal group: only the Nocturnals come (1 sway where they left, 1 at the fight)."
+            "faction": "a location held by a lone group of another faction, next to a Nocturnal group: only the Nocturnals come."
           },
           "round": 21
         },
@@ -1445,7 +1445,7 @@
           "slot": "strike",
           "sway": 2,
           "action": "gate",
-          "text": "Join two locations for the rest of the round: they count as a single location for movement, and fight as one (strength and sway added across both; a true tie scorches both). Each end is an ↂ location or a location holding the Sci-Fi faction; never three factions across them. Only 1 sway, there, from the Sci-Fi faction or one at either end. Target: the two ends.",
+          "text": "Join two locations for the rest of the round: they count as a single location for movement, and fight as one (strength and sway added across both; a true tie scorches both). Each end is an ↂ location or a location holding the Sci-Fi faction; never three factions across them. Only 1 sway, at one end. Target: the two ends.",
           "readings": {
             "location": "either end: an ↂ location, or a location holding the Sci-Fi faction.",
             "faction": "either end: a location holding the Sci-Fi faction, or an ↂ location."
@@ -1646,8 +1646,8 @@
           "action": "terror",
           "text": "The Slayerettes stir up terrors in the dark. Mark up to the card’s sway of locations, 1 sway on each. When night falls, before the fights, at each mark you may make 1 token of a faction there flee to a neighbouring location it can enter; your sway from the mark may follow it. Target: the locations marked.",
           "readings": {
-            "location": "◐ locations; each mark paid by a faction there (an empty one: the Nocturnals).",
-            "faction": "locations holding the Nocturnals; paid by them."
+            "location": "◐ locations.",
+            "faction": "locations holding the Nocturnals."
           },
           "round": 21
         },
@@ -1660,8 +1660,8 @@
           "action": "study",
           "text": "The Kids on Bikes sneak in after the fight to study the bodies. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, if you lead there, you also take 1 trophy from the runner-up’s pile. Target: the locations marked.",
           "readings": {
-            "location": "ↂ locations; each mark paid by a faction there (an empty one: the Sci-Fi faction).",
-            "faction": "locations holding the Sci-Fi faction; paid by them."
+            "location": "ↂ locations.",
+            "faction": "locations holding the Sci-Fi faction."
           },
           "round": 21
         },
@@ -1674,8 +1674,8 @@
           "action": "altar",
           "text": "Father and the Flock spill blood on the altar. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, the winner loses as many as the loser. Target: the locations marked.",
           "readings": {
-            "location": "⎈ locations; each mark paid by a faction there (an empty one: the Demons).",
-            "faction": "locations holding the Demons; paid by the Demons."
+            "location": "⎈ locations.",
+            "faction": "locations holding the Demons."
           },
           "round": 21
         },
@@ -1700,7 +1700,7 @@
           "slot": "shift",
           "sway": 3,
           "action": "plough",
-          "text": "The Slayerettes plough a truck straight through the middle of the brawl. Every side leaves by half, rounded up, split as you choose among its neighbours, never two sides to the same location. You choose which side pays at the fight. Target: the fight.",
+          "text": "The Slayerettes plough a truck straight through the middle of the brawl. Every side leaves by half, rounded up, split as you choose among its neighbours, never two sides to the same location. Target: the fight.",
           "readings": {
             "location": "a fight at a ◐ location.",
             "faction": "a fight the Nocturnals are in."

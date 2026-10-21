@@ -812,19 +812,25 @@ function controlRoom(state, pid, card, t) {
 
 /**
  * Wake the Dead (☾ signature, designer 2026-10-18; first named Raise the Dead): how many of the dead you may raise at
- * `loc`, up to the card's sway (D24), your standing with the Undead and their supply. Location reading: any ☾
+ * `loc`, up to the card's sway (D24), your standing with the faction paying (`payer`; absent: the best of them) and the
+ * Undead supply. Location reading: any ☾
  * location: empty, a lone group (a fight with the Undead), or a fight without them (a three-way fight, the only way one
  * happens). Faction reading: anywhere the Undead are; the risen join their group. A Gate's ends never hold three factions.
- * @param {GameState} state @param {string} pid @param {string} loc @param {'location' | 'faction' | undefined} mode
+ * @param {GameState} state @param {string} pid @param {string} loc @param {'location' | 'faction' | undefined} mode @param {string} [payer]
  */
-function raiseRoom(state, pid, loc, mode) {
+function raiseRoom(state, pid, loc, mode, payer) {
   const undead = factionOfArchetype(state, 'undead');
   const place = state.board[loc];
-  if (!undead || !place || place.scorched) return { undead, max: 0 };
+  if (!undead || !place || place.scorched) return { undead, max: 0, payers: /** @type {string[]} */ ([]) };
   const here = factionsAt(state, loc);
   const ok = mode === 'faction' ? here.includes(undead) : alignmentOf(loc) === 'undead' && (here.includes(undead) || here.length < 2 || !gateOf(state, loc));
-  if (!ok) return { undead, max: 0 };
-  return { undead, max: Math.min(swayFor(state, pid, 'wake-the-dead'), state.players[pid].standing[undead] ?? 0, state.supply[undead] ?? 0) };
+  if (!ok) return { undead, max: 0, payers: /** @type {string[]} */ ([]) };
+  // Who pays the bid (common rule 8, designer 2026-10-20): faction reading, the Undead; location reading, a faction
+  // there, the risen Undead included.
+  const payers = mode === 'faction' ? [undead] : [...new Set([undead, ...here])];
+  const room = (/** @type {string} */ f) => Math.min(swayFor(state, pid, 'wake-the-dead'), swayRequired(state) ? state.players[pid].standing[f] ?? 0 : Infinity, state.supply[undead] ?? 0);
+  const max = payer ? (payers.includes(payer) ? room(payer) : 0) : Math.max(0, ...payers.map(room));
+  return { undead, max, payers: payers.filter((f) => room(f) > 0) };
 }
 
 /**
@@ -1200,10 +1206,12 @@ function checkShape(state, pid, card, t) {
     }
     case 'raise': {
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
-      const { max } = raiseRoom(state, pid, t.location ?? '', t.mode);
-      if (!t.location || max <= 0) return t.mode === 'location' ? 'Choose a ☾ location, with standing with the Undead to raise them.' : 'Choose a location holding the Undead, with standing with them to raise more.';
+      const payer = t.mode === 'faction' ? factionOfArchetype(state, 'undead') : t.payer;
+      if (!t.location || raiseRoom(state, pid, t.location, t.mode).max <= 0) return t.mode === 'location' ? 'Choose a ☾ location, with the standing to pay for the dead.' : 'Choose a location holding the Undead, with standing with them to raise more.';
+      const { max } = raiseRoom(state, pid, t.location, t.mode, payer);
+      if (!payer || max <= 0) return 'Choose whose standing pays: a faction there, the risen Undead included.';
       const n = (t.from ?? []).filter((l) => l === t.location).length;
-      return n >= 1 && n <= max ? null : `Raise from 1 to ${max} of the dead: up to the card's sway, your standing with the Undead and their supply.`;
+      return n >= 1 && n <= max ? null : `Raise from 1 to ${max} of the dead: up to the card's sway, your standing with the faction paying and the Undead supply.`;
     }
     case 'plough': {
       const loc = t.location, sf = suitFaction(state, card);
@@ -1618,13 +1626,14 @@ function act(state, pid, card, t) {
       break;
     }
     case 'raise': {
-      // The dead rise as a third side; each one risen places 1 of your sway there, from your standing with the Undead (the bid).
+      // The dead rise; each one risen places 1 of your sway there, the bid, from standing with the faction paying (rule 8).
       const loc = /** @type {string} */ (t.location);
       const undead = /** @type {string} */ (factionOfArchetype(state, 'undead'));
       const n = (t.from ?? []).filter((l) => l === loc).length;
       state.supply[undead] -= n;
       addTokens(state, loc, undead, n);
-      for (let i = 0; i < n; i++) placeOne(state, pid, undead, loc);
+      const payer = t.mode === 'faction' ? undead : /** @type {string} */ (t.payer ?? undead);
+      for (let i = 0; i < n; i++) placeOne(state, pid, payer, loc);
       logLine(state, `${pid}: ${card.name}: ${n} ${names(undead)} rise at ${lname(loc)}.`);
       break;
     }
@@ -3229,9 +3238,10 @@ function nextShape(state, pid, cardId, t) {
     case 'raise': {
       const st = /** @type {GameState} */ (state);
       if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => raiseRoom(st, pid, l, mode).max > 0) };
+      if (mode === 'location' && !t.payer) return { kind: 'faction', key: 'payer', options: raiseRoom(st, pid, t.location, mode).payers };
       const from = t.from ?? [];
       if (from.includes('__stop')) return { kind: 'done' };
-      const n = from.length, { max } = raiseRoom(st, pid, t.location, mode);
+      const n = from.length, { max } = raiseRoom(st, pid, t.location, mode, mode === 'faction' ? undefined : t.payer);
       if (n >= max) return { kind: 'done' };
       return { kind: 'location', key: 'from', options: [t.location], optional: n >= 1, left: max - n };
     }

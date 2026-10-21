@@ -875,8 +875,14 @@ test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-
   s.board[loc].sway = { bob: 2 };
   s.players.ann.standing[dead] = 3;
   s.players.ann.hand = ['wake-the-dead', 'fresh-meat', 'track-snow', 'broadcast']; // a signature's sway: 1 per card in hand, itself included (D24)
-  const t = { mode: /** @type {const} */ ('location'), location: loc, from: [loc, loc, loc] };
+  const t = { mode: /** @type {const} */ ('location'), location: loc, from: [loc, loc, loc], payer: dead };
   assert.equal(checkTarget(s, 'ann', cardById('wake-the-dead'), t), null);
+  // Common rule 8 (designer, 2026-10-20): a faction there may pay instead, the risen Undead included; not one elsewhere.
+  s.players.ann.standing[f] = 3;
+  assert.equal(checkTarget(s, 'ann', cardById('wake-the-dead'), { ...t, payer: f }), null);
+  const elsewhere = s.factions.find((x) => ![dead, f, g].includes(x));
+  assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), { ...t, payer: elsewhere }));
+  s.players.ann.standing[f] = 0;
   assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), { ...t, from: [loc, loc, loc, loc] })); // only 3 standing
   const late = { ...s, players: { ...s.players, ann: { ...s.players.ann, hand: ['wake-the-dead', 'fresh-meat'] } } };
   assert.ok(checkTarget(late, 'ann', cardById('wake-the-dead'), t)); // 2 cards in hand: up to 2 rise (D24)
