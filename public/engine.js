@@ -2692,7 +2692,7 @@ function fight(state, loc, joined = undefined) {
   }
   const ranking = rankAt(state, loc, hacked);
   const collectors = ranking.places;
-  if (place.study && collectors[0] === place.study && ranking.involved > 1 && piles.length > 1) {
+  if (place.study && collectors[0] === place.study && collectors[1] && piles.length > 1) { // no runner-up (alone, or tied for second): nothing extra
     // Study the Bodies (ↂ signature): if the player leads here, they also take 1 from the runner-up's pile, the
     // smallest, before the piles go out (designer, 2026-10-20).
     const rp = piles[piles.length - 1];

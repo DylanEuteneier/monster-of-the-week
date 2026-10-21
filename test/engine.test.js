@@ -827,6 +827,12 @@ test('Study the Bodies (ↂ signature): marks like the Altar; at a marked fight,
   after.board[loc].sway = { ...after.board[loc].sway, bob: 5 };
   const lost = resolveFight(after, loc);
   assert.deepEqual([lost.players.bob.trophies[f], lost.players.ann.trophies[sci]], [4, 2]);
+  // Players tied for runner-up: that pile goes back to the supply, and the leader takes nothing from it (designer, 2026-10-20).
+  const home = spec.locations.find((l) => l.id === loc)?.archetype;
+  const [p, q] = ['bob', 'cat', 'dan', 'eve'].filter((x) => spec.slayerGroups.find((gr) => gr.id === after.players[x].group)?.archetype !== home); // no affinity to break the tie
+  after.board[loc].sway = { ann: 3, [p]: 2, [q]: 2 };
+  const tied = resolveFight(after, loc);
+  assert.deepEqual([tied.players.ann.trophies[f], tied.players.ann.trophies[sci] ?? 0, tied.players[p].trophies[sci] ?? 0], [4, 0, 0]);
 });
 
 test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-way fight pays the leader the two larger piles (designer, 2026-10-18)', () => {
