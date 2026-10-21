@@ -10,7 +10,7 @@
  * are chosen on the board one step at a time: each step's candidates are
  * spotlit (hexes) or lit gold (tokens), and the server checks the result.
  */
-import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice, pendingDestinations, checkTarget, previewTarget, responsesOn } from './engine.js';
+import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice, pendingDestinations, checkTarget, previewTarget, responsesOn, fleeOptions } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml, faceDownHtml, effectHtml, markImg, EFFECTS } from './pieces.js';
 import { cardHtml as baseCardHtml, suitIcon } from './cards.js';
@@ -57,6 +57,9 @@ const ui = {
   },
   /** @type {string[]} */
   bots: [],
+  /** Night Terrors' nightfall (◐ signature): the flight being chosen at the current mark */
+  /** @type {{ faction?: string, to?: string }} */
+  flee: {},
   /** a move sent, its view not back yet */
   sending: false,
   /** the server runs older rules than these files (wrangler dev stopped reloading) */
@@ -390,7 +393,7 @@ function sendChat(text) {
 // ---------------------------------------------------------------------------
 
 /** @type {Record<PlayerView['phase'], string>} */
-const PHASE_LABELS = { draft: 'Draft', play: 'Play', growth: 'Growth', ended: 'Game over' };
+const PHASE_LABELS = { draft: 'Draft', play: 'Play', night: 'Nightfall', growth: 'Growth', ended: 'Game over' };
 
 /** @param {string} f */
 const fname = (f) => factionById(f).name;
@@ -473,6 +476,15 @@ function picks() {
   if (!view) return out;
   if (view.phase === 'growth' && view.growing && view.growing.leaders[view.growing.next % view.growing.leaders.length] === view.you) {
     out.spots = Object.keys(view.growing.due);
+    return out;
+  }
+  if (view.phase === 'night') {
+    // Nightfall (Night Terrors): at the first mark left, pick who flees, then where.
+    if (view.night?.player !== view.you) return out;
+    const loc = view.night.left[0];
+    const opts = fleeOptions(/** @type {any} */ (view), loc);
+    if (!ui.flee.faction) out.groups = opts.map((o) => ({ location: loc, faction: o.faction }));
+    else if (!ui.flee.to) out.spots = opts.find((o) => o.faction === ui.flee.faction)?.to ?? [];
     return out;
   }
   if (ui.responding && view.pending) {
@@ -637,7 +649,7 @@ const cardHtml = (id, o = {}) => baseCardHtml(id, { ...o, view: ui.view });
 /** @type {BarNext} */
 let handNext = { cards: [], open: false, actions: [], state: 'wait', text: '', extra: '' };
 
-const LABELS = /** @type {Record<string, string>} */ ({ pass: 'Pass', confirm: 'Confirm', withdraw: 'Back', pick: 'Keep', 'target-none': 'No effect', back: 'Back', skip: 'Done' });
+const LABELS = /** @type {Record<string, string>} */ ({ 'let-be': 'Let them be', 'flee-follow': 'Your sway follows', 'flee-stay': 'Your sway stays', pass: 'Pass', confirm: 'Confirm', withdraw: 'Back', pick: 'Keep', 'target-none': 'No effect', back: 'Back', skip: 'Done' });
 const ACTION_ICONS = /** @type {Record<string, string>} */ ({ pass: '»', confirm: '✓', withdraw: '↩', pick: '✓', 'target-none': '⊘', back: '↩', skip: '✓' });
 const ARROWS = /** @type {Record<string, string>} */ ({ E: '→', NE: '↗', NW: '↖', W: '←', SW: '↙', SE: '↘' });
 
@@ -711,7 +723,7 @@ function renderPhase() {
     setHtml('phase', ui.token ? `<span class="bar-text">${esc(ui.connectionNote)}</span>` : '<span class="bar-text">Open the player link you were given (/p/…).</span>');
     return;
   }
-  const renderers = { draft: renderDraft, play: renderPlay, growth: renderGrowth, ended: renderEnded };
+  const renderers = { draft: renderDraft, play: renderPlay, night: renderNight, growth: renderGrowth, ended: renderEnded };
   renderers[view.phase]();
   if (ui.note) handNext = { ...handNext, actions: [], state: 'wait', text: esc(ui.note) };
   // A move on its way to the server: said at once, so a click never looks dead (designer, 2026-10-11).
@@ -826,6 +838,18 @@ function renderGrowth() {
   if (!g) return step('wait', 'Growth');
   const mine = g.leaders[g.next % g.leaders.length] === view.you;
   return mine ? step('turn', `Grow ${esc(fname(g.faction))}: pick a location`) : step('wait', `${esc(fname(g.faction))} grows · ${esc(waitingText())}`);
+}
+
+function renderNight() {
+  const view = /** @type {PlayerView} */ (ui.view);
+  const n = view.night;
+  if (!n || n.player !== view.you) return step('wait', `Night falls · ${esc(waitingText())}`);
+  const loc = locationById(n.left[0]).name;
+  if (!ui.flee.faction) { handAction('let-be', { label: 'Let them be' }); return step('turn', `Night terrors at ${esc(loc)}: pick a group to lose 1 token into the dark`); }
+  if (!ui.flee.to) { handAction('back'); return step('turn', `1 ${esc(fname(ui.flee.faction))} flees from ${esc(loc)}: pick where`); }
+  handAction('flee-follow', { primary: true, label: 'Your sway follows' });
+  handAction('flee-stay', { label: 'Your sway stays' });
+  return step('turn', `1 ${esc(fname(ui.flee.faction))} flees to ${esc(locationById(ui.flee.to).name)}: does your sway follow?`);
 }
 
 function renderEnded() {
@@ -1462,6 +1486,18 @@ function onClick(event) {
   }
   const loc = target.dataset.location ?? '';
   if (action === 'pick-location' && view?.phase === 'growth') return sendMove({ type: 'grow', location: loc });
+  if (view?.phase === 'night' && view.night) {
+    const mark = view.night.left[0];
+    if (action === 'pick-group') { ui.flee = { faction: target.dataset.faction }; return render(); }
+    if (action === 'pick-location') { ui.flee = { ...ui.flee, to: loc }; return render(); }
+    if (action === 'back') { ui.flee = {}; return render(); }
+    if (action === 'let-be') { ui.flee = {}; return sendMove({ type: 'flee', location: mark }); }
+    if (action === 'flee-follow' || action === 'flee-stay') {
+      const f = ui.flee;
+      ui.flee = {};
+      return sendMove({ type: 'flee', location: mark, faction: f.faction, to: f.to, follow: action === 'flee-follow' });
+    }
+  }
   if (action === 'pick-location' && ui.responding) {
     const id = ui.responding;
     ui.responding = null;

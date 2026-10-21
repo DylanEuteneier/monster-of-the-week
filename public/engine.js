@@ -41,7 +41,7 @@ export { spec };
  */
 
 /** @typedef {Record<string, string>} Options  variant id → choice id */
-/** @typedef {'draft' | 'play' | 'growth' | 'ended'} Phase */
+/** @typedef {'draft' | 'play' | 'night' | 'growth' | 'ended'} Phase */
 
 /**
  * A face-down token on a location (IN1). `card` is null for a bluff (BT1).
@@ -65,6 +65,7 @@ export { spec };
  * @property {string[]} [links]  Link the Swarm (⏏ signature, designer 2026-10-18): the neighbouring groups linked in; absent, every neighbour (older games)
  * @property {boolean} [lock]      Lock Down the Town (test card, round 19): this round, no group moves into or out of this location's region
  * @property {boolean} [altar]     Spill Blood on the Altar (⎈ signature, designer 2026-10-18): at this round's fight here, the winner loses as many as the loser
+ * @property {string} [terror]     Night Terrors (◐ signature, designer 2026-10-20): this player's mark; at nightfall 1 token here may flee
  * @property {string} [study]      Study the Bodies (ↂ signature, designer 2026-10-19): at this round's fight here, this player, if they lead, takes 1 from the runner-up's pile too
  */
 
@@ -129,6 +130,7 @@ export { spec };
  * @property {string | null} [lastPlayed]  the last card played for its action (Steal Their Playbook, test card, round 15)
  * @property {GameEvent[]} events  what the last resolved action did, for "after" responses
  * @property {{ faction: string, left: number, leaders: string[], next: number, due: Record<string, number> } | null} growing  growth phase when a supply runs short
+ * @property {{ player: string, left: string[] } | null} [night]  Night Terrors (◐ signature): nightfall, before the fights; the player's marks still to decide
  * @property {RoundLog[]} log
  * @property {{ side: 'island' | 'invaders', factions: string[], players: string[], scores: Record<string, number>, placings?: string[] } | null} result
  */
@@ -162,7 +164,8 @@ export { spec };
  *   | { type: 'withdraw' }
  *   | { type: 'pass' }
  *   | { type: 'respond', card: string, location?: string }
- *   | { type: 'grow', location: string }} Move
+ *   | { type: 'grow', location: string }
+ *   | { type: 'flee', location: string, faction?: string, to?: string, follow?: boolean }} Move
  */
 /** @typedef {{ playerId: string, move: Move }} Submission */
 /** @typedef {{ ok: true } | { ok: false, reason: string }} Verdict */
@@ -178,8 +181,9 @@ export { spec };
  * @property {string[]} seating
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, bluffs: number, handSize: number, picked: boolean }>} players
  * @property {{ faction: string, leaders: string[], next: number, due: Record<string, number> } | null} growing
+ * @property {{ player: string, left: string[] } | null} [night]
  * @property {string[]} factions
- * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, token: { owner: string, kind?: string, real?: boolean } | null, scorched: boolean, gate?: string, gateLoss?: string, truce?: boolean, double?: string[], wake?: boolean, swarm?: string | boolean, backdoor?: string[], lock?: boolean }>} board
+ * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, token: { owner: string, kind?: string, real?: boolean } | null, scorched: boolean, gate?: string, gateLoss?: string, truce?: boolean, double?: string[], wake?: boolean, swarm?: string | boolean, backdoor?: string[], lock?: boolean, altar?: boolean, study?: string, terror?: string }>} board
  * @property {Record<string, number>} supply
  * @property {string[]} deck  this game's cards
  * @property {Record<string, number>} printed  this game's printed sway by card
@@ -739,6 +743,13 @@ function altarMarks(state, card, mode) {
   const spots = open.filter((l) => suitLocations(card).includes(l));
   return { held: spots.flatMap((l) => factionsAt(state, l).map((f) => ({ location: l, faction: f }))), empty: spots.filter((l) => !factionsAt(state, l).length) };
 }
+
+/**
+ * Night Terrors (◐ signature, designer 2026-10-20): at nightfall, who may flee a mark: 1 token of a faction there with
+ * one free to leave (from a fight, half: D22), to any neighbouring location it can enter (never making three factions).
+ * @param {GameState} state @param {string} loc
+ */
+export const fleeOptions = (state, loc) => factionsAt(state, loc).filter((f) => freeOf(state, loc, f) > 0).map((f) => ({ faction: f, to: burstSpots(state, loc, f) })).filter((o) => o.to.length);
 
 /** The marks a Spill Blood or Study the Bodies target names: the held locations with their payers, then the empty ones (the Demons pay). @param {GameState} state @param {Card} card @param {Target} t */
 const altarChosen = (state, card, t) => [
@@ -1483,13 +1494,13 @@ function checkShape(state, pid, card, t) {
     }
     case 'tipoff': case 'bounty': return t.faction && state.factions.includes(t.faction) ? null : 'Choose a faction.';
     case 'lockdown': return t.location && state.board[t.location] && !state.board[t.location].lock ? null : 'Choose a location in a region not already locked down.';
-    case 'altar': case 'study': {
+    case 'altar': case 'study': case 'terror': {
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
       const { held, empty } = altarMarks(state, card, t.mode);
       const marks = altarChosen(state, card, t);
       if (!marks.length) return 'Mark at least one location.';
       if (new Set(marks.map((m) => m.location)).size !== marks.length) return 'Each location takes one mark.';
-      if (marks.some((m) => !held.some((h) => h.location === m.location && h.faction === m.faction) && !(empty.includes(m.location) && (t.from ?? []).includes(m.location)))) return t.mode === 'location' ? `Mark ${card.action === 'altar' ? '⎈' : 'ↂ'} locations, each paid by a faction there (an empty one by the suit's faction).` : 'Mark locations holding the suit\'s faction.';
+      if (marks.some((m) => !held.some((h) => h.location === m.location && h.faction === m.faction) && !(empty.includes(m.location) && (t.from ?? []).includes(m.location)))) return t.mode === 'location' ? `Mark ${{ altar: '⎈', study: 'ↂ', terror: '◐' }[card.action]} locations, each paid by a faction there (an empty one by the suit's faction).` : 'Mark locations holding the suit\'s faction.';
       if (marks.length > swayFor(state, pid, card.id)) return 'Mark no more locations than the card\'s sway: 1 sway on each.';
       const owed = /** @type {Record<string, number>} */ ({});
       for (const m of marks) owed[m.faction] = (owed[m.faction] ?? 0) + 1;
@@ -2126,6 +2137,13 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name}: blood on ${marks.map((m) => lname(m.location)).join(', ')}.`);
       break;
     }
+    case 'terror': {
+      // Each marked location takes 1 sway, the bid; at nightfall, 1 token there may flee (the nightfall step).
+      const marks = altarChosen(state, card, t);
+      for (const m of marks) { state.board[m.location].terror = pid; placeOne(state, pid, m.faction, m.location); }
+      logLine(state, `${pid}: ${card.name}: terror waits for nightfall at ${marks.map((m) => lname(m.location)).join(', ')}.`);
+      break;
+    }
     case 'study': {
       // Each marked location takes 1 sway, the bid; after its fight this round, the player takes 1 of the winner's losses.
       const marks = altarChosen(state, card, t);
@@ -2206,7 +2224,7 @@ export function pendingDestinations(state, pend) {
     case 'standin-sig': return t.to ? [t.to] : [];
     case 'rally': case 'dig-in': case 'underdog': case 'shift-bet': case 'pull-back': case 'spread-word': return [];
     case 'control': return [];
-    case 'altar': case 'study': return [];
+    case 'altar': case 'study': case 'terror': return [];
     case 'raise': return t.location ? [t.location] : [];
     case 'plough': return [...new Set((t.from ?? []).filter((l) => l !== '__stop'))];
     case 'rejoin': {
@@ -2262,6 +2280,16 @@ export function validate(state, submission) {
     if (keep.length !== p.kept.length + 1) return no(`Keep ${p.kept.length + 1} cards.`);
     if (new Set(keep).size !== keep.length || keep.some((c) => !pool.includes(c))) return no('Keep cards from your kept cards and this batch.');
     return OK;
+  }
+  if (state.phase === 'night') {
+    // Night Terrors (◐ signature): at each mark, 1 token of a faction there may flee to a neighbour; the mark's sway may follow.
+    if (m.type !== 'flee' || !state.night) return no('Night has fallen: decide who flees from each mark.');
+    if (state.night.player !== pid) return no('Another player decides at nightfall.');
+    if (!state.night.left.includes(m.location)) return no('Choose one of your marks.');
+    if (!m.faction) return OK; // let them be
+    const exits = fleeOptions(state, m.location).find((o) => o.faction === m.faction)?.to ?? [];
+    if (!m.to || !exits.includes(m.to)) return no('1 token flees to a neighbouring location it can enter (from a fight, half may leave).');
+    return m.follow && (state.board[m.location].sway[pid] ?? 0) < 1 ? no('You have no sway there to follow.') : OK;
   }
   if (state.phase === 'growth') {
     if (m.type !== 'grow' || !state.growing) return no('Choose where the faction grows.');
@@ -2332,6 +2360,19 @@ export function applyMove(state, submission) {
     }
     case 'respond': return respond(next, pid, m.card, m.location);
     case 'grow': return growOne(next, m.location);
+    case 'flee': {
+      const n = /** @type {NonNullable<GameState['night']>} */ (next.night);
+      const place = next.board[m.location];
+      if (m.faction && m.to) {
+        takeTokens(next, m.location, m.faction, 1);
+        addTokens(next, m.to, m.faction, 1);
+        if (m.follow) { place.sway[pid] -= 1; if (!place.sway[pid]) delete place.sway[pid]; next.board[m.to].sway[pid] = (next.board[m.to].sway[pid] ?? 0) + 1; }
+        logLine(next, `  Night terrors at ${locationById(m.location).name}: 1 ${factionById(m.faction).name} flees to ${locationById(m.to).name}${m.follow ? `, ${pid}'s sway following` : ''}.`);
+      }
+      delete place.terror;
+      n.left = n.left.filter((l) => l !== m.location);
+      return n.left.length ? next : closeRound(next);
+    }
     case 'pass': {
       next.events = [{ type: 'pass', player: pid }];
       next.passesInRow += 1;
@@ -2492,9 +2533,24 @@ function endOfPlay(state) {
   for (const id of state.seating) state.players[id].hand = [];
   state.pending = null;
   state.events = [];
-  logLine(state, 'Everyone passed. Fights:');
+  const marks = LOCATION_IDS.filter((l) => state.board[l].terror);
+  if (marks.length) {
+    // Night Terrors (◐ signature): nightfall comes first, before the fights.
+    state.phase = 'night';
+    state.night = { player: /** @type {string} */ (state.board[marks[0]].terror), left: marks };
+    logLine(state, 'Everyone passed. Night falls.');
+    return state;
+  }
+  return closeRound(state);
+}
+
+/** The fights, then growth. @param {GameState} state */
+function closeRound(state) {
+  state.phase = 'play';
+  state.night = null;
+  logLine(state, 'Fights:');
   for (const loc of LOCATION_IDS) fightAt(state, loc);
-  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.gate; delete p.gateLoss; delete p.truce; delete p.double; delete p.wake; delete p.swarm; delete p.links; delete p.backdoor; delete p.lock; delete p.altar; delete p.study; } // round 15, 18 and 19 test cards last the round
+  for (const loc of LOCATION_IDS) { const p = state.board[loc]; delete p.gate; delete p.gateLoss; delete p.truce; delete p.double; delete p.wake; delete p.swarm; delete p.links; delete p.backdoor; delete p.lock; delete p.altar; delete p.study; delete p.terror; } // round 15, 18 and 19 test cards last the round
   state.tips = [];
   state.bounties = [];
   return beginGrowth(state);
@@ -2923,6 +2979,7 @@ export function waitingOn(state) {
   if ('me' in state) return state.phase === 'draft' ? state.seating.filter((id) => !state.players[id].picked) : state.toAct ? [state.toAct] : [];
   if (state.phase === 'draft') return state.seating.filter((id) => !state.players[id].picked);
   if (state.phase === 'growth' && state.growing) return [state.growing.leaders[state.growing.next % state.growing.leaders.length]];
+  if (state.phase === 'night' && state.night) return [state.night.player];
   if (state.pending) return [state.pending.player];
   return [state.seating[state.turn]];
 }
@@ -3461,7 +3518,7 @@ function nextShape(state, pid, cardId, t) {
       return t.faction ? { kind: 'done' } : { kind: 'faction', options: state.factions.slice() };
     case 'lockdown':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].lock) };
-    case 'altar': case 'study': {
+    case 'altar': case 'study': case 'terror': {
       // First the held locations (pick the group whose standing pays), then the empty ⎈ ones (the Demons pay).
       const st = /** @type {GameState} */ (state);
       const { held, empty } = altarMarks(st, card, mode);
@@ -3574,6 +3631,7 @@ export function describeTarget(cardId, t) {
     case 'surveil-supply': case 'raise-stakes': return `at ${L(t.location)}${how}`;
     case 'split-up': return `at ${(t.from ?? []).map(L).join(', ')}`;
     case 'wake-dead': return `at ${L(t.location)}${how}`;
+    case 'terror': return `night terrors at ${[...(t.moves ?? []).map((m) => m.location), ...(t.from ?? [])].filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
     case 'study': return `bodies studied at ${[...(t.moves ?? []).map((m) => m.location), ...(t.from ?? [])].filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
     case 'altar': return `blood on ${[...(t.moves ?? []).map((m) => m.location), ...(t.from ?? [])].filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
     case 'swarm': return `${t.mode === 'location' && t.faction ? `${F(t.faction)} ` : ''}at ${L(t.location)}${how}`;
@@ -3641,7 +3699,7 @@ export function playerView(state, playerId) {
     factions: state.factions.slice(),
     board: Object.fromEntries(LOCATION_IDS.map((loc) => {
       const place = state.board[loc];
-      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: place.swarm, ...(place.links ? { links: place.links.slice() } : {}) } : {}), ...(place.gate ? { gate: place.gate, gateLoss: place.gateLoss } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}), ...(place.altar ? { altar: true } : {}), ...(place.study ? { study: place.study } : {}) }];
+      return [loc, { tokens: { ...place.tokens }, sway: { ...place.sway }, token: place.token ? { owner: place.token.owner, ...(place.token.kind ? { kind: place.token.kind } : {}), ...(place.token.owner === playerId ? { real: !!place.token.card } : {}) } : null, scorched: place.scorched, ...(place.truce ? { truce: true } : {}), ...(place.double ? { double: place.double.slice() } : {}), ...(place.wake ? { wake: true } : {}), ...(place.swarm ? { swarm: place.swarm, ...(place.links ? { links: place.links.slice() } : {}) } : {}), ...(place.gate ? { gate: place.gate, gateLoss: place.gateLoss } : {}), ...(place.backdoor ? { backdoor: place.backdoor.slice() } : {}), ...(place.lock ? { lock: true } : {}), ...(place.altar ? { altar: true } : {}), ...(place.study ? { study: place.study } : {}), ...(place.terror ? { terror: place.terror } : {}) }];
     })),
     supply: { ...state.supply },
     deck: deckOf(state),
@@ -3650,6 +3708,7 @@ export function playerView(state, playerId) {
     bounties: (state.bounties ?? []).slice(),
     printed: Object.fromEntries(deckOf(state).map((id) => [id, swayFor(state, playerId, id)])),
     growing: state.growing ? clone(state.growing) : null,
+    night: state.night ? clone(state.night) : null,
     first: state.first,
     opened: state.opened,
     toAct: waitingOn(state)[0] ?? null,

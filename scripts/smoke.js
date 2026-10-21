@@ -99,6 +99,7 @@ async function main() {
   /** @param {PlayerView} v @returns {any} */
   const policy = (v) => {
     if (v.phase === 'draft') return v.me.picked ? null : { type: 'pick', keep: [...v.me.kept, ...v.me.batch].slice(0, v.me.kept.length + 1) };
+    if (v.phase === 'night') return v.night && v.night.player === v.you ? { type: 'flee', location: v.night.left[0] } : null;
     if (v.phase === 'growth') return v.growing && v.growing.leaders[v.growing.next % v.growing.leaders.length] === v.you ? { type: 'grow', location: Object.keys(v.growing.due)[0] } : null;
     if (v.phase !== 'play') return null;
     if (v.pending) return v.pending.player === v.you ? { type: 'confirm' } : null;

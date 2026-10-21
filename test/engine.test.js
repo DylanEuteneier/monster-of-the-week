@@ -806,6 +806,36 @@ test('Spill Blood on the Altar (⎈ signature): marks up to the hand, 1 sway eac
   assert.deepEqual([la.board[home].altar, la.board[other].altar, la.players.ann.standing[demon], la.players.ann.standing[f]], [true, true, 0, 0]);
 });
 
+test('Night Terrors (◐ signature): marks, then at nightfall 1 token may flee each mark to a neighbour, your sway following if you choose (designer, 2026-10-20)', () => {
+  const s = clear(draftAll(newGame()));
+  s.opened = true;
+  const noct = /** @type {string} */ (factionOfArchetype(s, 'nocturnals'));
+  const [f] = s.factions.filter((x) => x !== noct);
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype !== 'nocturnals')?.id);
+  const b = map[loc].adjacent[1];
+  s.board[loc].tokens = { [noct]: 3 };
+  s.board[b].tokens = { [f]: 2 };
+  const pid = s.seating[s.turn];
+  s.players[pid].hand = ['night-terrors', ...s.players[pid].hand.filter((c) => c !== 'night-terrors')].slice(0, 2);
+  const t = { mode: /** @type {const} */ ('faction'), moves: [{ location: loc, faction: noct, to: '' }] };
+  assert.equal(checkTarget(s, pid, cardById('night-terrors'), t), null);
+  let g = applyMove(s, { playerId: pid, move: { type: 'play', card: 'night-terrors', use: 'action', target: t } });
+  assert.equal(g.board[loc].terror, pid);
+  // Everyone passes: night falls before the fights, and the card's player decides.
+  for (let i = 0; i < 10 && g.phase === 'play'; i++) g = applyMove(g, { playerId: g.seating[g.turn], move: { type: 'pass' } });
+  assert.equal(g.phase, 'night');
+  assert.deepEqual(waitingOn(g), [pid]);
+  assert.equal(validate(g, { playerId: pid, move: { type: 'flee', location: loc, faction: noct, to: loc } }).ok, false); // to a neighbour
+  // 1 Nocturnal flees into the lone rival next door: a fight, with the mark's sway following.
+  const night = applyMove(g, { playerId: pid, move: { type: 'flee', location: loc, faction: noct, to: b, follow: true } });
+  assert.notEqual(night.phase, 'night');
+  assert.equal(night.board[loc].tokens[noct] >= 2, true);
+  // Letting them be is allowed too.
+  const calm = applyMove(g, { playerId: pid, move: { type: 'flee', location: loc } });
+  assert.notEqual(calm.phase, 'night');
+});
+
 test('Study the Bodies (ↂ signature): marks like the Altar; at a marked fight, if you lead, you also take 1 from the runner-up\'s pile (designer, 2026-10-19, 2026-10-20)', () => {
   const s = clear(newGame());
   const sci = /** @type {string} */ (factionOfArchetype(s, 'scifi'));

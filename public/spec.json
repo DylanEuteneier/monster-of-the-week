@@ -10,7 +10,7 @@
     "notes": "Seat limits are decision D3 (3.16). Rules: the first draft (Appendix G). Cards: Set v2 (H.8) plus scaffold placeholders for the six extras (H.6). Numbers: first-draft guesses (G.7), each a variant. Map: the prototype board, layout D (testing only)."
   },
   "constants": {
-    "coreDeck": ["invite-in", "gate", "hack-targeting", "bait-trail", "ritual", "draw-away", "big-chase", "cut-powerlines", "plough", "light-cross", "wake-the-dead", "take-control", "standin-nocturnals", "study-bodies", "spill-blood", "rally", "dig-in", "shift-bet", "spread-word", "pull-back", "underdog"],
+    "coreDeck": ["invite-in", "gate", "hack-targeting", "bait-trail", "ritual", "draw-away", "big-chase", "cut-powerlines", "plough", "light-cross", "wake-the-dead", "take-control", "night-terrors", "study-bodies", "spill-blood", "rally", "dig-in", "shift-bet", "spread-word", "pull-back", "underdog"],
     "handSize": {
       "3": 6,
       "4": 5,
@@ -1634,6 +1634,20 @@
           "readings": {
             "location": "any fight at a ⏏ location; you choose the faction hit.",
             "faction": "any fight the Sentients are in; their rival is hit."
+          },
+          "round": 21
+        },
+        {
+          "id": "night-terrors",
+          "name": "Night Terrors",
+          "suit": "nocturnals",
+          "slot": "signature",
+          "sway": 4,
+          "action": "terror",
+          "text": "The Slayerettes stir up terrors in the dark. Mark up to the card’s sway of locations, 1 sway on each. When night falls, before the fights, at each mark you may make 1 token of a faction there flee to a neighbouring location it can enter; your sway from the mark may follow it. Target: the locations marked.",
+          "readings": {
+            "location": "◐ locations; each mark paid by a faction there (an empty one: the Nocturnals).",
+            "faction": "locations holding the Nocturnals; paid by them."
           },
           "round": 21
         },

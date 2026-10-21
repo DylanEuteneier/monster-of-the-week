@@ -27,7 +27,7 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, clone, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthDue,
+  cardById, clone, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthDue, fleeOptions,
 } from './engine.js';
 import evalFit from './eval-fit.json' with { type: 'json' };
 
@@ -510,6 +510,15 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
     return { type: 'grow', location: options[0].location };
   }
 
+  if (state.phase === 'night') {
+    // Night Terrors' nightfall: at the first mark left, the flight (or none) worth the most now.
+    const n = state.night;
+    if (!n || n.player !== pid) return null;
+    const options = nightMoves(state, n.left[0]).map((move) => ({ move, v: value(applyMove(state, { playerId: pid, move })) }));
+    options.sort((a, b) => b.v - a.v);
+    return options[0].move;
+  }
+
   if (state.phase !== 'play') return null;
 
   // Responses: only when they beat holding the card.
@@ -751,6 +760,9 @@ export function rankForHint(state, pid, memory, profile = 'trophy:hidden=1,enum=
   } else if (state.phase === 'growth') {
     const g = state.growing;
     if (g && g.leaders[g.next % g.leaders.length] === pid) moves = Object.keys(g.due).map((location) => { const move = /** @type {Move} */ ({ type: 'grow', location }); const s = applyMove(state, { playerId: pid, move }); return { move, s, v: ev(s) }; });
+  } else if (state.phase === 'night') {
+    const n = state.night;
+    if (n && n.player === pid) moves = nightMoves(state, n.left[0]).map((move) => { const s = applyMove(state, { playerId: pid, move }); return { move, s, v: ev(s) }; });
   } else if (state.phase === 'play' && !state.pending && state.seating[state.turn] === pid) {
     moves = candidates(state, pid, rng, SEARCH.targets, true).map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) }; });
   }
@@ -760,3 +772,11 @@ export function rankForHint(state, pid, memory, profile = 'trophy:hidden=1,enum=
 
 /** A state after a move played straight through (for hints). @param {GameState} state @param {string} pid @param {Move} move */
 export const afterMove = (state, pid, move) => after(state, pid, move);
+
+/** Night Terrors' nightfall: every choice at one mark (let them be, or 1 token to a neighbour, the sway following or not). @param {GameState} state @param {string} loc @returns {Move[]} */
+function nightMoves(state, loc) {
+  /** @type {Move[]} */
+  const out = [{ type: 'flee', location: loc }];
+  for (const o of fleeOptions(state, loc)) for (const to of o.to) for (const follow of [false, true]) out.push({ type: 'flee', location: loc, faction: o.faction, to, follow });
+  return out.filter((m) => !('follow' in m && m.follow) || (state.board[loc].sway[/** @type {NonNullable<GameState['night']>} */ (state.night).player] ?? 0) > 0);
+}
