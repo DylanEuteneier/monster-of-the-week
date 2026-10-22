@@ -19,6 +19,7 @@
     "seeding": {
       "home": 5,
       "even": 3,
+      "two": 2,
       "other": 1
     },
     "notes": "Hand sizes: PS1 (3.16). Seeding: SD1 (3.5).",
@@ -970,10 +971,20 @@
       ]
     },
     {
+      "id": "alignedGrowth",
+      "label": "Growth on own ground",
+      "description": "AL3 (designer, 2026-10-21: off by default): a faction controlling one of its aligned locations grows 1 more there.",
+      "default": "off",
+      "choices": [
+        { "id": "off", "label": "Off", "description": "Every growing group grows 1 (designer, 2026-10-21)." },
+        { "id": "on", "label": "On", "description": "AL3 as first drafted: 1 more on its own aligned ground." }
+      ]
+    },
+    {
       "id": "seeding",
       "label": "Starting tokens",
-      "description": "First draft (designer, 2026-10-17): how each faction's tokens start on its three aligned locations.",
-      "default": "even",
+      "description": "SD1 (designer): how each faction's tokens start on its three aligned locations; 2 on each since 2026-10-21.",
+      "default": "two",
       "choices": [
         {
           "id": "home",
@@ -983,7 +994,12 @@
         {
           "id": "even",
           "label": "3 on each",
-          "description": "The first draft (designer, 2026-10-17): 3 on each of the three."
+          "description": "The first draft (designer, 2026-10-17): 3 on each of the three (45 in all)."
+        },
+        {
+          "id": "two",
+          "label": "2 on each",
+          "description": "SD1 (designer, 2026-10-21): 2 on each of the three (30 in all)."
         }
       ]
     },

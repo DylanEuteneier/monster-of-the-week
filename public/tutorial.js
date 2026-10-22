@@ -97,6 +97,8 @@ const tokens = (/** @type {string} */ f, /** @type {number} */ n) => `<span clas
 const cubes = (/** @type {string} */ pid, /** @type {number} */ n) => `<span class="tut-pieces">${Array.from({ length: n }, () => cubeHtml(colour(pid), 9)).join('')}</span>`;
 const view = () => playerView(R.table.state, YOU);
 const opt = (/** @type {string} */ id) => Number(R.table.state.options[id]);
+/** Growth on own ground (AL3), a variant off by default (designer, 2026-10-21). */
+const boosted = () => R.table.state.options.alignedGrowth === 'on';
 const rounds = () => view().rounds;
 
 /** Your slayer group, its archetype and its faction in this game. */
@@ -478,7 +480,7 @@ function endingSteps() {
     demo(() => s0, () => A, () => ({ type: 'spot', target: [SEL.hex(g1.loc), SEL.hex(g2.loc), SEL.presence, SEL.trophyTab], title: 'Fights kill monsters',
       html: `${eq(chip('fight'), op('→'), tokens(g1.f, 3), op('→'), 'trophies', op('·'), `<b>${total(A)}</b> monsters left`)}${recall('The fight: the dead leave the board, and the top bids take them as trophies.')}` })),
     demo(() => A, () => B, () => ({ type: 'spot', target: [...grew.map(SEL.hex), SEL.presence], title: 'Growth breeds more',
-      html: `${eq(chip('round end'), op('→'), 'groups grow', op('·'), `<b>${total(B)}</b> monsters`)}${recall(`Growth: ${opt('growth')}+ alone grows; more on its own ground.`)}` })),
+      html: `${eq(chip('round end'), op('→'), 'groups grow', op('·'), `<b>${total(B)}</b> monsters`)}${recall(`Growth: ${opt('growth')}+ alone grows${boosted() ? '; more on its own ground' : ''}.`)}` })),
     demo(() => B, () => C, () => ({ type: 'spot', target: [SEL.presence, SEL.trophyTab], title: `${t} or fewer: complete sets decide`,
       html: `${eq(miniGauge(total(C), t), `<b>${total(C)}</b>`, op(`${t} or fewer`))}<p>The slayers did their job. Whoever holds the most <b>complete sets</b> of trophies wins: count your fewest colour.</p>${trophyRow(v.factions, lopsided)}${eq('no', tokenHtml(missing, 1), op('='), 'no complete set', op('='), '<b>0</b>')}<p class="small muted">Sway counts for nothing.</p>` })),
     demo(() => C, () => D, () => ({ type: 'spot', target: [SEL.trophyTab], title: 'Hunt every kind',
@@ -656,11 +658,12 @@ function chapterGrowth() {
   const away = Object.keys(c.st.board).find((l) => l !== c.L1 && l !== c.L2 && locationById(l).archetype !== factionById(c.G).archetype) ?? c.L2;
   /** @type {Scene} */ const held = { rows: [{ f: c.F0, supply: 6, sway: {} }, { f: c.G, supply: 6, sway: {} }], hexes: [{ loc: away, tokens: { [c.G]: 2 } }, { loc: ownF, tokens: { [c.F0]: 3, [c.G]: 1 } }] };
   /** @type {Scene} */ const g0 = { ...held, hexes: [{ loc: away, tokens: { [c.G]: 2 } }, { loc: ownF, tokens: { [c.F0]: 3 } }] };
-  /** @type {Scene} */ const g1 = { rows: [{ f: c.F0, supply: 4, sway: {} }, { f: c.G, supply: 5, sway: {} }], hexes: [{ loc: away, tokens: { [c.G]: 3 } }, { loc: ownF, tokens: { [c.F0]: 5 } }] };
+  const more = boosted() ? 1 : 0; // AL3, off by default (designer, 2026-10-21)
+  /** @type {Scene} */ const g1 = { rows: [{ f: c.F0, supply: 5 - more, sway: {} }, { f: c.G, supply: 5, sway: {} }], hexes: [{ loc: away, tokens: { [c.G]: 3 } }, { loc: ownF, tokens: { [c.F0]: 4 + more } }] };
   return [
     chapter('3 · Growth'),
     sceneStep('Control', held, held, `${eq(tokens(c.F0, 3), op('vs'), tokens(c.G, 1), op('→'), `the ${F(c.F0)} control ${L(ownF)}`)}<p>The most monsters at a location control it. At most two factions share a location: no lure can bring a third.</p>`, [`hex:${ownF}`]),
-    sceneStep('Growth', g0, g1, `${eq(`${opt('growth')}+ alone`, op('→'), '+1', op('·'), 'on its own ground, if it controls it', op('→'), '+1 more')}<p>After the fights, each faction alone somewhere with ${opt('growth')}+ monsters grows from its supply. ${L(ownF)} is the ${F(c.F0)}' own ground, so they grow twice there. Left alone, monsters multiply.</p>`, [`hex:${away}`, `hex:${ownF}`, `row:${c.G}`, `row:${c.F0}`]),
+    sceneStep('Growth', g0, g1, `${eq(`${opt('growth')}+ alone`, op('→'), '+1', ...(more ? [op('·'), 'on its own ground, if it controls it', op('→'), '+1 more'] : []))}<p>After the fights, each faction alone somewhere with ${opt('growth')}+ monsters grows from its supply.${more ? ` ${L(ownF)} is the ${F(c.F0)}' own ground, so they grow twice there.` : ''} Left alone, monsters multiply.</p>`, [`hex:${away}`, `hex:${ownF}`, `row:${c.G}`, `row:${c.F0}`]),
   ];
 }
 
@@ -982,7 +985,7 @@ function resolveSteps(pid, move, style) {
     hooks.ui.note = 'Resolve: growth';
     const grew = Object.keys(post.board).filter((l) => post.factions.some((f) => (post.board[l].tokens[f] ?? 0) > (end.board[l].tokens[f] ?? 0)));
     const g = opt('growth');
-    const lesson = once('growth') ? recall(`Growth: ${g}+ alone → +1; on its own ground, if it controls it, +1 more.`) : '';
+    const lesson = once('growth') ? recall(`Growth: ${g}+ alone → +1${boosted() ? '; on its own ground, if it controls it, +1 more' : ''}.`) : '';
     return present(end, { instant: true }).then(() => lead({ type: 'spot', target: grew.length ? grew.map(SEL.hex) : SEL.board, title: 'Growth',
       html: `<p>${grew.length ? `${plural(grew.length, 'location')} grew.` : 'Nothing grew.'}</p>${lesson}` }, () => present(shown)));
   }, () => {

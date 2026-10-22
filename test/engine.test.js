@@ -216,12 +216,13 @@ test('tied leaders collect nothing and both piles go back (PT2, ST1, AS1); a lon
 
 // Growth and the end -------------------------------------------------------
 
-test('a lone faction with 2 or more tokens grows, aligned locations one extra (GR1, AL3)', () => {
+test('a lone faction with 2 or more tokens grows by 1 (GR1); alignedGrowth=on, aligned locations one extra (AL3; off by default, designer 2026-10-21)', () => {
   const s = clear(newGame());
   const home = spec.locations.find((l) => l.archetype === spec.factions.find((f) => f.id === A)?.archetype)?.id ?? '';
   s.board[home].tokens = { [A]: 2 };
   s.board[NEUTRAL].tokens = { [A]: 3 };
-  assert.deepEqual(growthDue(s, A), { [home]: 2, [NEUTRAL]: 1 });
+  assert.deepEqual(growthDue(s, A), { [home]: 1, [NEUTRAL]: 1 });
+  assert.deepEqual(growthDue({ ...s, options: { ...s.options, alignedGrowth: 'on' } }, A), { [home]: 2, [NEUTRAL]: 1 });
 });
 
 test('bots play whole games of legal moves at every player count, and a winner is named', () => {
@@ -634,13 +635,14 @@ test('Half from a fight (D22, designer 2026-10-17): from a fight, a card moves a
   assert.equal(lone.board[from].tokens[g], 1); // a single token in a fight can't be moved
 });
 
-test('seeding=even, the first draft (designer 2026-10-17): each faction starts with 3 on each of its aligned locations', () => {
+test('SD1 (designer, 2026-10-21): each faction starts with 2 on each of its aligned locations; seeding=even, 3', () => {
   const s = newGame(3);
   for (const f of s.factions) {
     const arch = /** @type {string} */ (spec.factions.find((x) => x.id === f)?.archetype);
-    for (const l of spec.locations.filter((x) => x.archetype === arch)) assert.equal(s.board[l.id].tokens[f], 3);
+    for (const l of spec.locations.filter((x) => x.archetype === arch)) assert.equal(s.board[l.id].tokens[f], 2);
   }
-  assert.equal(totalPresence(s), 45);
+  assert.equal(totalPresence(s), 30);
+  assert.equal(totalPresence(createGame({ seed: 3, players: PLAYERS, options: { seeding: 'even' } })), 45);
 });
 
 test('The Big Chase: a lone group runs a chase, leaving 1 token and 1 sway at each location passed (designer, 2026-10-17)', () => {

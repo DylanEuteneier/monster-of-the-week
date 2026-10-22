@@ -596,7 +596,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - Cards can use alignment to break the normal movement rules (MV2, 3.7).
 - A slayer group wins ties between players at the locations aligned with its archetype (AB1, 3.10).
 - `AL2` **Tied fights on aligned ground (first draft):** in a tied fight at a location aligned with one of the two factions, that faction wins the fight (3.13).
-- `AL3` **Boosted growth (first draft):** a faction that controls a location aligned with its archetype (LC2, 3.2) gains one extra token there, on top of normal growth (3.5).
+- `AL3` **Boosted growth (first draft; designer, 2026-10-21: off by default, variant `alignedGrowth`):** a faction that controls a location aligned with its archetype (LC2, 3.2) gains one extra token there, on top of normal growth (3.5). Off, every growing group grows 1.
   - For now, the extra token applies only where the location already grows. A faction under the growth threshold gains nothing.
 
 #### 3.4 Invader forces · *Decisions*
@@ -636,7 +636,8 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 **Ideas**
 
 - `SD1` **Seeding (first draft):** each faction starts on its home territory: its archetype's three locations.
-  - First draft (designer, 2026-10-17): 3 tokens on each of the three, 45 on the board in all. Every location starts held by its aligned faction.
+  - *Designer (2026-10-21): 2 tokens on each of the three, 30 on the board in all* (45 was too much). Every location starts held by its aligned faction.
+  - Variant (`seeding=even`, the first draft, designer 2026-10-17): 3 on each of the three, 45 in all. With AL3 every location grew by 2 from round 1, so presence jumped (45 → about 60 after round 1 in the core deck).
   - Variant (`seeding=home`, as SD1 was first drafted): a home location drawn at random from the three gets 5 tokens, and each of the other two gets 1 (35 in all).
   - *Measured (2026-10-17; 24 games each, seed 7, 5 players, mixed decks), island / invaders and presence at game end (threshold 20):* 5/1/1 without D22: 17 / 7, 16.6; 5/1/1 with D22: 22 / 2, 7.8; **3/3/3 with D22 (the first draft): 19 / 5, 14.9**; 3/3/3 without D22: 6 / 18, 30.7. The two changes pull in opposite directions; together they sit near the earlier balance with no fight ever made to disappear. Trophies per player 11.3 (about 6 to 7 before).
   - Starting presence and the total number of tokens per faction, including the supply, are left to balancing.
@@ -1264,6 +1265,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-09 | The tuned table confirmed over 40 games | Backers 18.1% a seat, trophy 21.3%; the invaders' ending 15 in 40 |
 | 2026-10-10 | Unattended experiment runner (designer: a repeatable script for several machines that jitters the tuned values, runs, judges and commits its results): `scripts/experiment.js`, one game pool per machine fed by several experiments at once, shared baselines, a testing log entry per attempt (`experiments/`); last night's 48 attempts backfilled. The play-outs-into-the-next-round switch (`deep`) removed: clearly worse | Standard bots unchanged (identical play checked) |
 | 2026-10-10 | Overnight bot tuning (designer: implement the research's best candidates and keep testing on short runs): bot games about 5× faster with identical play; tools for duplicate deals, placings and fitting the evaluation; about 30 variants tested | None adopted: no change measurably beats the standard profiles; 20-game runs only find large effects (F.9, Tuning method) |
+| 2026-10-21 | The start (SD1) is 2 on each aligned location, 30 in all (designer: 45 too much); growth on own ground (AL3) off by default (designer). Together the 2026-10-17 start and AL3 made every location grow by 2 from round 1 | Variants `seeding=even`, `alignedGrowth=on` |
 | 2026-10-21 | Plough Through's sway (designer): 1 at each exit and 1 at the fight, split as you choose among the fight's factions and the Nocturnals; standing had been its main block (33% of turns) | |
 | 2026-10-20 | Common card rules 7–9 (designer): you choose the payer where several factions leave or reach one location; sway placed without movement comes from a faction there, or the suit's faction; the signature bid. Every card follows them except The Gate (1 sway) and Take Control (spends board sway), which state it; card texts trimmed; Wake the Dead's bid may be paid by a faction there | |
 | 2026-10-20 | The ◐ signature, Night Terrors, designed and built as a test card (designer), with a new nightfall step before the fights; it replaces the last stand-in signature in the core deck | |

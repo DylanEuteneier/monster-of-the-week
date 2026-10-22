@@ -539,15 +539,15 @@ export function createGame(input) {
   /** @type {Record<string, number>} */
   const supply = {};
   for (const faction of factions) {
-    // SD1, first draft (designer, 2026-10-17): 3 on each of the archetype's three locations (variant seeding=even).
-    // seeding=home: a random home location gets 5, the others 1.
+    // SD1 (designer, 2026-10-21): 2 on each of the archetype's three locations (variant seeding=two); seeding=even: 3 on
+    // each (2026-10-17); seeding=home: a random home location gets 5, the others 1.
     const locs = spec.locations.filter((l) => l.archetype === archetypeOf(faction)).map((l) => l.id);
     const s = shuffle(locs, rngState);
     rngState = s.rngState;
-    const even = (options.seeding ?? 'even') === 'even';
+    const how = options.seeding ?? 'two', even = how === 'even' || how === 'two';
     let placed = 0;
     for (const loc of s.items) {
-      const n = even ? spec.constants.seeding.even : loc === s.items[0] ? spec.constants.seeding.home : spec.constants.seeding.other;
+      const n = how === 'two' ? spec.constants.seeding.two : even ? spec.constants.seeding.even : loc === s.items[0] ? spec.constants.seeding.home : spec.constants.seeding.other;
       board[loc].tokens[faction] = n;
       placed += n;
     }
@@ -2862,9 +2862,10 @@ function growthSpots(state, faction) {
   return LOCATION_IDS.filter((loc) => !state.board[loc].scorched && factionsAt(state, loc).length === 1 && tokensOf(state, loc, faction) >= threshold);
 }
 
-/** What each growth location is due: 1, plus 1 if the faction is aligned with it (AL3). @param {GameState} state @param {string} faction */
+/** What each growth location is due: 1, plus 1 if the faction is aligned with it (AL3; variant alignedGrowth, off by default since 2026-10-21). @param {GameState} state @param {string} faction */
 export function growthDue(state, faction) {
-  return Object.fromEntries(growthSpots(state, faction).map((loc) => [loc, 1 + (archetypeOf(faction) === alignmentOf(loc) ? 1 : 0)]));
+  const boost = state.options.alignedGrowth === 'on';
+  return Object.fromEntries(growthSpots(state, faction).map((loc) => [loc, 1 + (boost && archetypeOf(faction) === alignmentOf(loc) ? 1 : 0)]));
 }
 
 /**
