@@ -3103,14 +3103,16 @@ export function playableResponses(state, pid) {
 export function sampleTarget(state, pid, cardId, rng) {
   const card = cardById(cardId);
   const pick = (/** @type {any[]} */ xs) => xs[Math.floor(rng() * xs.length)];
-  const groups = LOCATION_IDS.flatMap((loc) => factionsAt(state, loc).map((f) => ({ loc, f })));
+  // The groups only the direct guesses use; a walked card still draws its number, so the random sequence is unchanged.
+  const sampled = SAMPLED.has(/** @type {string} */ (card.action));
+  const groups = sampled ? LOCATION_IDS.flatMap((loc) => factionsAt(state, loc).map((f) => ({ loc, f }))) : [];
   /** @type {('location' | 'faction')[]} */
   const modes = card.suit ? ['location', 'faction'] : ['location'];
   for (let tries = 0; tries < 40; tries++) {
     const mode = pick(modes);
     /** @type {Target | null} */
     let t = null;
-    const g = pick(groups);
+    const g = sampled ? pick(groups) : (rng(), undefined);
     switch (card.action) {
       case 'lure': case 'draw-adjacent': t = { mode, location: pick(LOCATION_IDS) }; break;
       case 'gather-region': case 'gather-neighbours': t = { mode, location: pick(LOCATION_IDS), faction: pick(state.factions) }; break;
@@ -3175,16 +3177,26 @@ function walkTarget(state, pid, cardId, mode, rng) {
   const pick = (/** @type {any[]} */ xs) => xs[Math.floor(rng() * xs.length)];
   /** @type {Target} */
   let t = copied(state, cardById(cardId)).suit ? { mode } : {};
+  // While a bot searches, each choice is memoised by the path of picks that led to it (cheaper than keying by the
+  // whole target, as nextChoice does). A speed-up, not a rule.
+  const memo = memoDepth ? (WALK_MEMO.get(state) ?? WALK_MEMO.set(state, new Map()).get(state)) : null;
+  let path = `${pid}|${cardId}|${mode}`;
   for (let steps = 0; steps < 30; steps++) {
-    const c = nextChoice(state, pid, cardId, t);
+    let c = memo?.get(path);
+    if (!c) { c = nextChoice(state, pid, cardId, t); memo?.set(path, c); }
     if (c.kind === 'done') return finishWalk(t);
-    if (c.kind === 'mode') { t = { mode }; continue; }
+    if (c.kind === 'mode') { t = { mode }; path += '|m'; continue; }
     if ('optional' in c && c.optional && rng() < 0.3) return finishWalk(t);
     if (!('options' in c) || !c.options.length) return null;
-    t = chooseStep(t, c, pick(/** @type {any[]} */ (c.options)));
+    const i = Math.floor(rng() * c.options.length);
+    t = chooseStep(t, c, /** @type {any[]} */ (c.options)[i]);
+    path += `|${i}`;
   }
   return null;
 }
+
+/** @type {WeakMap<object, Map<string, Choice>>} */
+const WALK_MEMO = new WeakMap();
 
 /** A target with one more choice made. @param {Target} t @param {Choice} c @param {any} o @returns {Target} */
 function chooseStep(t, c, o) {
