@@ -3179,6 +3179,23 @@ const finishWalk = (t) => t;
  * @returns {Choice}
  */
 export function nextChoice(state, pid, cardId, t) {
+  // Memoised per state object while a bot searches (memoising), as checkTarget: a walk asks the same first questions
+  // of the same state again and again. Callers never change a choice they're given. Not a rule.
+  if (!memoDepth) return nextChoiceNow(state, pid, cardId, t);
+  let memo = CHOICE_MEMO.get(state);
+  if (!memo) { memo = new Map(); CHOICE_MEMO.set(state, memo); }
+  const key = `${pid}|${cardId}|${JSON.stringify(t)}`;
+  const hit = memo.get(key);
+  if (hit !== undefined) return hit;
+  const c = nextChoiceNow(state, pid, cardId, t);
+  memo.set(key, c);
+  return c;
+}
+/** @type {WeakMap<object, Map<string, Choice>>} */
+const CHOICE_MEMO = new WeakMap();
+
+/** nextChoice, uncached. @param {GameState} state @param {string} pid @param {string} cardId @param {Target} t @returns {Choice} */
+function nextChoiceNow(state, pid, cardId, t) {
   const c = nextShape(state, pid, cardId, t);
   const card = copied(state, cardById(cardId));
   if (c.kind !== 'done' || !selectedPays(state) || !LEADS.has(/** @type {string} */ (card.action)) || ledFaction(state, card, t) !== null) return c;
