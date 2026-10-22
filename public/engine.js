@@ -2877,6 +2877,27 @@ export function growthDue(state, faction) {
 }
 
 /**
+ * Each faction's total growth due this round, capped by its supply, in one pass over the board: the same sums as
+ * growthDue faction by faction (for the bots' estimates; a speed-up, not a rule). @param {GameState} state
+ */
+export function growthTotal(state) {
+  const threshold = num(state, 'growth');
+  const boost = state.options.alignedGrowth === 'on';
+  /** @type {Record<string, number>} */ const due = {};
+  for (const loc of LOCATION_IDS) {
+    if (state.board[loc].scorched) continue;
+    const here = factionsAt(state, loc);
+    if (here.length !== 1) continue;
+    const f = here[0];
+    if (tokensOf(state, loc, f) < threshold) continue;
+    due[f] = (due[f] ?? 0) + 1 + (boost && archetypeOf(f) === alignmentOf(loc) ? 1 : 0);
+  }
+  let total = 0;
+  for (const f of state.factions) total += Math.min(state.supply[f], due[f] ?? 0);
+  return total;
+}
+
+/**
  * Growth for each faction in turn, from `from`. A faction with enough supply
  * grows everywhere it is due; one short of tokens grows as far as its supply
  * allows, its sway leaders taking turns to choose (3.5).

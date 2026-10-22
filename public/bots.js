@@ -27,7 +27,7 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, clone, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthDue, fleeOptions,
+  cardById, clone, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthTotal, fleeOptions,
 } from './engine.js';
 import evalFit from './eval-fit.json' with { type: 'json' };
 
@@ -300,8 +300,7 @@ export function features(state, pid) {
 function chancesAfter(s, pid, soft = 1, colours = ISLAND) {
   const roundsLeft = Math.max(0, Number(s.options.rounds) - s.round);
   const threshold = Number(s.options.threshold);
-  let grow = 0;
-  for (const f of s.factions) grow += Math.min(s.supply[f], Object.values(growthDue(s, f)).reduce((a, b) => a + b, 0));
+  const grow = growthTotal(s);
   const projected = totalPresence(s) + (s.phase === 'play' ? grow : 0);
   const spreadP = soft * (2 + 3 * roundsLeft);
   const others = s.seating.filter((id) => id !== pid);
