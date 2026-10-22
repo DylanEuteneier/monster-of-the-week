@@ -2617,8 +2617,32 @@ const FIXED = new Set(['options', 'deck', 'printed', 'seating', 'factions']);
 export function cloneState(state) {
   /** @type {Record<string, unknown>} */
   const o = {};
-  for (const k in state) { const v = /** @type {Record<string, unknown>} */ (state)[k]; o[k] = FIXED.has(k) ? v : clone(v); }
+  for (const k in state) {
+    const v = /** @type {Record<string, unknown>} */ (state)[k];
+    o[k] = FIXED.has(k) ? v : k === 'board' ? copyRecords(/** @type {Record<string, Record<string, unknown>>} */ (v)) : k === 'players' ? copyRecords(/** @type {Record<string, Record<string, unknown>>} */ (v)) : clone(v);
+  }
   return /** @type {T} */ (o);
+}
+/**
+ * The board or the players, copied one record deep by spreading (fast for their small flat maps): each place or
+ * player gets fresh copies of its maps and lists; anything deeper falls back to clone. @param {Record<string, Record<string, unknown>>} recs
+ */
+function copyRecords(recs) {
+  /** @type {Record<string, Record<string, unknown>>} */
+  const out = {};
+  for (const id in recs) {
+    const r = recs[id];
+    /** @type {Record<string, unknown>} */
+    const c = {};
+    for (const k in r) {
+      const v = r[k];
+      if (v === null || typeof v !== 'object') c[k] = v;
+      else if (Array.isArray(v)) c[k] = v.some((x) => x !== null && typeof x === 'object') ? clone(v) : v.slice();
+      else { let flat = true; for (const j in v) { const x = /** @type {Record<string, unknown>} */ (v)[j]; if (x !== null && typeof x === 'object') { flat = false; break; } } c[k] = flat ? { ...v } : clone(v); }
+    }
+    out[id] = c;
+  }
+  return out;
 }
 
 /** Several locations' fights in turn, on one copy (as resolveFight one after another); `copy` false: on `state` itself, already a copy. @param {GameState} state @param {string[]} locs @returns {GameState} */
