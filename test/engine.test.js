@@ -920,32 +920,41 @@ test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-
   assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), { ...joined, location: loc, from: [loc] })); // no Undead there
 });
 
-test('Plough Through: every side of a fight leaves by half rounded up, through its own exits; a side of 1 leaves entirely (designer, 2026-10-17)', () => {
+test('Plough Through: every side of a fight leaves by half rounded up, through its own exits; a side of 1 leaves entirely; the sway split as you choose among the fight\'s factions and the Nocturnals (designer, 2026-10-17, 2026-10-21)', () => {
   const s = clear(newGame());
   const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
   const noct = /** @type {string} */ (factionOfArchetype(s, 'nocturnals'));
-  const g = /** @type {string} */ (s.factions.find((x) => x !== noct));
+  const [g, h] = s.factions.filter((x) => x !== noct);
   const loc = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals' && map[l.id].adjacent.length >= 3)?.id);
   const [a, b, c] = map[loc].adjacent;
   s.board[loc].tokens = { [noct]: 5, [g]: 1 };
-  s.players.ann.standing[noct] = 2;
-  s.players.ann.standing[g] = 2;
-  const [first, second] = s.factions.filter((f) => f === noct || f === g); // sides in seat order of factions
+  s.players.ann.standing[noct] = 0;
+  s.players.ann.standing[g] = 4;
+  const first = s.factions.find((f) => f === noct || f === g); // sides in the order of the factions
   const exits = first === noct ? [a, a, b, c] : [c, a, a, b]; // the Nocturnals: 3 out (2 to a, 1 to b); the other: 1 to c
-  const t = { mode: /** @type {const} */ ('faction'), location: loc, payer: g, from: exits }; // the other side pays the 1 at the fight
+  // Three exits and the fight: 4 sway, here all from the other side.
+  const t = { mode: /** @type {const} */ ('faction'), location: loc, from: exits, payers: [g, g, g, g] };
   assert.equal(checkTarget(s, 'ann', cardById('plough'), t), null);
   const after = previewTarget(s, 'ann', 'plough', t);
   assert.deepEqual([after.board[loc].tokens[noct], after.board[loc].tokens[g] ?? 0, after.board[a].tokens[noct], after.board[b].tokens[noct], after.board[c].tokens[g]], [2, 0, 2, 1, 1]);
   assert.deepEqual([loc, a, b, c].map((l) => after.board[l].sway.ann), [1, 1, 1, 1]);
-  s.players.ann.standing[g] = 1;
-  assert.ok(checkTarget(s, 'ann', cardById('plough'), t)); // the payer needs 2: its exit and the fight
-  s.players.ann.standing[g] = 2;
-  assert.ok(second);
+  assert.equal(after.players.ann.standing[g], 0);
+  s.players.ann.standing[g] = 3;
+  assert.ok(checkTarget(s, 'ann', cardById('plough'), t)); // 3 standing for 4 sway
+  // Split as you choose: 2 from each.
+  s.players.ann.standing[noct] = 2; s.players.ann.standing[g] = 2;
+  assert.equal(checkTarget(s, 'ann', cardById('plough'), { ...t, payers: [noct, g, noct, g] }), null);
+  assert.ok(checkTarget(s, 'ann', cardById('plough'), { ...t, payers: [h, g, noct, g] })); // never a faction outside the fight but the Nocturnals
+  s.players.ann.standing[g] = 4;
   const clash = first === noct ? [a, a, b, a] : [a, a, a, b];
   assert.ok(checkTarget(s, 'ann', cardById('plough'), { ...t, from: clash })); // never two sides to one location
   assert.ok(checkTarget(s, 'ann', cardById('plough'), { ...t, from: exits.slice(1) })); // every side leaves in full
-  s.players.ann.standing[noct] = 1;
-  assert.ok(checkTarget(s, 'ann', cardById('plough'), t)); // two Nocturnal exits, 1 sway: can't play
+  // At a ◐ fight without the Nocturnals, they may still pay.
+  s.board[loc].tokens = { [g]: 2, [h]: 2 };
+  s.players.ann.standing[g] = 0; s.players.ann.standing[h] = 0; s.players.ann.standing[noct] = 3;
+  const first2 = s.factions.find((f) => f === g || f === h);
+  const ex2 = first2 === g ? [a, b] : [b, a];
+  assert.equal(checkTarget(s, 'ann', cardById('plough'), { mode: 'location', location: loc, from: ex2, payers: [noct, noct, noct] }), null);
   s.board[loc].tokens = { [noct]: 5 };
   assert.ok(checkTarget(s, 'ann', cardById('plough'), t)); // not a fight
 });

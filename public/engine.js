@@ -153,7 +153,8 @@ export { spec };
  * @property {boolean} [realOnly]  only one location was free: place the real token there (else the bluff)
  * @property {{ location: string, faction: string, to: string }[]} [moves]
  * @property {string} [lead]       the faction the player leads, on cards that move several factions (D15)
- * @property {string} [payer]      Invite Them In, the Gate, Plough Through: the faction whose standing pays the 1 sway at the fight
+ * @property {string} [payer]      Invite Them In, the Gate, Wake the Dead: the faction whose standing pays
+ * @property {string[]} [payers]   Plough Through: who pays each sway, one per exit (in order of first use), then the fight
  * @property {string} [losses]     the Gate: the end the winner's losses come from first
  */
 
@@ -842,30 +843,32 @@ function raiseRoom(state, pid, loc, mode, payer) {
 const ploughSides = (state, loc) => state.factions.filter((f) => factionsAt(state, loc).includes(f))
   .map((f) => ({ f, n: Math.ceil(tokensOf(state, loc, f) / 2), spots: burstSpots(state, loc, f) }));
 /**
- * Plough Through: can the exits chosen so far (`from`) be finished? No location takes two sides, and under D21 each side
- * opens no more exits than your standing with it pays for, the payer's 1 at the fight included.
- * @param {GameState} state @param {string} pid @param {string} loc @param {string[]} from @param {string | undefined} payer
+ * Plough Through: can the exits chosen so far (`from`) be finished? No location takes two sides, and under D21 the
+ * standing you hold with the factions that may pay covers every exit and the fight.
+ * @param {GameState} state @param {string} pid @param {Card} card @param {string} loc @param {string[]} from
  */
-function ploughFits(state, pid, loc, from, payer) {
+function ploughFits(state, pid, card, loc, from) {
   const sides = ploughSides(state, loc);
-  const pay = (/** @type {string} */ f) => (swayRequired(state) ? (state.players[pid].standing[f] ?? 0) - (f === payer ? 1 : 0) : Infinity);
   /** @type {string[][]} */ const used = [];
   let i = 0;
   for (const side of sides) { used.push(from.slice(i, i + side.n)); i += side.n; }
   if (from.length > i) return false;
   const taken = (/** @type {number} */ k) => new Set(used.flatMap((u, j) => (j === k ? [] : u)));
-  for (const [k, side] of sides.entries()) {
-    const mine = new Set(used[k]);
-    if ([...mine].some((l) => !side.spots.includes(l) || taken(k).has(l)) || mine.size > pay(side.f)) return false;
-  }
+  for (const [k, side] of sides.entries()) if (used[k].some((l) => !side.spots.includes(l) || taken(k).has(l))) return false;
   // The sides still to open an exit each need one free location, distinct from the others' (a small matching).
-  const need = sides.map((side, k) => ({ side, k })).filter(({ side, k }) => used[k].length < side.n && !used[k].length);
+  const need = sides.map((side, k) => ({ side, k })).filter(({ k }) => !used[k].length);
   const held = new Set(used.flat());
+  // The card's stated break (designer, 2026-10-21): 1 at each exit and 1 at the fight, split as you choose among
+  // the fight's factions and the Nocturnals; all or nothing.
+  const budget = swayRequired(state) ? ploughPool(state, card, loc).reduce((n, f) => n + (state.players[pid].standing[f] ?? 0), 0) : Infinity;
+  if (held.size + need.length + 1 > budget) return false;
   /** @type {(j: number, busy: Set<string>) => boolean} */
-  const match = (j, busy) => j === need.length
-    || need[j].side.spots.some((l) => !busy.has(l) && pay(need[j].side.f) >= 1 && match(j + 1, new Set([...busy, l])));
+  const match = (j, busy) => j === need.length || need[j].side.spots.some((l) => !busy.has(l) && match(j + 1, new Set([...busy, l])));
   return match(0, held);
 }
+
+/** Plough Through: who may pay: the fight's factions, and the Nocturnals if they aren't in it (designer, 2026-10-21). @param {GameState} state @param {Card} card @param {string} loc */
+const ploughPool = (state, card, loc) => [...new Set([...factionsAt(state, loc), /** @type {string} */ (suitFaction(state, card))])];
 
 /**
  * Cut the Powerlines (⏏ shift, designer 2026-10-17): the faction's other groups a group of `f` at `loc` can rejoin,
@@ -1219,9 +1222,11 @@ function checkShape(state, pid, card, t) {
       if (!loc || !state.board[loc] || state.board[loc].scorched || factionsAt(state, loc).length < 2 || (t.mode === 'location' ? !suitLocations(card).includes(loc) : !factionsAt(state, loc).includes(/** @type {string} */ (sf)))) return t.mode === 'location' ? 'Choose a fight at a ◐ location.' : 'Choose a fight the Nocturnals are in.';
       const from = (t.from ?? []).filter((l) => l !== '__stop');
       const total = ploughSides(state, loc).reduce((n, side) => n + side.n, 0);
-      if (!t.payer || !factionsAt(state, loc).includes(t.payer)) return 'Choose which faction leaving pays the 1 sway at the fight.';
       if (from.length !== total) return `Every side leaves by half, rounded up: choose ${total} exits, one per token.`;
-      return ploughFits(state, pid, loc, from, t.payer) ? null : 'Each side goes out to neighbours it can enter, never where another side goes, and you need the sway for every exit (all or nothing).';
+      if (!ploughFits(state, pid, card, loc, from)) return 'Each side goes out to neighbours it can enter, never where another side goes, and you need the sway for every exit and the fight (all or nothing).';
+      const payers = t.payers ?? [], pool = ploughPool(state, card, loc);
+      if (payers.length !== new Set(from).size + 1 || payers.some((f) => !pool.includes(f))) return 'Choose who pays each sway: a faction in the fight, or the Nocturnals.';
+      return swayRequired(state) && pool.some((f) => payers.filter((x) => x === f).length > (state.players[pid].standing[f] ?? 0)) ? 'You need the standing for each sway you split (all or nothing).' : null;
     }
     case 'rejoin': {
       const loc = t.location, f = t.faction, sf = suitFaction(state, card);
@@ -1638,15 +1643,17 @@ function act(state, pid, card, t) {
       break;
     }
     case 'plough': {
-      // Every side leaves by half, rounded up, through its own exits; 1 sway where each faction lands.
+      // Every side leaves by half, rounded up, through its own exits.
       const loc = /** @type {string} */ (t.location);
       const from = (t.from ?? []).filter((l) => l !== '__stop');
       let i = 0;
       for (const side of ploughSides(state, loc)) {
         const mine = from.slice(i, i + side.n); i += side.n;
-        for (const l of new Set(mine)) move(state, pid, side.f, loc, l, mine.filter((x) => x === l).length, placed, true);
+        for (const l of new Set(mine)) { placed.add(`${l}:${side.f}`); move(state, pid, side.f, loc, l, mine.filter((x) => x === l).length, placed, true); }
       }
-      placeOne(state, pid, /** @type {string} */ (t.payer), loc);
+      // 1 at each exit and 1 at the fight, split among the payers as chosen (the card's stated break).
+      const spots = [...new Set(from), loc], payers = t.payers ?? [];
+      spots.forEach((l, k) => placeOne(state, pid, payers[k], l));
       logLine(state, `${pid}: ${card.name}: the fight at ${lname(loc)} scatters to ${[...new Set(from)].map(lname).join(', ')}.`);
       break;
     }
@@ -3105,6 +3112,7 @@ function walkTarget(state, pid, cardId, mode, rng) {
 
 /** A target with one more choice made. @param {Target} t @param {Choice} c @param {any} o @returns {Target} */
 function chooseStep(t, c, o) {
+  if (c.kind === 'faction' && c.key === 'payers') return { ...t, payers: [...(t.payers ?? []), o] };
   if (c.kind === 'faction') return { ...t, [c.key ?? 'faction']: o };
   if (c.kind === 'direction') return { ...t, direction: o };
   if (c.kind === 'split') return { ...t, split: { ...(t.split ?? {}), [o]: (t.split?.[o] ?? 0) + 1 } };
@@ -3156,7 +3164,7 @@ const finishWalk = (t) => t;
  * time, and the server still checks the finished target (checkTarget).
  * @typedef {{ kind: 'mode' } | { kind: 'location', key: 'location' | 'to' | 'bluff' | 'path' | 'from' | 'losses', options: string[], optional?: boolean, left?: number }
  *   | { kind: 'group', key: 'group' | 'move' | 'lure', options: { location: string, faction: string }[], optional?: boolean }
- *   | { kind: 'faction', key?: 'faction' | 'to' | 'lead' | 'payer', options: string[] } | { kind: 'direction', options: string[] }
+ *   | { kind: 'faction', key?: 'faction' | 'to' | 'lead' | 'payer' | 'payers', options: string[] } | { kind: 'direction', options: string[] }
  *   | { kind: 'split', options: string[], left: number } | { kind: 'done' }} Choice
  * @param {GameState} state @param {string} pid @param {string} cardId @param {Target} t
  * @returns {Choice}
@@ -3248,15 +3256,22 @@ function nextShape(state, pid, cardId, t) {
     case 'plough': {
       const st = /** @type {GameState} */ (state);
       const fightOk = (/** @type {string} */ l) => !st.board[l].scorched && factionsAt(st, l).length >= 2 && (mode === 'location' ? suitLocations(card).includes(l) : factionsAt(st, l).includes(/** @type {string} */ (sf)));
-      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => fightOk(l) && factionsAt(st, l).some((f) => ploughFits(st, pid, l, [], f))) };
-      if (!t.payer) return { kind: 'faction', key: 'payer', options: factionsAt(st, t.location).filter((f) => ploughFits(st, pid, /** @type {string} */ (t.location), [], f)) };
+      if (!t.location) return { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => fightOk(l) && ploughFits(st, pid, card, l, [])) };
       const sides = ploughSides(st, t.location);
       const from = t.from ?? [];
       const total = sides.reduce((n, side) => n + side.n, 0);
-      if (from.length >= total) return { kind: 'done' };
+      if (from.length >= total) {
+        // Who pays each sway, one at a time: each exit, then the fight.
+        const owed = new Set(from).size + 1, payers = t.payers ?? [];
+        if (payers.length >= owed) return { kind: 'done' };
+        const left = (/** @type {string} */ f) => (swayRequired(state) ? (state.players[pid].standing[f] ?? 0) : Infinity) - payers.filter((x) => x === f).length;
+        const pool = ploughPool(st, card, t.location);
+        const rest = owed - payers.length - 1; // still to pay after this one
+        return { kind: 'faction', key: 'payers', options: pool.filter((f) => left(f) >= 1 && pool.reduce((n, g) => n + Math.max(0, left(g) - (g === f ? 1 : 0)), 0) >= rest) };
+      }
       let i = 0, side = sides[0];
       for (const x of sides) { if (from.length < i + x.n) { side = x; break; } i += x.n; }
-      return { kind: 'location', key: 'from', options: side.spots.filter((l) => ploughFits(st, pid, t.location ?? '', [...from, l], t.payer)), left: total - from.length };
+      return { kind: 'location', key: 'from', options: side.spots.filter((l) => ploughFits(st, pid, card, t.location ?? '', [...from, l])), left: total - from.length };
     }
     case 'rejoin': {
       const st = /** @type {GameState} */ (state);

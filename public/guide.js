@@ -92,8 +92,15 @@ export function targetSteps(state, pid, cardId, target) {
       else Object.assign(t, { location: g.location, faction: g.faction });
       continue;
     }
+    if (c.kind === 'faction' && c.key === 'payers') {
+      const f = target.payers?.[(t.payers ?? []).length];
+      if (!f) break;
+      steps.push({ kind: 'faction', faction: f, label: `paid by the ${F(f)}` });
+      t.payers = [...(t.payers ?? []), f];
+      continue;
+    }
     if (c.kind === 'faction') {
-      const key = c.key ?? 'faction';
+      const key = /** @type {'faction' | 'to' | 'lead' | 'payer'} */ (c.key ?? 'faction');
       const f = /** @type {string | undefined} */ (target[key]);
       if (!f) break;
       steps.push({ kind: 'faction', faction: f, label: key === 'lead' ? `leading the ${F(f)}` : `the ${F(f)}` });

@@ -813,7 +813,7 @@ function renderTargeting(cardId) {
     : card.action === 'control' && choice.kind === 'location' && choice.key === 'from' ? `Spend 1 of your sway there to cut down one more · up to ${choice.left} more`
     : card.action === 'control' && choice.kind === 'faction' ? 'Pick the faction the machines turn on'
     : card.action === 'raise' && choice.kind === 'location' && choice.key === 'from' ? `Raise one more of the dead · up to ${choice.left} more`
-    : card.action === 'plough' && choice.kind === 'faction' && choice.key === 'payer' ? 'Pick which side pays at the fight'
+    : card.action === 'plough' && choice.kind === 'faction' && choice.key === 'payers' ? 'Pick who pays the next sway: each exit, then the fight (a faction in the fight, or the Nocturnals)'
     : card.action === 'raise' && choice.kind === 'faction' && choice.key === 'payer' ? 'Pick whose standing pays for the dead (a faction there, or the Undead)'
     : card.action === 'plough' && choice.kind === 'location' && choice.key === 'from' ? `Pick an exit for the next token · ${choice.left} left`
     : choice.kind === 'split' ? `Send tokens: ${choice.left} left`
@@ -1680,7 +1680,8 @@ function applyPick(t, action, el) {
     if (!t.mode) return false;
     choice = currentChoice(t);
   }
-  if (action === 'pick-faction') t[choice?.kind === 'faction' ? choice.key ?? 'faction' : 'faction'] = el.dataset.faction;
+  if (action === 'pick-faction' && choice?.kind === 'faction' && choice.key === 'payers') t.payers = [...(t.payers ?? []), el.dataset.faction ?? ''];
+  else if (action === 'pick-faction') t[/** @type {'faction' | 'to' | 'lead' | 'payer'} */ (choice?.kind === 'faction' ? choice.key ?? 'faction' : 'faction')] = el.dataset.faction;
   else if (action === 'pick-direction') t.direction = el.dataset.direction;
   else if (action === 'pick-group' && choice?.kind === 'group') {
     if (choice.key === 'lure') Object.assign(t, { faction: el.dataset.faction, from: [loc] });

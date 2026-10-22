@@ -1700,7 +1700,7 @@
           "slot": "shift",
           "sway": 3,
           "action": "plough",
-          "text": "The Slayerettes plough a truck straight through the middle of the brawl. Every side leaves by half, rounded up, split as you choose among its neighbours, never two sides to the same location. Target: the fight.",
+          "text": "The Slayerettes plough a truck straight through the middle of the brawl. Every side leaves by half, rounded up, split as you choose among its neighbours, never two sides to the same location. Its sway is paid by the factions in the fight or the Nocturnals, split as you choose. Target: the fight.",
           "readings": {
             "location": "a fight at a ◐ location.",
             "faction": "a fight the Nocturnals are in."
