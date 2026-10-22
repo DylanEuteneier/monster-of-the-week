@@ -265,9 +265,14 @@ const coloursOf = (persona) => (persona.w2 === undefined && persona.w3 === undef
 function chancesNow(state, pid, hidden, soft, colours) {
   if (!hidden) return chancesAfter(projectFights(state), pid, soft, colours);
   const mine = chancesAfter(projectFights(state, pid, false), pid, soft, colours);
-  if (!Object.values(state.board).some((place) => place.token && place.token.owner !== pid)) return mine;
+  let rival = false;
+  for (const loc in state.board) { const tk = state.board[loc].token; if (tk && tk.owner !== pid) { rival = true; break; } }
+  if (!rival) return mine;
   const theirs = chancesAfter(projectFights(state, pid, true), pid, soft, colours);
-  return /** @type {typeof mine} */ (Object.fromEntries(Object.entries(mine).map(([k, v]) => [k, (v + /** @type {Record<string, number>} */ (/** @type {unknown} */ (theirs))[k]) / 2])));
+  /** @type {Record<string, number>} */ const avg = {};
+  const m = /** @type {Record<string, number>} */ (/** @type {unknown} */ (mine)), th = /** @type {Record<string, number>} */ (/** @type {unknown} */ (theirs));
+  for (const k in m) avg[k] = (m[k] + th[k]) / 2;
+  return /** @type {typeof mine} */ (/** @type {unknown} */ (avg));
 }
 
 /**
