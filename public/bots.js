@@ -298,38 +298,63 @@ export function features(state, pid) {
 
 /** winChances on a board whose fights are already projected. @param {GameState} s @param {string} pid @param {number} [soft]  persona soft: widens every chance's spread @param {number[]} [colours]  the island margin's weights on the weakest, second and third colours, and on every trophy */
 function chancesAfter(s, pid, soft = 1, colours = ISLAND) {
+  // Plain loops (a speed-up): the same sums in the same order as before, so the same numbers.
   const roundsLeft = Math.max(0, Number(s.options.rounds) - s.round);
   const threshold = Number(s.options.threshold);
   const grow = growthTotal(s);
-  const projected = totalPresence(s) + (s.phase === 'play' ? grow : 0);
+  const F = s.factions, nF = F.length, seats = s.seating;
+  const presence = F.map((f) => presenceOf(s, f));
+  let total = 0;
+  for (let i = 0; i < nF; i++) total += presence[i];
+  const projected = total + (s.phase === 'play' ? grow : 0);
   const spreadP = soft * (2 + 3 * roundsLeft);
-  const others = s.seating.filter((id) => id !== pid);
-  const presence = s.factions.map((f) => presenceOf(s, f));
-  const top = Math.max(...presence);
+  let top = -Infinity;
+  for (let i = 0; i < nF; i++) if (presence[i] > top) top = presence[i];
   const w = presence.map((n) => Math.exp((n - top) / (1.5 + 1.5 * roundsLeft)));
-  const wSum = w.reduce((a, b) => a + b, 0);
+  let wSum = 0;
+  for (let i = 0; i < nF; i++) wSum += w[i];
   // Each seat's net standing with each faction, and per faction the best and second best seat (so "the best of the others" is a lookup).
-  const nets = Object.fromEntries(s.seating.map((id) => [id, s.factions.map((f) => (s.players[id].standing[f] ?? 0) - s.players[id].trophies[f])]));
-  const best = s.factions.map((_, i) => { let a = -Infinity, b = -Infinity, who = ''; for (const id of s.seating) { const v = nets[id][i]; if (v > a) { b = a; a = v; who = id; } else if (v > b) b = v; } return { a, b, who }; });
-  const bestOther = (/** @type {string} */ id, /** @type {number} */ i) => (best[i].who === id ? best[i].b : best[i].a);
-  const lead = (/** @type {number} */ i) => nets[pid][i] - bestOther(pid, i);
-  const asInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid(lead(i) / (soft * (1 + roundsLeft))), 0);
-  const marginInvaders = s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * lead(i), 0);
+  /** @type {Record<string, number[]>} */
+  const nets = {};
+  for (const id of seats) { const pl = s.players[id], row = new Array(nF); for (let i = 0; i < nF; i++) row[i] = (pl.standing[F[i]] ?? 0) - pl.trophies[F[i]]; nets[id] = row; }
+  const bestA = new Array(nF), bestB = new Array(nF), bestWho = new Array(nF);
+  for (let i = 0; i < nF; i++) { let a = -Infinity, b = -Infinity, who = ''; for (const id of seats) { const v = nets[id][i]; if (v > a) { b = a; a = v; who = id; } else if (v > b) b = v; } bestA[i] = a; bestB[i] = b; bestWho[i] = who; }
+  const bestOther = (/** @type {string} */ id, /** @type {number} */ i) => (bestWho[i] === id ? bestB[i] : bestA[i]);
+  const spreadI = soft * (1 + roundsLeft);
+  let asInvaders = 0, marginInvaders = 0;
+  for (let i = 0; i < nF; i++) { const l = nets[pid][i] - bestOther(pid, i); asInvaders += (w[i] / wSum) * sigmoid(l / spreadI); }
+  for (let i = 0; i < nF; i++) marginInvaders += (w[i] / wSum) * (nets[pid][i] - bestOther(pid, i));
   // The best rival's chance of leading the winning faction (each rival against everyone else).
-  const rivalInvaders = Math.max(0, ...others.map((o) => s.factions.reduce((acc, f, i) => acc + (w[i] / wSum) * sigmoid((nets[o][i] - bestOther(o, i)) / (soft * (1 + roundsLeft))), 0)));
+  let rivalInvaders = 0;
   /** @type {Record<string, number>} */
   const islOf = {};
   /** @type {Record<string, number>} */
   const allOf = {};
-  for (const id of s.seating) {
-    const t = s.factions.map((f) => s.players[id].trophies[f]).sort((a, b) => a - b);
+  const t = new Array(nF);
+  for (const id of seats) {
+    const tr = s.players[id].trophies;
+    let sum = 0;
+    for (let i = 0; i < nF; i++) { t[i] = tr[F[i]]; sum += t[i]; }
+    t.sort((a, b) => a - b);
     islOf[id] = colours[0] * t[0] + colours[1] * t[1] + colours[2] * t[2];
-    allOf[id] = islOf[id] + (colours[3] ?? 0.02) * s.factions.reduce((n, f) => n + s.players[id].trophies[f], 0);
+    allOf[id] = islOf[id] + (colours[3] ?? 0.02) * sum;
+    if (id === pid) continue;
+    let r = 0;
+    for (let i = 0; i < nF; i++) r += (w[i] / wSum) * sigmoid((nets[id][i] - bestOther(id, i)) / spreadI);
+    if (r > rivalInvaders) rivalInvaders = r;
   }
-  const marginIsland = islOf[pid] - Math.max(...others.map((o) => islOf[o]));
-  const linearIsland = allOf[pid] - Math.max(...others.map((o) => allOf[o])); // the island margin, counted directly
+  let bestIsl = -Infinity, bestAll = -Infinity, backers = 0;
+  for (const id of seats) {
+    if (id === pid) continue;
+    if (islOf[id] > bestIsl) bestIsl = islOf[id];
+    if (allOf[id] > bestAll) bestAll = allOf[id];
+    let m = -Infinity;
+    for (let i = 0; i < nF; i++) if (nets[id][i] > m) m = nets[id][i];
+    if (m >= TABLE.backing) backers += 1;
+  }
+  const marginIsland = islOf[pid] - bestIsl;
+  const linearIsland = allOf[pid] - bestAll; // the island margin, counted directly
   const asIsland = sigmoid(marginIsland / (soft * (0.6 + 0.8 * roundsLeft)));
-  const backers = others.filter((o) => Math.max(...nets[o]) >= TABLE.backing).length;
   const prior = Math.min(0.9, Math.max(0.1, TABLE.base + TABLE.step * backers));
   const rounds = Number(s.options.rounds);
   const known = rounds > 1 ? Math.min(1, (s.round - 1) / (rounds - 1)) : 1; // how much presence says by now
