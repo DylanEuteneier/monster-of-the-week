@@ -321,7 +321,15 @@ const gateOf = (state, loc) => /** @type {any} */ (state.board[loc])?.gate ?? nu
 /** The locations that make up this one: itself, and its Gate partner while the Gate is open. @param {GameState | PlayerView} state @param {string} loc */
 const endsOf = (state, loc) => { const g = gateOf(state, loc); return g ? [loc, g] : [loc]; };
 /** The factions at a location (both ends of a Gate together). @param {GameState} state @param {string} loc */
-const factionsAt = (state, loc) => [...new Set(endsOf(state, loc).flatMap((l) => Object.keys(state.board[l].tokens).filter((f) => state.board[l].tokens[f] > 0)))];
+const factionsAt = (state, loc) => {
+  // Hot path (2026-10-21 profile: 42% of a bot game): plain loops, no intermediate arrays. Same result and order.
+  /** @type {string[]} */ const out = [];
+  const add = (/** @type {Record<string, number>} */ tokens) => { for (const f in tokens) if (tokens[f] > 0 && !out.includes(f)) out.push(f); };
+  add(state.board[loc].tokens);
+  const g = gateOf(state, loc);
+  if (g) add(state.board[g].tokens);
+  return out;
+};
 /**
  * A location's neighbours. Through an open Gate the two ends are one location: either end's neighbours are its
  * neighbours, and a location next to one end is next to the other. Without a Gate, the map's adjacency.
