@@ -27,7 +27,7 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, clone, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthTotal, fleeOptions,
+  cardById, clone, cloneState, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthTotal, fleeOptions,
 } from './engine.js';
 import evalFit from './eval-fit.json' with { type: 'json' };
 
@@ -109,7 +109,7 @@ function projectFights(state, pid = undefined, rivals = false) {
   const key = hide.join(',');
   const hit = memo.get(key);
   if (hit) return hit;
-  const s = clone({ ...state, log: [], events: [] }); // the log is not read here, and copying it was most of the cost
+  const s = cloneState({ ...state, log: [], events: [] }); // the log is not read here, and copying it was most of the cost
   for (const loc of hide) s.board[loc].token = null;
   const out = resolveFights(s, locs, false);
   memo.set(key, out);
@@ -691,7 +691,7 @@ function cardWorth(state, pid, cardId, rng, ev, base) {
 function comboWorth(state, pid, cardId, kept, rng, ev, base) {
   let best = cardWorth(state, pid, cardId, rng, ev, base);
   for (const k of kept.filter((id) => id !== cardId)) {
-    const s = clone(state);
+    const s = cloneState(state);
     s.phase = 'play';
     s.turn = s.seating.indexOf(pid);
     s.opened = true;
@@ -701,7 +701,7 @@ function comboWorth(state, pid, cardId, kept, rng, ev, base) {
     if (!firsts.length) continue;
     const alone = firsts[0].v;
     for (const f of firsts.slice(0, 2)) {
-      const s2 = clone(f.s);
+      const s2 = cloneState(f.s);
       s2.phase = 'play';
       s2.turn = s2.seating.indexOf(pid);
       s2.pending = null;

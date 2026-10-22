@@ -1153,7 +1153,7 @@ function checkTargetNow(state, pid, card, t) {
   const led = selectedPays(state) ? ledFaction(state, copied(state, card), t) : null;
   if (led && cost > 0 && (state.players[pid].standing[led] ?? 0) < cost && movingFactions(state, pid, card, t).includes(led)) return 'You need standing with the faction you lead to pay for the sway this move places (IC1).';
   const tokensAfter = (/** @type {Options} */ options) => {
-    const copy = /** @type {GameState} */ (/** @type {unknown} */ (clone({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options, lastPlayed: state.lastPlayed ?? null, leftOut: state.leftOut ?? [], tips: state.tips ?? [], events: [], log: [] })));
+    const copy = /** @type {GameState} */ (/** @type {unknown} */ (cloneState({ board: state.board, players: state.players, pending: state.pending, factions: state.factions, supply: state.supply, round: state.round, options, lastPlayed: state.lastPlayed ?? null, leftOut: state.leftOut ?? [], tips: state.tips ?? [], events: [], log: [] })));
     act(copy, pid, card, t);
     return JSON.stringify(LOCATION_IDS.map((l) => copy.board[l].tokens));
   };
@@ -2376,7 +2376,7 @@ export function applyMove(state, submission) {
   const verdict = validate(state, submission);
   if (!verdict.ok) throw new IllegalMoveError(verdict.reason);
   /** @type {GameState} */
-  const next = clone({ ...state, log: [] });
+  const next = cloneState({ ...state, log: [] });
   // The log is shared copy-on-write: only this round's entry can still change (logLine), so only it is copied.
   next.log = state.log.map((e) => (e.round === state.round ? { ...e, events: e.events.slice() } : e));
   const { playerId: pid, move: m } = submission;
@@ -2607,9 +2607,23 @@ export function clone(x) {
   return /** @type {T} */ (o);
 }
 
+/** The parts of a game state no rule changes once the game is made: shared between copies, not copied. */
+const FIXED = new Set(['options', 'deck', 'printed', 'seating', 'factions']);
+/**
+ * A copy of a game state (or a slice of one) that shares its fixed parts (FIXED) and deep-copies the rest. Much of a
+ * plain clone's time went on the options. A speed-up, not a rule.
+ * @template T @param {T} state @returns {T}
+ */
+export function cloneState(state) {
+  /** @type {Record<string, unknown>} */
+  const o = {};
+  for (const k in state) { const v = /** @type {Record<string, unknown>} */ (state)[k]; o[k] = FIXED.has(k) ? v : clone(v); }
+  return /** @type {T} */ (o);
+}
+
 /** Several locations' fights in turn, on one copy (as resolveFight one after another); `copy` false: on `state` itself, already a copy. @param {GameState} state @param {string[]} locs @returns {GameState} */
 export function resolveFights(state, locs, copy = true) {
-  const next = copy ? clone(state) : state;
+  const next = copy ? cloneState(state) : state;
   for (const loc of locs) fightAt(next, loc);
   return next;
 }
