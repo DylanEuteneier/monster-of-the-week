@@ -478,7 +478,7 @@ function move(state, pid, faction, from, to, count, placedAt, freed = false) {
   // from, instead of the destination, paid by the faction moved.
   const spot = state.options.gatherSway === 'origin' && placedAt.gather ? from : to;
   const key = spot === to ? `${to}:${faction}` : `${from}:${faction}:origin`;
-  if (!free && swayRequired(state) && cost > 0 && !placedAt.has(key) && (state.players[pid].standing[faction] ?? 0) < cost) return 0;
+  if (!free && swayRequired(state) && cost > 0 && !placedAt.has(key) && (state.players[pid].standing[faction] ?? 0) < cost) { unpaidMoves += 1; return 0; }
   takeTokens(state, from, faction, n);
   addTokens(state, to, faction, n);
   const place = (/** @type {string} */ loc, /** @type {string} */ key, /** @type {number} */ amount) => {
@@ -1106,6 +1106,9 @@ function movingFactions(state, pid, card, t) {
   return state.factions.filter((f) => LOCATION_IDS.some((l) => (copy.board[l].tokens[f] ?? 0) > (state.board[l].tokens[f] ?? 0)));
 }
 
+/** Moves refused for want of standing (IC1), counted so checkTarget can tell when paying changed nothing. Not a rule. */
+let unpaidMoves = 0;
+
 /**
  * Check a target for a card's turn action. Returns an error, or null.
  * @param {GameState} state @param {string} pid @param {Card} card @param {Target | null | undefined} t
@@ -1154,9 +1157,14 @@ function checkTargetNow(state, pid, card, t) {
     act(copy, pid, card, t);
     return JSON.stringify(LOCATION_IDS.map((l) => copy.board[l].tokens));
   };
-  const paid = tokensAfter(state.options), free = tokensAfter({ ...state.options, swayRequired: 'off' });
-  // All or nothing (designer, 2026-10-15; variant payInFull): every move the card makes must be paid for.
-  if ((state.options.payInFull ?? 'on') === 'on') return paid === free ? null : 'You need the sway to pay for all of it (all or nothing).';
+  const refused = unpaidMoves;
+  const paid = tokensAfter(state.options);
+  // All or nothing (designer, 2026-10-15; variant payInFull): every move the card makes must be paid for. Inside a card's
+  // action, only a move refused for want of standing makes paying differ from not paying; if none was, they match.
+  const inFull = (state.options.payInFull ?? 'on') === 'on';
+  if (inFull && unpaidMoves === refused) return null;
+  const free = tokensAfter({ ...state.options, swayRequired: 'off' });
+  if (inFull) return paid === free ? null : 'You need the sway to pay for all of it (all or nothing).';
   // IC1 as first drafted: the card must be payable for at least one of its moves.
   const before = JSON.stringify(LOCATION_IDS.map((l) => state.board[l].tokens));
   if (paid === before && free !== before) return 'You need standing with the faction to pay for the sway this move places (IC1).';
