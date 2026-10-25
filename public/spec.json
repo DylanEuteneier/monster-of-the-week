@@ -10,7 +10,7 @@
     "notes": "Seat limits are decision D3 (3.16). Rules: the first draft (Appendix G). Cards: Set v2 (H.8) plus scaffold placeholders for the six extras (H.6). Numbers: first-draft guesses (G.7), each a variant. Map: the prototype board, layout D (testing only)."
   },
   "constants": {
-    "coreDeck": ["invite-in", "gate", "hack-targeting", "bait-trail", "ritual", "draw-away", "big-chase", "cut-powerlines", "plough", "light-cross", "wake-the-dead", "take-control", "night-terrors", "study-bodies", "spill-blood", "rally", "dig-in", "shift-bet", "spread-word", "pull-back", "underdog"],
+    "coreDeck": ["invite-in", "gate", "hack-targeting", "bait-trail", "ritual", "draw-away", "big-chase", "cut-powerlines", "plough", "light-cross", "wake-the-dead", "take-control", "night-terrors", "study-bodies", "spill-blood", "favours", "stakes", "exit", "showdown", "switch", "playbook"],
     "handSize": {
       "3": 6,
       "4": 5,
@@ -1570,6 +1570,75 @@
           }
         },
         {
+          "id": "favours",
+          "name": "Call in Favours",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "favours",
+          "uses": ["sway", "standing"],
+          "round": 22,
+          "text": "Choose one. Sway: 1 sway from your supply at each of up to X fights. Standing: up to X standing with one faction, from your supply. X is the cards in your hand, this one included.",
+          "marked": "A"
+        },
+        {
+          "id": "stakes",
+          "name": "Raise the Stakes",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "stakes",
+          "uses": ["standing", "sway", "tokens"],
+          "round": 22,
+          "text": "Choose one. Standing: take 1 standing from each of up to X factions, all into one. Sway: gather up to X of your sway from next door into one location. Tokens: up to X tokens of one faction come in from its groups next door, to a location where you have sway. X is the cards in your hand, this one included.",
+          "marked": "B"
+        },
+        {
+          "id": "exit",
+          "name": "Cover Every Exit",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "exit",
+          "uses": ["standing", "sway", "tokens"],
+          "round": 22,
+          "text": "Choose one. Standing: move 1 standing from one faction to each of up to X others. Sway: send 1 of your sway from one location to each of up to X neighbours. Tokens: a group sends 1 token to each of up to X neighbours. X is the cards in your hand, this one included.",
+          "marked": "C"
+        },
+        {
+          "id": "showdown",
+          "name": "Showdown",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "showdown",
+          "round": 22,
+          "text": "At a lone group, never a fight, burn your sway there, 1 for each token, to take that many of its tokens as your trophies. Burned sway goes back to your supply. Target: the group.",
+          "marked": "D"
+        },
+        {
+          "id": "switch",
+          "name": "Switch Allegiance",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "switch",
+          "uses": ["standing", "sway"],
+          "round": 22,
+          "text": "Choose one. Standing: burn up to X standing with one faction to gain the same with another. Sway: move up to X of your sway from one location to any other. X is the cards in your hand, this one included."
+        },
+        {
+          "id": "playbook",
+          "name": "Steal Their Playbook",
+          "suit": null,
+          "slot": "extra",
+          "sway": 0,
+          "action": "playbook",
+          "uses": ["theirs", "yours"],
+          "round": 22,
+          "text": "Choose one. Theirs: play the last card played for its action this round as if it were yours. Yours: take back into your hand a card you played earlier this round."
+        },
+        {
           "id": "rally",
           "name": "Rally Behind Them",
           "suit": null,
@@ -2022,7 +2091,7 @@
       },
       {
         "id": "steal-playbook",
-        "name": "Steal Their Playbook",
+        "name": "Steal Their Playbook (round 15)",
         "suit": null,
         "slot": "extra",
         "sway": 0,

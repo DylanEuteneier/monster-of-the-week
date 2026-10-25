@@ -800,11 +800,26 @@ function renderTargeting(cardId) {
   const suit = spec.archetypes.find((a) => a.id === card.suit);
   const WORDS = /** @type {Record<string, string>} */ ({
     mode: 'Pick a reading', location: 'Pick a location', to: 'Pick where they go', bluff: 'Pick a spot for the bluff', path: 'Pick the next step', lure: 'Tied: pick which group comes',
-    from: 'Pick where they come from', group: 'Pick a group', faction: 'Pick a faction', direction: 'Pick a direction', done: 'Ready',
+    from: 'Pick where they come from', group: 'Pick a group', faction: 'Pick a faction', direction: 'Pick a direction', use: 'Pick a use', done: 'Ready',
   });
   const key = choice.kind === 'location' || (choice.kind === 'group' && choice.key === 'lure') ? choice.key : choice.kind;
   const gateWords = /** @type {Record<string, string>} */ ({ location: 'Pick one end of the Gate', to: 'Pick the other end', losses: 'Pick the end that takes the winner\'s losses' });
   const words = card.action === 'gate' && choice.kind === 'location' && gateWords[choice.key] ? gateWords[choice.key]
+    : choice.kind === 'use' && choice.key === 'back' ? 'Pick a card you played to take back'
+    : card.action === 'favours' && choice.kind === 'location' ? `Pick a fight for 1 sway from your supply · up to ${choice.left} more`
+    : card.action === 'favours' && choice.kind === 'faction' ? 'Pick the faction: 1 standing from your supply each click'
+    : card.action === 'stakes' && choice.kind === 'faction' && choice.key === 'faction' ? 'Pick the faction it all goes into'
+    : card.action === 'stakes' && choice.kind === 'faction' ? 'Pick a faction to take 1 standing from'
+    : card.action === 'stakes' && choice.kind === 'location' && choice.key === 'location' ? 'Pick where it gathers'
+    : card.action === 'stakes' && choice.kind === 'location' ? `Pick next door to gather 1 from · up to ${choice.left} more`
+    : card.action === 'exit' && choice.kind === 'faction' && choice.key === 'faction' ? 'Pick the faction to spread from'
+    : card.action === 'exit' && choice.kind === 'faction' ? 'Pick a faction to get 1 standing'
+    : card.action === 'exit' && choice.kind === 'location' && choice.key === 'from' ? `Pick a neighbour to send 1 to · up to ${choice.left} more`
+    : card.action === 'showdown' && choice.kind === 'location' ? `Burn 1 more of your sway there to slay 1 more · up to ${choice.left} more`
+    : card.action === 'switch' && choice.kind === 'faction' && choice.key === 'to' ? 'Pick the faction you switch to'
+    : card.action === 'switch' && choice.kind === 'faction' && choice.key === 'payers' ? 'Click again to switch 1 more standing'
+    : card.action === 'switch' && choice.kind === 'location' && choice.key === 'to' ? 'Pick where your sway goes'
+    : card.action === 'switch' && choice.kind === 'location' && choice.key === 'from' ? `Click again to move 1 more of your sway · up to ${choice.left} more`
     : card.action === 'burst' && choice.kind === 'location' && choice.key === 'from' ? 'Pick where a token bursts to'
     : card.action === 'rejoin' && choice.kind === 'location' && choice.key === 'from' ? 'Pick a group to get one more token'
     : (card.action === 'altar' || card.action === 'study') && choice.kind === 'group' ? 'Pick a location to mark, by the group whose standing pays · Skip to finish'
@@ -819,7 +834,10 @@ function renderTargeting(cardId) {
     : choice.kind === 'split' ? `Send tokens: ${choice.left} left`
     : choice.kind === 'location' && choice.key === 'from' && card.action === 'move-sway' ? `Pick your sway to move · ${3 - (ui.target.from ?? []).filter((l) => l !== '__stop').length} left`
     : choice.kind === 'location' && choice.key === 'path' ? `Pick the next step · ${choice.left} left` : WORDS[key] ?? '';
-  const arrows = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>` : '';
+  const USE_LABELS = /** @type {Record<string, string>} */ ({ standing: 'Standing', sway: 'Sway on the board', tokens: 'Tokens', theirs: 'Theirs: the last card played', yours: 'Yours: take one back' });
+  const useLabel = (/** @type {string} */ u) => (choice.kind === 'use' && choice.key === 'back' ? cardById(u).name : USE_LABELS[u] ?? u);
+  const arrows = choice.kind === 'direction' ? `<span class="bar-actions">${choice.options.map((d) => `<button class="bar-btn" data-action="pick-direction" data-direction="${esc(d)}" title="${esc(d)}">${ARROWS[d] ?? d}</button>`).join('')}</span>`
+    : choice.kind === 'use' ? `<span class="bar-actions">${choice.options.map((u) => `<button class="bar-btn" data-action="pick-use" data-use="${esc(u)}">${esc(useLabel(u))}</button>`).join('')}</span>` : '';
   const t = ui.target;
   // A step with no candidates: say so, and point at playing it for no effect.
   const none = 'options' in choice && choice.options.length === 0 && !('optional' in choice && choice.optional);
@@ -827,7 +845,7 @@ function renderTargeting(cardId) {
   const hasOptions = (/** @type {'location' | 'faction'} */ mode) => { const c = nextChoice(/** @type {any} */ (view), view.you, cardId, { mode }); return c.kind === 'done' || ('options' in c && c.options.length > 0); };
   const empty = card.suit && card.action ? /** @type {('location' | 'faction')[]} */ (['location', 'faction']).filter((m) => !hasOptions(m)) : [];
   step('turn', esc(choice.kind === 'mode' ? (empty.length === 2 ? 'Nothing to target: play it for no effect' : 'Pick an option on the card') : none ? 'Nothing to target: play it for no effect' : words), arrows);
-  if ((choice.kind === 'location' || choice.kind === 'group') && choice.optional) handAction('skip', { label: choice.kind === 'location' && choice.key === 'bluff' ? 'No bluff' : 'Done' });
+  if ((choice.kind === 'location' || choice.kind === 'group' || choice.kind === 'faction') && 'optional' in choice && choice.optional) handAction('skip', { label: choice.kind === 'location' && choice.key === 'bluff' ? 'No bluff' : 'Done' });
   handAction('target-none', { tip: 'Play it for no effect' });
   handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
   toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, reading: t.mode, empty } : { dim: true })), false);
@@ -1308,13 +1326,14 @@ function markHint() {
     for (const x of document.querySelectorAll(`#board .token-stack[data-faction="${CSS.escape(next.faction)}"][data-action="pick-faction"]`)) x.classList.add('is-hint-next');
   }
   if (next.kind === 'direction') q(`[data-action="pick-direction"][data-direction="${CSS.escape(next.direction)}"]`)?.classList.add('is-hint-next');
+  if (next.kind === 'use') q(`[data-action="pick-use"][data-use="${CSS.escape(next.use)}"]`)?.classList.add('is-hint-next');
   if (next.kind === 'skip') q('[data-action="skip"]')?.classList.add('is-hint-next');
 }
 
 /**
  * The next click towards the hint's target, from the step the table is on
  * (the same steps applyPick fills in). @param {import('./engine.js').Target} ht
- * @returns {{ kind: 'tile', location: string } | { kind: 'group', location: string, faction: string } | { kind: 'faction', faction: string } | { kind: 'direction', direction: string } | { kind: 'skip' } | null}
+ * @returns {{ kind: 'tile', location: string } | { kind: 'group', location: string, faction: string } | { kind: 'faction', faction: string } | { kind: 'direction', direction: string } | { kind: 'use', use: string } | { kind: 'skip' } | null}
  */
 function hintNext(ht) {
   const c = currentChoice();
@@ -1345,6 +1364,7 @@ function hintNext(ht) {
     return f ? { kind: 'faction', faction: f } : null;
   }
   if (c.kind === 'direction') return ht.direction ? { kind: 'direction', direction: ht.direction } : null;
+  if (c.kind === 'use') { const u = /** @type {string | undefined} */ (ht[c.key]); return u ? { kind: 'use', use: u } : null; }
   return null;
 }
 
@@ -1504,7 +1524,7 @@ function onClick(event) {
     ui.responding = null;
     return sendMove({ type: 'respond', card: id, location: loc });
   }
-  if (ui.choosing && ['pick-location', 'pick-group', 'pick-faction', 'pick-direction', 'skip'].includes(action ?? '')) {
+  if (ui.choosing && ['pick-location', 'pick-group', 'pick-faction', 'pick-direction', 'pick-use', 'skip'].includes(action ?? '')) {
     const t = ui.target;
     const before = structuredClone(t);
     if (!applyPick(t, action ?? '', target)) return;
@@ -1683,6 +1703,7 @@ function applyPick(t, action, el) {
   if (action === 'pick-faction' && choice?.kind === 'faction' && choice.key === 'payers') t.payers = [...(t.payers ?? []), el.dataset.faction ?? ''];
   else if (action === 'pick-faction') t[/** @type {'faction' | 'to' | 'lead' | 'payer'} */ (choice?.kind === 'faction' ? choice.key ?? 'faction' : 'faction')] = el.dataset.faction;
   else if (action === 'pick-direction') t.direction = el.dataset.direction;
+  else if (action === 'pick-use' && choice?.kind === 'use') t[choice.key] = el.dataset.use;
   else if (action === 'pick-group' && choice?.kind === 'group') {
     if (choice.key === 'lure') Object.assign(t, { faction: el.dataset.faction, from: [loc] });
     else if (choice.key === 'move') t.moves = [...(t.moves ?? []), { location: loc, faction: el.dataset.faction ?? '', to: '' }];
@@ -1697,7 +1718,8 @@ function applyPick(t, action, el) {
     if (choice.key === 'bluff') t.bluff = '';
     else if (choice.key === 'path') t.path = [...(t.path ?? []), '__stop'];
     else if (choice.key === 'from') t.from = [...(t.from ?? []), '__stop'];
-  } else if (action === 'skip' && choice?.kind === 'group') t.moves = [...(t.moves ?? []), { location: '__stop', faction: '', to: '__stop' }];
+  } else if (action === 'skip' && choice?.kind === 'faction' && choice.key === 'payers') t.payers = [...(t.payers ?? []), '__stop'];
+  else if (action === 'skip' && choice?.kind === 'group') t.moves = [...(t.moves ?? []), { location: '__stop', faction: '', to: '__stop' }];
   return true;
 }
 

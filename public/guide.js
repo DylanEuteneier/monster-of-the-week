@@ -16,7 +16,7 @@ import { cardById, factionById, locationById, nextChoice, resolveFight, clone } 
  * A move as another seat may see it: a hidden play (a face-down token card)
  * shows its card and where its tokens went, never which one is real.
  * @typedef {Move | { type: 'hidden', card: string, locations: string[] }} SeenMove  hidden: the card is known (its tokens' backs show it), not which token is real
- * @typedef {{ kind: 'location', location: string, label: string } | { kind: 'group', location: string, faction: string, label: string } | { kind: 'faction', faction: string, label: string } | { kind: 'direction', label: string }} Step
+ * @typedef {{ kind: 'location', location: string, label: string } | { kind: 'group', location: string, faction: string, label: string } | { kind: 'faction', faction: string, label: string } | { kind: 'direction', label: string } | { kind: 'use', label: string }} Step
  * @typedef {{ loc: string, sides: { f: string, n: number, lost: number }[], sway: Record<string, number>, piles: { pid: string, f: string, n: number }[], scorched: boolean, flipped: string | null, lines: string[],
  *   place: PlayerView['board'][string], supply: Record<string, number>, players: Record<string, { standing: Record<string, number>, supply: number }> }} Fight
  */
@@ -105,6 +105,13 @@ export function targetSteps(state, pid, cardId, target) {
       if (!f) break;
       steps.push({ kind: 'faction', faction: f, label: key === 'lead' ? `leading the ${F(f)}` : `the ${F(f)}` });
       t[key] = f;
+      continue;
+    }
+    if (c.kind === 'use') {
+      const u = /** @type {string | undefined} */ (target[c.key]);
+      if (!u) break;
+      steps.push({ kind: 'use', label: c.key === 'back' ? `taking back ${u}` : u });
+      t[c.key] = u;
       continue;
     }
     if (c.kind === 'direction') {

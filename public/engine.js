@@ -128,6 +128,7 @@ export { spec };
  * @property {{ pid: string, faction: string }[]} [tips]  Tip Off the Sheriff (test card, round 18): this round, whoever moves the faction, the tipper places 1 sway where it lands
  * @property {string[]} [bounties]  Put a Bounty On It (test card, round 19): factions whose winning group loses 1 more token at each fight this round
  * @property {string | null} [lastPlayed]  the last card played for its action (Steal Their Playbook, test card, round 15)
+ * @property {{ pid: string, card: string, use: string }[]} [roundPlays]  this round's plays, in order (Steal Their Playbook, unsuited, 2026-10-24)
  * @property {GameEvent[]} events  what the last resolved action did, for "after" responses
  * @property {{ faction: string, left: number, leaders: string[], next: number, due: Record<string, number> } | null} growing  growth phase when a supply runs short
  * @property {{ player: string, left: string[] } | null} [night]  Night Terrors (◐ signature): nightfall, before the fights; the player's marks still to decide
@@ -154,7 +155,9 @@ export { spec };
  * @property {{ location: string, faction: string, to: string }[]} [moves]
  * @property {string} [lead]       the faction the player leads, on cards that move several factions (D15)
  * @property {string} [payer]      Invite Them In, the Gate, Wake the Dead: the faction whose standing pays
- * @property {string[]} [payers]   Plough Through: who pays each sway, one per exit (in order of first use), then the fight
+ * @property {string[]} [payers]   Plough Through: who pays each sway, one per exit (in order of first use), then the fight; the unsuited cards' standing picks
+ * @property {string} [use]        an unsuited card with several uses (designer, 2026-10-23): the one played
+ * @property {string} [back]       Steal Their Playbook, yours: the card taken back
  * @property {string} [losses]     the Gate: the end the winner's losses come from first
  */
 
@@ -189,6 +192,7 @@ export { spec };
  * @property {string[]} deck  this game's cards
  * @property {Record<string, number>} printed  this game's printed sway by card
  * @property {string | null} lastPlayed  the last card played for its action
+ * @property {{ pid: string, card: string, use: string }[]} [roundPlays]  this round's plays
  * @property {{ pid: string, faction: string }[]} tips  Tip Off the Sheriff this round (round 18)
  * @property {string[]} bounties  Put a Bounty On It this round (round 19)
  * @property {string | null} first
@@ -638,7 +642,7 @@ export function createGame(input) {
   const state = {
     version: spec.meta.version, options, rngState, phase: 'draft', round: 1, seating: input.players.slice(), players, factions,
     board, supply, leftOut: [], pass: 1, first: null, turn: 0, passesInRow: 0, opened: false, pending: null, events: [], growing: null,
-    log: [], result: null, deck, printed, lastPlayed: null, tips: [],
+    log: [], result: null, deck, printed, lastPlayed: null, roundPlays: [], tips: [],
   };
   return deal(state);
 }
@@ -658,8 +662,49 @@ export function swayFor(state, pid, cardId) {
   const p = state.players[pid];
   const hand = p && 'hand' in p ? p.hand : null;
   if (cardById(cardId).slot !== 'signature' || !Array.isArray(hand)) return printedOf(state, cardId);
+  const held = hand.includes(cardId) || (hand.includes(PLAYBOOK) && lastAction(/** @type {GameState} */ (state)) === cardId); // copied by Steal Their Playbook: the Playbook is the card played
+  return hand.length + (held ? 0 : 1);
+}
+
+/** Steal Their Playbook (unsuited, designer 2026-10-24). */
+const PLAYBOOK = 'playbook';
+/** This round's last card played for its action, the Playbook's own plays aside, or null. @param {GameState | PlayerView} state */
+function lastAction(state) {
+  const plays = ('roundPlays' in state && state.roundPlays) || [];
+  for (let i = plays.length - 1; i >= 0; i--) if (plays[i].use === 'action' && plays[i].card !== PLAYBOOK) return plays[i].card;
+  return null;
+}
+/** The cards a player played earlier this round, each once, that the Playbook may take back. @param {GameState | PlayerView} state @param {string} pid */
+const ownPlays = (state, pid) => [...new Set((('roundPlays' in state && state.roundPlays) || []).filter((x) => x.pid === pid && x.card !== PLAYBOOK).map((x) => x.card))];
+/**
+ * The unsuited cards' X (designer, 2026-10-23): the cards in hand, the one played included (as D24).
+ * @param {GameState | PlayerView} state @param {string} pid @param {string} cardId
+ */
+function handX(state, pid, cardId) {
+  const p = /** @type {any} */ (state.players[pid]);
+  const hand = 'me' in state && state.you === pid ? state.me.hand : p && Array.isArray(p.hand) ? p.hand : null;
+  if (!Array.isArray(hand)) return 1;
   return hand.length + (hand.includes(cardId) ? 0 : 1);
 }
+/** A pick list with the stop marker taken out. @param {string[] | undefined} xs */
+const picked = (xs) => (xs ?? []).filter((x) => x !== '__stop');
+/** How many times each entry appears. @param {string[]} xs @returns {Record<string, number>} */
+function tally(xs) {
+  /** @type {Record<string, number>} */ const n = {};
+  for (const x of xs) n[x] = (n[x] ?? 0) + 1;
+  return n;
+}
+/** The fights now (not scorched). @param {GameState | PlayerView} state */
+const fightsNow = (state) => LOCATION_IDS.filter((l) => !state.board[l].scorched && factionsAt(/** @type {GameState} */ (state), l).length >= 2);
+/** Your sway at a location. @param {GameState | PlayerView} state @param {string} pid @param {string} l */
+const mySway = (state, pid, l) => state.board[l].sway[pid] ?? 0;
+/** Your standing with a faction (no limit when sway isn't required). @param {GameState | PlayerView} state @param {string} pid @param {string} f */
+const myStanding = (state, pid, f) => (swayRequired(/** @type {GameState} */ (state)) ? state.players[pid].standing[f] ?? 0 : Infinity);
+/** Your supply. @param {GameState | PlayerView} state @param {string} pid */
+const mySupply = (state, pid) => state.players[pid].supply ?? 0;
+/** Raise the Stakes, tokens: where a faction's kin next door can come from, and how many each may send (from a fight, half). @param {GameState} state @param {string} centre @param {string} f */
+const stakeSources = (state, centre, f) => adj(state, centre).filter((l) => !state.board[l].scorched && freeOf(state, l, f) > 0).map((l) => ({ l, n: freeOf(state, l, f) }));
+
 
 /** Start a round's draft: shuffle all 21 cards, deal hands, leave the rest out (PS1, DR4, DR5). @param {GameState} state */
 function deal(state) {
@@ -675,6 +720,7 @@ function deal(state) {
     p.known = p.known.filter((k) => k.startsWith('token:'));
   });
   state.leftOut = s.items.slice(state.seating.length * handSize);
+  state.roundPlays = [];
   state.phase = 'draft';
   state.pass = 1;
   state.pending = null;
@@ -1523,6 +1569,99 @@ function checkShape(state, pid, card, t) {
     }
     case 'tipoff': case 'bounty': return t.faction && state.factions.includes(t.faction) ? null : 'Choose a faction.';
     case 'lockdown': return t.location && state.board[t.location] && !state.board[t.location].lock ? null : 'Choose a location in a region not already locked down.';
+    // The unsuited cards (designer, 2026-10-23/24). X is the cards in hand, this one included (handX).
+    case 'favours': {
+      // A, Call in Favours: 1 sway from your supply at each of up to X fights, or up to X standing with one faction.
+      const x = Math.min(handX(state, pid, card.id), mySupply(state, pid));
+      if (t.use === 'sway') {
+        const at = picked(t.from);
+        if (!at.length || new Set(at).size !== at.length || at.some((l) => !fightsNow(state).includes(l))) return 'Pick fights, each once.';
+        return at.length <= x ? null : 'At most the cards in your hand, and what your supply holds.';
+      }
+      if (t.use === 'standing') {
+        const fs = picked(t.payers);
+        if (!fs.length || fs.some((f) => f !== fs[0]) || !state.factions.includes(fs[0])) return 'Pick one faction.';
+        return fs.length <= x ? null : 'At most the cards in your hand, and what your supply holds.';
+      }
+      return 'Pick a use: sway at fights, or standing.';
+    }
+    case 'stakes': {
+      // B, Raise the Stakes (gather).
+      const x = handX(state, pid, card.id);
+      if (t.use === 'standing') {
+        const to = t.faction, from = picked(t.payers);
+        if (!to || !state.factions.includes(to)) return 'Pick the faction to raise your stake with.';
+        if (!from.length || from.length > x || new Set(from).size !== from.length || from.some((f) => f === to || !state.factions.includes(f) || myStanding(state, pid, f) < 1)) return 'Take 1 standing from each of up to X other factions you have standing with.';
+        return null;
+      }
+      if (t.use === 'sway') {
+        const to = t.location, from = picked(t.from), n = tally(from);
+        if (!to || !state.board[to] || state.board[to].scorched) return 'Pick where your sway gathers.';
+        if (!from.length || from.length > x || Object.entries(n).some(([l, k]) => !adj(state, to).includes(l) || mySway(state, pid, l) < k)) return 'Gather up to X of your sway from next door.';
+        return null;
+      }
+      if (t.use === 'tokens') {
+        const to = t.location, f = t.faction, from = picked(t.from), n = tally(from);
+        if (!to || !state.board[to] || state.board[to].scorched || mySway(state, pid, to) < 1) return 'Pick a location where you have sway.';
+        if (!f || !canEnter(state, to, f)) return 'Pick a faction that can come in.';
+        const src = stakeSources(state, to, f);
+        if (!from.length || from.length > x || Object.entries(n).some(([l, k]) => (src.find((q) => q.l === l)?.n ?? 0) < k)) return 'Up to X of its tokens come in from next door (from a fight, half).';
+        return myStanding(state, pid, f) < Object.keys(n).length + 1 ? 'You need the sway to pay where they leave and where they arrive (all or nothing).' : null;
+      }
+      return 'Pick a use: standing, sway on the board, or tokens.';
+    }
+    case 'exit': {
+      // C, Cover Every Exit (scatter).
+      const x = handX(state, pid, card.id);
+      if (t.use === 'standing') {
+        const from = t.faction, to = picked(t.payers);
+        if (!from || !state.factions.includes(from)) return 'Pick the faction to spread your standing from.';
+        if (!to.length || to.length > Math.min(x, myStanding(state, pid, from)) || new Set(to).size !== to.length || to.some((f) => f === from || !state.factions.includes(f))) return 'Move 1 standing to each of up to X other factions.';
+        return null;
+      }
+      if (t.use === 'sway') {
+        const from = t.location, to = picked(t.from);
+        if (!from || !state.board[from] || mySway(state, pid, from) < 1) return 'Pick a location where you have sway.';
+        if (!to.length || to.length > Math.min(x, mySway(state, pid, from)) || new Set(to).size !== to.length || to.some((l) => !adj(state, from).includes(l) || state.board[l].scorched)) return 'Send 1 of your sway to each of up to X neighbours.';
+        return null;
+      }
+      if (t.use === 'tokens') {
+        const loc = t.location, f = t.faction, to = picked(t.from);
+        if (!loc || !f || !state.board[loc] || !canLeave(state, loc, f)) return 'Pick a group (from a fight, half of it).';
+        const spots = burstSpots(state, loc, f);
+        if (!to.length || to.length > Math.min(x, freeOf(state, loc, f)) || new Set(to).size !== to.length || to.some((l) => !spots.includes(l))) return 'It sends 1 token to each of up to X neighbours it can enter.';
+        return myStanding(state, pid, f) < to.length + 1 ? 'You need the sway to pay where it leaves and at every location a token reaches (all or nothing).' : null;
+      }
+      return 'Pick a use: standing, sway on the board, or tokens.';
+    }
+    case 'showdown': {
+      // D, Showdown: at a lone group, burn your sway there, 1 per token, for as many of its tokens as trophies.
+      const loc = t.location, f = t.faction, n = picked(t.from).filter((l) => l === loc).length;
+      if (!loc || !f || !state.board[loc] || loneAt(state, loc) !== f) return 'Pick a lone group (never a fight).';
+      if (mySway(state, pid, loc) < 1) return 'You need sway there to fight them.';
+      return n >= 1 && n <= Math.min(mySway(state, pid, loc), tokensOf(state, loc, f)) ? null : 'As many as your sway there, and the group, allow.';
+    }
+    case 'switch': {
+      // Switch Allegiance (unmarked): standing 1:1 from one faction to another, or your sway from one location to any other.
+      const x = handX(state, pid, card.id);
+      if (t.use === 'standing') {
+        const from = t.faction, to = t.to, n = picked(t.payers).length;
+        if (!from || !to || from === to || !state.factions.includes(from) || !state.factions.includes(to)) return 'Pick the faction you leave, then the one you join.';
+        return n >= 1 && n <= Math.min(x, myStanding(state, pid, from)) ? null : 'Up to X of your standing with it.';
+      }
+      if (t.use === 'sway') {
+        const from = t.location, to = t.to, n = picked(t.from).length;
+        if (!from || !to || from === to || !state.board[from] || !state.board[to] || state.board[to].scorched) return 'Pick where your sway leaves, then where it goes.';
+        return n >= 1 && n <= Math.min(x, mySway(state, pid, from)) ? null : 'Up to X of your sway there.';
+      }
+      return 'Pick a use: standing, or sway on the board.';
+    }
+    case 'playbook': {
+      // Steal Their Playbook (unmarked): theirs, the last card played for its action this round, as if yours; yours, take one of your plays back.
+      if (t.use === 'yours') return t.back && ownPlays(state, pid).includes(t.back) ? null : 'Pick a card you played earlier this round.';
+      if (t.use === 'theirs') { const last = lastAction(state); return last ? checkShape(state, pid, cardById(last), t) : 'Nothing has been played for its action this round.'; }
+      return 'Pick a use: theirs, or yours.';
+    }
     case 'altar': case 'study': case 'terror': {
       if (t.mode !== 'location' && t.mode !== 'faction') return 'Choose a location target or a faction target.';
       const { held, empty } = altarMarks(state, card, t.mode);
@@ -2162,6 +2301,104 @@ function act(state, pid, card, t) {
       logLine(state, `${pid}: ${card.name} at ${lname(/** @type {string} */ (t.location))}.`);
       break;
     }
+    case 'favours': {
+      const me = state.players[pid];
+      if (t.use === 'sway') {
+        for (const l of picked(t.from)) { if (me.supply <= 0) break; me.supply -= 1; state.board[l].sway[pid] = (state.board[l].sway[pid] ?? 0) + 1; state.events.push({ type: 'sway-placed', player: pid, faction: '', location: l }); }
+        logLine(state, `${pid}: ${card.name}: sway from the supply at ${picked(t.from).map(lname).join(', ')}.`);
+      } else {
+        const fs = picked(t.payers), f = fs[0], n = Math.min(fs.length, me.supply);
+        me.supply -= n; me.standing[f] += n;
+        logLine(state, `${pid}: ${card.name}: ${n} standing with ${names(f)}, from the supply.`);
+      }
+      break;
+    }
+    case 'stakes': {
+      const me = state.players[pid];
+      if (t.use === 'standing') {
+        const to = /** @type {string} */ (t.faction), from = picked(t.payers);
+        for (const f of from) me.standing[f] -= 1;
+        me.standing[to] += from.length;
+        logLine(state, `${pid}: ${card.name}: ${from.length} standing gathered with ${names(to)}.`);
+      } else if (t.use === 'sway') {
+        const to = /** @type {string} */ (t.location), from = picked(t.from);
+        for (const l of from) { state.board[l].sway[pid] -= 1; if (!state.board[l].sway[pid]) delete state.board[l].sway[pid]; }
+        state.board[to].sway[pid] = (state.board[to].sway[pid] ?? 0) + from.length;
+        logLine(state, `${pid}: ${card.name}: ${from.length} sway gathered at ${lname(to)}.`);
+      } else {
+        // Tokens: up to X come in from next door (from a fight, half); 1 sway where each group left and 1 at the centre.
+        const to = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction), n = tally(picked(t.from));
+        placed.add(`${to}:${f}`);
+        let moved = 0;
+        for (const [l, k] of Object.entries(n)) { const m = move(state, pid, f, l, to, k, placed); if (m) { moved += m; placeOne(state, pid, f, l); } }
+        if (moved) placeOne(state, pid, f, to);
+        logLine(state, `${pid}: ${card.name}: ${moved} ${names(f)} come in to ${lname(to)}.`);
+      }
+      break;
+    }
+    case 'exit': {
+      const me = state.players[pid];
+      if (t.use === 'standing') {
+        const from = /** @type {string} */ (t.faction), to = picked(t.payers);
+        me.standing[from] -= to.length;
+        for (const f of to) me.standing[f] += 1;
+        logLine(state, `${pid}: ${card.name}: standing with ${names(from)} spread to ${to.map(names).join(', ')}.`);
+      } else if (t.use === 'sway') {
+        const from = /** @type {string} */ (t.location), to = picked(t.from);
+        state.board[from].sway[pid] -= to.length;
+        if (!state.board[from].sway[pid]) delete state.board[from].sway[pid];
+        for (const l of to) state.board[l].sway[pid] = (state.board[l].sway[pid] ?? 0) + 1;
+        logLine(state, `${pid}: ${card.name}: sway spread from ${lname(from)} to ${to.map(lname).join(', ')}.`);
+      } else {
+        // Tokens: 1 to each chosen neighbour (1 sway where each lands, as any move), and 1 where it left.
+        const f = /** @type {string} */ (t.faction), loc = /** @type {string} */ (t.location), to = picked(t.from);
+        let n = 0;
+        for (const l of to) n += move(state, pid, f, loc, l, 1, placed);
+        placeOne(state, pid, f, loc);
+        logLine(state, `${pid}: ${card.name}: ${n} ${names(f)} scatter from ${lname(loc)}.`);
+      }
+      break;
+    }
+    case 'showdown': {
+      // Burned sway goes back to your supply (designer, 2026-10-24); the tokens taken are your trophies.
+      const loc = /** @type {string} */ (t.location), f = /** @type {string} */ (t.faction);
+      const n = Math.min(picked(t.from).filter((l) => l === loc).length, state.board[loc].sway[pid] ?? 0, tokensOf(state, loc, f));
+      takeTokens(state, loc, f, n);
+      state.players[pid].trophies[f] += n;
+      state.board[loc].sway[pid] -= n;
+      if (!state.board[loc].sway[pid]) delete state.board[loc].sway[pid];
+      state.players[pid].supply += n;
+      logLine(state, `${pid}: ${card.name} at ${lname(loc)}: ${n} ${names(f)} slain, ${pid}'s trophies.`);
+      break;
+    }
+    case 'switch': {
+      const me = state.players[pid];
+      if (t.use === 'standing') {
+        const n = picked(t.payers).length, from = /** @type {string} */ (t.faction), to = /** @type {string} */ (t.to);
+        me.standing[from] -= n; me.standing[to] += n;
+        logLine(state, `${pid}: ${card.name}: ${n} standing from ${names(from)} to ${names(to)}.`);
+      } else {
+        const n = picked(t.from).length, from = /** @type {string} */ (t.location), to = /** @type {string} */ (t.to);
+        state.board[from].sway[pid] -= n;
+        if (!state.board[from].sway[pid]) delete state.board[from].sway[pid];
+        state.board[to].sway[pid] = (state.board[to].sway[pid] ?? 0) + n;
+        logLine(state, `${pid}: ${card.name}: ${n} sway from ${lname(from)} to ${lname(to)}.`);
+      }
+      break;
+    }
+    case 'playbook': {
+      if (t.use === 'yours') {
+        const back = /** @type {string} */ (t.back), plays = ('roundPlays' in state && state.roundPlays) || [];
+        const i = plays.map((x) => x.pid === pid && x.card === back).lastIndexOf(true);
+        if (i >= 0) plays.splice(i, 1);
+        state.players[pid].hand.push(back);
+        logLine(state, `${pid}: ${card.name}: takes ${cardById(back).name} back.`);
+      } else {
+        const last = lastAction(state);
+        if (last) { logLine(state, `${pid}: ${card.name}: plays ${cardById(last).name} as their own.`); act(state, pid, cardById(last), t); }
+      }
+      break;
+    }
     case 'altar': {
       // Each marked location takes 1 sway, the bid; at its fight this round, the winner loses as many as the loser.
       const marks = altarChosen(state, card, t);
@@ -2242,7 +2479,7 @@ function triggerMatches(state, pid, response, location) {
   }
 }
 
-/** Where a pending action would move tokens into (for blocks). @param {GameState | PlayerView} state @param {{ card: string, target: Target | null }} pend */
+/** Where a pending action would move tokens into (for blocks). @param {GameState | PlayerView} state @param {{ card: string, target: Target | null }} pend @returns {string[]} */
 export function pendingDestinations(state, pend) {
   const t = pend.target;
   if (!t) return [];
@@ -2257,6 +2494,8 @@ export function pendingDestinations(state, pend) {
     case 'rally': case 'dig-in': case 'underdog': case 'shift-bet': case 'pull-back': case 'spread-word': return [];
     case 'control': return [];
     case 'altar': case 'study': case 'terror': return [];
+    case 'favours': case 'stakes': case 'exit': case 'switch': case 'showdown': return t.use === 'tokens' ? [...new Set([t.location ?? '', ...picked(t.from)])].filter(Boolean) : [];
+    case 'playbook': { const last = t.use === 'theirs' ? lastAction(state) : null; return last ? pendingDestinations(state, { ...pend, card: last }) : []; }
     case 'raise': return t.location ? [t.location] : [];
     case 'plough': return [...new Set((t.from ?? []).filter((l) => l !== '__stop'))];
     case 'rejoin': {
@@ -2415,6 +2654,7 @@ export function applyMove(state, submission) {
     }
     case 'play': {
       p.hand = p.hand.filter((c) => c !== m.card);
+      next.roundPlays = [...(next.roundPlays ?? []), { pid, card: m.card, use: m.use }];
       next.passesInRow = 0;
       next.events = [];
       if (pid === next.first) next.opened = true;
@@ -2436,7 +2676,7 @@ export function applyMove(state, submission) {
         return next;
       }
       logLine(next, `${pid} plays ${card.name}${card.action === 'copy' && next.lastPlayed ? `, copying ${cardById(next.lastPlayed).name}` : ''}.`);
-      if (card.action !== 'copy') next.lastPlayed = card.id;
+      if (card.action !== 'copy' && card.action !== 'playbook') next.lastPlayed = card.id;
       if (!responsesOn(next)) {
         // No responses (the first draft): the action resolves at once.
         if (m.target) act(next, pid, card, m.target);
@@ -3185,7 +3425,7 @@ function walkTarget(state, pid, cardId, mode, rng) {
     let c = memo?.get(path);
     if (!c) { c = nextChoice(state, pid, cardId, t); memo?.set(path, c); }
     if (c.kind === 'done') return finishWalk(t);
-    if (c.kind === 'mode') { t = { mode }; path += '|m'; continue; }
+    if (c.kind === 'mode') { t = { ...t, mode }; path += '|m'; continue; }
     if ('optional' in c && c.optional && rng() < 0.3) return finishWalk(t);
     if (!('options' in c) || !c.options.length) return null;
     const i = Math.floor(rng() * c.options.length);
@@ -3195,11 +3435,99 @@ function walkTarget(state, pid, cardId, mode, rng) {
   return null;
 }
 
+/**
+ * The unsuited cards' choices once a use is picked (designer, 2026-10-23/24). Picks with a stop marker end early.
+ * @param {GameState} st @param {string} pid @param {Card} card @param {Target} t @returns {Choice}
+ */
+function unsuitedShape(st, pid, card, t) {
+  const x = handX(st, pid, card.id);
+  const stopped = (/** @type {string[] | undefined} */ xs) => (xs ?? []).includes('__stop');
+  const all = st.factions;
+  const open = LOCATION_IDS.filter((l) => !st.board[l].scorched);
+  const done = /** @type {Choice} */ ({ kind: 'done' });
+  switch (card.action) {
+    case 'favours': {
+      const cap = Math.min(x, mySupply(st, pid));
+      if (cap < 1) return { kind: 'faction', key: 'payers', options: [] };
+      if (t.use === 'sway') {
+        const at = picked(t.from);
+        if (stopped(t.from) || at.length >= cap) return done;
+        return { kind: 'location', key: 'from', options: fightsNow(st).filter((l) => !at.includes(l)), optional: at.length > 0, left: cap - at.length };
+      }
+      const fs = picked(t.payers);
+      if (stopped(t.payers) || fs.length >= cap) return done;
+      return { kind: 'faction', key: 'payers', options: fs.length ? [fs[0]] : all.slice(), optional: fs.length > 0 };
+    }
+    case 'stakes': {
+      if (t.use === 'standing') {
+        if (!t.faction) return { kind: 'faction', key: 'faction', options: all.filter((f) => all.some((g) => g !== f && myStanding(st, pid, g) >= 1)) };
+        const from = picked(t.payers);
+        if (stopped(t.payers) || from.length >= x) return done;
+        return { kind: 'faction', key: 'payers', options: all.filter((f) => f !== t.faction && !from.includes(f) && myStanding(st, pid, f) >= 1), optional: from.length > 0 };
+      }
+      if (t.use === 'sway') {
+        if (!t.location) return { kind: 'location', key: 'location', options: open.filter((l) => adj(st, l).some((n) => mySway(st, pid, n) > 0)) };
+        const from = picked(t.from), n = tally(from);
+        if (stopped(t.from) || from.length >= x) return done;
+        return { kind: 'location', key: 'from', options: adj(st, t.location).filter((l) => mySway(st, pid, l) > (n[l] ?? 0)), optional: from.length > 0, left: x - from.length };
+      }
+      // tokens
+      const can = (/** @type {string} */ c, /** @type {string} */ f) => canEnter(st, c, f) && stakeSources(st, c, f).length > 0 && myStanding(st, pid, f) >= 2;
+      if (!t.location) return { kind: 'location', key: 'location', options: open.filter((l) => mySway(st, pid, l) > 0 && all.some((f) => can(l, f))) };
+      if (!t.faction) return { kind: 'faction', key: 'faction', options: all.filter((f) => can(/** @type {string} */ (t.location), f)) };
+      const from = picked(t.from), n = tally(from);
+      if (stopped(t.from) || from.length >= x) return done;
+      const sources = Object.keys(n).length;
+      const options = stakeSources(st, t.location, t.faction).filter((q) => q.n > (n[q.l] ?? 0) && myStanding(st, pid, t.faction ?? '') >= sources + (n[q.l] ? 0 : 1) + 1).map((q) => q.l);
+      return { kind: 'location', key: 'from', options, optional: from.length > 0, left: x - from.length };
+    }
+    case 'exit': {
+      if (t.use === 'standing') {
+        if (!t.faction) return { kind: 'faction', key: 'faction', options: all.filter((f) => myStanding(st, pid, f) >= 1) };
+        const to = picked(t.payers), cap = Math.min(x, myStanding(st, pid, t.faction));
+        if (stopped(t.payers) || to.length >= cap) return done;
+        return { kind: 'faction', key: 'payers', options: all.filter((f) => f !== t.faction && !to.includes(f)), optional: to.length > 0 };
+      }
+      if (t.use === 'sway') {
+        if (!t.location) return { kind: 'location', key: 'location', options: open.filter((l) => mySway(st, pid, l) > 0 && adj(st, l).some((n) => !st.board[n].scorched)) };
+        const to = picked(t.from), cap = Math.min(x, mySway(st, pid, t.location));
+        if (stopped(t.from) || to.length >= cap) return done;
+        return { kind: 'location', key: 'from', options: adj(st, t.location).filter((l) => !st.board[l].scorched && !to.includes(l)), optional: to.length > 0, left: cap - to.length };
+      }
+      if (!t.location) return { kind: 'group', key: 'group', options: groupsOf(st).filter((g) => canLeave(st, g.location, g.faction) && burstSpots(st, g.location, g.faction).length > 0 && myStanding(st, pid, g.faction) >= 2) };
+      const f = /** @type {string} */ (t.faction), to = picked(t.from), cap = Math.min(x, freeOf(st, t.location, f), myStanding(st, pid, f) - 1);
+      if (stopped(t.from) || to.length >= cap) return done;
+      return { kind: 'location', key: 'from', options: burstSpots(st, t.location, f).filter((l) => !to.includes(l)), optional: to.length > 0, left: cap - to.length };
+    }
+    case 'switch': {
+      if (t.use === 'standing') {
+        if (!t.faction) return { kind: 'faction', key: 'faction', options: all.filter((f) => myStanding(st, pid, f) >= 1) };
+        if (!t.to) return { kind: 'faction', key: 'to', options: all.filter((f) => f !== t.faction) };
+        const n = picked(t.payers).length, cap = Math.min(x, myStanding(st, pid, t.faction));
+        if (stopped(t.payers) || n >= cap) return done;
+        return { kind: 'faction', key: 'payers', options: [t.faction], optional: n > 0 };
+      }
+      if (!t.location) return { kind: 'location', key: 'location', options: open.filter((l) => mySway(st, pid, l) > 0) };
+      if (!t.to) return { kind: 'location', key: 'to', options: open.filter((l) => l !== t.location) };
+      const n = picked(t.from).length, cap = Math.min(x, mySway(st, pid, t.location));
+      if (stopped(t.from) || n >= cap) return done;
+      return { kind: 'location', key: 'from', options: [t.to], optional: n > 0, left: cap - n };
+    }
+    case 'playbook': {
+      if (t.use === 'yours') return t.back ? done : { kind: 'use', key: 'back', options: ownPlays(st, pid) };
+      const last = lastAction(st);
+      return last ? nextShape(st, pid, last, t) : { kind: 'use', key: 'back', options: [] };
+    }
+  }
+  return done;
+}
+
 /** @type {WeakMap<object, Map<string, Choice>>} */
 const WALK_MEMO = new WeakMap();
 
 /** A target with one more choice made. @param {Target} t @param {Choice} c @param {any} o @returns {Target} */
 function chooseStep(t, c, o) {
+  if (c.kind === 'use') return { ...t, [c.key]: o };
   if (c.kind === 'faction' && c.key === 'payers') return { ...t, payers: [...(t.payers ?? []), o] };
   if (c.kind === 'faction') return { ...t, [c.key ?? 'faction']: o };
   if (c.kind === 'direction') return { ...t, direction: o };
@@ -3236,7 +3564,7 @@ export function listTargets(state, pid, cardId, cap) {
     const t = /** @type {Target} */ (stack.pop());
     const c = nextChoice(state, pid, cardId, t);
     if (c.kind === 'done') { keep(t); continue; }
-    if (c.kind === 'mode') continue;
+    if (c.kind === 'mode') { if (!t.mode) stack.push({ ...t, mode: 'faction' }, { ...t, mode: 'location' }); continue; }
     if ('optional' in c && c.optional) keep(t);
     if (!('options' in c)) continue;
     for (const o of /** @type {any[]} */ (c.options)) stack.push(chooseStep(t, c, o));
@@ -3252,7 +3580,8 @@ const finishWalk = (t) => t;
  * time, and the server still checks the finished target (checkTarget).
  * @typedef {{ kind: 'mode' } | { kind: 'location', key: 'location' | 'to' | 'bluff' | 'path' | 'from' | 'losses', options: string[], optional?: boolean, left?: number }
  *   | { kind: 'group', key: 'group' | 'move' | 'lure', options: { location: string, faction: string }[], optional?: boolean }
- *   | { kind: 'faction', key?: 'faction' | 'to' | 'lead' | 'payer' | 'payers', options: string[] } | { kind: 'direction', options: string[] }
+ *   | { kind: 'faction', key?: 'faction' | 'to' | 'lead' | 'payer' | 'payers', options: string[], optional?: boolean } | { kind: 'direction', options: string[] }
+ *   | { kind: 'use', key: 'use' | 'back', options: string[] }
  *   | { kind: 'split', options: string[], left: number } | { kind: 'done' }} Choice
  * @param {GameState} state @param {string} pid @param {string} cardId @param {Target} t
  * @returns {Choice}
@@ -3648,6 +3977,23 @@ function nextShape(state, pid, cardId, t) {
       return t.faction ? { kind: 'done' } : { kind: 'faction', options: state.factions.slice() };
     case 'lockdown':
       return t.location ? { kind: 'done' } : { kind: 'location', key: 'location', options: LOCATION_IDS.filter((l) => !state.board[l].lock) };
+    case 'favours': case 'stakes': case 'exit': case 'switch': case 'playbook': {
+      // An unsuited card with several uses: pick one first, among those with something to do.
+      const st = /** @type {GameState} */ (state);
+      if (!t.use) {
+        const uses = /** @type {string[]} */ ('uses' in card && card.uses ? card.uses : []);
+        return { kind: 'use', key: 'use', options: uses.filter((u) => { const c = unsuitedShape(st, pid, card, { use: u }); return c.kind === 'done' || ('options' in c && c.options.length > 0); }) };
+      }
+      const c = unsuitedShape(st, pid, card, t);
+      return 'options' in c && !c.options.length && 'optional' in c && c.optional ? { kind: 'done' } : c; // nothing more to add: finished
+    }
+    case 'showdown': {
+      const st = /** @type {GameState} */ (state);
+      if (!t.location) return { kind: 'group', key: 'group', options: groups().filter((g) => loneAt(st, g.location) === g.faction && mySway(st, pid, g.location) > 0) };
+      const n = picked(t.from).length, cap = Math.min(mySway(st, pid, t.location), tokensOf(st, t.location, /** @type {string} */ (t.faction)));
+      if ((t.from ?? []).includes('__stop') || n >= cap) return { kind: 'done' };
+      return { kind: 'location', key: 'from', options: [t.location], optional: n > 0, left: cap - n };
+    }
     case 'altar': case 'study': case 'terror': {
       // First the held locations (pick the group whose standing pays), then the empty ⎈ ones (the Demons pay).
       const st = /** @type {GameState} */ (state);
@@ -3761,6 +4107,12 @@ export function describeTarget(cardId, t) {
     case 'surveil-supply': case 'raise-stakes': return `at ${L(t.location)}${how}`;
     case 'split-up': return `at ${(t.from ?? []).map(L).join(', ')}`;
     case 'wake-dead': return `at ${L(t.location)}${how}`;
+    case 'favours': return t.use === 'sway' ? `sway from the supply at ${(t.from ?? []).filter((l) => l !== '__stop').map(L).join(', ')}` : `${(t.payers ?? []).filter((x) => x !== '__stop').length} standing with ${F((t.payers ?? [])[0])}`;
+    case 'stakes': return t.use === 'standing' ? `standing gathered with ${F(t.faction)}` : t.use === 'sway' ? `sway gathered at ${L(t.location)}` : `${F(t.faction)} come in to ${L(t.location)}`;
+    case 'exit': return t.use === 'standing' ? `standing spread from ${F(t.faction)}` : t.use === 'sway' ? `sway spread from ${L(t.location)}` : `${F(t.faction)} scatter from ${L(t.location)}`;
+    case 'showdown': return `${(t.from ?? []).filter((l) => l !== '__stop').length} ${F(t.faction)} slain at ${L(t.location)}`;
+    case 'switch': return t.use === 'standing' ? `standing from ${F(t.faction)} to ${F(t.to)}` : `sway from ${L(t.location)} to ${L(t.to)}`;
+    case 'playbook': return t.use === 'yours' ? `takes ${t.back ? cardById(t.back).name : '?'} back` : 'plays the last card as their own';
     case 'terror': return `night terrors at ${[...(t.moves ?? []).map((m) => m.location), ...(t.from ?? [])].filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
     case 'study': return `bodies studied at ${[...(t.moves ?? []).map((m) => m.location), ...(t.from ?? [])].filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
     case 'altar': return `blood on ${[...(t.moves ?? []).map((m) => m.location), ...(t.from ?? [])].filter((l) => l !== '__stop').map(L).join(', ')}${how}`;
@@ -3834,6 +4186,7 @@ export function playerView(state, playerId) {
     supply: { ...state.supply },
     deck: deckOf(state),
     lastPlayed: state.lastPlayed ?? null,
+    roundPlays: (state.roundPlays ?? []).map((x) => ({ ...x })),
     tips: (state.tips ?? []).map((x) => ({ ...x })),
     bounties: (state.bounties ?? []).slice(),
     printed: Object.fromEntries(deckOf(state).map((id) => [id, swayFor(state, playerId, id)])),

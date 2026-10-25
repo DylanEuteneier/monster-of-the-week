@@ -808,6 +808,75 @@ test('Spill Blood on the Altar (⎈ signature): marks up to the hand, 1 sway eac
   assert.deepEqual([la.board[home].altar, la.board[other].altar, la.players.ann.standing[demon], la.players.ann.standing[f]], [true, true, 0, 0]);
 });
 
+test('the unsuited cards (designer, 2026-10-23/24): X is the hand, this card included; each use does what it says', () => {
+  const s = clear(newGame());
+  const [f, g, h] = s.factions;
+  const map = /** @type {Record<string, { adjacent: string[] }>} */ (spec.map.locations);
+  const loc = /** @type {string} */ (spec.locations[0].id);
+  const [a, b] = map[loc].adjacent;
+  const ann = s.players.ann;
+  const hand = (/** @type {string} */ c) => { ann.hand = [c, 'fresh-meat', 'broadcast']; }; // X = 3
+  // A, Call in Favours: standing from the supply, up to X with one faction; sway from the supply at fights.
+  hand('favours');
+  ann.supply = 10;
+  const fav = { use: 'standing', payers: [f, f, f] };
+  assert.equal(checkTarget(s, 'ann', cardById('favours'), fav), null);
+  assert.ok(checkTarget(s, 'ann', cardById('favours'), { ...fav, payers: [f, f, f, f] })); // more than X
+  assert.ok(checkTarget(s, 'ann', cardById('favours'), { ...fav, payers: [f, g] })); // one faction only
+  const fa = previewTarget(s, 'ann', 'favours', fav);
+  assert.deepEqual([fa.players.ann.standing[f], fa.players.ann.supply], [s.players.ann.standing[f] + 3, 7]);
+  s.board[a].tokens = { [f]: 2, [g]: 2 };
+  const fs = previewTarget(s, 'ann', 'favours', { use: 'sway', from: [a] });
+  assert.equal(fs.board[a].sway.ann, 1);
+  assert.ok(checkTarget(s, 'ann', cardById('favours'), { use: 'sway', from: [b] })); // not a fight
+  // B, Raise the Stakes: standing gathered, 1 from each of up to X factions.
+  hand('stakes');
+  const st = previewTarget(s, 'ann', 'stakes', { use: 'standing', faction: f, payers: [g, h] });
+  assert.deepEqual([st.players.ann.standing[f], st.players.ann.standing[g]], [s.players.ann.standing[f] + 2, s.players.ann.standing[g] - 1]);
+  // Tokens: a faction's kin next door come in, to where you have sway; 1 sway where they left and at the centre.
+  s.board[a].tokens = { [g]: 3 };
+  s.board[loc].sway = { ann: 1 };
+  const tk = previewTarget(s, 'ann', 'stakes', { use: 'tokens', location: loc, faction: g, from: [a, a] });
+  assert.deepEqual([tk.board[loc].tokens[g], tk.board[a].tokens[g], tk.board[a].sway.ann, tk.board[loc].sway.ann], [2, 1, 1, 2]);
+  assert.ok(checkTarget(s, 'ann', cardById('stakes'), { use: 'tokens', location: b, faction: g, from: [a] })); // no sway of yours there
+  // C, Cover Every Exit: a group sends 1 token to each of up to X neighbours.
+  hand('exit');
+  s.board[a].tokens = {};
+  s.board[loc].tokens = { [g]: 4 };
+  const ex = previewTarget(s, 'ann', 'exit', { use: 'tokens', location: loc, faction: g, from: [a, b] });
+  assert.deepEqual([ex.board[loc].tokens[g], ex.board[a].tokens[g], ex.board[b].tokens[g]], [2, 1, 1]);
+  // D, Showdown: at a lone group, 1 of your sway there for each token, as your trophies; the sway back to your supply.
+  hand('showdown');
+  s.board[loc].sway = { ann: 2 };
+  const sd = previewTarget(s, 'ann', 'showdown', { location: loc, faction: g, from: [loc, loc] });
+  assert.deepEqual([sd.board[loc].tokens[g], sd.players.ann.trophies[g], sd.board[loc].sway.ann ?? 0, sd.players.ann.supply], [2, 2, 0, s.players.ann.supply + 2]);
+  assert.ok(checkTarget(s, 'ann', cardById('showdown'), { location: loc, faction: g, from: [loc, loc, loc] })); // only 2 of your sway there
+  s.board[loc].tokens = { [g]: 4, [h]: 1 };
+  assert.ok(checkTarget(s, 'ann', cardById('showdown'), { location: loc, faction: g, from: [loc] })); // never a fight
+  // Switch Allegiance: standing 1:1; or your sway jumps anywhere.
+  hand('switch');
+  const sw = previewTarget(s, 'ann', 'switch', { use: 'standing', faction: f, to: g, payers: [f, f] });
+  assert.deepEqual([sw.players.ann.standing[f], sw.players.ann.standing[g]], [s.players.ann.standing[f] - 2, s.players.ann.standing[g] + 2]);
+  const far = /** @type {string} */ (spec.locations[spec.locations.length - 1].id);
+  const sj = previewTarget(s, 'ann', 'switch', { use: 'sway', location: loc, to: far, from: [far, far] });
+  assert.deepEqual([sj.board[loc].sway.ann ?? 0, sj.board[far].sway.ann], [0, 2]);
+});
+
+test('Steal Their Playbook (designer, 2026-10-24): theirs copies the last card played for its action this round; yours takes one of your plays back', () => {
+  const s = clear(draftAll(newGame()));
+  s.opened = true;
+  const pid = s.seating[s.turn];
+  s.players[pid].hand = ['playbook', 'fresh-meat'];
+  assert.ok(checkTarget(s, pid, cardById('playbook'), { use: 'theirs' })); // nothing played yet
+  s.roundPlays = [{ pid, card: 'gate', use: 'sway' }, { pid: 'zed', card: 'showdown', use: 'action' }];
+  const c = nextChoice(s, pid, 'playbook', {});
+  assert.ok(c.kind === 'use' && c.options.includes('yours'));
+  // Yours: the Gate, played for sway earlier, comes back to hand.
+  const back = applyMove(s, { playerId: pid, move: { type: 'play', card: 'playbook', use: 'action', target: { use: 'yours', back: 'gate' } } });
+  assert.ok(back.players[pid].hand.includes('gate'));
+  assert.ok(!(back.roundPlays ?? []).some((x) => x.card === 'gate'));
+});
+
 test('Night Terrors (◐ signature): marks, then at nightfall 1 token may flee each mark to a neighbour, your sway following if you choose (designer, 2026-10-20)', () => {
   const s = clear(draftAll(newGame()));
   s.opened = true;
