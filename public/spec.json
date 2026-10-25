@@ -973,8 +973,8 @@
     {
       "id": "alignedGrowth",
       "label": "Growth on own ground",
-      "description": "AL3 (designer, 2026-10-21: off by default): a faction controlling one of its aligned locations grows 1 more there.",
-      "default": "off",
+      "description": "AL3: a faction controlling one of its aligned locations grows 1 more there (designer: off 2026-10-21, back on by default 2026-10-24).",
+      "default": "on",
       "choices": [
         { "id": "off", "label": "Off", "description": "Every growing group grows 1 (designer, 2026-10-21)." },
         { "id": "on", "label": "On", "description": "AL3 as first drafted: 1 more on its own aligned ground." }

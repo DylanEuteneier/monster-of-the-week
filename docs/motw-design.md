@@ -609,7 +609,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - Cards can use alignment to break the normal movement rules (MV2, 3.7).
 - A slayer group wins ties between players at the locations aligned with its archetype (AB1, 3.10).
 - `AL2` **Tied fights on aligned ground (first draft):** in a tied fight at a location aligned with one of the two factions, that faction wins the fight (3.13).
-- `AL3` **Boosted growth (first draft; designer, 2026-10-21: off by default, variant `alignedGrowth`):** a faction that controls a location aligned with its archetype (LC2, 3.2) gains one extra token there, on top of normal growth (3.5). Off, every growing group grows 1.
+- `AL3` **Boosted growth (first draft; designer, 2026-10-21: off by default; 2026-10-24: back on by default, after the island won all 10 games with the unsuited cards; variant `alignedGrowth`):** a faction that controls a location aligned with its archetype (LC2, 3.2) gains one extra token there, on top of normal growth (3.5). Off, every growing group grows 1.
   - For now, the extra token applies only where the location already grows. A faction under the growth threshold gains nothing.
 
 #### 3.4 Invader forces · *Decisions*
@@ -1278,6 +1278,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-09 | The tuned table confirmed over 40 games | Backers 18.1% a seat, trophy 21.3%; the invaders' ending 15 in 40 |
 | 2026-10-10 | Unattended experiment runner (designer: a repeatable script for several machines that jitters the tuned values, runs, judges and commits its results): `scripts/experiment.js`, one game pool per machine fed by several experiments at once, shared baselines, a testing log entry per attempt (`experiments/`); last night's 48 attempts backfilled. The play-outs-into-the-next-round switch (`deep`) removed: clearly worse | Standard bots unchanged (identical play checked) |
 | 2026-10-10 | Overnight bot tuning (designer: implement the research's best candidates and keep testing on short runs): bot games about 5× faster with identical play; tools for duplicate deals, placings and fitting the evaluation; about 30 variants tested | None adopted: no change measurably beats the standard profiles; 20-game runs only find large effects (F.9, Tuning method) |
+| 2026-10-24 | Growth on own ground (AL3) back on by default (designer), after the island won all 10 games with the new unsuited cards | |
 | 2026-10-24 | The six unsuited cards designed (designer): A Call in Favours, B Raise the Stakes, C Cover Every Exit, D Showdown, unmarked Switch Allegiance and Steal Their Playbook; built as test cards, the core deck now has no stand-ins | Prototype: a card with several uses starts with a pick-a-use step; each round records its plays (for the Playbook); the round-15 pool card is now Steal Their Playbook (round 15) |
 | 2026-10-21 | The start (SD1) is 2 on each aligned location, 30 in all (designer: 45 too much); growth on own ground (AL3) off by default (designer). Together the 2026-10-17 start and AL3 made every location grow by 2 from round 1 | Variants `seeding=even`, `alignedGrowth=on` |
 | 2026-10-21 | Plough Through's sway (designer): 1 at each exit and 1 at the fight, split as you choose among the fight's factions and the Nocturnals; standing had been its main block (33% of turns) | |

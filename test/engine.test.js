@@ -216,13 +216,13 @@ test('tied leaders collect nothing and both piles go back (PT2, ST1, AS1); a lon
 
 // Growth and the end -------------------------------------------------------
 
-test('a lone faction with 2 or more tokens grows by 1 (GR1); alignedGrowth=on, aligned locations one extra (AL3; off by default, designer 2026-10-21)', () => {
+test('a lone faction with 2 or more tokens grows by 1 (GR1), aligned locations one extra (AL3, on by default again, designer 2026-10-24); alignedGrowth=off, no extra', () => {
   const s = clear(newGame());
   const home = spec.locations.find((l) => l.archetype === spec.factions.find((f) => f.id === A)?.archetype)?.id ?? '';
   s.board[home].tokens = { [A]: 2 };
   s.board[NEUTRAL].tokens = { [A]: 3 };
-  assert.deepEqual(growthDue(s, A), { [home]: 1, [NEUTRAL]: 1 });
-  assert.deepEqual(growthDue({ ...s, options: { ...s.options, alignedGrowth: 'on' } }, A), { [home]: 2, [NEUTRAL]: 1 });
+  assert.deepEqual(growthDue(s, A), { [home]: 2, [NEUTRAL]: 1 });
+  assert.deepEqual(growthDue({ ...s, options: { ...s.options, alignedGrowth: 'off' } }, A), { [home]: 1, [NEUTRAL]: 1 });
 });
 
 test('bots play whole games of legal moves at every player count, and a winner is named', () => {
