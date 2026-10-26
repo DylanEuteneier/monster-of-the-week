@@ -210,7 +210,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number, guardCap?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -450,7 +450,8 @@ function presenceGuard(state, pid, c, persona) {
   const others = state.seating.filter((id) => id !== pid);
   const lead = (/** @type {string} */ f) => ((p.standing[f] ?? 0) - p.trophies[f]) - Math.max(...others.map((o) => (state.players[o].standing[f] ?? 0) - state.players[o].trophies[f]));
   const backed = state.factions.slice().sort((a, b) => lead(b) - lead(a))[0];
-  const margin = Math.max(-3, Math.min(3, (c.projected - c.threshold) / 5));
+  const cap = persona.guardCap ?? 3; // guardCap (2026-10-26): at 3, presence 15 over the threshold already saturated, so early losses went unseen
+  const margin = Math.max(-cap, Math.min(cap, (c.projected - c.threshold) / 5));
   // top: the invaders' ending is won by the faction with the most presence (TH1), so its backed faction must be that one.
   const rivalTop = Math.max(...state.factions.filter((f) => f !== backed).map((f) => presenceOf(state, f)));
   const ahead = Math.max(-2, Math.min(2, (presenceOf(state, backed) - rivalTop) / 3));
