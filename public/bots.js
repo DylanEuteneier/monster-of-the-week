@@ -506,7 +506,9 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false, eve
       const wide = listTargets(state, pid, cardId, RANK.list, even);
       if (wide.complete && wide.targets.length <= LIST.cap) listed = wide; // all of it fits: the same list as the plain listing, made once
       else if (wide.targets.length > LIST.cap) {
-        const scored = wide.targets.map((target) => ({ target, v: quick(after(state, pid, { type: 'play', card: cardId, use: 'action', target })) })).sort((a, b) => b.v - a.v);
+        const scored = wide.targets.map((target) => /** @type {Move} */ ({ type: 'play', card: cardId, use: 'action', target }))
+          .filter((move) => validate(state, { playerId: pid, move }).ok) // only plays legal now (the opener must open with the marked card)
+          .map((move) => ({ target: /** @type {any} */ (move).target, v: quick(after(state, pid, move)) })).sort((a, b) => b.v - a.v);
         const rest = scored.slice(RANK.top);
         const picks = [...scored.slice(0, RANK.top), ...Array.from({ length: Math.min(RANK.random, rest.length) }, () => rest.splice(Math.floor(rng() * rest.length), 1)[0])];
         for (const { target } of picks) { seen.add(JSON.stringify(target)); moves.push({ type: 'play', card: cardId, use: 'action', target }); }
