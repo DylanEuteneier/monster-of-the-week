@@ -68,7 +68,9 @@ const LIST = { cap: 40 };
 /** Ranked listing (persona rank): list up to `list`, keep the `top` by quick score and `random` others. Tuning, not rules. */
 const RANK = { list: 200, top: 30, random: 10 };
 /** The play-out search (persona sim): its best moves one move ahead, each played to the round's end this many times, by fast goal bots. */
-const SIM = { keep: 6, playouts: 4, maxMoves: 400 };
+// keep 8, playouts 6 (2026-10-26, challengers, 40 games each, seed 111: backer 40% a seat against 5%, trophy 38% against 16%;
+// designer: data quality over speed). Was 6 and 4.
+const SIM = { keep: 8, playouts: 6, maxMoves: 400 };
 const ROLLOUT = 'trophy:sim=0,enum=0,combo=0';
 
 /**
