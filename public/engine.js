@@ -3548,13 +3548,26 @@ function chooseStep(t, c, o) {
  * For bots: the legal targets of a card, listed by walking every choice the
  * table offers, up to `cap`. `complete` is false when the list was cut short
  * (then a bot should sample more besides). Not a rule.
- * @param {GameState} state @param {string} pid @param {string} cardId @param {number} cap
+ * `even`: a card with several uses shares the cap between them (2026-10-25: listed depth first, the last use filled
+ * the cap on its own).
+ * @param {GameState} state @param {string} pid @param {string} cardId @param {number} cap @param {boolean} [even]
  * @returns {{ targets: Target[], complete: boolean }}
  */
-export function listTargets(state, pid, cardId, cap) {
+export function listTargets(state, pid, cardId, cap, even = false) {
+  const card = cardById(cardId);
+  const uses = /** @type {string[]} */ ('uses' in card && card.uses ? card.uses : []);
+  if (even && uses.length > 1) {
+    const each = Math.max(1, Math.ceil(cap / uses.length));
+    const parts = uses.map((use) => listTargetsFrom(state, pid, cardId, each, [{ use }]));
+    return { targets: parts.flatMap((p) => p.targets), complete: parts.every((p) => p.complete) };
+  }
+  return listTargetsFrom(state, pid, cardId, cap, copied(state, card).suit ? [{ mode: 'faction' }, { mode: 'location' }] : [{}]);
+}
+/** listTargets from given starting targets. @param {GameState} state @param {string} pid @param {string} cardId @param {number} cap @param {Target[]} start @returns {{ targets: Target[], complete: boolean }} */
+function listTargetsFrom(state, pid, cardId, cap, start) {
   const card = cardById(cardId);
   /** @type {Target[]} */
-  const stack = copied(state, card).suit ? [{ mode: 'faction' }, { mode: 'location' }] : [{}];
+  const stack = start.slice();
   /** @type {Map<string, Target>} */
   const found = new Map();
   let visits = 0;

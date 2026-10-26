@@ -156,6 +156,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - hidden: count face-down tokens, its own as they are, a rival's as even odds.
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
+ * - even: with enum, a card with several uses shares the listing between them (2026-10-25: the last use filled it).
  * - field: win chances against every rival, multiplied (2026-10-25, designer: value making any rival lose points), not
  *   only against the best of them.
  * - spread: with sim, every card in hand sends its best move to the play-outs (2026-10-25: a play whose worth comes
@@ -195,7 +196,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -478,7 +479,7 @@ export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
 // ---------------------------------------------------------------------------
 
 /** Every move worth considering on this bot's turn. @param {GameState} state @param {string} pid @param {() => number} rng */
-function candidates(state, pid, rng, targets = SEARCH.targets, list = false) {
+function candidates(state, pid, rng, targets = SEARCH.targets, list = false, even = false) {
   const p = state.players[pid];
   /** @type {Move[]} */
   const moves = [{ type: 'pass' }];
@@ -493,7 +494,7 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false) {
     /** @type {Set<string>} */
     const seen = new Set();
     if (list) {
-      const l = listTargets(state, pid, cardId, LIST.cap);
+      const l = listTargets(state, pid, cardId, LIST.cap, even);
       for (const target of l.targets) { seen.add(JSON.stringify(target)); moves.push({ type: 'play', card: cardId, use: 'action', target }); }
       if (l.complete && !l.targets.length) moves.push({ type: 'play', card: cardId, use: 'action', target: null }); // no legal target: played for no effect
       if (l.complete) continue;
@@ -581,7 +582,7 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
   if (state.seating[state.turn] !== pid) return null;
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
-  const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum);
+  const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum, !!persona?.even);
   if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories } : undefined, persona.halve ?? 0, !!persona.spread);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
