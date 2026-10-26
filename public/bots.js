@@ -30,6 +30,7 @@ import {
   cardById, clone, cloneState, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthTotal, fleeOptions,
 } from './engine.js';
 import evalFit from './eval-fit.json' with { type: 'json' };
+import goalFitData from './goal-fit.json' with { type: 'json' };
 
 /** @typedef {import('./engine.js').GameState} GameState */
 /** @typedef {import('./engine.js').Move} Move */
@@ -162,6 +163,9 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - hidden: count face-down tokens, its own as they are, a rival's as even odds.
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
+ * - goalFit: the goal (island or invaders) chosen on each ending's fitted win chance (goal-fit.json, from
+ *   scripts/fit-goals.mjs; 2026-10-26, designer: accurate round evaluation passed back to strategy), not on the
+ *   bots' own, which predicts no better than a constant early on. Moves are still chosen by the bot's own value.
  * - deepRoll: with sim and table, the play-outs' seats keep their target listing and even (2026-10-26: imagined
  *   futures sampled 8 targets a card, so the big unsuited cards were misplayed in them).
  * - rank: with enum, a card with more targets than the listing holds lists up to RANK.list, scores each quickly (its own
@@ -206,7 +210,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -405,6 +409,20 @@ function goalValue(state, pid, goal, persona, quick = false) {
 }
 
 /**
+ * Each ending's fitted chance of this seat winning by it (persona goalFit): island and invaders, from goal-fit.json for
+ * this round; null when there is no fit for the round. @param {GameState} state @param {string} pid
+ */
+function endingChances(state, pid) {
+  const data = /** @type {{ names: string[], rounds: Record<string, { mean: number[], sd: number[], isl: number[], inv: number[] }> }} */ (goalFitData);
+  const m = data.rounds[String(state.round)];
+  if (!m) return null;
+  const f = /** @type {Record<string, number>} */ (features(state, pid));
+  const x = data.names.map((k, j) => ((f[k] ?? 0) - m.mean[j]) / m.sd[j]);
+  const p = (/** @type {number[]} */ w) => sigmoid(w[0] + x.reduce((a, v, j) => a + v * w[j + 1], 0));
+  return { isl: p(m.isl), inv: p(m.inv) };
+}
+
+/**
  * The fitted evaluation (persona fit): the log-odds of winning from this
  * seat's features, by the weights fitted for this round (a play-out ends
  * after the round's fights, in the next round). Null at the game's end, where
@@ -474,10 +492,12 @@ export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
   const pushInv = push * (1 + (persona.allies ?? 0) * c.backers);
   const reachInv = (1 - c.known) * Math.min(1, c.prior + 0.15) + c.known * sigmoid((c.projected - c.threshold - 0.5 + pushInv) / c.spreadP);
   const reachIsl = (1 - c.known) * Math.min(1, 1 - c.prior + 0.15) + c.known * (1 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spreadP));
-  const evidence = reachInv * c.asInvaders - reachIsl * c.asIsland;
+  const fitted = persona.goalFit ? endingChances(state, pid) : null;
+  const evidence = fitted ? fitted.inv - fitted.isl : reachInv * c.asInvaders - reachIsl * c.asIsland;
   if (memory && memory.jitter === undefined) memory.jitter = (rng() * 2 - 1) * persona.jitter; // this game's play style
   const score = evidence + (persona.lean + (memory?.jitter ?? 0)) * (1 - c.known);
   const held = memory?.goal;
+  if (fitted && held === 'invaders' && persona.commit && fitted.isl < persona.commit * fitted.inv) return (memory && (memory.goal = 'invaders'), 'invaders'); // commit, on the fitted chances
   /** @type {Goal} */
   let goal = score > (held === 'invaders' ? -persona.hold : held === 'island' ? persona.hold : 0) ? 'invaders' : 'island';
   // commit: a bot backing a faction abandons it only for an island chance at least `commit` times its invader chance.
