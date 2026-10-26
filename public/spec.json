@@ -981,6 +981,16 @@
       ]
     },
     {
+      "id": "wayBack",
+      "label": "A way back for factions",
+      "description": "Designer (2026-10-26), first draft: a suit card may be played to bring its faction back while it has no location with 2 or more of its tokens: up to the card's sway of its tokens at its suit locations or where it is, 1 standing with it each.",
+      "default": "on",
+      "choices": [
+        { "id": "on", "label": "On", "description": "The first draft." },
+        { "id": "off", "label": "Off", "description": "No way back: a faction wiped out stays gone." }
+      ]
+    },
+    {
       "id": "seeding",
       "label": "Starting tokens",
       "description": "SD1 (designer): how each faction's tokens start on its three aligned locations; 2 on each since 2026-10-21.",

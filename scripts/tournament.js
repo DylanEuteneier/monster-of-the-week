@@ -67,7 +67,7 @@ import { seededRng, chance, measureState, play, MAX_MOVES, upgradeRecord } from 
 
 /** @typedef {import('../public/bots.js').Profile} Profile @typedef {import('../public/engine.js').GameState} GameState */
 /** @typedef {{ trophies: number, flips: number, control: number, moved: number, placed: number, presence: number, made?: number, big?: number }} Effect */
-/** @typedef {{ r: number, seat: string, card: string, use: 'action' | 'sway', dWin: number, opener: boolean, fx?: Effect }} Play */
+/** @typedef {{ r: number, seat: string, card: string, use: 'action' | 'sway' | 'return', dWin: number, opener: boolean, fx?: Effect }} Play */
 /** @typedef {{ r: number, fights: number, by: number[], swayd: number, onBoard: number, standing: number }} Economy */
 /** @typedef {{ r: number, opening: boolean, profile: string, benefit: Record<string, number | null> }} Probe */
 /** @typedef {{ at: number, card: string, seat: string, loc: string, stake: string[], maker: string, makerCard: string, moved: boolean, size?: number, big?: boolean }} Vanish */

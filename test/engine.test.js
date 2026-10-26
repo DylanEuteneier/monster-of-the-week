@@ -877,6 +877,27 @@ test('Steal Their Playbook (designer, 2026-10-24): theirs copies the last card p
   assert.ok(!(back.roundPlays ?? []).some((x) => x.card === 'gate'));
 });
 
+test('A way back (designer, 2026-10-26): a suit card brings its faction back while it has no location with 2 or more, up to its sway, 1 standing each', () => {
+  const s = clear(draftAll(newGame()));
+  s.opened = true;
+  const pid = s.seating[s.turn];
+  const noct = /** @type {string} */ (factionOfArchetype(s, 'nocturnals'));
+  const home = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals')?.id);
+  s.players[pid].hand = ['invite-in', 'fresh-meat']; // a ◐ strike, printed sway 2
+  s.players[pid].standing[noct] = 5;
+  const supply = s.supply[noct], cubes = s.players[pid].supply;
+  const play = (/** @type {string[]} */ places) => /** @type {import('../public/engine.js').Move} */ ({ type: 'play', card: 'invite-in', use: 'return', places });
+  const move = play([home, home]);
+  assert.equal(validate(s, { playerId: pid, move }).ok, true); // the Nocturnals are gone: no location with 2 or more
+  assert.equal(validate(s, { playerId: pid, move: play([home, home, home]) }).ok, false); // more than its sway
+  const after = applyMove(s, { playerId: pid, move });
+  assert.deepEqual([after.board[home].tokens[noct], after.supply[noct], after.players[pid].standing[noct], after.players[pid].supply], [2, supply - 2, 3, cubes + 2]);
+  s.board[home].tokens = { [noct]: 2 };
+  assert.equal(validate(s, { playerId: pid, move }).ok, false); // it can still grow: no way back
+  s.options.wayBack = 'off'; s.board[home].tokens = {};
+  assert.equal(validate(s, { playerId: pid, move }).ok, false); // variant off
+});
+
 test('Night Terrors (◐ signature): marks, then at nightfall 1 token may flee each mark to a neighbour, your sway following if you choose (designer, 2026-10-20)', () => {
   const s = clear(draftAll(newGame()));
   s.opened = true;

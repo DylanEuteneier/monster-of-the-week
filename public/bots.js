@@ -27,7 +27,7 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, clone, cloneState, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthTotal, fleeOptions,
+  cardById, clone, cloneState, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthTotal, fleeOptions, returnRoom,
 } from './engine.js';
 import evalFit from './eval-fit.json' with { type: 'json' };
 import goalFitData from './goal-fit.json' with { type: 'json' };
@@ -522,6 +522,14 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false, eve
       const spots = swaySpots(state, cardId);
       if (spots.length) for (const location of spots) moves.push({ type: 'play', card: cardId, use: 'sway', location });
       else moves.push({ type: 'play', card: cardId, use: 'sway' });
+      // A way back (2026-10-26): at each spot 1 token, or all of them; and one spread over the spots.
+      const back = returnRoom(state, pid, cardId);
+      if (back.max > 0) {
+        /** @type {string[][]} */ const ways = [];
+        for (const l of back.spots) { ways.push([l]); if (back.max > 1) ways.push(Array(back.max).fill(l)); }
+        if (back.spots.length > 1 && back.max > 1) ways.push(back.spots.slice(0, back.max));
+        for (const places of ways) moves.push({ type: 'play', card: cardId, use: 'return', places });
+      }
     }
     if (!card.action) continue;
     /** @type {Set<string>} */

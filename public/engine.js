@@ -163,7 +163,7 @@ export { spec };
 
 /**
  * @typedef {{ type: 'pick', keep: string[] }
- *   | { type: 'play', card: string, use: 'action' | 'sway', target?: Target | null, location?: string }
+ *   | { type: 'play', card: string, use: 'action' | 'sway' | 'return', target?: Target | null, location?: string, places?: string[] }
  *   | { type: 'confirm' }
  *   | { type: 'withdraw' }
  *   | { type: 'pass' }
@@ -1118,6 +1118,24 @@ const canFollow = (state, to, mover, f) => {
   const there = new Set([...factionsAt(state, to), mover]);
   return !state.board[to].scorched && (there.has(f) || there.size < 2);
 };
+
+/**
+ * A way back for factions (designer, 2026-10-26; a third way to play a suit card): while the suit's faction has no
+ * location with 2 or more of its tokens, up to X of its tokens (X the card's sway) come back from its supply, at its
+ * suit locations or where it already is, each paid with 1 standing with it (back to your supply). Where they may go,
+ * and how many at most; none while the faction can still grow somewhere.
+ * @param {GameState} state @param {string} pid @param {string} cardId
+ */
+export function returnRoom(state, pid, cardId) {
+  const card = cardById(cardId);
+  if (!card.suit) return { spots: /** @type {string[]} */ ([]), max: 0, faction: '' };
+  const f = /** @type {string} */ (factionOfArchetype(state, card.suit));
+  if ((state.options.wayBack ?? 'on') === 'off') return { spots: /** @type {string[]} */ ([]), max: 0, faction: f };
+  if (LOCATION_IDS.some((l) => rawTokens(state, l, f) >= 2)) return { spots: /** @type {string[]} */ ([]), max: 0, faction: f };
+  const spots = LOCATION_IDS.filter((l) => !state.board[l].scorched && (suitLocations(card).includes(l) || rawTokens(state, l, f) > 0) && canEnter(state, l, f));
+  const max = Math.min(swayFor(state, pid, cardId), state.supply[f] ?? 0, swayRequired(state) ? state.players[pid].standing[f] ?? 0 : Infinity);
+  return { spots, max: spots.length ? max : 0, faction: f };
+}
 
 /**
  * Where 1 sway goes when a card is spent for sway, under the test
@@ -2595,6 +2613,12 @@ export function validate(state, submission) {
     if (spots.length ? !spots.includes(m.location ?? '') : m.location) return no('Choose a location its faction controls for 1 of the sway.');
     return OK;
   }
+  if (m.use === 'return') {
+    const { spots, max } = returnRoom(state, pid, m.card);
+    const places = m.places ?? [];
+    if (!max) return no('Its faction can come back only when it has no location with 2 or more of its tokens, and you need standing with it.');
+    return places.length >= 1 && places.length <= max && places.every((l) => spots.includes(l)) ? OK : no(`Bring back 1 to ${max} of its tokens, at its own locations or where it already is.`);
+  }
   if (m.use !== 'action') return no('Choose the action or the sway.');
   const e = checkTarget(state, pid, card, m.target ?? null);
   if (e) return no(e);
@@ -2672,6 +2696,18 @@ export function applyMove(state, submission) {
           next.events.push({ type: 'sway-placed', player: pid, faction, location: m.location });
         }
         logLine(next, `${pid} plays ${card.name} for ${gain} sway with ${factionById(faction).name}.`);
+        next.turn = (next.turn + 1) % next.seating.length;
+        return next;
+      }
+      if (m.use === 'return') {
+        // A way back (designer, 2026-10-26): its faction's tokens return; 1 standing with it for each, back to the supply.
+        const { faction } = returnRoom(state, pid, m.card);
+        const places = m.places ?? [];
+        for (const l of places) addTokens(next, l, faction, 1);
+        next.supply[faction] -= places.length;
+        p.standing[faction] -= places.length;
+        p.supply += places.length;
+        logLine(next, `${pid} plays ${card.name} to bring ${places.length} ${factionById(faction).name} back, at ${[...new Set(places)].map((l) => locationById(l).name).join(', ')}.`);
         next.turn = (next.turn + 1) % next.seating.length;
         return next;
       }

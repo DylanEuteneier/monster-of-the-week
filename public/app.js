@@ -10,7 +10,7 @@
  * are chosen on the board one step at a time: each step's candidates are
  * spotlit (hexes) or lit gold (tokens), and the server checks the result.
  */
-import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice, pendingDestinations, checkTarget, previewTarget, responsesOn, fleeOptions } from './engine.js';
+import { spec, factionById, locationById, cardById, waitingOn, describeTarget, nextChoice, pendingDestinations, checkTarget, previewTarget, responsesOn, fleeOptions, returnRoom } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml, faceDownHtml, effectHtml, markImg, EFFECTS } from './pieces.js';
 import { cardHtml as baseCardHtml, suitIcon } from './cards.js';
@@ -60,6 +60,9 @@ const ui = {
   /** Night Terrors' nightfall (◐ signature): the flight being chosen at the current mark */
   /** @type {{ faction?: string, to?: string }} */
   flee: {},
+  /** A way back (2026-10-26): the suit card being played to bring its faction back, and where each token goes */
+  /** @type {{ card: string, places: string[] } | null} */
+  returning: null,
   /** a move sent, its view not back yet */
   sending: false,
   /** the server runs older rules than these files (wrangler dev stopped reloading) */
@@ -478,6 +481,10 @@ function picks() {
     out.spots = Object.keys(view.growing.due);
     return out;
   }
+  if (ui.returning && view.phase === 'play') {
+    out.spots = returnRoom(/** @type {any} */ (view), view.you, ui.returning.card).spots;
+    return out;
+  }
   if (view.phase === 'night') {
     // Nightfall (Night Terrors): at the first mark left, pick who flees, then where.
     if (view.night?.player !== view.you) return out;
@@ -766,11 +773,19 @@ function renderPlay() {
   const opener = mustOpen ? me.hand.filter((c) => cardById(c).marked).sort((a, b) => String(cardById(a).marked).localeCompare(String(cardById(b).marked)))[0] : null;
   if (ui.choosing && !me.hand.includes(ui.choosing)) ui.choosing = null;
   if (myTurn && ui.choosing) return renderTargeting(ui.choosing);
+  if (myTurn && ui.returning && me.hand.includes(ui.returning.card)) {
+    const room = returnRoom(/** @type {any} */ (view), view.you, ui.returning.card);
+    if (ui.returning.places.length) handAction('skip', { label: 'Done' });
+    handAction('back');
+    toHand(me.hand.map((c) => cardHtml(c, c === ui.returning?.card ? { selected: true } : { dim: true })), false);
+    return step('turn', `Bring ${esc(fname(room.faction))} back: pick where each token goes · ${room.max - ui.returning.places.length} more at most`);
+  }
+  if (ui.returning && !(myTurn && me.hand.includes(ui.returning.card))) ui.returning = null;
   toHand(me.hand.map((c) => {
     const card = cardById(c);
     const canAct = myTurn && !!card.action && (!mustOpen || c === opener);
     const mode = ready.includes(c) ? 'respond' : canAct ? 'act' : '';
-    return cardHtml(c, { mode, sway: myTurn && !mustOpen && !!card.suit, dim: !mode });
+    return cardHtml(c, { mode, sway: myTurn && !mustOpen && !!card.suit, back: myTurn && !mustOpen && returnRoom(/** @type {any} */ (view), view.you, c).max > 0, dim: !mode });
   }), false);
   const played = pending ? `${pending.player === view.you ? '<b>You</b> play' : `<b>${esc(pending.player)}</b> plays`} <span title="${esc(describeTarget(pending.card, pending.target))}">${esc(cardById(pending.card).name)}</span>${pending.cancelled ? ' (cancelled)' : ''}` : '';
   if (ui.responding) {
@@ -1486,6 +1501,18 @@ function onClick(event) {
     ui.choosing = null;
     ui.target = {};
     return sendMove({ type: 'play', card, use: 'sway' });
+  }
+  if (action === 'return') { ui.choosing = null; ui.target = {}; ui.returning = { card, places: [] }; return render(); }
+  if (ui.returning && view) {
+    const r = ui.returning;
+    const room = returnRoom(/** @type {any} */ (view), view.you, r.card);
+    if (action === 'back') { ui.returning = null; return render(); }
+    if (action === 'skip' && r.places.length) { ui.returning = null; return sendMove({ type: 'play', card: r.card, use: 'return', places: r.places }); }
+    if (action === 'pick-location' && room.spots.includes(target.dataset.location ?? '')) {
+      r.places = [...r.places, target.dataset.location ?? ''];
+      if (r.places.length >= room.max) { ui.returning = null; return sendMove({ type: 'play', card: r.card, use: 'return', places: r.places }); }
+      return render();
+    }
   }
   if (action === 'back') {
     // Undo the last pick (a reading counts); with nothing left to undo, put the card down.

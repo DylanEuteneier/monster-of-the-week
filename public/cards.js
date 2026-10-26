@@ -23,7 +23,7 @@ export function suitIcon(archetype, scale = 2) {
 const fname = (f) => factionById(f).name;
 
 /**
- * @typedef {{ mode?: '' | 'act' | 'respond' | 'keep', ticked?: boolean, sway?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string, empty?: string[], view?: PlayerView | null, extra?: string }} CardOptions
+ * @typedef {{ mode?: '' | 'act' | 'respond' | 'keep', ticked?: boolean, sway?: boolean, back?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string, empty?: string[], view?: PlayerView | null, extra?: string }} CardOptions
  */
 
 /**
@@ -55,6 +55,7 @@ export function cardHtml(id, o = {}) {
       ${c.action ? opt('set-mode', 'LOC', `Location target: ${r?.location ?? ''}${o.empty?.includes('location') ? ' Nothing to target right now.' : ''}`, o.reading === 'location', { mode: 'location' }) : ''}
       ${c.action ? opt('set-mode', 'FAC', `Faction target: ${r?.faction ?? ''}${sf ? ` (${fname(sf)})` : ''}${o.empty?.includes('faction') ? ' Nothing to target right now.' : ''}`, o.reading === 'faction', { mode: 'faction' }) : ''}
       ${opt('sway', `<b>+${printed}</b>`, `Spend for ${printed} sway with ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}`, false)}
+      ${o.back ? opt('return', 'BACK', `Bring ${sf ? fname(sf) : 'its faction'} back: up to its sway of tokens at its own locations or where it is, 1 standing with it each`, false) : ''}
     </div>` : '';
   const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : '', o.selected && o.next ? 'card-needs-reading' : ''].filter(Boolean).join(' ');
   // Responses are out of the first draft: their text shows only when the variant turns them on.
