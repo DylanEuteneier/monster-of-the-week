@@ -156,6 +156,8 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - hidden: count face-down tokens, its own as they are, a rival's as even odds.
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
+ * - spread: with sim, every card in hand sends its best move to the play-outs (2026-10-25: a play whose worth comes
+ *   later, such as taking a card back or a mark that pays at nightfall, scores little one move ahead and never got there).
  * - combo: in the draft, value a card with the cards already kept.
  * - race: with protect, value its lead in its backed faction's net standing,
  *   weighted by how safe presence is (once it is safe, the lead decides).
@@ -191,7 +193,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -573,7 +575,7 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
   const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum);
-  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories } : undefined, persona.halve ?? 0);
+  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories } : undefined, persona.halve ?? 0, !!persona.spread);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
     const v = value(after(state, pid, move));
@@ -591,11 +593,14 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
  * standard goal bots several times, scored for this bot at the end. Each
  * playout's randomness is shared across the moves, so they meet the same
  * futures. Passing and holding a card are judged like any other move.
- * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory} [memory] @param {number} [keep] @param {number} [playouts] @param {Seats} [table]  persona table: each seat's profile (played fast) and memory, in the play-outs @param {number} [halve]  persona halve: successive halving over `keep` moves
+ * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory} [memory] @param {number} [keep] @param {number} [playouts] @param {Seats} [table]  persona table: each seat's profile (played fast) and memory, in the play-outs @param {number} [halve]  persona halve: successive halving over `keep` moves @param {boolean} [spread]  persona spread: every card in hand gets its best move into the play-outs
  */
-function simPick(state, pid, rng, moves, ev, memory, keep = SIM.keep, playouts = SIM.playouts, table = undefined, halve = 0) {
+function simPick(state, pid, rng, moves, ev, memory, keep = SIM.keep, playouts = SIM.playouts, table = undefined, halve = 0, spread = false) {
   const ranked = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) }; }).sort((a, b) => b.v - a.v);
-  const short = ranked.slice(0, keep);
+  // spread: the best move of each card in hand first (its action, else its sway), then the best of the rest.
+  const firsts = spread ? [...new Set(ranked.flatMap((r) => (r.move.type === 'play' ? [r.move.card] : [])))].map((c) => /** @type {typeof ranked[number]} */ (ranked.find((r) => r.move.type === 'play' && r.move.card === c))) : [];
+  const short = spread ? [...firsts, ...ranked.filter((r) => !firsts.includes(r))].slice(0, Math.max(keep, firsts.length)) : ranked.slice(0, keep);
+  if (spread) short.sort((a, b) => b.v - a.v);
   const pass = ranked.find((r) => r.move.type === 'pass');
   if (pass && !short.includes(pass)) short.push(pass);
   if (halve && short.length > 2) return halvingPick(short, pid, rng, ev, memory, keep * playouts, table);
