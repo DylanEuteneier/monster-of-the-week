@@ -499,10 +499,13 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false, eve
     if (!card.action) continue;
     /** @type {Set<string>} */
     const seen = new Set();
+    /** @type {ReturnType<typeof listTargets> | null} */
+    let listed = null;
     if (list && quick) {
       // persona rank: list wide, keep the likeliest by a quick score, plus a few others at random.
       const wide = listTargets(state, pid, cardId, RANK.list, even);
-      if (wide.targets.length > LIST.cap) {
+      if (wide.complete && wide.targets.length <= LIST.cap) listed = wide; // all of it fits: the same list as the plain listing, made once
+      else if (wide.targets.length > LIST.cap) {
         const scored = wide.targets.map((target) => ({ target, v: quick(after(state, pid, { type: 'play', card: cardId, use: 'action', target })) })).sort((a, b) => b.v - a.v);
         const rest = scored.slice(RANK.top);
         const picks = [...scored.slice(0, RANK.top), ...Array.from({ length: Math.min(RANK.random, rest.length) }, () => rest.splice(Math.floor(rng() * rest.length), 1)[0])];
@@ -512,7 +515,7 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false, eve
       }
     }
     if (list && !seen.size) {
-      const l = listTargets(state, pid, cardId, LIST.cap, even);
+      const l = listed ?? listTargets(state, pid, cardId, LIST.cap, even);
       for (const target of l.targets) { seen.add(JSON.stringify(target)); moves.push({ type: 'play', card: cardId, use: 'action', target }); }
       if (l.complete && !l.targets.length) moves.push({ type: 'play', card: cardId, use: 'action', target: null }); // no legal target: played for no effect
       if (l.complete) continue;
