@@ -63,6 +63,8 @@ const SEARCH = {
 };
 /** Listing targets (persona enum): up to this many per card; past it, sampling fills in. */
 const LIST = { cap: 40 };
+/** Ranked listing (persona rank): list up to `list`, keep the `top` by quick score and `random` others. Tuning, not rules. */
+const RANK = { list: 200, top: 30, random: 10 };
 /** The play-out search (persona sim): its best moves one move ahead, each played to the round's end this many times, by fast goal bots. */
 const SIM = { keep: 6, playouts: 4, maxMoves: 400 };
 const ROLLOUT = 'trophy:sim=0,enum=0,combo=0';
@@ -126,9 +128,9 @@ const sigmoid = (/** @type {number} */ x) => 1 / (1 + Math.exp(-x));
  * unknown profile, such as one saved before a bot was removed, plays as goal).
  * @param {GameState} state @param {string} pid @param {Profile | string} [profile] @param {Goal} [goal]  a goal bot's current goal
  */
-export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
+export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick = false) {
   const persona = personaOf(profile);
-  return goalValue(state, pid, goal ?? 'island', persona ?? PERSONAS.trophy);
+  return goalValue(state, pid, goal ?? 'island', persona ?? PERSONAS.trophy, quick);
 }
 
 // ---------------------------------------------------------------------------
@@ -156,6 +158,8 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - hidden: count face-down tokens, its own as they are, a rival's as even odds.
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
+ * - rank: with enum, a card with more targets than the listing holds lists up to RANK.list, scores each quickly (its own
+ *   evaluation on the board after the play, fights not projected), and fully scores the best RANK.top and RANK.random others.
  * - even: with enum, a card with several uses shares the listing between them (2026-10-25: the last use filled it).
  * - field: win chances against every rival, multiplied (2026-10-25, designer: value making any rival lose points), not
  *   only against the best of them.
@@ -196,7 +200,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -379,9 +383,10 @@ function chancesAfter(s, pid, soft = 1, colours = ISLAND, field = false) {
 }
 
 /** A goal bot's value: its win chance, weighted toward its goal, plus its margins. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
-function goalValue(state, pid, goal, persona) {
+function goalValue(state, pid, goal, persona, quick = false) {
   if (persona.fit) { const v = fitValue(state, pid); if (v !== null) return persona.fit * v + 0.02 * state.players[pid].supply; }
-  const c = winChances(state, pid, !!persona.hidden, persona.soft ?? 1, coloursOf(persona), !!persona.field);
+  // quick (persona rank): the board as it stands, fights not projected; a cheap first look, not the bot's judgement.
+  const c = quick ? chancesAfter(state, pid, persona.soft ?? 1, coloursOf(persona), !!persona.field) : winChances(state, pid, !!persona.hidden, persona.soft ?? 1, coloursOf(persona), !!persona.field);
   // Margins are added on their own, never scaled by an ending's chance: a margin can be negative, and scaling it would
   // reward a bot that is behind for making that ending less likely (2026-10-08 fix).
   const inv = c.pInvaders * 10 * c.asInvaders + persona.margin * c.marginInvaders;
@@ -480,7 +485,7 @@ export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
 // ---------------------------------------------------------------------------
 
 /** Every move worth considering on this bot's turn. @param {GameState} state @param {string} pid @param {() => number} rng */
-function candidates(state, pid, rng, targets = SEARCH.targets, list = false, even = false) {
+function candidates(state, pid, rng, targets = SEARCH.targets, list = false, even = false, quick = /** @type {((s: GameState) => number) | null} */ (null)) {
   const p = state.players[pid];
   /** @type {Move[]} */
   const moves = [{ type: 'pass' }];
@@ -494,7 +499,19 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false, eve
     if (!card.action) continue;
     /** @type {Set<string>} */
     const seen = new Set();
-    if (list) {
+    if (list && quick) {
+      // persona rank: list wide, keep the likeliest by a quick score, plus a few others at random.
+      const wide = listTargets(state, pid, cardId, RANK.list, even);
+      if (wide.targets.length > LIST.cap) {
+        const scored = wide.targets.map((target) => ({ target, v: quick(after(state, pid, { type: 'play', card: cardId, use: 'action', target })) })).sort((a, b) => b.v - a.v);
+        const rest = scored.slice(RANK.top);
+        const picks = [...scored.slice(0, RANK.top), ...Array.from({ length: Math.min(RANK.random, rest.length) }, () => rest.splice(Math.floor(rng() * rest.length), 1)[0])];
+        for (const { target } of picks) { seen.add(JSON.stringify(target)); moves.push({ type: 'play', card: cardId, use: 'action', target }); }
+        if (wide.complete) continue;
+        targets += seen.size;
+      }
+    }
+    if (list && !seen.size) {
       const l = listTargets(state, pid, cardId, LIST.cap, even);
       for (const target of l.targets) { seen.add(JSON.stringify(target)); moves.push({ type: 'play', card: cardId, use: 'action', target }); }
       if (l.complete && !l.targets.length) moves.push({ type: 'play', card: cardId, use: 'action', target: null }); // no legal target: played for no effect
@@ -583,7 +600,7 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
   if (state.seating[state.turn] !== pid) return null;
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
-  const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum, !!persona?.even);
+  const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum, !!persona?.even, persona?.rank ? (s) => evaluate(s, pid, profile, goal, true) : null);
   if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories } : undefined, persona.halve ?? 0, !!persona.spread);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
