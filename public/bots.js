@@ -206,12 +206,13 @@ const PERSONAS = {
   // sim 49.9%, sets=2 29.3% (sets=1 26.0%, sets=4 21.0%), enum 24.8%, combo 24.3%, hidden 21.5%; all together 57.9%.
   // table (2026-10-09): a bug fix, not a heuristic: play-outs had every seat, the bot itself included, play as a trophy-leaning goal bot.
   // threat 3 (2026-10-09, 10 games against top=2 backers): trophy 30% a seat (13% at threat 1); they take the lead of the backed faction.
-  trophy: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 3, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1 },
+  // even 1 (2026-10-25, challenger, 64 games, seeds 61 and 71): trophy 37% a seat with it against 20%; backer 16% against 12.5%.
+  trophy: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 3, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1, even: 1 },
   // protect 4 (2026-10-09, 10 games): presence held at or over the threshold through round 4 (21 against 14).
   // commit 2 with protect: the invaders' ending 5 in 10 (1 in 10 before), final presence 20.3 (10.9).
   // top 2: backers 30% a seat against goal 13% (15% against 23% before), mostly from island wins (10 games).
   // race 2 (against threat-3 trophy bots): backers 20% a seat, trophy 20%; the invaders' ending 4 in 10, backers winning 3 of them (10 games).
-  backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1, protect: 4, commit: 2, top: 2, race: 2 },
+  backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1, protect: 4, commit: 2, top: 2, race: 2, even: 1 },
 };
 
 /**
