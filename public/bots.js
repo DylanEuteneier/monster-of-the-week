@@ -156,6 +156,8 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - hidden: count face-down tokens, its own as they are, a rival's as even odds.
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
+ * - field: win chances against every rival, multiplied (2026-10-25, designer: value making any rival lose points), not
+ *   only against the best of them.
  * - spread: with sim, every card in hand sends its best move to the play-outs (2026-10-25: a play whose worth comes
  *   later, such as taking a card back or a mark that pays at nightfall, scores little one move ahead and never got there).
  * - combo: in the draft, value a card with the cards already kept.
@@ -193,7 +195,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -244,16 +246,16 @@ const TABLE = { backing: 8, base: 0.3, step: 0.15 };
  * leading it (standing less trophies against the best rival). `asIsland`: my
  * weakest colour, then the next, against the best rival (TS2, WT1). Margins
  * sharpen as rounds run out.
- * @param {GameState} state @param {string} pid @param {boolean} [hidden]  persona hidden: count face-down tokens (see projectFights)
+ * @param {GameState} state @param {string} pid @param {boolean} [hidden]  persona hidden: count face-down tokens (see projectFights) @param {number} [soft] @param {number[]} [colours] @param {boolean} [field]  persona field
  */
-export function winChances(state, pid, hidden = false, soft = 1, colours = ISLAND) {
+export function winChances(state, pid, hidden = false, soft = 1, colours = ISLAND, field = false) {
   // Memoised per state (a speed-up): goals, values and play-outs ask about the same position many times. Read-only result.
-  if (!memoOn()) return chancesNow(state, pid, hidden, soft, colours);
+  if (!memoOn()) return chancesNow(state, pid, hidden, soft, colours, field);
   let memo = CHANCES.get(state);
   if (!memo) { memo = new Map(); CHANCES.set(state, memo); }
-  const key = `${pid}|${hidden ? 1 : 0}|${soft}|${colours}`;
+  const key = `${pid}|${hidden ? 1 : 0}|${soft}|${colours}|${field ? 1 : 0}`;
   let c = memo.get(key);
-  if (!c) { c = chancesNow(state, pid, hidden, soft, colours); memo.set(key, c); }
+  if (!c) { c = chancesNow(state, pid, hidden, soft, colours, field); memo.set(key, c); }
   return c;
 }
 /** @type {WeakMap<object, Map<string, ReturnType<typeof chancesAfter>>>} */
@@ -263,14 +265,14 @@ const ISLAND = [1, 0.35, 0.12, 0.02];
 /** @param {Persona} persona */
 const coloursOf = (persona) => (persona.w2 === undefined && persona.w3 === undefined && persona.all === undefined ? ISLAND : [1, persona.w2 ?? ISLAND[1], persona.w3 ?? ISLAND[2], persona.all ?? ISLAND[3]]);
 
-/** winChances, uncached. @param {GameState} state @param {string} pid @param {boolean} hidden @param {number} soft @param {number[]} colours */
-function chancesNow(state, pid, hidden, soft, colours) {
-  if (!hidden) return chancesAfter(projectFights(state), pid, soft, colours);
-  const mine = chancesAfter(projectFights(state, pid, false), pid, soft, colours);
+/** winChances, uncached. @param {GameState} state @param {string} pid @param {boolean} hidden @param {number} soft @param {number[]} colours @param {boolean} [field] */
+function chancesNow(state, pid, hidden, soft, colours, field = false) {
+  if (!hidden) return chancesAfter(projectFights(state), pid, soft, colours, field);
+  const mine = chancesAfter(projectFights(state, pid, false), pid, soft, colours, field);
   let rival = false;
   for (const loc in state.board) { const tk = state.board[loc].token; if (tk && tk.owner !== pid) { rival = true; break; } }
   if (!rival) return mine;
-  const theirs = chancesAfter(projectFights(state, pid, true), pid, soft, colours);
+  const theirs = chancesAfter(projectFights(state, pid, true), pid, soft, colours, field);
   /** @type {Record<string, number>} */ const avg = {};
   const m = /** @type {Record<string, number>} */ (/** @type {unknown} */ (mine)), th = /** @type {Record<string, number>} */ (/** @type {unknown} */ (theirs));
   for (const k in m) avg[k] = (m[k] + th[k]) / 2;
@@ -303,8 +305,8 @@ export function features(state, pid) {
   }).map(([k, v]) => [k, r3(v)]));
 }
 
-/** winChances on a board whose fights are already projected. @param {GameState} s @param {string} pid @param {number} [soft]  persona soft: widens every chance's spread @param {number[]} [colours]  the island margin's weights on the weakest, second and third colours, and on every trophy */
-function chancesAfter(s, pid, soft = 1, colours = ISLAND) {
+/** winChances on a board whose fights are already projected. @param {GameState} s @param {string} pid @param {number} [soft]  persona soft: widens every chance's spread @param {number[]} [colours]  the island margin's weights on the weakest, second and third colours, and on every trophy @param {boolean} [field]  persona field: beat every rival, not only the best */
+function chancesAfter(s, pid, soft = 1, colours = ISLAND, field = false) {
   // Plain loops (a speed-up): the same sums in the same order as before, so the same numbers.
   const roundsLeft = Math.max(0, Number(s.options.rounds) - s.round);
   const threshold = Number(s.options.threshold);
@@ -329,7 +331,10 @@ function chancesAfter(s, pid, soft = 1, colours = ISLAND) {
   const bestOther = (/** @type {string} */ id, /** @type {number} */ i) => (bestWho[i] === id ? bestB[i] : bestA[i]);
   const spreadI = soft * (1 + roundsLeft);
   let asInvaders = 0, marginInvaders = 0;
-  for (let i = 0; i < nF; i++) { const l = nets[pid][i] - bestOther(pid, i); asInvaders += (w[i] / wSum) * sigmoid(l / spreadI); }
+  for (let i = 0; i < nF; i++) {
+    if (field) { let p = 1; for (const o of seats) if (o !== pid) p *= sigmoid((nets[pid][i] - nets[o][i]) / spreadI); asInvaders += (w[i] / wSum) * p; continue; } // beat every rival
+    const l = nets[pid][i] - bestOther(pid, i); asInvaders += (w[i] / wSum) * sigmoid(l / spreadI);
+  }
   for (let i = 0; i < nF; i++) marginInvaders += (w[i] / wSum) * (nets[pid][i] - bestOther(pid, i));
   // The best rival's chance of leading the winning faction (each rival against everyone else).
   let rivalInvaders = 0;
@@ -361,7 +366,9 @@ function chancesAfter(s, pid, soft = 1, colours = ISLAND) {
   }
   const marginIsland = islOf[pid] - bestIsl;
   const linearIsland = allOf[pid] - bestAll; // the island margin, counted directly
-  const asIsland = sigmoid(marginIsland / (soft * (0.6 + 0.8 * roundsLeft)));
+  const spreadT = soft * (0.6 + 0.8 * roundsLeft);
+  let asIsland = sigmoid(marginIsland / spreadT);
+  if (field) { asIsland = 1; for (const o of seats) if (o !== pid) asIsland *= sigmoid((islOf[pid] - islOf[o]) / spreadT); } // beat every rival
   const prior = Math.min(0.9, Math.max(0.1, TABLE.base + TABLE.step * backers));
   const rounds = Number(s.options.rounds);
   const known = rounds > 1 ? Math.min(1, (s.round - 1) / (rounds - 1)) : 1; // how much presence says by now
@@ -372,7 +379,7 @@ function chancesAfter(s, pid, soft = 1, colours = ISLAND) {
 /** A goal bot's value: its win chance, weighted toward its goal, plus its margins. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
 function goalValue(state, pid, goal, persona) {
   if (persona.fit) { const v = fitValue(state, pid); if (v !== null) return persona.fit * v + 0.02 * state.players[pid].supply; }
-  const c = winChances(state, pid, !!persona.hidden, persona.soft ?? 1, coloursOf(persona));
+  const c = winChances(state, pid, !!persona.hidden, persona.soft ?? 1, coloursOf(persona), !!persona.field);
   // Margins are added on their own, never scaled by an ending's chance: a margin can be negative, and scaling it would
   // reward a bot that is behind for making that ending less likely (2026-10-08 fix).
   const inv = c.pInvaders * 10 * c.asInvaders + persona.margin * c.marginInvaders;
@@ -448,7 +455,7 @@ function setAccess(state, pid) {
  * @param {GameState} state @param {string} pid @param {Persona} persona @param {BotMemory} [memory] @param {() => number} [rng] @returns {Goal}
  */
 export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
-  const c = winChances(state, pid, !!persona.hidden, persona.soft ?? 1, coloursOf(persona));
+  const c = winChances(state, pid, !!persona.hidden, persona.soft ?? 1, coloursOf(persona), !!persona.field);
   const push = persona.push * (c.roundsLeft + 1);
   // allies: the rivals seen backing a faction push presence up too, so the invaders' ending is more reachable than one player's push.
   const pushInv = push * (1 + (persona.allies ?? 0) * c.backers);
