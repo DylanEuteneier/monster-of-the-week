@@ -46,7 +46,7 @@ function spend(state, cardId, at = (spots) => spots[0]) {
 }
 /** @typedef {'trophy' | 'backer'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory, table?: Record<string, string>, memories?: Record<string, BotMemory> }} BotOptions  table, memories: every seat's profile and memory, for play-outs (persona table) */
-/** @typedef {{ profiles?: Record<string, string>, memories?: Record<string, BotMemory> }} Seats  the table as a play-out sees it */
+/** @typedef {{ profiles?: Record<string, string>, memories?: Record<string, BotMemory>, deep?: boolean }} Seats  the table as a play-out sees it; deep: the play-outs' seats keep their target listing (persona deepRoll) */
 /** What a bot remembers between its turns: its goal, and this game's variation in its lean. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal, jitter?: number }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
 
@@ -54,6 +54,8 @@ export const PROFILES = /** @type {Profile[]} */ (['trophy', 'backer']);
 
 /** A profile with the slow search switched off (play-outs, probes' imagined futures, tests): the same persona, one move ahead, sampled targets. @param {string} profile */
 export const fast = (profile) => (personaOf(profile) ? `${profile}${profile.includes(':') ? ',' : ':'}sim=0,enum=0,combo=0` : profile);
+/** A play-out seat that keeps its target listing (and even): persona deepRoll. @param {string} profile */
+const fastListing = (profile) => (personaOf(profile) ? `${profile}${profile.includes(':') ? ',' : ':'}sim=0,combo=0` : profile);
 
 /** Tuning for the bots, not rules. */
 const SEARCH = {
@@ -158,6 +160,8 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - hidden: count face-down tokens, its own as they are, a rival's as even odds.
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
+ * - deepRoll: with sim and table, the play-outs' seats keep their target listing and even (2026-10-26: imagined
+ *   futures sampled 8 targets a card, so the big unsuited cards were misplayed in them).
  * - rank: with enum, a card with more targets than the listing holds lists up to RANK.list, scores each quickly (its own
  *   evaluation on the board after the play, fights not projected), and fully scores the best RANK.top and RANK.random others.
  * - even: with enum, a card with several uses shares the listing between them (2026-10-25: the last use filled it).
@@ -200,7 +204,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -606,7 +610,7 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
   const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum, !!persona?.even, persona?.rank ? (s) => evaluate(s, pid, profile, goal, true) : null);
-  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories } : undefined, persona.halve ?? 0, !!persona.spread);
+  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories, deep: !!persona.deepRoll } : undefined, persona.halve ?? 0, !!persona.spread);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
     const v = value(after(state, pid, move));
@@ -710,7 +714,7 @@ function playOutRound(state, seed, pid, memory, table = undefined, through = fal
   for (let n = 0; n < SIM.maxMoves && going(); n++) {
     let moved = false;
     for (const id of s.seating) {
-      const m = playMove(s, id, r, table?.profiles?.[id] ? fast(table.profiles[id]) : ROLLOUT, mem[id]);
+      const m = playMove(s, id, r, table?.profiles?.[id] ? (table.deep ? fastListing(table.profiles[id]) : fast(table.profiles[id])) : ROLLOUT, mem[id]);
       if (!m) continue;
       s = applyMove(s, { playerId: id, move: m });
       moved = true;
