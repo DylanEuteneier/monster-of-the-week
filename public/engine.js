@@ -3446,6 +3446,36 @@ export function sampleTarget(state, pid, cardId, rng) {
 const SAMPLED = new Set(['lure', 'draw-adjacent', 'gather-region', 'gather-neighbours', 'broadcast', 'sow', 'token', 'halve', 'drive-out', 'drive-out-either', 'teleport', 'halve-far', 'move-sway', 'split', 'conveyor']);
 
 /**
+ * For a bot's steered search (2026-10-26): the next step from a partial target, as finished targets (`done`) and
+ * partial ones one choice further (`next`). A mode (reading) choice opens both readings. Not a rule.
+ * @param {GameState} state @param {string} pid @param {string} cardId @param {Target} t
+ * @returns {{ done: Target[], next: Target[] }}
+ */
+export function choiceSteps(state, pid, cardId, t) {
+  const c = nextChoice(state, pid, cardId, t);
+  if (c.kind === 'done') return { done: [t], next: [] };
+  if (c.kind === 'mode') return { done: [], next: [{ ...t, mode: 'location' }, { ...t, mode: 'faction' }] };
+  if (!('options' in c)) return { done: [], next: [] };
+  return { done: 'optional' in c && c.optional ? [t] : [], next: /** @type {any[]} */ (c.options).map((o) => chooseStep(t, c, o)) };
+}
+/**
+ * For a bot's steered search: a random finished target from a partial one, choice by choice as the table offers
+ * them; null if the walk gets stuck. Not a rule. @param {GameState} state @param {string} pid @param {string} cardId @param {Target} t @param {() => number} rng
+ */
+export function completeTarget(state, pid, cardId, t, rng) {
+  let x = t;
+  for (let steps = 0; steps < 30; steps++) {
+    const c = nextChoice(state, pid, cardId, x);
+    if (c.kind === 'done') return x;
+    if (c.kind === 'mode') { x = { ...x, mode: rng() < 0.5 ? 'location' : 'faction' }; continue; }
+    if ('optional' in c && c.optional && rng() < 0.3) return x;
+    if (!('options' in c) || !c.options.length) return null;
+    x = chooseStep(x, c, /** @type {any[]} */ (c.options)[Math.floor(rng() * c.options.length)]);
+  }
+  return null;
+}
+
+/**
  * A random target built one choice at a time, as the table offers them (for bots).
  * @param {GameState} state @param {string} pid @param {string} cardId @param {'location' | 'faction'} mode @param {() => number} rng @returns {Target | null}
  */

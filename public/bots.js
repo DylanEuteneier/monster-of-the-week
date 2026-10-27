@@ -27,13 +27,14 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, clone, cloneState, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthTotal, fleeOptions, returnRoom,
+  cardById, clone, cloneState, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthTotal, fleeOptions, returnRoom, choiceSteps, completeTarget,
 } from './engine.js';
 import evalFit from './eval-fit.json' with { type: 'json' };
 import goalFitData from './goal-fit.json' with { type: 'json' };
 
 /** @typedef {import('./engine.js').GameState} GameState */
 /** @typedef {import('./engine.js').Move} Move */
+/** @typedef {import('./engine.js').Target} Target */
 
 /**
  * Spending a card for sway; under the test lever swayToBoard, 1 of
@@ -165,6 +166,10 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - hidden: count face-down tokens, its own as they are, a rival's as even odds.
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
+ * - steer: with enum, a card with more targets than the listing holds has them found best first (designer, 2026-10-26:
+ *   first see which kind of move is needed and fits the plan, then spend the listing there): each option of each choice
+ *   is tried with a couple of random completions, scored by the bot's own value (so its goal counts), and the most
+ *   promising branch is opened further, until the listing is spent.
  * - plan: with sim, plan the whole hand (designer, 2026-10-26: chains of plays, the hand played together). Each of
  *   its best first moves is tried with every plan for the cards left (none; one card next; two cards in order): in
  *   its play-outs it keeps to the plan, choosing each planned card's target on the board as it then is. The budget
@@ -217,7 +222,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number, guardCap?: number, plan?: number, planBudget?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number, guardCap?: number, plan?: number, planBudget?: number, steer?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -519,7 +524,7 @@ export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
 // ---------------------------------------------------------------------------
 
 /** Every move worth considering on this bot's turn. @param {GameState} state @param {string} pid @param {() => number} rng */
-function candidates(state, pid, rng, targets = SEARCH.targets, list = false, even = false, quick = /** @type {((s: GameState) => number) | null} */ (null)) {
+function candidates(state, pid, rng, targets = SEARCH.targets, list = false, even = false, quick = /** @type {((s: GameState) => number) | null} */ (null), steer = /** @type {((s: GameState) => number) | null} */ (null)) {
   const p = state.players[pid];
   /** @type {Move[]} */
   const moves = [{ type: 'pass' }];
@@ -543,6 +548,11 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false, eve
     const seen = new Set();
     /** @type {ReturnType<typeof listTargets> | null} */
     let listed = null;
+    if (list && steer && !listTargets(state, pid, cardId, LIST.cap + 1, even).complete) {
+      // persona steer: the listing spent best first, where the bot's own value says the card's worth lies.
+      for (const target of steered(state, pid, cardId, rng, steer, LIST.cap)) { const k = JSON.stringify(target); if (seen.has(k)) continue; seen.add(k); moves.push({ type: 'play', card: cardId, use: 'action', target }); }
+      targets += seen.size;
+    }
     if (list && quick) {
       // persona rank: list wide, keep the likeliest by a quick score, plus a few others at random.
       const wide = listTargets(state, pid, cardId, RANK.list, even);
@@ -574,6 +584,44 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false, eve
     }
   }
   return moves.filter((m) => validate(state, { playerId: pid, move: m }).ok);
+}
+
+/**
+ * Best-first targets for a card (persona steer): each branch of its choice tree gets a couple of random completions,
+ * scored by the bot's own value; the most promising open branch is opened next, until `budget` targets are scored.
+ * Returns them, best first. Tuning, not rules.
+ * @param {GameState} state @param {string} pid @param {string} cardId @param {() => number} rng @param {(s: GameState) => number} value @param {number} budget
+ */
+function steered(state, pid, cardId, rng, value, budget) {
+  /** @type {Map<string, { target: Target, v: number }>} */
+  const found = new Map();
+  const score = (/** @type {Target} */ target) => {
+    const k = JSON.stringify(target);
+    const hit = found.get(k);
+    if (hit) return hit.v;
+    const move = /** @type {Move} */ ({ type: 'play', card: cardId, use: 'action', target });
+    if (!validate(state, { playerId: pid, move }).ok) return -Infinity;
+    const v = value(after(state, pid, move));
+    found.set(k, { target, v });
+    return v;
+  };
+  /** @type {{ t: Target, v: number }[]} */
+  const open = [];
+  const look = (/** @type {Target} */ t) => {
+    const { done, next } = choiceSteps(state, pid, cardId, t);
+    for (const d of done) score(d);
+    for (const n of next) {
+      let v = -Infinity;
+      for (let i = 0; i < 2 && found.size < budget; i++) { const c = completeTarget(state, pid, cardId, n, rng); if (c) v = Math.max(v, score(c)); }
+      if (v > -Infinity) open.push({ t: n, v });
+    }
+  };
+  look({});
+  for (let guard = 0; guard < 200 && found.size < budget && open.length; guard++) {
+    open.sort((a, b) => b.v - a.v);
+    look(/** @type {{ t: Target }} */ (open.shift()).t);
+  }
+  return [...found.values()].sort((a, b) => b.v - a.v).map((x) => x.target);
 }
 
 /** The state after a move, with an action played straight through to its resolution. @param {GameState} state @param {string} pid @param {Move} move */
@@ -647,7 +695,7 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
   if (state.seating[state.turn] !== pid) return null;
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
-  const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum, !!persona?.even, persona?.rank ? (s) => evaluate(s, pid, profile, goal, true) : null);
+  const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum, !!persona?.even, persona?.rank ? (s) => evaluate(s, pid, profile, goal, true) : null, persona?.steer ? ev : null);
   if (persona?.sim && persona.plan) return planPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.planBudget ?? PLAN.budget, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories, deep: !!persona.deepRoll } : undefined);
   if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories, deep: !!persona.deepRoll } : undefined, persona.halve ?? 0, !!persona.spread);
   let best = moves[0] ?? null, bestV = -Infinity;
