@@ -72,6 +72,8 @@ const RANK = { list: 200, top: 30, random: 10 };
 // keep 8, playouts 6 (2026-10-26, challengers, 40 games each, seed 111: backer 40% a seat against 5%, trophy 38% against 16%;
 // designer: data quality over speed). Was 6 and 4.
 const SIM = { keep: 8, playouts: 6, maxMoves: 400 };
+/** Hand planning (persona plan): play-outs per decision, spread over the (first move, plan) pairs. Tuning, not rules. */
+const PLAN = { budget: 300, depth: 2 };
 const ROLLOUT = 'trophy:sim=0,enum=0,combo=0';
 
 /**
@@ -163,6 +165,11 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - hidden: count face-down tokens, its own as they are, a rival's as even odds.
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
+ * - plan: with sim, plan the whole hand (designer, 2026-10-26: chains of plays, the hand played together). Each of
+ *   its best first moves is tried with every plan for the cards left (none; one card next; two cards in order): in
+ *   its play-outs it keeps to the plan, choosing each planned card's target on the board as it then is. The budget
+ *   (planBudget play-outs, default PLAN.budget) is spent by successive halving over the (move, plan) pairs. It plays
+ *   the best pair's first move and plans again next turn.
  * - goalFit: the goal (island or invaders) chosen on each ending's fitted win chance (goal-fit.json, from
  *   scripts/fit-goals.mjs; 2026-10-26, designer: accurate round evaluation passed back to strategy), not on the
  *   bots' own, which predicts no better than a constant early on. Moves are still chosen by the bot's own value.
@@ -210,7 +217,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number, guardCap?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number, guardCap?: number, plan?: number, planBudget?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -641,6 +648,7 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
   const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum, !!persona?.even, persona?.rank ? (s) => evaluate(s, pid, profile, goal, true) : null);
+  if (persona?.sim && persona.plan) return planPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.planBudget ?? PLAN.budget, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories, deep: !!persona.deepRoll } : undefined);
   if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories, deep: !!persona.deepRoll } : undefined, persona.halve ?? 0, !!persona.spread);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
@@ -682,6 +690,43 @@ function simPick(state, pid, rng, moves, ev, memory, keep = SIM.keep, playouts =
 }
 
 /**
+ * Hand planning (persona plan): the best `keep` first moves one move ahead (passing always among them), each with
+ * every plan for the cards left in hand (none; one card next; two cards in order), as (move, plan) pairs; play-outs
+ * keep to the plan. Successive halving over the pairs, shared seeds. Tuning, not rules.
+ * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory | undefined} memory @param {number} keep @param {number} budget @param {Seats} [table]
+ */
+function planPick(state, pid, rng, moves, ev, memory, keep, budget, table) {
+  const ranked = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) }; }).sort((a, b) => b.v - a.v);
+  const short = ranked.slice(0, keep);
+  const pass = ranked.find((r) => r.move.type === 'pass');
+  if (pass && !short.includes(pass)) short.push(pass);
+  /** @type {{ move: Move, s: GameState, plan: string[] }[]} */
+  const arms = [];
+  for (const { move, s } of short) {
+    const left = [...new Set(s.players[pid].hand)];
+    arms.push({ move, s, plan: [] });
+    for (const a of left) {
+      arms.push({ move, s, plan: [a] });
+      if (PLAN.depth > 1) for (const b of left) if (b !== a) arms.push({ move, s, plan: [a, b] });
+    }
+  }
+  return halvingPick(arms, pid, rng, ev, memory, budget, table);
+}
+
+/**
+ * The planned card's move in a play-out (persona plan): its best play now (its action on sampled targets, its sway,
+ * bringing its faction back) by the bot's own value one move ahead; null if it can't be played.
+ * @param {GameState} s @param {string} pid @param {string} card @param {() => number} rng @param {string} profile @param {BotMemory | undefined} memory
+ */
+function plannedMove(s, pid, card, rng, profile, memory) {
+  // Listed targets, shared across a card's uses (enum + even), as the bot itself chooses: sampled targets misplayed the big multi-use cards (designer, 2026-10-26).
+  const options = candidates(s, pid, rng, SEARCH.targets, true, true).filter((m) => m.type === 'play' && m.card === card);
+  let best = null, bestV = -Infinity;
+  for (const m of options) { const v = evaluate(after(s, pid, m), pid, profile, memory?.goal); if (v > bestV) { best = m; bestV = v; } }
+  return best;
+}
+
+/**
  * Successive halving (persona halve): the same play-outs as the plain search
  * (keep × playouts), spent in rounds; after each, the worse half of the moves
  * is dropped, so the close calls among the best get the most play-outs. Every
@@ -690,6 +735,7 @@ function simPick(state, pid, rng, moves, ev, memory, keep = SIM.keep, playouts =
  * @param {{ move: Move, s: GameState }[]} arms @param {string} pid @param {() => number} rng @param {Ev} ev @param {BotMemory | undefined} memory @param {number} budget @param {Seats} [table]
  */
 function halvingPick(arms, pid, rng, ev, memory, budget, table) {
+  if (arms.length === 1) return arms[0].move;
   const rounds = Math.ceil(Math.log2(arms.length));
   /** @type {number[]} */
   const seeds = [];
@@ -698,7 +744,7 @@ function halvingPick(arms, pid, rng, ev, memory, budget, table) {
     const each = Math.max(1, Math.floor(budget / (alive.length * rounds)));
     const upto = alive[0].n + each;
     while (seeds.length < upto) seeds.push(Math.floor(rng() * 2 ** 31));
-    for (const a of alive) for (; a.n < upto; a.n++) a.total += ev(playOutRound(a.s, seeds[a.n], pid, memory, table));
+    for (const a of alive) for (; a.n < upto; a.n++) a.total += ev(playOutRound(a.s, seeds[a.n], pid, memory, table, false, /** @type {any} */ (a).plan));
     alive.sort((x, y) => y.total / y.n - x.total / x.n);
     alive = alive.slice(0, Math.ceil(alive.length / 2));
   }
@@ -732,7 +778,8 @@ function draftPick(state, pid, rng, ranked, n, ev, memory, persona, table) {
 }
 
 /** Fast bots play from here to the end of this round's play: each seat's own profile (persona table) or ROLLOUT. @param {GameState} state @param {number} seed @param {string} pid @param {BotMemory} [memory] @param {Seats} [table] @param {boolean} [through]  from the draft, on through the round's play */
-function playOutRound(state, seed, pid, memory, table = undefined, through = false) {
+function playOutRound(state, seed, pid, memory, table = undefined, through = false, plan = /** @type {string[] | undefined} */ (undefined)) {
+  const todo = plan ? plan.slice() : [];
   let x = seed | 0;
   const r = () => { x = (Math.imul(x, 1664525) + 1013904223) | 0; return (x >>> 0) / 2 ** 32; };
   /** @type {Record<string, BotMemory>} */
@@ -745,7 +792,13 @@ function playOutRound(state, seed, pid, memory, table = undefined, through = fal
   for (let n = 0; n < SIM.maxMoves && going(); n++) {
     let moved = false;
     for (const id of s.seating) {
-      const m = playMove(s, id, r, table?.profiles?.[id] ? (table.deep ? fastListing(table.profiles[id]) : fast(table.profiles[id])) : ROLLOUT, mem[id]);
+      const profile = table?.profiles?.[id] ? (table.deep ? fastListing(table.profiles[id]) : fast(table.profiles[id])) : ROLLOUT;
+      let m = null;
+      // persona plan: on its own turns this bot plays its planned cards in order, each as well as it can then.
+      if (id === pid && todo.length && s.phase === 'play' && !s.pending && s.seating[s.turn] === pid) {
+        while (todo.length && !m) { const c = /** @type {string} */ (todo.shift()); if (s.players[pid].hand.includes(c)) m = plannedMove(s, pid, c, r, profile, mem[id]); }
+      }
+      m ??= playMove(s, id, r, profile, mem[id]);
       if (!m) continue;
       s = applyMove(s, { playerId: id, move: m });
       moved = true;
