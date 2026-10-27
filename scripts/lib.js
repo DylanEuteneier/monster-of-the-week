@@ -6,7 +6,7 @@
  * a moment, against letting the turn go, with the rest of the round played
  * out). A measuring tool, not rules.
  */
-import { applyMove, clone, memoising, nextRandom, sampleTarget, validate } from '../public/engine.js';
+import { applyMove, clone, memoising, nextRandom } from '../public/engine.js';
 import { botMove, winChances } from '../public/bots.js';
 
 /** @typedef {import('../public/engine.js').GameState} GameState @typedef {import('../public/engine.js').Move} Move @typedef {import('../public/bots.js').Profile} Profile */
@@ -94,50 +94,46 @@ export function play(state, pid, move) {
   return s;
 }
 
-const SAMPLED_TARGETS = 12;
-
 /**
- * The controlled card test (designer, 2026-10-07: card strength over a
- * played-out round, as benefit to the player). The player to act is given each
- * card, plays it as well as it can find (the few best targets one move ahead,
- * each played out), and bots play the rest of the round; its benefit is the
- * change in the player's chance of winning against letting the turn go, in
- * percentage points. Each playout seed is shared between the card and the
- * baseline. The rest of the round is played by `bots`: the table's own seats
- * and profiles, so the imagined future has the same players as the game.
- * null: no legal target.
- * @param {GameState} state @param {string[]} cardIds @param {{ playouts: number, targets: number, bots: Profile | Record<string, string>, seed: number, memories?: Record<string, import('../public/bots.js').BotMemory> }} o
- * @returns {Record<string, number | null>}
+ * The card test (designer, 2026-10-26: a card's worth is what it adds to a hand, not the average of every way to play
+ * it; a situational card is played when it's good, and otherwise held, spent for sway or ignored). At a moment of a
+ * real game, the player to act is given the card and its bot chooses freely, as in play (the card's action, its sway,
+ * bringing its faction back, another card, or passing); bots play out the rest of the round. The card's worth is the
+ * change in that player's chance of winning against the same moment without the card, in percentage points; each
+ * play-out seed, and the decision's randomness, is shared between the two. Also: whether the bot chose to use the card.
+ * The rest of the round is played by `bots`: the table's own seats and profiles. Replaces the forced-play test (the
+ * card's action played as well as a few sampled targets allowed, against letting the turn go).
+ * @param {GameState} state @param {string[]} cardIds @param {{ playouts: number, bots: Profile | Record<string, string>, seed: number, memories?: Record<string, import('../public/bots.js').BotMemory> }} o
+ * @returns {{ benefit: Record<string, number | null>, used: Record<string, boolean> }}
  */
 export function measureState(state, cardIds, o) {
   const pid = state.seating[state.turn];
   const seeds = Array.from({ length: o.playouts }, (_, i) => o.seed * 7919 + i);
-  const mean = (/** @type {GameState} */ s) => seeds.reduce((n, seed) => n + chance(playRest(s, seed, o.bots, o.memories), pid), 0) / seeds.length;
-  // Baseline: the turn goes by with nothing played (a measuring device, not a move in the game).
-  const skip = clone(state);
-  skip.opened = true;
-  skip.turn = (skip.turn + 1) % skip.seating.length;
-  const base = mean(skip);
+  const profile = /** @type {Profile} */ (typeof o.bots === 'string' ? o.bots : o.bots[pid] ?? 'trophy');
+  /** The player's chance after its bot chooses freely from this state, the round played out. @param {GameState} s */
+  const value = (s) => {
+    const move = botMove(s, { playerId: pid, rng: seededRng(o.seed), profile, memory: clone(o.memories?.[pid] ?? {}), table: typeof o.bots === 'string' ? undefined : o.bots, memories: o.memories });
+    const after = !move ? s : move.type === 'play' ? play(s, pid, move) : applyMove(s, { playerId: pid, move });
+    return { move, v: seeds.reduce((n, seed) => n + chance(playRest(after, seed, o.bots, o.memories), pid), 0) / seeds.length };
+  };
+  /** @type {Map<string, number>} without each card: the hand as it is, or less that card */
+  const without = new Map();
   /** @type {Record<string, number | null>} */
-  const out = {};
-  const rng = seededRng(o.seed);
+  const benefit = {};
+  /** @type {Record<string, boolean>} */
+  const used = {};
   for (const cardId of cardIds) {
-    const s = clone(state);
-    s.opened = true; // the card is measured on its own, not as the forced opener
+    const base = clone(state);
+    base.players[pid].hand = base.players[pid].hand.filter((c) => c !== cardId);
+    const key = base.players[pid].hand.join(',');
+    if (!without.has(key)) without.set(key, value(base).v);
+    const s = clone(base);
     s.players[pid].hand.push(cardId);
-    /** @type {Map<string, Move>} */
-    const moves = new Map();
-    for (let i = 0; i < SAMPLED_TARGETS * 2 && moves.size < SAMPLED_TARGETS; i++) {
-      const target = sampleTarget(s, pid, cardId, rng);
-      const move = /** @type {Move} */ ({ type: 'play', card: cardId, use: 'action', target });
-      if (target && validate(s, { playerId: pid, move }).ok) moves.set(JSON.stringify(target), move);
-    }
-    if (!moves.size) { out[cardId] = null; continue; }
-    const best = [...moves.values()].map((m) => { const after = play(s, pid, m); return { after, v: chance(after, pid) }; })
-      .sort((a, b) => b.v - a.v).slice(0, o.targets);
-    out[cardId] = Math.round((Math.max(...best.map((b) => mean(b.after))) - base) * 100) / 100;
+    const r = value(s);
+    benefit[cardId] = Math.round((r.v - /** @type {number} */ (without.get(key))) * 100) / 100;
+    used[cardId] = !!r.move && r.move.type === 'play' && r.move.card === cardId;
   }
-  return out;
+  return { benefit, used };
 }
 
 /**

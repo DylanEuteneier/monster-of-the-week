@@ -69,7 +69,7 @@ import { seededRng, chance, measureState, play, MAX_MOVES, upgradeRecord } from 
 /** @typedef {{ trophies: number, flips: number, control: number, moved: number, placed: number, presence: number, made?: number, big?: number }} Effect */
 /** @typedef {{ r: number, seat: string, card: string, use: 'action' | 'sway' | 'return', dWin: number, opener: boolean, fx?: Effect }} Play */
 /** @typedef {{ r: number, fights: number, by: number[], swayd: number, onBoard: number, standing: number }} Economy */
-/** @typedef {{ r: number, opening: boolean, profile: string, benefit: Record<string, number | null> }} Probe */
+/** @typedef {{ r: number, opening: boolean, profile: string, benefit: Record<string, number | null>, used?: Record<string, boolean> }} Probe  benefit: the card's worth in hand; used: whether the bot chose to use it */
 /** @typedef {{ at: number, card: string, seat: string, loc: string, stake: string[], maker: string, makerCard: string, moved: boolean, size?: number, big?: boolean }} Vanish */
 /** @typedef {{ r: number, plays: number, start: number, made: number, kept: number, lost: Vanish[], bigMade?: number, bigKept?: number }} FightRound */
 /** @typedef {{ r: number, staked: number, cards: Record<string, [number, number]> }} Reach */
@@ -231,10 +231,10 @@ function summarise(records, list, options) {
   let scorched = 0, trophySum = 0, trophyN = 0, shared = 0;
   /** @type {Record<number, Economy & { rounds: number }>} */
   const economy = {};
-  /** @typedef {{ dealt: number, held: number, unplayed: number, action: number, sway: number, opener: number, dAction: number, dSway: number, winAction: number, winSway: number, endsIsland: number, fx: Effect, turns: number, playable: number, probes: number[], openingProbes: number[], probeNull: number, byProfile: Record<string, { probes: number[], dWin: number, plays: number }> }} Acc */
+  /** @typedef {{ dealt: number, held: number, unplayed: number, action: number, sway: number, opener: number, dAction: number, dSway: number, winAction: number, winSway: number, endsIsland: number, fx: Effect, turns: number, playable: number, probes: number[], usedProbes: number[], openingProbes: number[], probeNull: number, byProfile: Record<string, { probes: number[], dWin: number, plays: number }> }} Acc */
   /** @type {Record<string, Acc>} */
   const cards = {};
-  const acc = (/** @type {string} */ id) => (cards[id] ??= { dealt: 0, held: 0, unplayed: 0, action: 0, sway: 0, opener: 0, dAction: 0, dSway: 0, winAction: 0, winSway: 0, endsIsland: 0, fx: { trophies: 0, flips: 0, control: 0, moved: 0, placed: 0, presence: 0, made: 0, big: 0 }, turns: 0, playable: 0, probes: [], openingProbes: [], probeNull: 0, byProfile: {} });
+  const acc = (/** @type {string} */ id) => (cards[id] ??= { dealt: 0, held: 0, unplayed: 0, action: 0, sway: 0, opener: 0, dAction: 0, dSway: 0, winAction: 0, winSway: 0, endsIsland: 0, fx: { trophies: 0, flips: 0, control: 0, moved: 0, placed: 0, presence: 0, made: 0, big: 0 }, turns: 0, playable: 0, probes: [], usedProbes: [], openingProbes: [], probeNull: 0, byProfile: {} });
   const vanish = { rounds: 0, plays: 0, start: 0, made: 0, kept: 0, gone: 0, staked: 0, moved: 0, byQuarter: [0, 0, 0, 0], own: 0, bigRounds: 0, bigMade: 0, bigKept: 0, bigUndone: 0, bigUndoneStaked: 0 };
   /** @type {Record<string, { actions: number, gone: number, staked: number, moved: number, plays: number, reachN: number, reach: number, reachMax: number, bigUndone: number }>} */
   const undo = {};
@@ -296,6 +296,7 @@ function summarise(records, list, options) {
     for (const pr of r.probes) for (const [id, v] of Object.entries(pr.benefit)) {
       if (v === null) { acc(id).probeNull += 1; continue; }
       acc(id).probes.push(v);
+      if (pr.used?.[id]) acc(id).usedProbes.push(v); // the moments the bot chose to use it
       if (pr.opening) acc(id).openingProbes.push(v);
       if (pr.profile) (acc(id).byProfile[pr.profile] ??= { probes: [], dWin: 0, plays: 0 }).probes.push(v);
     }
@@ -327,7 +328,7 @@ function summarise(records, list, options) {
       dWinAction: avg(a.dAction, a.action), dWinSway: avg(a.dSway, a.sway),
       winAfterAction: pct(a.winAction, a.action), winAfterSway: pct(a.winSway, a.sway), islandAfterAction: pct(a.endsIsland, a.action),
       perAction: Object.fromEntries(Object.entries(a.fx).map(([k, v]) => [k, avg(v, a.action)])),
-      probe: { n: a.probes.length, benefit: mean(a.probes), up: pct(a.probes.filter((v) => v > 0).length, a.probes.length), opening: mean(a.openingProbes), openingN: a.openingProbes.length, noTarget: a.probeNull },
+      probe: { n: a.probes.length, benefit: mean(a.probes), up: pct(a.probes.filter((v) => v > 0).length, a.probes.length), usedPct: pct(a.usedProbes.length, a.probes.length), whenUsed: mean(a.usedProbes), opening: mean(a.openingProbes), openingN: a.openingProbes.length, noTarget: a.probeNull },
       byProfile: Object.fromEntries(Object.entries(a.byProfile).map(([p, b]) => [p, { probe: mean(b.probes), probes: b.probes.length, dWinAction: avg(b.dWin, b.plays), actions: b.plays }])),
     }])),
   };
@@ -470,7 +471,7 @@ else {
           const opening = !s.opened && pid === s.first;
           if ((d.probe.open && opening) || (d.probe.rate > 0 && side() < d.probe.rate)) { // probeOpen=1: every round's first play too (the marked cards' moment)
             const pick = probeCards.map((/** @type {string} */ c) => ({ c, k: side() })).sort((/** @type {{ k: number }} */ a, /** @type {{ k: number }} */ b) => a.k - b.k).slice(0, d.probe.sample).map((/** @type {{ c: string }} */ x) => x.c);
-            probes.push({ r: s.round, opening: !s.opened && pid === s.first, profile: seats[pid], benefit: measureState(s, pick, { playouts: d.probe.playouts, targets: d.probe.targets, bots: d.probe.lite ? Object.fromEntries(Object.entries(seats).map(([k, v]) => [k, fast(String(v))])) : seats, memories: memory, seed: d.seed * 100003 + g * 101 + n }) });
+            probes.push({ r: s.round, opening: !s.opened && pid === s.first, profile: seats[pid], ...measureState(s, pick, { playouts: d.probe.playouts, bots: d.probe.lite ? Object.fromEntries(Object.entries(seats).map(([k, v]) => [k, fast(String(v))])) : seats, memories: memory, seed: d.seed * 100003 + g * 101 + n }) });
           }
           if (d.reach.rate > 0 && side() < d.reach.rate) { // reach=rate: what every card could do to the fights here (only where others hold a stake in one)
             const staked = [...fightsOn(s).keys()].filter((loc) => stakeOf(s.board[loc]).some((p) => p !== pid)).length;
