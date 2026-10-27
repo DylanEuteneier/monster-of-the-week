@@ -231,7 +231,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number, guardCap?: number, plan?: number, planBudget?: number, steer?: number, draftPlan?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number, guardCap?: number, plan?: number, planBudget?: number, planDepth?: number, steer?: number, draftPlan?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -715,7 +715,7 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
   const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum, !!persona?.even, persona?.rank ? (s) => evaluate(s, pid, profile, goal, true) : null, persona?.steer ? ev : null);
-  if (persona?.sim && persona.plan) return planPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.planBudget ?? PLAN.budget, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories, deep: !!persona.deepRoll } : undefined);
+  if (persona?.sim && persona.plan) return planPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.planBudget ?? PLAN.budget, persona.planDepth ?? PLAN.depth, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories, deep: !!persona.deepRoll } : undefined);
   if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories, deep: !!persona.deepRoll } : undefined, persona.halve ?? 0, !!persona.spread);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
@@ -760,9 +760,9 @@ function simPick(state, pid, rng, moves, ev, memory, keep = SIM.keep, playouts =
  * Hand planning (persona plan): the best `keep` first moves one move ahead (passing always among them), each with
  * every plan for the cards left in hand (none; one card next; two cards in order), as (move, plan) pairs; play-outs
  * keep to the plan. Successive halving over the pairs, shared seeds. Tuning, not rules.
- * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory | undefined} memory @param {number} keep @param {number} budget @param {Seats} [table]
+ * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory | undefined} memory @param {number} keep @param {number} budget @param {number} depth @param {Seats} [table]
  */
-function planPick(state, pid, rng, moves, ev, memory, keep, budget, table) {
+function planPick(state, pid, rng, moves, ev, memory, keep, budget, depth, table) {
   const ranked = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) }; }).sort((a, b) => b.v - a.v);
   const short = ranked.slice(0, keep);
   const pass = ranked.find((r) => r.move.type === 'pass');
@@ -780,7 +780,7 @@ function planPick(state, pid, rng, moves, ev, memory, keep, budget, table) {
     const left = [...new Set(s.players[pid].hand)];
     for (const a of left) {
       arms.push({ move, s, plan: [a] });
-      if (PLAN.depth > 1) for (const b of left) if (b !== a) arms.push({ move, s, plan: [a, b] });
+      if (depth > 1) for (const b of left) if (b !== a) arms.push({ move, s, plan: [a, b] });
     }
   }
   if (!arms.length) return plain[0]?.move ?? null;
