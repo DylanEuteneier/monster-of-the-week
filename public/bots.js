@@ -74,7 +74,7 @@ const RANK = { list: 200, top: 30, random: 10 };
 // designer: data quality over speed). Was 6 and 4.
 const SIM = { keep: 8, playouts: 6, maxMoves: 400 };
 /** Counters for looking inside the planning search (a measuring aid, not tuning). */
-export const PLAN_STATS = { decisions: 0, planned: 0, changed: 0, gain: 0, lucky: 0 };
+export const PLAN_STATS = { decisions: 0, planned: 0, changed: 0, gain: 0, lucky: 0, followed: 0, dropped: 0 };
 /** Hand planning (persona plan): play-outs per decision, spread over the (first move, plan) pairs. Tuning, not rules. */
 // moves: plans for every shortlisted first move (2026-10-27: plans only for the plain search's best 3 changed 8% of moves;
 // a setup move ranks low alone, so it never got a plan).
@@ -247,7 +247,9 @@ const PERSONAS = {
   // commit 2 with protect: the invaders' ending 5 in 10 (1 in 10 before), final presence 20.3 (10.9).
   // top 2: backers 30% a seat against goal 13% (15% against 23% before), mostly from island wins (10 games).
   // race 2 (against threat-3 trophy bots): backers 20% a seat, trophy 20%; the invaders' ending 4 in 10, backers winning 3 of them (10 games).
-  backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1, protect: 4, commit: 2, top: 2, race: 2, even: 1 },
+  // plan 1, steer 1 (2026-10-27, challengers: rounds 2-3 35% a seat against 10% over 48 games, validation 23% against 15%
+  // over 80 games, seed 401). Trophy bots measured no better with them (21/21%, 17/24%, 17/19%), so they don't plan.
+  backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1, protect: 4, commit: 2, top: 2, race: 2, even: 1, plan: 1, steer: 1 },
 };
 
 /**
@@ -946,7 +948,7 @@ function playOutRound(state, seed, pid, memory, table = undefined, through = fal
         if (m) {
           const own = playMove(s, id, r, profile, mem[id]);
           const v = (/** @type {Move} */ x) => evaluate(after(s, pid, x), pid, profile, mem[id]?.goal);
-          if (own && own.type === 'play' && v(own) > v(m)) { todo.unshift(/** @type {any} */ (m).card); m = own; }
+          if (own && own.type === 'play' && v(own) > v(m)) { todo.unshift(/** @type {any} */ (m).card); m = own; PLAN_STATS.dropped += 1; } else PLAN_STATS.followed += 1;
         }
       }
       m ??= playMove(s, id, r, profile, mem[id]);
