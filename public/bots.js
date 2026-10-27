@@ -73,8 +73,12 @@ const RANK = { list: 200, top: 30, random: 10 };
 // keep 8, playouts 6 (2026-10-26, challengers, 40 games each, seed 111: backer 40% a seat against 5%, trophy 38% against 16%;
 // designer: data quality over speed). Was 6 and 4.
 const SIM = { keep: 8, playouts: 6, maxMoves: 400 };
+/** Counters for looking inside the planning search (a measuring aid, not tuning). */
+export const PLAN_STATS = { decisions: 0, planned: 0, changed: 0, gain: 0, lucky: 0 };
 /** Hand planning (persona plan): play-outs per decision, spread over the (first move, plan) pairs. Tuning, not rules. */
-const PLAN = { budget: 300, depth: 2, moves: 3 };
+// moves: plans for every shortlisted first move (2026-10-27: plans only for the plain search's best 3 changed 8% of moves;
+// a setup move ranks low alone, so it never got a plan).
+const PLAN = { budget: 450, depth: 2, moves: 99 };
 /** Planning in the draft (persona draftPlan): keeps compared besides the best by worth, and play-outs for each keep's plan. Tuning, not rules. */
 const DRAFT_PLAN = { swaps: 3, budget: 120 };
 const ROLLOUT = 'trophy:sim=0,enum=0,combo=0';
@@ -783,6 +787,9 @@ function planPick(state, pid, rng, moves, ev, memory, keep, budget, table) {
   // plain search's seeds, it must still beat the best plain move.
   const arm = /** @type {{ move: Move, s: GameState, plan: string[] }} */ (arms.find((x) => x.move === planned.move && x.plan === planned.plan) ?? arms.find((x) => x.move === planned.move));
   const fair = seeds.reduce((n, seed) => n + ev(playOutRound(arm.s, seed, pid, memory, table, false, arm.plan)), 0) / seeds.length;
+  PLAN_STATS.decisions += 1;
+  if (fair > plain[0].v) { PLAN_STATS.planned += 1; if (planned.move !== plain[0].move) PLAN_STATS.changed += 1; PLAN_STATS.gain += fair - plain[0].v; }
+  PLAN_STATS.lucky += planned.v - fair;
   return fair > plain[0].v ? planned.move : plain[0].move;
 }
 
