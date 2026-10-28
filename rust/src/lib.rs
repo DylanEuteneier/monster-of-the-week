@@ -9,3 +9,4 @@ pub mod json;
 pub mod setup;
 pub mod spec;
 pub mod types;
+pub mod view;

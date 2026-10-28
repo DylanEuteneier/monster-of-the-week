@@ -484,6 +484,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<(Loc, String)>) {
 
 /// Rank players by sway at a location (AB1, PT2, ST1): (places: who collects first and second, None where a tie used
 /// the place up; how many are involved; tied leaders).
+// PERF: allocates three Vecs per fight (places, amounts, tied); places is at most two: a fixed [Option<Pid>; 2].
 pub fn rank_at(s: &GameState, loc: Loc) -> (Vec<Option<Pid>>, usize, Vec<Pid>) {
     let entries: Vec<(Pid, i32)> = s.board[loc as usize].sway.iter().filter(|e| e.1 > 0).collect();
     let involved = entries.len();
