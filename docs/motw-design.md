@@ -1242,6 +1242,18 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** D8 and Appendix F (the engine, the data file, the tutorial's deal, now the core deck at a new seed).
 - **Date:** 2026-10-27; done 2026-10-28
 
+#### D28. The prototype carries only what is current
+
+- **Decided (designer, 2026-10-28):** with a solid deck and a good first draft of the rules, the prototype's code carries only what is current; whatever has been ruled out or is no longer needed is removed (it stays in this document as history). Removed:
+  - *The rule variants that decisions had settled:* `swayRequired` (IC1 is a requirement, D15), `payInFull` (all or nothing, D21), `fightHalf` (half from a fight, D22) and `winnerLoss` (the winner loses half, rounded up, D25). Their alternatives can no longer be dealt; the rules they decided are simply the rules.
+  - *Upgrades for old saves and logs:* loading games and tournament logs saved before influence was renamed sway (D18), and the old *goal* name for the trophy bot. The data file's version moved to 0.2.0, so a game saved before this is set aside and the host deals a new one.
+  - *Bot settings neither profile uses:* the *allies* switch (measured, won less) and the overrides of the island weights, the supply's value, the chances' softness and the search sizes (their values stay, fixed); the experiment runner no longer varies them.
+  - *Card figures from the old decks* (the card review page's tournament figures, 2026-10-10, none of them for a core card); the page shows new figures once `npm run cards:plays` runs on the core deck.
+- **Stays open:** every numeric first-draft guess (G.7) and the rule variants without a decision: `alignedGrowth`, `wayBack`, `seeding`, `groups`, `swayPerMove`.
+- **Scope:** prototype only; the rules themselves are unchanged.
+- **Affects:** D15, D21, D22, D25 (their variants), Appendix F (the data file, the bots), the play fingerprints (re-recorded for the sets that used the removed variants).
+- **Date:** 2026-10-28
+
 #### D14. Tokens and cubes
 
 - **Decided:** faction presence on the board is made of **tokens**; **cubes** are always players' sway. A faction never has cubes, and a player never has tokens (apart from hidden and bluff tokens, which are separate pieces).
@@ -1349,6 +1361,8 @@ Actual changes to mechanisms and game structure.
 | 2026-10-07 | Card strength measured over a played-out round, as benefit to the player (designer); deep bots with a reply lookahead and strategy breakpoints on two axes (the ending; sway or trophies mid-game); bot tournament | Prototype tooling, not rules; the breakpoint numbers are suggestions to tune |
 | 2026-10-27 | The prototype's engine and bots to be rewritten in Rust; the old decks' code removed, only the core deck encoded (D27) | Prototype only, not rules |
 | 2026-10-28 | The Rust engine and bots replace the JavaScript ones in the Worker, the table, the tutorial and the scripts (D27): WebAssembly through `public/rules.js`; the recorded games kept as fingerprints | Prototype only, not rules; play unchanged |
+| 2026-10-28 | Bots: each card in the search gets its own count of targets to sample; the count no longer grew across the hand (designer) | A slip from 2026-10-08; play changed slightly, fingerprints re-recorded; no effect on speed |
+| 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
 
 ---
 
@@ -3068,7 +3082,7 @@ Every card idea, in one format. Entries are ideas for the first draft, not decis
 **Shared wording**
 
 - **Any faction:** a presence action can move any faction, with no token limit (3.7, principles 10 and 12; IL1 is out of the first draft).
-- **Sway:** a presence action places 1 sway at each destination, spent from the player's standing with the faction moved. Under IC1 (D15) this is a requirement: each destination's move happens only if the player can pay its sway (variant `swayRequired`, on by default; off is the old reading, where a player with no standing still moves and places none).
+- **Sway:** a presence action places 1 sway at each destination, spent from the player's standing with the faction moved. Under IC1 (D15) this is a requirement: each destination's move happens only if the player can pay its sway (the prototype's variant `swayRequired`, whose off reading let a player with no standing still move and place none, was removed 2026-10-28, D28).
 - **Infl.:** the sway a suit card gives with its suit's affinity faction when spent for sway instead (principle 7).
 - **Kind:** concentrate (gather into one location; feeds growth), scatter (break into single tokens; stops growth), merge (force a fight), split (prevent a fight), pin (nothing enters or leaves), swap (two groups trade places), far push, relocate, fight math, timing, standing effect (lasts the round), block, sway, information, catch-up, rule-bend, sow (mancala), lure (the largest group comes), teleport, halve, conveyor, network jump, shove, mirror, leap.
 - **Group:** all of one faction's tokens at one location.

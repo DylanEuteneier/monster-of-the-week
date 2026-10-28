@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "Monster of the Week",
-    "version": "0.1.0-first-draft",
+    "version": "0.2.0-first-draft",
     "players": {
       "min": 3,
       "max": 5,
@@ -810,60 +810,6 @@
       ]
     },
     {
-      "id": "swayRequired",
-      "label": "Sway as a requirement",
-      "description": "IC1 (designer, 2026-10-07, first draft): the card says how much sway a move places, and that is a requirement, paid from standing with the faction moved. A move goes only as far as the player can pay: with 1 standing, a card that places 1 per location spread to spreads to one location. Cards that place no sway have no requirement.",
-      "default": "on",
-      "choices": [
-        {
-          "id": "on",
-          "label": "On",
-          "description": "The first draft (IC1)."
-        },
-        {
-          "id": "off",
-          "label": "Off",
-          "description": "Before IC1: any move is allowed; sway is placed only as far as standing goes."
-        }
-      ]
-    },
-    {
-      "id": "winnerLoss",
-      "label": "Winner's losses",
-      "description": "D25 (designer, 2026-10-18, for now): the winner of a fight loses half the loser's number, rounded up (in a three-way fight, the larger loser's).",
-      "default": "up",
-      "choices": [
-        {
-          "id": "up",
-          "label": "Half, rounded up",
-          "description": "D25: half the loser's number, rounded up."
-        },
-        {
-          "id": "down",
-          "label": "Half, rounded down",
-          "description": "FR5 as first drafted: half the loser's number, rounded down, at least 1."
-        }
-      ]
-    },
-    {
-      "id": "fightHalf",
-      "label": "Half from a fight",
-      "description": "Core rule (designer, 2026-10-17; D22): from a location where a fight already exists, any card moves at most half of a faction's group, rounded down. At least half always stays, so no fight is emptied by movement; pulling some out still places the mover's sway there.",
-      "default": "on",
-      "choices": [
-        {
-          "id": "off",
-          "label": "Off",
-          "description": "Fights not protected: a card can move a whole group out (the first draft)."
-        },
-        {
-          "id": "on",
-          "label": "On",
-          "description": "The current rule (D22)."
-        }
-      ]
-    },
-    {
       "id": "alignedGrowth",
       "label": "Growth on own ground",
       "description": "AL3: a faction controlling one of its aligned locations grows 1 more there (designer: off 2026-10-21, back on by default 2026-10-24).",
@@ -919,24 +865,6 @@
           "id": "two",
           "label": "2 on each",
           "description": "SD1 (designer, 2026-10-21): 2 on each of the three (30 in all)."
-        }
-      ]
-    },
-    {
-      "id": "payInFull",
-      "label": "Pay in full",
-      "description": "Designer, 2026-10-15: every card is all or nothing on the sway it places. A card whose action can't be paid for in full can't be played for its action (it can still be played for sway).",
-      "default": "on",
-      "choices": [
-        {
-          "id": "on",
-          "label": "All or nothing",
-          "description": "The current rule."
-        },
-        {
-          "id": "off",
-          "label": "As far as you can pay",
-          "description": "IC1 as first drafted: a move goes only as far as the player can pay."
         }
       ]
     }

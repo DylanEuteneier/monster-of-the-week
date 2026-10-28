@@ -23,7 +23,7 @@
  */
 import { DurableObject } from 'cloudflare:workers';
 import rulesModule from '../public/motw.wasm';
-import { applyMove, createGame, playerView, IllegalMoveError, spec, upgradeState, botMove, PROFILES, useModule } from '../public/rules.js';
+import { applyMove, createGame, playerView, IllegalMoveError, spec, botMove, PROFILES, useModule } from '../public/rules.js';
 import { suggest } from '../public/hints.js';
 import type { Hint } from '../public/hints.js';
 import { seenBy, roundFights } from '../public/guide.js';
@@ -230,8 +230,7 @@ export class Game extends DurableObject<Env> {
     this.botProfiles = botProfiles ?? {};
     this.botMemory = botMemory ?? {};
     // A game saved by an older engine can't be read by this one; set it aside so the host deals a new game.
-    // A game saved before influence was renamed sway is upgraded as it loads.
-    this.game = game && game.version === spec.meta.version ? upgradeState(game) : null;
+    this.game = game && game.version === spec.meta.version ? game : null;
     this.tokens = tokens ?? {};
     this.chat = chat ?? [];
     this.bots = bots ?? [];

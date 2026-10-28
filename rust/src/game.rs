@@ -421,8 +421,8 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
     let loser = by_size[0];
     let lost: Vec<(Fac, i32)> = losers.iter().map(|&f| (f, s.board[li].tokens.get(f))).collect();
     let nl = s.board[li].tokens.get(loser);
-    // D25: the winner loses half the (larger) loser's number, rounded up; winnerLoss=down: rounded down, at least 1.
-    let mut winner_loss = if s.options.winner_loss_down { (nl.div_euclid(2)).max(1) } else { (nl + 1).div_euclid(2) };
+    // D25: the winner loses half the (larger) loser's number, rounded up.
+    let mut winner_loss = (nl + 1).div_euclid(2);
     if s.board[li].altar {
         winner_loss = nl;
     }

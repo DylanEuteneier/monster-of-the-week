@@ -129,17 +129,3 @@ export function measureState(state, cardIds, o) {
   return { benefit, used };
 }
 
-/**
- * A logged record from before "influence" was renamed "sway" (designer,
- * 2026-10-10), with its keys and its enum values renamed: so old tournament
- * logs and baselines still read. Records written since pass through unchanged.
- * @template T @param {T} x @returns {T}
- */
-export function upgradeRecord(x) {
-  const fix = (/** @type {string} */ k) => k.replace(/Influence/g, 'Sway').replace(/influence/g, 'sway');
-  if (Array.isArray(x)) return /** @type {T} */ (/** @type {unknown} */ (x.map(upgradeRecord)));
-  if (typeof x === 'string') return /** @type {T} */ (/** @type {unknown} */ (/^influence(-spent|-placed)?$/.test(x) ? fix(x) : x));
-  if (x === null || typeof x !== 'object') return x;
-  return /** @type {T} */ (Object.fromEntries(Object.entries(x).map(([k, v]) => [fix(k), upgradeRecord(v)])));
-}
-

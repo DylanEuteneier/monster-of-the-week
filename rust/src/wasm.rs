@@ -171,7 +171,6 @@ pub fn call(name: &str, a: &[Value]) -> Out {
             let s = state(arg(0))?;
             Ok(Value::from(sway_for(&s, seat(&s, arg(1))?, card_of(arg(2))?)))
         }
-        "upgradeState" => Ok(upgrade_state(arg(0).clone())),
         "nextRandom" => {
             let (value, next) = next_random(arg(0).as_f64().unwrap_or(0.0) as i64 as i32);
             Ok(json!({ "value": value, "state": next }))
@@ -205,14 +204,7 @@ pub fn call(name: &str, a: &[Value]) -> Out {
         "winChances" => {
             let s = state(arg(0))?;
             let pid = seat(&s, arg(1))?;
-            let soft = arg(2).as_f64().unwrap_or(1.0);
-            let mut colours = [1.0, 0.35, 0.12, 0.02];
-            if let Some(c) = arg(3).as_array() {
-                for (i, x) in c.iter().take(4).enumerate() {
-                    colours[i] = x.as_f64().unwrap_or(colours[i]);
-                }
-            }
-            let c = bots::win_chances(&s, pid, soft, &colours);
+            let c = bots::win_chances(&s, pid);
             Ok(json!({
                 "pInvaders": c.p_invaders, "prior": c.prior, "known": c.known, "backers": c.backers, "linearIsland": c.linear_island,
                 "rivalInvaders": c.rival_invaders, "asInvaders": c.as_invaders, "asIsland": c.as_island, "marginInvaders": c.margin_invaders,
@@ -370,34 +362,6 @@ fn resolve_options(raw: &[(String, String)]) -> Result<(), String> {
     Ok(())
 }
 
-/// A state saved before sway was called influence (upgradeState): the old names moved to the new.
-fn upgrade_state(mut v: Value) -> Value {
-    if let Some(board) = v.get_mut("board").and_then(|b| b.as_object_mut()) {
-        for place in board.values_mut() {
-            if let Some(p) = place.as_object_mut() {
-                if let Some(Value::Object(infl)) = p.remove("influence") {
-                    let mut sway = p.get("sway").and_then(|x| x.as_object()).cloned().unwrap_or_default();
-                    for (k, n) in infl {
-                        sway.insert(k, n);
-                    }
-                    p.insert("sway".into(), Value::Object(sway));
-                }
-            }
-        }
-    }
-    if let Some(options) = v.get_mut("options").and_then(|o| o.as_object_mut()) {
-        let old: Vec<String> = options.keys().filter(|k| k.starts_with("influence")).cloned().collect();
-        for k in old {
-            let x = options.remove(&k).unwrap_or(Value::Null);
-            let new = format!("sway{}", &k[9..]);
-            if options.get(&new).is_none_or(|n| n.is_null()) {
-                options.insert(new, x);
-            }
-        }
-    }
-    v
-}
-
 fn goal_of(v: &Value) -> Option<Goal> {
     match v.as_str() {
         Some("island") => Some(Goal::Island),
@@ -447,23 +411,13 @@ fn persona_value(p: &bots::Persona) -> Value {
     put("sim", Some(p.sim));
     put("combo", Some(p.combo));
     put("sets", Some(p.sets));
-    put("keep", p.keep);
-    put("playouts", p.playouts);
-    put("save", p.save);
-    put("soft", p.soft);
-    put("w2", p.w2);
-    put("w3", p.w3);
-    put("all", p.all);
     put("table", Some(p.table));
     put("commit", Some(p.commit));
-    put("allies", Some(p.allies));
     put("protect", Some(p.protect));
     put("top", Some(p.top));
     put("race", Some(p.race));
     put("even", Some(p.even));
     put("plan", Some(p.plan));
-    put("planBudget", p.plan_budget);
-    put("planDepth", p.plan_depth);
     put("steer", Some(p.steer));
     Value::Object(o)
 }

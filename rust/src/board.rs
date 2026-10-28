@@ -183,7 +183,7 @@ pub fn sway_leaders(s: &GameState, f: Fac) -> Vec<Pid> {
     if aff.is_empty() { tied } else { aff }
 }
 
-/// Tokens of a faction free to leave a location: half from a fight (D22; variant fightHalf).
+/// Tokens of a faction free to leave a location: half from a fight, rounded down (D22).
 // PERF: tokens_of and factions_at each walk the location again; callers usually just did both.
 pub fn free_of(s: &GameState, loc: Loc, f: Fac) -> i32 {
     let n = tokens_of(s, loc, f);
@@ -191,7 +191,7 @@ pub fn free_of(s: &GameState, loc: Loc, f: Fac) -> i32 {
     if !here.iter().any(|&x| x != f) {
         return n;
     }
-    if s.options.fight_half { n.div_euclid(2) } else { n }
+    n.div_euclid(2)
 }
 
 /// A group that can set off: present, with some free to leave.

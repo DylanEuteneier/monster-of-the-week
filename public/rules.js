@@ -156,7 +156,7 @@ export { spec };
 /** @typedef {'island' | 'invaders'} Goal */
 /**
  * A bot's persona (profile numbers; rust/src/bots.rs).
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, even?: number, plan?: number, planBudget?: number, planDepth?: number, steer?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, enum: number, sim: number, combo: number, sets: number, table: number, commit: number, protect: number, top: number, race: number, even: number, plan: number, steer: number }} Persona
  */
 /**
  * The next choice in building a card's target (nextChoice).
@@ -369,8 +369,6 @@ export const presenceOf = (state, faction) => call('presenceOf', lean(state), fa
 export const totalPresence = (state) => call('totalPresence', lean(state));
 /** A card's sway for a player now. @param {GameState | PlayerView} state @param {string} pid @param {string} cardId @returns {number} */
 export const swayFor = (state, pid, cardId) => call('swayFor', lean(state), pid, cardId);
-/** A state saved under the old names (influence), moved to the new. @param {GameState} state @returns {GameState} */
-export const upgradeState = (state) => call('upgradeState', state);
 /** One step of the seeded generator (Appendix F.4). @param {number} state @returns {{ value: number, state: number }} */
 export const nextRandom = (state) => call('nextRandom', state);
 /** A seeded shuffle. @template T @param {T[]} items @param {number} rngState @returns {{ items: T[], rngState: number }} */
@@ -400,8 +398,8 @@ export function botMove(state, input) {
   return answer.move;
 }
 
-/** The chance of winning, by ending. @param {GameState} state @param {string} pid @param {number} [soft] @param {number[]} [colours] */
-export const winChances = (state, pid, soft = 1, colours) => /** @type {{ pInvaders: number, prior: number, known: number, backers: number, linearIsland: number, rivalInvaders: number, asInvaders: number, asIsland: number, marginInvaders: number, marginIsland: number, projected: number, threshold: number, spreadP: number, roundsLeft: number }} */ (call('winChances', lean(state), pid, soft, colours ?? null));
+/** The chance of winning, by ending. @param {GameState} state @param {string} pid */
+export const winChances = (state, pid) => /** @type {{ pInvaders: number, prior: number, known: number, backers: number, linearIsland: number, rivalInvaders: number, asInvaders: number, asIsland: number, marginInvaders: number, marginIsland: number, projected: number, threshold: number, spreadP: number, roundsLeft: number }} */ (call('winChances', lean(state), pid));
 /** How good a position is for a seat. @param {GameState} state @param {string} pid @param {string} [profile] @param {Goal} [goal] @returns {number} */
 export const evaluate = (state, pid, profile = 'trophy', goal) => call('evaluate', lean(state), pid, profile, goal ?? null);
 /** A seat's position as numbers (a measuring tool). @param {GameState} state @param {string} pid @returns {Record<string, number>} */

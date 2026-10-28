@@ -644,10 +644,9 @@ fn bait_the_herd_swells_along_a_trail_and_crashes_into_a_lone_rival() {
     let crash = adjacent(&scoop).into_iter().find(|l| *l != start && *l != stop && !adjacent(&start).contains(l) && !adjacent(&stop).contains(l))
         .unwrap_or_else(|| adjacent(&scoop).into_iter().find(|l| *l != start && *l != stop).unwrap());
     let s = edit(&s0, |x| {
-        x["options"]["fightHalf"] = json!("off");
         x["board"][&start]["tokens"] = obj(&[(&und, 2)]);
         x["board"][&stop]["tokens"] = obj(&[(&und, 3)]);
-        x["board"][&scoop]["tokens"] = obj(&[(&und, 1), (&g, 4)]);
+        x["board"][&scoop]["tokens"] = obj(&[(&und, 1)]);
         x["board"][&crash]["tokens"] = obj(&[(&h, 2)]);
         x["players"]["ann"]["standing"][&und] = json!(4);
     });
@@ -656,7 +655,7 @@ fn bait_the_herd_swells_along_a_trail_and_crashes_into_a_lone_rival() {
     let after = preview(&s, "ann", "bait-trail", t.clone());
     assert_eq!(after["board"][&crash]["tokens"][&und], 6);
     assert!(after["board"][&start]["tokens"].get(&und).is_none() && after["board"][&stop]["tokens"].get(&und).is_none());
-    assert_eq!(after["board"][&scoop]["tokens"], obj(&[(&g, 4)]));
+    assert_eq!(after["board"][&scoop]["tokens"], json!({}));
     for l in [&start, &stop, &scoop, &crash] {
         assert_eq!(after["board"][l]["sway"]["ann"], 1);
     }
@@ -668,13 +667,14 @@ fn bait_the_herd_swells_along_a_trail_and_crashes_into_a_lone_rival() {
     assert_eq!((moved["board"][&start]["sway"]["ann"].clone(), moved["board"][&stop]["sway"]["ann"].clone()), (json!(1), json!(1)));
     let poor = edit(&s, |x| x["players"]["ann"]["standing"][&und] = json!(3));
     assert!(check(&poor, "ann", "bait-trail", t.clone()).is_some());
-    let two = edit(&s, |x| x["board"][&scoop]["tokens"] = obj(&[(&und, 2), (&g, 4)]));
-    assert_eq!(preview(&two, "ann", "bait-trail", t.clone())["board"][&scoop]["tokens"], obj(&[(&g, 4)]));
-    let d22 = edit(&s, |x| { x["options"]["fightHalf"] = json!("on"); x["board"][&scoop]["tokens"] = obj(&[(&und, 1), (&g, 4)]); });
-    assert!(check(&d22, "ann", "bait-trail", t.clone()).is_some());
-    let d22 = edit(&d22, |x| x["board"][&scoop]["tokens"] = obj(&[(&und, 5), (&g, 4)]));
-    assert_eq!(check(&d22, "ann", "bait-trail", t.clone()), None);
-    assert_eq!(preview(&d22, "ann", "bait-trail", t)["board"][&scoop]["tokens"], obj(&[(&und, 3), (&g, 4)]));
+    let two = edit(&s, |x| x["board"][&scoop]["tokens"] = obj(&[(&und, 2)]));
+    assert_eq!(preview(&two, "ann", "bait-trail", t.clone())["board"][&scoop]["tokens"], json!({}));
+    // Half from a fight (D22): a group in a fight is scooped only up to half of it, rounded down.
+    let fight = edit(&s, |x| x["board"][&scoop]["tokens"] = obj(&[(&und, 1), (&g, 4)]));
+    assert!(check(&fight, "ann", "bait-trail", t.clone()).is_some());
+    let fight = edit(&fight, |x| x["board"][&scoop]["tokens"] = obj(&[(&und, 5), (&g, 4)]));
+    assert_eq!(check(&fight, "ann", "bait-trail", t.clone()), None);
+    assert_eq!(preview(&fight, "ann", "bait-trail", t)["board"][&scoop]["tokens"], obj(&[(&und, 3), (&g, 4)]));
 }
 
 #[test]
@@ -725,8 +725,6 @@ fn half_from_a_fight_a_card_moves_at_most_half_a_group() {
     let (from, to) = ("junkyard".to_string(), "graveyard".to_string());
     let s = edit(&s0, |x| { x["board"][&from]["tokens"] = obj(&[(&f, 5), (&g, 2)]); x["board"][&to]["tokens"] = obj(&[(&f, 1)]); });
     let cut = json!({ "mode": "location", "location": from, "faction": f, "from": [] });
-    let off = edit(&s, |x| x["options"]["fightHalf"] = json!("off"));
-    assert_eq!(preview(&off, "ann", "cut-powerlines", cut.clone())["board"][&to]["tokens"][&f], 6);
     let after = preview(&s, "ann", "cut-powerlines", cut.clone());
     assert_eq!((after["board"][&to]["tokens"][&f].clone(), after["board"][&from]["tokens"][&f].clone()), (json!(3), json!(3)));
     let s = edit(&s, |x| { x["board"][&from]["tokens"] = obj(&[(&f, 5), (&g, 1)]); x["board"][&to]["tokens"] = obj(&[(&g, 1)]); });
@@ -1296,7 +1294,5 @@ fn ic1_a_card_is_played_only_if_its_sway_can_be_paid() {
         x["players"]["ann"]["standing"][&sen] = json!(0);
     });
     let cut = json!({ "mode": "faction", "location": from, "faction": sen, "from": [] });
-    assert!(check(&s, "ann", "cut-powerlines", cut.clone()).is_some());
-    let off = edit(&s, |x| x["options"]["swayRequired"] = json!("off"));
-    assert_eq!(check(&off, "ann", "cut-powerlines", cut), None);
+    assert!(check(&s, "ann", "cut-powerlines", cut).is_some());
 }

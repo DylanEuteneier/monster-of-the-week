@@ -133,7 +133,7 @@ round 1 without new links.
 | `npm run build` | Dry-run bundle of the worker into `dist/` |
 | `npm run check` | wasm + typecheck + test + test:rust + build |
 | `npm run tournament -- [games] [seed] [profiles=…] [log=…] [out=…] [probe=…]` | The tuning tournament: whole bot games; endings, economy, and per-card play figures and probes (see the script's header) |
-| `npm run cards:plays` | The card tuning run: 400 games with probes, resumable (`.tuning/games.jsonl`), summary to `public/card-play-stats.json` for the card review page |
+| `npm run cards:plays` | The card tuning run: 400 games with probes, resumable (`.tuning/games-core.jsonl`), summary to `public/card-play-stats.json` for the card review page |
 | `npm run smoke` | Plays a whole game through a running server over websockets |
 | `npm run deploy` | `wrangler deploy` |
 | `npm run secret` | Optionally lock the host page by setting `ADMIN_SECRET` on the deployed worker |

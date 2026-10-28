@@ -48,6 +48,8 @@ const TABLE_BACKING: i32 = 8;
 const TABLE_BASE: f64 = 0.3;
 const TABLE_STEP: f64 = 0.15;
 const ISLAND: [f64; 4] = [1.0, 0.35, 0.12, 0.02];
+/// What a cube in a bot's own supply is worth to it.
+const SUPPLY_VALUE: f64 = 0.02;
 
 /// A goal bot's persona; 0 is a switch off.
 #[derive(Clone, Debug, PartialEq)]
@@ -63,34 +65,24 @@ pub struct Persona {
     pub sim: f64,
     pub combo: f64,
     pub sets: f64,
-    pub keep: Option<f64>,
-    pub playouts: Option<f64>,
-    pub save: Option<f64>,
-    pub soft: Option<f64>,
-    pub w2: Option<f64>,
-    pub w3: Option<f64>,
-    pub all: Option<f64>,
     pub table: f64,
     pub commit: f64,
-    pub allies: f64,
     pub protect: f64,
     pub top: f64,
     pub race: f64,
     pub even: f64,
     pub plan: f64,
-    pub plan_budget: Option<f64>,
-    pub plan_depth: Option<f64>,
     pub steer: f64,
 }
 
 fn base(name: &str) -> Option<Persona> {
     let trophy = Persona {
         lean: -0.3, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: 3.0, enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
-        keep: None, playouts: None, save: None, soft: None, w2: None, w3: None, all: None, table: 1.0, commit: 0.0, allies: 0.0, protect: 0.0, top: 0.0,
-        race: 0.0, even: 1.0, plan: 0.0, plan_budget: None, plan_depth: None, steer: 0.0,
+        table: 1.0, commit: 0.0, protect: 0.0, top: 0.0,
+        race: 0.0, even: 1.0, plan: 0.0, steer: 0.0,
     };
     match name {
-        "trophy" | "goal" => Some(trophy),
+        "trophy" => Some(trophy),
         "backer" => Some(Persona { lean: 0.3, threat: 1.0, protect: 4.0, commit: 2.0, top: 2.0, race: 2.0, plan: 1.0, steer: 1.0, ..trophy }),
         _ => None,
     }
@@ -131,23 +123,13 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "sim" => p.sim = x,
                 "combo" => p.combo = x,
                 "sets" => p.sets = x,
-                "keep" => p.keep = Some(x),
-                "playouts" => p.playouts = Some(x),
-                "save" => p.save = Some(x),
-                "soft" => p.soft = Some(x),
-                "w2" => p.w2 = Some(x),
-                "w3" => p.w3 = Some(x),
-                "all" => p.all = Some(x),
                 "table" => p.table = x,
                 "commit" => p.commit = x,
-                "allies" => p.allies = x,
                 "protect" => p.protect = x,
                 "top" => p.top = x,
                 "race" => p.race = x,
                 "even" => p.even = x,
                 "plan" => p.plan = x,
-                "planBudget" => p.plan_budget = Some(x),
-                "planDepth" => p.plan_depth = Some(x),
                 "steer" => p.steer = x,
                 _ => {}
             }
@@ -167,14 +149,6 @@ pub fn fast(profile: &str) -> String {
 #[inline]
 fn on(x: f64) -> bool {
     x != 0.0 && !x.is_nan()
-}
-
-fn colours_of(p: &Persona) -> [f64; 4] {
-    if p.w2.is_none() && p.w3.is_none() && p.all.is_none() {
-        ISLAND
-    } else {
-        [1.0, p.w2.unwrap_or(ISLAND[1]), p.w3.unwrap_or(ISLAND[2]), p.all.unwrap_or(ISLAND[3])]
-    }
 }
 
 #[inline]
@@ -248,13 +222,13 @@ pub struct Chances {
     pub rounds_left: f64,
 }
 
-pub fn win_chances(s: &GameState, pid: Pid, soft: f64, colours: &[f64; 4]) -> Chances {
-    chances_after(&project_fights(s), pid, soft, colours)
+pub fn win_chances(s: &GameState, pid: Pid) -> Chances {
+    chances_after(&project_fights(s), pid)
 }
 
 /// win_chances for a position every seat asks about (the goal checks in a play-out): its projection remembered.
-fn win_chances_shared(s: &GameState, pid: Pid, soft: f64, colours: &[f64; 4]) -> Chances {
-    chances_after(&project_fights_cached(s), pid, soft, colours)
+fn win_chances_shared(s: &GameState, pid: Pid) -> Chances {
+    chances_after(&project_fights_cached(s), pid)
 }
 
 /// A location's fight, as what it does: the location (and a Gate partner) afterwards, and what it adds to each supply
@@ -355,7 +329,8 @@ fn project_fights(s: &GameState) -> GameState {
     out
 }
 
-fn chances_after(s: &GameState, pid: Pid, soft: f64, colours: &[f64; 4]) -> Chances {
+fn chances_after(s: &GameState, pid: Pid) -> Chances {
+    let colours = &ISLAND;
     let rounds = s.options.rounds as f64;
     let rounds_left = (rounds - s.round as f64).max(0.0);
     let threshold = s.options.threshold as f64;
@@ -367,7 +342,7 @@ fn chances_after(s: &GameState, pid: Pid, soft: f64, colours: &[f64; 4]) -> Chan
         total += p;
     }
     let projected = total + if s.phase == Phase::Play { grow } else { 0.0 };
-    let spread_p = soft * (2.0 + 3.0 * rounds_left);
+    let spread_p = 2.0 + 3.0 * rounds_left;
     let mut top = f64::NEG_INFINITY;
     for &p in &presence {
         if p > top {
@@ -408,7 +383,7 @@ fn chances_after(s: &GameState, pid: Pid, soft: f64, colours: &[f64; 4]) -> Chan
         best_who[i] = who;
     }
     let best_other = |id: usize, i: usize| if best_who[i] == id { best_b[i] } else { best_a[i] };
-    let spread_i = soft * (1.0 + rounds_left);
+    let spread_i = 1.0 + rounds_left;
     let me = pid as usize;
     let mut as_invaders = 0.0;
     let mut margin_invaders = 0.0;
@@ -467,7 +442,7 @@ fn chances_after(s: &GameState, pid: Pid, soft: f64, colours: &[f64; 4]) -> Chan
     }
     let margin_island = isl_of[me] - best_isl;
     let linear_island = all_of[me] - best_all;
-    let spread_t = soft * (0.6 + 0.8 * rounds_left);
+    let spread_t = 0.6 + 0.8 * rounds_left;
     let as_island = sigmoid(margin_island / spread_t);
     let prior = (TABLE_BASE + TABLE_STEP * backers as f64).max(0.1).min(0.9);
     let known = if rounds > 1.0 { ((s.round as f64 - 1.0) / (rounds - 1.0)).min(1.0) } else { 1.0 };
@@ -482,14 +457,14 @@ pub fn evaluate(s: &GameState, pid: Pid, profile: &str, goal: Option<Goal>) -> f
 }
 
 fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
-    let c = win_chances(s, pid, p.soft.unwrap_or(1.0), &colours_of(p));
+    let c = win_chances(s, pid);
     let inv = c.p_invaders * 10.0 * c.as_invaders + p.margin * c.margin_invaders;
     let island_margin = p.linear * 10.0 * c.linear_island;
     let isl = (1.0 - c.p_invaders) * 10.0 * c.as_island + island_margin;
     let threat = p.threat * 10.0 * c.p_invaders * c.rival_invaders;
     let guard = if on(p.protect) && goal == Goal::Invaders { p.protect * presence_guard(s, pid, &c, p) } else { 0.0 };
     let main = if goal == Goal::Invaders { inv + guard } else { isl + if on(p.sets) { p.sets * (1.0 - c.p_invaders) * set_access(s, pid) } else { 0.0 } };
-    main - threat + p.save.unwrap_or(0.02) * s.players[pid as usize].supply as f64
+    main - threat + SUPPLY_VALUE * s.players[pid as usize].supply as f64
 }
 
 fn presence_guard(s: &GameState, pid: Pid, c: &Chances, p: &Persona) -> f64 {
@@ -530,10 +505,9 @@ fn set_access(s: &GameState, pid: Pid) -> f64 {
 
 /// Which goal to pursue now (chooseGoal). Draws from `rng` once per game, for the memory's jitter.
 pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut BotMemory>, rng: Rng) -> Goal {
-    let c = win_chances_shared(s, pid, p.soft.unwrap_or(1.0), &colours_of(p));
+    let c = win_chances_shared(s, pid);
     let push = p.push * (c.rounds_left + 1.0);
-    let push_inv = push * (1.0 + p.allies * c.backers as f64);
-    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * sigmoid((c.projected - c.threshold - 0.5 + push_inv) / c.spread_p);
+    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * sigmoid((c.projected - c.threshold - 0.5 + push) / c.spread_p);
     let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spread_p));
     let evidence = reach_inv * c.as_invaders - reach_isl * c.as_island;
     let mut memory = memory;
@@ -792,12 +766,10 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
             });
             if let Some(x) = pe.as_ref() {
                 if on(x.sim) && on(x.plan) {
-                    let keep = x.keep.map(|k| k as usize).unwrap_or(SIM_KEEP);
-                    return plan_pick(s, pid, rng, moves, &ev, memory.as_deref(), keep, x.plan_budget.map(|b| b as usize).unwrap_or(PLAN_BUDGET), x.plan_depth.map(|d| d as usize).unwrap_or(PLAN_DEPTH), table.as_ref());
+                    return plan_pick(s, pid, rng, moves, &ev, memory.as_deref(), SIM_KEEP, PLAN_BUDGET, PLAN_DEPTH, table.as_ref());
                 }
                 if on(x.sim) {
-                    let keep = x.keep.map(|k| k as usize).unwrap_or(SIM_KEEP);
-                    return sim_pick(s, pid, rng, moves, &ev, memory.as_deref(), keep, x.playouts.map(|k| k as usize).unwrap_or(SIM_PLAYOUTS), table.as_ref());
+                    return sim_pick(s, pid, rng, moves, &ev, memory.as_deref(), SIM_KEEP, SIM_PLAYOUTS, table.as_ref());
                 }
             }
             let mut best: Option<Move> = moves.first().cloned();
@@ -1175,7 +1147,7 @@ pub fn after_move(s: &GameState, pid: Pid, m: &Move) -> GameState {
 /// A seat's position as numbers (features), for fitting the evaluation to how games end; tournament logs record it at
 /// the start of each round's play. A measuring tool: the bots don't read it. In the JavaScript's key order.
 pub fn features(s0: &GameState, pid: Pid) -> Vec<(&'static str, f64)> {
-    let c = win_chances(s0, pid, 1.0, &ISLAND);
+    let c = win_chances(s0, pid);
     let s = project_fights(s0);
     let p = &s.players[pid as usize];
     let n = s.factions.len();

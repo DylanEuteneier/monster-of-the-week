@@ -57,20 +57,6 @@ test('flights: every token and cube that moved is paired from where it was to wh
   assert.deepEqual(cube.map((x) => [x.from.kind, x.to.kind, x.n]), [['supply', 'standing', 2], ['supply', 'loc', 1]]);
 });
 
-test('a game saved before influence was renamed sway still loads', async () => {
-  const { upgradeState } = await import('../public/rules.js');
-  const { upgradeRecord } = await import('../scripts/lib.js');
-  const s = /** @type {any} */ (createGame({ seed: 2, players: ['Ann', 'Bob', 'Cat'] }));
-  const loc = Object.keys(s.board)[0];
-  s.board[loc].influence = { Ann: 2 }; delete s.board[loc].sway;
-  s.options.influenceRequired = s.options.swayRequired; delete s.options.swayRequired;
-  const up = /** @type {any} */ (upgradeState(s));
-  assert.deepEqual(up.board[loc].sway, { Ann: 2 });
-  assert.equal('influence' in up.board[loc], false);
-  assert.equal(up.options.swayRequired, 'on');
-  assert.deepEqual(upgradeRecord({ use: 'influence', dWinInfluence: 1, locationsWithInfluence: 2, name: 'influence of the moon' }), { use: 'sway', dWinSway: 1, locationsWithSway: 2, name: 'influence of the moon' });
-});
-
 /** Round 1, the learner's moves made by `pick` (the bots' dice kept as the tutorial keeps them). @param {(table: any) => any} pick */
 function roundOne(pick) {
   const table = newTable();

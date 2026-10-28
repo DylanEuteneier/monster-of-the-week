@@ -17,7 +17,7 @@
     "wasm": "cd rust && PATH=$HOME/.cargo/bin:$PATH cargo build -q --profile wasm --target wasm32-unknown-unknown --lib && cp target/wasm32-unknown-unknown/wasm/motw.wasm ../public/motw.wasm",
     "tournament": "node scripts/tournament.js",
     "experiment": "node scripts/experiment.js",
-    "cards:plays": "node scripts/tournament.js 400 21 log=.tuning/games-v4.jsonl out=public/card-play-stats.json probe=0.05 probeOpen=1 probeSample=6 probeLite=1",
+    "cards:plays": "node scripts/tournament.js 400 21 log=.tuning/games-core.jsonl out=public/card-play-stats.json probe=0.05 probeOpen=1 probeSample=6 probeLite=1",
     "smoke": "node scripts/smoke.js",
     "build": "wrangler deploy --dry-run --outdir dist",
     "deploy": "wrangler deploy",

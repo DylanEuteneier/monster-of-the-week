@@ -177,13 +177,11 @@ pub struct Options {
     pub start_board: i32,
     pub groups_random: bool,
     pub sway_per_move: i32,
+    /// IC1 (D15): a move's sway must be paid. Always so in a game; off only in checkTarget's comparison copy (unpaid).
     pub sway_required: bool,
-    pub winner_loss_down: bool,
-    pub fight_half: bool,
     pub aligned_growth: bool,
     pub way_back: bool,
     pub seeding: Seeding,
-    pub pay_in_full: bool,
     /// The same options with sway not required (checkTarget's comparison), made once.
     pub unpaid: std::cell::OnceCell<Rc<Options>>,
 }
@@ -218,9 +216,7 @@ impl Options {
             start_board: num("startBoard"),
             groups_random: get("groups") == "random",
             sway_per_move: num("swayPerMove"),
-            sway_required: get("swayRequired") != "off",
-            winner_loss_down: get("winnerLoss") == "down",
-            fight_half: get("fightHalf") != "off",
+            sway_required: true,
             aligned_growth: get("alignedGrowth") == "on",
             way_back: get("wayBack") != "off",
             seeding: match get("seeding") {
@@ -228,7 +224,6 @@ impl Options {
                 "home" => Seeding::Home,
                 _ => Seeding::Two,
             },
-            pay_in_full: get("payInFull") != "off",
             unpaid: std::cell::OnceCell::new(),
             raw,
         }
@@ -237,16 +232,11 @@ impl Options {
     pub fn unpaid(&self) -> Rc<Options> {
         self.unpaid.get_or_init(|| Rc::new(self.with_sway_required(false))).clone()
     }
-    /// A copy with swayRequired set.
+    /// A copy with the sway requirement set.
     pub fn with_sway_required(&self, on: bool) -> Options {
         let mut o = self.clone();
         o.unpaid = std::cell::OnceCell::new();
         o.sway_required = on;
-        for e in o.raw.iter_mut() {
-            if e.0 == "swayRequired" {
-                e.1 = (if on { "on" } else { "off" }).to_string();
-            }
-        }
         o
     }
 }

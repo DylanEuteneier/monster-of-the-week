@@ -83,7 +83,7 @@ fn is_suit_loc(c: &Card, l: Loc) -> bool {
 fn my_sway(s: &GameState, pid: Pid, l: Loc) -> i32 {
     s.board[l as usize].sway.get(pid)
 }
-/// Your standing with a faction (no limit when sway isn't required).
+/// Your standing with a faction (no limit in checkTarget's unpaid comparison).
 #[inline]
 fn my_standing(s: &GameState, pid: Pid, f: Fac) -> i64 {
     if s.options.sway_required { s.players[pid as usize].standing[f as usize] as i64 } else { i64::MAX }
@@ -390,21 +390,14 @@ pub fn check_target(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> 
         act(&mut copy, pid, ci, t);
         copy.board.map(|p| p.tokens)
     };
+    // Pay in full (D21): the action happens only if every move it makes can be paid.
     let refused = UNPAID.with(|u| u.get());
     let paid = tokens_after(s.options.clone());
-    let in_full = s.options.pay_in_full;
-    if in_full && UNPAID.with(|u| u.get()) == refused {
+    if UNPAID.with(|u| u.get()) == refused {
         return None;
     }
     let free = tokens_after(s.options.unpaid());
-    if in_full {
-        return if paid == free { None } else { Some("You need the sway to pay for all of it (all or nothing).".into()) };
-    }
-    let before: [OMap; NLOC] = s.board.map(|p| p.tokens);
-    if paid == before && free != before {
-        return Some("You need standing with the faction to pay for the sway this move places (IC1).".into());
-    }
-    None
+    if paid == free { None } else { Some("You need the sway to pay for all of it (all or nothing).".into()) }
 }
 
 /// A quiet copy of a state, for imagining a move (no log).

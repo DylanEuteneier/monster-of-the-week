@@ -310,8 +310,7 @@ fn omap_from<const N: usize>(v: &Value, key: impl Fn(&str) -> Option<u8>) -> Res
     Ok(m)
 }
 
-/// A game state saved by either engine. Fields from before the old decks were removed (bluffs, hidden tokens, the deck
-/// and printed sway, responses) are ignored.
+/// A game state as the Worker saves it.
 pub fn state_from_value(v: &Value) -> Result<GameState, String> {
     let sp = spec();
     let seating: Vec<String> = v["seating"].as_array().ok_or("no seating")?.iter().map(|x| x.as_str().unwrap_or("").to_string()).collect();
@@ -342,7 +341,7 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
     let mut board = Vec::new();
     for l in &sp.locations {
         let p = &v["board"][&l.id];
-        let sway = p.get("sway").or_else(|| p.get("influence")).cloned().unwrap_or(json!({}));
+        let sway = p.get("sway").cloned().unwrap_or(json!({}));
         board.push(Place {
             tokens: omap_from(&p["tokens"], |k| slot(k))?,
             sway: omap_from(&sway, |k| pid(k))?,

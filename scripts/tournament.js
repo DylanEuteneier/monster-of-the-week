@@ -61,7 +61,7 @@ import { fileURLToPath } from 'node:url';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, listTargets, clone, validate, fightsDue } from '../public/rules.js';
 import { PROFILES, botMove, fast, features } from '../public/rules.js';
-import { seededRng, chance, measureState, play, MAX_MOVES, upgradeRecord } from './lib.js';
+import { seededRng, chance, measureState, play, MAX_MOVES } from './lib.js';
 
 /** @typedef {import('../public/rules.js').Profile} Profile @typedef {import('../public/rules.js').GameState} GameState */
 /** @typedef {{ trophies: number, flips: number, control: number, moved: number, placed: number, presence: number, made?: number, big?: number }} Effect */
@@ -348,7 +348,7 @@ function main() {
   for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:lean=0)`);
   const games = Number(gamesArg), seed = Number(seedArg);
   /** @type {GameRecord[]} */
-  const records = logFile && existsSync(logFile) ? readFileSync(logFile, 'utf8').split('\n').filter(Boolean).map((l) => upgradeRecord(JSON.parse(l))) : [];
+  const records = logFile && existsSync(logFile) ? readFileSync(logFile, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
   const done = new Set(records.map((r) => r.g));
   const todo = Array.from({ length: games }, (_, g) => g).filter((g) => !done.has(g));
   if (records.length) process.stderr.write(`resuming: ${records.length} games already in ${logFile}\n`);

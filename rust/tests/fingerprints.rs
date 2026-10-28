@@ -35,8 +35,8 @@ fn variants() {
     check("d");
 }
 #[test]
-fn sway_not_required_seat_groups() {
-    check("e2");
+fn starting_sway_and_seat_groups() {
+    check("e");
 }
 #[test]
 fn play_out_search() {

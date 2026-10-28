@@ -6,33 +6,90 @@
   "profiles": {
     "trophy": {
       "params": {
-        "threat": { "sd": 0.75, "min": 0, "max": 8 },
-        "margin": { "sd": 0.75, "min": 0, "max": 8 },
-        "linear": { "sd": 0.3, "min": 0, "max": 4 },
-        "sets": { "sd": 0.5, "min": 0, "max": 6 },
-        "push": { "sd": 0.5, "min": 0, "max": 6 },
-        "hold": { "sd": 0.03, "min": 0, "max": 0.5 },
-        "w2": { "default": 0.35, "sd": 0.12, "min": 0, "max": 1.5 },
-        "w3": { "default": 0.12, "sd": 0.06, "min": 0, "max": 1 },
-        "save": { "default": 0.02, "sd": 0.02, "min": 0, "max": 0.3 },
-        "soft": { "default": 1, "sd": 0.15, "min": 0.5, "max": 3 }
+        "threat": {
+          "sd": 0.75,
+          "min": 0,
+          "max": 8
+        },
+        "margin": {
+          "sd": 0.75,
+          "min": 0,
+          "max": 8
+        },
+        "linear": {
+          "sd": 0.3,
+          "min": 0,
+          "max": 4
+        },
+        "sets": {
+          "sd": 0.5,
+          "min": 0,
+          "max": 6
+        },
+        "push": {
+          "sd": 0.5,
+          "min": 0,
+          "max": 6
+        },
+        "hold": {
+          "sd": 0.03,
+          "min": 0,
+          "max": 0.5
+        }
       }
     },
     "backer": {
       "params": {
-        "threat": { "sd": 0.5, "min": 0, "max": 6 },
-        "margin": { "sd": 0.75, "min": 0, "max": 8 },
-        "linear": { "sd": 0.3, "min": 0, "max": 4 },
-        "sets": { "sd": 0.5, "min": 0, "max": 6 },
-        "push": { "sd": 0.5, "min": 0, "max": 6 },
-        "hold": { "sd": 0.03, "min": 0, "max": 0.5 },
-        "protect": { "sd": 1, "min": 0, "max": 10 },
-        "commit": { "sd": 0.5, "min": 1, "max": 6 },
-        "top": { "sd": 0.5, "min": 0, "max": 6 },
-        "race": { "sd": 0.5, "min": 0, "max": 6 },
-        "w2": { "default": 0.35, "sd": 0.12, "min": 0, "max": 1.5 },
-        "w3": { "default": 0.12, "sd": 0.06, "min": 0, "max": 1 },
-        "save": { "default": 0.02, "sd": 0.02, "min": 0, "max": 0.3 }
+        "threat": {
+          "sd": 0.5,
+          "min": 0,
+          "max": 6
+        },
+        "margin": {
+          "sd": 0.75,
+          "min": 0,
+          "max": 8
+        },
+        "linear": {
+          "sd": 0.3,
+          "min": 0,
+          "max": 4
+        },
+        "sets": {
+          "sd": 0.5,
+          "min": 0,
+          "max": 6
+        },
+        "push": {
+          "sd": 0.5,
+          "min": 0,
+          "max": 6
+        },
+        "hold": {
+          "sd": 0.03,
+          "min": 0,
+          "max": 0.5
+        },
+        "protect": {
+          "sd": 1,
+          "min": 0,
+          "max": 10
+        },
+        "commit": {
+          "sd": 0.5,
+          "min": 1,
+          "max": 6
+        },
+        "top": {
+          "sd": 0.5,
+          "min": 0,
+          "max": 6
+        },
+        "race": {
+          "sd": 0.5,
+          "min": 0,
+          "max": 6
+        }
       }
     }
   }

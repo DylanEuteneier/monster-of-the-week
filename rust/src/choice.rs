@@ -107,7 +107,7 @@ fn count_loc(xs: &[Id], l: Loc) -> i32 {
 fn standing(s: &GameState, pid: Pid, f: Fac) -> i64 {
     s.players[pid as usize].standing[f as usize] as i64
 }
-/// Standing with a faction, or no limit when sway isn't required.
+/// Standing with a faction (no limit in checkTarget's unpaid comparison).
 #[inline]
 fn my_standing(s: &GameState, pid: Pid, f: Fac) -> i64 {
     if s.options.sway_required { standing(s, pid, f) } else { i64::MAX / 4 }
