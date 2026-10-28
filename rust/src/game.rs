@@ -497,31 +497,42 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
 
 /// Rank players by sway at a location (AB1, PT2, ST1): (places: who collects first and second, None where a tie used
 /// the place up; how many are involved; tied leaders).
-// PERF: allocates three Vecs per fight (places, amounts, tied); places is at most two: a fixed [Option<Pid>; 2].
-pub fn rank_at(s: &GameState, loc: Loc) -> (Vec<Option<Pid>>, usize, Vec<Pid>) {
-    let entries: Vec<(Pid, i32)> = s.board[loc as usize].sway.iter().filter(|e| e.1 > 0).collect();
-    let involved = entries.len();
-    let mut by_amount: Vec<(i32, Vec<Pid>)> = Vec::new();
-    for &(p, n) in &entries {
+/// Rank players by sway at a location (AB1, PT2, ST1): (places: who collects first and second, None where a tie used
+/// the place up; how many are involved; tied leaders).
+pub fn rank_at(s: &GameState, loc: Loc) -> (List<Option<Pid>, 2>, usize, Small<5>) {
+    let sway = &s.board[loc as usize].sway;
+    let mut involved = 0;
+    // Each amount with the players on it, in first-seen order (a Map by amount).
+    let mut by_amount: List<(i32, Small<5>), 5> = List::new();
+    for (p, n) in sway.iter() {
+        if n <= 0 {
+            continue;
+        }
+        involved += 1;
         match by_amount.iter_mut().find(|e| e.0 == n) {
             Some(e) => e.1.push(p),
-            None => by_amount.push((n, vec![p])),
+            None => by_amount.push((n, Small::from_slice(&[p]))),
         }
     }
-    let mut amounts: Vec<i32> = by_amount.iter().map(|e| e.0).collect();
-    amounts.sort_by(|x, y| y.cmp(x));
-    let mut places: Vec<Option<Pid>> = Vec::new();
-    let mut tied_leaders: Vec<Pid> = Vec::new();
-    for amount in amounts {
+    let mut amounts: Small<5> = Small::new();
+    let mut vals: [i32; 5] = [0; 5];
+    for (k, e) in by_amount.iter().enumerate() {
+        vals[k] = e.0;
+        amounts.push(k as u8);
+    }
+    amounts.sort_by(|&x, &y| vals[y as usize].cmp(&vals[x as usize]));
+    let mut places: List<Option<Pid>, 2> = List::new();
+    let mut tied_leaders: Small<5> = Small::new();
+    for k in amounts {
         if places.len() >= 2 {
             break;
         }
-        let mut tied = by_amount.iter().find(|e| e.0 == amount).unwrap().1.clone();
+        let mut tied = by_amount[k as usize].1;
         if tied.len() > 1 {
-            let aff: Vec<Pid> = tied.iter().copied().filter(|&p| affinity_of(s, p) == alignment_of(loc)).collect();
+            let aff: Small<5> = tied.iter().copied().filter(|&p| affinity_of(s, p) == alignment_of(loc)).collect();
             if aff.len() == 1 {
                 places.push(Some(aff[0]));
-                tied.retain(|&p| p != aff[0]);
+                tied.retain(|p| p != aff[0]);
                 if places.len() >= 2 {
                     break;
                 }
@@ -531,7 +542,7 @@ pub fn rank_at(s: &GameState, loc: Loc) -> (Vec<Option<Pid>>, usize, Vec<Pid>) {
                 }
             }
             if places.is_empty() {
-                tied_leaders = tied.clone();
+                tied_leaders = tied;
             }
             let mut i = 0;
             while i < tied.len() && places.len() < 2 {

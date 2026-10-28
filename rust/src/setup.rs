@@ -173,9 +173,9 @@ pub fn printed_of(card: CardIx) -> i32 {
 }
 
 /// The Playbook (Steal Their Playbook).
-// PERF: a linear search by id on every call (sway_for, last_action); store the index once.
 pub fn playbook() -> CardIx {
-    spec().card_ix("playbook").expect("playbook")
+    static PLAYBOOK: std::sync::OnceLock<CardIx> = std::sync::OnceLock::new();
+    *PLAYBOOK.get_or_init(|| spec().card_ix("playbook").expect("playbook"))
 }
 
 /// This round's last card played for its action, the Playbook's own plays aside.

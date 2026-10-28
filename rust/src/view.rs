@@ -1,7 +1,7 @@
 //! For the table: previews, a target in words, and what one seat may see (engine.js previewTarget, describeTarget,
 //! playerView).
 
-use crate::cards::{act, card, imagined};
+use crate::cards::{act, card, scratch};
 use crate::game::waiting_on;
 use crate::json::{state_to_value, target_to_value};
 use crate::setup::{deck, sway_for};
@@ -11,8 +11,7 @@ use serde_json::{json, Map, Value};
 
 /// The state a finished target would leave, without playing it (the board and the players).
 pub fn preview_target(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> GameState {
-    let mut copy = imagined(s);
-    copy.round_plays = vec![]; // as the JavaScript copy, which holds no roundPlays
+    let mut copy = scratch(s); // no roundPlays, as the JavaScript copy
     act(&mut copy, pid, ci, t);
     copy
 }

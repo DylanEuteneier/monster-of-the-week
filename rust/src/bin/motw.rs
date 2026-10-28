@@ -8,6 +8,9 @@
 //!     Bot games on fixed seeds, as scripts/fingerprint.mjs plays them (same seeds, same random sequence), every move and
 //!     state hashed; with check=, compared move by move with a JavaScript recording.
 //!
+//!   motw time profile=backer [seed=9] [decisions=5]
+//!     Seconds per decision for a profile: from the start of round 2, seat 5's next decisions (others fast bots).
+//!
 //!   motw crosscheck <cases.jsonl>
 //!     Compares the Rust engine's answers with the JavaScript's on the cases scripts/crosscheck.mjs wrote: listed
 //!     targets, sampled targets, the first choice, the reasons broken targets are refused, and previews.
@@ -23,6 +26,7 @@ fn main() {
         Some("replay") => replay(&args[1..]),
         Some("crosscheck") => crosscheck(&args[1]),
         Some("fingerprint") => fingerprint(&args[1..]),
+        Some("time") => time(&args[1..]),
         _ => eprintln!("usage: motw replay <file.jsonl> players=5 seed=1 [o.variant=choice ...]"),
     }
 }
@@ -227,4 +231,35 @@ fn fingerprint(args: &[String]) {
         std::fs::write(f, out.join("\n") + "\n").expect("write");
     }
     println!("{games} games, {moves} moves, {:?}{}", t0.elapsed(), if want.is_some() { if bad > 0 { format!("; {bad} differ") } else { "; all match".into() } } else { String::new() });
+}
+
+fn time(args: &[String]) {
+    use motw::bots::{bot_move, fast, BotMemory, Seats};
+    use motw::game::waiting_on;
+    let (kv, options) = opts(args);
+    let profile = kv.get("profile").cloned().unwrap_or_else(|| "backer".into());
+    let seed: i64 = kv.get("seed").map(|x| x.parse().unwrap()).unwrap_or(9);
+    let decisions: usize = kv.get("decisions").map(|x| x.parse().unwrap()).unwrap_or(5);
+    let names: Vec<String> = (1..=5).map(|i| format!("P{i}")).collect();
+    let mut s = create_game(seed, &names, &options).expect("game");
+    let mut memory = vec![BotMemory::default(); 5];
+    let mut x: u64 = seed as u64 * 2654435761 + 1;
+    let mut rng = move || { x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407); (x >> 11) as f64 / (1u64 << 53) as f64 };
+    let quick = fast("trophy");
+    let (mut timed, mut total) = (0usize, 0f64);
+    let mut worst = 0f64;
+    while s.phase != motw::types::Phase::Ended && timed < decisions {
+        let pid = waiting_on(&s)[0];
+        let mine = pid == 4 && s.round >= 2 && s.phase == motw::types::Phase::Play;
+        let t0 = std::time::Instant::now();
+        let m = bot_move(&s, pid, &mut rng, if mine { &profile } else { &quick }, Some(&mut memory[pid as usize]), &Seats::default()).expect("move");
+        if mine {
+            let t = t0.elapsed().as_secs_f64();
+            total += t;
+            worst = worst.max(t);
+            timed += 1;
+        }
+        s = apply_move(&s, pid, &m).expect("legal");
+    }
+    println!("{profile}: {timed} decisions, {:.2} s each on average, {:.2} s at most", total / timed.max(1) as f64, worst);
 }

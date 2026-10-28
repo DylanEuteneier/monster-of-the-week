@@ -377,8 +377,7 @@ pub fn return_room(s: &GameState, pid: Pid, ci: CardIx) -> (Vec<Loc>, i32, Optio
 // ---------------------------------------------------------------------------
 
 /// Check a target for a card's turn action. Returns an error, or None.
-// PERF: clones the whole state twice (paid and free) to run the action; a dry-run that only tracks refused moves, or a
-// copy of just the board and players, would do. Called for every candidate target the bots list: the hottest N+1.
+// PERF: runs the action on a copy, twice when a move was refused (paid and free); bots memoise it per decision.
 pub fn check_target(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> Option<String> {
     let reason = check_shape(s, pid, ci, t);
     let Some(t) = t else { return reason };
@@ -386,9 +385,8 @@ pub fn check_target(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> 
         return reason;
     }
     let tokens_after = |options: std::rc::Rc<Options>| -> [OMap; NLOC] {
-        let mut copy = imagined(s);
+        let mut copy = scratch(s); // no roundPlays, as the JavaScript copy (see engine.js)
         copy.options = options;
-        copy.round_plays = vec![]; // as the JavaScript copy, which holds no roundPlays (see engine.js)
         act(&mut copy, pid, ci, t);
         copy.board.map(|p| p.tokens)
     };
@@ -411,10 +409,39 @@ pub fn check_target(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> 
 
 /// A quiet copy of a state, for imagining a move (no log).
 pub fn imagined(s: &GameState) -> GameState {
-    let mut c = s.clone();
-    c.quiet = true;
-    c.log = vec![];
-    c
+    GameState { round_plays: s.round_plays.clone(), ..scratch_base(s) }
+}
+
+/// A quiet copy without the round's plays (checkTarget's and previewTarget's copies, as the JavaScript's hold none).
+pub fn scratch(s: &GameState) -> GameState {
+    scratch_base(s)
+}
+
+fn scratch_base(s: &GameState) -> GameState {
+    GameState {
+        version: s.version.clone(),
+        options: s.options.clone(),
+        rng_state: s.rng_state,
+        phase: s.phase,
+        round: s.round,
+        seating: s.seating.clone(),
+        players: s.players.clone(),
+        factions: s.factions,
+        board: s.board,
+        supply: s.supply,
+        left_out: s.left_out,
+        pass: s.pass,
+        first: s.first,
+        turn: s.turn,
+        passes_in_row: s.passes_in_row,
+        opened: s.opened,
+        round_plays: Vec::new(),
+        growing: s.growing.clone(),
+        night: s.night.clone(),
+        log: Vec::new(),
+        result: s.result.clone(),
+        quiet: true,
+    }
 }
 
 fn reading(t: &Target) -> bool {
