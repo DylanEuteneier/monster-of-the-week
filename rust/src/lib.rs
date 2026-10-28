@@ -13,6 +13,8 @@ pub mod json;
 pub mod setup;
 pub mod small;
 pub mod spec;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod tournament;
 pub mod types;
 pub mod view;
 pub mod wasm;

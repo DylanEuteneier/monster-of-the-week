@@ -16,6 +16,7 @@
     "test:rust": "cd rust && PATH=$HOME/.cargo/bin:$PATH cargo test --release -q",
     "wasm": "cd rust && PATH=$HOME/.cargo/bin:$PATH cargo build -q --profile wasm --target wasm32-unknown-unknown --lib && cp target/wasm32-unknown-unknown/wasm/motw.wasm ../public/motw.wasm",
     "tournament": "node scripts/tournament.js",
+    "bots": "cd rust && PATH=$HOME/.cargo/bin:$PATH cargo build -q --release && caffeinate -i ./target/release/motw tournament",
     "experiment": "node scripts/experiment.js",
     "cards:plays": "node scripts/tournament.js 400 21 log=.tuning/games-core.jsonl out=public/card-play-stats.json probe=0.05 probeOpen=1 probeSample=6 probeLite=1",
     "smoke": "node scripts/smoke.js",

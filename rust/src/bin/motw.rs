@@ -5,6 +5,10 @@
 //!     line per move, check= compares with such a file move by move (say, one written before a change), digests=1
 //!     prints each game's digest as tests/fixtures/fingerprints.json records it.
 //!
+//!   motw tournament [games=20] [seed=1] profiles=a;b;... [workers=cores] [duplicate=1] [log=file.jsonl] [o.variant=choice ...]
+//!     Whole bot games natively, the profiles rotated through the seats (src/tournament.rs): wins by profile and seat,
+//!     the endings, and a line per game in log= (the same games scripts/tournament.js plays on the same seed).
+//!
 //!   motw time profile=backer [seed=9] [decisions=5]
 //!     Seconds per decision for a profile: from the start of round 2, seat 5's next decisions (others fast bots).
 
@@ -17,6 +21,7 @@ fn main() {
     match args.first().map(|s| s.as_str()) {
         Some("fingerprint") => fingerprint(&args[1..]),
         Some("time") => time(&args[1..]),
+        Some("tournament") => tournament(&args[1..]),
         _ => eprintln!("usage: motw fingerprint games=20 seed=1 profiles=a;b;... | motw time profile=backer"),
     }
 }
@@ -112,4 +117,65 @@ fn time(args: &[String]) {
         s = apply_move(&s, pid, &m).expect("legal");
     }
     println!("{profile}: {timed} decisions, {:.2} s each on average, {:.2} s at most", total / timed.max(1) as f64, worst);
+}
+
+fn tournament(args: &[String]) {
+    use std::io::Write;
+    let (kv, options) = opts(args);
+    let games: usize = kv.get("games").map(|x| x.parse().unwrap()).unwrap_or(20);
+    let seed: i64 = kv.get("seed").map(|x| x.parse().unwrap()).unwrap_or(1);
+    let list: Vec<String> = kv.get("profiles").cloned().unwrap_or_else(|| "backer;backer;trophy;trophy;trophy".into()).split(';').map(|s| s.to_string()).collect();
+    let workers: usize = kv.get("workers").map(|x| x.parse().unwrap()).unwrap_or_else(|| std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4));
+    let duplicate = kv.get("duplicate").is_some_and(|x| x == "1");
+    let log = kv.get("log").map(|f| std::sync::Mutex::new(std::fs::OpenOptions::new().create(true).append(true).open(f).expect("log")));
+    let t0 = std::time::Instant::now();
+    let count = std::sync::atomic::AtomicUsize::new(0);
+    let names: Vec<String> = (1..=list.len()).map(|i| format!("P{i}")).collect();
+    let done = |x: &motw::tournament::Game| {
+        let k = count.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
+        eprint!("\r{k}/{games} games, {:.0}s", t0.elapsed().as_secs_f64());
+        if let Some(f) = &log {
+            let id = |p: &u8| names[*p as usize].clone();
+            let line = serde_json::json!({
+                "g": x.g, "seed": seed, "side": if x.island { "island" } else { "invaders" },
+                "seats": names.iter().cloned().zip(x.seats.iter().map(|p| serde_json::Value::from(p.as_str()))).collect::<serde_json::Map<String, serde_json::Value>>(),
+                "groups": names.iter().cloned().zip(x.groups.iter().map(|p| serde_json::Value::from(p.as_str()))).collect::<serde_json::Map<String, serde_json::Value>>(),
+                "winners": x.winners.iter().map(id).collect::<Vec<_>>(), "placings": x.placings.iter().map(id).collect::<Vec<_>>(),
+                "presence": x.presence, "moves": x.moves, "seconds": (x.seconds * 10.0).round() / 10.0,
+            });
+            writeln!(f.lock().unwrap(), "{line}").unwrap();
+        }
+    };
+    let played = motw::tournament::run(seed, games, &list, &options, duplicate, workers, &done);
+    eprintln!();
+    let island = played.iter().filter(|x| x.island).count();
+    let all_wins: usize = played.iter().map(|x| x.winners.len()).sum();
+    println!("{games} games, {} players, {:.0} s on {workers} threads ({:.1} s a game). Island won {island}, invaders {}. An even share a seat is {:.0}%.",
+        list.len(), t0.elapsed().as_secs_f64(), played.iter().map(|x| x.seconds).sum::<f64>() / games.max(1) as f64, games - island, 100.0 / list.len() as f64);
+    let mut profiles: Vec<String> = Vec::new();
+    for p in &list {
+        if !profiles.contains(p) {
+            profiles.push(p.clone());
+        }
+    }
+    // a seat: wins per seat-game, with its standard error (each seat-game a win or not), to judge what the run can tell.
+    println!("{:<40} {:>6} {:>10} {:>15} {:>8} {:>9}", "profile", "seats", "share", "a seat", "island", "invaders");
+    for p in &profiles {
+        let seats = list.iter().filter(|x| *x == p).count();
+        let (mut wins, mut isl, mut inv) = (0, 0, 0);
+        for x in &played {
+            for &w in &x.winners {
+                if x.seats[w as usize] == *p {
+                    wins += 1;
+                    if x.island { isl += 1 } else { inv += 1 }
+                }
+            }
+        }
+        let n = (games * seats).max(1) as f64;
+        let rate = wins as f64 / n;
+        let se = (rate * (1.0 - rate) / n).sqrt();
+        println!("{:<40} {:>6} {:>9.1}% {:>7.1}% ±{:>4.1} {:>8} {:>9}", p, seats, 100.0 * wins as f64 / all_wins.max(1) as f64, 100.0 * rate, 100.0 * se, isl, inv);
+    }
+    let by_seat: Vec<String> = (0..list.len()).map(|i| format!("P{} {:.0}%", i + 1, 100.0 * played.iter().filter(|x| x.winners.contains(&(i as u8))).count() as f64 / games.max(1) as f64)).collect();
+    println!("wins by seat: {}", by_seat.join(" · "));
 }

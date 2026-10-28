@@ -132,6 +132,7 @@ round 1 without new links.
 | `npm run typecheck` | Strict TypeScript over the rules module, client, scripts, and worker |
 | `npm run build` | Dry-run bundle of the worker into `dist/` |
 | `npm run check` | wasm + typecheck + test + test:rust + build |
+| `npm run bots -- [games=20] [seed=1] [profiles=a;b;…] [workers=…] [duplicate=1] [log=…]` | Bot games natively on every core, for iterating on the bots: wins by profile (with standard errors) and seat, endings; the same games the tournament plays on the same seed |
 | `npm run tournament -- [games] [seed] [profiles=…] [log=…] [out=…] [probe=…]` | The tuning tournament: whole bot games; endings, economy, and per-card play figures and probes (see the script's header) |
 | `npm run cards:plays` | The card tuning run: 400 games with probes, resumable (`.tuning/games-core.jsonl`), summary to `public/card-play-stats.json` for the card review page |
 | `npm run smoke` | Plays a whole game through a running server over websockets |

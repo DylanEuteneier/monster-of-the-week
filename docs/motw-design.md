@@ -2823,6 +2823,7 @@ These are strategies, described by what each is for.
 | Play fingerprints | That a change to the code doesn't change play: the recorded bot games (`rust/tests/fixtures/fingerprints.json`) are replayed and every state hashed. Regenerated only when a decision is meant to change play. |
 | Bridge tests | That the JavaScript side gets the engine's answers: refused moves, the table's questions on a player view, a bot's memory kept between turns. |
 | Render tests | That every phase can be drawn from a player view without error, run without a browser. |
+| Bot tournament, native | Whole bot games in Rust on every core (`npm run bots`, `motw tournament`): wins by profile, with standard errors, and by seat, and the endings. The same deals and bot randomness as the tuning tournament, so a run plays the same games, about twice as fast; for iterating on the bots. |
 | Tuning tournament | Whole games with bots, across every core: that games run start to finish, the figures for tuning the bots, the economy and the cards (with controlled probes), saved as it runs and resumable (`scripts/tournament.js`). |
 | Smoke test | That a whole game can be played against a running server over websockets, end to end. |
 | Admin script | Not a test: it deals a game and lists the magic links from the command line, using the same admin routes as the host page. It can be pointed at a local or a deployed server. |
