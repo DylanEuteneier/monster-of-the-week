@@ -32,6 +32,8 @@ pub enum Goal {
 pub struct Seats {
     pub profiles: Option<HashMap<Pid, String>>,
     pub memories: Option<HashMap<Pid, BotMemory>>,
+    /// Testing (persona rollList): the play-out bots list targets as the full bots do.
+    pub roll_list: bool,
 }
 
 const SEARCH_TARGETS: usize = 8;
@@ -73,13 +75,24 @@ pub struct Persona {
     pub even: f64,
     pub plan: f64,
     pub steer: f64,
+    /// Search sizes, for testing (unset: SIM_KEEP, SIM_PLAYOUTS, PLAN_BUDGET, PLAN_DEPTH).
+    pub keep: Option<usize>,
+    pub playouts: Option<usize>,
+    pub plan_budget: Option<usize>,
+    pub plan_depth: Option<usize>,
+    /// Testing: the jitter on one-step values (unset: SEARCH_NOISE); the draft's sampled plays per card (unset: 4);
+    /// the play-out search's value mixed with the one-step value (0: play-outs only); play-out bots listing targets.
+    pub noise: Option<f64>,
+    pub draft: Option<usize>,
+    pub mix: f64,
+    pub roll_list: f64,
 }
 
 fn base(name: &str) -> Option<Persona> {
     let trophy = Persona {
         lean: -0.3, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: 3.0, enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: 0.0, protect: 0.0, top: 0.0,
-        race: 0.0, even: 1.0, plan: 0.0, steer: 0.0,
+        race: 0.0, even: 1.0, plan: 0.0, steer: 0.0, keep: None, playouts: None, plan_budget: None, plan_depth: None, noise: None, draft: None, mix: 0.0, roll_list: 0.0,
     };
     match name {
         "trophy" => Some(trophy),
@@ -131,11 +144,27 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "even" => p.even = x,
                 "plan" => p.plan = x,
                 "steer" => p.steer = x,
+                "keep" => p.keep = Some(x as usize),
+                "playouts" => p.playouts = Some(x as usize),
+                "planBudget" => p.plan_budget = Some(x as usize),
+                "planDepth" => p.plan_depth = Some(x as usize),
+                "noise" => p.noise = Some(x),
+                "draft" => p.draft = Some(x as usize),
+                "mix" => p.mix = x,
+                "rollList" => p.roll_list = x,
                 _ => {}
             }
         }
     }
     Some(p)
+}
+
+/// A play-out bot that lists targets (persona rollList): the same persona, one move ahead, no draft combos.
+fn listing(profile: &str) -> String {
+    if persona_of(profile).is_none() {
+        return profile.to_string();
+    }
+    format!("{profile}{}sim=0,combo=0", if profile.contains(':') { "," } else { ":" })
 }
 
 /// A profile with the slow search switched off (play-outs): the same persona, one move ahead, sampled targets.
@@ -706,7 +735,9 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
     let goal = persona.as_ref().map(|p| choose_goal(s, pid, p, memory.as_deref_mut(), &mut *rng));
     let ev = |x: &GameState| evaluate(x, pid, profile, goal);
     let p = &s.players[me];
-    let noise = |v: f64, rng: &mut dyn FnMut() -> f64| v + (rng() - 0.5) * SEARCH_NOISE;
+    let jitter = persona.as_ref().and_then(|x| x.noise).unwrap_or(SEARCH_NOISE);
+    let draws = persona.as_ref().and_then(|x| x.draft).unwrap_or(4);
+    let noise = |v: f64, rng: &mut dyn FnMut() -> f64| v + (rng() - 0.5) * jitter;
     match s.phase {
         Phase::Draft => {
             if p.picked {
@@ -717,7 +748,7 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
             let combo = persona.as_ref().is_some_and(|x| on(x.combo));
             let mut worth: Vec<(CardIx, f64)> = Vec::new();
             for &c in &pool {
-                let w = if combo { combo_worth(s, pid, c, &p.kept, rng, &ev, base_v) } else { card_worth(s, pid, c, rng, &ev, base_v) };
+                let w = if combo { combo_worth(s, pid, c, &p.kept, rng, &ev, base_v, draws) } else { card_worth(s, pid, c, rng, &ev, base_v, draws) };
                 worth.push((c, noise(w, rng)));
             }
             worth.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
@@ -759,17 +790,17 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
             let steer_fn = |x: &GameState| ev(x);
             let steer: Option<&dyn Fn(&GameState) -> f64> = if pe.as_ref().is_some_and(|x| on(x.steer)) { Some(&steer_fn) } else { None };
             let moves = candidates(s, pid, rng, SEARCH_TARGETS, pe.as_ref().is_some_and(|x| on(x.enumerate)), pe.as_ref().is_some_and(|x| on(x.even)), steer, None);
-            let table = pe.as_ref().filter(|x| on(x.table)).map(|_| {
+            let table = pe.as_ref().filter(|x| on(x.table)).map(|x| {
                 let mut profiles = seats.profiles.clone().unwrap_or_default();
                 profiles.insert(pid, profile.to_string());
-                Seats { profiles: Some(profiles), memories: seats.memories.clone() }
+                Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: on(x.roll_list) }
             });
             if let Some(x) = pe.as_ref() {
                 if on(x.sim) && on(x.plan) {
-                    return plan_pick(s, pid, rng, moves, &ev, memory.as_deref(), SIM_KEEP, PLAN_BUDGET, PLAN_DEPTH, table.as_ref());
+                    return plan_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.plan_budget.unwrap_or(PLAN_BUDGET), x.plan_depth.unwrap_or(PLAN_DEPTH), table.as_ref());
                 }
                 if on(x.sim) {
-                    return sim_pick(s, pid, rng, moves, &ev, memory.as_deref(), SIM_KEEP, SIM_PLAYOUTS, table.as_ref());
+                    return sim_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.playouts.unwrap_or(SIM_PLAYOUTS), x.mix, table.as_ref());
                 }
             }
             let mut best: Option<Move> = moves.first().cloned();
@@ -793,7 +824,7 @@ fn seed_of(rng: Rng) -> i64 {
 
 /// The play-out search (persona sim).
 #[allow(clippy::too_many_arguments)]
-fn sim_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, keep: usize, playouts: usize, table: Option<&Seats>) -> Option<Move> {
+fn sim_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, keep: usize, playouts: usize, mix: f64, table: Option<&Seats>) -> Option<Move> {
     let mut ranked: Vec<(Move, GameState, f64)> = moves.into_iter().map(|m| { let x = after(s, pid, &m); let v = ev(&x); (m, x, v) }).collect();
     ranked.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
     let pass_i = ranked.iter().position(|r| r.0 == Move::Pass);
@@ -811,7 +842,7 @@ fn sim_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&Ga
         for &seed in &seeds {
             total += ev(&play_out_round(&ranked[i].1, seed, pid, memory, table, None));
         }
-        let v = total / seeds.len() as f64;
+        let v = (1.0 - mix) * (total / seeds.len() as f64) + mix * ranked[i].2;
         if v > best_v {
             best = Some(ranked[i].0.clone());
             best_v = v;
@@ -941,6 +972,7 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
     let mut s = imagined(state);
     let round = s.round;
     let profiles: Vec<String> = (0..n).map(|id| match table.and_then(|t| t.profiles.as_ref()).and_then(|p| p.get(&(id as Pid))) {
+        Some(p) if table.is_some_and(|t| t.roll_list) => listing(p),
         Some(p) => fast(p),
         None => ROLLOUT.to_string(),
     }).collect();
@@ -988,7 +1020,7 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
 }
 
 /// How much a card adds, played as well as the bot can find right now (the draft's rough worth).
-fn card_worth(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, ev: &dyn Fn(&GameState) -> f64, base_v: f64) -> f64 {
+fn card_worth(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, ev: &dyn Fn(&GameState) -> f64, base_v: f64, draws: usize) -> f64 {
     let c = card(ci);
     let mut x = imagined(s);
     x.phase = Phase::Play;
@@ -1000,7 +1032,7 @@ fn card_worth(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, ev: &dyn Fn(&GameSt
     if c.suit.is_some() && legal(&x, pid, &infl) {
         best = best.max(ev(&after(&x, pid, &infl)) - base_v);
     }
-    for _ in 0..4 {
+    for _ in 0..draws {
         let Some(t) = sample_target(&x, pid, ci, rng) else { continue };
         let m = action(ci, Some(t));
         if !legal(&x, pid, &m) {
@@ -1012,15 +1044,15 @@ fn card_worth(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, ev: &dyn Fn(&GameSt
 }
 
 /// In the draft (persona combo): a card's worth with the cards already kept.
-fn combo_worth(s: &GameState, pid: Pid, ci: CardIx, kept: &[CardIx], rng: Rng, ev: &dyn Fn(&GameState) -> f64, base_v: f64) -> f64 {
-    let mut best = card_worth(s, pid, ci, rng, ev, base_v);
+fn combo_worth(s: &GameState, pid: Pid, ci: CardIx, kept: &[CardIx], rng: Rng, ev: &dyn Fn(&GameState) -> f64, base_v: f64, draws: usize) -> f64 {
+    let mut best = card_worth(s, pid, ci, rng, ev, base_v, draws);
     for &k in kept.iter().filter(|&&k| k != ci) {
         let mut x = imagined(s);
         x.phase = Phase::Play;
         x.turn = pid as usize;
         x.opened = true;
         x.players[pid as usize].hand = Hand::from_slice(&[k, ci]);
-        let firsts = best_plays(&x, pid, k, rng, ev);
+        let firsts = best_plays(&x, pid, k, rng, ev, draws);
         if firsts.is_empty() {
             continue;
         }
@@ -1029,7 +1061,7 @@ fn combo_worth(s: &GameState, pid: Pid, ci: CardIx, kept: &[CardIx], rng: Rng, e
             let mut x2 = f.0.clone();
             x2.phase = Phase::Play;
             x2.turn = pid as usize;
-            let seconds = best_plays(&x2, pid, ci, rng, ev);
+            let seconds = best_plays(&x2, pid, ci, rng, ev, draws);
             if let Some(sec) = seconds.first() {
                 best = best.max(sec.1 - alone);
             }
@@ -1039,9 +1071,9 @@ fn combo_worth(s: &GameState, pid: Pid, ci: CardIx, kept: &[CardIx], rng: Rng, e
 }
 
 /// A card's best few plays for its action, best first.
-fn best_plays(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, ev: &dyn Fn(&GameState) -> f64) -> Vec<(GameState, f64)> {
+fn best_plays(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, ev: &dyn Fn(&GameState) -> f64, draws: usize) -> Vec<(GameState, f64)> {
     let mut out = Vec::new();
-    for _ in 0..4 {
+    for _ in 0..draws {
         let Some(t) = sample_target(s, pid, ci, rng) else { continue };
         let m = action(ci, Some(t));
         if !legal(s, pid, &m) {
@@ -1109,7 +1141,7 @@ pub fn rank_for_hint(s: &GameState, pid: Pid, memory: &mut BotMemory, profile: &
     match s.phase {
         Phase::Draft if !p.picked => {
             let pool: Vec<CardIx> = p.kept.iter().chain(p.batch.iter()).copied().collect();
-            worth = pool.into_iter().map(|c| (c, card_worth(s, pid, c, rng, &ev, base_v))).collect();
+            worth = pool.into_iter().map(|c| (c, card_worth(s, pid, c, rng, &ev, base_v, 4))).collect();
             worth.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         }
         Phase::Growth => {

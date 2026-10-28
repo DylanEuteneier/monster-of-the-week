@@ -62,7 +62,7 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
         let mut moved = false;
         // Every seat is offered the move in seat order, as the JavaScript tournament does; the first with one makes it.
         for pid in 0..n as Pid {
-            let table = Seats { profiles: Some(profiles.clone()), memories: Some(memory.iter().enumerate().map(|(i, m)| (i as Pid, m.clone())).collect()) };
+            let table = Seats { profiles: Some(profiles.clone()), memories: Some(memory.iter().enumerate().map(|(i, m)| (i as Pid, m.clone())).collect()), ..Default::default() };
             let m = {
                 let rng: &mut dyn FnMut() -> f64 = if duplicate { &mut *own[pid as usize] } else { &mut shared };
                 bot_move(&s, pid, rng, &seats[pid as usize], Some(&mut memory[pid as usize]), &table)

@@ -196,6 +196,7 @@ pub fn call(name: &str, a: &[Value]) -> Out {
             let seats = Seats {
                 profiles: input["table"].as_object().map(|t| t.iter().filter_map(|(id, p)| Some((s.pid_of(id)?, p.as_str()?.to_string()))).collect()),
                 memories: input["memories"].as_object().map(|t| t.iter().filter_map(|(id, m)| Some((s.pid_of(id)?, memory_from(m)))).collect::<HashMap<_, _>>()),
+                ..Default::default()
             };
             let mut rng = host_rng();
             let m = bots::bot_move(&s, pid, &mut rng, profile, memory.as_mut(), &seats);
