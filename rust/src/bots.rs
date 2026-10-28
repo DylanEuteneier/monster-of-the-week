@@ -589,9 +589,6 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
     let p = &s.players[pid as usize];
     let mut memo = Memo::default();
     let mut moves = vec![Move::Pass];
-    // As the JavaScript: `targets` grows with each listed card and is never reset, so later cards in the hand sample
-    // more (to review: probably unintended).
-    let mut targets = targets;
     let mut hand: Vec<CardIx> = Vec::new();
     for &c in &p.hand {
         if !hand.contains(&c) {
@@ -624,6 +621,8 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
         }
         // Targets already offered (equal targets are those JSON.stringify would write alike: fields in order).
         let mut seen: Vec<Option<Target>> = Vec::new();
+        // How many targets this card offers: `targets` sampled, beyond any it listed.
+        let mut want = targets;
         if list {
             if let Some(value) = steer {
                 if !list_targets_memo(s, pid, ci, LIST_CAP + 1, even, &mut memo).1 {
@@ -634,7 +633,7 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
                         seen.push(Some(t));
                         moves.push(action(ci, Some(t)));
                     }
-                    targets += seen.len();
+                    want = targets + seen.len();
                 }
             }
         }
@@ -651,10 +650,10 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
             if complete {
                 continue;
             }
-            targets += seen.len();
+            want = targets + seen.len();
         }
         let mut i = 0;
-        while i < targets * 2 && seen.len() < targets {
+        while i < want * 2 && seen.len() < want {
             i += 1;
             let t = sample_target_memo(s, pid, ci, rng, &mut memo);
             if seen.contains(&t) {
