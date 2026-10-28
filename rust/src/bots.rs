@@ -177,13 +177,44 @@ fn sigmoid(x: f64) -> f64 {
 // ---------------------------------------------------------------------------
 
 /// The board after this round's fights, as they stand now.
-// PERF: recomputed for every evaluation (the JavaScript memoises it per state); the same state is judged many times.
 fn project_fights(s: &GameState) -> GameState {
+    // A few recent projections, by the position's content (the board, players and supply, the round and phase, the
+    // options): every seat asks about the same position in a play-out before one of them moves.
+    thread_local! {
+        static CACHE: std::cell::RefCell<Vec<(u64, GameState, GameState)>> = const { std::cell::RefCell::new(Vec::new()) };
+    }
+    let same = |a: &GameState, b: &GameState| a.board == b.board && a.players == b.players && a.supply == b.supply && a.round == b.round && a.phase == b.phase && std::rc::Rc::ptr_eq(&a.options, &b.options);
+    let key = {
+        use std::hash::{Hash, Hasher};
+        let mut h = crate::small::Fx::default();
+        for p in &s.board {
+            p.tokens.hash(&mut h);
+            p.sway.hash(&mut h);
+        }
+        for p in &s.players {
+            p.standing.hash(&mut h);
+            p.trophies.hash(&mut h);
+            p.supply.hash(&mut h);
+        }
+        s.supply.hash(&mut h);
+        h.write_u64(s.round as u64);
+        h.finish()
+    };
+    if let Some(hit) = CACHE.with(|c| c.borrow().iter().find(|e| e.0 == key && same(&e.1, s)).map(|e| e.2.clone())) {
+        return hit;
+    }
     let locs = fights_due(s);
     let mut out = imagined(s);
     if !locs.is_empty() {
         resolve_fights(&mut out, &locs);
     }
+    CACHE.with(|c| {
+        let mut c = c.borrow_mut();
+        if c.len() >= 8 {
+            c.remove(0);
+        }
+        c.push((key, imagined(s), out.clone()));
+    });
     out
 }
 

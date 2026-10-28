@@ -25,7 +25,7 @@ pub const NLOC: usize = 15;
 
 /// A small map that keeps insertion order, as a JavaScript object with string keys does: setting a present key keeps
 /// its place, a new key goes last, and removing a key forgets its place. Inline (no heap): copying it is a memory copy.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 pub struct OMap<const N: usize = 5> {
     len: u8,
     keys: [u8; N],
@@ -35,6 +35,24 @@ pub struct OMap<const N: usize = 5> {
 impl<const N: usize> Default for OMap<N> {
     fn default() -> Self {
         OMap { len: 0, keys: [0; N], vals: [0; N] }
+    }
+}
+
+// Equality and hashing look at the live entries only, in order (slots past the end may hold stale values).
+impl<const N: usize> PartialEq for OMap<N> {
+    #[inline]
+    fn eq(&self, o: &Self) -> bool {
+        let n = self.len as usize;
+        n == o.len as usize && self.keys[..n] == o.keys[..n] && self.vals[..n] == o.vals[..n]
+    }
+}
+impl<const N: usize> Eq for OMap<N> {}
+impl<const N: usize> std::hash::Hash for OMap<N> {
+    #[inline]
+    fn hash<H: std::hash::Hasher>(&self, h: &mut H) {
+        let n = self.len as usize;
+        self.keys[..n].hash(h);
+        self.vals[..n].hash(h);
     }
 }
 

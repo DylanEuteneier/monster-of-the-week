@@ -679,8 +679,8 @@ pub fn complete_target(s: &GameState, pid: Pid, ci: CardIx, t: &Target, rng: &mu
 /// walk, by the path of picks that led to it, and whether a target is legal. Valid only for the state it was made for.
 #[derive(Default)]
 pub struct Memo {
-    walk: std::collections::HashMap<(Pid, CardIx, Mode, List<u8, 32>), std::rc::Rc<Choice>>,
-    checks: std::collections::HashMap<(Pid, CardIx, Target), bool>,
+    walk: crate::small::FxMap<(Pid, CardIx, Mode, List<u8, 32>), std::rc::Rc<Choice>>,
+    checks: crate::small::FxMap<(Pid, CardIx, Target), bool>,
 }
 
 impl Memo {
