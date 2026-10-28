@@ -535,11 +535,12 @@ export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
 // ---------------------------------------------------------------------------
 
 /** Every move worth considering on this bot's turn. @param {GameState} state @param {string} pid @param {() => number} rng */
-function candidates(state, pid, rng, targets = SEARCH.targets, list = false, even = false, quick = /** @type {((s: GameState) => number) | null} */ (null), steer = /** @type {((s: GameState) => number) | null} */ (null)) {
+function candidates(state, pid, rng, targets = SEARCH.targets, list = false, even = false, quick = /** @type {((s: GameState) => number) | null} */ (null), steer = /** @type {((s: GameState) => number) | null} */ (null), only = /** @type {string | null} */ (null)) {
   const p = state.players[pid];
   /** @type {Move[]} */
   const moves = [{ type: 'pass' }];
   for (const cardId of new Set(p.hand)) {
+    if (only && cardId !== only) continue; // one card's moves only (a planned card)
     const card = cardById(cardId);
     if (card.suit) {
       const spots = swaySpots(state, cardId);
@@ -866,7 +867,7 @@ function halvingValue(arms, pid, rng, ev, memory, budget, table) {
  */
 function plannedMove(s, pid, card, rng, profile, memory) {
   // Listed targets, shared across a card's uses (enum + even), as the bot itself chooses: sampled targets misplayed the big multi-use cards (designer, 2026-10-26).
-  const options = candidates(s, pid, rng, SEARCH.targets, true, true).filter((m) => m.type === 'play' && m.card === card);
+  const options = candidates(s, pid, rng, SEARCH.targets, true, true, null, null, card).filter((m) => m.type === 'play' && m.card === card); // that card only (2026-10-27: listing every card's targets made a game take hours)
   let best = null, bestV = -Infinity;
   for (const m of options) { const v = evaluate(after(s, pid, m), pid, profile, memory?.goal); if (v > bestV) { best = m; bestV = v; } }
   return best;
