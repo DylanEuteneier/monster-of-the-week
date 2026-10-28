@@ -6,7 +6,6 @@ use crate::board::*;
 use crate::cards::*;
 use crate::choice::*;
 use crate::game::*;
-use crate::json::target_key;
 use crate::spec::spec;
 use crate::types::*;
 use std::collections::HashMap;
@@ -467,12 +466,6 @@ fn after(s: &GameState, pid: Pid, m: &Move) -> GameState {
 fn legal(s: &GameState, pid: Pid, m: &Move) -> bool {
     validate(s, pid, m).is_none()
 }
-fn key_of(t: &Option<Target>) -> String {
-    match t {
-        None => "null".into(),
-        Some(t) => target_key(t),
-    }
-}
 
 /// Every move worth considering on this bot's turn (candidates).
 // PERF: every candidate is validated (check_target clones the state twice) after listing already checked it.
@@ -514,16 +507,16 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
                 }
             }
         }
-        let mut seen: Vec<String> = Vec::new();
+        // Targets already offered (equal targets are those JSON.stringify would write alike: fields in order).
+        let mut seen: Vec<Option<Target>> = Vec::new();
         if list {
             if let Some(value) = steer {
                 if !list_targets_memo(s, pid, ci, LIST_CAP + 1, even, &mut memo).1 {
                     for t in steered(s, pid, ci, rng, value, LIST_CAP, &mut memo) {
-                        let k = target_key(&t);
-                        if seen.contains(&k) {
+                        if seen.contains(&Some(t)) {
                             continue;
                         }
-                        seen.push(k);
+                        seen.push(Some(t));
                         moves.push(action(ci, Some(t)));
                     }
                     targets += seen.len();
@@ -534,7 +527,7 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
             let (l, complete) = list_targets_memo(s, pid, ci, LIST_CAP, even, &mut memo);
             let none = l.is_empty();
             for t in l {
-                seen.push(target_key(&t));
+                seen.push(Some(t));
                 moves.push(action(ci, Some(t)));
             }
             if complete && none {
@@ -549,11 +542,10 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
         while i < targets * 2 && seen.len() < targets {
             i += 1;
             let t = sample_target_memo(s, pid, ci, rng, &mut memo);
-            let k = key_of(&t);
-            if seen.contains(&k) {
+            if seen.contains(&t) {
                 continue;
             }
-            seen.push(k);
+            seen.push(t);
             moves.push(action(ci, t));
         }
     }
@@ -566,22 +558,21 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
 
 /// Best-first targets for a card (persona steer).
 fn steered(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, value: &dyn Fn(&GameState) -> f64, budget: usize, memo: &mut Memo) -> Vec<Target> {
-    let mut found: Vec<(String, Target, f64)> = Vec::new();
-    let mut score = |t: &Target, found: &mut Vec<(String, Target, f64)>| -> f64 {
-        let k = target_key(t);
-        if let Some(hit) = found.iter().find(|e| e.0 == k) {
-            return hit.2;
+    let mut found: Vec<(Target, f64)> = Vec::new();
+    let mut score = |t: &Target, found: &mut Vec<(Target, f64)>| -> f64 {
+        if let Some(hit) = found.iter().find(|e| e.0 == *t) {
+            return hit.1;
         }
         let m = action(ci, Some(*t));
         if !(legal(s, pid, &action(ci, None)) && memo.legal(s, pid, ci, t)) {
             return f64::NEG_INFINITY;
         }
         let v = value(&after(s, pid, &m));
-        found.push((k, t.clone(), v));
+        found.push((*t, v));
         v
     };
     let mut open: Vec<(Target, f64)> = Vec::new();
-    let mut look = |t: &Target, found: &mut Vec<(String, Target, f64)>, open: &mut Vec<(Target, f64)>, rng: &mut dyn FnMut() -> f64| {
+    let mut look = |t: &Target, found: &mut Vec<(Target, f64)>, open: &mut Vec<(Target, f64)>, rng: &mut dyn FnMut() -> f64| {
         let (done, next) = choice_steps(s, pid, ci, t);
         for d in &done {
             score(d, found);
@@ -608,8 +599,8 @@ fn steered(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, value: &dyn Fn(&GameSt
         let (t, _) = open.remove(0);
         look(&t, &mut found, &mut open, rng);
     }
-    found.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
-    found.into_iter().map(|e| e.1).collect()
+    found.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    found.into_iter().map(|e| e.0).collect()
 }
 
 /// The move this bot should make right now (botMove), or None.

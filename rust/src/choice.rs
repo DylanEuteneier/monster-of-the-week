@@ -797,18 +797,18 @@ pub fn list_targets_memo(s: &GameState, pid: Pid, ci: CardIx, cap: usize, even: 
 // (which clones the state twice); a cap of 40 targets can mean hundreds of state copies per card.
 fn list_targets_from(s: &GameState, pid: Pid, ci: CardIx, cap: usize, start: Vec<Target>, memo: &mut Memo) -> (Vec<Target>, bool) {
     let mut stack = start;
-    let mut found: Vec<(String, Target)> = Vec::new();
+    // Equal targets are those JSON.stringify would write alike (fields in order): the listing's duplicates.
+    let mut found: Vec<Target> = Vec::new();
     let mut visits = 0usize;
-    let mut keep = |t: &Target, found: &mut Vec<(String, Target)>| {
-        let k = crate::json::target_key(t);
-        if !found.iter().any(|e| e.0 == k) && memo.legal(s, pid, ci, t) {
-            found.push((k, *t));
+    let mut keep = |t: &Target, found: &mut Vec<Target>| {
+        if !found.contains(t) && memo.legal(s, pid, ci, t) {
+            found.push(*t);
         }
     };
     while !stack.is_empty() && found.len() < cap {
         visits += 1;
         if visits > cap * 40 {
-            return (found.into_iter().map(|e| e.1).collect(), false);
+            return (found, false);
         }
         let t = stack.pop().unwrap();
         let c = next_choice(s, pid, ci, &t);
@@ -838,5 +838,5 @@ fn list_targets_from(s: &GameState, pid: Pid, ci: CardIx, cap: usize, start: Vec
         }
     }
     let complete = stack.is_empty();
-    (found.into_iter().map(|e| e.1).collect(), complete)
+    (found, complete)
 }
