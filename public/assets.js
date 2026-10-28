@@ -145,20 +145,15 @@ async function cards() {
   };
   /** @typedef {{ id: string, suit: string | null, action: string | null, name: string, round?: number, marked?: string }} AnyCard */
   const deck = /** @type {AnyCard[]} */ (/** @type {unknown} */ (spec.cards));
-  const tests = /** @type {AnyCard[]} */ (/** @type {unknown} */ (spec.testCards.cards));
-  const all = [...deck.map((c) => ({ c, status: c.marked ? `Deck · marked ${c.marked}` : 'Deck' })), ...tests.map((c) => ({ c, status: c.round ? `Test · round ${c.round}` : 'Held out' }))];
-  /** Types, from H.9's action types. */
-  const TYPES = ['Presence', 'Fight modifier', 'Sway', 'Response only'];
-  const typeOf = (/** @type {string | null} */ action) => (!action ? 'Response only' : action === 'token' ? 'Fight modifier' : ['move-sway', 'cash-in'].includes(action) ? 'Sway' : 'Presence');
+  const all = deck.map((c) => ({ c, status: c.marked ? `Marked ${c.marked}` : c.suit ? 'Suited' : 'Unsuited' }));
   const suits = [...spec.archetypes.map((a) => a.id), null];
-  all.sort((x, y) => suits.indexOf(x.c.suit) - suits.indexOf(y.c.suit) || TYPES.indexOf(typeOf(x.c.action)) - TYPES.indexOf(typeOf(y.c.action))
-    || (x.c.action ?? '').localeCompare(y.c.action ?? '') || x.c.name.localeCompare(y.c.name));
-  const tags = (/** @type {AnyCard} */ c, /** @type {string} */ status) => `<div class="review-tags">${playTags(c.id, !!c.action)}<span class="review-tag is-status">${esc(status)}</span><span class="review-tag is-status">${esc(typeOf(c.action))} · <span class="mono">${esc(c.action ?? 'none')}</span></span></div>`;
+  all.sort((x, y) => suits.indexOf(x.c.suit) - suits.indexOf(y.c.suit) || (x.c.action ?? '').localeCompare(y.c.action ?? '') || x.c.name.localeCompare(y.c.name));
+  const tags = (/** @type {AnyCard} */ c, /** @type {string} */ status) => `<div class="review-tags">${playTags(c.id, !!c.action)}<span class="review-tag is-status">${esc(status)}</span><span class="review-tag is-status"><span class="mono">${esc(c.action ?? 'none')}</span></span></div>`;
   const how = plays
     ? `Figures from ${plays.games} bot games of the tuning tournament (${esc(plays.profiles.join(', '))}; updated ${esc(plays.updated.slice(0, 16).replace('T', ' '))}). Every figure is coloured by rank across the cards: green the top third, gold the middle third. <b>Probe</b>: a controlled test, the card played against letting the turn go (cause). The rest come from what the bots chose in whole games (correlation, not cause). Hover a tag for its meaning.`
     : 'No tournament figures yet: run <span class="mono">npm run cards:plays</span>.';
-  $('cards').innerHTML = `<div class="row-between"><h2>Cards</h2><span class="small muted">${all.length} cards: ${deck.length} in the deck, ${tests.length} out of the deal</span></div>
-    <p class="small muted">Every card the engine can play, for review, sorted by suit, then type, then action. ${how}</p>
+  $('cards').innerHTML = `<div class="row-between"><h2>Cards</h2><span class="small muted">${all.length} cards in the deck</span></div>
+    <p class="small muted">Every card in the deck, for review, sorted by suit, then action. ${how}</p>
     <div class="review-grid" id="review-grid"></div>`;
   const items = all.map(({ c, status }) => cardHtml(c.id, { extra: tags(c, status) }));
   // Masonry that reads left to right: each card, in order, goes to the shortest column.

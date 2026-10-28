@@ -87,12 +87,8 @@ export function playRest(state, seed, bots, memories = undefined) {
   return s;
 }
 
-/** A card's action played, straight through to its resolution. @param {GameState} state @param {string} pid @param {Move} move */
-export function play(state, pid, move) {
-  let s = applyMove(state, { playerId: pid, move });
-  if (s.pending && s.pending.player === pid) s = applyMove(s, { playerId: pid, move: { type: 'confirm' } });
-  return s;
-}
+/** A card's action played. @param {GameState} state @param {string} pid @param {Move} move */
+export const play = (state, pid, move) => applyMove(state, { playerId: pid, move });
 
 /**
  * The card test (designer, 2026-10-26: a card's worth is what it adds to a hand, not the average of every way to play

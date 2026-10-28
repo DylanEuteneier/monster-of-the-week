@@ -30,7 +30,7 @@
    3. Absolute inside a relative parent, at coordinates from data:
         .board > .board-tile   pixel positions from the board art (inline style)
         .hex > sprite/state/pieces   sizes from pieces.js (inline style)
-        .hex-pieces > .side-marks   face-down and effect tokens, a column at the location's side
+        .hex-pieces > .side-marks   effect tokens, a column at the location's side
         .token > face/art, .cube > faces   drawn pieces
         .hand .fan > .card     anchored at the fan's centre-bottom, moved only
                                by transform (see 4)
@@ -333,15 +333,9 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .standing-group.is-leading { border-bottom-color: var(--state-candidate); }
 .trophies { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 .trophies > .token + .token { margin-left: -12px; }
-/* Face-down tokens (pieces.js faceDownHtml): the back, in the owner's colour, shows the icon of the card that placed
-   it (a real token and its bluff look the same); its owner sees the face: the icon on cardboard, or struck through for
-   the bluff. Effect tokens: a round token with the effect's icon. Both sit in a column at the location's side (.side-marks, absolute in
-   the hex's pieces box). Rubble sits centred on a scorched location. */
+/* Effect tokens (pieces.js effectHtml): a round token with the effect's icon, in a column at the location's side
+   (.side-marks, absolute in the hex's pieces box). Rubble sits centred on a scorched location. */
 .side-marks { position: absolute; right: -4px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 2px; z-index: 1; }
-.face-down { position: relative; display: inline-grid; place-items: center; width: 20px; height: 20px; background: var(--color-panel-2); border: 2px solid var(--owner); box-shadow: 1px 1px 0 var(--ink); }
-.face-down.is-real, .face-down.is-bluff { background: var(--card-face); }
-.face-down.is-bluff .mark { opacity: 0.35; filter: grayscale(1); }
-.face-down.is-bluff::after { content: ""; position: absolute; left: 1px; right: 1px; top: 50%; height: 2px; background: var(--color-danger); transform: rotate(-45deg); }
 .effect-token { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--ink); border: 2px solid var(--color-accent); box-shadow: 1px 1px 0 var(--ink); }
 .rubble { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -40%); line-height: 0; pointer-events: none; }
 
@@ -356,8 +350,8 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .hex.is-candidate:hover > .hex-state-hover, .hex.is-candidate.is-hovered > .hex-state-hover { display: block; }
 .hex.is-candidate:hover, .hex.is-candidate.is-hovered { transform: translateY(-2px); }
 /* A card that acts on a whole region: every location it will touch shows its hover art while a candidate is hovered (app.js, lightRegions). */
-.hex.is-region > .hex-state-hover, .hex.is-suggested > .hex-state-hover { display: block; }
-.hex.is-region > .hex-state-candidate, .hex.is-suggested > .hex-state-candidate { display: none; }
+.hex.is-suggested > .hex-state-hover { display: block; }
+.hex.is-suggested > .hex-state-candidate { display: none; }
 .hex-pieces { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .hex-pieces .stack-row { flex-wrap: nowrap; gap: 4px; justify-content: center; }
 .hex-pieces .token-stack > * + * { margin-left: calc(var(--w) * -0.66); }
@@ -585,7 +579,6 @@ body { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px + 2 * va
 .card-band > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-name { font-family: var(--font-display); font-size: 13px; text-transform: uppercase; line-height: 1.15; }
 .card p { margin: 0; color: #5a5454; }
-.card-response { border-top: 1px dashed #a0948f; padding-top: 4px; }
 /* The two readings: what LOC and FAC each target on this card. */
 .card-readings { margin: 0; display: flex; flex-direction: column; gap: 2px; color: #5a5454; }
 .card-reading { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 4px; align-items: baseline; }
@@ -609,17 +602,16 @@ button.card-opt:hover { background: #f6cca1; }
 .card-opt.is-next { background: var(--color-accent); }
 .card-opt.is-on { background: var(--color-accent); outline: 2px solid var(--ink); outline-offset: 1px; }
 .card-opt.is-empty, .card-opt.is-next.is-empty { background: #e0f2f4; opacity: 0.5; text-decoration: line-through; }
-/* Card states: playable (act), keepable in the draft (keep), a ready
-   response, ticked to keep, dimmed (a dark wash, never transparency). */
-.card-act, .card-keep, .card-respond { cursor: pointer; }
+/* Card states: playable (act), keepable in the draft (keep), ticked to
+   keep, dimmed (a dark wash, never transparency). */
+.card-act, .card-keep { cursor: pointer; }
 .card-ticked { outline: 3px solid var(--state-candidate); outline-offset: 2px; }
-.card-respond { outline: 3px solid var(--color-link); outline-offset: 2px; }
 .card-dim::after { content: ""; position: absolute; inset: 0; background: rgb(48 43 45 / 0.38); pointer-events: none; }
 .card-dim:hover::after { background: rgb(48 43 45 / 0.18); }
 
 /* ---------------------------------------------------------------------------
-   The bar (catalogue 2): your supply and bluffs, then the current step and its
-   buttons. Its colour is the turn: gold for your move, cyan when you can answer.
+   The bar (catalogue 2): your supply, then the current step and its
+   buttons. Its colour is the turn: gold for your move.
 --------------------------------------------------------------------------- */
 .dock {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-dock);
@@ -630,12 +622,10 @@ button.card-opt:hover { background: #f6cca1; }
   border-top: 3px solid var(--ink);
 }
 .dock.is-turn { border-top-color: var(--color-accent); background: color-mix(in oklab, var(--color-panel-2), var(--color-accent) 12%); }
-.dock.is-respond { border-top-color: var(--color-link); background: color-mix(in oklab, var(--color-panel-2), var(--color-link) 12%); }
 .bar-mine { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .bar-step { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; min-width: 0; overflow: hidden; }
 .bar-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .dock.is-turn .bar-text { color: var(--color-accent); }
-.dock.is-respond .bar-text { color: var(--color-link); }
 .bar-actions { display: flex; gap: 6px; flex: none; }
 .bar-btn { padding: 3px 10px; font-size: 12px; cursor: pointer; background: var(--color-cell); color: var(--color-text); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
 .bar-btn:hover:not(:disabled) { border-color: var(--color-accent); }
@@ -645,7 +635,6 @@ button.card-opt:hover { background: #f6cca1; }
 .bar-icon { width: 30px; height: 28px; padding: 0; display: grid; place-items: center; font-size: 16px; line-height: 1; }
 .chip { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; cursor: help; }
 .chip b { font-weight: 600; }
-.bluff { width: 10px; height: 10px; background: var(--color-cell); border: 2px solid var(--color-muted); box-shadow: 1px 1px 0 var(--ink); }
 
 /* Sway (left) and trophies (right): tabs rising from the bar's ends,
    in its colours. Compact: tokens and numbers only (trophies: only those
@@ -661,7 +650,6 @@ button.card-opt:hover { background: #f6cca1; }
 .side-left { left: 8px; }
 .side-right { right: 8px; align-items: flex-end; }
 .dock.is-turn ~ .side-stack { background: color-mix(in oklab, var(--color-panel-2), var(--color-accent) 12%); border-color: var(--color-accent); }
-.dock.is-respond ~ .side-stack { background: color-mix(in oklab, var(--color-panel-2), var(--color-link) 12%); border-color: var(--color-link); }
 .side-head { display: none; font-family: var(--font-display); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); }
 .side-name { display: none; }
 .side-row { display: flex; align-items: center; gap: 4px; font-size: 12px; }

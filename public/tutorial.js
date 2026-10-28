@@ -31,7 +31,7 @@
 import { spec, factionById, locationById, cardById, describeTarget, playerView, resolveFight, clone, listTargets, previewTarget, deckOf, printedOf, controllerOf, growthDue } from './engine.js';
 import { newTable, copyTable, autoMove, nextActor, play, botPicks, check, YOU, BOTS } from './tutorial-game.js';
 import { suggest } from './hints.js';
-import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS, faceDownHtml } from './pieces.js';
+import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { flyPaths, SLOW } from './motion.js';
 import { cardHtml, suitIcon } from './cards.js';
 import { CLASH, tussleOn } from './fx.js';
@@ -172,7 +172,7 @@ const run = (n, piece, cap = 8) => (n > cap ? `${Array.from({ length: cap }, pie
 function miniCard(id, on = false) {
   if (id.startsWith('~')) return `<span class="tut-mini-card is-back" data-k="card:${id.slice(1)}"><b>?</b></span>`; // a rival's card, face down
   const c = cardById(id);
-  return `<span class="tut-mini-card card-suit-${c.suit ?? 'none'}${on ? ' is-lit' : ''}" data-k="card:${id}">${suitIcon(c.suit, 1)}<b>${esc(c.name)}</b>${c.suit ? `<span class="tut-chip">+${printedOf(R.table.state, id)}</span>` : ''}</span>`;
+  return `<span class="tut-mini-card card-suit-${c.suit ?? 'none'}${on ? ' is-lit' : ''}" data-k="card:${id}">${suitIcon(c.suit, 1)}<b>${esc(c.name)}</b>${c.suit ? `<span class="tut-chip">+${printedOf(id)}</span>` : ''}</span>`;
 }
 
 /** A player's slayer group emblem (pixel art, 2×). @param {string} pid */
@@ -586,12 +586,12 @@ function chapterStory() {
   const T = Object.keys(map.locations).find((l) => adj(S, l) && !own(l)) ?? c.L2;
   const W = Object.keys(map.locations).find((l) => l !== S && l !== T && (adj(S, l) || adj(T, l)) && !homeOf(l, G) && !homeOf(l, H)) ?? c.L3;
   const gArch = /** @type {typeof spec.archetypes[number]} */ (spec.archetypes.find((x) => x.id === factionById(G).archetype));
-  const deck = deckOf(c.st);
+  const deck = deckOf();
   // A mixed hand: a card of the Cryptids' suit (the offering that pays for the lure), your suit's lure, and an unsuited card.
   const lure = deck.find((id) => cardById(id).suit === arch.id && cardById(id).action === 'lure') ?? deck.find((id) => cardById(id).suit === arch.id) ?? deck[0];
   const offer = deck.find((id) => cardById(id).suit === gArch.id) ?? deck.find((id) => cardById(id).suit && id !== lure) ?? deck[1];
   const wild = deck.find((id) => !cardById(id).suit) ?? deck[2];
-  const po = printedOf(c.st, offer);
+  const po = printedOf(offer);
   const sF = c.supF, sG = c.st.supply[G], y = c.you0, yG = c.mine.standing[G], a = c.ash0, S0 = c.mine.supply, A0 = c.st.players[ash].supply;
   const icon = suitIcon(arch.id), gIcon = suitIcon(gArch.id);
   /** @param {{ fS?: number, fRow?: number, ashF?: number, gSup?: number, gRow?: number, ashG?: number, S?: any, T?: any, W?: any, you?: any, ash?: any, gRowOn?: boolean, players?: boolean, hexes?: string[] }} o @returns {Scene} */
@@ -719,14 +719,14 @@ function chapterRound() {
  * What kind of card use a move is: the round teaches each kind the first
  * time it comes up and fast-forwards the rest (designer, 2026-10-10: cover
  * the main card actions, then jump ahead).
- * @param {Move} move @returns {'sway' | 'move' | 'token' | 'special' | 'pass' | 'other'}
+ * @param {Move} move @returns {'sway' | 'move' | 'special' | 'pass' | 'other'}
  */
 function kindOf(move) {
   if (move.type === 'pass') return 'pass';
   if (move.type !== 'play') return 'other';
   if (move.use === 'sway') return 'sway';
   const c = cardById(move.card);
-  return c.action === 'token' ? 'token' : c.suit ? 'move' : 'special';
+  return c.suit ? 'move' : 'special';
 }
 
 /** The driver: decides what comes next from the game itself. @type {Step} */
@@ -752,7 +752,7 @@ function drive() {
   if (actor === YOU) {
     // The learner moves on the table, with a hint (designer, 2026-10-11); the controls explained the first time.
     // No cards left: the pass is the only move, made for them (designer, 2026-10-11).
-    if (s.phase === 'play' && !s.pending && !s.players[YOU].hand.length) { next(...turnSteps(YOU, { type: 'pass' }), drive); return null; }
+    if (s.phase === 'play' && !s.players[YOU].hand.length) { next(...turnSteps(YOU, { type: 'pass' }), drive); return null; }
     if (hooks.ui.note) { hooks.ui.note = null; hooks.render(); }
     if (R.mode === 'guided' && !R.taught.yourTurn) { R.taught.yourTurn = true; next(yourTurn, waitStep, drive); } else next(waitStep, drive);
     return null;
@@ -853,7 +853,6 @@ function changes(a, b) {
       const n = (pb.sway[pid] ?? 0) - (pa.sway[pid] ?? 0);
       if (n) parts.push(`${n > 0 ? '+' : '−'}${Math.abs(n)} ${cubeHtml(colour(pid), 9)} ${who(pid)}`);
     }
-    if (!pa.token && pb.token) parts.push('a face-down token');
     if (!parts.length) return '';
     locs.push(loc);
     return `<li><b>${L(loc)}</b>: ${parts.join(', ')}</li>`;
@@ -873,19 +872,17 @@ function narrate(pid, move, a, b) {
   if (move.type === 'play') {
     const c = cardById(move.card);
     const ch = changes(a, b);
-    // What it did: the target in words (a rival's face-down tokens stay secret), or the card's own text when the target has none.
-    const said = c.action === 'token' && pid !== YOU ? `two face-down ${c.name} tokens: one real, one bluff` : describeTarget(c.id, move.target ?? null);
+    // What it did: the target in words, or the card's own text when the target has none.
+    const said = describeTarget(c.id, move.target ?? null);
     const what = said || c.text;
-    // Paid from standing onto the board (a move), not from the supply (a token's marker cube).
+    // Paid from standing onto the board (a move), not from the supply.
     const placed = b.seating.some((x) => b.factions.some((f) => b.players[x].standing[f] < a.players[x].standing[f]) && Object.keys(b.board).some((l) => (b.board[l].sway[x] ?? 0) > (a.board[l].sway[x] ?? 0)));
     const teach = [
       placed && once('move') ? recall('The sway paid for the lure lands with the monsters as a bid.') : '',
-      c.action === 'token' && once('token') ? `${eq(faceDownHtml({ kind: c.id }, colour(pid)), faceDownHtml({ kind: c.id }, colour(pid)))}<p>Two face-down tokens with the same back, the card's: one real, one bluff, and only ${pid === YOU ? 'you know' : `${esc(pid)} knows`} which. Each carries 1 sway as a bid; both flip when that location fights.</p>` : '',
-      !c.suit && c.action !== 'token' && once('special') ? '<p class="small muted">Unsuited cards can\'t be spent for sway; they bend the rules instead.</p>' : '',
+      !c.suit && once('special') ? '<p class="small muted">Unsuited cards can\'t be spent for sway; they bend the rules instead.</p>' : '',
     ].join('');
     // The learner's own play was just previewed: say what changed rather than repeat the target.
-    // Your own play was just previewed, and a token play is shown as its tokens: no need to say it again.
-    const body = (pid === YOU && R.taught.yourTurn) ? '' : c.action === 'token' && pid !== YOU ? `<div class="tut-card">${cardHtml(c.id, { view: playerView(b, YOU) })}</div>` : `<div class="tut-card">${cardHtml(c.id, { view: playerView(b, YOU) })}</div><p>${esc(what.replace(/\.$/, ''))}${ch.locs.length || !said ? '' : ': no effect'}.</p>`;
+    const body = (pid === YOU && R.taught.yourTurn) ? '' : `<div class="tut-card">${cardHtml(c.id, { view: playerView(b, YOU) })}</div><p>${esc(what.replace(/\.$/, ''))}${ch.locs.length || !said ? '' : ': no effect'}.</p>`;
     return { type: 'spot', target: ch.locs.length ? ch.locs.map(SEL.hex) : SEL.seat(pid), title: `${who(pid)} ${verb(pid, 'plays')} ${esc(c.name)}`,
       html: `${body}${teach}` || '<p>Done: see the board.</p>', auto: pid !== YOU && !teach, dwell: 3200 };
   }
@@ -945,7 +942,6 @@ function turnSteps(pid, given, taught = false) {
 function resolveSteps(pid, move, style) {
   const start = clone(R.table.state);
   for (const id of start.seating) start.players[id].hand = [];
-  start.pending = null;
   const fights = Object.keys(start.board).filter((l) => !start.board[l].scorched && Object.values(start.board[l].tokens).filter((n) => n > 0).length === 2);
   /** @type {GameState[]} */
   const chain = [start];
@@ -998,13 +994,11 @@ function resolveSteps(pid, move, style) {
 
 /**
  * The first live fight's losses, counted out: the chapter 2 rule with this
- * fight's numbers (a face-down token flips first, so its counts are the ones
- * that fight). @param {GameState} a @param {GameState} b @param {string} loc
+ * fight's numbers. @param {GameState} a @param {GameState} b @param {string} loc
  */
 function countDead(a, b, loc) {
   const sides = Object.entries(a.board[loc].tokens).filter(([, n]) => n > 0).map(([f, n]) => ({ f, n, lost: n - (b.board[loc].tokens[f] ?? 0) }));
-  const flip = a.board[loc].token ? '<p class="small">The face-down token flips first, so the count is after it.</p>' : '';
-  if (sides.length === 2 && !a.board[loc].token) {
+  if (sides.length === 2) {
     const [x, y] = sides;
     if (x.n === y.n) {
       const home = sides.find((t) => factionById(t.f).archetype === locationById(loc).archetype);
@@ -1015,7 +1009,7 @@ function countDead(a, b, loc) {
     const [win, lose] = x.n > y.n ? [x, y] : [y, x];
     return fightMath(win.f, win.n, lose.f, lose.n);
   }
-  return `${flip}${sides.map((s) => eq(`the ${F(s.f)} lose`, op('='), s.lost ? tokens(s.f, s.lost) : '0')).join('')}${recall('Bigger group wins; the loser loses all, the winner half that, rounded up.')}`;
+  return `${sides.map((s) => eq(`the ${F(s.f)} lose`, op('='), s.lost ? tokens(s.f, s.lost) : '0')).join('')}${recall('Bigger group wins; the loser loses all, the winner half that, rounded up.')}`;
 }
 
 /** A fight before it happens. @param {GameState} s @param {string} loc */
@@ -1023,15 +1017,15 @@ function before(s, loc) {
   const place = s.board[loc];
   const sides = Object.entries(place.tokens).filter(([, n]) => n > 0).map(([f, n]) => `${tokens(f, n)}<b>${n}</b>`);
   const bids = s.seating.map((pid) => [pid, place.sway[pid] ?? 0]).filter(([, n]) => Number(n) > 0).sort((x, y) => Number(y[1]) - Number(x[1]));
-  return `${eq(sides[0] ?? '', op('vs'), sides[1] ?? '')}${bids.length ? eq(op('sway here'), ...bids.map(([pid, n]) => `${cubes(String(pid), Number(n))}<span class="small">${who(String(pid))}</span>`)) : '<p>Nobody has sway here: the dead go back to their supplies.</p>'}${place.token ? '<p class="small">A face-down token here flips first.</p>' : ''}`;
+  return `${eq(sides[0] ?? '', op('vs'), sides[1] ?? '')}${bids.length ? eq(op('sway here'), ...bids.map(([pid, n]) => `${cubes(String(pid), Number(n))}<span class="small">${who(String(pid))}</span>`)) : '<p>Nobody has sway here: the dead go back to their supplies.</p>'}`;
 }
 
 /** The engine's log lines speak of the learner's seat in the third person ("You takes"); put them in the second. @param {string} line */
 const youify = (line) => line.replace(/\bYou takes\b/g, 'You take').replace(/\bYou's\b/g, 'Your').replace(/\bYou passes\b/g, 'You pass').replace(/\bYou plays\b/g, 'You play');
 
 /**
- * A fight in a few short lines, from the engine's own log: any face-down
- * token that flipped, who beat whom, and each player's piles together.
+ * A fight in a few short lines, from the engine's own log: who beat whom,
+ * and each player's piles together.
  * @param {GameState} a @param {GameState} b @param {string} loc
  */
 function fightLines(a, b, loc) {

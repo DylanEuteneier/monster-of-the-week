@@ -7,10 +7,9 @@
       "max": 5,
       "tunedFor": 5
     },
-    "notes": "Seat limits are decision D3 (3.16). Rules: the first draft (Appendix G). Cards: Set v2 (H.8) plus scaffold placeholders for the six extras (H.6). Numbers: first-draft guesses (G.7), each a variant. Map: the prototype board, layout D (testing only)."
+    "notes": "Seat limits are decision D3 (3.16). Rules: the first draft (Appendix G) as amended in section 3. Cards: the core deck, the 21 cards here. Numbers: first-draft guesses (G.7), each a variant. Map: the prototype board, layout D (testing only)."
   },
   "constants": {
-    "coreDeck": ["invite-in", "gate", "hack-targeting", "bait-trail", "ritual", "draw-away", "big-chase", "cut-powerlines", "plough", "light-cross", "wake-the-dead", "take-control", "night-terrors", "study-bodies", "spill-blood", "favours", "stakes", "exit", "showdown", "switch", "playbook"],
     "handSize": {
       "3": 6,
       "4": 5,
@@ -22,8 +21,7 @@
       "two": 2,
       "other": 1
     },
-    "notes": "Hand sizes: PS1 (3.16). Seeding: SD1 (3.5).",
-    "unsuitedSlots": 6
+    "notes": "Hand sizes: PS1 (3.16). Seeding: SD1 (3.5)."
   },
   "archetypes": [
     {
@@ -240,279 +238,299 @@
   ],
   "cards": [
     {
-      "id": "fresh-meat",
-      "name": "Leave Out Fresh Meat",
+      "id": "invite-in",
+      "name": "Invite Them In",
       "suit": "nocturnals",
       "slot": "strike",
       "sway": 2,
-      "action": "lure",
-      "gather": true,
-      "text": "The largest group adjacent to the target moves into it, all of it. Target: the bait location.",
+      "action": "invite",
+      "text": "Two groups of different factions next door are invited into an empty location. Target: where they’re invited.",
       "readings": {
-        "location": "a ◐ location, any faction comes.",
-        "faction": "anywhere, only the Nocturnals come."
-      }
-    },
-    {
-      "id": "track-snow",
-      "name": "Track Them in the Snow",
-      "suit": "nocturnals",
-      "slot": "shift",
-      "sway": 3,
-      "action": "sow",
-      "text": "Drive the target group hex by bordering hex, leaving 1 token and 1 of your sway in each location entered, while your sway with that faction lasts. A location it can't enter ends the chase; leftover tokens stay together at the last location. Target: the group chased.",
-      "readings": {
-        "location": "any group at a ◐ location.",
-        "faction": "a Nocturnal group anywhere."
-      }
-    },
-    {
-      "id": "silver-bullets",
-      "name": "Silver Bullets",
-      "suit": "nocturnals",
-      "slot": "signature",
-      "sway": 4,
-      "action": "token",
-      "text": "Hidden: at its fight, each group loses 2 more tokens as casualties, and the token’s owner takes those as a pile of their own. (Revised in round 17.)",
-      "readings": {
-        "location": "a ◐ location.",
-        "faction": "a location holding the Nocturnals."
+        "location": "an empty ◐ location; any two groups next to it.",
+        "faction": "a location held by a lone group of another faction, next to a Nocturnal group: only the Nocturnals come."
       },
-      "response": {
-        "id": "never-invite",
-        "name": "Never Invite Them In",
-        "timing": "before",
-        "trigger": "move-into-your-location",
-        "text": "When a player is about to move tokens into a location where you have sway, block it; the tokens stay where they are."
-      }
+      "round": 21
     },
     {
-      "id": "broadcast",
-      "name": "Broadcast a Signal",
+      "id": "gate",
+      "name": "The Gate",
       "suit": "scifi",
       "slot": "strike",
       "sway": 2,
-      "action": "broadcast",
-      "text": "Call the groups of one faction from up to two locations anywhere into the target. Target: where they answer.",
+      "action": "gate",
+      "text": "Join two locations for the rest of the round: they count as a single location for movement, and fight as one (strength and sway added across both; a true tie scorches both). Each end is an ↂ location or a location holding the Sci-Fi faction; never three factions across them. Only 1 sway, at one end. Target: the two ends.",
       "readings": {
-        "location": "any faction, into an ↂ location.",
-        "faction": "the Sci-Fi faction, into any location."
-      }
-    },
-    {
-      "id": "leak",
-      "name": "Leak the Documents",
-      "suit": "scifi",
-      "slot": "shift",
-      "sway": 3,
-      "action": "halve",
-      "text": "Half the target group, rounded down, leaves for an adjacent location of your choice. Target: the group split.",
-      "readings": {
-        "location": "any group at an ↂ location.",
-        "faction": "a Sci-Fi group anywhere."
-      }
-    },
-    {
-      "id": "beam",
-      "name": "Beam Them Up",
-      "suit": "scifi",
-      "slot": "signature",
-      "sway": 4,
-      "action": "teleport",
-      "unpinned": true,
-      "text": "Lift the target group and set it down at any location on the island. Target: the group taken.",
-      "readings": {
-        "location": "any group at an ↂ location.",
-        "faction": "a Sci-Fi group anywhere."
+        "location": "either end: an ↂ location, or a location holding the Sci-Fi faction.",
+        "faction": "either end: a location holding the Sci-Fi faction, or an ↂ location."
       },
-      "response": {
-        "id": "classified",
-        "name": "Classified",
-        "timing": "after",
-        "trigger": "token-placed",
-        "text": "When a hidden token is placed, look at its face."
-      }
+      "round": 21
     },
     {
-      "id": "hack-network",
-      "name": "Hack the Network",
+      "id": "hack-targeting",
+      "name": "Spoof the Signal",
       "suit": "sentients",
       "slot": "strike",
       "sway": 2,
-      "action": "hack",
-      "unpinned": true,
-      "text": "Move the target group to any location on the island that holds one other faction, so it fights there at the round’s end. Target: the group, then where it goes.",
+      "action": "threat",
+      "text": "The AV Club spoofs a command signal to a group: ordered to engage the strongest hostile force in range, it marches on the largest lone group of another faction within two locations of it (ties: your choice). Target: the group fooled.",
+      "readings": {
+        "location": "a group at a ⏏ location.",
+        "faction": "a Sentient group anywhere."
+      },
+      "round": 21
+    },
+    {
+      "id": "bait-trail",
+      "name": "Bait the Herd",
+      "suit": "undead",
+      "slot": "strike",
+      "sway": 2,
+      "action": "herd",
+      "text": "Lay a trail of bait: a group follows it from neighbour to neighbour, picking up its own kind at every stop and leaving nothing behind. It stops where you choose, or crashes into a lone group of another faction. Target: the herd.",
+      "readings": {
+        "location": "a group at a ☾ location.",
+        "faction": "an Undead group anywhere."
+      },
+      "round": 21
+    },
+    {
+      "id": "ritual",
+      "name": "Perform the Ritual",
+      "suit": "demonic",
+      "slot": "strike",
+      "sway": 2,
+      "action": "well",
+      "text": "Father and the Flock begin the rite, and one faction next door is drawn to it: every group of it comes, whole if it’s alone, as many as you choose if it’s in a fight. The centre is empty or holds one faction. Target: the centre, then the faction called.",
+      "readings": {
+        "location": "a ⎈ location; any faction is called.",
+        "faction": "any location next to the Demon faction; the Demons are called."
+      },
+      "round": 21
+    },
+    {
+      "id": "draw-away",
+      "name": "Draw Them Away",
+      "suit": "undead",
+      "slot": "shift",
+      "sway": 3,
+      "action": "burst",
+      "text": "The Watch sets out distractions all round the location, and one of the dead shambles off to check each. A group sends 1 token to each of at least two neighbours; the rest stay. Target: the group.",
+      "readings": {
+        "location": "a group at a ☾ location.",
+        "faction": "an Undead group anywhere."
+      },
+      "round": 21
+    },
+    {
+      "id": "big-chase",
+      "name": "The Big Chase",
+      "suit": "scifi",
+      "slot": "shift",
+      "sway": 3,
+      "action": "chase",
+      "text": "The Kids on Bikes lead a group on a chase from neighbour to neighbour, across any region, through empty ground, lone rivals, its own kind and fights it’s part of. Every location it passes keeps 1 token; the rest, at least 1, arrive wherever you end it. Target: the group chased.",
+      "readings": {
+        "location": "a group at an ↂ location.",
+        "faction": "a Sci-Fi group anywhere."
+      },
+      "round": 21
+    },
+    {
+      "id": "cut-powerlines",
+      "name": "Cut the Powerlines",
+      "suit": "sentients",
+      "slot": "shift",
+      "sway": 3,
+      "action": "rejoin",
+      "text": "The AV Club cuts the powerlines. A group scatters to its faction’s other groups anywhere on the island, 1 token at a time: no group gets a second until every group has one. A lone group leaves entirely; from a fight, exactly half. Target: the group.",
       "readings": {
         "location": "any group at a ⏏ location.",
-        "faction": "a Sentient group anywhere."
-      }
+        "faction": "a Sentients group anywhere."
+      },
+      "round": 21
     },
     {
-      "id": "reroute",
-      "name": "Reroute the Power Grid",
-      "suit": "sentients",
+      "id": "plough",
+      "name": "Plough Through",
+      "suit": "nocturnals",
       "slot": "shift",
       "sway": 3,
-      "action": "gather-region",
-      "text": "Move one faction's tokens from every location in the target's region into the target. Target: the destination.",
+      "action": "plough",
+      "text": "The Slayerettes plough a truck straight through the middle of the brawl. Every side leaves by half, rounded up, split as you choose among its neighbours, never two sides to the same location. Its sway is paid by the factions in the fight or the Nocturnals, split as you choose. Target: the fight.",
       "readings": {
-        "location": "any faction, into a ⏏ location.",
-        "faction": "the Sentients, into any location."
-      }
-    },
-    {
-      "id": "traffic",
-      "name": "Reprogram the Traffic Lights",
-      "suit": "sentients",
-      "slot": "signature",
-      "sway": 4,
-      "action": "conveyor",
-      "text": "Choose one of the six hex directions; every group of the target moves one hex that way, where it can.",
-      "readings": {
-        "location": "every group in a ⏏ location's region.",
-        "faction": "every Sentient group on the island."
+        "location": "a fight at a ◐ location.",
+        "faction": "a fight the Nocturnals are in."
       },
-      "response": {
-        "id": "pull-plug",
-        "name": "Pull the Plug",
-        "timing": "after",
-        "trigger": "sway-spent",
-        "text": "When a player spends a card for sway, they gain 1 less, and you gain 1 with the same faction."
-      }
+      "round": 21
     },
     {
-      "id": "bell",
-      "name": "Ring the Church Bell",
-      "suit": "undead",
-      "slot": "strike",
-      "sway": 2,
-      "action": "draw-adjacent",
-      "gather": true,
-      "text": "Every token in adjacent locations is drawn into the target. Target: where the bell rings.",
-      "readings": {
-        "location": "a ☾ location, any faction comes.",
-        "faction": "anywhere, only Undead tokens come."
-      }
-    },
-    {
-      "id": "salt-burn",
-      "name": "Salt and Burn the Bones",
-      "suit": "undead",
-      "slot": "signature",
-      "sway": 4,
-      "action": "token",
-      "pulled": true,
-      "text": "Hidden: at its fight, both groups lose all their tokens; trophies are handed out as normal and the location is not scorched.",
-      "readings": {
-        "location": "a ☾ location.",
-        "faction": "a location holding the Undead."
-      },
-      "response": {
-        "id": "seance",
-        "name": "Hold a Séance",
-        "timing": "after",
-        "trigger": "pass",
-        "text": "When any player passes, look at the cards left out this round."
-      }
-    },
-        {
-        "id": "horde",
-        "name": "Lead the Horde",
-        "suit": "undead",
-        "slot": "shift",
-        "sway": 3,
-        "action": "shove",
-        "round": 13,
-        "text": "Move the target group into an adjacent location; if that would make three factions there, the smaller group already there is shoved on to an adjacent location of your choice. Target: the horde. (Round 7 wording, first built in round 13.)",
-        "readings": {
-          "location": "any group at a ☾ location.",
-          "faction": "an Undead group anywhere."
-        }
-      },
-    {
-      "id": "summoning",
-      "name": "Draw a Summoning Circle",
-      "suit": "demonic",
-      "slot": "strike",
-      "sway": 2,
-      "action": "gather-neighbours",
-      "text": "Every group of one faction in neighbouring regions moves into the target. Target: the circle.",
-      "readings": {
-        "location": "any faction, into a ⎈ location.",
-        "faction": "the Demons, into any location."
-      }
-    },
-    {
-      "id": "lamps",
-      "name": "Light Every Lamp",
+      "id": "light-cross",
+      "name": "Light of the Cross",
       "suit": "demonic",
       "slot": "shift",
       "sway": 3,
-      "action": "drive-out",
-      "text": "At a contested location, the target faction is driven to an adjacent location of your choice, so the fight there doesn't happen. Target: the faction driven out.",
+      "action": "split",
+      "text": "The cross is raised and the target group falls back from its light, split evenly between two neighbours. A group of 1 can’t be split. Target: the group.",
       "readings": {
-        "location": "the smaller faction at a contested ⎈ location.",
-        "faction": "the Demons, wherever they are contested."
+        "location": "any group at a ⎈ location.",
+        "faction": "a Demon group anywhere."
       }
     },
     {
-      "id": "house-fire",
-      "name": "Set the House on Fire",
+      "id": "wake-the-dead",
+      "name": "Wake the Dead",
+      "suit": "undead",
+      "slot": "signature",
+      "sway": 4,
+      "action": "raise",
+      "text": "The Watch chases the fight into the old cemetery, and the dead rise: as many from the Undead supply as you choose, up to the card’s sway. At a ☾ location they rise as a group of their own, and if two factions are already fighting there, as a third side. Each one risen places 1 of your sway there. Target: where they rise.",
+      "readings": {
+        "location": "any ☾ location; at a fight there, the dead rise as a third side.",
+        "faction": "any location holding the Undead; the risen join them."
+      },
+      "round": 21
+    },
+    {
+      "id": "take-control",
+      "name": "Take Control",
+      "suit": "sentients",
+      "slot": "signature",
+      "sway": 4,
+      "action": "control",
+      "text": "The AV Club takes control of the machines and turns them on the enemy. At the target fight, spend your sway there, 1 for each, to cut down up to the card’s sway of a faction’s tokens there: you take them as trophies, and the sway spent goes back to your supply. Target: the fight, then the faction hit.",
+      "readings": {
+        "location": "any fight at a ⏏ location; you choose the faction hit.",
+        "faction": "any fight the Sentients are in; their rival is hit."
+      },
+      "round": 21
+    },
+    {
+      "id": "night-terrors",
+      "name": "Night Terrors",
+      "suit": "nocturnals",
+      "slot": "signature",
+      "sway": 4,
+      "action": "terror",
+      "text": "The Slayerettes stir up terrors in the dark. Mark up to the card’s sway of locations, 1 sway on each. When night falls, before the fights, at each mark you may make 1 token of a faction there flee to a neighbouring location it can enter; your sway from the mark may follow it. Target: the locations marked.",
+      "readings": {
+        "location": "◐ locations.",
+        "faction": "locations holding the Nocturnals."
+      },
+      "round": 21
+    },
+    {
+      "id": "study-bodies",
+      "name": "Study the Bodies",
+      "suit": "scifi",
+      "slot": "signature",
+      "sway": 4,
+      "action": "study",
+      "text": "The Kids on Bikes sneak in after the fight to study the bodies. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, if you lead there, you also take 1 trophy from the runner-up’s pile. Target: the locations marked.",
+      "readings": {
+        "location": "ↂ locations.",
+        "faction": "locations holding the Sci-Fi faction."
+      },
+      "round": 21
+    },
+    {
+      "id": "spill-blood",
+      "name": "Spill Blood on the Altar",
       "suit": "demonic",
       "slot": "signature",
       "sway": 4,
-      "action": "token",
-      "text": "Hidden: any fight here counts as a true tie: both groups are wiped out and the location is scorched.",
+      "action": "altar",
+      "text": "Father and the Flock spill blood on the altar. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, the winner loses as many as the loser. Target: the locations marked.",
       "readings": {
-        "location": "a ⎈ location.",
-        "faction": "a location holding the Demons."
+        "location": "⎈ locations.",
+        "faction": "locations holding the Demons."
       },
-      "response": {
-        "id": "sign-blood",
-        "name": "Sign in Blood",
-        "timing": "after",
-        "trigger": "sway-placed",
-        "text": "When a player spends sway from a faction, gain 1 sway with the Demon faction."
-      }
+      "round": 21
     },
     {
-      "id": "set-trap",
-      "name": "Set a Trap",
+      "id": "favours",
+      "name": "Call in Favours",
       "suit": null,
       "slot": "extra",
       "sway": 0,
-      "action": "token",
-      "text": "Hidden: place a face-down token (and a bluff) on the target. At its fight, the token’s owner takes every pile, whoever leads. Target: any location.",
+      "action": "favours",
+      "uses": [
+        "sway",
+        "standing"
+      ],
+      "round": 22,
+      "text": "Choose one. Sway: 1 sway from your supply at each of up to X fights. Standing: up to X standing with one faction, from your supply. X is the cards in your hand, this one included.",
       "marked": "A"
     },
     {
-      "id": "lockdown",
-      "name": "Lock Down the Town",
+      "id": "stakes",
+      "name": "Raise the Stakes",
       "suit": null,
       "slot": "extra",
       "sway": 0,
-      "action": "lockdown",
-      "text": "Name a region; this round, no group moves into or out of it. Target: a location in the region.",
+      "action": "stakes",
+      "uses": [
+        "standing",
+        "sway",
+        "tokens"
+      ],
+      "round": 22,
+      "text": "Choose one. Standing: take 1 standing from each of up to X factions, all into one. Sway: gather up to X of your sway from next door into one location. Tokens: up to X tokens of one faction come in from its groups next door, to a location where you have sway. X is the cards in your hand, this one included.",
+      "marked": "B"
+    },
+    {
+      "id": "exit",
+      "name": "Cover Every Exit",
+      "suit": null,
+      "slot": "extra",
+      "sway": 0,
+      "action": "exit",
+      "uses": [
+        "standing",
+        "sway",
+        "tokens"
+      ],
+      "round": 22,
+      "text": "Choose one. Standing: move 1 standing from one faction to each of up to X others. Sway: send 1 of your sway from one location to each of up to X neighbours. Tokens: a group sends 1 token to each of up to X neighbours. X is the cards in your hand, this one included.",
       "marked": "C"
     },
     {
-      "id": "bounty",
-      "name": "Put a Bounty On It",
+      "id": "showdown",
+      "name": "Showdown",
       "suit": null,
       "slot": "extra",
       "sway": 0,
-      "action": "bounty",
-      "text": "Name a faction; at every fight this round, its group loses 1 more token when it wins, into the trophy piles. Target: the faction.",
+      "action": "showdown",
+      "round": 22,
+      "text": "At a lone group, never a fight, burn your sway there, 1 for each token, to take that many of its tokens as your trophies. Burned sway goes back to your supply. Target: the group.",
       "marked": "D"
     },
     {
-      "id": "plan-b",
-      "name": "Plan B",
+      "id": "switch",
+      "name": "Switch Allegiance",
       "suit": null,
       "slot": "extra",
       "sway": 0,
-      "action": "move-sway",
-      "text": "Pivot: move up to 3 of your sway from other locations to one location."
+      "action": "switch",
+      "uses": [
+        "standing",
+        "sway"
+      ],
+      "round": 22,
+      "text": "Choose one. Standing: burn up to X standing with one faction to gain the same with another. Sway: move up to X of your sway from one location to any other. X is the cards in your hand, this one included."
+    },
+    {
+      "id": "playbook",
+      "name": "Steal Their Playbook",
+      "suit": null,
+      "slot": "extra",
+      "sway": 0,
+      "action": "playbook",
+      "uses": [
+        "theirs",
+        "yours"
+      ],
+      "round": 22,
+      "text": "Choose one. Theirs: play the last card played for its action this round as if it were yours. Yours: take back into your hand a card you played earlier this round."
     }
   ],
   "variants": [
@@ -756,39 +774,6 @@
       ]
     },
     {
-      "id": "bluffs",
-      "label": "Bluff tokens",
-      "description": "Bluff tokens per player (BT1, G.7).",
-      "default": "3",
-      "choices": [
-        {
-          "id": "0",
-          "label": "0",
-          "description": ""
-        },
-        {
-          "id": "1",
-          "label": "1",
-          "description": ""
-        },
-        {
-          "id": "2",
-          "label": "2",
-          "description": ""
-        },
-        {
-          "id": "3",
-          "label": "3",
-          "description": ""
-        },
-        {
-          "id": "4",
-          "label": "4",
-          "description": ""
-        }
-      ]
-    },
-    {
       "id": "groups",
       "label": "Slayer groups",
       "description": "How slayer groups are given out (G.7).",
@@ -825,24 +810,6 @@
       ]
     },
     {
-      "id": "swayToBoard",
-      "label": "Sway onto the board",
-      "description": "Test lever (sway economy, 2026-10-07): when a card is spent for sway, 1 of it goes onto a location its faction controls.",
-      "default": "off",
-      "choices": [
-        {
-          "id": "off",
-          "label": "Off",
-          "description": "The first draft: all to standing."
-        },
-        {
-          "id": "on",
-          "label": "On",
-          "description": "Test lever: 1 onto a controlled location, the player's choice."
-        }
-      ]
-    },
-    {
       "id": "swayRequired",
       "label": "Sway as a requirement",
       "description": "IC1 (designer, 2026-10-07, first draft): the card says how much sway a move places, and that is a requirement, paid from standing with the faction moved. A move goes only as far as the player can pay: with 1 standing, a card that places 1 per location spread to spreads to one location. Cards that place no sway have no requirement.",
@@ -861,95 +828,21 @@
       ]
     },
     {
-      "id": "whoPays",
-      "label": "Who pays to move several factions",
-      "description": "D15 (designer, 2026-10-07; first-draft starting place, not set in stone): each faction moved to a new location costs 1 sway from that faction, placed on the new location, regardless of the size of the group moved. A draw-in can place up to two; a spread more. Alternative: only the selected faction pays.",
-      "default": "each",
-      "choices": [
-        {
-          "id": "each",
-          "label": "Each faction",
-          "description": "The first draft: each faction moved to a new location pays 1 sway from that faction, placed there; a group you can’t pay for stays."
-        },
-        {
-          "id": "selected",
-          "label": "Selected faction",
-          "description": "Alternative: only the faction you select (or lead) pays; the other factions come along free and place nothing. It moves first."
-        }
-      ]
-    },
-    {
-      "id": "swayBonus",
-      "label": "Extra sway from cards",
-      "description": "Test lever (designer, 2026-10-07: bump the sway cards provide): added to every suited card’s printed sway when it is spent for sway. 0 is the first draft.",
-      "default": "0",
-      "choices": [
-        {
-          "id": "0",
-          "label": "+0",
-          "description": ""
-        },
-        {
-          "id": "1",
-          "label": "+1",
-          "description": ""
-        },
-        {
-          "id": "2",
-          "label": "+2",
-          "description": ""
-        },
-        {
-          "id": "3",
-          "label": "+3",
-          "description": ""
-        }
-      ]
-    },
-    {
-      "id": "swayAtOrigin",
-      "label": "Sway where tokens leave",
-      "description": "Test lever (sway economy, 2026-10-07): a move also places 1 sway where the tokens left from.",
-      "default": "off",
-      "choices": [
-        {
-          "id": "off",
-          "label": "Off",
-          "description": "The first draft."
-        },
-        {
-          "id": "on",
-          "label": "On",
-          "description": "Test lever."
-        }
-      ]
-    },
-    {
-      "id": "pinning",
-      "label": "Pinning",
-      "description": "Test lever (designer, 2026-10-13: fights made to disappear): at a contested location, each token pins one enemy token, so only the larger group's surplus can leave. Pinning stops movement only: a card marked unpinned does something else (designer: Trade Souls) and takes every token.",
-      "default": "off",
-      "choices": [
-        {
-          "id": "off",
-          "label": "Off",
-          "description": "The first draft."
-        },
-        {
-          "id": "on",
-          "label": "On",
-          "description": "Test lever."
-        }
-      ]
-    },
-    {
       "id": "winnerLoss",
       "label": "Winner's losses",
       "description": "D25 (designer, 2026-10-18, for now): the winner of a fight loses half the loser's number, rounded up (in a three-way fight, the larger loser's).",
       "default": "up",
       "choices": [
-        { "id": "up", "label": "Half, rounded up", "description": "D25: half the loser's number, rounded up." },
-        { "id": "down", "label": "Half, rounded down", "description": "FR5 as first drafted: half the loser's number, rounded down, at least 1." }
+        {
+          "id": "up",
+          "label": "Half, rounded up",
+          "description": "D25: half the loser's number, rounded up."
+        },
+        {
+          "id": "down",
+          "label": "Half, rounded down",
+          "description": "FR5 as first drafted: half the loser's number, rounded down, at least 1."
+        }
       ]
     },
     {
@@ -976,8 +869,16 @@
       "description": "AL3: a faction controlling one of its aligned locations grows 1 more there (designer: off 2026-10-21, back on by default 2026-10-24).",
       "default": "on",
       "choices": [
-        { "id": "off", "label": "Off", "description": "Every growing group grows 1 (designer, 2026-10-21)." },
-        { "id": "on", "label": "On", "description": "AL3 as first drafted: 1 more on its own aligned ground." }
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "Every growing group grows 1 (designer, 2026-10-21)."
+        },
+        {
+          "id": "on",
+          "label": "On",
+          "description": "AL3 as first drafted: 1 more on its own aligned ground."
+        }
       ]
     },
     {
@@ -986,8 +887,16 @@
       "description": "Designer (2026-10-26), first draft: a suit card may be played to bring its faction back while it has no location with 2 or more of its tokens: up to the card's sway of its tokens at its suit locations or where it is, 1 standing with it each.",
       "default": "on",
       "choices": [
-        { "id": "on", "label": "On", "description": "The first draft." },
-        { "id": "off", "label": "Off", "description": "No way back: a faction wiped out stays gone." }
+        {
+          "id": "on",
+          "label": "On",
+          "description": "The first draft."
+        },
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "No way back: a faction wiped out stays gone."
+        }
       ]
     },
     {
@@ -1014,24 +923,6 @@
       ]
     },
     {
-      "id": "gatherSway",
-      "label": "Gather sway where taken from",
-      "description": "Test lever (designer, 2026-10-13): a gather (cards marked gather: Leave Out Fresh Meat, Set the Bait, Lay a Trail, Follow the Lights, Ring the Church Bell) places 1 sway on each location it takes tokens from, instead of the destination, paid from standing with the faction moved.",
-      "default": "off",
-      "choices": [
-        {
-          "id": "off",
-          "label": "Off",
-          "description": "The first draft."
-        },
-        {
-          "id": "origin",
-          "label": "Where taken from",
-          "description": "Test lever."
-        }
-      ]
-    },
-    {
       "id": "payInFull",
       "label": "Pay in full",
       "description": "Designer, 2026-10-15: every card is all or nothing on the sway it places. A card whose action can't be paid for in full can't be played for its action (it can still be played for sway).",
@@ -1046,60 +937,6 @@
           "id": "off",
           "label": "As far as you can pay",
           "description": "IC1 as first drafted: a move goes only as far as the player can pay."
-        }
-      ]
-    },
-    {
-      "id": "responses",
-      "label": "Responses",
-      "description": "Out of the first draft (designer, 2026-10-07): responses stay candidate ideas. Off: a played action resolves at once and cards' responses are ignored.",
-      "default": "off",
-      "choices": [
-        {
-          "id": "off",
-          "label": "Off",
-          "description": "The first draft: no responses; actions resolve at once."
-        },
-        {
-          "id": "on",
-          "label": "On",
-          "description": "Responses and the pending step (the earlier prototype)."
-        }
-      ]
-    },
-    {
-      "id": "coreParts",
-      "label": "Core part",
-      "description": "Prototype test plumbing, not a rule: with the mixed deck, swap in one part of the new core.",
-      "default": "none",
-      "choices": [
-        { "id": "none", "label": "None", "description": "The mixed deck as it is." },
-        { "id": "strikes-shifts", "label": "Strikes and shifts", "description": "Each suit's strike and shift are the core's." },
-        { "id": "signatures", "label": "Signatures", "description": "Each suit's signature is the core's (stand-ins included)." },
-        { "id": "unsuited", "label": "Unsuited", "description": "The six unsuited cards are the core's stand-ins." },
-        { "id": "sway", "label": "Printed sway", "description": "Each card prints its own sway, not the mixed deck's weighting." }
-      ]
-    },
-    {
-      "id": "deck",
-      "label": "Deck",
-      "description": "Prototype test plumbing, not a rule. Mixed: when the game is created, each suit draws one Strike, one Shift and one Signature at random from the deck and the test cards, printed 2, 3 and 4 sway by measured strength, the strongest 2 and the weakest 4 (9 per suit, D12); the marked unsuited cards (A, C, D) stay and the other three unsuited slots draw at random from the unmarked unsuited cards. Fixed: Set v2, its unsuited slots filled at random to six.",
-      "default": "core",
-      "choices": [
-        {
-          "id": "core",
-          "label": "New core",
-          "description": "The slot-first core set (designer, 2026-10-18): the five new strikes and shifts, Wake the Dead and Take Control, stand-ins for the undesigned signatures and the six unsuited cards (A to D marked). Printed sway: strikes 2, shifts 3, signatures your hand (D24)."
-        },
-        {
-          "id": "mixed",
-          "label": "Mixed",
-          "description": "A random card per slot per suit, from the deck and the test cards; the marked cards plus three random unsuited cards."
-        },
-        {
-          "id": "fixed",
-          "label": "Fixed (Set v2)",
-          "description": "The cards in spec.cards, the open unsuited slots filled at random."
         }
       ]
     }
@@ -1346,908 +1183,5 @@
         "mirror": "beach-city"
       }
     }
-  },
-  "testCards": {
-    "notes": "Cards out of the fixed deck: rounds 8 to 20 ideas (rounds 14 to 19: unsuited extras, rounds 18 and 19 marked-card candidates (Lock Down the Town and Put a Bounty On It adopted as C and D; Set a Trap, with Claim the Spoils’ rules, is A); rounds 17 to 19: revisions of the weakest) under measurement by scripts/tournament.js. A mixed deck (variant deck) can deal them. Their slots are provisional, assigned by Claude from 3.7’s slot definitions (Strike makes a contest, Shift concentrates or scatters, Signature bends a rule); sway is set per game. Not rules.",
-    "cards": [
-      {
-        "id": "force-field",
-        "name": "Raise the Force Field",
-        "suit": "scifi",
-        "slot": "signature",
-        "sway": 3,
-        "action": "token",
-        "pulled": true,
-        "text": "Hidden: at its fight, the winner loses no tokens.",
-        "readings": {
-          "location": "an ↂ location.",
-          "faction": "a location holding the Sci-Fi faction."
-        },
-        "round": 8
-      },
-      {
-        "id": "sign-contract",
-        "name": "Sign the Contract",
-        "suit": "demonic",
-        "slot": "signature",
-        "sway": 3,
-        "action": "token",
-        "text": "Hidden: at its fight, the token’s owner takes the bigger pile and the leader only the smaller; the owner pays 2 standing with the Demons for the deal. (Revised in round 17.)",
-        "readings": {
-          "location": "a ⎈ location.",
-          "faction": "a location holding the Demons."
-        },
-        "round": 8
-      },
-      {
-        "id": "leak-press",
-        "name": "Leak It to the Press",
-        "suit": "scifi",
-        "slot": "shift",
-        "sway": 3,
-        "action": "halve-far",
-        "text": "Half the target group, rounded down, goes to any location on the island it can enter. Target: the group split.",
-        "readings": {
-          "location": "any group at an ↂ location.",
-          "faction": "a Sci-Fi group anywhere."
-        },
-        "round": 9
-      },
-      {
-        "id": "lamps-either",
-        "name": "Light Every Lamp (either side)",
-        "suit": "demonic",
-        "slot": "shift",
-        "sway": 3,
-        "action": "drive-out-either",
-        "text": "At a contested location, either faction is driven to an adjacent location of your choice, so the fight there doesn’t happen. Target: the faction driven out.",
-        "readings": {
-          "location": "either faction at a contested ⎈ location.",
-          "faction": "the Demons, wherever they are contested."
-        },
-        "round": 9
-      },
-      {
-        "id": "full-moon",
-        "name": "Wait for the Full Moon",
-        "suit": "nocturnals",
-        "slot": "signature",
-        "sway": 3,
-        "action": "reinforce",
-        "text": "Up to 3 tokens from the faction’s supply join the target group. Target: the group.",
-        "readings": {
-          "location": "any group at a ◐ location.",
-          "faction": "a Nocturnal group anywhere."
-        },
-        "round": 10
-      },
-      {
-        "id": "tractor-beam",
-        "name": "Turn On the Tractor Beam",
-        "suit": "scifi",
-        "slot": "signature",
-        "sway": 3,
-        "action": "carry-fight",
-        "pulled": true,
-        "unpinned": true,
-        "text": "Both groups at the target are lifted together into an adjacent location with no tokens; the fight happens there. Target: the contest.",
-        "readings": {
-          "location": "a contest at an ↂ location.",
-          "faction": "a contest the Sci-Fi faction is in."
-        },
-        "round": 10
-      },
-      {
-      "id": "light-cross",
-      "name": "Light of the Cross",
-      "suit": "demonic",
-      "slot": "shift",
-      "sway": 3,
-      "action": "split",
-      "text": "The cross is raised and the target group falls back from its light, split evenly between two neighbours. A group of 1 can’t be split. Target: the group.",
-      "readings": {
-        "location": "any group at a ⎈ location.",
-        "faction": "a Demon group anywhere."
-      }
-    },
-        {
-          "id": "invite-in",
-          "name": "Invite Them In",
-          "suit": "nocturnals",
-          "slot": "strike",
-          "sway": 2,
-          "action": "invite",
-          "text": "Two groups of different factions next door are invited into an empty location. Target: where they’re invited.",
-          "readings": {
-            "location": "an empty ◐ location; any two groups next to it.",
-            "faction": "a location held by a lone group of another faction, next to a Nocturnal group: only the Nocturnals come."
-          },
-          "round": 21
-        },
-        {
-          "id": "gate",
-          "name": "The Gate",
-          "suit": "scifi",
-          "slot": "strike",
-          "sway": 2,
-          "action": "gate",
-          "text": "Join two locations for the rest of the round: they count as a single location for movement, and fight as one (strength and sway added across both; a true tie scorches both). Each end is an ↂ location or a location holding the Sci-Fi faction; never three factions across them. Only 1 sway, at one end. Target: the two ends.",
-          "readings": {
-            "location": "either end: an ↂ location, or a location holding the Sci-Fi faction.",
-            "faction": "either end: a location holding the Sci-Fi faction, or an ↂ location."
-          },
-          "round": 21
-        },
-        {
-          "id": "hack-targeting",
-          "name": "Spoof the Signal",
-          "suit": "sentients",
-          "slot": "strike",
-          "sway": 2,
-          "action": "threat",
-          "text": "The AV Club spoofs a command signal to a group: ordered to engage the strongest hostile force in range, it marches on the largest lone group of another faction within two locations of it (ties: your choice). Target: the group fooled.",
-          "readings": {
-            "location": "a group at a ⏏ location.",
-            "faction": "a Sentient group anywhere."
-          },
-          "round": 21
-        },
-        {
-          "id": "bait-trail",
-          "name": "Bait the Herd",
-          "suit": "undead",
-          "slot": "strike",
-          "sway": 2,
-          "action": "herd",
-          "text": "Lay a trail of bait: a group follows it from neighbour to neighbour, picking up its own kind at every stop and leaving nothing behind. It stops where you choose, or crashes into a lone group of another faction. Target: the herd.",
-          "readings": {
-            "location": "a group at a ☾ location.",
-            "faction": "an Undead group anywhere."
-          },
-          "round": 21
-        },
-        {
-          "id": "ritual",
-          "name": "Perform the Ritual",
-          "suit": "demonic",
-          "slot": "strike",
-          "sway": 2,
-          "action": "well",
-          "text": "Father and the Flock begin the rite, and one faction next door is drawn to it: every group of it comes, whole if it’s alone, as many as you choose if it’s in a fight. The centre is empty or holds one faction. Target: the centre, then the faction called.",
-          "readings": {
-            "location": "a ⎈ location; any faction is called.",
-            "faction": "any location next to the Demon faction; the Demons are called."
-          },
-          "round": 21
-        },
-        {
-          "id": "big-chase",
-          "name": "The Big Chase",
-          "suit": "scifi",
-          "slot": "shift",
-          "sway": 3,
-          "action": "chase",
-          "text": "The Kids on Bikes lead a group on a chase from neighbour to neighbour, across any region, through empty ground, lone rivals, its own kind and fights it’s part of. Every location it passes keeps 1 token; the rest, at least 1, arrive wherever you end it. Target: the group chased.",
-          "readings": {
-            "location": "a group at an ↂ location.",
-            "faction": "a Sci-Fi group anywhere."
-          },
-          "round": 21
-        },
-        {
-          "id": "standin-nocturnals",
-          "name": "Nocturnal Stand-in",
-          "suit": "nocturnals",
-          "slot": "signature",
-          "sway": 4,
-          "action": "standin-sig",
-          "standIn": true,
-          "round": 21,
-          "text": "Stand-in (prototype only, until this suit's signature is designed). Move a group to a neighbouring location it can enter, then bid up to the card's sway at the location it reached, the move's 1 included. Target: the group, then where it goes.",
-          "readings": {
-            "location": "a group at a ◐ location.",
-            "faction": "a Nocturnal group anywhere."
-          }
-        },
-        {
-          "id": "standin-scifi",
-          "name": "Sci-Fi Stand-in",
-          "suit": "scifi",
-          "slot": "signature",
-          "sway": 4,
-          "action": "standin-sig",
-          "standIn": true,
-          "round": 21,
-          "text": "Stand-in (prototype only, until this suit's signature is designed). Move a group to a neighbouring location it can enter, then bid up to the card's sway at the location it reached, the move's 1 included. Target: the group, then where it goes.",
-          "readings": {
-            "location": "a group at a ↂ location.",
-            "faction": "a Sci-Fi group anywhere."
-          }
-        },
-        {
-          "id": "standin-demonic",
-          "name": "Demon Stand-in",
-          "suit": "demonic",
-          "slot": "signature",
-          "sway": 4,
-          "action": "standin-sig",
-          "standIn": true,
-          "round": 21,
-          "text": "Stand-in (prototype only, until this suit's signature is designed). Move a group to a neighbouring location it can enter, then bid up to the card's sway at the location it reached, the move's 1 included. Target: the group, then where it goes.",
-          "readings": {
-            "location": "a group at a ⎈ location.",
-            "faction": "a Demon group anywhere."
-          }
-        },
-        {
-          "id": "favours",
-          "name": "Call in Favours",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "favours",
-          "uses": ["sway", "standing"],
-          "round": 22,
-          "text": "Choose one. Sway: 1 sway from your supply at each of up to X fights. Standing: up to X standing with one faction, from your supply. X is the cards in your hand, this one included.",
-          "marked": "A"
-        },
-        {
-          "id": "stakes",
-          "name": "Raise the Stakes",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "stakes",
-          "uses": ["standing", "sway", "tokens"],
-          "round": 22,
-          "text": "Choose one. Standing: take 1 standing from each of up to X factions, all into one. Sway: gather up to X of your sway from next door into one location. Tokens: up to X tokens of one faction come in from its groups next door, to a location where you have sway. X is the cards in your hand, this one included.",
-          "marked": "B"
-        },
-        {
-          "id": "exit",
-          "name": "Cover Every Exit",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "exit",
-          "uses": ["standing", "sway", "tokens"],
-          "round": 22,
-          "text": "Choose one. Standing: move 1 standing from one faction to each of up to X others. Sway: send 1 of your sway from one location to each of up to X neighbours. Tokens: a group sends 1 token to each of up to X neighbours. X is the cards in your hand, this one included.",
-          "marked": "C"
-        },
-        {
-          "id": "showdown",
-          "name": "Showdown",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "showdown",
-          "round": 22,
-          "text": "At a lone group, never a fight, burn your sway there, 1 for each token, to take that many of its tokens as your trophies. Burned sway goes back to your supply. Target: the group.",
-          "marked": "D"
-        },
-        {
-          "id": "switch",
-          "name": "Switch Allegiance",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "switch",
-          "uses": ["standing", "sway"],
-          "round": 22,
-          "text": "Choose one. Standing: burn up to X standing with one faction to gain the same with another. Sway: move up to X of your sway from one location to any other. X is the cards in your hand, this one included."
-        },
-        {
-          "id": "playbook",
-          "name": "Steal Their Playbook",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "playbook",
-          "uses": ["theirs", "yours"],
-          "round": 22,
-          "text": "Choose one. Theirs: play the last card played for its action this round as if it were yours. Yours: take back into your hand a card you played earlier this round."
-        },
-        {
-          "id": "rally",
-          "name": "Rally Behind Them",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "rally",
-          "standIn": true,
-          "round": 21,
-          "text": "Stand-in (prototype only, until the unsuited cards are designed). Place 1 sway from your supply at each location controlled by a faction you're the sway leader of. All of it, or it can't be played.",
-          "marked": "A"
-        },
-        {
-          "id": "dig-in",
-          "name": "Dig In",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "dig-in",
-          "standIn": true,
-          "round": 21,
-          "text": "Stand-in (prototype only, until the unsuited cards are designed). Place 1 sway from your supply at each fight where you're the leader. All of it, or it can't be played.",
-          "marked": "B"
-        },
-        {
-          "id": "shift-bet",
-          "name": "Shift the Bet",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "shift-bet",
-          "standIn": true,
-          "round": 21,
-          "text": "Stand-in (prototype only, until the unsuited cards are designed). Move up to 3 of your sway from one location to a neighbouring one. Target: where it leaves, then where it goes.",
-          "marked": "C"
-        },
-        {
-          "id": "spread-word",
-          "name": "Spread the Word",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "spread-word",
-          "standIn": true,
-          "round": 21,
-          "text": "Stand-in (prototype only, until the unsuited cards are designed). Move 1 of your sway from one location to each of up to two neighbouring locations. Target: where it leaves, then where it goes.",
-          "marked": "D"
-        },
-        {
-          "id": "pull-back",
-          "name": "Pull Back",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "pull-back",
-          "standIn": true,
-          "round": 21,
-          "text": "Stand-in (prototype only, until the unsuited cards are designed). Move all your sway at one location to a neighbouring location. Target: where it leaves, then where it goes."
-        },
-        {
-          "id": "underdog",
-          "name": "Back the Underdog",
-          "suit": null,
-          "slot": "extra",
-          "sway": 0,
-          "action": "underdog",
-          "standIn": true,
-          "round": 21,
-          "text": "Stand-in (prototype only, until the unsuited cards are designed). Place 1 sway from your supply at each fight where a faction you're the sway leader of is the smaller side. All of it, or it can't be played."
-        },
-        {
-          "id": "take-control",
-          "name": "Take Control",
-          "suit": "sentients",
-          "slot": "signature",
-          "sway": 4,
-          "action": "control",
-          "text": "The AV Club takes control of the machines and turns them on the enemy. At the target fight, spend your sway there, 1 for each, to cut down up to the card’s sway of a faction’s tokens there: you take them as trophies, and the sway spent goes back to your supply. Target: the fight, then the faction hit.",
-          "readings": {
-            "location": "any fight at a ⏏ location; you choose the faction hit.",
-            "faction": "any fight the Sentients are in; their rival is hit."
-          },
-          "round": 21
-        },
-        {
-          "id": "night-terrors",
-          "name": "Night Terrors",
-          "suit": "nocturnals",
-          "slot": "signature",
-          "sway": 4,
-          "action": "terror",
-          "text": "The Slayerettes stir up terrors in the dark. Mark up to the card’s sway of locations, 1 sway on each. When night falls, before the fights, at each mark you may make 1 token of a faction there flee to a neighbouring location it can enter; your sway from the mark may follow it. Target: the locations marked.",
-          "readings": {
-            "location": "◐ locations.",
-            "faction": "locations holding the Nocturnals."
-          },
-          "round": 21
-        },
-        {
-          "id": "study-bodies",
-          "name": "Study the Bodies",
-          "suit": "scifi",
-          "slot": "signature",
-          "sway": 4,
-          "action": "study",
-          "text": "The Kids on Bikes sneak in after the fight to study the bodies. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, if you lead there, you also take 1 trophy from the runner-up’s pile. Target: the locations marked.",
-          "readings": {
-            "location": "ↂ locations.",
-            "faction": "locations holding the Sci-Fi faction."
-          },
-          "round": 21
-        },
-        {
-          "id": "spill-blood",
-          "name": "Spill Blood on the Altar",
-          "suit": "demonic",
-          "slot": "signature",
-          "sway": 4,
-          "action": "altar",
-          "text": "Father and the Flock spill blood on the altar. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, the winner loses as many as the loser. Target: the locations marked.",
-          "readings": {
-            "location": "⎈ locations.",
-            "faction": "locations holding the Demons."
-          },
-          "round": 21
-        },
-        {
-          "id": "wake-the-dead",
-          "name": "Wake the Dead",
-          "suit": "undead",
-          "slot": "signature",
-          "sway": 4,
-          "action": "raise",
-          "text": "The Watch chases the fight into the old cemetery, and the dead rise: as many from the Undead supply as you choose, up to the card’s sway. At a ☾ location they rise as a group of their own, and if two factions are already fighting there, as a third side. Each one risen places 1 of your sway there. Target: where they rise.",
-          "readings": {
-            "location": "any ☾ location; at a fight there, the dead rise as a third side.",
-            "faction": "any location holding the Undead; the risen join them."
-          },
-          "round": 21
-        },
-        {
-          "id": "plough",
-          "name": "Plough Through",
-          "suit": "nocturnals",
-          "slot": "shift",
-          "sway": 3,
-          "action": "plough",
-          "text": "The Slayerettes plough a truck straight through the middle of the brawl. Every side leaves by half, rounded up, split as you choose among its neighbours, never two sides to the same location. Its sway is paid by the factions in the fight or the Nocturnals, split as you choose. Target: the fight.",
-          "readings": {
-            "location": "a fight at a ◐ location.",
-            "faction": "a fight the Nocturnals are in."
-          },
-          "round": 21
-        },
-        {
-          "id": "draw-away",
-          "name": "Draw Them Away",
-          "suit": "undead",
-          "slot": "shift",
-          "sway": 3,
-          "action": "burst",
-          "text": "The Watch sets out distractions all round the location, and one of the dead shambles off to check each. A group sends 1 token to each of at least two neighbours; the rest stay. Target: the group.",
-          "readings": {
-            "location": "a group at a ☾ location.",
-            "faction": "an Undead group anywhere."
-          },
-          "round": 21
-        },
-        {
-          "id": "cut-powerlines",
-          "name": "Cut the Powerlines",
-          "suit": "sentients",
-          "slot": "shift",
-          "sway": 3,
-          "action": "rejoin",
-          "text": "The AV Club cuts the powerlines. A group scatters to its faction’s other groups anywhere on the island, 1 token at a time: no group gets a second until every group has one. A lone group leaves entirely; from a fight, exactly half. Target: the group.",
-          "readings": {
-            "location": "any group at a ⏏ location.",
-            "faction": "a Sentients group anywhere."
-          },
-          "round": 21
-        },
-        {
-        "id": "drones",
-        "name": "Reprogram the Drones",
-        "suit": "sentients",
-        "slot": "signature",
-        "sway": 3,
-        "action": "defect",
-        "pulled": true,
-        "text": "Up to 3 tokens of the target group change sides: they join the other faction at that location (swapped through the supplies). Target: the group that defects.",
-        "readings": {
-          "location": "a group in a contest at a ⏏ location.",
-          "faction": "a group fighting the Sentients; its tokens become Sentients."
-        },
-        "round": 10
-      },
-      {
-        "id": "banshee",
-        "name": "Hear the Banshee Wail",
-        "suit": "undead",
-        "slot": "shift",
-        "sway": 3,
-        "action": "repel",
-        "text": "Every group next to the target is driven one hex straight on, away from it, where it can enter. Target: where she wails.",
-        "readings": {
-          "location": "a ☾ location; any faction is driven.",
-          "faction": "anywhere; only Undead groups are driven."
-        },
-        "round": 10
-      },
-      {
-        "id": "pit",
-        "name": "Open the Pit",
-        "suit": "demonic",
-        "slot": "signature",
-        "sway": 3,
-        "action": "pit-fall",
-        "unpinned": true,
-        "text": "The target group, 3 tokens or fewer, falls through to any location in its region it can enter. Target: the group, then where it lands. (Revised in round 17.)",
-        "readings": {
-          "location": "a small group at a ⎈ location.",
-          "faction": "a small group sharing a location with the Demons."
-        },
-        "round": 10
-      },
-      {
-        "id": "ski-slope",
-        "name": "Chase Them Down the Slope",
-        "suit": "nocturnals",
-        "slot": "strike",
-        "sway": 3,
-        "action": "slide",
-        "round": 11,
-        "text": "Choose a direction; the target group slides hex by hex that way until it reaches a location it can’t enter, or the coast. Target: the group.",
-        "readings": {
-          "location": "any group at a ◐ location.",
-          "faction": "a Nocturnal group anywhere."
-        }
-      },
-      {
-        "id": "saucer",
-        "name": "Crash-Land the Saucer",
-        "suit": "scifi",
-        "slot": "strike",
-        "sway": 3,
-        "action": "chain",
-        "round": 11,
-        "text": "Choose a direction; the target group moves one hex that way. Any group of another faction in its way is knocked one hex on, the same way, and so on down the line; a group with nowhere to go stays. Target: the group.",
-        "readings": {
-          "location": "any group at an ↂ location.",
-          "faction": "a Sci-Fi group anywhere."
-        }
-      },
-      {
-        "id": "livestream",
-        "name": "Livestream the Fight",
-        "suit": "sentients",
-        "slot": "signature",
-        "sway": 3,
-        "action": "token",
-        "round": 11,
-        "text": "Hidden: at its fight, each trophy pile is doubled from its faction’s supply.",
-        "readings": {
-          "location": "a ⏏ location.",
-          "faction": "a location holding the Sentients."
-        }
-      },
-      {
-        "id": "lay-to-rest",
-        "name": "Lay Them to Rest",
-        "suit": "undead",
-        "slot": "signature",
-        "sway": 3,
-        "action": "token",
-        "round": 11,
-        "text": "Hidden: at its fight, the token’s owner takes the smaller pile; the rest go back to their supplies. (Revised in round 17.)",
-        "readings": {
-          "location": "a ☾ location.",
-          "faction": "a location holding the Undead."
-        }
-      },
-      {
-        "id": "trade-souls",
-        "name": "Trade Souls",
-        "suit": "demonic",
-        "slot": "signature",
-        "sway": 3,
-        "action": "swap-far",
-        "pulled": true,
-        "unpinned": true,
-        "round": 11,
-        "text": "The target group trades places with any other group on the island, if each can stand where the other was. Target: the first soul.",
-        "readings": {
-          "location": "any group at a ⎈ location.",
-          "faction": "a Demon group anywhere."
-        }
-      },
-      {
-        "id": "circle-prey",
-        "name": "Circle the Prey",
-        "suit": "nocturnals",
-        "slot": "signature",
-        "sway": 3,
-        "action": "circle",
-        "round": 12,
-        "text": "The groups round the target circle it: each moves one location on, clockwise, where it can enter. Target: the prey.",
-        "readings": {
-          "location": "a ◐ location; any faction circles.",
-          "faction": "anywhere; only Nocturnal groups circle."
-        }
-      },
-      {
-        "id": "follow-lights",
-        "name": "Follow the Lights",
-        "suit": "scifi",
-        "slot": "strike",
-        "sway": 3,
-        "action": "follow",
-        "gather": true,
-        "round": 12,
-        "text": "The target group moves to an adjacent location; then a group of another faction next to that location may follow it in. Target: the leader.",
-        "readings": {
-          "location": "any group at an ↂ location.",
-          "faction": "a Sci-Fi group anywhere."
-        }
-      },
-      {
-        "id": "cameras",
-        "name": "Install the Cameras",
-        "suit": "sentients",
-        "slot": "signature",
-        "sway": 3,
-        "action": "surveil-supply",
-        "round": 12,
-        "text": "Place 1 sway from your supply at the target and at each location next to it that holds tokens. Target: the hub. (Revised in round 17.)",
-        "readings": {
-          "location": "a ⏏ location.",
-          "faction": "a location holding the Sentients."
-        }
-      },
-      {
-        "id": "invert",
-        "name": "Invert the Pentagram",
-        "suit": "demonic",
-        "slot": "signature",
-        "sway": 3,
-        "action": "token",
-        "round": 12,
-        "text": "Hidden: at its fight, the smaller group wins.",
-        "readings": {
-          "location": "a ⎈ location.",
-          "faction": "a location holding the Demons."
-        }
-      },
-      {
-        "id": "howl",
-        "name": "Howl at the Moon",
-        "suit": "nocturnals",
-        "slot": "shift",
-        "sway": 3,
-        "action": "howl",
-        "round": 13,
-        "text": "Every group of one faction two hexes from the target moves one hex closer (to a location next to it; one already holding that faction if it can). Target: where the howl rises.",
-        "readings": {
-          "location": "a ◐ location; any one faction answers.",
-          "faction": "anywhere; the Nocturnals answer."
-        }
-      },
-      {
-        "id": "cloud",
-        "name": "Back Up to the Cloud",
-        "suit": "sentients",
-        "slot": "shift",
-        "sway": 3,
-        "action": "network",
-        "unpinned": true,
-        "round": 13,
-        "text": "Move the target group across the network, however far. Target: the group moved. (Round 7 wording, first built in round 13.)",
-        "readings": {
-          "location": "any group, from one ⏏ location to another.",
-          "faction": "a Sentient group, to any location holding another Sentient group."
-        }
-      },
-      {
-        "id": "book-leap",
-        "name": "Read from the Book",
-        "suit": "demonic",
-        "slot": "strike",
-        "sway": 3,
-        "action": "leap",
-        "unpinned": true,
-        "round": 13,
-        "text": "The target group leaps over an adjacent location into the one beyond it, in a straight line. Target: the group. (Round 6 idea, first built in round 13; readings added.)",
-        "readings": {
-          "location": "any group at a ⎈ location.",
-          "faction": "a Demon group anywhere."
-        }
-      },
-      {
-        "id": "bail-out",
-        "name": "Bail Out",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "bail-out",
-        "round": 14,
-        "text": "Pivot: move all your sway at one location to any other location. Target: where you bail out from, then where it goes."
-      },
-      {
-        "id": "call-backup",
-        "name": "Call for Backup",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "backup",
-        "round": 14,
-        "text": "Double your sway at the target; the extra comes from your supply. Target: a location where you have sway."
-      },
-      {
-        "id": "fall-back",
-        "name": "Fall Back",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "fall-back",
-        "round": 14,
-        "text": "Pivot: move all your sway from every location next to the target into it. Target: the rallying point."
-      },
-      {
-        "id": "stake-out",
-        "name": "Stake Out",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "stake",
-        "amount": 4,
-        "round": 14,
-        "text": "Place 4 sway from your supply on the target. Target: any location. (Designer seed, 2026-10-07.)"
-      },
-      {
-        "id": "call-truce",
-        "name": "Call a Truce",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "truce",
-        "pulled": true,
-        "round": 15,
-        "text": "There is no fight at the target this round; both groups stay. Target: any location."
-      },
-      {
-        "id": "steal-playbook",
-        "name": "Steal Their Playbook (round 15)",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "copy",
-        "round": 15,
-        "text": "Play the action of the last card played this game, as if it were yours. Its own target rules apply."
-      },
-      {
-        "id": "lay-trail",
-        "name": "Lay a Trail",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "trail",
-        "gather": true,
-        "round": 15,
-        "text": "Move a whole group into a location where you alone have the most sway, from a location next to it. Target: your location, then the group."
-      },
-      {
-        "id": "canvass",
-        "name": "Canvass the Town",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "canvass",
-        "round": 16,
-        "text": "Place 1 sway from your supply at each of up to four locations. Target: the locations."
-      },
-      {
-        "id": "set-bait",
-        "name": "Set the Bait",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "bait",
-        "gather": true,
-        "round": 16,
-        "text": "Place 2 sway from your supply at the target, then draw a whole group into it from a location next to it. Target: the bait, then the group."
-      },
-      {
-        "id": "change-allegiance",
-        "name": "Defect",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "allegiance",
-        "round": 16,
-        "text": "Move up to 4 of your standing from one faction to another. Target: the faction you leave, then the one you join."
-      },
-      {
-        "id": "raise-stakes",
-        "name": "Raise the Stakes",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "raise-stakes",
-        "round": 17,
-        "text": "At a contested location, place sway from your supply equal to the larger group there (up to 5). Target: the contest. (Round 17.)"
-      },
-      {
-        "id": "swap-allegiance",
-        "name": "Trade Secrets",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "swap-standing",
-        "round": 17,
-        "text": "Swap your standing with two factions. Target: the two factions. (Round 17.)"
-      },
-      {
-        "id": "split-up",
-        "name": "Split Up, Gang!",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "split-up",
-        "round": 18,
-        "text": "Opening gambit (marked-card candidate for B): place 1 sway from your supply at up to three locations in different regions; this round, your sway at each counts double at its fight. Target: the locations."
-      },
-      {
-        "id": "tip-off",
-        "name": "Tip Off the Sheriff",
-        "suit": null,
-        "slot": "extra",
-        "sway": 0,
-        "action": "tipoff",
-        "round": 18,
-        "text": "Opening gambit (marked-card candidate for B): name a faction; for the rest of the round, whenever anyone moves it, place 1 sway from your supply where it lands. Target: the faction."
-      },
-      {
-        "id": "wake-dead",
-        "name": "Wake the Dead (round 18)",
-        "suit": "undead",
-        "slot": "signature",
-        "sway": 3,
-        "action": "wake-dead",
-        "pulled": true,
-        "round": 18,
-        "text": "This round, the fight at the target can’t scorch it, and the losing faction’s casualties rise there as Undead instead of becoming trophies. Target: the graveyard.",
-        "readings": {
-          "location": "a ☾ location.",
-          "faction": "a location holding the Undead."
-        }
-      },
-      {
-        "id": "link-swarm",
-        "name": "Link the Swarm",
-        "suit": "sentients",
-        "slot": "signature",
-        "sway": 4,
-        "action": "swarm",
-        "round": 20,
-        "text": "The AV Club links the swarm. At this round’s fight at the target, the linked faction also counts its groups next door that you link in, for who wins (casualties and trophies as usual). Place 1 sway at each linked group and 1 at the target, up to the card’s sway in all, from your standing with the linked faction. Target: the hub, the faction linked, then its groups.",
-        "readings": {
-          "location": "any faction at a ⏏ location.",
-          "faction": "the Sentients, at a location holding them."
-        }
-      },
-      {
-        "id": "call-home",
-        "name": "Call Home",
-        "suit": "sentients",
-        "slot": "shift",
-        "sway": 3,
-        "action": "call-home",
-        "round": 20,
-        "text": "1 token of the target faction moves to the target from every other location holding it, anywhere on the island. Target: the destination, then the faction.",
-        "readings": {
-          "location": "any faction, into a ⏏ location.",
-          "faction": "the Sentients, into any location."
-        }
-      },
-      {
-        "id": "backdoor",
-        "name": "Install a Backdoor",
-        "suit": "sentients",
-        "slot": "signature",
-        "sway": 3,
-        "action": "backdoor",
-        "round": 20,
-        "text": "At this round’s fight at the target, your sway there counts 1 more for each Sentient token there, even if you placed none. Target: the hacked location.",
-        "readings": {
-          "location": "a ⏏ location.",
-          "faction": "a location holding the Sentients."
-        }
-      }
-    ]
   }
 }

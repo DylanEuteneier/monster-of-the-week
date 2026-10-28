@@ -32,22 +32,20 @@
  * - vanished fights (designer, 2026-10-13: a fight disappearing, not being
  *   outbid, is what undoes a player's progress): each round, every fight
  *   (a location contested by a pair of factions) a play makes, and every
- *   fight a play makes disappear, with who had a stake in it (sway or a
- *   hidden token there), who made it and with which card, and how far into
+ *   fight a play makes disappear, with who had a stake in it (sway
+ *   there), who made it and with which card, and how far into
  *   the round it went; how many fights made in play are still there when the
  *   fights come. reach=rate also asks, on that share of turns, every card
  *   with an action whether it could make a fight others hold a stake in
  *   disappear there and then (its listed targets, up to reachTargets=40).
  *
  *   node scripts/tournament.js [games=50] [seed=1] [profiles=backer,backer,trophy,trophy,trophy]
- *     [log=games.jsonl] [out=summary.json] [strength=card-strength.json] [probe=0] [probeOpen=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [probeLite=0] [reach=0] [reachTargets=40] [workers=cores] [duplicate=0] [option=value ...]
+ *     [log=games.jsonl] [out=summary.json] [probe=0] [probeOpen=0] [probeSample=6] [probeCards=id,id] [probePlayouts=2] [probeTargets=2] [probeLite=0] [reach=0] [reachTargets=40] [workers=cores] [duplicate=0] [option=value ...]
  *
  * - log= appends one line per finished game; a run with the same log resumes,
  *   skipping games already in it. out= is rewritten after every game with the
  *   summary so far (public/card-play-stats.json is what the card review page
  *   reads). Runs across every core.
- * - strength= also writes each card's probe result as its strength, for
- *   printed sway (D12: public/card-strength.json, read by the engine).
  * - One seat per profile, so the profile count is the player count (3 to 5).
  *   The standard tuning table (designer, 2026-10-08: both halves of the game)
  *   seats two faction backers and three goal trophy chasers (hunter removed 2026-10-09), so the
@@ -61,7 +59,7 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, listTargets, clone, validate, pulled, fightsDue } from '../public/engine.js';
+import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, listTargets, clone, validate, fightsDue } from '../public/engine.js';
 import { PROFILES, botMove, fast, features } from '../public/bots.js';
 import { seededRng, chance, measureState, play, MAX_MOVES, upgradeRecord } from './lib.js';
 
@@ -125,7 +123,6 @@ function effectOf(was, now, pid) {
     const p0 = was.board[loc], p1 = now.board[loc];
     if (contestedPlace(p1) && topOf(p1) === pid && topOf(p0) !== pid) control += 1;
     for (const f of new Set([...Object.keys(p0.tokens), ...Object.keys(p1.tokens)])) moved += Math.max(0, (p1.tokens[f] ?? 0) - (p0.tokens[f] ?? 0));
-    if (p1.token && !p0.token) moved += 1;
     placed += Math.max(0, (p1.sway[pid] ?? 0) - (p0.sway[pid] ?? 0));
   }
   // The largest fight the play made or grew (both groups' tokens), and whether it is big (BIG_FIGHT or more): a big
@@ -145,11 +142,11 @@ const BIG_FIGHT = 6;
 // Vanished fights (a play that makes a fight disappear)
 // ---------------------------------------------------------------------------
 
-/** Each fight on the board, as location → the pair of factions, sorted (a truce there: no fight). @param {GameState} s */
+/** Each fight on the board, as location → the pair of factions, sorted. @param {GameState} s */
 function fightsOn(s) {
   /** @type {Map<string, string>} */
   const out = new Map();
-  for (const loc of fightsDue(s)) if (!s.board[loc].truce) out.set(loc, Object.keys(unionTokens(s, loc)).sort().join('+')); // a Gate's ends: one fight, listed at both
+  for (const loc of fightsDue(s)) out.set(loc, Object.keys(unionTokens(s, loc)).sort().join('+')); // a Gate's ends: one fight, listed at both
   return out;
 }
 
@@ -170,8 +167,8 @@ const sameFight = (was, now) => !!was && !!now && was.split('+').every((f) => no
 /** A fight's size: both groups' tokens together. @param {GameState} s @param {string} loc @param {string} pair */
 const fightSize = (s, loc, pair) => { const t = unionTokens(s, loc); return pair.split('+').reduce((n, f) => n + (t[f] ?? 0), 0); };
 
-/** The players with a stake in a location's fight: sway there, or a hidden token there. @param {GameState['board'][string]} place */
-const stakeOf = (place) => [...new Set([...Object.entries(place.sway).filter(([, n]) => n > 0).map(([p]) => p), ...(place.token ? [place.token.owner] : [])])];
+/** The players with a stake in a location's fight: sway there. @param {GameState['board'][string]} place */
+const stakeOf = (place) => Object.entries(place.sway).filter(([, n]) => n > 0).map(([p]) => p);
 
 /** What one play did to the fights: those that disappeared (with their stakes; moved: the same pair now fights at a new location) and those it made. @param {GameState} was @param {GameState} now */
 function fightChange(was, now) {
@@ -344,10 +341,10 @@ function main() {
   const pairs = Object.fromEntries(args.filter((a) => a.includes('=')).map((a) => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]));
   const list = (pairs.profiles ?? 'backer,backer,trophy,trophy,trophy').split(pairs.profiles?.includes(';') ? ';' : ',');
   const duplicate = pairs.duplicate === '1';
-  const logFile = pairs.log, outFile = pairs.out, strengthFile = pairs.strength, workerCap = Number(pairs.workers ?? 0);
+  const logFile = pairs.log, outFile = pairs.out, workerCap = Number(pairs.workers ?? 0);
   const probe = { rate: Number(pairs.probe ?? 0), open: pairs.probeOpen === '1', sample: Number(pairs.probeSample ?? 6), cards: pairs.probeCards?.split(','), playouts: Number(pairs.probePlayouts ?? 2), targets: Number(pairs.probeTargets ?? 2), lite: pairs.probeLite === '1' };
   const reach = { rate: Number(pairs.reach ?? 0), targets: Number(pairs.reachTargets ?? 40) };
-  for (const k of ['profiles', 'duplicate', 'log', 'out', 'strength', 'probe', 'probeOpen', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets', 'probeLite', 'reach', 'reachTargets', 'workers']) delete pairs[k];
+  for (const k of ['profiles', 'duplicate', 'log', 'out', 'probe', 'probeOpen', 'probeSample', 'probeCards', 'probePlayouts', 'probeTargets', 'probeLite', 'reach', 'reachTargets', 'workers']) delete pairs[k];
   for (const p of list) if (!PROFILES.includes(/** @type {Profile} */ (p.split(':')[0]))) throw new Error(`unknown bot profile ${p}; try ${PROFILES.join(', ')} (goal profiles take overrides: goal:lean=0)`);
   const games = Number(gamesArg), seed = Number(seedArg);
   /** @type {GameRecord[]} */
@@ -374,10 +371,6 @@ function main() {
   function report() {
     process.stderr.write('\n');
     const s = summarise(records, list, pairs);
-    if (strengthFile) {
-      const strength = Object.fromEntries(Object.entries(s.cards).filter(([, c]) => c.probe.benefit !== null).map(([id, c]) => [id, c.probe.benefit]));
-      writeFileSync(strengthFile, `${JSON.stringify({ measured: s.updated.slice(0, 10), source: `scripts/tournament.js: probe results, ${s.games} games (${list.join(', ')})`, strength }, null, 2)}\n`);
-    }
     console.log(`${s.games} games, ${list.length} players, ${JSON.stringify(pairs)}. Island won ${s.sides.island}, invaders ${s.sides.invaders}; shared wins ${s.sharedWins}%. An even share is ${(100 / list.length).toFixed(0)}%.`);
     console.log(`${'profile'.padEnd(16)} | share | won as island | won as invaders`);
     for (const [p, t] of Object.entries(s.byProfile).sort((a, b) => (b[1].share ?? 0) - (a[1].share ?? 0))) console.log(`${p.padEnd(16)} | ${`${t.share}%`.padStart(5)} | ${String(t.island).padStart(13)} | ${String(t.invaders).padStart(15)}`);
@@ -414,7 +407,7 @@ if (isMainThread) main();
 else {
   const d = workerData;
   const players = d.list.map((/** @type {string} */ _, /** @type {number} */ i) => `P${i + 1}`);
-  const probeCards = d.probe.cards ?? [...spec.cards, ...spec.testCards.cards].filter((c) => c.action && !pulled(/** @type {any} */ (c))).map((c) => c.id);
+  const probeCards = d.probe.cards ?? spec.cards.filter((c) => c.action).map((c) => c.id);
   for (const g of d.games) {
     // Rotate: in game g, seat i plays profile (i + g) mod n.
     /** @type {Record<string, string>} */
@@ -455,7 +448,7 @@ else {
         for (const loc of fightsOn(s).keys()) makers.set(loc, { maker: '', card: '', big: false });
       }
       // The player to act: playable checks, and a probe on a share of turns.
-      const actor = s.phase === 'play' && !s.pending ? s.seating[s.turn] : null;
+      const actor = s.phase === 'play' ? s.seating[s.turn] : null;
       let moved = false;
       for (const pid of s.seating) {
         const move = botMove(s, { playerId: pid, rng: rngOf(pid), profile: /** @type {Profile} */ (seats[pid]), memory: memory[pid], table: seats, memories: memory });
@@ -482,7 +475,6 @@ else {
         if (move.type === 'play') {
           const before = chance(s, pid), opener = !s.opened && pid === s.first;
           s = applyMove(s, { playerId: pid, move });
-          if (s.pending && s.pending.player === pid) s = applyMove(s, { playerId: pid, move: { type: 'confirm' } });
           /** @type {Play} */
           const rec = { r: prev.round, seat: pid, card: move.card, use: move.use, dWin: Math.round((chance(s, pid) - before) * 10) / 10, opener };
           if (move.use === 'action' && s.phase === 'play') rec.fx = effectOf(prev, s, pid);
@@ -531,7 +523,7 @@ else {
     }
     const result = /** @type {NonNullable<GameState['result']>} */ (s.result);
     parentPort?.postMessage(/** @type {GameRecord} */ ({
-      g, side: result.side, seats, groups: Object.fromEntries(s.seating.map((p) => [p, s.players[p].group])), winners: result.players, placings: result.placings ?? [], deck: s.deck ?? [],
+      g, side: result.side, seats, groups: Object.fromEntries(s.seating.map((p) => [p, s.players[p].group])), winners: result.players, placings: result.placings ?? [], deck: spec.cards.map((c) => c.id),
       presence, scorched: Object.values(s.board).filter((p) => p.scorched).length, trophies: Object.fromEntries(s.seating.map((p) => [p, Object.values(s.players[p].trophies).reduce((a, b) => a + b, 0)])),
       trophiesByColour: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].trophies }])), scores: s.result?.scores ?? {}, goals, wonBy: s.result?.factions ?? [], standing: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].standing }])), presenceBy: Object.fromEntries(s.factions.map((f) => [f, presenceOf(s, f)])),
       economy, plays, held, unplayed, playable, probes, fightRounds, reach, forecasts,

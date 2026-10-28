@@ -27,7 +27,7 @@
  * real players. Their tuning numbers below are not rules.
  */
 import {
-  cardById, clone, cloneState, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, playableResponses, validate, applyMove, totalPresence, presenceOf, swaySpots, growthTotal, fleeOptions, returnRoom, choiceSteps, completeTarget,
+  cardById, clone, cloneState, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, validate, applyMove, totalPresence, presenceOf, growthTotal, fleeOptions, returnRoom, choiceSteps, completeTarget,
 } from './engine.js';
 import evalFit from './eval-fit.json' with { type: 'json' };
 import goalFitData from './goal-fit.json' with { type: 'json' };
@@ -36,16 +36,8 @@ import goalFitData from './goal-fit.json' with { type: 'json' };
 /** @typedef {import('./engine.js').Move} Move */
 /** @typedef {import('./engine.js').Target} Target */
 
-/**
- * Spending a card for sway; under the test lever swayToBoard, 1 of
- * it goes onto a location its faction controls (`at` picks which).
- * @param {GameState} state @param {string} cardId @param {(spots: string[]) => string} [at]
- * @returns {Move}
- */
-function spend(state, cardId, at = (spots) => spots[0]) {
-  const spots = swaySpots(state, cardId);
-  return spots.length ? { type: 'play', card: cardId, use: 'sway', location: at(spots) } : { type: 'play', card: cardId, use: 'sway' };
-}
+/** Spending a card for sway. @param {string} cardId @returns {Move} */
+const spend = (cardId) => ({ type: 'play', card: cardId, use: 'sway' });
 /** @typedef {'trophy' | 'backer'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory, table?: Record<string, string>, memories?: Record<string, BotMemory> }} BotOptions  table, memories: every seat's profile and memory, for play-outs (persona table) */
 /** @typedef {{ profiles?: Record<string, string>, memories?: Record<string, BotMemory>, deep?: boolean, cheap?: boolean }} Seats  the table as a play-out sees it; deep: the play-outs' seats keep their target listing (persona deepRoll) */
@@ -63,7 +55,6 @@ const fastListing = (profile) => (personaOf(profile) ? `${profile}${profile.incl
 const SEARCH = {
   targets: 8,         // targets sampled per card
   noise: 0.15,        // random jitter on each move's value, so bots vary
-  respondMargin: 0.4, // a response must beat holding the card by this much
 };
 /** Listing targets (persona enum): up to this many per card; past it, sampling fills in. */
 const LIST = { cap: 40 };
@@ -108,31 +99,22 @@ function contested(state) {
 }
 
 /**
- * The board after this round's fights, as they stand now. Face-down tokens:
- * by default every one is ignored. For `pid` (persona hidden), its own count
- * as they are, and rivals' as they are (`rivals` true) or ignored (false); the
- * caller averages the two, a rival's token being as likely a bluff as not.
- * @param {GameState} state @param {string} [pid] @param {boolean} [rivals]
+ * The board after this round's fights, as they stand now.
+ * @param {GameState} state
  */
-function projectFights(state, pid = undefined, rivals = false) {
+function projectFights(state) {
   const locs = contested(state);
   if (!locs.length) return state;
-  const hide = locs.filter((loc) => { const tok = state.board[loc].token; return tok && !(pid !== undefined && (tok.owner === pid || rivals)); });
-  // Memoised per state and tokens set aside (a speed-up, not a heuristic): the same projection is asked for many times.
-  if (!memoOn()) return resolveFights({ ...state, log: [], events: [], board: Object.fromEntries(Object.entries(state.board).map(([loc, place]) => [loc, hide.includes(loc) ? { ...place, token: null } : place])) }, locs);
-  let memo = PROJECTED.get(state);
-  if (!memo) { memo = new Map(); PROJECTED.set(state, memo); }
-  const key = hide.join(',');
-  const hit = memo.get(key);
+  // Memoised per state (a speed-up, not a heuristic): the same projection is asked for many times.
+  if (!memoOn()) return resolveFights({ ...state, log: [] }, locs);
+  const hit = PROJECTED.get(state);
   if (hit) return hit;
-  const s = cloneState({ ...state, log: [], events: [] }); // the log is not read here, and copying it was most of the cost
-  for (const loc of hide) s.board[loc].token = null;
-  const out = resolveFights(s, locs, false);
-  memo.set(key, out);
+  const out = resolveFights(cloneState({ ...state, log: [] }), locs, false); // the log is not read here, and copying it was most of the cost
+  PROJECTED.set(state, out);
   return out;
 }
 
-/** @type {WeakMap<object, Map<string, GameState>>} */
+/** @type {WeakMap<object, GameState>} */
 const PROJECTED = new WeakMap();
 
 const sigmoid = (/** @type {number} */ x) => 1 / (1 + Math.exp(-x));
@@ -169,7 +151,6 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - threat: how much the best rival's chance of winning through the invaders
  *   counts against it (designer: trophy players block a lone backer).
  * Search (switches, 0 or 1, tested as challengers before they become standard):
- * - hidden: count face-down tokens, its own as they are, a rival's as even odds.
  * - enum: list every legal target of a card (up to LIST.cap), not 8 samples.
  * - sim: choose by playing each of its best moves out to the round's end.
  * - steer: with enum, a card with more targets than the listing holds has them found best first (designer, 2026-10-26:
@@ -234,7 +215,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, hidden?: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number, guardCap?: number, plan?: number, planBudget?: number, planDepth?: number, planHorizon?: number, planPairs?: number, steer?: number, draftPlan?: number, cheapRoll?: number, rollTargets?: number, rollQuick?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number, guardCap?: number, plan?: number, planBudget?: number, planDepth?: number, planHorizon?: number, planPairs?: number, steer?: number, draftPlan?: number, cheapRoll?: number, rollTargets?: number, rollQuick?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -245,14 +226,14 @@ const PERSONAS = {
   // table (2026-10-09): a bug fix, not a heuristic: play-outs had every seat, the bot itself included, play as a trophy-leaning goal bot.
   // threat 3 (2026-10-09, 10 games against top=2 backers): trophy 30% a seat (13% at threat 1); they take the lead of the backed faction.
   // even 1 (2026-10-25, challenger, 64 games, seeds 61 and 71): trophy 37% a seat with it against 20%; backer 16% against 12.5%.
-  trophy: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 3, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1, even: 1 },
+  trophy: { lean: -0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 3, enum: 1, sim: 1, combo: 1, sets: 2, table: 1, even: 1 },
   // protect 4 (2026-10-09, 10 games): presence held at or over the threshold through round 4 (21 against 14).
   // commit 2 with protect: the invaders' ending 5 in 10 (1 in 10 before), final presence 20.3 (10.9).
   // top 2: backers 30% a seat against goal 13% (15% against 23% before), mostly from island wins (10 games).
   // race 2 (against threat-3 trophy bots): backers 20% a seat, trophy 20%; the invaders' ending 4 in 10, backers winning 3 of them (10 games).
   // plan 1, steer 1 (2026-10-27, challengers: rounds 2-3 35% a seat against 10% over 48 games, validation 23% against 15%
   // over 80 games, seed 401). Trophy bots measured no better with them (21/21%, 17/24%, 17/19%), so they don't plan.
-  backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, hidden: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1, protect: 4, commit: 2, top: 2, race: 2, even: 1, plan: 1, steer: 1 },
+  backer: { lean: 0.3, jitter: 0.15, hold: 0.05, push: 2, margin: 3, linear: 1, threat: 1, enum: 1, sim: 1, combo: 1, sets: 2, table: 1, protect: 4, commit: 2, top: 2, race: 2, even: 1, plan: 1, steer: 1 },
 };
 
 /**
@@ -288,16 +269,16 @@ const TABLE = { backing: 8, base: 0.3, step: 0.15 };
  * leading it (standing less trophies against the best rival). `asIsland`: my
  * weakest colour, then the next, against the best rival (TS2, WT1). Margins
  * sharpen as rounds run out.
- * @param {GameState} state @param {string} pid @param {boolean} [hidden]  persona hidden: count face-down tokens (see projectFights) @param {number} [soft] @param {number[]} [colours] @param {boolean} [field]  persona field
+ * @param {GameState} state @param {string} pid @param {number} [soft] @param {number[]} [colours] @param {boolean} [field]  persona field
  */
-export function winChances(state, pid, hidden = false, soft = 1, colours = ISLAND, field = false) {
+export function winChances(state, pid, soft = 1, colours = ISLAND, field = false) {
   // Memoised per state (a speed-up): goals, values and play-outs ask about the same position many times. Read-only result.
-  if (!memoOn()) return chancesNow(state, pid, hidden, soft, colours, field);
+  if (!memoOn()) return chancesAfter(projectFights(state), pid, soft, colours, field);
   let memo = CHANCES.get(state);
   if (!memo) { memo = new Map(); CHANCES.set(state, memo); }
-  const key = `${pid}|${hidden ? 1 : 0}|${soft}|${colours}|${field ? 1 : 0}`;
+  const key = `${pid}|${soft}|${colours}|${field ? 1 : 0}`;
   let c = memo.get(key);
-  if (!c) { c = chancesNow(state, pid, hidden, soft, colours, field); memo.set(key, c); }
+  if (!c) { c = chancesAfter(projectFights(state), pid, soft, colours, field); memo.set(key, c); }
   return c;
 }
 /** @type {WeakMap<object, Map<string, ReturnType<typeof chancesAfter>>>} */
@@ -307,20 +288,6 @@ const ISLAND = [1, 0.35, 0.12, 0.02];
 /** @param {Persona} persona */
 const coloursOf = (persona) => (persona.w2 === undefined && persona.w3 === undefined && persona.all === undefined ? ISLAND : [1, persona.w2 ?? ISLAND[1], persona.w3 ?? ISLAND[2], persona.all ?? ISLAND[3]]);
 
-/** winChances, uncached. @param {GameState} state @param {string} pid @param {boolean} hidden @param {number} soft @param {number[]} colours @param {boolean} [field] */
-function chancesNow(state, pid, hidden, soft, colours, field = false) {
-  if (!hidden) return chancesAfter(projectFights(state), pid, soft, colours, field);
-  const mine = chancesAfter(projectFights(state, pid, false), pid, soft, colours, field);
-  let rival = false;
-  for (const loc in state.board) { const tk = state.board[loc].token; if (tk && tk.owner !== pid) { rival = true; break; } }
-  if (!rival) return mine;
-  const theirs = chancesAfter(projectFights(state, pid, true), pid, soft, colours, field);
-  /** @type {Record<string, number>} */ const avg = {};
-  const m = /** @type {Record<string, number>} */ (/** @type {unknown} */ (mine)), th = /** @type {Record<string, number>} */ (/** @type {unknown} */ (theirs));
-  for (const k in m) avg[k] = (m[k] + th[k]) / 2;
-  return /** @type {typeof mine} */ (/** @type {unknown} */ (avg));
-}
-
 /**
  * A seat's position as numbers, for fitting the evaluation to how games end
  * (scripts/fit.mjs; tournament logs record it at the start of each round's
@@ -328,8 +295,8 @@ function chancesNow(state, pid, hidden, soft, colours, field = false) {
  * @param {GameState} state @param {string} pid @returns {Record<string, number>}
  */
 export function features(state, pid) {
-  const c = winChances(state, pid, true);
-  const s = projectFights(state, pid, false);
+  const c = winChances(state, pid);
+  const s = projectFights(state);
   const p = s.players[pid];
   const t = s.factions.map((f) => p.trophies[f]).sort((x, y) => x - y);
   const others = s.seating.filter((id) => id !== pid);
@@ -422,7 +389,7 @@ function chancesAfter(s, pid, soft = 1, colours = ISLAND, field = false) {
 function goalValue(state, pid, goal, persona, quick = false) {
   if (persona.fit) { const v = fitValue(state, pid); if (v !== null) return persona.fit * v + 0.02 * state.players[pid].supply; }
   // quick (persona rank): the board as it stands, fights not projected; a cheap first look, not the bot's judgement.
-  const c = quick ? chancesAfter(state, pid, persona.soft ?? 1, coloursOf(persona), !!persona.field) : winChances(state, pid, !!persona.hidden, persona.soft ?? 1, coloursOf(persona), !!persona.field);
+  const c = quick ? chancesAfter(state, pid, persona.soft ?? 1, coloursOf(persona), !!persona.field) : winChances(state, pid, persona.soft ?? 1, coloursOf(persona), !!persona.field);
   // Margins are added on their own, never scaled by an ending's chance: a margin can be negative, and scaling it would
   // reward a bot that is behind for making that ending less likely (2026-10-08 fix).
   const inv = c.pInvaders * 10 * c.asInvaders + persona.margin * c.marginInvaders;
@@ -513,7 +480,7 @@ function setAccess(state, pid) {
  * @param {GameState} state @param {string} pid @param {Persona} persona @param {BotMemory} [memory] @param {() => number} [rng] @returns {Goal}
  */
 export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
-  const c = winChances(state, pid, !!persona.hidden, persona.soft ?? 1, coloursOf(persona), !!persona.field);
+  const c = winChances(state, pid, persona.soft ?? 1, coloursOf(persona), !!persona.field);
   const push = persona.push * (c.roundsLeft + 1);
   // allies: the rivals seen backing a faction push presence up too, so the invaders' ending is more reachable than one player's push.
   const pushInv = push * (1 + (persona.allies ?? 0) * c.backers);
@@ -546,9 +513,7 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false, eve
     if (only && cardId !== only) continue; // one card's moves only (a planned card)
     const card = cardById(cardId);
     if (card.suit) {
-      const spots = swaySpots(state, cardId);
-      if (spots.length) for (const location of spots) moves.push({ type: 'play', card: cardId, use: 'sway', location });
-      else moves.push({ type: 'play', card: cardId, use: 'sway' });
+      moves.push(spend(cardId));
       // A way back (2026-10-26): at each spot 1 token, or all of them; and one spread over the spots.
       const back = returnRoom(state, pid, cardId);
       if (back.max > 0) {
@@ -639,12 +604,8 @@ function steered(state, pid, cardId, rng, value, budget) {
   return [...found.values()].sort((a, b) => b.v - a.v).map((x) => x.target);
 }
 
-/** The state after a move, with an action played straight through to its resolution. @param {GameState} state @param {string} pid @param {Move} move */
-function after(state, pid, move) {
-  let s = applyMove(state, { playerId: pid, move });
-  if (s.pending && s.pending.player === pid && move.type === 'play') s = applyMove(s, { playerId: pid, move: { type: 'confirm' } });
-  return s;
-}
+/** The state after a move. @param {GameState} state @param {string} pid @param {Move} move */
+const after = (state, pid, move) => applyMove(state, { playerId: pid, move });
 
 /** @typedef {(s: GameState, id?: string) => number} Ev  a bot's value of a position, for itself or (in its lookahead) another seat */
 
@@ -697,25 +658,6 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
 
   if (state.phase !== 'play') return null;
 
-  // Responses: only when they beat holding the card.
-  const responses = playableResponses(state, pid);
-  if (responses.length) {
-    const actor = state.pending?.player;
-    const finish = (/** @type {GameState} */ s) => (s.pending && actor ? applyMove(s, { playerId: actor, move: { type: 'confirm' } }) : s);
-    const baseline = ev(finish(state));
-    let best = null, bestV = baseline + SEARCH.respondMargin;
-    for (const r of responses) {
-      const move = /** @type {Move} */ ({ type: 'respond', card: r.card, location: r.location });
-      const v = ev(finish(applyMove(state, { playerId: pid, move })));
-      if (v > bestV) {
-        best = move;
-        bestV = v;
-      }
-    }
-    if (best) return best;
-  }
-
-  if (state.pending) return state.pending.player === pid ? { type: 'confirm' } : null;
   if (state.seating[state.turn] !== pid) return null;
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
@@ -810,7 +752,6 @@ function handPlanValue(state, pid, hand, rng, ev, memory, table) {
   s.phase = 'play';
   s.turn = s.seating.indexOf(pid);
   s.opened = true;
-  s.pending = null;
   for (const id of s.seating) s.players[id].hand = id === pid ? hand.slice() : s.players[id].kept.slice();
   const moves = candidates(s, pid, rng, SEARCH.targets, true, true);
   const ranked = moves.map((move) => { const t = after(s, pid, move); return { move, s: t, v: ev(t) }; }).sort((a, b) => b.v - a.v).slice(0, 4);
@@ -947,7 +888,7 @@ function playOutRound(state, seed, pid, memory, table = undefined, through = fal
       const profile = table?.profiles?.[id] ? (table.deep ? fastListing(table.profiles[id]) : table.cheap ? `${fast(table.profiles[id])},rollTargets=3,rollQuick=1` : fast(table.profiles[id])) : ROLLOUT;
       let m = null;
       // persona plan: on its own turns this bot plays its planned cards in order, each as well as it can then.
-      if (id === pid && todo.length && s.phase === 'play' && !s.pending && s.seating[s.turn] === pid) {
+      if (id === pid && todo.length && s.phase === 'play' && s.seating[s.turn] === pid) {
         while (todo.length && !m) { const c = /** @type {string} */ (todo.shift()); if (s.players[pid].hand.includes(c)) m = plannedMove(s, pid, c, r, profile, mem[id]); }
         // Flexible (2026-10-27): the planned card is played only if it is at least as good one move ahead as what the
         // bot would do anyway; otherwise the plan waits.
@@ -977,10 +918,9 @@ function cardWorth(state, pid, cardId, rng, ev, base) {
   s.phase = 'play';
   s.turn = s.seating.indexOf(pid);
   s.opened = true;
-  s.pending = null;
   s.players[pid].hand = [cardId];
-  let best = card.response ? 0.5 : 0;
-  const infl = spend(s, cardId);
+  let best = 0;
+  const infl = spend(cardId);
   if (card.suit && validate(s, { playerId: pid, move: infl }).ok) best = Math.max(best, ev(after(s, pid, infl)) - base);
   if (card.action) {
     for (let i = 0; i < 4; i++) {
@@ -1008,7 +948,6 @@ function comboWorth(state, pid, cardId, kept, rng, ev, base) {
     s.phase = 'play';
     s.turn = s.seating.indexOf(pid);
     s.opened = true;
-    s.pending = null;
     s.players[pid].hand = [k, cardId];
     const firsts = bestPlays(s, pid, k, rng, ev);
     if (!firsts.length) continue;
@@ -1017,7 +956,6 @@ function comboWorth(state, pid, cardId, kept, rng, ev, base) {
       const s2 = cloneState(f.s);
       s2.phase = 'play';
       s2.turn = s2.seating.indexOf(pid);
-      s2.pending = null;
       const seconds = bestPlays(s2, pid, cardId, rng, ev);
       if (seconds.length) best = Math.max(best, seconds[0].v - alone);
     }
@@ -1048,13 +986,13 @@ function bestPlays(s, pid, cardId, rng, ev) {
  * The bot's view of a seat's options, for a hint (public/hints.js): its plan
  * and every move ranked by its value one move ahead, with no noise and no
  * play-outs (play-outs would play rivals' hidden hands; one move ahead uses
- * only what the seat can see, rivals' face-down tokens as even odds). Draft:
+ * only what the seat can see). Draft:
  * each card in the pool by the worth of its best play now. Growth: each
  * location the seat may choose. `memory` keeps the plan between hints.
  * @param {GameState} state @param {string} pid @param {BotMemory} memory @param {string} [profile]
  * @returns {{ goal: Goal, ev: (s: GameState) => number, base: number, moves: { move: Move, s: GameState, v: number }[], worth: { card: string, v: number }[] }}
  */
-export function rankForHint(state, pid, memory, profile = 'trophy:hidden=1,enum=1') {
+export function rankForHint(state, pid, memory, profile = 'trophy:enum=1') {
   let x = 12345;
   const rng = () => { x = (Math.imul(x, 1664525) + 1013904223) | 0; return (x >>> 0) / 2 ** 32; };
   const persona = personaOf(profile) ?? /** @type {Persona} */ (personaOf('trophy'));
@@ -1075,7 +1013,7 @@ export function rankForHint(state, pid, memory, profile = 'trophy:hidden=1,enum=
   } else if (state.phase === 'night') {
     const n = state.night;
     if (n && n.player === pid) moves = nightMoves(state, n.left[0]).map((move) => { const s = applyMove(state, { playerId: pid, move }); return { move, s, v: ev(s) }; });
-  } else if (state.phase === 'play' && !state.pending && state.seating[state.turn] === pid) {
+  } else if (state.phase === 'play' && state.seating[state.turn] === pid) {
     moves = candidates(state, pid, rng, SEARCH.targets, true).map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) }; });
   }
   moves.sort((a, b) => b.v - a.v);

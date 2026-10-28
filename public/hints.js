@@ -11,9 +11,7 @@
  * words are this file's: each line reports something the
  * bot's value really counts (trophies from this round's fights, sway with a
  * faction, the monster count against the mark), measured before and after the
- * move, so a hint never gives a reason the bot didn't have. Rivals' face-down
- * tokens are left out of every projection: a hint knows only what the seat
- * knows. Pure (no page): runs in the browser (tutorial) and in the worker.
+ * move, so a hint never gives a reason the bot didn't have. Pure (no page): runs in the browser (tutorial) and in the worker.
  * Prototype tooling, not rules.
  */
 import { cardById, factionById, locationById, describeTarget, clone, resolveFight, totalPresence, presenceOf } from './engine.js';
@@ -41,12 +39,11 @@ export function hintKey(s, pid) {
 
 /**
  * This round's fights as the seat can foresee them: who would take what,
- * location by location (rivals' face-down tokens left out).
- * @param {GameState} state @param {string} pid
+ * location by location.
+ * @param {GameState} state
  */
-function foresee(state, pid) {
+function foresee(state) {
   const s = clone(state);
-  for (const place of Object.values(s.board)) if (place.token && place.token.owner !== pid) place.token = null;
   /** @type {Record<string, { gains: Record<string, Record<string, number>>, lead: string | null, sway: Record<string, number> }>} */
   const out = {};
   let cur = s;
@@ -68,10 +65,9 @@ function foresee(state, pid) {
   return out;
 }
 
-/** The projected monster count: after this round's fights and growth, as the bot counts it. @param {GameState} s @param {string} pid */
-function projectedCount(s, pid) {
+/** The projected monster count: after this round's fights and growth, as the bot counts it. @param {GameState} s */
+function projectedCount(s) {
   const f = clone(s);
-  for (const place of Object.values(f.board)) if (place.token && place.token.owner !== pid) place.token = null;
   let cur = f;
   for (const loc of Object.keys(f.board)) if (!cur.board[loc].scorched && Object.values(cur.board[loc].tokens).filter((n) => n > 0).length === 2) cur = resolveFight(cur, loc);
   return totalPresence(cur);
@@ -102,7 +98,7 @@ function planLine(s, pid, goal) {
  * @param {GameState} a @param {GameState} b @param {string} pid @param {'island' | 'invaders'} goal
  */
 function reasons(a, b, pid, goal) {
-  const fa = foresee(a, pid), fb = foresee(b, pid);
+  const fa = foresee(a), fb = foresee(b);
   const t = Number(a.options.threshold);
   const w = weakest(a, pid);
   /** @type {{ text: string, weight: number }[]} */
@@ -136,7 +132,7 @@ function reasons(a, b, pid, goal) {
     }
   }
   // The monster count against the mark.
-  const ca = projectedCount(a, pid), cb = projectedCount(b, pid);
+  const ca = projectedCount(a), cb = projectedCount(b);
   if (Math.abs(cb - ca) >= 2 || (ca > t) !== (cb > t)) {
     const good = goal === 'invaders' ? cb > ca : cb < ca;
     lines.push({ text: `Puts the monster count after this round's fights at about ${cb} (mark: ${t}), ${cb > ca ? 'up' : 'down'} from ${ca}${good ? ', which your plan wants' : ''}.`, weight: good ? (goal === 'invaders' ? 2.5 : 2) : 0.5 });
@@ -159,8 +155,7 @@ function ruleFor(s, move) {
   if (move.use === 'sway') return `An offering: spend a suited card for its printed sway with the faction of its suit${f ? ` (the ${F(f)})` : ''}. Its action is lost.`;
   if (!c.suit) return 'Unsuited cards have no LOC or FAC: they bend the rules as the card says, and can\'t be spent for sway.';
   if (move.target?.mode === 'faction') return `FAC: the card acts on the faction of its suit${f ? `, the ${F(f)},` : ''} wherever they are.`;
-  const moves = ['lure', 'draw-adjacent', 'gather-region', 'gather-neighbours', 'call-home', 'broadcast'].includes(c.action ?? '');
-  return `LOC: the card acts at a location of its suit, on whichever faction is there.${moves ? ' Moving a faction costs 1 sway with it, and that sway lands with them as your bid.' : ''}`;
+  return 'LOC: the card acts at a location of its suit, on whichever faction is there.';
 }
 
 /** A move as a short title. @param {GameState} s @param {string} pid @param {Move} move */
@@ -190,9 +185,9 @@ function shortOf(move) {
 /** Every location a move names, to light on the board. @param {Move} move */
 function tilesOf(move) {
   if (move.type === 'grow') return [move.location];
-  if (move.type !== 'play' || !move.target) return move.type === 'play' && move.location ? [move.location] : [];
+  if (move.type !== 'play' || !move.target) return [];
   const t = move.target;
-  return [...new Set([t.location, t.to, t.bluff, ...(t.from ?? []), ...(t.path ?? []), ...Object.keys(t.split ?? {}), ...(t.moves ?? []).flatMap((m) => [m.location, m.to])].filter((x) => typeof x === 'string'))];
+  return [...new Set([t.location, t.to, ...(t.from ?? []), ...(t.path ?? []), ...Object.keys(t.split ?? {}), ...(t.moves ?? []).flatMap((m) => [m.location, m.to])].filter((x) => typeof x === 'string'))];
 }
 
 /**
@@ -223,7 +218,7 @@ export function suggest(state, pid, memory, given = undefined) {
     const fresh = keep.find((c) => !p.kept.includes(c)) ?? keep[0];
     // The new pick's reason: its best play now, explained (as the bot values a card in the draft).
     const solo = clone(state);
-    solo.phase = 'play'; solo.turn = solo.seating.indexOf(pid); solo.opened = true; solo.pending = null; solo.players[pid].hand = [fresh];
+    solo.phase = 'play'; solo.turn = solo.seating.indexOf(pid); solo.opened = true; solo.players[pid].hand = [fresh];
     const best = rankForHint(solo, pid, { ...memory }).moves.find((m) => m.move.type === 'play');
     const how = best ? (best.move.type === 'play' && best.move.use === 'sway' ? 'spent for sway' : titleOf(solo, pid, best.move).replace(/^.*?(\((LOC|FAC)\))?: /, (_, m) => (m ? `${m} ` : ''))) : '';
     const first = best ? reasons(solo, best.s, pid, r.goal)[0] : undefined;

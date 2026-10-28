@@ -3,7 +3,7 @@
  * A player card as the table draws it: shared by the table (app.js) and the
  * assets page's card review. Display only; holds no rules.
  */
-import { spec, factionById, cardById, responsesOn } from './engine.js';
+import { spec, factionById, cardById } from './engine.js';
 import art from './assets/sprites.json' with { type: 'json' };
 
 /** @typedef {import('./engine.js').PlayerView} PlayerView */
@@ -23,12 +23,12 @@ export function suitIcon(archetype, scale = 2) {
 const fname = (f) => factionById(f).name;
 
 /**
- * @typedef {{ mode?: '' | 'act' | 'respond' | 'keep', ticked?: boolean, sway?: boolean, back?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string, empty?: string[], view?: PlayerView | null, extra?: string }} CardOptions
+ * @typedef {{ mode?: '' | 'act' | 'keep', ticked?: boolean, sway?: boolean, back?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string, empty?: string[], view?: PlayerView | null, extra?: string }} CardOptions
  */
 
 /**
  * A card. `mode` says what clicking it does: 'act' (play its action),
- * 'respond' (fire its response), 'keep' (draft), or '' (nothing). `view`
+ * 'keep' (draft), or '' (nothing). `view`
  * names the faction behind each reading; `extra` is HTML added at the foot
  * of the card (the assets page's review tags).
  * @param {string} id @param {CardOptions} [o]
@@ -37,7 +37,7 @@ export function cardHtml(id, o = {}) {
   const c = cardById(id);
   const suit = spec.archetypes.find((a) => a.id === c.suit);
   const view = o.view ?? null;
-  // This game's printed sway (a mixed deck sets it per game).
+  // The card's sway for this seat now (a signature's is the hand size, D24).
   const printed = view?.printed?.[id] ?? c.sway;
   const sf = view && c.suit ? view.factions.find((f) => factionById(f).archetype === c.suit) : undefined;
   const band = c.suit ? `<span class="suit-line">${suitIcon(c.suit)} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
@@ -58,9 +58,7 @@ export function cardHtml(id, o = {}) {
       ${o.back ? opt('return', 'BACK', `Bring ${sf ? fname(sf) : 'its faction'} back: up to its sway of tokens at its own locations or where it is, 1 standing with it each`, false) : ''}
     </div>` : '';
   const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : '', o.selected && o.next ? 'card-needs-reading' : ''].filter(Boolean).join(' ');
-  // Responses are out of the first draft: their text shows only when the variant turns them on.
-  const response = c.response && view && responsesOn(view) ? c.response : null;
-  const full = `${c.name}. ${c.text}${response ? ` Response (${response.timing}): ${response.name}. ${response.text}` : ''}`;
+  const full = `${c.name}. ${c.text}`;
   return `<div class="${classes}" data-card="${esc(id)}" title="${esc(full)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
     <div class="card-band">${band}</div>
     <div class="card-main">
@@ -68,7 +66,6 @@ export function cardHtml(id, o = {}) {
         <span class="card-name">${esc(c.name)}</span>
         <p class="small">${esc(c.text)}</p>
         ${readings}
-        ${response ? `<p class="small card-response"><b>Response, ${esc(response.timing)}: ${esc(response.name)}.</b> ${esc(response.text)}</p>` : ''}
       </div>
       ${options}
     </div>

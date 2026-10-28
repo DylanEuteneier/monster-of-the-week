@@ -1231,6 +1231,15 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** 3.7 (the signature slot), alongside the open bid every signature carries and D24. Checked against the signatures so far: Wake the Dead's location reading creates one (against a lone group, or as a third side), and its faction reading affects one when the risen join an Undead side in a fight; Take Control changes fights already there. The stand-ins can (the move may land on a lone rival). All meet it as built.
 - **Date:** 2026-10-18
 
+#### D27. The prototype's engine in Rust; only the core deck in code
+
+- **Decided (designer, 2026-10-27):** the prototype's rules engine and bots are rewritten in Rust: one crate, built natively for bot runs and as WebAssembly for the Worker (live games' bots) and the table. While the port is under way the JavaScript engine is the reference, and every game is checked move by move against it; once it matches, Rust is the only place the rules live.
+- **Decided (designer, 2026-10-27):** only the live game is encoded: the 21 cards of the core deck and the variants that apply to them. The old decks' code is removed everywhere (the Set v2 deck and the mixed and fixed deals, the test cards outside the core, the responses system, hidden tokens and bluffs, printed sway by measured strength, and the variants that served only them: deck, coreParts, responses, bluffs, pinning, gatherSway, swayAtOrigin, swayToBoard, swayBonus, whoPays). They stay in this document as references and context only (Appendix H, the changelog); bringing one back means building it again.
+- **Why (designer):** planning bots made a decision take 10 to 40 seconds, too slow to play against; the old decks' code no longer earns its keep.
+- **Scope:** prototype only; not a rule of the game.
+- **Affects:** D8 and Appendix F (the engine, the data file, the tutorial's deal, now the core deck at a new seed).
+- **Date:** 2026-10-27
+
 #### D14. Tokens and cubes
 
 - **Decided:** faction presence on the board is made of **tokens**; **cubes** are always players' sway. A faction never has cubes, and a player never has tokens (apart from hidden and bluff tokens, which are separate pieces).
@@ -1336,6 +1345,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-07 | D15 starting place: each faction moved to a new location pays 1 of its sway there, regardless of group size (variant `whoPays`, each by default). Card scores taken off the card review page until they can be trusted (designer) | Economy, 100 bot games: with IC1, fights with 2+ players bidding rise from 1% to about 40% in round 1 (fewer fights, 0.6 a round against 3.2); each-pays slightly ahead of selected-pays |
 | 2026-10-07 | IC1 in the first draft: the sway a card places is a requirement (D15). The core loop recorded (D16) | Bot games after IC1: fewer fights (1.4 a round) and the invaders win 97% (30 games); presence climbs to about 50 against a threshold of 20 |
 | 2026-10-07 | Card strength measured over a played-out round, as benefit to the player (designer); deep bots with a reply lookahead and strategy breakpoints on two axes (the ending; sway or trophies mid-game); bot tournament | Prototype tooling, not rules; the breakpoint numbers are suggestions to tune |
+| 2026-10-27 | The prototype's engine and bots to be rewritten in Rust; the old decks' code removed, only the core deck encoded (D27) | Prototype only, not rules |
 
 ---
 

@@ -102,7 +102,6 @@ async function main() {
     if (v.phase === 'night') return v.night && v.night.player === v.you ? { type: 'flee', location: v.night.left[0] } : null;
     if (v.phase === 'growth') return v.growing && v.growing.leaders[v.growing.next % v.growing.leaders.length] === v.you ? { type: 'grow', location: Object.keys(v.growing.due)[0] } : null;
     if (v.phase !== 'play') return null;
-    if (v.pending) return v.pending.player === v.you ? { type: 'confirm' } : null;
     if (v.toAct !== v.you) return null;
     const mark = (/** @type {string} */ c) => ('marked' in cardById(c) && cardById(c).marked) || '';
     const marked = v.first === v.you && !v.opened ? v.me.hand.filter(mark).sort((a, b) => mark(a).localeCompare(mark(b)))[0] : null;
@@ -113,8 +112,8 @@ async function main() {
     if (!view) fail('no view');
     if (view.phase === 'ended') break;
     const actor = seats.find((seat) => seat.view && policy(seat.view));
-    if (!actor?.view) fail(`nobody can act in ${view.phase}, round ${view.round}: ${JSON.stringify({ toAct: view.toAct, first: view.first, opened: view.opened, pending: view.pending, seats: seats.map((s) => [s.name, s.view?.you, s.view?.toAct, !!s.view?.pending, JSON.stringify(s.view ? policy(s.view) : null)]) })}`);
-    const key = (/** @type {PlayerView} */ v) => JSON.stringify([v.round, v.phase, v.pending, v.toAct, v.log.at(-1)?.events.length, v.seating.map((id) => v.players[id].picked)]);
+    if (!actor?.view) fail(`nobody can act in ${view.phase}, round ${view.round}: ${JSON.stringify({ toAct: view.toAct, first: view.first, opened: view.opened, seats: seats.map((s) => [s.name, s.view?.you, s.view?.toAct, JSON.stringify(s.view ? policy(s.view) : null)]) })}`);
+    const key = (/** @type {PlayerView} */ v) => JSON.stringify([v.round, v.phase, v.toAct, v.log.at(-1)?.events.length, v.seating.map((id) => v.players[id].picked)]);
     const before = key(actor.view);
     const sent = policy(actor.view);
     await new Promise((resolve) => setTimeout(resolve, 260)); // stay under the per-seat rate limit (4 a second)

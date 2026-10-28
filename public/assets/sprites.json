@@ -926,60 +926,10 @@
    "height": 9,
    "src": "/assets/marks/rubble.png"
   },
-  "silver-bullets": {
-   "width": 8,
-   "height": 8,
-   "src": "/assets/marks/silver-bullets.png"
-  },
-  "salt-burn": {
-   "width": 8,
-   "height": 8,
-   "src": "/assets/marks/salt-burn.png"
-  },
-  "house-fire": {
-   "width": 8,
-   "height": 8,
-   "src": "/assets/marks/house-fire.png"
-  },
-  "set-trap": {
-   "width": 8,
-   "height": 8,
-   "src": "/assets/marks/set-trap.png"
-  },
-  "truce": {
-   "width": 8,
-   "height": 8,
-   "src": "/assets/marks/truce.png"
-  },
-  "double": {
-   "width": 8,
-   "height": 8,
-   "src": "/assets/marks/double.png"
-  },
-  "wake": {
-   "width": 8,
-   "height": 8,
-   "src": "/assets/marks/wake.png"
-  },
-  "backdoor": {
-   "width": 8,
-   "height": 8,
-   "src": "/assets/marks/backdoor.png"
-  },
-  "swarm": {
-   "width": 8,
-   "height": 8,
-   "src": "/assets/marks/swarm.png"
-  },
   "gate": {
    "width": 8,
    "height": 8,
    "src": "/assets/marks/gate.png"
-  },
-  "lock": {
-   "width": 8,
-   "height": 8,
-   "src": "/assets/marks/lock.png"
   }
  },
  "symbols": {

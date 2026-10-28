@@ -13,24 +13,19 @@ import { cardById, factionById, locationById, nextChoice, resolveFight, clone } 
 /** @typedef {import('./engine.js').Move} Move */
 /** @typedef {import('./engine.js').Target} Target */
 /**
- * A move as another seat may see it: a hidden play (a face-down token card)
- * shows its card and where its tokens went, never which one is real.
- * @typedef {Move | { type: 'hidden', card: string, locations: string[] }} SeenMove  hidden: the card is known (its tokens' backs show it), not which token is real
- * @typedef {{ kind: 'location', location: string, label: string } | { kind: 'group', location: string, faction: string, label: string } | { kind: 'faction', faction: string, label: string } | { kind: 'direction', label: string } | { kind: 'use', label: string }} Step
- * @typedef {{ loc: string, sides: { f: string, n: number, lost: number }[], sway: Record<string, number>, piles: { pid: string, f: string, n: number }[], scorched: boolean, flipped: string | null, lines: string[],
+ * A move as another seat may see it (every move but a draft pick is public).
+ * @typedef {Move} SeenMove
+ * @typedef {{ kind: 'location', location: string, label: string } | { kind: 'group', location: string, faction: string, label: string } | { kind: 'faction', faction: string, label: string } | { kind: 'use', label: string }} Step
+ * @typedef {{ loc: string, sides: { f: string, n: number, lost: number }[], sway: Record<string, number>, piles: { pid: string, f: string, n: number }[], scorched: boolean, lines: string[],
  *   place: PlayerView['board'][string], supply: Record<string, number>, players: Record<string, { standing: Record<string, number>, supply: number }> }} Fight
  */
 
 const F = (/** @type {string} */ f) => factionById(f).name;
 const L = (/** @type {string} */ l) => locationById(l).name;
 
-/** What a viewer may see of a seat's move. @param {Move} move @param {string} pid  who made it @param {string} viewer @returns {SeenMove | null} */
-export function seenBy(move, pid, viewer) {
-  if (move.type === 'pick') return null; // the draft is secret
-  if (pid !== viewer && move.type === 'play' && move.use === 'action' && cardById(move.card).action === 'token') {
-    return { type: 'hidden', card: move.card, locations: [move.target?.location, move.target?.bluff].filter((x) => typeof x === 'string').sort() };
-  }
-  return move;
+/** What a viewer may see of a seat's move. @param {Move} move @param {string} _pid  who made it @param {string} _viewer @returns {SeenMove | null} */
+export function seenBy(move, _pid, _viewer) {
+  return move.type === 'pick' ? null : move; // the draft is secret
 }
 
 /**
@@ -53,21 +48,18 @@ export function targetSteps(state, pid, cardId, target) {
       let l;
       if (c.key === 'path') l = real(target.path)[real(t.path).length];
       else if (c.key === 'from') l = real(target.from)[real(t.from).length];
-      else if (c.key === 'to' && t.moves?.length) l = target.moves?.[t.moves.length - 1]?.to;
       else l = /** @type {string | undefined} */ (target[c.key]);
       if (!l) {
         if (!c.optional) break;
         if (c.key === 'path') t.path = [...(t.path ?? []), '__stop'];
         else if (c.key === 'from') t.from = [...(t.from ?? []), '__stop'];
-        else if (c.key === 'bluff') t.bluff = '';
         else break;
         continue;
       }
-      const word = { location: 'at', to: 'to', from: 'from', path: 'via', bluff: 'bluff at', losses: 'losses from' }[c.key] ?? 'at';
+      const word = { location: 'at', to: 'to', from: 'from', path: 'via', losses: 'losses from' }[c.key] ?? 'at';
       steps.push({ kind: 'location', location: l, label: `${word} ${L(l)}` });
       if (c.key === 'path') t.path = [...(t.path ?? []), l];
       else if (c.key === 'from') t.from = [...(t.from ?? []), l];
-      else if (c.key === 'to' && t.moves?.length) t.moves[t.moves.length - 1].to = l;
       else t[c.key] = l;
       continue;
     }
@@ -79,16 +71,14 @@ export function targetSteps(state, pid, cardId, target) {
       continue;
     }
     if (c.kind === 'group') {
-      const g = c.key === 'lure' ? { location: target.from?.[0] ?? '', faction: target.faction ?? '' }
-        : c.key === 'move' ? target.moves?.[(t.moves ?? []).length]
+      const g = c.key === 'move' ? target.moves?.[(t.moves ?? []).length]
         : { location: target.location ?? '', faction: target.faction ?? '' };
       if (!g || !g.location || g.location === '__stop') {
         if (c.optional && c.key === 'move') { t.moves = [...(t.moves ?? []), { location: '__stop', faction: '', to: '__stop' }]; continue; }
         break;
       }
       steps.push({ kind: 'group', location: g.location, faction: g.faction, label: `the ${F(g.faction)} at ${L(g.location)}` });
-      if (c.key === 'lure') Object.assign(t, { faction: g.faction, from: [g.location] });
-      else if (c.key === 'move') t.moves = [...(t.moves ?? []), { location: g.location, faction: g.faction, to: '' }];
+      if (c.key === 'move') t.moves = [...(t.moves ?? []), { location: g.location, faction: g.faction, to: '' }];
       else Object.assign(t, { location: g.location, faction: g.faction });
       continue;
     }
@@ -100,10 +90,10 @@ export function targetSteps(state, pid, cardId, target) {
       continue;
     }
     if (c.kind === 'faction') {
-      const key = /** @type {'faction' | 'to' | 'lead' | 'payer'} */ (c.key ?? 'faction');
+      const key = /** @type {'faction' | 'to' | 'payer'} */ (c.key ?? 'faction');
       const f = /** @type {string | undefined} */ (target[key]);
       if (!f) break;
-      steps.push({ kind: 'faction', faction: f, label: key === 'lead' ? `leading the ${F(f)}` : `the ${F(f)}` });
+      steps.push({ kind: 'faction', faction: f, label: `the ${F(f)}` });
       t[key] = f;
       continue;
     }
@@ -112,12 +102,6 @@ export function targetSteps(state, pid, cardId, target) {
       if (!u) break;
       steps.push({ kind: 'use', label: c.key === 'back' ? `taking back ${u}` : u });
       t[c.key] = u;
-      continue;
-    }
-    if (c.kind === 'direction') {
-      if (!target.direction) break;
-      steps.push({ kind: 'direction', label: `heading ${target.direction}` });
-      t.direction = target.direction;
       continue;
     }
     break;
@@ -130,7 +114,7 @@ export function targetSteps(state, pid, cardId, target) {
  * fights): each with its sides, the bids, who takes which pile, and the
  * public pieces after it (for the table to show one fight at a time). Fights
  * don't depend on each other's order (RO1); this is board order, as the
- * engine runs them. Hidden tokens flip in the fight, so nothing secret.
+ * engine runs them. Nothing secret.
  * @param {GameState} before @returns {Fight[]}
  */
 export function roundFights(before) {
@@ -151,9 +135,9 @@ export function roundFights(before) {
     }
     const np = next.board[loc];
     out.push({
-      loc, sides, sway: { ...place.sway }, piles, scorched: np.scorched, flipped: place.token ? place.token.owner : null,
+      loc, sides, sway: { ...place.sway }, piles, scorched: np.scorched,
       lines: (next.log.find((e) => e.round === next.round)?.events ?? []).slice(was).map((l) => l.trim()),
-      place: { tokens: { ...np.tokens }, sway: { ...np.sway }, token: np.token ? { owner: np.token.owner, ...(np.token.kind ? { kind: np.token.kind } : {}) } : null, scorched: np.scorched },
+      place: { tokens: { ...np.tokens }, sway: { ...np.sway }, scorched: np.scorched },
       supply: { ...next.supply },
       players: Object.fromEntries(next.seating.map((id) => [id, { standing: { ...next.players[id].standing }, supply: next.players[id].supply }])),
     });
