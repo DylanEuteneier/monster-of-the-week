@@ -3,10 +3,10 @@
  * A player card as the table draws it: shared by the table (app.js) and the
  * assets page's card review. Display only; holds no rules.
  */
-import { spec, factionById, cardById } from './engine.js';
+import { spec, factionById, cardById } from './rules.js';
 import art from './assets/sprites.json' with { type: 'json' };
 
-/** @typedef {import('./engine.js').PlayerView} PlayerView */
+/** @typedef {import('./rules.js').PlayerView} PlayerView */
 
 /** @param {unknown} value */
 function esc(value) {

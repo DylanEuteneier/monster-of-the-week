@@ -12,5 +12,5 @@
     "skipLibCheck": true,
     "types": ["@cloudflare/workers-types/experimental"]
   },
-  "include": ["src/**/*.ts", "public/engine.js", "public/spec.json"]
+  "include": ["src/**/*.ts", "public/rules.js", "public/spec.json"]
 }

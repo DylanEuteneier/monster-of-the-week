@@ -6,10 +6,9 @@
  * a moment, against letting the turn go, with the rest of the round played
  * out). A measuring tool, not rules.
  */
-import { applyMove, clone, memoising, nextRandom } from '../public/engine.js';
-import { botMove, winChances } from '../public/bots.js';
+import { applyMove, clone, nextRandom, botMove, winChances } from '../public/rules.js';
 
-/** @typedef {import('../public/engine.js').GameState} GameState @typedef {import('../public/engine.js').Move} Move @typedef {import('../public/bots.js').Profile} Profile */
+/** @typedef {import('../public/rules.js').GameState} GameState @typedef {import('../public/rules.js').Move} Move @typedef {import('../public/rules.js').Profile} Profile */
 
 export const MAX_MOVES = 20_000;
 
@@ -26,9 +25,7 @@ export function seededRng(seed) {
  * high predictions came true about half as often as claimed).
  * @param {GameState} s @param {string} pid
  */
-export const chance = (s, pid) => memoising(() => chanceNow(s, pid));
-/** chance, unmemoised. @param {GameState} s @param {string} pid */
-const chanceNow = (s, pid) => {
+export const chance = (s, pid) => {
   const raw = (/** @type {string} */ id) => { const c = winChances(s, id); return c.pInvaders * c.asInvaders + (1 - c.pInvaders) * c.asIsland; };
   const all = s.seating.map((id) => ({ id, v: raw(id) }));
   const sum = all.reduce((n, x) => n + x.v, 0);
@@ -45,7 +42,7 @@ const chanceNow = (s, pid) => {
 export function playOut(state, rng, onRound, profiles = {}) {
   let game = state;
   let round = game.round;
-  /** @type {Record<string, import('../public/bots.js').BotMemory>} one memory per seat (goal bots) */
+  /** @type {Record<string, import('../public/rules.js').BotMemory>} one memory per seat (goal bots) */
   const memory = Object.fromEntries(game.seating.map((id) => [id, {}]));
   for (let moves = 0; moves < MAX_MOVES; moves++) {
     if (game.phase === 'ended') return game;
@@ -66,12 +63,12 @@ export function playOut(state, rng, onRound, profiles = {}) {
   throw new Error(`game did not end within ${MAX_MOVES} moves`);
 }
 
-/** Bots play from here to the end of the round's play (its fights). @param {GameState} state @param {number} seed @param {Profile | Record<string, string>} bots  one profile for every seat, or each seat's @param {Record<string, import('../public/bots.js').BotMemory>} [memories]  each bot's memory now (copied; its plan carries on) */
+/** Bots play from here to the end of the round's play (its fights). @param {GameState} state @param {number} seed @param {Profile | Record<string, string>} bots  one profile for every seat, or each seat's @param {Record<string, import('../public/rules.js').BotMemory>} [memories]  each bot's memory now (copied; its plan carries on) */
 export function playRest(state, seed, bots, memories = undefined) {
   const rng = seededRng(seed);
   let s = state;
   const round = s.round;
-  /** @type {Record<string, import('../public/bots.js').BotMemory>} */
+  /** @type {Record<string, import('../public/rules.js').BotMemory>} */
   const memory = Object.fromEntries(s.seating.map((id) => [id, clone(memories?.[id] ?? {})]));
   for (let n = 0; n < MAX_MOVES && s.phase === 'play' && s.round === round; n++) {
     let moved = false;
@@ -99,7 +96,7 @@ export const play = (state, pid, move) => applyMove(state, { playerId: pid, move
  * play-out seed, and the decision's randomness, is shared between the two. Also: whether the bot chose to use the card.
  * The rest of the round is played by `bots`: the table's own seats and profiles. Replaces the forced-play test (the
  * card's action played as well as a few sampled targets allowed, against letting the turn go).
- * @param {GameState} state @param {string[]} cardIds @param {{ playouts: number, bots: Profile | Record<string, string>, seed: number, memories?: Record<string, import('../public/bots.js').BotMemory> }} o
+ * @param {GameState} state @param {string[]} cardIds @param {{ playouts: number, bots: Profile | Record<string, string>, seed: number, memories?: Record<string, import('../public/rules.js').BotMemory> }} o
  * @returns {{ benefit: Record<string, number | null>, used: Record<string, boolean> }}
  */
 export function measureState(state, cardIds, o) {

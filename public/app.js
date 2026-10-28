@@ -10,7 +10,7 @@
  * are chosen on the board one step at a time: each step's candidates are
  * spotlit (hexes) or lit gold (tokens), and the server checks the result.
  */
-import { spec, factionById, locationById, cardById, waitingOn, nextChoice, checkTarget, previewTarget, fleeOptions, returnRoom } from './engine.js';
+import { spec, factionById, locationById, cardById, waitingOn, nextChoice, checkTarget, previewTarget, fleeOptions, returnRoom } from './rules.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml, effectHtml, markImg, EFFECTS } from './pieces.js';
 import { cardHtml as baseCardHtml, suitIcon } from './cards.js';
@@ -18,8 +18,8 @@ import { planFlights, fly } from './motion.js';
 import { targetSteps } from './guide.js';
 import { tussleOn } from './fx.js';
 
-/** @typedef {import('./engine.js').PlayerView} PlayerView */
-/** @typedef {import('./engine.js').Move} Move */
+/** @typedef {import('./rules.js').PlayerView} PlayerView */
+/** @typedef {import('./rules.js').Move} Move */
 /** @typedef {{ from: string, text: string, at: number }} ChatLine */
 
 const PALETTE = SEAT_COLOURS;   // seat colours match the sway cubes
@@ -86,13 +86,13 @@ const ui = {
   /** play: the card whose target is being built on the board */
   /** @type {string | null} */
   choosing: null,
-  /** @type {import('./engine.js').Target} */
+  /** @type {import('./rules.js').Target} */
   target: {},
   /** the lit choice whose outcome is previewed on the board */
   /** @type {HTMLElement | null} */
   previewing: null,
   /** the target before each pick, so Back undoes one step at a time */
-  /** @type {import('./engine.js').Target[]} */
+  /** @type {import('./rules.js').Target[]} */
   undo: [],
   /** table talk lines arrived while the overlay was closed */
   unread: 0,
@@ -454,7 +454,7 @@ function renderPlayers() {
 // Rendering — the island
 // ---------------------------------------------------------------------------
 
-/** @typedef {import('./engine.js').Target} Target */
+/** @typedef {import('./rules.js').Target} Target */
 
 /** The step being chosen, if a target is being built. @param {Target} [t] */
 function currentChoice(t = ui.target) {
@@ -1292,7 +1292,7 @@ function markHint() {
 
 /**
  * The next click towards the hint's target, from the step the table is on
- * (the same steps applyPick fills in). @param {import('./engine.js').Target} ht
+ * (the same steps applyPick fills in). @param {import('./rules.js').Target} ht
  * @returns {{ kind: 'tile', location: string } | { kind: 'group', location: string, faction: string } | { kind: 'faction', faction: string } | { kind: 'use', use: string } | { kind: 'skip' } | null}
  */
 function hintNext(ht) {
@@ -1611,7 +1611,7 @@ function onPreview(event) {
 /**
  * Apply one board pick (a lit location, group, faction or direction, or Done)
  * to a target being built. Mutates `t`; false if the pick fits no step.
- * @param {import('./engine.js').Target} t @param {string} action @param {HTMLElement} el
+ * @param {import('./rules.js').Target} t @param {string} action @param {HTMLElement} el
  */
 function applyPick(t, action, el) {
   const loc = el.dataset.location ?? '';
@@ -1647,7 +1647,7 @@ function applyPick(t, action, el) {
   return true;
 }
 
-/** Strip the "stop" markers the step-by-step builder uses. @param {import('./engine.js').Target} t */
+/** Strip the "stop" markers the step-by-step builder uses. @param {import('./rules.js').Target} t */
 function finish(t) {
   const out = structuredClone(t);
   if (out.path) out.path = out.path.filter((l) => l !== '__stop');
@@ -1761,7 +1761,7 @@ const tableHooks = {
   hand: (mode) => { if (ui.tuck !== (mode === 'tuck') || ui.raise !== (mode === 'raise')) { ui.tuck = mode === 'tuck'; ui.raise = mode === 'raise'; renderHand(); } },
   /** Tick the cards to keep in the draft. @param {string[]} keep */
   setKeep: (keep) => { ui.keep = keep.slice(); ui.keepFor = ui.view?.me.kept.length ?? -1; renderPhase(); },
-  /** Select a card with a finished target (shown as chosen), or put it down. @param {string | null} card @param {import('./engine.js').Target} [target] */
+  /** Select a card with a finished target (shown as chosen), or put it down. @param {string | null} card @param {import('./rules.js').Target} [target] */
   choose: (card, target = {}) => { ui.choosing = card; ui.target = structuredClone(target); ui.undo = []; render(); },
   /** Hints on or off, and where they come from (the tutorial's own). @param {boolean} on @param {(() => import('./hints.js').Hint | null)} [source] */
   hints: (on, source) => { if (source) ui.hints.source = source; setHints(on ? 'full' : 'off'); },

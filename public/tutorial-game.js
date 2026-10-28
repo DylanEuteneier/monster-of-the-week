@@ -5,12 +5,12 @@
  * search and the tests can run it in Node. Prototype tooling, not rules: every
  * move goes through the engine exactly as it would on the server.
  */
-import { createGame, applyMove, validate, waitingOn, nextRandom, clone } from './engine.js';
-import { botMove, fast } from './bots.js';
+import { createGame, applyMove, validate, waitingOn, nextRandom, clone } from './rules.js';
+import { botMove, fast } from './rules.js';
 
-/** @typedef {import('./engine.js').GameState} GameState */
-/** @typedef {import('./engine.js').Move} Move */
-/** @typedef {import('./bots.js').BotMemory} BotMemory */
+/** @typedef {import('./rules.js').GameState} GameState */
+/** @typedef {import('./rules.js').Move} Move */
+/** @typedef {import('./rules.js').BotMemory} BotMemory */
 
 /** The seat the learner sits in. */
 export const YOU = 'You';

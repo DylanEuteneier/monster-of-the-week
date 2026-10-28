@@ -6,12 +6,12 @@
  * the table (app.js) and the tutorial tell it. Prototype tooling, not rules:
  * everything here is read from the engine (nextChoice, resolveFight).
  */
-import { cardById, factionById, locationById, nextChoice, resolveFight, clone } from './engine.js';
+import { cardById, factionById, locationById, nextChoice, resolveFight, clone } from './rules.js';
 
-/** @typedef {import('./engine.js').GameState} GameState */
-/** @typedef {import('./engine.js').PlayerView} PlayerView */
-/** @typedef {import('./engine.js').Move} Move */
-/** @typedef {import('./engine.js').Target} Target */
+/** @typedef {import('./rules.js').GameState} GameState */
+/** @typedef {import('./rules.js').PlayerView} PlayerView */
+/** @typedef {import('./rules.js').Move} Move */
+/** @typedef {import('./rules.js').Target} Target */
 /**
  * A move as another seat may see it (every move but a draft pick is public).
  * @typedef {Move} SeenMove

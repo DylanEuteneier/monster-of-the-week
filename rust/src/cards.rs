@@ -1,4 +1,4 @@
-//! Targets: the two-target rule and each card's action (engine.js "Targets", checkShape, checkTarget, act).
+//! Targets: the two-target rule and each card's action (checkShape, checkTarget, act).
 
 use crate::board::*;
 use crate::setup::*;
@@ -385,7 +385,7 @@ pub fn check_target(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> 
         return reason;
     }
     let tokens_after = |options: std::rc::Rc<Options>| -> [OMap; NLOC] {
-        let mut copy = scratch(s); // no roundPlays, as the JavaScript copy (see engine.js)
+        let mut copy = scratch(s); // no roundPlays: so a copied Playbook play skips this check, as in the JavaScript engine (to review)
         copy.options = options;
         act(&mut copy, pid, ci, t);
         copy.board.map(|p| p.tokens)

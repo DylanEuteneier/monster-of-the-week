@@ -6,7 +6,7 @@
  *
  * The move is the strongest bot's (the caller passes it: the worker runs the
  * full bot as this table's bots are set up, designer 2026-10-11; the tutorial
- * passes its scripted move), else the best one move ahead (bots.js
+ * passes its scripted move), else the best one move ahead (the bots'
  * rankForHint, which also ranks the other options and holds the plan). The
  * words are this file's: each line reports something the
  * bot's value really counts (trophies from this round's fights, sway with a
@@ -14,12 +14,12 @@
  * move, so a hint never gives a reason the bot didn't have. Pure (no page): runs in the browser (tutorial) and in the worker.
  * Prototype tooling, not rules.
  */
-import { cardById, factionById, locationById, describeTarget, clone, resolveFight, totalPresence, presenceOf } from './engine.js';
-import { rankForHint, afterMove } from './bots.js';
+import { cardById, factionById, locationById, describeTarget, clone, resolveFight, totalPresence, presenceOf } from './rules.js';
+import { rankForHint, afterMove } from './rules.js';
 
-/** @typedef {import('./engine.js').GameState} GameState */
-/** @typedef {import('./engine.js').Move} Move */
-/** @typedef {import('./bots.js').BotMemory} BotMemory */
+/** @typedef {import('./rules.js').GameState} GameState */
+/** @typedef {import('./rules.js').Move} Move */
+/** @typedef {import('./rules.js').BotMemory} BotMemory */
 /**
  * @typedef {{ title: string, why: string[] }} Option
  * @typedef {{ key: string, plan: string, short: string, title: string, why: string[], rule: string, others: Option[], move: Move | null, card?: string, keep?: string[], tiles: string[] }} Hint  short: the move in a few words (the concise hint); title: in full

@@ -4,15 +4,15 @@
  * copy seat links. Every action is a call to /admin/*; nothing here touches
  * game rules. The option pickers are built from the variants in spec.json.
  */
-import { spec, variants } from './engine.js';
-import { PROFILES } from './bots.js';
+import { spec, variants } from './rules.js';
+import { PROFILES } from './rules.js';
 
 const KEY_STORAGE = 'motw-host-key';
 const MIN_SEATS = spec.meta.players.min;
 const MAX_SEATS = spec.meta.players.max;
 const DEFAULT_SEATS = ['Ann', 'Bob', 'Cat', 'Dan', 'Eve'];
 const TOAST_MS = 3000;
-/** The bot profiles (public/bots.js), as the host sees them. */
+/** The bot profiles (rules.js), as the host sees them. */
 const PROFILE_LABELS = /** @type {Record<string, string>} */ ({
   trophy: 'trophy (adapts; plays for trophy sets)',
   backer: 'backer (adapts; leans to backing a faction)',

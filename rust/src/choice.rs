@@ -1,4 +1,4 @@
-//! Building a card's target one choice at a time (engine.js nextChoice, the walks and listing). Not rules: they offer
+//! Building a card's target one choice at a time (nextChoice, the walks and listing). Not rules: they offer
 //! the legal options a step at a time, and checkTarget still checks the finished target.
 
 use crate::board::*;

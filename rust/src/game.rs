@@ -1,4 +1,4 @@
-//! Validation, applying moves, the resolve phase and the end of the game (engine.js "Validation" to "Derived values").
+//! Validation, applying moves, the resolve phase and the end of the game .
 
 use crate::board::*;
 use crate::cards::*;

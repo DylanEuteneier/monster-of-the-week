@@ -46,7 +46,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIR = join(ROOT, 'experiments');
 const RESULTS = join(DIR, 'results'), BASES = join(DIR, 'bases'), CATALOGUE = join(DIR, 'CATALOGUE.md');
 const SPACE = join(DIR, 'space.json');
-const CODE = ['public/engine.js', 'public/bots.js', 'public/spec.json', 'scripts/tournament.js', 'scripts/lib.js'];
+const CODE = ['public/motw.wasm', 'public/rules.js', 'public/spec.json', 'scripts/tournament.js', 'scripts/lib.js'];
 
 /** @typedef {{ g: number, side: string, seats: Record<string, string>, winners: string[], placings?: string[], trophiesByColour?: any, standing?: any, presenceBy?: any }} Game */
 /** @typedef {{ games: number, seats: number, winA: number, winB: number, dWin: number, seWin: number, zWin: number, gain: number, seGain: number, zGain: number, invA: number, invB: number }} Metrics */
@@ -141,7 +141,7 @@ const round3 = (/** @type {number} */ x) => Math.round(x * 1000) / 1000;
 
 /** The profiles' current values, read fresh (a pull may have changed the bots). @returns {Record<string, Record<string, number>>} */
 function defaults(/** @type {string[]} */ profiles) {
-  const code = `import(${JSON.stringify(pathToFileURL(join(ROOT, 'public/bots.js')).href)}).then((m) => console.log(JSON.stringify(Object.fromEntries(${JSON.stringify(profiles)}.map((p) => [p, m.personaOf(p)])))))`;
+  const code = `import(${JSON.stringify(pathToFileURL(join(ROOT, 'public/rules.js')).href)}).then((m) => console.log(JSON.stringify(Object.fromEntries(${JSON.stringify(profiles)}.map((p) => [p, m.personaOf(p)])))))`;
   return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code], { cwd: ROOT, encoding: 'utf8' }));
 }
 

@@ -1,5 +1,4 @@
-//! For the table: previews, a target in words, and what one seat may see (engine.js previewTarget, describeTarget,
-//! playerView).
+//! For the table: previews, a target in words, and what one seat may see (previewTarget, describeTarget, playerView).
 
 use crate::cards::{act, card, scratch};
 use crate::game::waiting_on;

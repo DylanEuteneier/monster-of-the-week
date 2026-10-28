@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { spec } from '../public/engine.js';
+import { spec } from '../public/rules.js';
 import art from '../public/assets/sprites.json' with { type: 'json' };
 
 /** @typedef {{ width: number, height: number, src: string, rows: string[] }} Sprite */

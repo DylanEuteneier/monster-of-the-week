@@ -1237,9 +1237,10 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Decided (designer, 2026-10-27):** only the live game is encoded: the 21 cards of the core deck and the variants that apply to them. The old decks' code is removed everywhere (the Set v2 deck and the mixed and fixed deals, the test cards outside the core, the responses system, hidden tokens and bluffs, printed sway by measured strength, and the variants that served only them: deck, coreParts, responses, bluffs, pinning, gatherSway, swayAtOrigin, swayToBoard, swayBonus, whoPays). They stay in this document as references and context only (Appendix H, the changelog); bringing one back means building it again.
 - **Why (designer):** planning bots made a decision take 10 to 40 seconds, too slow to play against; the old decks' code no longer earns its keep.
 - **With it (2026-10-27):** the bots' experiments that measured no better and were never adopted (fit, blend, goalFit, field, rank, spread, halve, draft, draftPlan, deepRoll, cheapRoll, guardCap, planHorizon, planPairs) are removed with their fitting scripts and data; the standard trophy and backer bots are ported as they play. One bot bug fixed in both: with sway not required, negative standing made every valuation NaN (it now counts as no access).
+- **Done (2026-10-28):** the port matched the JavaScript move by move (every recorded game, and the table's questions on a seat's view), and Rust is now the only place the rules live: the JavaScript engine and bots are retired. The Worker and the table reach the Rust engine through `public/rules.js` and its WebAssembly build (F.4); the recorded games are kept as fingerprints the Rust tests replay, so play cannot change by accident (F.14). One effect at the table: it now asks the same engine as the server about its own view, so its previews, the options it offers and its checks of a target match what the server will accept (the JavaScript engine, run on a view, sometimes differed).
 - **Scope:** prototype only; not a rule of the game.
 - **Affects:** D8 and Appendix F (the engine, the data file, the tutorial's deal, now the core deck at a new seed).
-- **Date:** 2026-10-27
+- **Date:** 2026-10-27; done 2026-10-28
 
 #### D14. Tokens and cubes
 
@@ -1347,6 +1348,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-07 | IC1 in the first draft: the sway a card places is a requirement (D15). The core loop recorded (D16) | Bot games after IC1: fewer fights (1.4 a round) and the invaders win 97% (30 games); presence climbs to about 50 against a threshold of 20 |
 | 2026-10-07 | Card strength measured over a played-out round, as benefit to the player (designer); deep bots with a reply lookahead and strategy breakpoints on two axes (the ending; sway or trophies mid-game); bot tournament | Prototype tooling, not rules; the breakpoint numbers are suggestions to tune |
 | 2026-10-27 | The prototype's engine and bots to be rewritten in Rust; the old decks' code removed, only the core deck encoded (D27) | Prototype only, not rules |
+| 2026-10-28 | The Rust engine and bots replace the JavaScript ones in the Worker, the table, the tutorial and the scripts (D27): WebAssembly through `public/rules.js`; the recorded games kept as fingerprints | Prototype only, not rules; play unchanged |
 
 ---
 
@@ -1389,6 +1391,7 @@ Actual changes to mechanisms and game structure.
 | **Phase** | A step within a round. |
 | **Pile** | *(Idea.)* One faction's casualties from a fight, handed to a player together as trophies. |
 | **Pinning** | *(Test lever, prototype only.)* At a contested location each token pins one enemy token, so only the larger group's surplus can leave by a movement card. Cards marked unpinned aren't movement and aren't held. Not to be confused with the Pin action type in Appendix H (a card that stops movement into or out of a location). |
+| **Play fingerprint** | *(Prototype only.)* Bot games on fixed seeds with the game state hashed after every move: a recording that shows whether a code change changed play. Kept in `rust/tests/fixtures/fingerprints.json`. |
 | **Player view** | The copy of the game state that one seat is allowed to see. |
 | **Presence** | *(Idea.)* The number of invader tokens on the board. A faction's presence is the number of its own tokens on the board. |
 | **Presence threshold** | *(Idea.)* The level of total invader presence, checked at game end, that decides which win condition applies. |
@@ -2377,7 +2380,7 @@ The patterns and architecture the web prototype is built on. This appendix cover
 | Cloudflare Workers | One Worker serves the pages and routes every request. It runs on the free plan. |
 | Game state as one text document | The whole game is a single JSON document. One Durable Object holds it in memory and saves it after every accepted move. |
 | HTML and JavaScript UI | Static pages with no build step. The browser draws one player's view and sends moves. |
-| JavaScript game engine as a state machine | One plain module of pure functions holds all the rules. The server uses it to decide; the browser uses it only to preview. |
+| Rust game engine as a state machine | One Rust crate of pure functions holds all the rules and the bots, built to WebAssembly for the Worker and the browser (D27). The server uses it to decide; the browser uses it only to preview. |
 | Magic links | Each seat has a link of its own. The link is the player's identity, with no accounts and no lobby. |
 | Bots | Any seat can be a bot. The server plays it with a random legal move as soon as it can act. |
 | Host page | A page for naming the seats, choosing options and bots, dealing a new game, and copying the links. |
@@ -2448,8 +2451,9 @@ The Worker itself only routes. It passes the websocket and admin routes to the D
 ### F.4 The engine
 
 - **Pure functions.** The engine never touches the network, the page, or storage. It takes a state and returns a new one, so it runs unchanged in the server, the browser, the tests, and the simulation.
-- **The same module on both sides.** It is plain JavaScript with type comments, checked under strict TypeScript. The types for the state, the moves, and the player view are written at the top of the file.
-- **It reads the data file.** The engine imports the data file, builds its lookups from it once, and passes it on to whoever imports the engine.
+- **Rust, the same build on both sides (D27).** The engine and the bots are one Rust crate (`rust/`), built to WebAssembly (`public/motw.wasm`, by `npm run wasm`) for the Worker and the browser, and natively for the Rust tests and tools. JavaScript reaches it through `public/rules.js`, which keeps the engine's function names and holds the types for the state, the moves, and the player view (checked under strict TypeScript). Calls pass the state as JSON, so a saved game is the same document either way.
+- **It reads the data file.** The engine builds in the data file and builds its lookups from it once; `rules.js` reads the same file for the content lookups the table needs (cards, factions, locations).
+- **On a player view.** The browser asks its questions (the next choice in a target, a preview, a check) on its own player view; the engine reads the view's own hand and the seat to act, so it answers as the server would.
 
 #### The functions
 
@@ -2644,7 +2648,7 @@ Where a game is started. The host page holds no game rules. Everything it does i
 #### Bots that play to win (designer, 2026-10-07)
 
 - **Purpose.** Bots play out rounds to measure cards and play whole games to test the systems. *Designer:* bot speed is not a concern; bots should play as tactically and strategically as we can make them, and their reactions should be designed carefully.
-- **Profiles** (`public/bots.js`; tuning, not rules). *Pruned (designer, 2026-10-08): every dumb or weak bot was removed; three remain.*
+- **Profiles** (`rust/src/bots.rs`; tuning, not rules). *Pruned (designer, 2026-10-08): every dumb or weak bot was removed; three remain.*
   - *trophy* (named *goal* until 2026-10-09; designer renamed it, as both profiles are goal-driven): the trophy player, the standard bot (server, scripts, tests). Goal-driven, below; leans toward the island and trophy sets. Older notes say *goal* for it.
   - *backer:* the faction backer: leans toward backing a faction for the invaders, guards presence (`protect`), holds its plan unless the island is clearly better (`commit`) and pushes its faction to the top (`top`).
   - *goal-deep:* removed (2026-10-09, designer): goal plus a reply lookahead, which bypassed the play-out search; it won 5% of 10 games against 42.5% for goal. A lighter play-out search (`keep=4,playouts=2`) also measured clearly worse (10% against 45%), so tuning runs keep the full search and stay fast with small samples (about 10 games, variants side by side; designer).
@@ -2683,7 +2687,7 @@ Where a game is started. The host page holds no game rules. Everything it does i
     - *Bot profile rework (2026-10-08, after a review of the whole system):* competence, style and table are kept apart. Competence (one evaluator for every goal bot): island trophies counted directly, margins never scaled by an ending's chance, the threat of a rival's faction lead, and a win-chance measure normalised across the table (calibrated: round 1 predicts 20% and 20% happen; round 4's 15%, 25%, 43% came true 18%, 28%, 35%; very high late predictions are still over-confident). Style is two numbers: a lean toward factions or trophies that fades by round (varied a little each game) and stubbornness. Stances are now fluid: backers open on a faction (72% in round 1) and many give up late (30% still backing in round 5); trophy players sometimes join late (11% in round 5). Probes play out the real table with each bot's plan.
     - *Rules test with committed backers (never abandon their faction; 200 games each):* the invaders' ending with 1 backer 25%, 2 backers 43%, 3 backers 58.5%, 4 backers 67%. Two backers and a majority meet the targets; a lone backer at 25% is easier than "very, very difficult". That is a rules question (how well a lone faction holds presence against four players removing it). *Designer (2026-10-08): 25% is fine for now.*
 - **Bots read the full state.** A bot that plays to win would have to be limited to its own player view for a fair game against people; for measuring cards, full state is used. *Open:* whether to limit them.
-- **Smarter bots (designer, 2026-10-08: make the bots even smarter; a little cheating, the reply lookahead seeing the next hand, is fine for now).** Five search switches on the goal bots (`public/bots.js`, tuning, not rules), each tested as a challenger in seat 5 against backer, backer, goal, goal (200 games each; an even share is 20%):
+- **Smarter bots (designer, 2026-10-08: make the bots even smarter; a little cheating, the reply lookahead seeing the next hand, is fine for now).** Five search switches on the goal bots (then `public/bots.js`, now `rust/src/bots.rs`; tuning, not rules), each tested as a challenger in seat 5 against backer, backer, goal, goal (200 games each; an even share is 20%):
   - *sim, play-out search:* its six best moves one move ahead (passing always among them), each played to the end of the round four times by fast goal bots, with shared randomness; passing and holding a card are judged like any other move. **49.9%** (the goal bots 15.0%).
   - *sets, access to the weakest colours:* for the island, standing and board sway with the factions of its weakest colours count (the access to their fights under IC1), fading out by the last round. sets=1 26.0%, **sets=2 29.3%**, sets=4 21.0%. Prompted by a game where a bot took 31 trophies, 18 of them Machines, and lost on a colour at 0 (designer: lots of trophies only matter with many complete sets).
   - *enum, every target listed* (up to 40 per card, sampling past it): 24.8%. *combo, hand-aware draft* (a card's worth after each kept card's best play): 24.3%. *hidden, face-down tokens counted* (its own as they are, a rival's as even odds of a bluff): 21.5%.
@@ -2767,12 +2771,16 @@ public/
   assets.html, assets.js   assets page: every token, token, and sprite, and the palette
   pieces.js       presence tokens and sway cubes, drawn in CSS
   assets/         built art: sprites, token outlines, and their data file
-  bots.js         the bots (goal, goal-deep, hunter), shared by the server and the scripts
-  engine.js       the rules: createGame, validate, applyMove, resolve, playerView
+  rules.js        the rules for JavaScript: the Rust engine and bots under the engine's names, the types, lookups
+  motw.wasm       the Rust engine and bots, built to WebAssembly (npm run wasm)
   spec.json       all constants and content as data
+rust/
+  src/            the rules engine and the bots, the only place the rules live (wasm.rs: the bridge)
+  src/bin/motw.rs play fingerprints and bot timing, natively
+  tests/          engine and bot tests, and the recorded games (fixtures/fingerprints.json)
 src/
   worker.ts       routing, and the game's Durable Object: tokens, websockets, saving
-test/             engine tests and a headless render of every phase
+test/             bots and the rules bridge, the tutorial, and a headless render of every phase
 scripts/
   tournament.js   the tuning tournament: bot games, endings, economy, card plays and probes
   lib.js          shared by the tournament and the tests
@@ -2788,7 +2796,8 @@ wrangler.toml     Worker configuration
 
 - **Locally:** `wrangler dev` runs the Worker, the Durable Object, and the static pages together, with hot reload.
 - **Deploying:** the repository is connected to Cloudflare, so every push to the main branch builds and deploys.
-- **Checks:** type checking, tests, and a trial bundle run on every push.
+- **Building the engine:** `npm run wasm` builds the Rust engine to `public/motw.wasm`, which is committed and deployed as it is (needs Rust and its WebAssembly target). `npm run check` builds it first.
+- **Checks:** the engine's build, type checking, the JavaScript and Rust tests, and a trial bundle run on every push.
 
 ### F.14 Testing and scripts
 
@@ -2796,12 +2805,14 @@ These are strategies, described by what each is for.
 
 | Strategy | What it checks |
 |---|---|
-| Engine tests | The rules, using worked examples: that legal moves give the expected result, that illegal moves are rejected with a reason, and that each seat's view hides what it should. |
+| Engine tests | The rules, using worked examples (in Rust, `rust/tests`): that legal moves give the expected result, that illegal moves are rejected with a reason, and that each seat's view hides what it should. |
+| Play fingerprints | That a change to the code doesn't change play: the recorded bot games (`rust/tests/fixtures/fingerprints.json`) are replayed and every state hashed. Regenerated only when a decision is meant to change play. |
+| Bridge tests | That the JavaScript side gets the engine's answers: refused moves, the table's questions on a player view, a bot's memory kept between turns. |
 | Render tests | That every phase can be drawn from a player view without error, run without a browser. |
 | Tuning tournament | Whole games with bots, across every core: that games run start to finish, the figures for tuning the bots, the economy and the cards (with controlled probes), saved as it runs and resumable (`scripts/tournament.js`). |
 | Smoke test | That a whole game can be played against a running server over websockets, end to end. |
 | Admin script | Not a test: it deals a game and lists the magic links from the command line, using the same admin routes as the host page. It can be pointed at a local or a deployed server. |
-| Checks on every push | Type checking, the tests, and a trial bundle of the Worker. |
+| Checks on every push | The engine's build, type checking, the JavaScript and Rust tests, and a trial bundle of the Worker. |
 
 - **The engine is tested first and most.** Because it is pure, it can be tested without a server or a browser, and it is the part that is rerun whenever a rule changes.
 
@@ -3022,7 +3033,7 @@ Educated first guesses, made at the designer's request so bots can run simulatio
 
 ### G.8 Readings used in the prototype engine (2026-10-06)
 
-Where a rule or card left a detail open, the engine (`public/engine.js`) uses the reading below. These are implementation choices for the prototype, listed so the designer can review them; none is a decision.
+Where a rule or card left a detail open, the engine (`rust/src`; `public/engine.js` until 2026-10-28) uses the reading below. These are implementation choices for the prototype, listed so the designer can review them; none is a decision.
 
 - **Placing sway with a move:** at each destination, 1 sway is placed per faction moved there, spent from the mover's standing with that faction, whenever they have any (it is not optional).
 - **Draft:** each pass, a player keeps one more card than before from their kept cards plus the batch in front of them, and passes the rest to the next seat (DR3 with the put-back rule, as one choice). The last card of each batch is kept automatically, since there is no choice to make.

@@ -1,4 +1,4 @@
-//! Board helpers (engine.js "Board helpers"): what is where, who may enter, and moving tokens.
+//! Board helpers: what is where, who may enter, and moving tokens.
 
 use crate::spec::spec;
 use crate::types::*;

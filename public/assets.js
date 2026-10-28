@@ -5,7 +5,7 @@
  * the palette. Read-only; holds no rules.
  * Sprites are plain static files under /assets/, built by assets/sprites.py.
  */
-import { spec } from './engine.js';
+import { spec } from './rules.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { LAYOUT_SUGGESTIONS } from './layout-suggestions.js';

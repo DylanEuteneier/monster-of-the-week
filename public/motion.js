@@ -13,10 +13,10 @@
  * - a player's cubes: on a location, in standing with a faction, or in
  *   their supply.
  */
-import { factionById } from './engine.js';
+import { factionById } from './rules.js';
 import { tokenHtml, cubeHtml } from './pieces.js';
 
-/** @typedef {import('./engine.js').PlayerView} PlayerView */
+/** @typedef {import('./rules.js').PlayerView} PlayerView */
 
 /** One kind of place a piece can be. @typedef {{ kind: 'loc', loc: string } | { kind: 'supply' } | { kind: 'standing', faction: string } | { kind: 'trophy', player: string }} Spot */
 /** Pieces of one kind leaving or arriving somewhere. @typedef {{ spot: Spot, n: number }} Flow */

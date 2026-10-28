@@ -1,6 +1,6 @@
-//! Bots (a port of public/bots.js): the trophy and backer profiles, their evaluation, search, play-outs and hand
-//! planning. Tuning numbers, not rules. Random draws and floating-point sums follow the JavaScript's order exactly, so
-//! the same seed plays the same game.
+//! Bots: the trophy and backer profiles, their evaluation, search, play-outs and hand planning. Tuning numbers, not
+//! rules. Random draws and floating-point sums keep the order of the JavaScript bots they were ported from, so the
+//! recorded games (tests/fixtures/fingerprints.json) still play the same.
 
 use crate::board::*;
 use crate::cards::*;
@@ -49,7 +49,7 @@ const TABLE_BASE: f64 = 0.3;
 const TABLE_STEP: f64 = 0.15;
 const ISLAND: [f64; 4] = [1.0, 0.35, 0.12, 0.02];
 
-/// A goal bot's persona (bots.js Persona); 0 is a switch off.
+/// A goal bot's persona; 0 is a switch off.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Persona {
     pub lean: f64,
@@ -523,7 +523,7 @@ fn set_access(s: &GameState, pid: Pid) -> f64 {
     let on_board = |f: usize| -> i32 { s.board.iter().map(|pl| if pl.tokens.get(f as Fac) > 0 { pl.sway.get(pid) } else { 0 }).sum() };
     let mut acc = 0.0;
     for (i, &f) in order.iter().enumerate() {
-        acc += need[i] * (((p.standing[f] + on_board(f)) as f64).max(0.0)).sqrt(); // negative standing: no access (as bots.js)
+        acc += need[i] * (((p.standing[f] + on_board(f)) as f64).max(0.0)).sqrt(); // negative standing: no access
     }
     acc * (rounds_left / 2.0).min(1.0)
 }
@@ -1101,4 +1101,118 @@ fn night_moves(s: &GameState, loc: Loc) -> Vec<Move> {
 /// The deck's cards (for callers that need the list).
 pub fn all_cards() -> usize {
     spec().cards.len()
+}
+
+/// A hint's ranking (rankForHint): the seat's goal, then its options ranked by their worth one move ahead, with no
+/// noise and no play-outs (play-outs would play rivals' hidden hands). Draft: each card in the pool by its best play's
+/// worth now. Growth and nightfall: each choice the seat may make. `memory` keeps the goal between hints.
+pub struct HintRanking {
+    pub goal: Goal,
+    pub moves: Vec<(Move, GameState, f64)>,
+    pub worth: Vec<(CardIx, f64)>,
+}
+
+pub fn rank_for_hint(s: &GameState, pid: Pid, memory: &mut BotMemory, profile: &str) -> HintRanking {
+    // The hint's own fixed sequence (an LCG), so the same position always gets the same hint.
+    let mut x: i32 = 12345;
+    let mut r = move || {
+        x = x.wrapping_mul(1664525).wrapping_add(1013904223);
+        (x as u32) as f64 / 4294967296.0
+    };
+    let rng: Rng = &mut r;
+    let persona = persona_of(profile).or_else(|| persona_of("trophy")).expect("trophy persona");
+    if memory.jitter.is_none() {
+        memory.jitter = Some(0.0); // no random lean in a hint
+    }
+    let goal = choose_goal(s, pid, &persona, Some(memory), rng);
+    let ev = |x: &GameState| evaluate(x, pid, profile, Some(goal));
+    let base_v = ev(s);
+    let p = &s.players[pid as usize];
+    let mut moves: Vec<(Move, GameState, f64)> = Vec::new();
+    let mut worth: Vec<(CardIx, f64)> = Vec::new();
+    let played = |m: Move| {
+        let x = apply_move(s, pid, &m).expect("a hint's move is legal");
+        let v = ev(&x);
+        (m, x, v)
+    };
+    match s.phase {
+        Phase::Draft if !p.picked => {
+            let pool: Vec<CardIx> = p.kept.iter().chain(p.batch.iter()).copied().collect();
+            worth = pool.into_iter().map(|c| (c, card_worth(s, pid, c, rng, &ev, base_v))).collect();
+            worth.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        }
+        Phase::Growth => {
+            if let Some(g) = &s.growing {
+                if g.leaders[g.next as usize % g.leaders.len()] == pid {
+                    moves = g.due.iter().map(|(l, _)| played(Move::Grow { location: l })).collect();
+                }
+            }
+        }
+        Phase::Night => {
+            if let Some(n) = &s.night {
+                if n.player == pid {
+                    moves = night_moves(s, n.left[0]).into_iter().map(played).collect();
+                }
+            }
+        }
+        Phase::Play if s.turn == pid as usize => {
+            moves = candidates(s, pid, rng, SEARCH_TARGETS, true, false, None, None).into_iter().map(|m| {
+                let x = after(s, pid, &m);
+                let v = ev(&x);
+                (m, x, v)
+            }).collect();
+        }
+        _ => {}
+    }
+    moves.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
+    HintRanking { goal, moves, worth }
+}
+
+/// A state after a move played straight through (for hints: afterMove).
+pub fn after_move(s: &GameState, pid: Pid, m: &Move) -> GameState {
+    after(s, pid, m)
+}
+
+/// A seat's position as numbers (features), for fitting the evaluation to how games end; tournament logs record it at
+/// the start of each round's play. A measuring tool: the bots don't read it. In the JavaScript's key order.
+pub fn features(s0: &GameState, pid: Pid) -> Vec<(&'static str, f64)> {
+    let c = win_chances(s0, pid, 1.0, &ISLAND);
+    let s = project_fights(s0);
+    let p = &s.players[pid as usize];
+    let n = s.factions.len();
+    let mut t: Vec<i32> = (0..n).map(|f| p.trophies[f]).collect();
+    t.sort();
+    let others: Vec<usize> = (0..s.players.len()).filter(|&i| i != pid as usize).collect();
+    let net = |i: usize, f: usize| (s.players[i].standing[f] - s.players[i].trophies[f]) as f64;
+    let presence: Vec<i32> = (0..n).map(|f| presence_of(&s, f as Fac)).collect();
+    let top_n = *presence.iter().max().unwrap();
+    let top = presence.iter().position(|&x| x == top_n).unwrap();
+    let best_other = |f: usize| others.iter().map(|&o| net(o, f)).fold(f64::NEG_INFINITY, f64::max);
+    let r3 = |x: f64| (x * 1000.0 + 0.5).floor() / 1000.0; // Math.round(x * 1000) / 1000
+    let raw: Vec<(&'static str, f64)> = vec![
+        ("pInvaders", c.p_invaders),
+        ("invWin", c.p_invaders * c.as_invaders),
+        ("islWin", (1.0 - c.p_invaders) * c.as_island),
+        ("rivalWin", c.p_invaders * c.rival_invaders),
+        ("asInvaders", c.as_invaders),
+        ("asIsland", c.as_island),
+        ("marginIsland", c.margin_island),
+        ("marginInvaders", c.margin_invaders),
+        ("rivalInvaders", c.rival_invaders),
+        ("linearIsland", c.linear_island),
+        ("roundsLeft", c.rounds_left),
+        ("projected", c.projected - c.threshold),
+        ("weakest", t[0] as f64),
+        ("second", t[1] as f64),
+        ("third", t[2] as f64),
+        ("trophies", t.iter().sum::<i32>() as f64),
+        ("leadTop", net(pid as usize, top) - best_other(top)),
+        ("bestLead", (0..n).map(|f| net(pid as usize, f) - best_other(f)).fold(f64::NEG_INFINITY, f64::max)),
+        ("standing", (0..n).map(|f| p.standing[f]).sum::<i32>() as f64),
+        ("supply", p.supply as f64),
+        ("hand", s0.players[pid as usize].hand.len() as f64),
+        ("onBoard", s.board.iter().map(|pl| pl.sway.get(pid)).sum::<i32>() as f64),
+        ("access", set_access(s0, pid)),
+    ];
+    raw.into_iter().map(|(k, v)| (k, r3(v))).collect()
 }

@@ -28,7 +28,7 @@
  * none. Cards are temporary, so nothing here names a card; every number is
  * read from the game's options.
  */
-import { spec, factionById, locationById, cardById, describeTarget, playerView, resolveFight, clone, listTargets, previewTarget, deckOf, printedOf, controllerOf, growthDue } from './engine.js';
+import { spec, factionById, locationById, cardById, describeTarget, playerView, resolveFight, clone, listTargets, previewTarget, deckOf, printedOf, controllerOf, growthDue } from './rules.js';
 import { newTable, copyTable, autoMove, nextActor, play, botPicks, check, YOU, BOTS } from './tutorial-game.js';
 import { suggest } from './hints.js';
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
@@ -38,9 +38,9 @@ import { CLASH, tussleOn } from './fx.js';
 import art from './assets/sprites.json' with { type: 'json' };
 
 /** @typedef {import('./app.js').TableHooks} TableHooks */
-/** @typedef {import('./engine.js').GameState} GameState */
-/** @typedef {import('./engine.js').PlayerView} PlayerView */
-/** @typedef {import('./engine.js').Move} Move */
+/** @typedef {import('./rules.js').GameState} GameState */
+/** @typedef {import('./rules.js').PlayerView} PlayerView */
+/** @typedef {import('./rules.js').Move} Move */
 
 /**
  * What a step shows. A step that shows nothing runs and the next one follows.

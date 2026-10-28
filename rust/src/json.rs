@@ -1,5 +1,5 @@
-//! JSON in the JavaScript engine's shapes: game states, player views, moves, targets and choices; and the play
-//! fingerprint's hash (scripts/fingerprint.mjs gameOf).
+//! JSON in the shapes the table, the Worker and saved games use: game states, player views, moves, targets and
+//! choices; and the play fingerprint's hash (src/fingerprint.rs).
 
 use crate::choice::{Choice, FacKey, GroupKey, Kind, LocKey, Opt, UseKey};
 use crate::spec::{spec, Use};
@@ -455,7 +455,7 @@ pub fn choice_to_value(factions: &F5, c: &Choice) -> Value {
 }
 
 // ---------------------------------------------------------------------------
-// The play fingerprint (scripts/fingerprint.mjs)
+// The play fingerprint's hash (src/fingerprint.rs): the parts of a state that are the game
 // ---------------------------------------------------------------------------
 
 /// Canonical JSON: keys sorted, as the fingerprint script writes it.

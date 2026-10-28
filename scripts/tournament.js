@@ -11,7 +11,7 @@
  *   locations with sway, sway on the board and standing held;
  * - every card play: what it was played for (its action or its sway),
  *   whether it opened the round, the swing in its player's chance of winning
- *   (winChances in public/bots.js, percentage points), and for actions what
+ *   (winChances, the bots' estimate, percentage points), and for actions what
  *   the play did to this round's fights (trophies changing hands, fights
  *   whose winner flips weighted by the tokens lost there), control taken
  *   (contested locations where its player became sole top sway), pieces
@@ -59,11 +59,11 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, listTargets, clone, validate, fightsDue } from '../public/engine.js';
-import { PROFILES, botMove, fast, features } from '../public/bots.js';
+import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, listTargets, clone, validate, fightsDue } from '../public/rules.js';
+import { PROFILES, botMove, fast, features } from '../public/rules.js';
 import { seededRng, chance, measureState, play, MAX_MOVES, upgradeRecord } from './lib.js';
 
-/** @typedef {import('../public/bots.js').Profile} Profile @typedef {import('../public/engine.js').GameState} GameState */
+/** @typedef {import('../public/rules.js').Profile} Profile @typedef {import('../public/rules.js').GameState} GameState */
 /** @typedef {{ trophies: number, flips: number, control: number, moved: number, placed: number, presence: number, made?: number, big?: number }} Effect */
 /** @typedef {{ r: number, seat: string, card: string, use: 'action' | 'sway' | 'return', dWin: number, opener: boolean, fx?: Effect }} Play */
 /** @typedef {{ r: number, fights: number, by: number[], swayd: number, onBoard: number, standing: number }} Economy */
@@ -196,7 +196,7 @@ function reachOf(state, cardIds, cap) {
     const { targets } = listTargets(s, pid, id, cap);
     let best = -1;
     for (const target of targets) {
-      const move = /** @type {import('../public/engine.js').Move} */ ({ type: 'play', card: id, use: 'action', target });
+      const move = /** @type {import('../public/rules.js').Move} */ ({ type: 'play', card: id, use: 'action', target });
       if (!validate(s, { playerId: pid, move }).ok) continue;
       const n = fightChange(s, play(s, pid, move)).gone.filter((g) => !g.moved && theirs(s, g.loc)).length;
       best = Math.max(best, n);
@@ -420,7 +420,7 @@ else {
     const own = Object.fromEntries(players.map((/** @type {string} */ pid, /** @type {number} */ i) => [pid, seededRng(d.seed * 7919 + deal * 31 + i)]));
     const shared = seededRng(d.seed * 7 + g), side = seededRng(d.seed * 13 + g); // side: probes and playable checks, so they don't change the game
     const rngOf = (/** @type {string} */ pid) => (d.duplicate ? own[pid] : shared);
-    /** @type {Record<string, import('../public/bots.js').BotMemory>} */
+    /** @type {Record<string, import('../public/rules.js').BotMemory>} */
     const memory = Object.fromEntries(players.map((/** @type {string} */ pid) => [pid, {}]));
     /** @type {Play[]} */ const plays = [];
     /** @type {string[]} */ const held = [], unplayed = [];

@@ -2,7 +2,7 @@
 
 A shared-board area-control game: slayer groups on a small island town push
 invading factions into each other, playing for trophies and for standing with
-whichever faction wins. This repo is the web prototype: a pure game engine, a
+whichever faction wins. This repo is the web prototype: a pure game engine (Rust, run as WebAssembly), a
 Cloudflare Worker with one Durable Object as the authority, and a
 no-build-step browser table, playable remotely by 3–5 people on their own
 devices.
@@ -51,14 +51,18 @@ public/
   assets.html/js  assets page: example location card, tokens, cubes, every sprite, the palette
   pieces.js       presence tokens and sway cubes as HTML (CSS pieces)
   assets/         built art: sprites.json, sprite PNGs, token outlines (SVG); static files
-  bots.js         bots (goal, goal-deep, hunter), shared by the server and the scripts
-  engine.js       pure game logic — createGame, validate, applyMove, resolve, playerView
+  rules.js        the rules for JavaScript: the Rust engine and bots (motw.wasm) under the names the table,
+                  the worker and the scripts use; types, spec lookups
+  motw.wasm       the Rust engine and bots, built by `npm run wasm` (committed)
   spec.json       all constants and content as data
 src/
   worker.ts       routing + the Game Durable Object (tokens, websockets, persistence)
+rust/
+  src/            the rules engine and the bots (the only place rules live); src/wasm.rs is the JavaScript bridge
+  src/bin/motw.rs motw fingerprint (play fingerprints), motw time (seconds per bot decision)
+  tests/          engine and bot tests; fingerprints.rs replays the recorded games (tests/fixtures)
 test/
-  engine.test.js      data, setup, validation, phases, visibility
-  bots.test.js        bots only propose legal moves and finish games
+  bots.test.js        bots only propose legal moves and finish games; the rules bridge
   app.render.test.js  headless render of every phase
 scripts/
   tournament.js   the tuning tournament: bot games, endings, economy, card plays and probes
@@ -73,13 +77,18 @@ assets/
   test/           preview pages for the sprite test and the font specimen
 ```
 
-The engine is plain JavaScript with JSDoc types, checked under TypeScript
-strict mode (`checkJs`). Both the Durable Object and the browser import the
-same module; the client only uses it for previews and never decides anything.
+The engine and the bots are Rust (`rust/`), built to WebAssembly
+(`public/motw.wasm`) and reached through `public/rules.js`, which keeps the
+JavaScript names and types (JSDoc, checked under TypeScript strict mode). Both
+the Durable Object and the browser load the same module; the client only uses
+it for previews (on its own view) and never decides anything. The scripts run
+the same module in Node; `rust/target/release/motw` is the native tool for play
+fingerprints and timing.
 
 ## Local development
 
-Needs Node 22+ (`.nvmrc` pins 24, matching CI).
+Needs Node 22+ (`.nvmrc` pins 24, matching CI), and Rust with the WebAssembly
+target for `npm run wasm` and the Rust tests (`rustup target add wasm32-unknown-unknown`).
 
 ```sh
 npm install
@@ -116,11 +125,13 @@ round 1 without new links.
 | `npm run dev` | Worker, Durable Object, and static assets on :8788 with live reload |
 | `npm run new-game -- [names…]` | Create a game (3–5 names; default five seats) and print links. Flags: `--seed N`, `--option id=choice`, `--bots A,B` |
 | `npm run links` | Re-list the magic links for the current game |
-| `npm test` | Engine, bot, and render tests (`node --test`) |
+| `npm test` | Bot, bridge, tutorial and render tests (`node --test`) |
+| `npm run test:rust` | The engine and bot tests in Rust, and the recorded games (`cargo test`) |
+| `npm run wasm` | Build the Rust engine to `public/motw.wasm` (commit it) |
 | `npm run test:watch` | Same, re-running on change |
-| `npm run typecheck` | Strict TypeScript over engine, client, scripts, and worker |
+| `npm run typecheck` | Strict TypeScript over the rules module, client, scripts, and worker |
 | `npm run build` | Dry-run bundle of the worker into `dist/` |
-| `npm run check` | typecheck + test + build |
+| `npm run check` | wasm + typecheck + test + test:rust + build |
 | `npm run tournament -- [games] [seed] [profiles=…] [log=…] [out=…] [probe=…]` | The tuning tournament: whole bot games; endings, economy, and per-card play figures and probes (see the script's header) |
 | `npm run cards:plays` | The card tuning run: 400 games with probes, resumable (`.tuning/games.jsonl`), summary to `public/card-play-stats.json` for the card review page |
 | `npm run smoke` | Plays a whole game through a running server over websockets |

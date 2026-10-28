@@ -8,9 +8,9 @@
  *   npm run smoke            (reads ADMIN_SECRET from the env or .dev.vars)
  */
 import { readFileSync } from 'node:fs';
-import { cardById } from '../public/engine.js';
+import { cardById } from '../public/rules.js';
 
-/** @typedef {import('../public/engine.js').PlayerView} PlayerView */
+/** @typedef {import('../public/rules.js').PlayerView} PlayerView */
 
 const BASE = process.argv[2] ?? process.env.BASE ?? 'http://localhost:8788';
 const SECRET = process.env.ADMIN_SECRET ?? readDevVarsSecret() ?? '';
@@ -113,7 +113,7 @@ async function main() {
     if (view.phase === 'ended') break;
     const actor = seats.find((seat) => seat.view && policy(seat.view));
     if (!actor?.view) fail(`nobody can act in ${view.phase}, round ${view.round}: ${JSON.stringify({ toAct: view.toAct, first: view.first, opened: view.opened, seats: seats.map((s) => [s.name, s.view?.you, s.view?.toAct, JSON.stringify(s.view ? policy(s.view) : null)]) })}`);
-    const key = (/** @type {PlayerView} */ v) => JSON.stringify([v.round, v.phase, v.toAct, v.log.at(-1)?.events.length, v.seating.map((id) => v.players[id].picked)]);
+    const key = (/** @type {PlayerView} */ v) => JSON.stringify([v.round, v.phase, v.toAct, v.log.at(-1)?.events.length, v.seating.map((id) => v.players[id].picked), v.growing ? [v.growing.left, v.growing.next] : null]);
     const before = key(actor.view);
     const sent = policy(actor.view);
     await new Promise((resolve) => setTimeout(resolve, 260)); // stay under the per-seat rate limit (4 a second)

@@ -18,7 +18,7 @@ The document has three sections: 1. Context (working style and approach, plus tr
 ## Working in the code
 
 - The code follows the design document. Never add, infer, or settle a mechanism in code that the document has not settled; an open question stays open (make it a variant in `spec.json` or ask).
-- The engine (`public/engine.js`) is pure and is the only place rules live. Content and numbers live in `public/spec.json`.
+- The engine and the bots are Rust (`rust/src`), pure, and the only place rules live. Content and numbers live in `public/spec.json`. The Worker and the table reach them through `public/rules.js` and the WebAssembly build `public/motw.wasm`: `npm run wasm` builds it (`npm run check` does too); commit it with the Rust change. `rust/tests/fixtures/fingerprints.json` records how the bots play: a change that changes play fails `npm run test:rust`, and is regenerated (`motw fingerprint ... digests=1`) only when a decision means play to change.
 - Anything marked *scaffold* is placeholder plumbing, not a rule; replace it when the real phases land.
 - Art follows `assets/README.md` and Appendix F.17: printed art is pixel art (palette only, whole-number scaling), physical things are UI, and tokens and cubes are CSS pieces (`public/pieces.js`). After editing `assets/sprites.py`, run `npm run assets` and commit the generated files in `public/assets/`.
 - Run `npm run check` before committing. `npm run smoke` needs `npm run dev` running (port 8788).

@@ -7,7 +7,7 @@
  *   node scripts/tutorial-seed.js [count=300] [from=1]
  */
 import { newTable, nextActor, autoMove, play, botPicks, YOU } from '../public/tutorial-game.js';
-import { cardById } from '../public/engine.js';
+import { cardById } from '../public/rules.js';
 
 const [count = 300, from = 1] = process.argv.slice(2).map(Number);
 

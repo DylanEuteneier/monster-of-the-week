@@ -5,7 +5,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { playerView, createGame, clone, validate } from '../public/engine.js';
+import { playerView, createGame, clone, validate } from '../public/rules.js';
 import { newTable, copyTable, nextActor, autoMove, play, botPicks, YOU } from '../public/tutorial-game.js';
 import { suggest } from '../public/hints.js';
 import { planFlights } from '../public/motion.js';
@@ -58,7 +58,7 @@ test('flights: every token and cube that moved is paired from where it was to wh
 });
 
 test('a game saved before influence was renamed sway still loads', async () => {
-  const { upgradeState } = await import('../public/engine.js');
+  const { upgradeState } = await import('../public/rules.js');
   const { upgradeRecord } = await import('../scripts/lib.js');
   const s = /** @type {any} */ (createGame({ seed: 2, players: ['Ann', 'Bob', 'Cat'] }));
   const loc = Object.keys(s.board)[0];

@@ -22,14 +22,16 @@
  * its own playerView.
  */
 import { DurableObject } from 'cloudflare:workers';
-import { applyMove, createGame, playerView, IllegalMoveError, spec, upgradeState } from '../public/engine.js';
-import { botMove, PROFILES } from '../public/bots.js';
+import rulesModule from '../public/motw.wasm';
+import { applyMove, createGame, playerView, IllegalMoveError, spec, upgradeState, botMove, PROFILES, useModule } from '../public/rules.js';
 import { suggest } from '../public/hints.js';
 import type { Hint } from '../public/hints.js';
 import { seenBy, roundFights } from '../public/guide.js';
 import type { SeenMove, Fight } from '../public/guide.js';
-import type { BotMemory, Profile } from '../public/bots.js';
-import type { GameState, Move, Options, PlayerView } from '../public/engine.js';
+import type { GameState, Move, Options, PlayerView, BotMemory, Profile } from '../public/rules.js';
+
+// The rules engine (Rust, built to public/motw.wasm by `npm run wasm`), handed to the rules module once.
+useModule(rulesModule);
 
 export interface Env {
   GAME: DurableObjectNamespace<Game>;
@@ -186,11 +188,14 @@ class RateLimiter {
 // told (deployed, the two always ship together, so this never fires).
 // ---------------------------------------------------------------------------
 
-const SHARED = ['/engine.js', '/bots.js', '/hints.js', '/guide.js', '/spec.json'];
+const SHARED = ['/rules.js', '/motw.wasm', '/hints.js', '/guide.js', '/spec.json'];
 /** The shared files' fingerprint now, read through the assets binding. @returns {Promise<string>} */
 async function sharedPrint(env: Env): Promise<string> {
-  const texts = await Promise.all(SHARED.map(async (p) => { try { return await (await env.ASSETS.fetch(new Request(`http://assets${p}`))).text(); } catch { return ''; } }));
-  const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(texts.join('\u0000')));
+  const parts = await Promise.all(SHARED.map(async (p) => { try { return new Uint8Array(await (await env.ASSETS.fetch(new Request(`http://assets${p}`))).arrayBuffer()); } catch { return new Uint8Array(); } }));
+  const all = new Uint8Array(parts.reduce((n, x) => n + x.length + 1, 0));
+  let at = 0;
+  for (const x of parts) { all.set(x, at); at += x.length + 1; }
+  const digest = await crypto.subtle.digest('SHA-1', all);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 /** The fingerprint when this code loaded (module scope: a reload starts it again). */

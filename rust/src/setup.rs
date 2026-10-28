@@ -1,4 +1,4 @@
-//! Randomness, setup and the deal (engine.js "Randomness", "Setup").
+//! Randomness, setup and the deal.
 
 use crate::spec::{spec, Slot};
 use crate::types::*;
