@@ -1,0 +1,20 @@
+[package]
+name = "motw"
+version = "0.1.0"
+edition = "2021"
+description = "Monster of the Week: the rules engine and bots (port of public/engine.js and public/bots.js)"
+publish = false
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+serde_json = { version = "1.0", features = ["preserve_order"] }
+libm = "0.2"
+sha1_smol = "1.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+debug = 1
