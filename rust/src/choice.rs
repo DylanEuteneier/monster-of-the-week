@@ -679,8 +679,18 @@ pub fn complete_target(s: &GameState, pid: Pid, ci: CardIx, t: &Target, rng: &mu
 /// walk, by the path of picks that led to it, and whether a target is legal. Valid only for the state it was made for.
 #[derive(Default)]
 pub struct Memo {
-    walk: crate::small::FxMap<(Pid, CardIx, Mode, List<u8, 32>), std::rc::Rc<Choice>>,
+    /// The walks taken so far, as a tree: each node a partial target, the question it asks and the nodes its answers
+    /// lead to (roots by seat, card and mode).
+    roots: crate::small::FxMap<(Pid, CardIx, Mode), u32>,
+    nodes: Vec<Node>,
     checks: crate::small::FxMap<(Pid, CardIx, Target), bool>,
+}
+
+struct Node {
+    t: Target,
+    choice: Choice,
+    /// The node each option leads to (0: not walked yet; node 0 is never a child).
+    kids: Vec<u32>,
 }
 
 impl Memo {
@@ -688,40 +698,61 @@ impl Memo {
     pub fn legal(&mut self, s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> bool {
         *self.checks.entry((pid, ci, *t)).or_insert_with(|| check_target(s, pid, ci, Some(t)).is_none())
     }
+    fn node(&mut self, s: &GameState, pid: Pid, ci: CardIx, t: Target) -> u32 {
+        let choice = next_choice(s, pid, ci, &t);
+        let n = choice.options.len().max(1); // a mode question: its one answer, this walk's mode
+        self.nodes.push(Node { t, choice, kids: vec![0; n] });
+        (self.nodes.len() - 1) as u32
+    }
 }
 
 /// A random target built one choice at a time, as the table offers them (for bots).
 fn walk_target(s: &GameState, pid: Pid, ci: CardIx, mode: Mode, rng: &mut dyn FnMut() -> f64, memo: &mut Memo) -> Option<Target> {
-    let mut t = if card(ci).suit.is_some() { Target::with_mode(mode) } else { Target::default() };
-    let mut path: List<u8, 32> = List::new();
+    let mut at = match memo.roots.get(&(pid, ci, mode)) {
+        Some(&n) => n,
+        None => {
+            let t = if card(ci).suit.is_some() { Target::with_mode(mode) } else { Target::default() };
+            let n = memo.node(s, pid, ci, t);
+            memo.roots.insert((pid, ci, mode), n);
+            n
+        }
+    };
     for _ in 0..30 {
-        let key = (pid, ci, mode, path);
-        let c = match memo.walk.get(&key) {
-            Some(c) => c.clone(),
-            None => {
-                let c = std::rc::Rc::new(next_choice(s, pid, ci, &t));
-                memo.walk.insert(key, c.clone());
-                c
-            }
-        };
+        let node = &memo.nodes[at as usize];
+        let c = &node.choice;
         match c.kind {
-            Kind::Done => return Some(t),
+            Kind::Done => return Some(node.t),
             Kind::Mode => {
-                t.set_mode(mode);
-                path.push(u8::MAX);
+                at = match node.kids[0] {
+                    0 => {
+                        let mut t = node.t;
+                        t.set_mode(mode);
+                        let n = memo.node(s, pid, ci, t);
+                        memo.nodes[at as usize].kids[0] = n;
+                        n
+                    }
+                    n => n,
+                };
                 continue;
             }
             _ => {}
         }
         if c.is_optional() && rng() < 0.3 {
-            return Some(t);
+            return Some(node.t);
         }
         if c.options.is_empty() {
             return None;
         }
         let i = (rng() * c.options.len() as f64).floor() as usize;
-        t = choose_step(&t, &c, c.options[i]);
-        path.push(i as u8);
+        let next = node.kids[i];
+        at = if next != 0 {
+            next
+        } else {
+            let t = choose_step(&node.t, c, c.options[i]);
+            let n = memo.node(s, pid, ci, t);
+            memo.nodes[at as usize].kids[i] = n;
+            n
+        };
     }
     None
 }
