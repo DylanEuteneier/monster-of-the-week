@@ -567,7 +567,7 @@ test('Take Control (⏏ signature): spend your sway at a fight to cut down a fac
   const [f, g] = s.factions.filter((x) => x !== sent);
   const hub = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'sentients')?.id);
   const away = /** @type {string} */ (spec.locations.find((l) => l.archetype !== 'sentients')?.id);
-  s.players.ann.hand = ['take-control', 'fresh-meat', 'track-snow']; // the card's sway: 3 (D24)
+  s.players.ann.hand = ['take-control', 'gate', 'plough']; // the card's sway: 3 (D24)
   // Faction reading: a fight the Sentients are in; their rival is hit.
   s.board[away].tokens = { [sent]: 2, [f]: 5 };
   s.board[away].sway = { ann: 4, bob: 2 };
@@ -602,7 +602,7 @@ test('Spill Blood on the Altar (⎈ signature): marks up to the hand, 1 sway eac
   s.board[y].tokens = { [demon]: 2 };
   s.board[z].tokens = { [demon]: 1 };
   s.players.ann.standing[demon] = 3;
-  s.players.ann.hand = ['spill-blood', 'fresh-meat']; // a signature's sway: the hand (D24): 2 marks
+  s.players.ann.hand = ['spill-blood', 'gate']; // a signature's sway: the hand (D24): 2 marks
   const t = { mode: /** @type {const} */ ('faction'), moves: [{ location: x, faction: demon, to: '' }, { location: y, faction: demon, to: '' }] };
   assert.equal(checkTarget(s, 'ann', cardById('spill-blood'), t), null);
   assert.ok(checkTarget(s, 'ann', cardById('spill-blood'), { ...t, moves: [...t.moves, { location: z, faction: demon, to: '' }] })); // 3 marks, 2 cards in hand
@@ -615,7 +615,7 @@ test('Spill Blood on the Altar (⎈ signature): marks up to the hand, 1 sway eac
   const [home, other] = spec.locations.filter((l) => l.archetype === 'demonic').map((l) => l.id);
   q.board[other].tokens = { [f]: 2 };
   q.players.ann.standing[demon] = 1; q.players.ann.standing[f] = 1;
-  q.players.ann.hand = ['spill-blood', 'fresh-meat', 'broadcast'];
+  q.players.ann.hand = ['spill-blood', 'gate', 'ritual'];
   const lt = { mode: /** @type {const} */ ('location'), moves: [{ location: other, faction: f, to: '' }], from: [home] };
   assert.equal(checkTarget(q, 'ann', cardById('spill-blood'), lt), null);
   const la = previewTarget(q, 'ann', 'spill-blood', lt);
@@ -629,7 +629,7 @@ test('the unsuited cards (designer, 2026-10-23/24): X is the hand, this card inc
   const loc = /** @type {string} */ (spec.locations[0].id);
   const [a, b] = map[loc].adjacent;
   const ann = s.players.ann;
-  const hand = (/** @type {string} */ c) => { ann.hand = [c, 'fresh-meat', 'broadcast']; }; // X = 3
+  const hand = (/** @type {string} */ c) => { ann.hand = [c, 'gate', 'ritual']; }; // X = 3
   // A, Call in Favours: standing from the supply, up to X with one faction; sway from the supply at fights.
   hand('favours');
   ann.supply = 10;
@@ -680,7 +680,7 @@ test('Steal Their Playbook (designer, 2026-10-24): theirs copies the last card p
   const s = clear(draftAll(newGame()));
   s.opened = true;
   const pid = s.seating[s.turn];
-  s.players[pid].hand = ['playbook', 'fresh-meat'];
+  s.players[pid].hand = ['playbook', 'plough'];
   assert.ok(checkTarget(s, pid, cardById('playbook'), { use: 'theirs' })); // nothing played yet
   s.roundPlays = [{ pid, card: 'gate', use: 'sway' }, { pid: 'zed', card: 'showdown', use: 'action' }];
   const c = nextChoice(s, pid, 'playbook', {});
@@ -697,7 +697,7 @@ test('A way back (designer, 2026-10-26): a suit card brings its faction back whi
   const pid = s.seating[s.turn];
   const noct = /** @type {string} */ (factionOfArchetype(s, 'nocturnals'));
   const home = /** @type {string} */ (spec.locations.find((l) => l.archetype === 'nocturnals')?.id);
-  s.players[pid].hand = ['invite-in', 'fresh-meat']; // a ◐ strike, printed sway 2
+  s.players[pid].hand = ['invite-in', 'gate']; // a ◐ strike, printed sway 2
   s.players[pid].standing[noct] = 5;
   const supply = s.supply[noct], cubes = s.players[pid].supply;
   const play = (/** @type {string[]} */ places) => /** @type {import('../public/engine.js').Move} */ ({ type: 'play', card: 'invite-in', use: 'return', places });
@@ -751,7 +751,7 @@ test('Study the Bodies (ↂ signature): marks like the Altar; at a marked fight,
   s.board[loc].tokens = { [sci]: 6, [f]: 4 };
   s.board[loc].sway = { ann: 2, cat: 2 }; // ann's bid makes 3: ann leads
   s.players.ann.standing[sci] = 2;
-  s.players.ann.hand = ['study-bodies', 'fresh-meat'];
+  s.players.ann.hand = ['study-bodies', 'gate'];
   const t = { mode: /** @type {const} */ ('faction'), moves: [{ location: loc, faction: sci, to: '' }] };
   assert.equal(checkTarget(s, 'ann', cardById('study-bodies'), t), null);
   const after = { ...s, ...previewTarget(s, 'ann', 'study-bodies', t) };
@@ -780,7 +780,7 @@ test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-
   s.board[loc].tokens = { [f]: 6, [g]: 3 };
   s.board[loc].sway = { bob: 2 };
   s.players.ann.standing[dead] = 3;
-  s.players.ann.hand = ['wake-the-dead', 'fresh-meat', 'track-snow', 'broadcast']; // a signature's sway: 1 per card in hand, itself included (D24)
+  s.players.ann.hand = ['wake-the-dead', 'gate', 'plough', 'ritual']; // a signature's sway: 1 per card in hand, itself included (D24)
   const t = { mode: /** @type {const} */ ('location'), location: loc, from: [loc, loc, loc], payer: dead };
   assert.equal(checkTarget(s, 'ann', cardById('wake-the-dead'), t), null);
   // Common rule 8 (designer, 2026-10-20): a faction there may pay instead, the risen Undead included; not one elsewhere.
@@ -790,7 +790,7 @@ test('Wake the Dead (☾ signature): the dead rise as a third side, and a three-
   assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), { ...t, payer: elsewhere }));
   s.players.ann.standing[f] = 0;
   assert.ok(checkTarget(s, 'ann', cardById('wake-the-dead'), { ...t, from: [loc, loc, loc, loc] })); // only 3 standing
-  const late = { ...s, players: { ...s.players, ann: { ...s.players.ann, hand: ['wake-the-dead', 'fresh-meat'] } } };
+  const late = { ...s, players: { ...s.players, ann: { ...s.players.ann, hand: ['wake-the-dead', 'gate'] } } };
   assert.ok(checkTarget(late, 'ann', cardById('wake-the-dead'), t)); // 2 cards in hand: up to 2 rise (D24)
   assert.equal(checkTarget(late, 'ann', cardById('wake-the-dead'), { ...t, from: [loc, loc] }), null);
   const after = { ...s, ...previewTarget(s, 'ann', 'wake-the-dead', t) };
