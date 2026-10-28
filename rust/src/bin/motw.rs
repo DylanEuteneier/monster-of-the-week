@@ -4,6 +4,10 @@
 //!     Replays the moves a JavaScript fingerprint recorded (scripts/fingerprint.mjs) on the Rust engine, checking the
 //!     state's hash after every move.
 //!
+//!   motw fingerprint games=20 seed=1 profiles=a;b;... [check=file.jsonl] [out=file.jsonl] [o.variant=choice ...]
+//!     Bot games on fixed seeds, as scripts/fingerprint.mjs plays them (same seeds, same random sequence), every move and
+//!     state hashed; with check=, compared move by move with a JavaScript recording.
+//!
 //!   motw crosscheck <cases.jsonl>
 //!     Compares the Rust engine's answers with the JavaScript's on the cases scripts/crosscheck.mjs wrote: listed
 //!     targets, sampled targets, the first choice, the reasons broken targets are refused, and previews.
@@ -18,6 +22,7 @@ fn main() {
     match args.first().map(|s| s.as_str()) {
         Some("replay") => replay(&args[1..]),
         Some("crosscheck") => crosscheck(&args[1]),
+        Some("fingerprint") => fingerprint(&args[1..]),
         _ => eprintln!("usage: motw replay <file.jsonl> players=5 seed=1 [o.variant=choice ...]"),
     }
 }
@@ -137,9 +142,89 @@ fn crosscheck(file: &str) {
             // Key order inside a location's record (which effect was set first) is not compared: no rule reads it.
             wrong |= differ("preview", motw::json::canon(&preview_value(&s, pid, ci, &t)), motw::json::canon(p));
         }
+        if let Some(cs) = v.get("cands").and_then(|x| x.as_array()) {
+            for (k, steer) in [false, true].iter().enumerate() {
+                let mut r = lcg(v["candSeeds"][k].as_i64().unwrap());
+                let value = |x: &motw::types::GameState| motw::bots::evaluate(x, pid, "backer", Some(motw::bots::Goal::Invaders));
+                let st: Option<&dyn Fn(&motw::types::GameState) -> f64> = if *steer { Some(&value) } else { None };
+                let got = motw::bots::candidates(&s, pid, &mut r, 8, true, true, st, None);
+                let ours: Vec<String> = got.iter().map(|m| motw::json::move_to_value(&f, m).to_string()).collect();
+                let theirs: Vec<String> = cs[k].as_array().unwrap().iter().map(|m| m.to_string()).collect();
+                wrong |= differ(if *steer { "cands-steer" } else { "cands" }, ours.join("\n    "), theirs.join("\n    "));
+            }
+        }
+        if let Some(c) = v.get("chances") {
+            let o = motw::bots::win_chances(&s, pid, 1.0, &[1.0, 0.35, 0.12, 0.02]);
+            for (k, ours) in [("pInvaders", o.p_invaders), ("asInvaders", o.as_invaders), ("asIsland", o.as_island), ("marginInvaders", o.margin_invaders), ("marginIsland", o.margin_island), ("linearIsland", o.linear_island), ("rivalInvaders", o.rival_invaders), ("projected", o.projected), ("prior", o.prior), ("known", o.known)] {
+                wrong |= differ(k, format!("{ours:?}"), format!("{:?}", c[k].as_f64().unwrap()));
+            }
+        }
+        if let Some(ev) = v.get("evals").and_then(|x| x.as_array()) {
+            let mut k = 0;
+            for p in ["trophy", "backer"] {
+                for g in [motw::bots::Goal::Island, motw::bots::Goal::Invaders] {
+                    let ours = motw::bots::evaluate(&s, pid, p, Some(g));
+                    wrong |= differ("eval", format!("{ours:?}"), format!("{:?}", ev[k].as_f64().unwrap()));
+                    k += 1;
+                }
+            }
+        }
         if wrong {
             bad += 1;
         }
     }
     println!("{cases} cases, {bad} with differences {kinds:?}");
+}
+
+fn fingerprint(args: &[String]) {
+    use motw::bots::{bot_move, BotMemory, Seats};
+    use motw::game::waiting_on;
+    use motw::json::move_to_value;
+    let (kv, options) = opts(args);
+    let games: i64 = kv.get("games").map(|x| x.parse().unwrap()).unwrap_or(20);
+    let seed0: i64 = kv.get("seed").map(|x| x.parse().unwrap()).unwrap_or(1);
+    let profiles: Vec<String> = kv.get("profiles").cloned().unwrap_or_else(|| "backer:sim=0;backer:sim=0;trophy:sim=0;trophy:sim=0;trophy:sim=0".into()).split(';').map(|s| s.to_string()).collect();
+    let names: Vec<String> = (1..=profiles.len()).map(|i| format!("P{i}")).collect();
+    let want: Option<BTreeMap<i64, Vec<serde_json::Value>>> = kv.get("check").map(|f| {
+        let mut m: BTreeMap<i64, Vec<serde_json::Value>> = BTreeMap::new();
+        for line in std::fs::read_to_string(f).expect("read").lines().filter(|l| !l.is_empty()) {
+            let v: serde_json::Value = serde_json::from_str(line).unwrap();
+            m.entry(v["g"].as_i64().unwrap()).or_default().push(v);
+        }
+        m
+    });
+    let mut out: Vec<String> = Vec::new();
+    let (mut bad, mut moves) = (0, 0);
+    let t0 = std::time::Instant::now();
+    for g in 0..games {
+        let mut s = create_game(seed0 + g, &names, &options).expect("game");
+        let mut memory: Vec<BotMemory> = vec![BotMemory::default(); names.len()];
+        // The fingerprint's random sequence (scripts/fingerprint.mjs), in doubles as JavaScript computes it.
+        let mut r: f64 = ((seed0 + g) * 7919 + 1) as f64;
+        let mut rng = move || { r = (r * 1103515245.0 + 12345.0) % 2147483648.0; r / 2147483648.0 };
+        let mut lines = vec![serde_json::json!({ "g": g, "i": 0, "pid": null, "move": null, "hash": game_hash(&s) })];
+        let mut i = 1;
+        while s.phase != motw::types::Phase::Ended && i < 5000 {
+            let pid = waiting_on(&s)[0];
+            let m = bot_move(&s, pid, &mut rng, &profiles[pid as usize], Some(&mut memory[pid as usize]), &Seats::default()).expect("a move");
+            s = apply_move(&s, pid, &m).expect("legal");
+            lines.push(serde_json::json!({ "g": g, "i": i, "pid": names[pid as usize], "move": move_to_value(&s.factions, &m), "hash": game_hash(&s) }));
+            i += 1;
+            moves += 1;
+        }
+        if let Some(w) = &want {
+            let refs = w.get(&g).cloned().unwrap_or_default();
+            let k = lines.iter().zip(refs.iter()).position(|(a, b)| a["hash"] != b["hash"] || motw::json::canon(&a["move"]) != motw::json::canon(&b["move"]));
+            if k.is_some() || refs.len() != lines.len() {
+                bad += 1;
+                let k = k.unwrap_or(lines.len().min(refs.len()));
+                println!("game {g}: differs at move {k}: rust {} js {}", lines.get(k).map(|x| x["move"].to_string()).unwrap_or_default(), refs.get(k).map(|x| x["move"].to_string()).unwrap_or_default());
+            }
+        }
+        out.extend(lines.iter().map(|l| l.to_string()));
+    }
+    if let Some(f) = kv.get("out") {
+        std::fs::write(f, out.join("\n") + "\n").expect("write");
+    }
+    println!("{games} games, {moves} moves, {:?}{}", t0.elapsed(), if want.is_some() { if bad > 0 { format!("; {bad} differ") } else { "; all match".into() } } else { String::new() });
 }

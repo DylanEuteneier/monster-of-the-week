@@ -2,6 +2,7 @@
 //! The JavaScript engine is the reference while the port is checked game by game against it (scripts/fingerprint.mjs).
 
 pub mod board;
+pub mod bots;
 pub mod cards;
 pub mod choice;
 pub mod game;

@@ -9,7 +9,7 @@
  */
 import { writeFileSync } from 'node:fs';
 import { createGame, applyMove, waitingOn, listTargets, sampleTarget, nextChoice, checkTarget, cardById, previewTarget } from '../public/engine.js';
-import { botMove } from '../public/bots.js';
+import { botMove, evaluate, winChances, candidates } from '../public/bots.js';
 
 const opts = Object.fromEntries(process.argv.slice(2).map((a) => a.split(/=(.*)/s).slice(0, 2)));
 const games = Number(opts.games ?? 10), seed0 = Number(opts.seed ?? 1), every = Number(opts.every ?? 3);
@@ -38,7 +38,10 @@ for (let g = 0; g < games; g++) {
         // A few deliberately broken targets: each listed target with one field dropped, and its reason.
         const broken = list.targets.slice(0, 4).flatMap((t) => Object.keys(t).map((k) => { const x = { ...t }; delete x[/** @type {keyof typeof x} */ (k)]; return { t: x, reason: checkTarget(state, pid, cardById(card), x) }; }));
         const preview = list.targets.slice(0, 3).map((t) => previewTarget(state, pid, card, t));
-        lines.push(JSON.stringify({ state, pid, card, list, even, sampled, sampleSeeds: [0, 1, 2].map((k) => i * 31 + k), first, broken, preview }));
+        const evals = ['trophy', 'backer'].flatMap((p) => ['island', 'invaders'].map((g) => evaluate(state, pid, p, /** @type {any} */ (g))));
+        const chances = winChances(state, pid);
+        const cands = card === [...new Set(state.players[pid].hand)][0] ? [false, true].map((steer) => candidates(state, pid, lcg(i * 7 + (steer ? 1 : 0)), 8, true, true, steer ? (s) => evaluate(s, pid, 'backer', 'invaders') : null)) : null;
+        lines.push(JSON.stringify({ state, pid, card, list, even, sampled, sampleSeeds: [0, 1, 2].map((k) => i * 31 + k), first, broken, preview, evals, chances, cands, candSeeds: [i * 7, i * 7 + 1] }));
       }
     }
     const move = botMove(state, { playerId: pid, rng, profile: profiles[players.indexOf(pid)], memory: memory[pid] });

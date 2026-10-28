@@ -186,7 +186,7 @@ class RateLimiter {
 // told (deployed, the two always ship together, so this never fires).
 // ---------------------------------------------------------------------------
 
-const SHARED = ['/engine.js', '/bots.js', '/hints.js', '/guide.js', '/spec.json', '/eval-fit.json'];
+const SHARED = ['/engine.js', '/bots.js', '/hints.js', '/guide.js', '/spec.json'];
 /** The shared files' fingerprint now, read through the assets binding. @returns {Promise<string>} */
 async function sharedPrint(env: Env): Promise<string> {
   const texts = await Promise.all(SHARED.map(async (p) => { try { return await (await env.ASSETS.fetch(new Request(`http://assets${p}`))).text(); } catch { return ''; } }));

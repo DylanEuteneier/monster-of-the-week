@@ -29,8 +29,6 @@
 import {
   cardById, clone, cloneState, memoising, memoOn, resolveFights, fightsDue, sampleTarget, listTargets, validate, applyMove, totalPresence, presenceOf, growthTotal, fleeOptions, returnRoom, choiceSteps, completeTarget,
 } from './engine.js';
-import evalFit from './eval-fit.json' with { type: 'json' };
-import goalFitData from './goal-fit.json' with { type: 'json' };
 
 /** @typedef {import('./engine.js').GameState} GameState */
 /** @typedef {import('./engine.js').Move} Move */
@@ -40,7 +38,7 @@ import goalFitData from './goal-fit.json' with { type: 'json' };
 const spend = (cardId) => ({ type: 'play', card: cardId, use: 'sway' });
 /** @typedef {'trophy' | 'backer'} Profile */
 /** @typedef {{ rng: () => number, profile?: Profile, memory?: BotMemory, table?: Record<string, string>, memories?: Record<string, BotMemory> }} BotOptions  table, memories: every seat's profile and memory, for play-outs (persona table) */
-/** @typedef {{ profiles?: Record<string, string>, memories?: Record<string, BotMemory>, deep?: boolean, cheap?: boolean }} Seats  the table as a play-out sees it; deep: the play-outs' seats keep their target listing (persona deepRoll) */
+/** @typedef {{ profiles?: Record<string, string>, memories?: Record<string, BotMemory> }} Seats  the table as a play-out sees it */
 /** What a bot remembers between its turns: its goal, and this game's variation in its lean. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal, jitter?: number }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
 
@@ -48,8 +46,6 @@ export const PROFILES = /** @type {Profile[]} */ (['trophy', 'backer']);
 
 /** A profile with the slow search switched off (play-outs, probes' imagined futures, tests): the same persona, one move ahead, sampled targets. @param {string} profile */
 export const fast = (profile) => (personaOf(profile) ? `${profile}${profile.includes(':') ? ',' : ':'}sim=0,enum=0,combo=0` : profile);
-/** A play-out seat that keeps its target listing (and even): persona deepRoll. @param {string} profile */
-const fastListing = (profile) => (personaOf(profile) ? `${profile}${profile.includes(':') ? ',' : ':'}sim=0,combo=0` : profile);
 
 /** Tuning for the bots, not rules. */
 const SEARCH = {
@@ -58,20 +54,14 @@ const SEARCH = {
 };
 /** Listing targets (persona enum): up to this many per card; past it, sampling fills in. */
 const LIST = { cap: 40 };
-/** Ranked listing (persona rank): list up to `list`, keep the `top` by quick score and `random` others. Tuning, not rules. */
-const RANK = { list: 200, top: 30, random: 10 };
 /** The play-out search (persona sim): its best moves one move ahead, each played to the round's end this many times, by fast goal bots. */
 // keep 8, playouts 6 (2026-10-26, challengers, 40 games each, seed 111: backer 40% a seat against 5%, trophy 38% against 16%;
 // designer: data quality over speed). Was 6 and 4.
 const SIM = { keep: 8, playouts: 6, maxMoves: 400 };
-/** Counters for looking inside the planning search (a measuring aid, not tuning). */
-export const PLAN_STATS = { decisions: 0, planned: 0, changed: 0, gain: 0, lucky: 0, followed: 0, dropped: 0 };
 /** Hand planning (persona plan): play-outs per decision, spread over the (first move, plan) pairs. Tuning, not rules. */
 // moves: plans for every shortlisted first move (2026-10-27: plans only for the plain search's best 3 changed 8% of moves;
 // a setup move ranks low alone, so it never got a plan).
 const PLAN = { budget: 450, depth: 2, moves: 99 };
-/** Planning in the draft (persona draftPlan): keeps compared besides the best by worth, and play-outs for each keep's plan. Tuning, not rules. */
-const DRAFT_PLAN = { swaps: 3, budget: 120 };
 const ROLLOUT = 'trophy:sim=0,enum=0,combo=0';
 
 /**
@@ -124,9 +114,9 @@ const sigmoid = (/** @type {number} */ x) => 1 / (1 + Math.exp(-x));
  * unknown profile, such as one saved before a bot was removed, plays as goal).
  * @param {GameState} state @param {string} pid @param {Profile | string} [profile] @param {Goal} [goal]  a goal bot's current goal
  */
-export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick = false) {
+export function evaluate(state, pid, profile = 'trophy', goal = undefined) {
   const persona = personaOf(profile);
-  return goalValue(state, pid, goal ?? 'island', persona ?? PERSONAS.trophy, quick);
+  return goalValue(state, pid, goal ?? 'island', persona ?? PERSONAS.trophy);
 }
 
 // ---------------------------------------------------------------------------
@@ -157,29 +147,12 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  *   first see which kind of move is needed and fits the plan, then spend the listing there): each option of each choice
  *   is tried with a couple of random completions, scored by the bot's own value (so its goal counts), and the most
  *   promising branch is opened further, until the listing is spent.
- * - draftPlan: plan in the draft (designer, 2026-10-27: planning begins as the draft goes): the best keep by card worth
- *   and a few others (its weakest card swapped for the next best) are each scored by planning that hand as if play
- *   began now (best first move and plan, played out; others hold what they have kept); the best-planned keep is kept.
- * - cheapRoll: with sim, the play-outs' seats play quickly (2026-10-27: most of a decision's time went on the imagined
- *   players weighing each move carefully): rollTargets targets a card (3) and rollQuick, each move judged on the board as
- *   it stands, the round's fights not projected. The end of each play-out is still judged in full.
  * - plan: with sim, plan the whole hand (designer, 2026-10-26: chains of plays, the hand played together). Each of
  *   its best first moves is tried with every plan for the cards left (none; one card next; two cards in order): in
  *   its play-outs it keeps to the plan, choosing each planned card's target on the board as it then is. The budget
  *   (planBudget play-outs, default PLAN.budget) is spent by successive halving over the (move, plan) pairs. It plays
  *   the best pair's first move and plans again next turn.
- * - goalFit: the goal (island or invaders) chosen on each ending's fitted win chance (goal-fit.json, from
- *   scripts/fit-goals.mjs; 2026-10-26, designer: accurate round evaluation passed back to strategy), not on the
- *   bots' own, which predicts no better than a constant early on. Moves are still chosen by the bot's own value.
- * - deepRoll: with sim and table, the play-outs' seats keep their target listing and even (2026-10-26: imagined
- *   futures sampled 8 targets a card, so the big unsuited cards were misplayed in them).
- * - rank: with enum, a card with more targets than the listing holds lists up to RANK.list, scores each quickly (its own
- *   evaluation on the board after the play, fights not projected), and fully scores the best RANK.top and RANK.random others.
  * - even: with enum, a card with several uses shares the listing between them (2026-10-25: the last use filled it).
- * - field: win chances against every rival, multiplied (2026-10-25, designer: value making any rival lose points), not
- *   only against the best of them.
- * - spread: with sim, every card in hand sends its best move to the play-outs (2026-10-25: a play whose worth comes
- *   later, such as taking a card back or a mark that pays at nightfall, scores little one move ahead and never got there).
  * - combo: in the draft, value a card with the cards already kept.
  * - race: with protect, value its lead in its backed faction's net standing,
  *   weighted by how safe presence is (once it is safe, the lead decides).
@@ -194,17 +167,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - table: in its play-outs, every seat plays its own profile (fast), itself
  *   included, instead of all as trophy-leaning goal bots. Needs the table's
  *   profiles (BotOptions.table; a little cheating, fine for now).
- * - halve: spend the play-outs (keep × playouts) by successive halving: each
- *   round drops the worse half of the moves, so the best get the most.
- * - draft: in the draft, play out the keeps of its this-many best cards (the
- *   rest of the draft, then the round's play) and keep the best. Needs table.
- * - fit: score positions by the evaluation fitted to how games end
- *   (eval-fit.json, from scripts/fit.mjs), this many points per unit of
- *   log-odds, in place of the hand-built goal value; its goal still steers
- *   only the draft's and the plan's choices. A tuning test.
  * - save: the worth of each sway cube kept in supply (default 0.02).
- * - blend: add the fitted evaluation, this many points per unit of log-odds,
- *   to the goal value (which keeps the goal's own terms).
  * - w2, w3: the island margin's weights on the second and third weakest
  *   colours (default 0.35, 0.12; the weakest counts 1).
  * - all: the counted island margin's weight on every trophy (default 0.02).
@@ -215,7 +178,7 @@ export function evaluate(state, pid, profile = 'trophy', goal = undefined, quick
  * - sets: for the island, value standing (and sway on the board) with the
  *   factions of its weakest colours: the access to the fights that bring them
  *   (IC1), so it builds toward complete sets instead of piling up one colour.
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, halve?: number, draft?: number, fit?: number, blend?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, spread?: number, field?: number, even?: number, rank?: number, deepRoll?: number, goalFit?: number, guardCap?: number, plan?: number, planBudget?: number, planDepth?: number, planHorizon?: number, planPairs?: number, steer?: number, draftPlan?: number, cheapRoll?: number, rollTargets?: number, rollQuick?: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, enum?: number, sim?: number, combo?: number, sets?: number, keep?: number, playouts?: number, save?: number, soft?: number, w2?: number, w3?: number, all?: number, table?: number, commit?: number, allies?: number, protect?: number, top?: number, race?: number, even?: number, plan?: number, planBudget?: number, planDepth?: number, steer?: number }} Persona
  */
 /** @type {Record<'trophy' | 'backer', Persona>} */
 const PERSONAS = {
@@ -269,16 +232,16 @@ const TABLE = { backing: 8, base: 0.3, step: 0.15 };
  * leading it (standing less trophies against the best rival). `asIsland`: my
  * weakest colour, then the next, against the best rival (TS2, WT1). Margins
  * sharpen as rounds run out.
- * @param {GameState} state @param {string} pid @param {number} [soft] @param {number[]} [colours] @param {boolean} [field]  persona field
+ * @param {GameState} state @param {string} pid @param {number} [soft] @param {number[]} [colours]
  */
-export function winChances(state, pid, soft = 1, colours = ISLAND, field = false) {
+export function winChances(state, pid, soft = 1, colours = ISLAND) {
   // Memoised per state (a speed-up): goals, values and play-outs ask about the same position many times. Read-only result.
-  if (!memoOn()) return chancesAfter(projectFights(state), pid, soft, colours, field);
+  if (!memoOn()) return chancesAfter(projectFights(state), pid, soft, colours);
   let memo = CHANCES.get(state);
   if (!memo) { memo = new Map(); CHANCES.set(state, memo); }
-  const key = `${pid}|${soft}|${colours}|${field ? 1 : 0}`;
+  const key = `${pid}|${soft}|${colours}`;
   let c = memo.get(key);
-  if (!c) { c = chancesAfter(projectFights(state), pid, soft, colours, field); memo.set(key, c); }
+  if (!c) { c = chancesAfter(projectFights(state), pid, soft, colours); memo.set(key, c); }
   return c;
 }
 /** @type {WeakMap<object, Map<string, ReturnType<typeof chancesAfter>>>} */
@@ -314,8 +277,8 @@ export function features(state, pid) {
   }).map(([k, v]) => [k, r3(v)]));
 }
 
-/** winChances on a board whose fights are already projected. @param {GameState} s @param {string} pid @param {number} [soft]  persona soft: widens every chance's spread @param {number[]} [colours]  the island margin's weights on the weakest, second and third colours, and on every trophy @param {boolean} [field]  persona field: beat every rival, not only the best */
-function chancesAfter(s, pid, soft = 1, colours = ISLAND, field = false) {
+/** winChances on a board whose fights are already projected. @param {GameState} s @param {string} pid @param {number} [soft]  persona soft: widens every chance's spread @param {number[]} [colours]  the island margin's weights on the weakest, second and third colours, and on every trophy */
+function chancesAfter(s, pid, soft = 1, colours = ISLAND) {
   // Plain loops (a speed-up): the same sums in the same order as before, so the same numbers.
   const roundsLeft = Math.max(0, Number(s.options.rounds) - s.round);
   const threshold = Number(s.options.threshold);
@@ -341,7 +304,6 @@ function chancesAfter(s, pid, soft = 1, colours = ISLAND, field = false) {
   const spreadI = soft * (1 + roundsLeft);
   let asInvaders = 0, marginInvaders = 0;
   for (let i = 0; i < nF; i++) {
-    if (field) { let p = 1; for (const o of seats) if (o !== pid) p *= sigmoid((nets[pid][i] - nets[o][i]) / spreadI); asInvaders += (w[i] / wSum) * p; continue; } // beat every rival
     const l = nets[pid][i] - bestOther(pid, i); asInvaders += (w[i] / wSum) * sigmoid(l / spreadI);
   }
   for (let i = 0; i < nF; i++) marginInvaders += (w[i] / wSum) * (nets[pid][i] - bestOther(pid, i));
@@ -376,8 +338,7 @@ function chancesAfter(s, pid, soft = 1, colours = ISLAND, field = false) {
   const marginIsland = islOf[pid] - bestIsl;
   const linearIsland = allOf[pid] - bestAll; // the island margin, counted directly
   const spreadT = soft * (0.6 + 0.8 * roundsLeft);
-  let asIsland = sigmoid(marginIsland / spreadT);
-  if (field) { asIsland = 1; for (const o of seats) if (o !== pid) asIsland *= sigmoid((islOf[pid] - islOf[o]) / spreadT); } // beat every rival
+  const asIsland = sigmoid(marginIsland / spreadT);
   const prior = Math.min(0.9, Math.max(0.1, TABLE.base + TABLE.step * backers));
   const rounds = Number(s.options.rounds);
   const known = rounds > 1 ? Math.min(1, (s.round - 1) / (rounds - 1)) : 1; // how much presence says by now
@@ -386,10 +347,8 @@ function chancesAfter(s, pid, soft = 1, colours = ISLAND, field = false) {
 }
 
 /** A goal bot's value: its win chance, weighted toward its goal, plus its margins. @param {GameState} state @param {string} pid @param {Goal} goal @param {Persona} persona */
-function goalValue(state, pid, goal, persona, quick = false) {
-  if (persona.fit) { const v = fitValue(state, pid); if (v !== null) return persona.fit * v + 0.02 * state.players[pid].supply; }
-  // quick (persona rank): the board as it stands, fights not projected; a cheap first look, not the bot's judgement.
-  const c = quick ? chancesAfter(state, pid, persona.soft ?? 1, coloursOf(persona), !!persona.field) : winChances(state, pid, persona.soft ?? 1, coloursOf(persona), !!persona.field);
+function goalValue(state, pid, goal, persona) {
+  const c = winChances(state, pid, persona.soft ?? 1, coloursOf(persona));
   // Margins are added on their own, never scaled by an ending's chance: a margin can be negative, and scaling it would
   // reward a bot that is behind for making that ending less likely (2026-10-08 fix).
   const inv = c.pInvaders * 10 * c.asInvaders + persona.margin * c.marginInvaders;
@@ -397,37 +356,7 @@ function goalValue(state, pid, goal, persona, quick = false) {
   const isl = (1 - c.pInvaders) * 10 * c.asIsland + islandMargin;
   const threat = (persona.threat ?? 0) * 10 * c.pInvaders * c.rivalInvaders;
   const guard = persona.protect && goal === 'invaders' ? persona.protect * presenceGuard(state, pid, c, persona) : 0;
-  const fitted = persona.blend ? persona.blend * (fitValue(state, pid) ?? 0) : 0;
-  return (goal === 'invaders' ? inv + guard : isl + (persona.sets ? persona.sets * (1 - c.pInvaders) * setAccess(state, pid) : 0)) - threat + (persona.save ?? 0.02) * state.players[pid].supply + fitted;
-}
-
-/**
- * Each ending's fitted chance of this seat winning by it (persona goalFit): island and invaders, from goal-fit.json for
- * this round; null when there is no fit for the round. @param {GameState} state @param {string} pid
- */
-function endingChances(state, pid) {
-  const data = /** @type {{ names: string[], rounds: Record<string, { mean: number[], sd: number[], isl: number[], inv: number[] }> }} */ (goalFitData);
-  const m = data.rounds[String(state.round)];
-  if (!m) return null;
-  const f = /** @type {Record<string, number>} */ (features(state, pid));
-  const x = data.names.map((k, j) => ((f[k] ?? 0) - m.mean[j]) / m.sd[j]);
-  const p = (/** @type {number[]} */ w) => sigmoid(w[0] + x.reduce((a, v, j) => a + v * w[j + 1], 0));
-  return { isl: p(m.isl), inv: p(m.inv) };
-}
-
-/**
- * The fitted evaluation (persona fit): the log-odds of winning from this
- * seat's features, by the weights fitted for this round (a play-out ends
- * after the round's fights, in the next round). Null at the game's end, where
- * the hand-built value counts the result, and with no fit for the round.
- * @param {GameState} state @param {string} pid @returns {number | null}
- */
-function fitValue(state, pid) {
-  const rounds = /** @type {Record<string, { mean: number[], sd: number[], w: number[] }>} */ (evalFit.rounds);
-  const m = state.phase === 'ended' ? undefined : rounds[String(state.round)];
-  if (!m) return null;
-  const f = features(state, pid);
-  return /** @type {string[]} */ (evalFit.names).reduce((a, k, j) => a + m.w[j] * ((f[k] ?? 0) - m.mean[j]) / m.sd[j], 0);
+  return (goal === 'invaders' ? inv + guard : isl + (persona.sets ? persona.sets * (1 - c.pInvaders) * setAccess(state, pid) : 0)) - threat + (persona.save ?? 0.02) * state.players[pid].supply;
 }
 
 /**
@@ -443,8 +372,7 @@ function presenceGuard(state, pid, c, persona) {
   const others = state.seating.filter((id) => id !== pid);
   const lead = (/** @type {string} */ f) => ((p.standing[f] ?? 0) - p.trophies[f]) - Math.max(...others.map((o) => (state.players[o].standing[f] ?? 0) - state.players[o].trophies[f]));
   const backed = state.factions.slice().sort((a, b) => lead(b) - lead(a))[0];
-  const cap = persona.guardCap ?? 3; // guardCap (2026-10-26): at 3, presence 15 over the threshold already saturated, so early losses went unseen
-  const margin = Math.max(-cap, Math.min(cap, (c.projected - c.threshold) / 5));
+  const margin = Math.max(-3, Math.min(3, (c.projected - c.threshold) / 5));
   // top: the invaders' ending is won by the faction with the most presence (TH1), so its backed faction must be that one.
   const rivalTop = Math.max(...state.factions.filter((f) => f !== backed).map((f) => presenceOf(state, f)));
   const ahead = Math.max(-2, Math.min(2, (presenceOf(state, backed) - rivalTop) / 3));
@@ -469,7 +397,8 @@ function setAccess(state, pid) {
   const order = state.factions.slice().sort((a, b) => p.trophies[a] - p.trophies[b]);
   const need = [1, 0.35, 0.12, 0, 0];
   const onBoard = (/** @type {string} */ f) => Object.values(state.board).reduce((n, place) => n + ((place.tokens[f] ?? 0) > 0 ? place.sway[pid] ?? 0 : 0), 0);
-  return order.reduce((acc, f, i) => acc + need[i] * Math.sqrt((p.standing[f] ?? 0) + onBoard(f)), 0) * Math.min(1, roundsLeft / 2);
+  // Negative standing (only possible when sway isn't required) counts as no access (2026-10-27: its square root made every value NaN).
+  return order.reduce((acc, f, i) => acc + need[i] * Math.sqrt(Math.max(0, (p.standing[f] ?? 0) + onBoard(f))), 0) * Math.min(1, roundsLeft / 2);
 }
 
 /**
@@ -480,18 +409,16 @@ function setAccess(state, pid) {
  * @param {GameState} state @param {string} pid @param {Persona} persona @param {BotMemory} [memory] @param {() => number} [rng] @returns {Goal}
  */
 export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
-  const c = winChances(state, pid, persona.soft ?? 1, coloursOf(persona), !!persona.field);
+  const c = winChances(state, pid, persona.soft ?? 1, coloursOf(persona));
   const push = persona.push * (c.roundsLeft + 1);
   // allies: the rivals seen backing a faction push presence up too, so the invaders' ending is more reachable than one player's push.
   const pushInv = push * (1 + (persona.allies ?? 0) * c.backers);
   const reachInv = (1 - c.known) * Math.min(1, c.prior + 0.15) + c.known * sigmoid((c.projected - c.threshold - 0.5 + pushInv) / c.spreadP);
   const reachIsl = (1 - c.known) * Math.min(1, 1 - c.prior + 0.15) + c.known * (1 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spreadP));
-  const fitted = persona.goalFit ? endingChances(state, pid) : null;
-  const evidence = fitted ? fitted.inv - fitted.isl : reachInv * c.asInvaders - reachIsl * c.asIsland;
+  const evidence = reachInv * c.asInvaders - reachIsl * c.asIsland;
   if (memory && memory.jitter === undefined) memory.jitter = (rng() * 2 - 1) * persona.jitter; // this game's play style
   const score = evidence + (persona.lean + (memory?.jitter ?? 0)) * (1 - c.known);
   const held = memory?.goal;
-  if (fitted && held === 'invaders' && persona.commit && fitted.isl < persona.commit * fitted.inv) return (memory && (memory.goal = 'invaders'), 'invaders'); // commit, on the fitted chances
   /** @type {Goal} */
   let goal = score > (held === 'invaders' ? -persona.hold : held === 'island' ? persona.hold : 0) ? 'invaders' : 'island';
   // commit: a bot backing a faction abandons it only for an island chance at least `commit` times its invader chance.
@@ -504,8 +431,8 @@ export function chooseGoal(state, pid, persona, memory, rng = Math.random) {
 // Choosing a move
 // ---------------------------------------------------------------------------
 
-/** Every move worth considering on this bot's turn. @param {GameState} state @param {string} pid @param {() => number} rng */
-function candidates(state, pid, rng, targets = SEARCH.targets, list = false, even = false, quick = /** @type {((s: GameState) => number) | null} */ (null), steer = /** @type {((s: GameState) => number) | null} */ (null), only = /** @type {string | null} */ (null)) {
+/** Every move worth considering on this bot's turn (exported for the Rust port's cross-check). @param {GameState} state @param {string} pid @param {() => number} rng */
+export function candidates(state, pid, rng, targets = SEARCH.targets, list = false, even = false, steer = /** @type {((s: GameState) => number) | null} */ (null), only = /** @type {string | null} */ (null)) {
   const p = state.players[pid];
   /** @type {Move[]} */
   const moves = [{ type: 'pass' }];
@@ -526,30 +453,13 @@ function candidates(state, pid, rng, targets = SEARCH.targets, list = false, eve
     if (!card.action) continue;
     /** @type {Set<string>} */
     const seen = new Set();
-    /** @type {ReturnType<typeof listTargets> | null} */
-    let listed = null;
     if (list && steer && !listTargets(state, pid, cardId, LIST.cap + 1, even).complete) {
       // persona steer: the listing spent best first, where the bot's own value says the card's worth lies.
       for (const target of steered(state, pid, cardId, rng, steer, LIST.cap)) { const k = JSON.stringify(target); if (seen.has(k)) continue; seen.add(k); moves.push({ type: 'play', card: cardId, use: 'action', target }); }
       targets += seen.size;
     }
-    if (list && quick) {
-      // persona rank: list wide, keep the likeliest by a quick score, plus a few others at random.
-      const wide = listTargets(state, pid, cardId, RANK.list, even);
-      if (wide.complete && wide.targets.length <= LIST.cap) listed = wide; // all of it fits: the same list as the plain listing, made once
-      else if (wide.targets.length > LIST.cap) {
-        const scored = wide.targets.map((target) => /** @type {Move} */ ({ type: 'play', card: cardId, use: 'action', target }))
-          .filter((move) => validate(state, { playerId: pid, move }).ok) // only plays legal now (the opener must open with the marked card)
-          .map((move) => ({ target: /** @type {any} */ (move).target, v: quick(after(state, pid, move)) })).sort((a, b) => b.v - a.v);
-        const rest = scored.slice(RANK.top);
-        const picks = [...scored.slice(0, RANK.top), ...Array.from({ length: Math.min(RANK.random, rest.length) }, () => rest.splice(Math.floor(rng() * rest.length), 1)[0])];
-        for (const { target } of picks) { seen.add(JSON.stringify(target)); moves.push({ type: 'play', card: cardId, use: 'action', target }); }
-        if (wide.complete) continue;
-        targets += seen.size;
-      }
-    }
     if (list && !seen.size) {
-      const l = listed ?? listTargets(state, pid, cardId, LIST.cap, even);
+      const l = listTargets(state, pid, cardId, LIST.cap, even);
       for (const target of l.targets) { seen.add(JSON.stringify(target)); moves.push({ type: 'play', card: cardId, use: 'action', target }); }
       if (l.complete && !l.targets.length) moves.push({ type: 'play', card: cardId, use: 'action', target: null }); // no legal target: played for no effect
       if (l.complete) continue;
@@ -616,8 +526,7 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
   const goal = persona ? chooseGoal(state, pid, persona, memory, rng) : undefined;
   /** This bot's value of a position (others, in its lookahead, as standard goal bots). @type {Ev} */
   const ev = (s, id = pid) => (id === pid ? evaluate(s, pid, profile, goal) : evaluate(s, id));
-  // rollQuick (cheapRoll's play-out seats): moves judged on the board as it stands, fights not projected.
-  const value = persona?.rollQuick ? (/** @type {GameState} */ s) => evaluate(s, pid, profile, goal, true) + (rng() - 0.5) * SEARCH.noise : (/** @type {GameState} */ s) => ev(s) + (rng() - 0.5) * SEARCH.noise;
+  const value = (/** @type {GameState} */ s) => ev(s) + (rng() - 0.5) * SEARCH.noise;
 
   if (state.phase === 'draft') {
     if (p.picked) return null;
@@ -627,15 +536,6 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
     const worth = pool.map((cardId) => ({ cardId, v: (persona?.combo ? comboWorth(state, pid, cardId, p.kept, rng, ev, base) : cardWorth(state, pid, cardId, rng, ev, base)) + (rng() - 0.5) * SEARCH.noise }));
     worth.sort((a, b) => b.v - a.v);
     const n = p.kept.length + 1;
-    if (persona?.draftPlan && worth.length > n) {
-      const top = worth.slice(0, n).map((w) => w.cardId);
-      const keeps = [top, ...worth.slice(n, n + DRAFT_PLAN.swaps).map((w) => [...top.slice(0, n - 1), w.cardId])];
-      const table = persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories } : undefined;
-      let best = keeps[0], bestV = -Infinity;
-      for (const keep of keeps) { const v = handPlanValue(state, pid, keep, rng, ev, memory, table); if (v > bestV) { best = keep; bestV = v; } }
-      return legal(state, pid, { type: 'pick', keep: best });
-    }
-    if (persona?.draft && persona.table && worth.length > n) return draftPick(state, pid, rng, worth.map((w) => w.cardId), n, ev, memory, persona, { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories });
     return legal(state, pid, { type: 'pick', keep: worth.slice(0, n).map((w) => w.cardId) });
   }
 
@@ -661,9 +561,10 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
   if (state.seating[state.turn] !== pid) return null;
 
   // Only legal moves compete; the first is kept if none scores (passing isn't always legal).
-  const moves = candidates(state, pid, rng, persona?.rollTargets ?? SEARCH.targets, !!persona?.enum, !!persona?.even, persona?.rank ? (s) => evaluate(s, pid, profile, goal, true) : null, persona?.steer ? ev : null);
-  if (persona?.sim && persona.plan) return planPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.planBudget ?? PLAN.budget, persona.planDepth ?? PLAN.depth, persona.planHorizon ?? 0, persona.planPairs ?? 99, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories, deep: !!persona.deepRoll, cheap: !!persona.cheapRoll } : undefined);
-  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, persona.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories, deep: !!persona.deepRoll, cheap: !!persona.cheapRoll } : undefined, persona.halve ?? 0, !!persona.spread);
+  const moves = candidates(state, pid, rng, SEARCH.targets, !!persona?.enum, !!persona?.even, persona?.steer ? ev : null);
+  const table = persona?.table ? { profiles: { ...seats.profiles, [pid]: String(profile) }, memories: seats.memories } : undefined;
+  if (persona?.sim && persona.plan) return planPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.planBudget ?? PLAN.budget, persona.planDepth ?? PLAN.depth, table);
+  if (persona?.sim) return simPick(state, pid, rng, moves, ev, memory, persona.keep ?? SIM.keep, persona.playouts ?? SIM.playouts, table);
   let best = moves[0] ?? null, bestV = -Infinity;
   for (const move of moves) {
     const v = value(after(state, pid, move));
@@ -681,17 +582,13 @@ function playMove(state, pid, rng, profile, memory, seats = {}) {
  * standard goal bots several times, scored for this bot at the end. Each
  * playout's randomness is shared across the moves, so they meet the same
  * futures. Passing and holding a card are judged like any other move.
- * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory} [memory] @param {number} [keep] @param {number} [playouts] @param {Seats} [table]  persona table: each seat's profile (played fast) and memory, in the play-outs @param {number} [halve]  persona halve: successive halving over `keep` moves @param {boolean} [spread]  persona spread: every card in hand gets its best move into the play-outs
+ * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory} [memory] @param {number} [keep] @param {number} [playouts] @param {Seats} [table]  persona table: each seat's profile (played fast) and memory, in the play-outs
  */
-function simPick(state, pid, rng, moves, ev, memory, keep = SIM.keep, playouts = SIM.playouts, table = undefined, halve = 0, spread = false) {
+function simPick(state, pid, rng, moves, ev, memory, keep = SIM.keep, playouts = SIM.playouts, table = undefined) {
   const ranked = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) }; }).sort((a, b) => b.v - a.v);
-  // spread: the best move of each card in hand first (its action, else its sway), then the best of the rest.
-  const firsts = spread ? [...new Set(ranked.flatMap((r) => (r.move.type === 'play' ? [r.move.card] : [])))].map((c) => /** @type {typeof ranked[number]} */ (ranked.find((r) => r.move.type === 'play' && r.move.card === c))) : [];
-  const short = spread ? [...firsts, ...ranked.filter((r) => !firsts.includes(r))].slice(0, Math.max(keep, firsts.length)) : ranked.slice(0, keep);
-  if (spread) short.sort((a, b) => b.v - a.v);
+  const short = ranked.slice(0, keep);
   const pass = ranked.find((r) => r.move.type === 'pass');
   if (pass && !short.includes(pass)) short.push(pass);
-  if (halve && short.length > 2) return halvingPick(short, pid, rng, ev, memory, keep * playouts, table);
   const seeds = Array.from({ length: playouts }, () => Math.floor(rng() * 2 ** 31));
   let best = short[0]?.move ?? null, bestV = -Infinity;
   for (const { move, s } of short) {
@@ -707,9 +604,9 @@ function simPick(state, pid, rng, moves, ev, memory, keep = SIM.keep, playouts =
  * Hand planning (persona plan): the best `keep` first moves one move ahead (passing always among them), each with
  * every plan for the cards left in hand (none; one card next; two cards in order), as (move, plan) pairs; play-outs
  * keep to the plan. Successive halving over the pairs, shared seeds. Tuning, not rules.
- * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory | undefined} memory @param {number} keep @param {number} budget @param {number} depth @param {number} horizon  moves per plan play-out (0: to the round's end) @param {number} pairs  first moves that get two-card plans @param {Seats} [table]
+ * @param {GameState} state @param {string} pid @param {() => number} rng @param {Move[]} moves @param {Ev} ev @param {BotMemory | undefined} memory @param {number} keep @param {number} budget @param {number} depth @param {Seats} [table]
  */
-function planPick(state, pid, rng, moves, ev, memory, keep, budget, depth, horizon, pairs, table) {
+function planPick(state, pid, rng, moves, ev, memory, keep, budget, depth, table) {
   const ranked = moves.map((move) => { const s = after(state, pid, move); return { move, s, v: ev(s) }; }).sort((a, b) => b.v - a.v);
   const short = ranked.slice(0, keep);
   const pass = ranked.find((r) => r.move.type === 'pass');
@@ -723,54 +620,27 @@ function planPick(state, pid, rng, moves, ev, memory, keep, budget, depth, horiz
   // the best plain value.
   /** @type {{ move: Move, s: GameState, plan: string[] }[]} */
   const arms = [];
-  for (const [k, { move, s }] of plain.slice(0, PLAN.moves).entries()) {
+  for (const { move, s } of plain.slice(0, PLAN.moves)) {
     const left = [...new Set(s.players[pid].hand)];
     for (const a of left) {
       arms.push({ move, s, plan: [a] });
-      if (depth > 1 && k < pairs) for (const b of left) if (b !== a) arms.push({ move, s, plan: [a, b] });
+      if (depth > 1) for (const b of left) if (b !== a) arms.push({ move, s, plan: [a, b] });
     }
   }
   if (!arms.length) return plain[0]?.move ?? null;
-  const planned = halvingBest(arms, pid, rng, ev, memory, budget, table, horizon);
+  const planned = halvingBest(arms, pid, rng, ev, memory, budget, table);
   // Like for like (2026-10-27): the winning plan, chosen from many pairs, is lucky by selection; scored again on the
   // plain search's seeds, it must still beat the best plain move.
   const arm = /** @type {{ move: Move, s: GameState, plan: string[] }} */ (arms.find((x) => x.move === planned.move && x.plan === planned.plan) ?? arms.find((x) => x.move === planned.move));
-  const fair = seeds.reduce((n, seed) => n + ev(playOutRound(arm.s, seed, pid, memory, table, false, arm.plan)), 0) / seeds.length; // full length, as the plain moves were
-  PLAN_STATS.decisions += 1;
-  if (fair > plain[0].v) { PLAN_STATS.planned += 1; if (planned.move !== plain[0].move) PLAN_STATS.changed += 1; PLAN_STATS.gain += fair - plain[0].v; }
-  PLAN_STATS.lucky += planned.v - fair;
+  const fair = seeds.reduce((n, seed) => n + ev(playOutRound(arm.s, seed, pid, memory, table, arm.plan)), 0) / seeds.length;
   return fair > plain[0].v ? planned.move : plain[0].move;
-}
-
-/**
- * A hand's worth by planning it (persona draftPlan): as if play began now with `hand` (the others holding what they
- * have kept), the best (first move, plan) pair's mean played-out value, by successive halving. Tuning, not rules.
- * @param {GameState} state @param {string} pid @param {string[]} hand @param {() => number} rng @param {Ev} ev @param {BotMemory | undefined} memory @param {Seats} [table]
- */
-function handPlanValue(state, pid, hand, rng, ev, memory, table) {
-  const s = cloneState(state);
-  s.phase = 'play';
-  s.turn = s.seating.indexOf(pid);
-  s.opened = true;
-  for (const id of s.seating) s.players[id].hand = id === pid ? hand.slice() : s.players[id].kept.slice();
-  const moves = candidates(s, pid, rng, SEARCH.targets, true, true);
-  const ranked = moves.map((move) => { const t = after(s, pid, move); return { move, s: t, v: ev(t) }; }).sort((a, b) => b.v - a.v).slice(0, 4);
-  /** @type {{ move: Move, s: GameState, plan: string[] }[]} */
-  const arms = [];
-  for (const { move, s: t } of ranked) {
-    const left = [...new Set(t.players[pid].hand)];
-    arms.push({ move, s: t, plan: [] });
-    for (const a of left) { arms.push({ move, s: t, plan: [a] }); for (const b of left) if (b !== a) arms.push({ move, s: t, plan: [a, b] }); }
-  }
-  if (!arms.length) return ev(s);
-  return halvingValue(arms, pid, rng, ev, memory, DRAFT_PLAN.budget, table);
 }
 
 /**
  * Successive halving that returns the best arm and its mean value. @param {{ move: Move, s: GameState, plan?: string[] }[]} arms @param {string} pid @param {() => number} rng @param {Ev} ev @param {BotMemory | undefined} memory @param {number} budget @param {Seats} [table]
  * @returns {{ move: Move, v: number, plan?: string[] }}
  */
-function halvingBest(arms, pid, rng, ev, memory, budget, table, horizon = 0) {
+function halvingBest(arms, pid, rng, ev, memory, budget, table) {
   const rounds = Math.max(1, Math.ceil(Math.log2(arms.length)));
   /** @type {number[]} */
   const seeds = [];
@@ -779,30 +649,11 @@ function halvingBest(arms, pid, rng, ev, memory, budget, table, horizon = 0) {
     const each = Math.max(1, Math.floor(budget / (alive.length * rounds)));
     const upto = alive[0].n + each;
     while (seeds.length < upto) seeds.push(Math.floor(rng() * 2 ** 31));
-    for (const a of alive) for (; a.n < upto; a.n++) a.total += ev(playOutRound(a.s, seeds[a.n], pid, memory, table, false, a.plan, horizon));
+    for (const a of alive) for (; a.n < upto; a.n++) a.total += ev(playOutRound(a.s, seeds[a.n], pid, memory, table, a.plan));
     alive.sort((x, y) => y.total / y.n - x.total / x.n);
     if (alive.length > 1) alive = alive.slice(0, Math.ceil(alive.length / 2));
   }
   return { move: alive[0].move, v: alive[0].total / alive[0].n, plan: alive[0].plan };
-}
-
-/**
- * Successive halving that returns the best arm's mean value (for planning in the draft). @param {{ move: Move, s: GameState, plan?: string[] }[]} arms @param {string} pid @param {() => number} rng @param {Ev} ev @param {BotMemory | undefined} memory @param {number} budget @param {Seats} [table]
- */
-function halvingValue(arms, pid, rng, ev, memory, budget, table) {
-  const rounds = Math.max(1, Math.ceil(Math.log2(arms.length)));
-  /** @type {number[]} */
-  const seeds = [];
-  let alive = arms.map((a) => ({ ...a, total: 0, n: 0 }));
-  for (let r = 0; r < rounds; r++) {
-    const each = Math.max(1, Math.floor(budget / (alive.length * rounds)));
-    const upto = alive[0].n + each;
-    while (seeds.length < upto) seeds.push(Math.floor(rng() * 2 ** 31));
-    for (const a of alive) for (; a.n < upto; a.n++) a.total += ev(playOutRound(a.s, seeds[a.n], pid, memory, table, false, a.plan));
-    alive.sort((x, y) => y.total / y.n - x.total / x.n);
-    if (alive.length > 1) alive = alive.slice(0, Math.ceil(alive.length / 2));
-  }
-  return alive[0].total / alive[0].n;
 }
 
 /**
@@ -812,65 +663,14 @@ function halvingValue(arms, pid, rng, ev, memory, budget, table) {
  */
 function plannedMove(s, pid, card, rng, profile, memory) {
   // Listed targets, shared across a card's uses (enum + even), as the bot itself chooses: sampled targets misplayed the big multi-use cards (designer, 2026-10-26).
-  const options = candidates(s, pid, rng, SEARCH.targets, true, true, null, null, card).filter((m) => m.type === 'play' && m.card === card); // that card only (2026-10-27: listing every card's targets made a game take hours)
+  const options = candidates(s, pid, rng, SEARCH.targets, true, true, null, card).filter((m) => m.type === 'play' && m.card === card); // that card only (2026-10-27: listing every card's targets made a game take hours)
   let best = null, bestV = -Infinity;
   for (const m of options) { const v = evaluate(after(s, pid, m), pid, profile, memory?.goal); if (v > bestV) { best = m; bestV = v; } }
   return best;
 }
 
-/**
- * Successive halving (persona halve): the same play-outs as the plain search
- * (keep × playouts), spent in rounds; after each, the worse half of the moves
- * is dropped, so the close calls among the best get the most play-outs. Every
- * move meets the same futures (seeds in the same order), so the comparisons
- * stay paired. Tuning, not rules.
- * @param {{ move: Move, s: GameState }[]} arms @param {string} pid @param {() => number} rng @param {Ev} ev @param {BotMemory | undefined} memory @param {number} budget @param {Seats} [table]
- */
-function halvingPick(arms, pid, rng, ev, memory, budget, table) {
-  if (arms.length === 1) return arms[0].move;
-  const rounds = Math.ceil(Math.log2(arms.length));
-  /** @type {number[]} */
-  const seeds = [];
-  let alive = arms.map((a) => ({ ...a, total: 0, n: 0 }));
-  for (let r = 0; r < rounds && alive.length > 1; r++) {
-    const each = Math.max(1, Math.floor(budget / (alive.length * rounds)));
-    const upto = alive[0].n + each;
-    while (seeds.length < upto) seeds.push(Math.floor(rng() * 2 ** 31));
-    for (const a of alive) for (; a.n < upto; a.n++) a.total += ev(playOutRound(a.s, seeds[a.n], pid, memory, table, false, /** @type {any} */ (a).plan));
-    alive.sort((x, y) => y.total / y.n - x.total / x.n);
-    alive = alive.slice(0, Math.ceil(alive.length / 2));
-  }
-  return alive[0].move;
-}
-
-/**
- * The draft's play-out search (persona draft): the `draft` best cards by their
- * worth now, each kept with the best others, and each keep played out by the
- * table (the rest of the draft, then the round's play), scored for this bot
- * at the end. Shared seeds, as in the play's search. Tuning, not rules.
- * @param {GameState} state @param {string} pid @param {() => number} rng @param {string[]} ranked  the pool, best first @param {number} n  cards to keep
- * @param {Ev} ev @param {BotMemory | undefined} memory @param {Persona} persona @param {Seats} table
- */
-function draftPick(state, pid, rng, ranked, n, ev, memory, persona, table) {
-  /** @type {Map<string, string[]>} */
-  const keeps = new Map();
-  for (const c of ranked.slice(0, persona.draft ?? 3)) {
-    const keep = [c, ...ranked.filter((x) => x !== c).slice(0, n - 1)];
-    keeps.set([...keep].sort().join(','), keep);
-  }
-  const seeds = Array.from({ length: persona.playouts ?? SIM.playouts }, () => Math.floor(rng() * 2 ** 31));
-  let best = ranked.slice(0, n), bestV = -Infinity;
-  for (const keep of keeps.values()) {
-    const s = applyMove(state, { playerId: pid, move: { type: 'pick', keep } });
-    let total = 0;
-    for (const seed of seeds) total += ev(playOutRound(s, seed, pid, memory, table, true));
-    if (total > bestV) { best = keep; bestV = total; }
-  }
-  return legal(state, pid, { type: 'pick', keep: best });
-}
-
-/** Fast bots play from here to the end of this round's play: each seat's own profile (persona table) or ROLLOUT. @param {GameState} state @param {number} seed @param {string} pid @param {BotMemory} [memory] @param {Seats} [table] @param {boolean} [through]  from the draft, on through the round's play */
-function playOutRound(state, seed, pid, memory, table = undefined, through = false, plan = /** @type {string[] | undefined} */ (undefined), horizon = 0) {
+/** Fast bots play from here to the end of this round's play: each seat's own profile (persona table) or ROLLOUT. @param {GameState} state @param {number} seed @param {string} pid @param {BotMemory} [memory] @param {Seats} [table] @param {string[]} [plan]  persona plan: its cards to play, in order */
+function playOutRound(state, seed, pid, memory, table = undefined, plan = /** @type {string[] | undefined} */ (undefined)) {
   const todo = plan ? plan.slice() : [];
   let x = seed | 0;
   const r = () => { x = (Math.imul(x, 1664525) + 1013904223) | 0; return (x >>> 0) / 2 ** 32; };
@@ -879,13 +679,11 @@ function playOutRound(state, seed, pid, memory, table = undefined, through = fal
   const mem = Object.fromEntries(state.seating.map((id) => [id, id === pid && memory ? { ...memory } : { ...(table?.memories?.[id] ?? {}) }]));
   let s = state;
   const round = s.round;
-  // through (the draft's search): from the draft on, through this round's play.
-  const going = through ? () => s.phase !== 'ended' && s.round === round : () => s.phase === 'play' && s.round === round;
-  // horizon (persona planHorizon): stop after that many moves and let the evaluation, which projects the round's fights, judge.
-  for (let n = 0; n < (horizon || SIM.maxMoves) && going(); n++) {
+  const going = () => s.phase === 'play' && s.round === round;
+  for (let n = 0; n < SIM.maxMoves && going(); n++) {
     let moved = false;
     for (const id of s.seating) {
-      const profile = table?.profiles?.[id] ? (table.deep ? fastListing(table.profiles[id]) : table.cheap ? `${fast(table.profiles[id])},rollTargets=3,rollQuick=1` : fast(table.profiles[id])) : ROLLOUT;
+      const profile = table?.profiles?.[id] ? fast(table.profiles[id]) : ROLLOUT;
       let m = null;
       // persona plan: on its own turns this bot plays its planned cards in order, each as well as it can then.
       if (id === pid && todo.length && s.phase === 'play' && s.seating[s.turn] === pid) {
@@ -895,7 +693,7 @@ function playOutRound(state, seed, pid, memory, table = undefined, through = fal
         if (m) {
           const own = playMove(s, id, r, profile, mem[id]);
           const v = (/** @type {Move} */ x) => evaluate(after(s, pid, x), pid, profile, mem[id]?.goal);
-          if (own && own.type === 'play' && v(own) > v(m)) { todo.unshift(/** @type {any} */ (m).card); m = own; PLAN_STATS.dropped += 1; } else PLAN_STATS.followed += 1;
+          if (own && own.type === 'play' && v(own) > v(m)) { todo.unshift(/** @type {any} */ (m).card); m = own; }
         }
       }
       m ??= playMove(s, id, r, profile, mem[id]);

@@ -46,7 +46,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIR = join(ROOT, 'experiments');
 const RESULTS = join(DIR, 'results'), BASES = join(DIR, 'bases'), CATALOGUE = join(DIR, 'CATALOGUE.md');
 const SPACE = join(DIR, 'space.json');
-const CODE = ['public/engine.js', 'public/bots.js', 'public/spec.json', 'public/eval-fit.json', 'scripts/tournament.js', 'scripts/lib.js'];
+const CODE = ['public/engine.js', 'public/bots.js', 'public/spec.json', 'scripts/tournament.js', 'scripts/lib.js'];
 
 /** @typedef {{ g: number, side: string, seats: Record<string, string>, winners: string[], placings?: string[], trophiesByColour?: any, standing?: any, presenceBy?: any }} Game */
 /** @typedef {{ games: number, seats: number, winA: number, winB: number, dWin: number, seWin: number, zWin: number, gain: number, seGain: number, zGain: number, invA: number, invB: number }} Metrics */
