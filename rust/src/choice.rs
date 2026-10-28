@@ -675,16 +675,40 @@ pub fn complete_target(s: &GameState, pid: Pid, ci: CardIx, t: &Target, rng: &mu
     None
 }
 
+/// Answers a bot's search asks again and again about one state (a speed-up, not a rule): the choice at each step of a
+/// walk, by the path of picks that led to it, and whether a target is legal. Valid only for the state it was made for.
+#[derive(Default)]
+pub struct Memo {
+    walk: std::collections::HashMap<(Pid, CardIx, Mode, List<u8, 32>), std::rc::Rc<Choice>>,
+    checks: std::collections::HashMap<(Pid, CardIx, Target), bool>,
+}
+
+impl Memo {
+    /// Is this target legal (check_target), memoised.
+    pub fn legal(&mut self, s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> bool {
+        *self.checks.entry((pid, ci, *t)).or_insert_with(|| check_target(s, pid, ci, Some(t)).is_none())
+    }
+}
+
 /// A random target built one choice at a time, as the table offers them (for bots).
-// PERF: the JavaScript memoises each step by the path of picks that led to it, per state.
-fn walk_target(s: &GameState, pid: Pid, ci: CardIx, mode: Mode, rng: &mut dyn FnMut() -> f64) -> Option<Target> {
+fn walk_target(s: &GameState, pid: Pid, ci: CardIx, mode: Mode, rng: &mut dyn FnMut() -> f64, memo: &mut Memo) -> Option<Target> {
     let mut t = if card(ci).suit.is_some() { Target::with_mode(mode) } else { Target::default() };
+    let mut path: List<u8, 32> = List::new();
     for _ in 0..30 {
-        let c = next_choice(s, pid, ci, &t);
+        let key = (pid, ci, mode, path);
+        let c = match memo.walk.get(&key) {
+            Some(c) => c.clone(),
+            None => {
+                let c = std::rc::Rc::new(next_choice(s, pid, ci, &t));
+                memo.walk.insert(key, c.clone());
+                c
+            }
+        };
         match c.kind {
             Kind::Done => return Some(t),
             Kind::Mode => {
                 t.set_mode(mode);
+                path.push(u8::MAX);
                 continue;
             }
             _ => {}
@@ -697,12 +721,18 @@ fn walk_target(s: &GameState, pid: Pid, ci: CardIx, mode: Mode, rng: &mut dyn Fn
         }
         let i = (rng() * c.options.len() as f64).floor() as usize;
         t = choose_step(&t, &c, c.options[i]);
+        path.push(i as u8);
     }
     None
 }
 
 /// For the bots: a random legal target for a card's turn action, or None.
 pub fn sample_target(s: &GameState, pid: Pid, ci: CardIx, rng: &mut dyn FnMut() -> f64) -> Option<Target> {
+    sample_target_memo(s, pid, ci, rng, &mut Memo::default())
+}
+
+/// sample_target, with answers about this state remembered across calls.
+pub fn sample_target_memo(s: &GameState, pid: Pid, ci: CardIx, rng: &mut dyn FnMut() -> f64, memo: &mut Memo) -> Option<Target> {
     let c = card(ci);
     let sampled = c.action == Action::Split;
     let groups: Vec<(Loc, Fac)> = if sampled { groups_of(s) } else { vec![] };
@@ -728,10 +758,10 @@ pub fn sample_target(s: &GameState, pid: Pid, ci: CardIx, rng: &mut dyn FnMut() 
                 }
             }
         } else {
-            t = walk_target(s, pid, ci, mode, rng);
+            t = walk_target(s, pid, ci, mode, rng, memo);
         }
         if let Some(x) = t {
-            if check_target(s, pid, ci, Some(&x)).is_none() {
+            if memo.legal(s, pid, ci, &x) {
                 return Some(x);
             }
         }
@@ -742,32 +772,37 @@ pub fn sample_target(s: &GameState, pid: Pid, ci: CardIx, rng: &mut dyn FnMut() 
 /// For bots: the legal targets of a card, listed by walking every choice the table offers, up to `cap`; whether the
 /// list is complete. `even`: a card with several uses shares the cap between them.
 pub fn list_targets(s: &GameState, pid: Pid, ci: CardIx, cap: usize, even: bool) -> (Vec<Target>, bool) {
+    list_targets_memo(s, pid, ci, cap, even, &mut Memo::default())
+}
+
+/// list_targets, with answers about this state remembered across calls.
+pub fn list_targets_memo(s: &GameState, pid: Pid, ci: CardIx, cap: usize, even: bool, memo: &mut Memo) -> (Vec<Target>, bool) {
     let c = card(ci);
     if even && c.uses.len() > 1 {
         let each = ((cap as f64 / c.uses.len() as f64).ceil() as usize).max(1);
         let mut targets = Vec::new();
         let mut complete = true;
         for &u in &c.uses {
-            let (t, done) = list_targets_from(s, pid, ci, each, vec![Target::with_use(u)]);
+            let (t, done) = list_targets_from(s, pid, ci, each, vec![Target::with_use(u)], memo);
             targets.extend(t);
             complete &= done;
         }
         return (targets, complete);
     }
     let start = if c.suit.is_some() { vec![Target::with_mode(Mode::Faction), Target::with_mode(Mode::Location)] } else { vec![Target::default()] };
-    list_targets_from(s, pid, ci, cap, start)
+    list_targets_from(s, pid, ci, cap, start, memo)
 }
 
 // PERF: N+1: every node of the walk asks next_choice (rebuilding candidate lists) and every leaf runs check_target
 // (which clones the state twice); a cap of 40 targets can mean hundreds of state copies per card.
-fn list_targets_from(s: &GameState, pid: Pid, ci: CardIx, cap: usize, start: Vec<Target>) -> (Vec<Target>, bool) {
+fn list_targets_from(s: &GameState, pid: Pid, ci: CardIx, cap: usize, start: Vec<Target>, memo: &mut Memo) -> (Vec<Target>, bool) {
     let mut stack = start;
     let mut found: Vec<(String, Target)> = Vec::new();
     let mut visits = 0usize;
-    let keep = |t: &Target, found: &mut Vec<(String, Target)>| {
+    let mut keep = |t: &Target, found: &mut Vec<(String, Target)>| {
         let k = crate::json::target_key(t);
-        if !found.iter().any(|e| e.0 == k) && check_target(s, pid, ci, Some(t)).is_none() {
-            found.push((k, t.clone()));
+        if !found.iter().any(|e| e.0 == k) && memo.legal(s, pid, ci, t) {
+            found.push((k, *t));
         }
     };
     while !stack.is_empty() && found.len() < cap {

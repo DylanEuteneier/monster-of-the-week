@@ -59,7 +59,7 @@ impl Action {
 }
 
 /// An unsuited card's uses (spec.json `uses`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Use {
     Sway,
     Standing,

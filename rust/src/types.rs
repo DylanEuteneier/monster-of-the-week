@@ -409,7 +409,7 @@ impl Id {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Mode {
     Location,
     Faction,
@@ -424,7 +424,7 @@ impl Mode {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct GroupMove {
     pub location: Id,
     pub faction: Id,
@@ -432,7 +432,7 @@ pub struct GroupMove {
 }
 
 /// A target's fields, in the order a JavaScript object would list them (the order they were first set).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Key {
     #[default]
     Mode,
@@ -454,7 +454,7 @@ pub enum Key {
 /// A target's list of ids (exits, a path, payers), inline.
 pub type Ids = List<Id, 24>;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Target {
     pub mode: Option<Mode>,
     pub location: Option<Id>,

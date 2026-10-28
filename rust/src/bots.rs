@@ -448,6 +448,7 @@ fn key_of(t: &Option<Target>) -> String {
 #[allow(clippy::too_many_arguments)]
 pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool, even: bool, steer: Option<&dyn Fn(&GameState) -> f64>, only: Option<CardIx>) -> Vec<Move> {
     let p = &s.players[pid as usize];
+    let mut memo = Memo::default();
     let mut moves = vec![Move::Pass];
     // As the JavaScript: `targets` grows with each listed card and is never reset, so later cards in the hand sample
     // more (to review: probably unintended).
@@ -485,8 +486,8 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
         let mut seen: Vec<String> = Vec::new();
         if list {
             if let Some(value) = steer {
-                if !list_targets(s, pid, ci, LIST_CAP + 1, even).1 {
-                    for t in steered(s, pid, ci, rng, value, LIST_CAP) {
+                if !list_targets_memo(s, pid, ci, LIST_CAP + 1, even, &mut memo).1 {
+                    for t in steered(s, pid, ci, rng, value, LIST_CAP, &mut memo) {
                         let k = target_key(&t);
                         if seen.contains(&k) {
                             continue;
@@ -499,7 +500,7 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
             }
         }
         if list && seen.is_empty() {
-            let (l, complete) = list_targets(s, pid, ci, LIST_CAP, even);
+            let (l, complete) = list_targets_memo(s, pid, ci, LIST_CAP, even, &mut memo);
             let none = l.is_empty();
             for t in l {
                 seen.push(target_key(&t));
@@ -516,7 +517,7 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
         let mut i = 0;
         while i < targets * 2 && seen.len() < targets {
             i += 1;
-            let t = sample_target(s, pid, ci, rng);
+            let t = sample_target_memo(s, pid, ci, rng, &mut memo);
             let k = key_of(&t);
             if seen.contains(&k) {
                 continue;
@@ -525,19 +526,23 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
             moves.push(action(ci, t));
         }
     }
-    moves.into_iter().filter(|m| legal(s, pid, m)).collect()
+    moves.into_iter().filter(|m| match m {
+        // An action's target was checked as it was listed or sampled (memo); the rest of the move is checked here.
+        Move::Play { card, use_: PlayUse::Action, target: Some(Some(t)), .. } => legal(s, pid, &action(*card, None)) && memo.legal(s, pid, *card, t),
+        _ => legal(s, pid, m),
+    }).collect()
 }
 
 /// Best-first targets for a card (persona steer).
-fn steered(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, value: &dyn Fn(&GameState) -> f64, budget: usize) -> Vec<Target> {
+fn steered(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, value: &dyn Fn(&GameState) -> f64, budget: usize, memo: &mut Memo) -> Vec<Target> {
     let mut found: Vec<(String, Target, f64)> = Vec::new();
-    let score = |t: &Target, found: &mut Vec<(String, Target, f64)>| -> f64 {
+    let mut score = |t: &Target, found: &mut Vec<(String, Target, f64)>| -> f64 {
         let k = target_key(t);
         if let Some(hit) = found.iter().find(|e| e.0 == k) {
             return hit.2;
         }
-        let m = action(ci, Some(t.clone()));
-        if !legal(s, pid, &m) {
+        let m = action(ci, Some(*t));
+        if !(legal(s, pid, &action(ci, None)) && memo.legal(s, pid, ci, t)) {
             return f64::NEG_INFINITY;
         }
         let v = value(&after(s, pid, &m));
@@ -545,7 +550,7 @@ fn steered(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, value: &dyn Fn(&GameSt
         v
     };
     let mut open: Vec<(Target, f64)> = Vec::new();
-    let look = |t: &Target, found: &mut Vec<(String, Target, f64)>, open: &mut Vec<(Target, f64)>, rng: &mut dyn FnMut() -> f64| {
+    let mut look = |t: &Target, found: &mut Vec<(String, Target, f64)>, open: &mut Vec<(Target, f64)>, rng: &mut dyn FnMut() -> f64| {
         let (done, next) = choice_steps(s, pid, ci, t);
         for d in &done {
             score(d, found);
