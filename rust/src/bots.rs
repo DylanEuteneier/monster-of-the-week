@@ -97,8 +97,19 @@ fn base(name: &str) -> Option<Persona> {
 }
 
 /// A profile's persona ("trophy", "backer", or "trophy:lean=0,hold=0.1").
-// PERF: parsed on every call (the JavaScript caches by profile string); play-outs ask for it on every move.
 pub fn persona_of(profile: &str) -> Option<Persona> {
+    thread_local! {
+        static CACHE: std::cell::RefCell<std::collections::HashMap<String, Option<Persona>>> = std::cell::RefCell::new(std::collections::HashMap::new());
+    }
+    if let Some(p) = CACHE.with(|c| c.borrow().get(profile).cloned()) {
+        return p;
+    }
+    let p = parse_persona(profile);
+    CACHE.with(|c| c.borrow_mut().insert(profile.to_string(), p.clone()));
+    p
+}
+
+fn parse_persona(profile: &str) -> Option<Persona> {
     let (name, over) = match profile.split_once(':') {
         Some((n, o)) => (n, Some(o)),
         None => (profile, None),
@@ -472,12 +483,12 @@ fn action(card: CardIx, t: Option<Target>) -> Move {
     Move::Play { card, use_: PlayUse::Action, target: Some(t), places: None }
 }
 /// The state after a move, quiet (a search's imagined states write no log; nothing in a search reads it).
-// PERF: apply_move validates again (check_target clones twice) a move the search already knows is legal.
 fn after(s: &GameState, pid: Pid, m: &Move) -> GameState {
+    // Every move a bot imagines was validated when its search made it, so it isn't checked again.
     if s.quiet {
-        return apply_move(s, pid, m).expect("a bot's move is legal");
+        return apply_legal(s, pid, m);
     }
-    apply_move(&imagined(s), pid, m).expect("a bot's move is legal")
+    apply_legal(&imagined(s), pid, m)
 }
 fn legal(s: &GameState, pid: Pid, m: &Move) -> bool {
     validate(s, pid, m).is_none()

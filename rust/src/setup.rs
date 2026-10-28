@@ -30,12 +30,13 @@ pub fn shuffle<T: Clone>(items: &[T], rng_state: i32) -> (Vec<T>, i32) {
 }
 
 /// Add a line to this round's log (nothing in a quiet, imagined state).
-pub fn log_line(s: &mut GameState, line: impl FnOnce() -> String) {
+/// The line is built only when the state logs (a bot's imagined states don't), from the state as it now is.
+pub fn log_line(s: &mut GameState, line: impl FnOnce(&GameState) -> String) {
     if s.quiet {
         return;
     }
     let round = s.round;
-    let text = line();
+    let text = line(s);
     if let Some(e) = s.log.iter_mut().find(|e| e.round == round) {
         Rc::make_mut(e).events.push(text);
     } else {
@@ -163,7 +164,7 @@ pub fn deal(s: &mut GameState) {
     s.phase = Phase::Draft;
     s.pass = 1;
     let (round, out) = (s.round, s.left_out.len());
-    log_line(s, || format!("Round {round}: cards dealt, {out} left out unseen."));
+    log_line(s, |_| format!("Round {round}: cards dealt, {out} left out unseen."));
 }
 
 /// A card's printed sway.

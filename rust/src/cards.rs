@@ -905,9 +905,8 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 n += mv(s, pid, f, loc, l.loc().unwrap(), 1, &mut placed, false);
             }
             place_one(s, pid, f, loc);
-            let names = if s.quiet { String::new() } else { to.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ") };
             let fnm = fname(s, f);
-            log_line(s, || format!("{who}: {}: the {fnm} at {} scatter{}.", c.name, lname(loc), if n > 0 { format!(" to {names}") } else { String::new() }));
+            log_line(s, |_| { let names = to.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", "); format!("{who}: {}: the {fnm} at {} scatter{}.", c.name, lname(loc), if n > 0 { format!(" to {names}") } else { String::new() }) });
         }
         Action::Control => {
             let (loc, f) = (as_loc(t.location).unwrap(), as_fac(t.faction).unwrap());
@@ -921,7 +920,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
             }
             s.players[me].supply += n;
             let fnm = fname(s, f);
-            log_line(s, || format!("{who}: {}: the machines cut down {n} {fnm} at {}.", c.name, lname(loc)));
+            log_line(s, |_| format!("{who}: {}: the machines cut down {n} {fnm} at {}.", c.name, lname(loc)));
         }
         Action::Raise => {
             let loc = as_loc(t.location).unwrap();
@@ -934,7 +933,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 place_one(s, pid, payer, loc);
             }
             let fnm = fname(s, undead);
-            log_line(s, || format!("{who}: {}: {n} {fnm} rise at {}.", c.name, lname(loc)));
+            log_line(s, |_| format!("{who}: {}: {n} {fnm} rise at {}.", c.name, lname(loc)));
         }
         Action::Plough => {
             let loc = as_loc(t.location).unwrap();
@@ -963,8 +962,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                     place_one(s, pid, *f, l);
                 }
             }
-            let names = if s.quiet { String::new() } else { exits.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ") };
-            log_line(s, || format!("{who}: {}: the fight at {} scatters to {names}.", c.name, lname(loc)));
+            log_line(s, |_| { let names = exits.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", "); format!("{who}: {}: the fight at {} scatters to {names}.", c.name, lname(loc)) });
         }
         Action::Rejoin => {
             let (f, loc) = (as_fac(t.faction).unwrap(), as_loc(t.location).unwrap());
@@ -975,9 +973,8 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 mv(s, pid, f, loc, l, k, &mut placed, true);
             }
             place_one(s, pid, f, loc);
-            let names = if s.quiet { String::new() } else { went.iter().map(|x| lname(x.0)).collect::<Vec<_>>().join(", ") };
             let fnm = fname(s, f);
-            log_line(s, || format!("{who}: {}: the {fnm} at {} scatter to their own at {names}.", c.name, lname(loc)));
+            log_line(s, |_| { let names = went.iter().map(|x| lname(x.0)).collect::<Vec<_>>().join(", "); format!("{who}: {}: the {fnm} at {} scatter to their own at {names}.", c.name, lname(loc)) });
         }
         Action::Chase => {
             let (f, start) = (as_fac(t.faction).unwrap(), as_loc(t.location).unwrap());
@@ -993,8 +990,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
             add_tokens(s, end, f, n - (path.len() as i32 - 1));
             place_one(s, pid, f, end);
             let fnm = fname(s, f);
-            let strag = if s.quiet { String::new() } else { if path.len() > 1 { format!(", leaving stragglers at {}", path[..path.len() - 1].iter().map(|&l| lname(l)).collect::<Vec<_>>().join(", ")) } else { String::new() } };
-            log_line(s, || format!("{who}: {}: {fnm} chased from {} to {}{strag}.", c.name, lname(start), lname(end)));
+            log_line(s, |_| { let strag = if path.len() > 1 { format!(", leaving stragglers at {}", path[..path.len() - 1].iter().map(|&l| lname(l)).collect::<Vec<_>>().join(", ")) } else { String::new() }; format!("{who}: {}: {fnm} chased from {} to {}{strag}.", c.name, lname(start), lname(end)) });
         }
         Action::Well => {
             let (centre, f) = (as_loc(t.location).unwrap(), as_fac(t.faction).unwrap());
@@ -1019,7 +1015,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 place_one(s, pid, f, centre);
             }
             let fnm = fname(s, f);
-            log_line(s, || format!("{who}: {}: {n} {fnm} are drawn into {}.", c.name, lname(centre)));
+            log_line(s, |_| format!("{who}: {}: {n} {fnm} are drawn into {}.", c.name, lname(centre)));
         }
         Action::Herd => {
             let (f, start) = (as_fac(t.faction).unwrap(), as_loc(t.location).unwrap());
@@ -1041,7 +1037,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 place_one(s, pid, f, end);
             }
             let fnm = fname(s, f);
-            log_line(s, || format!("{who}: {}: {n} {fnm} follow the trail {} {}.", c.name, if crashes { "and crash into" } else { "to" }, lname(end)));
+            log_line(s, |_| format!("{who}: {}: {n} {fnm} follow the trail {} {}.", c.name, if crashes { "and crash into" } else { "to" }, lname(end)));
         }
         Action::Threat => {
             let (f, from, to) = (as_fac(t.faction).unwrap(), as_loc(t.location).unwrap(), as_loc(t.to).unwrap());
@@ -1053,7 +1049,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 place_one(s, pid, f, to);
             }
             let fnm = fname(s, f);
-            log_line(s, || format!("{who}: {}: {n} {fnm} march on {}.", c.name, lname(to)));
+            log_line(s, |_| format!("{who}: {}: {n} {fnm} march on {}.", c.name, lname(to)));
         }
         Action::Gate => {
             let (a, b) = (as_loc(t.location).unwrap(), as_loc(t.to).unwrap());
@@ -1064,7 +1060,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
             if let Some(p) = as_fac(t.payer) {
                 place_one(s, pid, p, a);
             }
-            log_line(s, || format!("{who}: {} joins {} and {} for the rest of the round.", c.name, lname(a), lname(b)));
+            log_line(s, |_| format!("{who}: {} joins {} and {} for the rest of the round.", c.name, lname(a), lname(b)));
         }
         Action::Invite => {
             let to = as_loc(t.location).unwrap();
@@ -1083,8 +1079,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
             if let Some(p) = payer {
                 place_one(s, pid, p, to);
             }
-            let names = if s.quiet { String::new() } else { guests.iter().map(|g| fname(s, g.faction.fac().unwrap())).collect::<Vec<_>>().join(" and ") };
-            log_line(s, || format!("{who}: {}: {names} come into {}.", c.name, lname(to)));
+            log_line(s, |s| { let names = guests.iter().map(|g| fname(s, g.faction.fac().unwrap())).collect::<Vec<_>>().join(" and "); format!("{who}: {}: {names} come into {}.", c.name, lname(to)) });
         }
         Action::Split => {
             let (f, from) = (as_fac(t.faction).unwrap(), as_loc(t.location).unwrap());
@@ -1093,7 +1088,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
             }
             place_one(s, pid, f, from);
             let fnm = fname(s, f);
-            log_line(s, || format!("{who}: {} turns {fnm} away from {}.", c.name, lname(from)));
+            log_line(s, |_| format!("{who}: {} turns {fnm} away from {}.", c.name, lname(from)));
         }
         Action::Favours => {
             if t.use_ == Some(Use::Sway) {
@@ -1105,8 +1100,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                     s.players[me].supply -= 1;
                     s.board[l.loc().unwrap() as usize].sway.add(pid, 1);
                 }
-                let names = if s.quiet { String::new() } else { at.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ") };
-                log_line(s, || format!("{who}: {}: sway from the supply at {names}.", c.name));
+                log_line(s, |_| { let names = at.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", "); format!("{who}: {}: sway from the supply at {names}.", c.name) });
             } else {
                 let fs = picked(&t.payers);
                 let f = fs[0].fac().unwrap();
@@ -1114,7 +1108,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 s.players[me].supply -= n;
                 s.players[me].standing[f as usize] += n;
                 let fnm = fname(s, f);
-                log_line(s, || format!("{who}: {}: {n} standing with {fnm}, from the supply.", c.name));
+                log_line(s, |_| format!("{who}: {}: {n} standing with {fnm}, from the supply.", c.name));
             }
         }
         Action::Stakes => {
@@ -1127,7 +1121,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                     }
                     s.players[me].standing[to as usize] += from.len() as i32;
                     let fnm = fname(s, to);
-                    log_line(s, || format!("{who}: {}: {} standing gathered with {fnm}.", c.name, from.len()));
+                    log_line(s, |_| format!("{who}: {}: {} standing gathered with {fnm}.", c.name, from.len()));
                 }
                 Some(Use::Sway) => {
                     let to = as_loc(t.location).unwrap();
@@ -1141,7 +1135,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                         }
                     }
                     s.board[to as usize].sway.add(pid, from.len() as i32);
-                    log_line(s, || format!("{who}: {}: {} sway gathered at {}.", c.name, from.len(), lname(to)));
+                    log_line(s, |_| format!("{who}: {}: {} sway gathered at {}.", c.name, from.len(), lname(to)));
                 }
                 _ => {
                     // Tokens: up to X come in from next door; 1 sway where each group left and 1 at the centre.
@@ -1161,7 +1155,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                         place_one(s, pid, f, to);
                     }
                     let fnm = fname(s, f);
-                    log_line(s, || format!("{who}: {}: {moved} {fnm} come in to {}.", c.name, lname(to)));
+                    log_line(s, |_| format!("{who}: {}: {moved} {fnm} come in to {}.", c.name, lname(to)));
                 }
             }
         }
@@ -1173,9 +1167,8 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 for f in &to {
                     s.players[me].standing[f.fac().unwrap() as usize] += 1;
                 }
-                let names = if s.quiet { String::new() } else { to.iter().map(|f| fname(s, f.fac().unwrap())).collect::<Vec<_>>().join(", ") };
                 let fnm = fname(s, from);
-                log_line(s, || format!("{who}: {}: standing with {fnm} spread to {names}.", c.name));
+                log_line(s, |s| { let names = to.iter().map(|f| fname(s, f.fac().unwrap())).collect::<Vec<_>>().join(", "); format!("{who}: {}: standing with {fnm} spread to {names}.", c.name) });
             }
             Some(Use::Sway) => {
                 let from = as_loc(t.location).unwrap();
@@ -1188,8 +1181,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 for l in &to {
                     s.board[l.loc().unwrap() as usize].sway.add(pid, 1);
                 }
-                let names = if s.quiet { String::new() } else { to.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ") };
-                log_line(s, || format!("{who}: {}: sway spread from {} to {names}.", c.name, lname(from)));
+                log_line(s, |_| { let names = to.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", "); format!("{who}: {}: sway spread from {} to {names}.", c.name, lname(from)) });
             }
             _ => {
                 let (f, loc) = (as_fac(t.faction).unwrap(), as_loc(t.location).unwrap());
@@ -1200,7 +1192,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 }
                 place_one(s, pid, f, loc);
                 let fnm = fname(s, f);
-                log_line(s, || format!("{who}: {}: {n} {fnm} scatter from {}.", c.name, lname(loc)));
+                log_line(s, |_| format!("{who}: {}: {n} {fnm} scatter from {}.", c.name, lname(loc)));
             }
         },
         Action::Showdown => {
@@ -1216,7 +1208,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
             }
             s.players[me].supply += n;
             let fnm = fname(s, f);
-            log_line(s, || format!("{who}: {} at {}: {n} {fnm} slain, {who}'s trophies.", c.name, lname(loc)));
+            log_line(s, |_| format!("{who}: {} at {}: {n} {fnm} slain, {who}'s trophies.", c.name, lname(loc)));
         }
         Action::Switch => {
             if t.use_ == Some(Use::Standing) {
@@ -1225,7 +1217,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 s.players[me].standing[from as usize] -= n;
                 s.players[me].standing[to as usize] += n;
                 let (a, b) = (fname(s, from), fname(s, to));
-                log_line(s, || format!("{who}: {}: {n} standing from {a} to {b}.", c.name));
+                log_line(s, |_| format!("{who}: {}: {n} standing from {a} to {b}.", c.name));
             } else {
                 let n = picked(&t.from).len() as i32;
                 let (from, to) = (as_loc(t.location).unwrap(), as_loc(t.to).unwrap());
@@ -1235,7 +1227,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                     s.board[from as usize].sway.remove(pid);
                 }
                 s.board[to as usize].sway.add(pid, n);
-                log_line(s, || format!("{who}: {}: {n} sway from {} to {}.", c.name, lname(from), lname(to)));
+                log_line(s, |_| format!("{who}: {}: {n} sway from {} to {}.", c.name, lname(from), lname(to)));
             }
         }
         Action::Playbook => {
@@ -1245,9 +1237,9 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                     s.round_plays.remove(i);
                 }
                 s.players[me].hand.push(back);
-                log_line(s, || format!("{who}: {}: takes {} back.", c.name, card(back).name));
+                log_line(s, |_| format!("{who}: {}: takes {} back.", c.name, card(back).name));
             } else if let Some(last) = last_action(s) {
-                log_line(s, || format!("{who}: {}: plays {} as their own.", c.name, card(last).name));
+                log_line(s, |_| format!("{who}: {}: plays {} as their own.", c.name, card(last).name));
                 act(s, pid, last, t);
             }
         }
@@ -1262,13 +1254,14 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 }
                 place_one(s, pid, f.fac().unwrap(), l);
             }
-            let names = if s.quiet { String::new() } else { marks.iter().map(|m| lname(m.0.loc().unwrap())).collect::<Vec<_>>().join(", ") };
-            let line = match c.action {
-                Action::Altar => format!("{who}: {}: blood on {names}.", c.name),
-                Action::Terror => format!("{who}: {}: terror waits for nightfall at {names}.", c.name),
-                _ => format!("{who}: {}: the kids will study the bodies at {names}.", c.name),
-            };
-            log_line(s, || line);
+            log_line(s, |_| {
+                let names = marks.iter().map(|m| lname(m.0.loc().unwrap())).collect::<Vec<_>>().join(", ");
+                match c.action {
+                    Action::Altar => format!("{who}: {}: blood on {names}.", c.name),
+                    Action::Terror => format!("{who}: {}: terror waits for nightfall at {names}.", c.name),
+                    _ => format!("{who}: {}: the kids will study the bodies at {names}.", c.name),
+                }
+            });
         }
     }
 }

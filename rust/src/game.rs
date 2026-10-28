@@ -115,6 +115,12 @@ pub fn apply_move(s: &GameState, pid: Pid, m: &Move) -> Result<GameState, String
     if let Some(reason) = validate(s, pid, m) {
         return Err(reason);
     }
+    Ok(apply_legal(s, pid, m))
+}
+
+/// Applies a move already known to be legal (a bot's search, which validated it when it made it). Debug builds check.
+pub fn apply_legal(s: &GameState, pid: Pid, m: &Move) -> GameState {
+    debug_assert!(validate(s, pid, m).is_none(), "apply_legal with an illegal move: {m:?}");
     let mut next = s.clone();
     let me = pid as usize;
     let seating = s.seating.clone();
@@ -147,7 +153,7 @@ pub fn apply_move(s: &GameState, pid: Pid, m: &Move) -> Result<GameState, String
                     next.board[to as usize].sway.add(pid, 1);
                 }
                 let fnm = fname(&next, f);
-                log_line(&mut next, || format!("  Night terrors at {}: 1 {fnm} flees to {}{}.", lname(loc), lname(to), if follow { format!(", {who}'s sway following") } else { String::new() }));
+                log_line(&mut next, |_| format!("  Night terrors at {}: 1 {fnm} flees to {}{}.", lname(loc), lname(to), if follow { format!(", {who}'s sway following") } else { String::new() }));
             }
             next.board[loc as usize].terror = None;
             let n = next.night.as_mut().expect("night");
@@ -158,7 +164,7 @@ pub fn apply_move(s: &GameState, pid: Pid, m: &Move) -> Result<GameState, String
         }
         Move::Pass => {
             next.passes_in_row += 1;
-            log_line(&mut next, || format!("{who} passes."));
+            log_line(&mut next, |_| format!("{who} passes."));
             if next.passes_in_row >= next.n() as i32 {
                 end_of_play(&mut next);
             } else {
@@ -181,7 +187,7 @@ pub fn apply_move(s: &GameState, pid: Pid, m: &Move) -> Result<GameState, String
                     next.players[me].supply -= gain;
                     next.players[me].standing[f as usize] += gain;
                     let fnm = fname(&next, f);
-                    log_line(&mut next, || format!("{who} plays {} for {gain} sway with {fnm}.", c.name));
+                    log_line(&mut next, |_| format!("{who} plays {} for {gain} sway with {fnm}.", c.name));
                 }
                 PlayUse::Return => {
                     let (_, _, f) = return_room(s, pid, ci);
@@ -201,21 +207,20 @@ pub fn apply_move(s: &GameState, pid: Pid, m: &Move) -> Result<GameState, String
                         }
                     }
                     let fnm = fname(&next, f);
-                    let names = if next.quiet { String::new() } else { uniq.iter().map(|&l| lname(l)).collect::<Vec<_>>().join(", ") };
-                    log_line(&mut next, || format!("{who} plays {} to bring {k} {fnm} back, at {names}.", c.name));
+                    log_line(&mut next, |_| { let names = uniq.iter().map(|&l| lname(l)).collect::<Vec<_>>().join(", "); format!("{who} plays {} to bring {k} {fnm} back, at {names}.", c.name) });
                 }
                 PlayUse::Action => {
-                    log_line(&mut next, || format!("{who} plays {}.", c.name));
+                    log_line(&mut next, |_| format!("{who} plays {}.", c.name));
                     match target {
                         Some(Some(t)) => act(&mut next, pid, ci, t),
-                        _ => log_line(&mut next, || format!("{} has nothing to act on.", c.name)),
+                        _ => log_line(&mut next, |_| format!("{} has nothing to act on.", c.name)),
                     }
                 }
             }
             next.turn = (next.turn + 1) % next.n();
         }
     }
-    Ok(next)
+    next
 }
 
 /// Everyone has picked: pass the rest on; when the batches are empty the draft is over.
@@ -253,7 +258,7 @@ fn start_play(s: &mut GameState) {
     s.passes_in_row = 0;
     s.phase = Phase::Play;
     let name = s.seating[first as usize].clone();
-    log_line(s, || format!("Draft done. {name} goes first."));
+    log_line(s, |_| format!("Draft done. {name} goes first."));
 }
 
 /// The round's play is over: unplayed cards go back; nightfall, or the fights.
@@ -265,7 +270,7 @@ fn end_of_play(s: &mut GameState) {
     if !marks.is_empty() {
         s.phase = Phase::Night;
         s.night = Some(Night { player: s.board[marks[0] as usize].terror.unwrap(), left: Locs::from_slice(&marks) });
-        log_line(s, || "Everyone passed. Night falls.".to_string());
+        log_line(s, |_| "Everyone passed. Night falls.".to_string());
         return;
     }
     close_round(s);
@@ -275,7 +280,7 @@ fn end_of_play(s: &mut GameState) {
 fn close_round(s: &mut GameState) {
     s.phase = Phase::Play;
     s.night = None;
-    log_line(s, || "Fights:".to_string());
+    log_line(s, |_| "Fights:".to_string());
     for l in 0..s.board.len() as Loc {
         fight_at(s, l);
     }
@@ -406,7 +411,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         s.board[li].sway = OMap::new();
         s.board[li].scorched = true;
         let all = if sides.len() > 2 { "Every side is" } else { "Both sides are" };
-        log_line(s, || { let name = fight_name(loc, other); format!("  {name}: a true tie. {all} wiped out and {name} is scorched.") });
+        log_line(s, |_| { let name = fight_name(loc, other); format!("  {name}: a true tie. {all} wiped out and {name} is scorched.") });
         return;
     }
     let winner = if top.len() > 1 { aligned.unwrap() } else { ranked[0] };
@@ -436,7 +441,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
     if !s.quiet {
         let (wn, ln, ls) = (fname(s, winner).to_string(), losers.iter().map(|&f| fname(s, f)).collect::<Vec<_>>().join(" and "), lost.iter().map(|x| x.1.to_string()).collect::<Vec<_>>().join(", "));
         let name = fight_name(loc, other);
-        log_line(s, || format!("  {name}: {wn} beat {ln}; casualties {ls} and {winner_loss}."));
+        log_line(s, |_| format!("  {name}: {wn} beat {ln}; casualties {ls} and {winner_loss}."));
     }
     // Trophies (TD1): bigger pile to the leader, smaller to the runner-up; with three piles, the leader takes the two larger.
     let mut piles: Vec<(Fac, i32)> = lost.iter().copied().chain(std::iter::once((winner, winner_loss))).filter(|x| x.1 > 0).collect();
@@ -451,7 +456,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
             let rf = piles[last].0;
             s.players[st as usize].trophies[rf as usize] += 1;
             let (seating, fnm) = (s.seating.clone(), fname(s, rf));
-            log_line(s, || format!("  {} studies one of the {fnm} dead.", seating[st as usize]));
+            log_line(s, |_| format!("  {} studies one of the {fnm} dead.", seating[st as usize]));
             if piles[last].1 == 0 {
                 piles.pop();
             }
@@ -461,7 +466,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         Some(p) => {
             s.players[p as usize].trophies[f as usize] += n;
             let (seating, fnm) = (s.seating.clone(), fname(s, f));
-            log_line(s, || format!("  {} takes a pile of {n} {fnm}.", seating[p as usize]));
+            log_line(s, |_| format!("  {} takes a pile of {n} {fnm}.", seating[p as usize]));
         }
         None => s.supply[f as usize] += n,
     };
@@ -589,7 +594,7 @@ fn begin_growth(s: &mut GameState, from: usize) {
             s.supply[f as usize] -= wants;
             let k = due.len();
             let fnm = fname(s, f);
-            log_line(s, || format!("{fnm} grows at {k} location{}.", if k == 1 { "" } else { "s" }));
+            log_line(s, |_| format!("{fnm} grows at {k} location{}.", if k == 1 { "" } else { "s" }));
         } else if s.supply[f as usize] > 0 {
             s.growing = Some(Growing { faction: f, left: s.supply[f as usize], leaders: sway_leaders(s, f), next: 0, due });
             s.phase = Phase::Growth;
@@ -616,7 +621,7 @@ fn grow_one(s: &mut GameState, loc: Loc) {
         return;
     }
     let fnm = fname(s, f);
-    log_line(s, || format!("{fnm} grows as far as its supply allows."));
+    log_line(s, |_| format!("{fnm} grows as far as its supply allows."));
     s.growing = None;
     s.phase = Phase::Play;
     begin_growth(s, f as usize + 1);
@@ -671,7 +676,7 @@ fn end_game(s: &mut GameState) {
         let names = top.iter().map(|&f| fname(s, f)).collect::<Vec<_>>().join(" and ");
         let wn = winners.iter().map(|&p| s.seating[p as usize].clone()).collect::<Vec<_>>().join(", ");
         s.result = Some(GameResult { island: false, factions: top, players: winners, scores, placings });
-        log_line(s, || format!("Total presence {total} is more than {threshold}: the invaders win. {names} take the island. Winner: {wn}."));
+        log_line(s, |_| format!("Total presence {total} is more than {threshold}: the invaders win. {names} take the island. Winner: {wn}."));
     } else {
         // TS2: the count of the colour held fewest of; WT1 compares the next weakest.
         let sorted = |p: Pid| { let mut v = s.players[p as usize].trophies.to_vec(); v.sort(); v };
@@ -689,7 +694,7 @@ fn end_game(s: &mut GameState) {
         let placings = placings(n, &scores, &winners, &tiebreak);
         let wn = winners.iter().map(|&p| s.seating[p as usize].clone()).collect::<Vec<_>>().join(", ");
         s.result = Some(GameResult { island: true, factions: vec![], players: winners, scores, placings });
-        log_line(s, || format!("Total presence {total} is not more than {threshold}: the island wins. Winner: {wn}."));
+        log_line(s, |_| format!("Total presence {total} is not more than {threshold}: the island wins. Winner: {wn}."));
     }
 }
 
