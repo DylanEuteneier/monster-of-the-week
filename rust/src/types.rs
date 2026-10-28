@@ -251,7 +251,7 @@ impl Options {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Place {
     /// faction slot → tokens
     pub tokens: OMap,

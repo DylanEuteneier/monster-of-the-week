@@ -257,12 +257,100 @@ fn win_chances_shared(s: &GameState, pid: Pid, soft: f64, colours: &[f64; 4]) ->
     chances_after(&project_fights_cached(s), pid, soft, colours)
 }
 
-/// The board after this round's fights.
+/// A location's fight, as what it does: the location (and a Gate partner) afterwards, and what it adds to each supply
+/// and to each seat's standing, trophies and supply.
+#[derive(Clone, Copy)]
+struct FightResult {
+    place: Place,
+    partner: Option<(Loc, Place)>,
+    supply: [i32; 5],
+    seats: [([i32; 5], [i32; 5], i32); 5],
+}
+
+/// What a fight depends on besides its location's content: the game's options and the seats' groups (affinity).
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+struct FightKey {
+    seats: usize,
+    factions: [u8; 5],
+    groups: [u8; 5],
+    loc: Loc,
+    place: Place,
+    partner: Option<(Loc, Place)>,
+}
+
+/// The board after this round's fights. Each location's fight depends only on that location (and its Gate partner),
+/// the seats' groups and the options, and only adds to the players' and supplies' totals, so fights are independent:
+/// each is remembered by its content, and a position that differs from one already projected at a few locations
+/// fights only those again.
 fn project_fights(s: &GameState) -> GameState {
+    thread_local! {
+        // The options the results hold for (kept alive, so the cache starts afresh when another game's differ).
+        static FIGHTS: std::cell::RefCell<(Option<std::rc::Rc<Options>>, crate::small::FxMap<FightKey, FightResult>)> = std::cell::RefCell::new(Default::default());
+    }
     let locs = fights_due(s);
     let mut out = imagined(s);
-    if !locs.is_empty() {
-        resolve_fights(&mut out, &locs);
+    if locs.is_empty() {
+        return out;
+    }
+    FIGHTS.with(|c| {
+        let mut c = c.borrow_mut();
+        if !c.0.as_ref().is_some_and(|o| std::rc::Rc::ptr_eq(o, &out.options) || **o == *out.options) {
+            *c = (Some(out.options.clone()), Default::default());
+        }
+    });
+    let mut groups = [0u8; 5];
+    for (i, p) in out.players.iter().enumerate() {
+        groups[i] = p.group;
+    }
+    for &l in &locs {
+        let li = l as usize;
+        if out.board[li].scorched || count_at(&out, l) < 2 {
+            continue; // as fight_at: none here, or already fought through its Gate
+        }
+        let partner = out.board[li].gate.map(|g| (g, out.board[g as usize]));
+        let key = FightKey { seats: out.players.len(), factions: out.factions, groups, loc: l, place: out.board[li], partner };
+        let hit = FIGHTS.with(|c| c.borrow().1.get(&key).copied());
+        let r = match hit {
+            Some(r) => r,
+            None => {
+                let before = (out.supply, out.players.iter().map(|p| (p.standing, p.trophies, p.supply)).collect::<Vec<_>>());
+                fight_at(&mut out, l);
+                let mut r = FightResult { place: out.board[li], partner: partner.map(|(g, _)| (g, out.board[g as usize])), supply: [0; 5], seats: [([0; 5], [0; 5], 0); 5] };
+                for f in 0..5 {
+                    r.supply[f] = out.supply[f] - before.0[f];
+                }
+                for (i, p) in out.players.iter().enumerate() {
+                    let b = before.1[i];
+                    for f in 0..5 {
+                        r.seats[i].0[f] = p.standing[f] - b.0[f];
+                        r.seats[i].1[f] = p.trophies[f] - b.1[f];
+                    }
+                    r.seats[i].2 = p.supply - b.2;
+                }
+                FIGHTS.with(|c| {
+                    let mut c = c.borrow_mut();
+                    if c.1.len() > 200_000 {
+                        c.1.clear();
+                    }
+                    c.1.insert(key, r);
+                });
+                continue; // already applied to `out`
+            }
+        };
+        out.board[li] = r.place;
+        if let Some((g, p)) = r.partner {
+            out.board[g as usize] = p;
+        }
+        for f in 0..5 {
+            out.supply[f] += r.supply[f];
+        }
+        for (i, p) in out.players.iter_mut().enumerate() {
+            for f in 0..5 {
+                p.standing[f] += r.seats[i].0[f];
+                p.trophies[f] += r.seats[i].1[f];
+            }
+            p.supply += r.seats[i].2;
+        }
     }
     out
 }

@@ -497,8 +497,6 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
 
 /// Rank players by sway at a location (AB1, PT2, ST1): (places: who collects first and second, None where a tie used
 /// the place up; how many are involved; tied leaders).
-/// Rank players by sway at a location (AB1, PT2, ST1): (places: who collects first and second, None where a tie used
-/// the place up; how many are involved; tied leaders).
 pub fn rank_at(s: &GameState, loc: Loc) -> (List<Option<Pid>, 2>, usize, Small<5>) {
     let sway = &s.board[loc as usize].sway;
     let mut involved = 0;
