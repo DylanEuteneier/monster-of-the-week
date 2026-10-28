@@ -176,7 +176,8 @@ fn sigmoid(x: f64) -> f64 {
 // ---------------------------------------------------------------------------
 
 /// The board after this round's fights, as they stand now.
-fn project_fights(s: &GameState) -> GameState {
+/// The board after this round's fights, remembered for the few positions asked about most recently.
+fn project_fights_cached(s: &GameState) -> GameState {
     // A few recent projections, by the position's content (the board, players and supply, the round and phase, the
     // options): every seat asks about the same position in a play-out before one of them moves.
     thread_local! {
@@ -238,6 +239,21 @@ pub struct Chances {
 
 pub fn win_chances(s: &GameState, pid: Pid, soft: f64, colours: &[f64; 4]) -> Chances {
     chances_after(&project_fights(s), pid, soft, colours)
+}
+
+/// win_chances for a position every seat asks about (the goal checks in a play-out): its projection remembered.
+fn win_chances_shared(s: &GameState, pid: Pid, soft: f64, colours: &[f64; 4]) -> Chances {
+    chances_after(&project_fights_cached(s), pid, soft, colours)
+}
+
+/// The board after this round's fights.
+fn project_fights(s: &GameState) -> GameState {
+    let locs = fights_due(s);
+    let mut out = imagined(s);
+    if !locs.is_empty() {
+        resolve_fights(&mut out, &locs);
+    }
+    out
 }
 
 fn chances_after(s: &GameState, pid: Pid, soft: f64, colours: &[f64; 4]) -> Chances {
@@ -415,7 +431,7 @@ fn set_access(s: &GameState, pid: Pid) -> f64 {
 
 /// Which goal to pursue now (chooseGoal). Draws from `rng` once per game, for the memory's jitter.
 pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut BotMemory>, rng: Rng) -> Goal {
-    let c = win_chances(s, pid, p.soft.unwrap_or(1.0), &colours_of(p));
+    let c = win_chances_shared(s, pid, p.soft.unwrap_or(1.0), &colours_of(p));
     let push = p.push * (c.rounds_left + 1.0);
     let push_inv = push * (1.0 + p.allies * c.backers as f64);
     let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * sigmoid((c.projected - c.threshold - 0.5 + push_inv) / c.spread_p);

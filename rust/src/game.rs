@@ -117,7 +117,8 @@ pub fn apply_move(s: &GameState, pid: Pid, m: &Move) -> Result<GameState, String
     }
     let mut next = s.clone();
     let me = pid as usize;
-    let who = s.seating[me].clone();
+    let seating = s.seating.clone();
+    let who: &str = &seating[me];
     match m {
         Move::Pick { keep } => {
             let p = &mut next.players[me];
@@ -200,7 +201,7 @@ pub fn apply_move(s: &GameState, pid: Pid, m: &Move) -> Result<GameState, String
                         }
                     }
                     let fnm = fname(&next, f);
-                    let names = uniq.iter().map(|&l| lname(l)).collect::<Vec<_>>().join(", ");
+                    let names = if next.quiet { String::new() } else { uniq.iter().map(|&l| lname(l)).collect::<Vec<_>>().join(", ") };
                     log_line(&mut next, || format!("{who} plays {} to bring {k} {fnm} back, at {names}.", c.name));
                 }
                 PlayUse::Action => {
@@ -329,7 +330,6 @@ fn joined_fight(s: &mut GameState, a: Loc, b: Loc) {
     let before_b = s.board[bi].tokens.clone();
     let sway_a = s.board[ai].sway.clone();
     let sway_b = s.board[bi].sway.clone();
-    let name = format!("{} and {}, through the Gate", lname(a), lname(b));
     for i in [ai, bi] {
         s.board[i].gate = None;
         s.board[i].gate_loss = None;
@@ -344,7 +344,7 @@ fn joined_fight(s: &mut GameState, a: Loc, b: Loc) {
     }
     s.board[bi].tokens = OMap::new();
     s.board[bi].sway = OMap::new();
-    fight(s, a, Some((b, name)));
+    fight(s, a, Some(b));
     if s.board[ai].scorched {
         s.board[bi].scorched = true;
         return;
@@ -375,16 +375,23 @@ fn joined_fight(s: &mut GameState, a: Loc, b: Loc) {
     }
 }
 
-/// One fight (FR5, TF1, TD1, AF3 adjusted). `joined`: a Gate's fight on the merged location (the other end, the name).
-fn fight(s: &mut GameState, loc: Loc, joined: Option<(Loc, String)>) {
+/// A fight's name in the log: the location, or a Gate's two ends.
+fn fight_name(loc: Loc, other: Option<Loc>) -> String {
+    match other {
+        Some(b) => format!("{} and {}, through the Gate", lname(loc), lname(b)),
+        None => lname(loc).to_string(),
+    }
+}
+
+/// One fight (FR5, TF1, TD1, AF3 adjusted). `joined`: a Gate's fight on the merged location (the other end).
+fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
     let li = loc as usize;
     let sides = factions_at(s, loc);
-    let name = joined.as_ref().map(|j| j.1.clone()).unwrap_or_else(|| lname(loc).to_string());
     let strength = |s: &GameState, f: Fac| s.board[li].tokens.get(f);
     let mut ranked = sides.clone();
     ranked.sort_by(|&x, &y| strength(s, y).cmp(&strength(s, x)));
     let top: Vec<Fac> = ranked.iter().copied().filter(|&f| strength(s, f) == strength(s, ranked[0])).collect();
-    let other = joined.as_ref().map(|j| j.0);
+    let other = joined;
     let aligned = top.iter().copied().find(|&f| f as usize == alignment_of(loc) || other.is_some_and(|o| f as usize == alignment_of(o)));
     if top.len() > 1 && aligned.is_none() {
         // TF1 + TM1: both wiped, the location scorched, nothing rewarded; everything back to its supply.
@@ -399,7 +406,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<(Loc, String)>) {
         s.board[li].sway = OMap::new();
         s.board[li].scorched = true;
         let all = if sides.len() > 2 { "Every side is" } else { "Both sides are" };
-        log_line(s, || format!("  {name}: a true tie. {all} wiped out and {name} is scorched."));
+        log_line(s, || { let name = fight_name(loc, other); format!("  {name}: a true tie. {all} wiped out and {name} is scorched.") });
         return;
     }
     let winner = if top.len() > 1 { aligned.unwrap() } else { ranked[0] };
@@ -426,8 +433,9 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<(Loc, String)>) {
             s.board[li].tokens.remove(f);
         }
     }
-    {
+    if !s.quiet {
         let (wn, ln, ls) = (fname(s, winner).to_string(), losers.iter().map(|&f| fname(s, f)).collect::<Vec<_>>().join(" and "), lost.iter().map(|x| x.1.to_string()).collect::<Vec<_>>().join(", "));
+        let name = fight_name(loc, other);
         log_line(s, || format!("  {name}: {wn} beat {ln}; casualties {ls} and {winner_loss}."));
     }
     // Trophies (TD1): bigger pile to the leader, smaller to the runner-up; with three piles, the leader takes the two larger.
@@ -442,8 +450,8 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<(Loc, String)>) {
             piles[last].1 -= 1;
             let rf = piles[last].0;
             s.players[st as usize].trophies[rf as usize] += 1;
-            let (who, fnm) = (s.seating[st as usize].clone(), fname(s, rf));
-            log_line(s, || format!("  {who} studies one of the {fnm} dead."));
+            let (seating, fnm) = (s.seating.clone(), fname(s, rf));
+            log_line(s, || format!("  {} studies one of the {fnm} dead.", seating[st as usize]));
             if piles[last].1 == 0 {
                 piles.pop();
             }
@@ -452,8 +460,8 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<(Loc, String)>) {
     let give = |s: &mut GameState, (f, n): (Fac, i32), pid: Option<Pid>| match pid {
         Some(p) => {
             s.players[p as usize].trophies[f as usize] += n;
-            let (who, fnm) = (s.seating[p as usize].clone(), fname(s, f));
-            log_line(s, || format!("  {who} takes a pile of {n} {fnm}."));
+            let (seating, fnm) = (s.seating.clone(), fname(s, f));
+            log_line(s, || format!("  {} takes a pile of {n} {fnm}.", seating[p as usize]));
         }
         None => s.supply[f as usize] += n,
     };

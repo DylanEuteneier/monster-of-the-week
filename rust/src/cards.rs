@@ -894,7 +894,8 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
     let c = card(ci);
     let mut placed: Placed = Vec::new();
     let me = pid as usize;
-    let who = s.seating[me].clone();
+    let seating = s.seating.clone();
+    let who: &str = &seating[me];
     match c.action {
         Action::Burst => {
             let (f, loc) = (as_fac(t.faction).unwrap(), as_loc(t.location).unwrap());
@@ -904,7 +905,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 n += mv(s, pid, f, loc, l.loc().unwrap(), 1, &mut placed, false);
             }
             place_one(s, pid, f, loc);
-            let names = to.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ");
+            let names = if s.quiet { String::new() } else { to.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ") };
             let fnm = fname(s, f);
             log_line(s, || format!("{who}: {}: the {fnm} at {} scatter{}.", c.name, lname(loc), if n > 0 { format!(" to {names}") } else { String::new() }));
         }
@@ -962,7 +963,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                     place_one(s, pid, *f, l);
                 }
             }
-            let names = exits.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ");
+            let names = if s.quiet { String::new() } else { exits.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ") };
             log_line(s, || format!("{who}: {}: the fight at {} scatters to {names}.", c.name, lname(loc)));
         }
         Action::Rejoin => {
@@ -974,7 +975,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 mv(s, pid, f, loc, l, k, &mut placed, true);
             }
             place_one(s, pid, f, loc);
-            let names = went.iter().map(|x| lname(x.0)).collect::<Vec<_>>().join(", ");
+            let names = if s.quiet { String::new() } else { went.iter().map(|x| lname(x.0)).collect::<Vec<_>>().join(", ") };
             let fnm = fname(s, f);
             log_line(s, || format!("{who}: {}: the {fnm} at {} scatter to their own at {names}.", c.name, lname(loc)));
         }
@@ -992,7 +993,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
             add_tokens(s, end, f, n - (path.len() as i32 - 1));
             place_one(s, pid, f, end);
             let fnm = fname(s, f);
-            let strag = if path.len() > 1 { format!(", leaving stragglers at {}", path[..path.len() - 1].iter().map(|&l| lname(l)).collect::<Vec<_>>().join(", ")) } else { String::new() };
+            let strag = if s.quiet { String::new() } else { if path.len() > 1 { format!(", leaving stragglers at {}", path[..path.len() - 1].iter().map(|&l| lname(l)).collect::<Vec<_>>().join(", ")) } else { String::new() } };
             log_line(s, || format!("{who}: {}: {fnm} chased from {} to {}{strag}.", c.name, lname(start), lname(end)));
         }
         Action::Well => {
@@ -1082,7 +1083,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
             if let Some(p) = payer {
                 place_one(s, pid, p, to);
             }
-            let names = guests.iter().map(|g| fname(s, g.faction.fac().unwrap())).collect::<Vec<_>>().join(" and ");
+            let names = if s.quiet { String::new() } else { guests.iter().map(|g| fname(s, g.faction.fac().unwrap())).collect::<Vec<_>>().join(" and ") };
             log_line(s, || format!("{who}: {}: {names} come into {}.", c.name, lname(to)));
         }
         Action::Split => {
@@ -1104,7 +1105,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                     s.players[me].supply -= 1;
                     s.board[l.loc().unwrap() as usize].sway.add(pid, 1);
                 }
-                let names = at.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ");
+                let names = if s.quiet { String::new() } else { at.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ") };
                 log_line(s, || format!("{who}: {}: sway from the supply at {names}.", c.name));
             } else {
                 let fs = picked(&t.payers);
@@ -1172,7 +1173,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 for f in &to {
                     s.players[me].standing[f.fac().unwrap() as usize] += 1;
                 }
-                let names = to.iter().map(|f| fname(s, f.fac().unwrap())).collect::<Vec<_>>().join(", ");
+                let names = if s.quiet { String::new() } else { to.iter().map(|f| fname(s, f.fac().unwrap())).collect::<Vec<_>>().join(", ") };
                 let fnm = fname(s, from);
                 log_line(s, || format!("{who}: {}: standing with {fnm} spread to {names}.", c.name));
             }
@@ -1187,7 +1188,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 for l in &to {
                     s.board[l.loc().unwrap() as usize].sway.add(pid, 1);
                 }
-                let names = to.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ");
+                let names = if s.quiet { String::new() } else { to.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ") };
                 log_line(s, || format!("{who}: {}: sway spread from {} to {names}.", c.name, lname(from)));
             }
             _ => {
@@ -1261,7 +1262,7 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 }
                 place_one(s, pid, f.fac().unwrap(), l);
             }
-            let names = marks.iter().map(|m| lname(m.0.loc().unwrap())).collect::<Vec<_>>().join(", ");
+            let names = if s.quiet { String::new() } else { marks.iter().map(|m| lname(m.0.loc().unwrap())).collect::<Vec<_>>().join(", ") };
             let line = match c.action {
                 Action::Altar => format!("{who}: {}: blood on {names}.", c.name),
                 Action::Terror => format!("{who}: {}: terror waits for nightfall at {names}.", c.name),
