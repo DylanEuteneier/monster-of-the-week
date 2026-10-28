@@ -1,5 +1,5 @@
 {
- "about": "Play fingerprints: per game, the SHA-1 (16 hex digits) of its state hashes in order, joined by newlines. First recorded by the JavaScript engine (2026-10-27) before it was retired; re-recorded 2026-10-28 when each card in the bots' search got its own count of targets to sample (designer); sets c, d and e re-recorded the same day without the rule variants decisions had settled (swayRequired, payInFull, fightHalf, winnerLoss). Re-recorded again 2026-10-28 when the trophy bot began planning its hand (designer), and when its one-step values lost their jitter. Regenerate with `motw fingerprint ... digests=1` only when a change is meant to change play.",
+ "about": "Play fingerprints: per game, the SHA-1 (16 hex digits) of its state hashes in order, joined by newlines. First recorded by the JavaScript engine (2026-10-27) before it was retired; re-recorded 2026-10-28 when each card in the bots' search got its own count of targets to sample (designer); sets c, d and e re-recorded the same day without the rule variants decisions had settled (swayRequired, payInFull, fightHalf, winnerLoss). Re-recorded again 2026-10-28 when the trophy bot began planning its hand (designer), when its one-step values lost their jitter, and when it kept 12 moves for its play-outs. Regenerate with `motw fingerprint ... digests=1` only when a change is meant to change play.",
  "sets": [
   {
    "name": "a",
@@ -348,7 +348,7 @@
    "options": {},
    "games": 1,
    "digests": [
-    "e38fa91f67e592e6"
+    "161b5d8e584b5774"
    ]
   },
   {
@@ -359,7 +359,7 @@
    "options": {},
    "games": 1,
    "digests": [
-    "a1f0a7d3c959f26c"
+    "3af5051cbaa7767c"
    ]
   }
  ]

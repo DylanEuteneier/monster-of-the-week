@@ -92,11 +92,11 @@ fn base(name: &str) -> Option<Persona> {
     let trophy = Persona {
         lean: -0.3, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: 3.0, enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: 0.0, protect: 0.0, top: 0.0,
-        race: 0.0, even: 1.0, plan: 1.0, steer: 1.0, keep: None, playouts: None, plan_budget: None, plan_depth: None, noise: Some(0.0), draft: None, mix: 0.0, roll_list: 0.0,
+        race: 0.0, even: 1.0, plan: 1.0, steer: 1.0, keep: Some(12), playouts: None, plan_budget: None, plan_depth: None, noise: Some(0.0), draft: None, mix: 0.0, roll_list: 0.0,
     };
     match name {
         "trophy" => Some(trophy),
-        "backer" => Some(Persona { lean: 0.3, threat: 1.0, protect: 4.0, commit: 2.0, top: 2.0, race: 2.0, plan: 1.0, steer: 1.0, noise: None, ..trophy }),
+        "backer" => Some(Persona { lean: 0.3, threat: 1.0, protect: 4.0, commit: 2.0, top: 2.0, race: 2.0, plan: 1.0, steer: 1.0, noise: None, keep: None, ..trophy }),
         _ => None,
     }
 }
