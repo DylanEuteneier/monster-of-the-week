@@ -90,13 +90,13 @@ impl Choice {
     }
 }
 
-fn has_stop(xs: &Option<Vec<Id>>) -> bool {
+fn has_stop(xs: &Option<Ids>) -> bool {
     xs.as_deref().unwrap_or(&[]).contains(&Id::Stop)
 }
-fn len_of(xs: &Option<Vec<Id>>) -> usize {
+fn len_of(xs: &Option<Ids>) -> usize {
     xs.as_deref().unwrap_or(&[]).len()
 }
-fn contains_loc(xs: &Option<Vec<Id>>, l: Loc) -> bool {
+fn contains_loc(xs: &Option<Ids>, l: Loc) -> bool {
     xs.as_deref().unwrap_or(&[]).contains(&Id::Loc(l))
 }
 fn count_loc(xs: &[Id], l: Loc) -> i32 {
@@ -202,7 +202,7 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             let fight_ok = |l: Loc| !s.board[l as usize].scorched && count_at(s, l) >= 2 && if mode == Mode::Location { is_suit_loc(c, l) } else { factions_at(s, l).contains(&sf.unwrap()) };
             let Some(l) = loc else { return Choice::locs(LocKey::Location, all_locs(s).filter(|&l| fight_ok(l) && plough_fits(s, pid, c, l, &[])).collect(), None, None) };
             let sides = plough_sides(s, l);
-            let from: Vec<Id> = t.from.clone().unwrap_or_default();
+            let from: Vec<Id> = t.from.unwrap_or_default().to_vec();
             let total: i32 = sides.iter().map(|x| x.1).sum();
             if from.len() as i32 >= total {
                 let mut uniq: Vec<Id> = Vec::new();
@@ -284,7 +284,7 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             if has_stop(&t.from) {
                 return Choice::done();
             }
-            let picks: Vec<Id> = t.from.clone().unwrap_or_default();
+            let picks: Vec<Id> = t.from.unwrap_or_default().to_vec();
             let mut chosen: Vec<Id> = Vec::new();
             for &x in &picks {
                 if !chosen.contains(&x) {
@@ -376,7 +376,7 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             };
             let f = fac.unwrap();
             let n = size(l, f);
-            let split: Vec<(Id, i32)> = t.split.clone().unwrap_or_default();
+            let split: Vec<(Id, i32)> = t.split.unwrap_or_default().to_vec();
             let placed_n: i32 = split.iter().map(|x| x.1).sum();
             let left = n - placed_n;
             let used: Vec<Id> = split.iter().filter(|x| x.1 > 0).map(|x| x.0).collect();

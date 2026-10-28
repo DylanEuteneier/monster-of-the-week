@@ -199,7 +199,7 @@ fn omap_fac(factions: &F5, m: &OMap) -> Value {
 fn omap_pid(seating: &[String], m: &OMap) -> Value {
     Value::Object(m.iter().map(|(p, n)| (seating[p as usize].clone(), Value::from(n))).collect())
 }
-fn omap_loc(m: &OMap) -> Value {
+fn omap_loc(m: &OMap<NLOC>) -> Value {
     Value::Object(m.iter().map(|(l, n)| (spec().locations[l as usize].id.clone(), Value::from(n))).collect())
 }
 fn by_fac(factions: &F5, v: &[i32; 5]) -> Value {
@@ -302,10 +302,10 @@ pub fn state_to_value(s: &GameState) -> Value {
     Value::Object(o)
 }
 
-fn omap_from(v: &Value, key: impl Fn(&str) -> Option<u8>) -> Result<OMap, String> {
-    let mut m = OMap::new();
+fn omap_from<const N: usize>(v: &Value, key: impl Fn(&str) -> Option<u8>) -> Result<OMap<N>, String> {
+    let mut m = OMap::<N>::new();
     for (k, n) in v.as_object().ok_or("expected an object")? {
-        m.0.push((key(k).ok_or_else(|| format!("unknown id {k}"))?, n.as_i64().unwrap_or(0) as i32));
+        m.push(key(k).ok_or_else(|| format!("unknown id {k}"))?, n.as_i64().unwrap_or(0) as i32);
     }
     Ok(m)
 }
@@ -333,9 +333,9 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
             supply: p["supply"].as_i64().unwrap_or(0) as i32,
             standing: by_fac(&p["standing"]),
             trophies: by_fac(&p["trophies"]),
-            hand: cardv(&p["hand"]),
-            kept: cardv(&p["kept"]),
-            batch: cardv(&p["batch"]),
+            hand: Hand::from_slice(&cardv(&p["hand"])),
+            kept: Hand::from_slice(&cardv(&p["kept"])),
+            batch: Hand::from_slice(&cardv(&p["batch"])),
             picked: p["picked"].as_bool().unwrap_or(false),
         });
     }
@@ -400,9 +400,9 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
         seating: Rc::new(seating.clone()),
         players,
         factions,
-        board,
+        board: board.try_into().map_err(|_| "the board has 15 locations".to_string())?,
         supply: by_fac(&v["supply"]),
-        left_out: cardv(&v["leftOut"]),
+        left_out: Small::from_slice(&cardv(&v["leftOut"])),
         pass: v["pass"].as_i64().unwrap_or(1) as i32,
         first: v["first"].as_str().and_then(pid),
         turn: v["turn"].as_u64().unwrap_or(0) as usize,

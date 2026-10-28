@@ -881,7 +881,7 @@ fn card_worth(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, ev: &dyn Fn(&GameSt
     x.phase = Phase::Play;
     x.turn = pid as usize;
     x.opened = true;
-    x.players[pid as usize].hand = vec![ci];
+    x.players[pid as usize].hand = Hand::from_slice(&[ci]);
     let mut best: f64 = 0.0;
     let infl = spend(ci);
     if c.suit.is_some() && legal(&x, pid, &infl) {
@@ -906,7 +906,7 @@ fn combo_worth(s: &GameState, pid: Pid, ci: CardIx, kept: &[CardIx], rng: Rng, e
         x.phase = Phase::Play;
         x.turn = pid as usize;
         x.opened = true;
-        x.players[pid as usize].hand = vec![k, ci];
+        x.players[pid as usize].hand = Hand::from_slice(&[k, ci]);
         let firsts = best_plays(&x, pid, k, rng, ev);
         if firsts.is_empty() {
             continue;

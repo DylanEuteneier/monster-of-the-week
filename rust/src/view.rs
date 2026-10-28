@@ -29,7 +29,7 @@ pub fn describe_target(factions: &[u8; 5], ci: CardIx, t: Option<&Target>) -> St
     let sp = spec();
     let l = |x: Option<Id>| match x { Some(Id::Loc(l)) => sp.locations[l as usize].name.clone(), _ => "?".into() };
     let f = |x: Option<Id>| match x { Some(Id::Fac(f)) => sp.factions[factions[f as usize] as usize].name.clone(), Some(Id::Absent(f)) => sp.factions[f as usize].name.clone(), _ => "?".into() };
-    let real = |xs: &Option<Vec<Id>>| -> Vec<Id> { xs.as_deref().unwrap_or(&[]).iter().copied().filter(|&x| x != Id::Stop).collect() };
+    let real = |xs: &Option<Ids>| -> Vec<Id> { xs.as_deref().unwrap_or(&[]).iter().copied().filter(|&x| x != Id::Stop).collect() };
     let names = |xs: &[Id]| xs.iter().map(|&x| l(Some(x))).collect::<Vec<_>>().join(", ");
     let how = match t.mode { Some(Mode::Faction) => " (faction target)", Some(Mode::Location) => " (location target)", None => "" };
     match card(ci).action {

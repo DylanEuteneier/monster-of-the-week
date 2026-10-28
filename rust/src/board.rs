@@ -20,10 +20,9 @@ pub fn ends_of(s: &GameState, loc: Loc) -> ([Loc; 2], usize) {
 }
 
 /// The factions at a location (both ends of a Gate together), in the order their tokens were placed.
-// PERF: allocates a Vec on every call and is the hottest helper (42% of a JS bot game); callers often need only the
-// count or membership. Return a fixed array, or cache per state.
-pub fn factions_at(s: &GameState, loc: Loc) -> Vec<Fac> {
-    let mut out: Vec<Fac> = Vec::with_capacity(3);
+#[inline]
+pub fn factions_at(s: &GameState, loc: Loc) -> Facs {
+    let mut out = Facs::new();
     for (f, n) in s.board[loc as usize].tokens.iter() {
         if n > 0 && !out.contains(&f) {
             out.push(f);
@@ -39,41 +38,36 @@ pub fn factions_at(s: &GameState, loc: Loc) -> Vec<Fac> {
     out
 }
 
-/// How many factions are at a location (factions_at().len(), without the list).
+/// How many factions are at a location.
+#[inline]
 pub fn count_at(s: &GameState, loc: Loc) -> usize {
     factions_at(s, loc).len()
 }
 
 /// A location's neighbours. Through an open Gate the two ends are one location.
-// PERF: clones the spec's adjacency on every call; return a slice when no Gate is open.
-pub fn adj(s: &GameState, loc: Loc) -> Vec<Loc> {
+pub fn adj(s: &GameState, loc: Loc) -> Locs {
     let sp = spec();
     let base = &sp.locations[loc as usize].adjacent;
     let g = gate_of(s, loc);
     if g.is_none() && !base.iter().any(|&l| gate_of(s, l).is_some()) {
-        return base.clone();
+        return Locs::from_slice(base);
     }
-    let mut out: Vec<Loc> = Vec::with_capacity(base.len() + 6);
-    let push = |v: &mut Vec<Loc>, l: Loc| {
-        if !v.contains(&l) {
-            v.push(l);
-        }
-    };
+    let mut out = Locs::new();
     for &l in base {
-        push(&mut out, l);
+        out.add(l);
     }
     if let Some(g) = g {
         for &l in &sp.locations[g as usize].adjacent {
-            push(&mut out, l);
+            out.add(l);
         }
     }
-    let snapshot = out.clone();
+    let snapshot = out;
     for l in snapshot {
         if let Some(p) = gate_of(s, l) {
-            push(&mut out, p);
+            out.add(p);
         }
     }
-    out.retain(|&l| l != loc && Some(l) != g);
+    out.retain(|l| l != loc && Some(l) != g);
     out
 }
 

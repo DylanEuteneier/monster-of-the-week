@@ -25,7 +25,7 @@ pub fn truthy(x: Option<Id>) -> bool {
     !matches!(x, None | Some(Id::Empty))
 }
 /// A pick list with the stop marker taken out.
-pub fn picked(xs: &Option<Vec<Id>>) -> Vec<Id> {
+pub fn picked(xs: &Option<Ids>) -> Vec<Id> {
     xs.as_deref().unwrap_or(&[]).iter().copied().filter(|&x| x != Id::Stop).collect()
 }
 /// How many times each entry appears, in first-seen order.
@@ -51,7 +51,7 @@ fn distinct<T: PartialEq + Copy>(xs: &[T]) -> Vec<T> {
 fn all_distinct<T: PartialEq + Copy>(xs: &[T]) -> bool {
     distinct(xs).len() == xs.len()
 }
-fn count_eq(xs: &Option<Vec<Id>>, x: Option<Id>) -> usize {
+fn count_eq(xs: &Option<Ids>, x: Option<Id>) -> usize {
     match x {
         None => 0,
         Some(x) => xs.as_deref().unwrap_or(&[]).iter().filter(|&&y| y == x).count(),
@@ -148,7 +148,7 @@ pub fn gate_end(s: &GameState, c: &Card, loc: Option<Loc>) -> bool {
     !p.scorched && p.gate.is_none() && (is_suit_loc(c, loc) || factions_at(s, loc).contains(&suit_faction(c).expect("suited")))
 }
 /// The factions present across two locations.
-pub fn factions_across(s: &GameState, a: Loc, b: Loc) -> Vec<Fac> {
+pub fn factions_across(s: &GameState, a: Loc, b: Loc) -> Facs {
     let mut v = factions_at(s, a);
     for f in factions_at(s, b) {
         if !v.contains(&f) {
@@ -209,7 +209,7 @@ pub fn plough_sides(s: &GameState, loc: Loc) -> Vec<(Fac, i32, Vec<Loc>)> {
     (0..5u8).filter(|f| here.contains(f)).map(|f| (f, (tokens_of(s, loc, f) + 1).div_euclid(2), burst_spots(s, loc, f))).collect()
 }
 /// Plough Through: who may pay: the fight's factions, and the Nocturnals if they aren't in it.
-pub fn plough_pool(s: &GameState, c: &Card, loc: Loc) -> Vec<Fac> {
+pub fn plough_pool(s: &GameState, c: &Card, loc: Loc) -> Facs {
     let mut v = factions_at(s, loc);
     let sf = suit_faction(c).expect("suited");
     if !v.contains(&sf) {
@@ -385,24 +385,24 @@ pub fn check_target(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> 
     if reason.is_some() || !s.options.sway_required {
         return reason;
     }
-    let tokens_after = |options: &Options| -> Vec<OMap> {
+    let tokens_after = |options: std::rc::Rc<Options>| -> [OMap; NLOC] {
         let mut copy = imagined(s);
-        copy.options = std::rc::Rc::new(options.clone());
+        copy.options = options;
         copy.round_plays = vec![]; // as the JavaScript copy, which holds no roundPlays (see engine.js)
         act(&mut copy, pid, ci, t);
-        copy.board.iter().map(|p| p.tokens.clone()).collect()
+        copy.board.map(|p| p.tokens)
     };
     let refused = UNPAID.with(|u| u.get());
-    let paid = tokens_after(&s.options);
+    let paid = tokens_after(s.options.clone());
     let in_full = s.options.pay_in_full;
     if in_full && UNPAID.with(|u| u.get()) == refused {
         return None;
     }
-    let free = tokens_after(&s.options.with_sway_required(false));
+    let free = tokens_after(s.options.unpaid());
     if in_full {
         return if paid == free { None } else { Some("You need the sway to pay for all of it (all or nothing).".into()) };
     }
-    let before: Vec<OMap> = s.board.iter().map(|p| p.tokens.clone()).collect();
+    let before: [OMap; NLOC] = s.board.map(|p| p.tokens);
     if paid == before && free != before {
         return Some("You need standing with the faction to pay for the sway this move places (IC1).".into());
     }

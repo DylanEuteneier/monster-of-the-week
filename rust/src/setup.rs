@@ -99,7 +99,7 @@ pub fn create_game(seed: i64, players: &[String], raw_options: &[(String, String
             *st = if f == arch { options.start_sway } else { options.start_others };
         }
         let held: i32 = standing.iter().sum();
-        let mut p = Player { group, supply: options.player_cubes - held, standing, trophies: [0; 5], hand: vec![], kept: vec![], batch: vec![], picked: false };
+        let mut p = Player { group, supply: options.player_cubes - held, standing, trophies: [0; 5], hand: Hand::new(), kept: Hand::new(), batch: Hand::new(), picked: false };
         // Each slayer group starts with sway at each of its affinity locations, from its supply.
         for l in 0..sp.locations.len() {
             if sp.locations[l].archetype != arch {
@@ -122,9 +122,9 @@ pub fn create_game(seed: i64, players: &[String], raw_options: &[(String, String
         seating: Rc::new(players.to_vec()),
         players: ps,
         factions,
-        board,
+        board: board.try_into().expect("15 locations"),
         supply,
-        left_out: vec![],
+        left_out: Small::new(),
         pass: 1,
         first: None,
         turn: 0,
@@ -153,12 +153,12 @@ pub fn deal(s: &mut GameState) {
     s.rng_state = st;
     for i in 0..s.n() {
         let p = &mut s.players[i];
-        p.batch = items[i * hand..(i + 1) * hand].to_vec();
-        p.kept = vec![];
-        p.hand = vec![];
+        p.batch = Hand::from_slice(&items[i * hand..(i + 1) * hand]);
+        p.kept = Hand::new();
+        p.hand = Hand::new();
         p.picked = false;
     }
-    s.left_out = items[s.n() * hand..].to_vec();
+    s.left_out = Small::from_slice(&items[s.n() * hand..]);
     s.round_plays = vec![];
     s.phase = Phase::Draft;
     s.pass = 1;

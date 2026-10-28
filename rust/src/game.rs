@@ -122,7 +122,7 @@ pub fn apply_move(s: &GameState, pid: Pid, m: &Move) -> Result<GameState, String
         Move::Pick { keep } => {
             let p = &mut next.players[me];
             let pool: Vec<CardIx> = p.kept.iter().chain(p.batch.iter()).copied().collect();
-            p.kept = keep.clone();
+            p.kept = Hand::from_slice(keep);
             p.batch = pool.into_iter().filter(|c| !keep.contains(c)).collect();
             p.picked = true;
             if next.players.iter().all(|p| p.picked) {
@@ -150,7 +150,7 @@ pub fn apply_move(s: &GameState, pid: Pid, m: &Move) -> Result<GameState, String
             }
             next.board[loc as usize].terror = None;
             let n = next.night.as_mut().expect("night");
-            n.left.retain(|&l| l != loc);
+            n.left.retain(|l| l != loc);
             if n.left.is_empty() {
                 close_round(&mut next);
             }
@@ -166,7 +166,7 @@ pub fn apply_move(s: &GameState, pid: Pid, m: &Move) -> Result<GameState, String
         }
         Move::Play { card, use_, target, places } => {
             let ci = *card;
-            next.players[me].hand.retain(|&c| c != ci);
+            next.players[me].hand.retain(|c| c != ci);
             next.round_plays.push(RoundPlay { pid, card: ci, use_: *use_ });
             next.passes_in_row = 0;
             if Some(pid) == next.first {
@@ -220,9 +220,9 @@ pub fn apply_move(s: &GameState, pid: Pid, m: &Move) -> Result<GameState, String
 /// Everyone has picked: pass the rest on; when the batches are empty the draft is over.
 fn pass_batches(s: &mut GameState) {
     let n = s.n();
-    let batches: Vec<Vec<CardIx>> = s.players.iter().map(|p| p.batch.clone()).collect();
+    let batches: Vec<Hand> = s.players.iter().map(|p| p.batch).collect();
     for i in 0..n {
-        s.players[i].batch = batches[(i + n - 1) % n].clone();
+        s.players[i].batch = batches[(i + n - 1) % n];
         s.players[i].picked = false;
     }
     s.pass += 1;
@@ -258,12 +258,12 @@ fn start_play(s: &mut GameState) {
 /// The round's play is over: unplayed cards go back; nightfall, or the fights.
 fn end_of_play(s: &mut GameState) {
     for p in s.players.iter_mut() {
-        p.hand = vec![];
+        p.hand = Hand::new();
     }
     let marks: Vec<Loc> = (0..s.board.len() as Loc).filter(|&l| s.board[l as usize].terror.is_some()).collect();
     if !marks.is_empty() {
         s.phase = Phase::Night;
-        s.night = Some(Night { player: s.board[marks[0] as usize].terror.unwrap(), left: marks });
+        s.night = Some(Night { player: s.board[marks[0] as usize].terror.unwrap(), left: Locs::from_slice(&marks) });
         log_line(s, || "Everyone passed. Night falls.".to_string());
         return;
     }
@@ -533,8 +533,8 @@ pub fn rank_at(s: &GameState, loc: Loc) -> (Vec<Option<Pid>>, usize, Vec<Pid>) {
 }
 
 /// What each growth location is due: 1, plus 1 if the faction is aligned with it (AL3; variant alignedGrowth).
-pub fn growth_due(s: &GameState, f: Fac) -> OMap {
-    let mut out = OMap::new();
+pub fn growth_due(s: &GameState, f: Fac) -> OMap<NLOC> {
+    let mut out = OMap::<NLOC>::new();
     for l in 0..s.board.len() as Loc {
         if s.board[l as usize].scorched {
             continue;
