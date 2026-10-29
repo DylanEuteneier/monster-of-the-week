@@ -498,6 +498,19 @@ The board empties (by round 5 fewer than half the locations hold tokens; about 2
 
 **What blocks them (same games):** mostly **cost**, no standing to pay the sway a move or mark places (IC1, D21): Spoof the Signal, Bait the Herd, The Big Chase, Cut the Powerlines, Draw Them Away, Light of the Cross, the Gate, Night Terrors, Spill Blood on the Altar, Study the Bodies, Perform the Ritual, Wake the Dead. Mostly **the board**, nothing that fits: Take Control and Plough Through (they need fights), Showdown (a lone group where you have sway), Invite Them In's location reading.
 
+**More sway (designer, 2026-10-29: bump up sway values; variant `cardSway`; 60 games each, seed 2001, balanced bot leans, passing off).** Cards with a legal action per turn, rounds 1–5; locations occupied and presence after round 5; invaders' ending:
+
+| | Action per turn | Occupied R5 | Presence R5 | Invaders |
+|---|---|---|---|---|
+| As now | 1.6 / 1.8 / 1.7 / 1.7 / 1.5 | 6.4 | 21.9 | 23% |
+| +1 card sway | 1.6 / 1.8 / 1.7 / 1.6 / 1.5 | 6.4 | 21.8 | 27% |
+| Starting standing 7 | 1.6 / 1.8 / 1.7 / 1.6 / 1.5 | 6.1 | 20.3 | 22% |
+| +1 card sway, start 7 | 1.6 / 1.9 / 1.7 / 1.6 / 1.5 | 6.4 | 20.4 | 27% |
+| +2 card sway, start 7 | 1.6 / 1.8 / 1.8 / 1.7 / 1.6 | 6.5 | 20.5 | 27% |
+| +1 card sway, 2 standing with others | 2.0 / 1.9 / 1.8 / 1.7 / 1.5 | 5.9 | 15.6 | 7% |
+
+Read: sway on the cards and own-faction starting standing change little (a card's sway goes to its own faction; the blocked cards mostly need standing with another). Standing with every faction unblocks cards, but most actions take tokens off the board, so presence collapses and the invaders almost never win: more actions alone empty the board faster. The lever looks like tokens coming onto the board. The balanced bot table (leans −0.3 … +0.3) itself brings the invaders' ending to about 23%, against 36% with two full backers.
+
 ## 2. Game foundation
 
 ### 2.1 Core tension and experience goals
