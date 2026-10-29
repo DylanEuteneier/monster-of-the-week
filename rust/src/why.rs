@@ -104,6 +104,9 @@ pub fn pick_conditions(s: &GameState, pid: Pid, ci: CardIx, mode: Mode, loc: Loc
             let (paid, free) = first_picks(s, pid, ci, mode);
             let fac = if matches!(free.kind, crate::choice::Kind::Group(_)) { f } else { None };
             let mut out: Vec<Cond> = reading_cond(s, ci, mode, loc, fac).into_iter().collect();
+            if out.first().is_some_and(|r| !r.met) {
+                return Some(out); // not this reading's: the rest doesn't apply
+            }
             out.push(cond(words, offers(&free, loc, fac)));
             out.push(cond("You have the standing to pay its sway", offers(&paid, loc, fac)));
             Some(out)
