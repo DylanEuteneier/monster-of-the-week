@@ -10,7 +10,7 @@
  * are chosen on the board one step at a time: each step's candidates are
  * spotlit (hexes) or lit gold (tokens), and the server checks the result.
  */
-import { spec, factionById, locationById, cardById, waitingOn, nextChoice, checkTarget, previewTarget, fleeOptions, returnRoom, readingConditions, pickConditions } from './rules.js';
+import { spec, factionById, locationById, cardById, waitingOn, nextChoice, checkTarget, previewTarget, fleeOptions, returnRoom, readingConditions, pickConditions, describeTarget } from './rules.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml, effectHtml, markImg, EFFECTS } from './pieces.js';
 import { cardHtml as baseCardHtml, suitIcon } from './cards.js';
@@ -117,6 +117,12 @@ const ui = {
    * @type {{ on: boolean, mode: 'off' | 'marks' | 'full', hint: import('./hints.js').Hint | null, asked: number, got: number, source: (() => import('./hints.js').Hint | null) | null, want: string, byKey: Record<string, import('./hints.js').Hint | null> }}
    */
   hints: { on: false, mode: 'off', hint: null, asked: 0, got: 0, source: null, want: '', byKey: {} },
+  /** the move being shown as it animates (another seat's, or your own): the bar says it in its chip */
+  /** @type {{ player: string, move: import('./guide.js').SeenMove } | null} */
+  acting: null,
+  /** your move on its way to the server */
+  /** @type {import('./rules.js').Move | null} */
+  sendingMove: null,
   /** the server's hint key for the view on screen (which position a hint must be for) */
   viewKey: '',
   /** the slayer group card open in the accordion (null: your own) */
@@ -268,17 +274,22 @@ async function showNext() {
     mark(`view ${item.view.round}:${item.view.phase} after ${last ? `${last.player} ${last.move.type}` : 'nothing'}`);
     // Another seat's move plays at this screen's speed (your own always at once, unpaused: designer, 2026-10-11).
     const other = !!before && !!last && last.player !== before.you && before.you === item.view.you;
+    // The bar says the move while it plays out (designer, 2026-10-28).
+    ui.acting = last && before && before.you === item.view.you && !item.instant ? { player: last.player, move: last.move } : null;
+    if (ui.acting) renderPhase();
     const s = speedNow();
     try {
       if (before && !item.instant && item.meta?.fights?.length && !s.instant && before.you === item.view.you) {
         if (other && last && s.guide) await guideTurn(before, before, last, s);
         await tellRoundEnd(before, item.view, item.meta.fights, s);
+        ui.acting = null;
         item.done();
         continue;
       }
       if (other && last && !item.instant && s.guide) {
         mark(`guide ${last.player} ${last.move.type}`);
         await guideTurn(before, item.view, last, s);
+        ui.acting = null;
         item.done();
         continue;
       }
@@ -291,6 +302,7 @@ async function showNext() {
     mark(`fly ${flights.length}`);
     if (flights.length) await fly(flights, item.view.you, { speed: item.speed ?? (other ? s.speed : 1) + incoming.length * 0.75 });
     if (item.meta?.hintKey) ui.viewKey = item.meta.hintKey;
+    ui.acting = null;
     showState(item.view, item.online);
     item.done();
   }
@@ -358,6 +370,7 @@ function sendMove(move) {
   if (!ui.socket || ui.socket.readyState !== WebSocket.OPEN) return toast('Not connected');
   ui.socket.send(JSON.stringify({ type: 'move', move }));
   ui.sending = true;
+  ui.sendingMove = move;
   // Your move starts moving the moment you click (designer, 2026-10-11): the table's own preview of it is shown at
   // once; the server's view, when it comes, corrects anything the preview couldn't know.
   const guess = ui.view && foresee(ui.view, move);
@@ -665,15 +678,35 @@ function step(state, text, extra = '') {
 /** Animated dots: something is under way (designer, 2026-10-28). */
 const DOTS = '<span class="dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>';
 
-/** Who is being waited on, as markup with the dots: a bot is thinking; people are waited for. */
+/**
+ * The bar's status (designer, 2026-10-28): who, as a static label ("Dan is"), then what, as a live chip: what they
+ * are thinking about while they decide (with the dots), then the move itself while it plays out.
+ * @param {string} who @param {string} what @param {boolean} [live]  still deciding (the dots)
+ */
+const status = (who, what, live = true) => `<span class="bar-who">${who}</span> <span class="bar-chip${live ? ' is-live' : ''}">${what}${live ? DOTS : ''}</span>`;
+
+/** What a phase's decision is about, for the chip. @param {PlayerView} view */
+const thinkingAbout = (view) => (view.phase === 'draft' ? 'picking a card' : view.phase === 'growth' ? 'choosing where it grows' : view.phase === 'night' ? 'deciding at nightfall' : 'choosing a play');
+
+/** A move in a few words, for the chip ("playing The Gate: …"). @param {import('./rules.js').Move} m */
+function moveWords(m) {
+  if (m.type === 'pick') return 'picking a card';
+  if (m.type === 'pass') return 'passing';
+  if (m.type === 'grow') return `growing at ${esc(lname(m.location))}`;
+  if (m.type === 'flee') return m.faction && m.to ? `sending 1 ${esc(fname(m.faction))} to ${esc(lname(m.to))}` : `letting the ${esc(lname(m.location))} mark be`;
+  const c = cardById(m.card);
+  if (m.use === 'sway') return `playing ${esc(c.name)} for sway`;
+  if (m.use === 'return') return `playing ${esc(c.name)} to bring tokens back`;
+  if (!m.target) return `playing ${esc(c.name)} for no effect`;
+  return `playing ${esc(c.name)}: ${esc(describeTarget(c.id, m.target).replace(/ \((faction|location) target\)/, ''))}`;
+}
+
+/** Who is being waited on, and what they are deciding, as the bar's status. */
 function waitingText() {
   const view = /** @type {PlayerView} */ (ui.view);
   const others = waitingOn(view).filter((id) => id !== view.you);
-  if (!others.length) return `Waiting${DOTS}`;
-  // A bot is said to be thinking, and about what (designer, 2026-10-28).
-  const about = view.phase === 'draft' ? 'picking a card' : view.phase === 'growth' ? 'choosing where it grows' : view.phase === 'night' ? 'deciding at nightfall' : 'choosing a play';
-  if (others.every((id) => ui.bots.includes(id))) return `${esc(others.join(', '))} ${others.length === 1 ? 'is' : 'are'} ${about}${DOTS}`;
-  return `Waiting for ${esc(others.join(', '))}${DOTS}`;
+  if (!others.length) return status('', 'waiting');
+  return status(`${esc(others.join(', '))} ${others.length === 1 ? 'is' : 'are'}`, thinkingAbout(view));
 }
 
 /** The hand, above the bar. */
@@ -724,7 +757,9 @@ function renderPhase() {
   renderers[view.phase]();
   if (ui.note) handNext = { ...handNext, actions: [], state: 'wait', text: esc(ui.note) };
   // A move on its way to the server: said at once, so a click never looks dead (designer, 2026-10-11).
-  if (ui.sending) handNext = { ...handNext, actions: [], text: `Sending${DOTS}` };
+  // A move playing out on the table (another seat's, or yours): said in the chip while it animates.
+  if (ui.acting) handNext = { ...handNext, actions: [], state: 'wait', text: status(ui.acting.player === view.you ? 'You are' : `${esc(ui.acting.player)} is`, moveWords(ui.acting.move), false) };
+  else if (ui.sending) handNext = { ...handNext, actions: [], text: ui.sendingMove ? status('You are', moveWords(ui.sendingMove)) : status('', `sending`) };
   setHtml('phase', `<span class="bar-text">${handNext.text}</span>${handNext.extra}<span class="bar-actions">${handNext.actions.join('')}</span>`);
   const dock = $('dock');
   for (const s of ['turn', 'wait', 'end']) dock.classList.toggle(`is-${s}`, handNext.state === s);

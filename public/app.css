@@ -627,6 +627,10 @@ button.card-opt:hover { background: #f6cca1; }
 .bar-mine { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .bar-step { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; min-width: 0; overflow: hidden; }
 .bar-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* The bar's status: who, as a static label, then what as a live chip (deciding: dots; then the move itself). */
+.bar-who { color: var(--color-muted); }
+.bar-chip { display: inline-block; padding: 1px 8px; border: 2px solid var(--color-border); background: var(--color-panel-2); color: var(--color-text); }
+.bar-chip.is-live { background: var(--color-accent-soft); }
 /* Something under way (a bot thinking, a move sending): three dots that light in turn. */
 .dots span { animation: dots 1.2s infinite; opacity: 0.2; }
 .dots span:nth-child(2) { animation-delay: 0.2s; }
