@@ -729,6 +729,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - In the first draft, `GR1` is this system: growth at resolution is how the game grows presence.
   - `GR4` *As spillover:* the spillover from a resolved fight is how invaders grow, so population growth and combat form one cascade rather than two systems (linked to cascading resolution in 3.13).
     - *Open:* whether spillover is the only source of growth.
+  - *Direction (designer, 2026-10-29):* fights stay costly; something else brings tokens back steadily as the game goes on, so a fight-heavy early game doesn't leave a thin, unexciting late game. Limits: fights must stay contested, backing must not get easy, and doing your own thing away from the fights must not become too valuable. Why: the fuller start (D32) lifts only the early rounds; the board drains to about 7 locations and 2 fights by round 5 whatever the start (1.7). *Open:* what the source is.
 
 ---
 
