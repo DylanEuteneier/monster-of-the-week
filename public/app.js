@@ -114,9 +114,9 @@ const ui = {
    * card, its way of playing and the locations marked on the table); full
    * (marks and the panel).
    * want: the position (hint key) a hint was asked for; byKey: the last hint the server sent, by its position
-   * @type {{ on: boolean, mode: 'off' | 'marks' | 'full' | 'ask', hint: import('./hints.js').Hint | null, asked: number, got: number, source: (() => import('./hints.js').Hint | null) | null, want: string, byKey: Record<string, import('./hints.js').Hint | null> }}
+   * @type {{ on: boolean, mode: 'off' | 'marks' | 'full' | 'ask', hint: import('./hints.js').Hint | null, asked: number, got: number, source: (() => import('./hints.js').Hint | null) | null, want: string, byKey: Record<string, import('./hints.js').Hint | null>, lean: number }}
    */
-  hints: { on: false, mode: 'off', hint: null, asked: 0, got: 0, source: null, want: '', byKey: {} },
+  hints: { on: false, mode: 'off', hint: null, asked: 0, got: 0, source: null, want: '', byKey: {}, lean: -0.3 },
   /** the move being shown as it animates (another seat's, or your own): the bar says it in its chip */
   /** @type {{ player: string, move: import('./guide.js').SeenMove } | null} */
   acting: null,
@@ -963,6 +963,10 @@ function render() {
   renderBoard();
   renderLog();
   $('hint-button').hidden = !hintsAvailable();
+  const aim = /** @type {HTMLSelectElement} */ ($('hint-lean'));
+  aim.hidden = !hintsAvailable() || !ui.hints.on || !!ui.hints.source;
+  if (aim.options.length === 0) aim.innerHTML = HINT_LEANS.map(([v, label]) => `<option value="${v}">${label}</option>`).join('');
+  aim.value = String(ui.hints.lean);
   renderSpeed();
   markHint();
   // A new choice (a card picked or put down, a reading, a pick): the hint recomputes for it.
@@ -1252,13 +1256,14 @@ function requestHint(asked = false) {
   // The hint follows the player's choice (designer, 2026-10-28): the best play overall, or with the chosen card, its
   // reading and what is picked so far. Each has its own key; a hint is shown only for the choice on screen.
   const focus = hintFocus();
-  const key = ui.viewKey + (focus ? `|${focus.card}|${JSON.stringify(focus.target)}` : '');
+  const key = ui.viewKey + (focus ? `|${focus.card}|${JSON.stringify(focus.target)}` : '') + `|L${ui.hints.lean}`;
   ui.hints.want = key;
   if (key in ui.hints.byKey) { ui.hints.got = ui.hints.asked; ui.hints.hint = ui.hints.byKey[key]; return renderHint(); }
   renderHint();
   // auto: the Worker may work out this seat's next hints as its turns come (not on demand).
   const auto = ui.hints.mode !== 'ask';
-  ui.socket.send(JSON.stringify(focus ? { type: 'hint', focus, auto } : { type: 'hint', auto }));
+  const lean = ui.hints.lean;
+  ui.socket.send(JSON.stringify(focus ? { type: 'hint', focus, auto, lean } : { type: 'hint', auto, lean }));
 }
 
 /** What the hint is for: the card being played and the target so far, while one is chosen in the play phase. */
@@ -1270,6 +1275,16 @@ let hintFocusAsked = '';
 
 const HINT_MODES = /** @type {const} */ (['off', 'marks', 'full', 'ask']);
 const HINT_LABELS = { off: 'Hints: off', marks: 'Hints: marks', full: 'Hints: full', ask: 'Hints: on demand' };
+/** The hint aim: the lean of the bot that suggests your moves, from the island (−0.3) to backing a faction (+0.3). */
+const HINT_LEANS = /** @type {const} */ ([[-0.3, 'Aim: island'], [-0.15, 'Aim: leaning island'], [0, 'Aim: either'], [0.15, 'Aim: leaning to back a faction'], [0.3, 'Aim: back a faction']]);
+/** Set the hint aim (the player's preference; remembered in this browser). @param {number} lean */
+function setHintLean(lean) {
+  ui.hints.lean = lean;
+  try { localStorage.setItem('motw-hint-lean', String(lean)); } catch { /* a convenience only */ }
+  ui.hints.byKey = {};
+  requestHint(ui.hints.mode === 'ask' && !!ui.hints.hint);
+}
+
 /** Set the hint mode (the Hints button cycles it; the tutorial starts full). @param {'off' | 'marks' | 'full' | 'ask'} mode */
 function setHints(mode) {
   ui.hints.mode = mode;
@@ -1945,6 +1960,7 @@ function main() {
   globalThis.addEventListener?.('resize', replace);
   globalThis.addEventListener?.('scroll', replace, { passive: true });
   document.addEventListener('click', onClick);
+  $('hint-lean').addEventListener('change', (event) => setHintLean(Number(/** @type {HTMLSelectElement} */ (event.target).value)));
   document.addEventListener('pointerover', onPreview);
   document.addEventListener('click', onCardClick);
   $('chat-form').addEventListener('submit', onChatSubmit);
@@ -1952,6 +1968,7 @@ function main() {
   let saved = null;
   try { saved = localStorage.getItem('motw-hints'); } catch { /* a convenience only */ }
   if (!ui.tutorial && (saved === 'marks' || saved === 'full' || saved === 'ask')) { ui.hints.mode = saved; ui.hints.on = true; }
+  try { const l = Number(localStorage.getItem('motw-hint-lean')); if (HINT_LEANS.some(([v]) => v === l) && localStorage.getItem('motw-hint-lean') !== null) ui.hints.lean = l; } catch { /* a convenience only */ }
   if (ui.tutorial) return void import('./tutorial.js').then((m) => m.start(tableHooks));
   if (ui.hotseat.enabled) return void loadHotseat();
   if (ui.token) connect();

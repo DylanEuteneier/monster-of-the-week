@@ -52,7 +52,7 @@ interface ChatLine {
 type ClientMessage =
   | { type: 'move'; move: Move }
   | { type: 'chat'; text: string }
-  | { type: 'hint'; focus?: HintFocus; auto?: boolean };
+  | { type: 'hint'; focus?: HintFocus; auto?: boolean; lean?: number };
 
 type ServerMessage =
   | { type: 'state'; view: PlayerView; online: string[]; bots: string[]; hintKey: string; last?: { player: string; move: SeenMove }; fights?: Fight[] }
@@ -219,6 +219,8 @@ export class Game extends DurableObject<Env> {
   private bots: string[] | undefined;
   /** Each seat's plan between hints (not saved: a restart only forgets the plan's stubbornness). */
   private hintMemory: Record<string, BotMemory> = {};
+  /** Each seat's hint aim, the lean of the bot that suggests its moves (designer, 2026-10-29: the player's choice). */
+  private hintLean: Record<string, number> = {};
   /** Hints worked out ahead, by seat and position (hintKey): a request answers at once, and none holds up a move. */
   private hintCache = new Map<string, Hint | null>();
   /** Seats that have asked for hints this session: their next hint is worked out as soon as their turn comes. */
@@ -370,7 +372,8 @@ export class Game extends DurableObject<Env> {
       // Automatic hints: this seat's next ones are worked out as its turns come; on demand: only what is asked.
       if (message.auto !== false) this.hintWanted.add(playerId);
       else this.hintWanted.delete(playerId);
-      const key = hintKey(this.game, playerId) + focusKey(message.focus);
+      if (message.lean !== undefined) this.hintLean[playerId] = message.lean;
+      const key = hintKey(this.game, playerId) + focusKey(message.focus) + this.leanKey(playerId);
       const cached = this.hintCache.get(`${playerId}|${key}`);
       if (cached !== undefined) return this.send(ws, { type: 'hint', key, hint: cached });
       // A hint for a choice the player has begun (a card, a reading, part of a target): worked out after anything
@@ -438,12 +441,20 @@ export class Game extends DurableObject<Env> {
    * A seat's hint for the position now. The move is the strongest bot's (designer, 2026-10-11: full search, seeing
    * what any bot sees, set up as this table's bots are); hints.js explains it from what the seat can see.
    */
+  /** A seat's hint aim as part of a hint's key. @param playerId */
+  private leanKey(playerId: string): string {
+    return `|L${this.hintLean[playerId] ?? -0.3}`;
+  }
+
   private hintFor(playerId: string, focus?: HintFocus): Hint | null {
     if (!this.game || this.game.phase === 'ended') return null;
-    const memory = (this.hintMemory[playerId] ??= { jitter: 0 }); // no random lean in a hint
-    const table = Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'bot:lean=-0.3']));
+    // The bot that suggests the move leans as the player chose (island −0.3 by default).
+    const lean = this.hintLean[playerId] ?? -0.3;
+    const profile = `bot:lean=${lean}`;
+    const memory = (this.hintMemory[`${playerId}|${lean}`] ??= { jitter: 0 }); // no random lean in a hint; a goal of its own per aim
+    const table = Object.fromEntries(this.game.seating.map((id) => [id, id === playerId ? profile : this.botProfiles[id] ?? 'bot:lean=-0.3']));
     let move: Move | null = null;
-    try { move = botMove(this.game, { playerId, rng: Math.random, profile: 'bot:lean=-0.3', memory, table, memories: { ...this.botMemory, [playerId]: memory }, ...(focus ? { focus } : {}) }); } catch (error) { console.error('hint failed:', error); }
+    try { move = botMove(this.game, { playerId, rng: Math.random, profile, memory, table, memories: { ...this.botMemory, [playerId]: memory }, ...(focus ? { focus } : {}) }); } catch (error) { console.error('hint failed:', error); }
     if (focus && !move) return null; // nothing to play with that choice (never a hint about another play)
     try { return suggest(this.game, playerId, memory, move ?? undefined); } catch (error) { console.error('hint failed:', error); return null; }
   }
@@ -458,12 +469,12 @@ export class Game extends DurableObject<Env> {
     if (!game || game.phase === 'ended' || game.seating.filter((id) => !this.bots?.includes(id)).length > 1) return;
     for (const playerId of waitingOn(game)) {
       if (!this.hintWanted.has(playerId) || this.bots?.includes(playerId)) continue;
-      const key = hintKey(game, playerId);
+      const key = hintKey(game, playerId) + this.leanKey(playerId);
       const at = `${playerId}|${key}`;
       if (this.hintCache.has(at)) continue;
       const hint = this.hintFor(playerId);
       if (this.game !== game) return; // a move came in: that position's hint is no longer wanted
-      for (const k of [...this.hintCache.keys()]) if (!k.startsWith(`${playerId}|${key}`)) this.hintCache.delete(k); // only the position now matters
+      for (const k of [...this.hintCache.keys()]) if (!k.startsWith(`${playerId}|${hintKey(game, playerId)}`)) this.hintCache.delete(k); // only the position now matters
       this.hintCache.set(at, hint);
       for (const socket of this.ctx.getWebSockets()) if (this.playerOf(socket) === playerId) this.send(socket, { type: 'hint', key, hint });
     }
@@ -474,7 +485,7 @@ export class Game extends DurableObject<Env> {
     await new Promise((resolve) => setTimeout(resolve, 0));
     const game = this.game;
     if (!game || game.phase === 'ended' || !waitingOn(game).includes(playerId) || (focus && game.phase !== 'play')) return;
-    const key = hintKey(game, playerId) + focusKey(focus);
+    const key = hintKey(game, playerId) + focusKey(focus) + this.leanKey(playerId);
     const at = `${playerId}|${key}`;
     if (!this.hintCache.has(at)) {
       const hint = this.hintFor(playerId, focus);
@@ -572,7 +583,9 @@ function parseClientMessage(raw: string | ArrayBuffer): ClientMessage | null {
   if (candidate.type === 'hint') {
     const f = (parsed as { focus?: { card?: unknown; target?: unknown } }).focus;
     const auto = (parsed as { auto?: unknown }).auto !== false; // on demand sends auto: false
-    return f && typeof f.card === 'string' && typeof f.target === 'object' && f.target !== null ? { type: 'hint', focus: { card: f.card, target: f.target as Record<string, unknown> }, auto } : { type: 'hint', auto };
+    const raw = (parsed as { lean?: unknown }).lean;
+    const lean = typeof raw === 'number' && Number.isFinite(raw) ? Math.round(Math.max(-0.6, Math.min(0.6, raw)) * 100) / 100 : undefined;
+    return f && typeof f.card === 'string' && typeof f.target === 'object' && f.target !== null ? { type: 'hint', focus: { card: f.card, target: f.target as Record<string, unknown> }, auto, lean } : { type: 'hint', auto, lean };
   }
   if (candidate.type === 'move' && typeof candidate.move === 'object' && candidate.move !== null) {
     return { type: 'move', move: candidate.move as Move };
