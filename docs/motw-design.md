@@ -500,6 +500,13 @@ The board empties (by round 5 fewer than half the locations hold tokens; about 2
 
 **Token flow (2026-10-29; 16 games, balanced leans, passing off, before D32).** Per round, a game's tokens added by cards / removed by cards / lost in fights / grown: R1 0.4 / 1.1 / 10.1 / 14.2; R2 1.7 / 1.1 / 14.1 / 9.4; R3 2.6 / 1.1 / 10.2 / 6.4; R4 2.9 / 1.2 / 10.2 / 4.9; R5 3.2 / 1.4 / 6.9 / 3.5. Fights take about 10 a round throughout while growth dries up (it needs a lone group of 2 or more, and fights and scatters break groups up): the inflow is the limit (designer: "that is the real limit here").
 
+**The fuller start (D32) and the inflow dials (2026-10-29; 60 games each, seed 2101, balanced leans, passing off).** Presence R1→R5 / occupied locations R5 / fights R5 / cards with an action R5 / invaders' endings:
+- D32 (3 on each, 2 standing with others): 45→25 / 7.1 / 2.0 / 1.6 of 2.5 / 47%. Flow per round, fights out: 19.7, 16.0, 14.4, 10.8, 9.1; growth: 16.8, 11.0, 6.5, 4.5, 3.6.
+- The old start (2 on each, 1 standing): 30→22 / 6.2 / 1.7 / 1.5 / 35%.
+- D32 with 25 or 30 faction tokens: presence ends 27 or 29; occupied and fights in round 5 unchanged (6.8–6.9, 1.9–2.1); invaders 58–60%. Short supply barely binds.
+- D32 with aligned growth off: growth halves (8.5 → 1.9), presence ends 16; invaders 7%.
+Reading: the fuller start lifts the early rounds (4.6 fights in round 1 against 2.6) but the board still drains to the same shape by round 5 (about 7 locations, 2 fights); the start and the supply move only the presence total, and with it the ending split. The decline is the fights' outflow outrunning a growth that shrinks as groups break up (designer, 2026-10-29: more seed tokens and sway can't fix it; the tension has to stay high into the late game without making backing too easy or sitting out of fights too valuable).
+
 **More sway (designer, 2026-10-29: bump up sway values; variant `cardSway`; 60 games each, seed 2001, balanced bot leans, passing off).** Cards with a legal action per turn, rounds 1–5; locations occupied and presence after round 5; invaders' ending:
 
 | | Action per turn | Occupied R5 | Presence R5 | Invaders |
