@@ -730,6 +730,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - `GR4` *As spillover:* the spillover from a resolved fight is how invaders grow, so population growth and combat form one cascade rather than two systems (linked to cascading resolution in 3.13).
     - *Open:* whether spillover is the only source of growth.
   - *Direction (designer, 2026-10-29):* fights stay costly; something else brings tokens back steadily as the game goes on, so a fight-heavy early game doesn't leave a thin, unexciting late game. Limits: fights must stay contested, backing must not get easy, and doing your own thing away from the fights must not become too valuable. Why: the fuller start (D32) lifts only the early rounds; the board drains to about 7 locations and 2 fights by round 5 whatever the start (1.7). *Open:* what the source is.
+  - `GR5` *Sway brings tokens (designer, 2026-10-29; being worked):* GR2's idea as a global rule rather than card text, since the cards' cognitive load is already high: each sway placed on the board brings 1 of that faction's tokens from its supply to the same location (that faction: the one whose standing paid it, D23 rules 3, 7 and 8). So the location a group leaves keeps a token where its sway went. *Open:* what happens when the token can't come (a third faction there, LL1; a scorched location; an empty supply); the amount (about 25–30 tokens a round at 1 a sway, against growth's 4–17); its effect on backing, which it helps directly.
 
 ---
 
