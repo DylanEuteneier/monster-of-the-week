@@ -88,6 +88,9 @@ const ui = {
   choosing: null,
   /** @type {import('./rules.js').Target} */
   target: {},
+  /** a marking card (Spill Blood, Study the Bodies): the location picked whose payer is still to choose */
+  /** @type {string | null} */
+  payerAt: null,
   /** the lit choice whose outcome is previewed on the board */
   /** @type {HTMLElement | null} */
   previewing: null,
@@ -321,7 +324,7 @@ function resetDrafts(phaseKey) {
   ui.phaseKey = phaseKey;
   ui.keep = [];
   ui.choosing = null;
-  ui.target = {};
+  ui.target = {}; ui.payerAt = null;
   ui.undo = [];
   ui.keepFor = -1;
 }
@@ -468,6 +471,9 @@ function currentChoice(t = ui.target) {
  * groups (a faction at a location) and factions. While a suit card's reading
  * is still open, both readings' candidates show at once and the click decides.
  */
+/** A marking card's group step (Spill Blood on the Altar, Study the Bodies): the location is the target, the group only says who pays. @param {ReturnType<typeof currentChoice>} c */
+const marking = (c) => !!c && c.kind === 'group' && c.key === 'move' && !!ui.choosing && ['altar', 'study'].includes(String(cardById(ui.choosing).action));
+
 function picks() {
   const view = ui.view;
   /** @type {{ spots: string[], groups: { location: string, faction: string }[], factions: string[] }} */
@@ -496,7 +502,12 @@ function picks() {
   for (const c of steps) {
     if (!c) continue;
     if (c.kind === 'location' || c.kind === 'split') out.spots.push(...c.options);
-    if (c.kind === 'group') out.groups.push(...c.options);
+    if (c.kind === 'group' && marking(c)) {
+      // Locations first (the location spotlight); where more than one faction there could pay, then those groups.
+      const at = c.options.filter((o) => o.location === ui.payerAt);
+      if (at.length) out.groups.push(...at);
+      else out.spots.push(...new Set(c.options.map((o) => o.location)));
+    } else if (c.kind === 'group') out.groups.push(...c.options);
     if (c.kind === 'faction') out.factions.push(...c.options);
   }
   return out;
@@ -575,7 +586,7 @@ function renderBoard() {
   const board = /** @type {{ width: number, height: number, src: string, tiles: { loc: string, region: string, x: number, y: number }[] } | undefined} */ (art.board);
   const S = 2;
   const lit = picks();
-  const chosen = new Set([ui.target.location, ui.target.to, ...(ui.target.path ?? []), ...(ui.target.from ?? []), ...Object.keys(ui.target.split ?? {})].filter(Boolean));
+  const chosen = new Set([ui.target.location, ui.target.to, ...(ui.target.path ?? []), ...(ui.target.from ?? []), ...Object.keys(ui.target.split ?? {}), ...(ui.choosing && ['altar', 'study'].includes(String(cardById(ui.choosing).action)) ? (ui.target.moves ?? []).map((m) => m.location) : [])].filter(Boolean));
   const shown = shownView().board;
   const tiles = (board?.tiles ?? []).map((t) => {
     const place = shown[t.loc];
@@ -790,7 +801,8 @@ function renderTargeting(cardId) {
     : card.action === 'switch' && choice.kind === 'location' && choice.key === 'from' ? `Click again to move 1 more of your sway · up to ${choice.left} more`
     : card.action === 'burst' && choice.kind === 'location' && choice.key === 'from' ? 'Pick where a token bursts to'
     : card.action === 'rejoin' && choice.kind === 'location' && choice.key === 'from' ? 'Pick a group to get one more token'
-    : (card.action === 'altar' || card.action === 'study') && choice.kind === 'group' ? 'Pick a location to mark, by the group whose standing pays · Skip to finish'
+    : (card.action === 'altar' || card.action === 'study') && choice.kind === 'group' && ui.payerAt && choice.options.some((o) => o.location === ui.payerAt) ? `Pick who pays at ${lname(ui.payerAt)}: a faction there`
+    : (card.action === 'altar' || card.action === 'study') && choice.kind === 'group' ? 'Pick a location to mark · Skip to finish'
     : (card.action === 'altar' || card.action === 'study') && choice.kind === 'location' ? `Pick an empty ${card.action === 'altar' ? '⎈' : 'ↂ'} location to mark (the suit's faction pays) · Skip to finish`
     : card.action === 'control' && choice.kind === 'location' && choice.key === 'from' ? `Spend 1 of your sway there to cut down one more · up to ${choice.left} more`
     : card.action === 'control' && choice.kind === 'faction' ? 'Pick the faction the machines turn on'
@@ -1281,7 +1293,8 @@ function markHint() {
   const next = hintNext(m.target);
   if (!next) return;
   if (next.kind === 'tile') tile(next.location)?.classList.add('is-hint-next');
-  if (next.kind === 'group') q(`#board .token-stack[data-location="${CSS.escape(next.location)}"][data-faction="${CSS.escape(next.faction)}"]`)?.classList.add('is-hint-next');
+  if (next.kind === 'group' && marking(currentChoice())) (ui.payerAt ? q(`#board .token-stack[data-location="${CSS.escape(next.location)}"][data-faction="${CSS.escape(next.faction)}"]`) : tile(next.location))?.classList.add('is-hint-next');
+  else if (next.kind === 'group') q(`#board .token-stack[data-location="${CSS.escape(next.location)}"][data-faction="${CSS.escape(next.faction)}"]`)?.classList.add('is-hint-next');
   if (next.kind === 'faction') {
     q(`#factions .faction-row[data-faction="${CSS.escape(next.faction)}"]`)?.classList.add('is-hint-next');
     for (const x of document.querySelectorAll(`#board .token-stack[data-faction="${CSS.escape(next.faction)}"][data-action="pick-faction"]`)) x.classList.add('is-hint-next');
@@ -1426,7 +1439,7 @@ function onClick(event) {
   if (ui.choosing && event.target instanceof HTMLElement
     && !event.target.closest('[data-action], .card-selected, #dock, .side-stack, .overlay, .topbar-buttons, .tut')) {
     ui.choosing = null;
-    ui.target = {};
+    ui.target = {}; ui.payerAt = null;
     return render();
   }
   const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target.closest('[data-action]') : null);
@@ -1438,10 +1451,10 @@ function onClick(event) {
   if (action === 'pass') return sendMove({ type: 'pass' });
   if (action === 'sway') {
     ui.choosing = null;
-    ui.target = {};
+    ui.target = {}; ui.payerAt = null;
     return sendMove({ type: 'play', card, use: 'sway' });
   }
-  if (action === 'return') { ui.choosing = null; ui.target = {}; ui.returning = { card, places: [] }; return render(); }
+  if (action === 'return') { ui.choosing = null; ui.target = {}; ui.payerAt = null; ui.returning = { card, places: [] }; return render(); }
   if (ui.returning && view) {
     const r = ui.returning;
     const room = returnRoom(/** @type {any} */ (view), view.you, r.card);
@@ -1454,6 +1467,7 @@ function onClick(event) {
     }
   }
   if (action === 'back') {
+    if (ui.payerAt) { ui.payerAt = null; return render(); }
     // Undo the last pick (a reading counts); with nothing left to undo, put the card down.
     const last = ui.choosing ? ui.undo.pop() : undefined;
     if (last) {
@@ -1461,13 +1475,13 @@ function onClick(event) {
       return render();
     }
     ui.choosing = null;
-    ui.target = {};
+    ui.target = {}; ui.payerAt = null;
     return render();
   }
   if (action === 'target-none' && ui.choosing) {
     const id = ui.choosing;
     ui.choosing = null;
-    ui.target = {};
+    ui.target = {}; ui.payerAt = null;
     return sendMove({ type: 'play', card: id, use: 'action', target: null });
   }
   const loc = target.dataset.location ?? '';
@@ -1493,7 +1507,7 @@ function onClick(event) {
     if (currentChoice()?.kind === 'done') {
       const id = /** @type {string} */ (ui.choosing);
       ui.choosing = null;
-      ui.target = {};
+      ui.target = {}; ui.payerAt = null;
       return sendMove({ type: 'play', card: id, use: 'action', target: finish(t) });
     }
     return render();
@@ -1631,7 +1645,13 @@ function applyPick(t, action, el) {
   if (action === 'pick-faction' && choice?.kind === 'faction' && choice.key === 'payers') t.payers = [...(t.payers ?? []), el.dataset.faction ?? ''];
   else if (action === 'pick-faction') t[/** @type {'faction' | 'to' | 'payer'} */ (choice?.kind === 'faction' ? choice.key ?? 'faction' : 'faction')] = el.dataset.faction;
   else if (action === 'pick-use' && choice?.kind === 'use') t[choice.key] = el.dataset.use;
-  else if (action === 'pick-group' && choice?.kind === 'group') {
+  else if (action === 'pick-location' && marking(choice)) {
+    const at = /** @type {{ location: string, faction: string }[]} */ (choice && 'options' in choice ? choice.options : []).filter((o) => typeof o === 'object' && o.location === loc);
+    if (!at.length) return false;
+    if (at.length > 1) { ui.payerAt = loc; render(); return false; } // then pick who pays there
+    t.moves = [...(t.moves ?? []), { location: loc, faction: at[0].faction, to: '' }];
+  } else if (action === 'pick-group' && choice?.kind === 'group') {
+    ui.payerAt = null;
     if (choice.key === 'move') t.moves = [...(t.moves ?? []), { location: loc, faction: el.dataset.faction ?? '', to: '' }];
     else Object.assign(t, { location: loc, faction: el.dataset.faction });
   } else if (action === 'pick-location' && choice?.kind === 'location') {
@@ -1669,7 +1689,7 @@ function onCardClick(event) {
   }
   if (mode === 'act') {
     ui.choosing = id;
-    ui.target = {};
+    ui.target = {}; ui.payerAt = null;
     ui.undo = [];
     if (currentChoice()?.kind === 'done') {
       ui.choosing = null;
