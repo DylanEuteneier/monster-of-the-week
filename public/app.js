@@ -656,11 +656,16 @@ function step(state, text, extra = '') {
   handNext = { ...handNext, state, text, extra };
 }
 
-/** Plain words for who is being waited on. */
+/** Animated dots: something is under way (designer, 2026-10-28). */
+const DOTS = '<span class="dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>';
+
+/** Who is being waited on, as markup with the dots: a bot is thinking; people are waited for. */
 function waitingText() {
   const view = /** @type {PlayerView} */ (ui.view);
   const others = waitingOn(view).filter((id) => id !== view.you);
-  return others.length ? `Waiting for ${others.join(', ')}` : 'Waiting';
+  if (!others.length) return `Waiting${DOTS}`;
+  if (others.every((id) => ui.bots.includes(id))) return `${esc(others.join(', '))} ${others.length === 1 ? 'is' : 'are'} thinking${DOTS}`;
+  return `Waiting for ${esc(others.join(', '))}${DOTS}`;
 }
 
 /** The hand, above the bar. */
@@ -711,7 +716,7 @@ function renderPhase() {
   renderers[view.phase]();
   if (ui.note) handNext = { ...handNext, actions: [], state: 'wait', text: esc(ui.note) };
   // A move on its way to the server: said at once, so a click never looks dead (designer, 2026-10-11).
-  if (ui.sending) handNext = { ...handNext, actions: [], text: 'Sending…' };
+  if (ui.sending) handNext = { ...handNext, actions: [], text: `Sending${DOTS}` };
   setHtml('phase', `<span class="bar-text">${handNext.text}</span>${handNext.extra}<span class="bar-actions">${handNext.actions.join('')}</span>`);
   const dock = $('dock');
   for (const s of ['turn', 'wait', 'end']) dock.classList.toggle(`is-${s}`, handNext.state === s);
@@ -725,7 +730,7 @@ function renderDraft() {
   const me = view.me;
   if (me.picked) {
     toHand(me.kept.map((c) => cardHtml(c)), false);
-    return step('wait', esc(waitingText()));
+    return step('wait', waitingText());
   }
   const need = me.kept.length + 1;
   const pool = [...me.kept, ...me.batch];
@@ -766,7 +771,7 @@ function renderPlay() {
     if (!mustOpen) handAction('pass');
     return step('turn', mustOpen ? `You go first: open with ${opener ? cardById(opener).name : 'your marked card'}` : 'Your turn');
   }
-  return step('wait', esc(waitingText()));
+  return step('wait', waitingText());
 }
 
 /** The current view (for helpers that need it). */
@@ -833,13 +838,13 @@ function renderGrowth() {
   const g = view.growing;
   if (!g) return step('wait', 'Growth');
   const mine = g.leaders[g.next % g.leaders.length] === view.you;
-  return mine ? step('turn', `Grow ${esc(fname(g.faction))}: pick a location`) : step('wait', `${esc(fname(g.faction))} grows · ${esc(waitingText())}`);
+  return mine ? step('turn', `Grow ${esc(fname(g.faction))}: pick a location`) : step('wait', `${esc(fname(g.faction))} grows · ${waitingText()}`);
 }
 
 function renderNight() {
   const view = /** @type {PlayerView} */ (ui.view);
   const n = view.night;
-  if (!n || n.player !== view.you) return step('wait', `Night falls · ${esc(waitingText())}`);
+  if (!n || n.player !== view.you) return step('wait', `Night falls · ${waitingText()}`);
   const loc = locationById(n.left[0]).name;
   if (!ui.flee.faction) { handAction('let-be', { label: 'Let them be' }); return step('turn', `Night terrors at ${esc(loc)}: pick a group to lose 1 token into the dark`); }
   if (!ui.flee.to) { handAction('back'); return step('turn', `1 ${esc(fname(ui.flee.faction))} flees from ${esc(loc)}: pick where`); }

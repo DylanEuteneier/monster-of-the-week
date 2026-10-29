@@ -625,6 +625,12 @@ button.card-opt:hover { background: #f6cca1; }
 .bar-mine { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .bar-step { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; min-width: 0; overflow: hidden; }
 .bar-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* Something under way (a bot thinking, a move sending): three dots that light in turn. */
+.dots span { animation: dots 1.2s infinite; opacity: 0.2; }
+.dots span:nth-child(2) { animation-delay: 0.2s; }
+.dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dots { 0%, 60%, 100% { opacity: 0.2; } 30% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .dots span { animation: none; opacity: 0.6; } }
 .dock.is-turn .bar-text { color: var(--color-accent); }
 .bar-actions { display: flex; gap: 6px; flex: none; }
 .bar-btn { padding: 3px 10px; font-size: 12px; cursor: pointer; background: var(--color-cell); color: var(--color-text); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }

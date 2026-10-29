@@ -402,6 +402,10 @@ export class Game extends DurableObject<Env> {
   private async runBots(): Promise<void> {
     if (!this.game || !this.bots?.length) return;
     for (let tick = 0; tick < MAX_BOT_MOVES_PER_TICK; tick++) {
+      // Let the last view go out before the next bot thinks (its search holds the thread), so every table sees
+      // whose turn it is while that bot decides.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (!this.game) return;
       const before = this.game;
       let made: { player: string; move: Move } | null = null;
       for (const playerId of this.bots) { const move = this.tryBotMove(playerId); if (move) { made = { player: playerId, move }; break; } }
