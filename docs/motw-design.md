@@ -1254,6 +1254,15 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Affects:** D15, D21, D22, D25 (their variants), Appendix F (the data file, the bots), the play fingerprints (re-recorded for the sets that used the removed variants).
 - **Date:** 2026-10-28
 
+#### D29. No passing, as a switch
+
+- **Decided (designer, 2026-10-28):** passing becomes a switch (variant `passing`), off by default. With it off, a player plays a card every turn (for its action, for sway, or for no effect when it has nothing to target); a player with an empty hand is skipped; the round's play ends when every card has been played (in place of RE3's all pass in a row). On, it is the first draft's TU1 and RE3.
+- **Why (designer):** passing may just be lazy in this design: better to be forced to make the hard choice. The bots passed about 14 times a round (5 seats), 9 of them beyond the round's closing passes, while 93% of cards were played anyway: a pass mostly postponed a play to have the last word before the fights.
+- **Open:** whether passing is a stall or a crunchy choice is being measured (why the bots pass, and what a seat that never passes wins); the tutorial still teaches passing (its game plays with passing on until its lessons are rewritten).
+- **Scope:** a switch; TU1 and RE3 stay in Appendix G as the on reading.
+- **Affects:** 3.8, 3.12 (round end), the tutorial, the bots (no pass moves when off), the play fingerprints (re-recorded).
+- **Date:** 2026-10-28
+
 #### D14. Tokens and cubes
 
 - **Decided:** faction presence on the board is made of **tokens**; **cubes** are always players' sway. A faction never has cubes, and a player never has tokens (apart from hidden and bluff tokens, which are separate pieces).
@@ -1363,6 +1372,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | The Rust engine and bots replace the JavaScript ones in the Worker, the table, the tutorial and the scripts (D27): WebAssembly through `public/rules.js`; the recorded games kept as fingerprints | Prototype only, not rules; play unchanged |
 | 2026-10-28 | Bots: each card in the search gets its own count of targets to sample; the count no longer grew across the hand (designer) | A slip from 2026-10-08; play changed slightly, fingerprints re-recorded; no effect on speed |
 | 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
+| 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
 | 2026-10-28 | Bot tests run natively (`npm run bots`, `motw tournament`: the tournament's games in Rust on every core, about twice as fast as WebAssembly). Budget map: more search for the trophy bot (16 kept moves, 12 play-outs, both) gained nothing; the trophy bot now plans its hand (designer), +6 points a seat pooled over two seeds; then drops the random jitter on its one-step values, ahead on all three seeds. Measured and not adopted: blending the one-step value into play-outs (worse), play-out bots listing targets (worse, slower), 12 draft samples, the backer keeping 16 moves. Planning confirmed for the backer (+5.6 pooled) | Bot tuning, not rules. The standard table's endings split 50/50 over 2,080 games, against the 40% invaders' ending aimed for: balance to revisit (designer) |
 
 ---

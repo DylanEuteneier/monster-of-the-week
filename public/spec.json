@@ -867,6 +867,24 @@
           "description": "SD1 (designer, 2026-10-21): 2 on each of the three (30 in all)."
         }
       ]
+    },
+    {
+      "id": "passing",
+      "label": "Passing",
+      "description": "Designer (2026-10-28): a switch, not a decision; off by default (passing looked like a lazy way to wait for others). With passing off there is no passing: on your turn you play a card (for its action, for sway, or for no effect when it has nothing to target), the hard choice instead of waiting; a player whose hand is empty is skipped, and the round's play ends when every card has been played.",
+      "default": "off",
+      "choices": [
+        {
+          "id": "on",
+          "label": "On",
+          "description": "The first draft (TU1): play or pass; passing is not final."
+        },
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "No passing: play a card each turn; the round ends when every card is played."
+        }
+      ]
     }
   ],
   "map": {

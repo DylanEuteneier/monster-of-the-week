@@ -23,7 +23,7 @@ export const BOTS = /** @type {const} */ ([['Ash', 'backer'], ['Bea', 'trophy'],
  */
 export const SEED = 113;
 /** Seats in order, so the learner is Slayerettes. */
-export const OPTIONS = { groups: 'seat' };
+export const OPTIONS = { groups: 'seat', passing: 'on' }; // passing on: the tutorial's lessons teach it (to rewrite for no passing)
 
 /**
  * Everything the tutorial's table holds. Plain data, so a snapshot is a copy.

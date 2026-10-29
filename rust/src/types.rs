@@ -181,6 +181,8 @@ pub struct Options {
     pub sway_required: bool,
     pub aligned_growth: bool,
     pub way_back: bool,
+    /// Passing while holding cards (TU1; variant passing, designer 2026-10-28: a switch).
+    pub passing: bool,
     pub seeding: Seeding,
     /// The same options with sway not required (checkTarget's comparison), made once.
     pub unpaid: std::cell::OnceCell<Rc<Options>>,
@@ -219,6 +221,7 @@ impl Options {
             sway_required: true,
             aligned_growth: get("alignedGrowth") == "on",
             way_back: get("wayBack") != "off",
+            passing: get("passing") != "off",
             seeding: match get("seeding") {
                 "even" => Seeding::Even,
                 "home" => Seeding::Home,

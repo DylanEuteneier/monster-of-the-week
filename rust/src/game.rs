@@ -71,7 +71,13 @@ pub fn validate(s: &GameState, pid: Pid, m: &Move) -> Verdict {
             let must_open = !s.opened && Some(pid) == s.first;
             match m {
                 Move::Pass => {
-                    if must_open && p.hand.iter().any(|&c| marked(c).is_some()) { no("The first player opens with their marked card.") } else { None }
+                    if must_open && p.hand.iter().any(|&c| marked(c).is_some()) {
+                        no("The first player opens with their marked card.")
+                    } else if !s.options.passing {
+                        no("No passing: play a card.")
+                    } else {
+                        None
+                    }
                 }
                 Move::Play { card, use_, target, places } => {
                     if !p.hand.contains(card) {
@@ -218,6 +224,16 @@ pub fn apply_legal(s: &GameState, pid: Pid, m: &Move) -> GameState {
                 }
             }
             next.turn = (next.turn + 1) % next.n();
+            if !next.options.passing {
+                // No passing: the round's play ends when the last card is played; a seat with an empty hand is skipped.
+                if next.players.iter().all(|p| p.hand.is_empty()) {
+                    end_of_play(&mut next);
+                } else {
+                    while next.players[next.turn].hand.is_empty() {
+                        next.turn = (next.turn + 1) % next.n();
+                    }
+                }
+            }
         }
     }
     next

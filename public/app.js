@@ -770,7 +770,7 @@ function renderPlay() {
     return cardHtml(c, { mode, sway: myTurn && !mustOpen && !!card.suit, back: myTurn && !mustOpen && returnRoom(/** @type {any} */ (view), view.you, c).max > 0, dim: !mode });
   }), false);
   if (myTurn) {
-    if (!mustOpen) handAction('pass');
+    if (!mustOpen && view.options.passing !== 'off') handAction('pass');
     return step('turn', mustOpen ? `You go first: open with ${opener ? cardById(opener).name : 'your marked card'}` : 'Your turn');
   }
   return step('wait', waitingText());
