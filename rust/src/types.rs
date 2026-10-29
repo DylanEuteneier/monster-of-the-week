@@ -164,6 +164,17 @@ pub enum Seeding {
 }
 
 /// The variants chosen for a game (spec.json `variants`), resolved, with their raw choices in the spec's order.
+/// Which cards' sway brings tokens (GR5, variant swayTokens).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum SwayTokens {
+    #[default]
+    Off,
+    All,
+    Shifts,
+    Strikes,
+    Signatures,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Options {
     pub raw: Vec<(String, String)>,
@@ -180,8 +191,9 @@ pub struct Options {
     /// IC1 (D15): a move's sway must be paid. Always so in a game; off only in checkTarget's comparison copy (unpaid).
     pub sway_required: bool,
     pub aligned_growth: bool,
-    /// GR5 (designer's seed, a switch): each sway placed on the board brings 1 of the paying faction's tokens there.
-    pub sway_tokens: bool,
+    /// GR5 (designer's seed, a switch): each sway placed on the board brings 1 of the paying faction's tokens there;
+    /// "on" for every card, or one slot's cards only (shifts, strikes, signatures).
+    pub sway_tokens: SwayTokens,
     pub way_back: bool,
     /// Passing while holding cards (TU1; variant passing, designer 2026-10-28: a switch).
     pub passing: bool,
@@ -224,7 +236,7 @@ impl Options {
             sway_per_move: num("swayPerMove"),
             sway_required: true,
             aligned_growth: get("alignedGrowth") == "on",
-            sway_tokens: get("swayTokens") == "on",
+            sway_tokens: match get("swayTokens") { "on" => SwayTokens::All, "shifts" => SwayTokens::Shifts, "strikes" => SwayTokens::Strikes, "signatures" => SwayTokens::Signatures, _ => SwayTokens::Off },
             way_back: get("wayBack") != "off",
             passing: get("passing") != "off",
             card_sway: num("cardSway"),

@@ -918,6 +918,20 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
 
 /// Carry out a card's turn action on `s` (a copy).
 pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
+    // GR5: whether this card's sway brings tokens.
+    let brings = match s.options.sway_tokens {
+        SwayTokens::Off => false,
+        SwayTokens::All => true,
+        SwayTokens::Shifts => card(ci).slot == crate::spec::Slot::Shift,
+        SwayTokens::Strikes => card(ci).slot == crate::spec::Slot::Strike,
+        SwayTokens::Signatures => card(ci).slot == crate::spec::Slot::Signature,
+    };
+    let was = crate::board::BRINGS.with(|b| b.replace(brings));
+    act_card(s, pid, ci, t);
+    crate::board::BRINGS.with(|b| b.set(was));
+}
+
+fn act_card(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
     let c = card(ci);
     let mut placed: Placed = Vec::new();
     let me = pid as usize;

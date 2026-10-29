@@ -800,9 +800,14 @@ fn gr5_sway_brings_1_of_its_factions_tokens_if_it_can() {
     let after = preview(&s, "ann", "big-chase", t.clone());
     assert_eq!((after["board"][&start]["tokens"][&f].clone(), after["board"][&a]["tokens"][&f].clone(), after["board"][&b]["tokens"][&f].clone(), after["board"][&c]["tokens"][&f].clone()), (json!(1), json!(2), json!(2), json!(4)));
     // A supply of 2 brings only 2: 5 chased, 7 on the board.
-    let low = preview(&edit(&s, |x| x["supply"][&f] = json!(2)), "ann", "big-chase", t);
+    let low = preview(&edit(&s, |x| x["supply"][&f] = json!(2)), "ann", "big-chase", t.clone());
     let on_board: i64 = [&start, &a, &b, &c].iter().map(|l| low["board"][*l]["tokens"][&f].as_i64().unwrap_or(0)).sum();
     assert_eq!(on_board, 7);
+    // By slot: The Big Chase is a shift, so "shifts" brings, "strikes" doesn't.
+    let shifts = preview(&edit(&s, |x| x["options"]["swayTokens"] = json!("shifts")), "ann", "big-chase", t.clone());
+    assert_eq!(shifts["board"][&c]["tokens"][&f], 4);
+    let strikes = preview(&edit(&s, |x| x["options"]["swayTokens"] = json!("strikes")), "ann", "big-chase", t);
+    assert_eq!(strikes["board"][&c]["tokens"][&f], 3);
 }
 
 #[test]

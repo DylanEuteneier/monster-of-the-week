@@ -246,10 +246,15 @@ pub fn mv(s: &mut GameState, pid: Pid, f: Fac, from: Loc, to: Loc, count: i32, p
     n
 }
 
+thread_local! {
+    /// Does the card now resolving bring tokens with its sway (GR5)? Set by `cards::act` for its card.
+    pub static BRINGS: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
 /// GR5 (variant swayTokens): sway placed on the board brings as many of its faction's tokens there from the supply,
 /// if it can: as many as the supply has, and only where the faction may enter (common rule 5).
 fn bring(s: &mut GameState, f: Fac, loc: Loc, k: i32) {
-    if !s.options.sway_tokens || !can_enter(s, loc, f) {
+    if !BRINGS.with(|b| b.get()) || !can_enter(s, loc, f) {
         return;
     }
     let n = k.min(s.supply[f as usize]);
