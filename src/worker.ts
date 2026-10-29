@@ -23,8 +23,8 @@
  */
 import { DurableObject } from 'cloudflare:workers';
 import rulesModule from '../public/motw.wasm';
-import { applyMove, createGame, playerView, IllegalMoveError, spec, botMove, PROFILES, useModule } from '../public/rules.js';
-import { suggest } from '../public/hints.js';
+import { applyMove, createGame, playerView, IllegalMoveError, spec, botMove, PROFILES, useModule, waitingOn } from '../public/rules.js';
+import { suggest, hintKey } from '../public/hints.js';
 import type { Hint } from '../public/hints.js';
 import { seenBy, roundFights } from '../public/guide.js';
 import type { SeenMove, Fight } from '../public/guide.js';
@@ -53,11 +53,11 @@ type ClientMessage =
   | { type: 'hint' };
 
 type ServerMessage =
-  | { type: 'state'; view: PlayerView; online: string[]; bots: string[]; last?: { player: string; move: SeenMove }; fights?: Fight[] }
+  | { type: 'state'; view: PlayerView; online: string[]; bots: string[]; hintKey: string; last?: { player: string; move: SeenMove }; fights?: Fight[] }
   | { type: 'error'; reason: string }
   | { type: 'chat'; lines: ChatLine[]; reset?: boolean }
   | { type: 'presence'; online: string[] }
-  | { type: 'hint'; hint: Hint | null }
+  | { type: 'hint'; key: string; hint: Hint | null }
   | { type: 'stale' };
 
 interface NewGameRequest {
@@ -212,6 +212,10 @@ export class Game extends DurableObject<Env> {
   private bots: string[] | undefined;
   /** Each seat's plan between hints (not saved: a restart only forgets the plan's stubbornness). */
   private hintMemory: Record<string, BotMemory> = {};
+  /** Hints worked out ahead, by seat and position (hintKey): a request answers at once, and none holds up a move. */
+  private hintCache = new Map<string, Hint | null>();
+  /** Seats that have asked for hints this session: their next hint is worked out as soon as their turn comes. */
+  private hintWanted = new Set<string>();
   private botProfiles: Record<string, Profile> = {};
   private botMemory: Record<string, BotMemory> = {};
   private limiter = new RateLimiter();
@@ -334,7 +338,7 @@ export class Game extends DurableObject<Env> {
     const [client, server] = [pair[0], pair[1]];
     this.ctx.acceptWebSocket(server, [playerId]);
     server.serializeAttachment({ playerId });
-    this.send(server, { type: 'state', view: playerView(this.game, playerId), online: this.online(), bots: this.bots ?? [] });
+    this.send(server, { type: 'state', view: playerView(this.game, playerId), online: this.online(), bots: this.bots ?? [], hintKey: hintKey(this.game, playerId) });
     this.send(server, { type: 'chat', lines: this.chat ?? [] });
     this.ctx.waitUntil((async () => { if (bootPrint && (await bootPrint) !== (await sharedPrint(this.env))) this.send(server, { type: 'stale' }); })());
     this.broadcastPresence();
@@ -354,13 +358,14 @@ export class Game extends DurableObject<Env> {
     if (message.type === 'hint') {
       // Hints everywhere but multiplayer games (designer, 2026-10-11): one human seat only.
       if (this.game.seating.filter((id) => !this.bots?.includes(id)).length > 1) return this.send(ws, { type: 'error', reason: 'hints are off in multiplayer games' });
-      // The move is the strongest bot's (designer, 2026-10-11: full search, seeing what any bot sees, set up as this
-      // table's bots are); hints.js explains it from what the seat can see, so the words reveal nothing.
-      const memory = (this.hintMemory[playerId] ??= { jitter: 0 }); // no random lean in a hint
-      const table = Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'trophy']));
-      let move: Move | null = null;
-      try { move = this.game.phase === 'ended' ? null : botMove(this.game, { playerId, rng: Math.random, profile: 'trophy', memory, table, memories: { ...this.botMemory, [playerId]: memory } }); } catch (error) { console.error('hint failed:', error); }
-      return this.send(ws, { type: 'hint', hint: suggest(this.game, playerId, memory, move ?? undefined) });
+      // Hints never hold up a move (designer, 2026-10-28): one worked out ahead answers at once; otherwise it is
+      // worked out after anything already waiting, and sent when ready.
+      this.hintWanted.add(playerId);
+      const key = hintKey(this.game, playerId);
+      const cached = this.hintCache.get(`${playerId}|${key}`);
+      if (cached !== undefined) return this.send(ws, { type: 'hint', key, hint: cached });
+      this.ctx.waitUntil(this.prepareHints());
+      return;
     }
     return this.handleMove(ws, { playerId, move: message.move });
   }
@@ -413,6 +418,42 @@ export class Game extends DurableObject<Env> {
       await this.ctx.storage.put({ [STORAGE_GAME]: this.game, [STORAGE_BOT_MEMORY]: this.botMemory });
       this.broadcastState({ ...made, before });
     }
+    // The bots are done: the human to decide gets their hint worked out now, while they read the board.
+    await this.prepareHints();
+  }
+
+  /**
+   * A seat's hint for the position now. The move is the strongest bot's (designer, 2026-10-11: full search, seeing
+   * what any bot sees, set up as this table's bots are); hints.js explains it from what the seat can see.
+   */
+  private hintFor(playerId: string): Hint | null {
+    if (!this.game || this.game.phase === 'ended') return null;
+    const memory = (this.hintMemory[playerId] ??= { jitter: 0 }); // no random lean in a hint
+    const table = Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'trophy']));
+    let move: Move | null = null;
+    try { move = botMove(this.game, { playerId, rng: Math.random, profile: 'trophy', memory, table, memories: { ...this.botMemory, [playerId]: memory } }); } catch (error) { console.error('hint failed:', error); }
+    try { return suggest(this.game, playerId, memory, move ?? undefined); } catch (error) { console.error('hint failed:', error); return null; }
+  }
+
+  /**
+   * Work out the hint for each seat that wants hints and is to decide now, once its view has gone out, and push it
+   * to that seat when ready (designer, 2026-10-28: hints calculate when they can and never block the table).
+   */
+  private async prepareHints(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 0)); // let the views (and any waiting move) go first
+    const game = this.game;
+    if (!game || game.phase === 'ended' || game.seating.filter((id) => !this.bots?.includes(id)).length > 1) return;
+    for (const playerId of waitingOn(game)) {
+      if (!this.hintWanted.has(playerId) || this.bots?.includes(playerId)) continue;
+      const key = hintKey(game, playerId);
+      const at = `${playerId}|${key}`;
+      if (this.hintCache.has(at)) continue;
+      const hint = this.hintFor(playerId);
+      if (this.game !== game) return; // a move came in: that position's hint is no longer wanted
+      this.hintCache.clear(); // only the position now matters
+      this.hintCache.set(at, hint);
+      for (const socket of this.ctx.getWebSockets()) if (this.playerOf(socket) === playerId) this.send(socket, { type: 'hint', key, hint });
+    }
   }
 
   private tryBotMove(playerId: string): Move | null {
@@ -456,7 +497,7 @@ export class Game extends DurableObject<Env> {
       const playerId = this.playerOf(socket);
       if (!playerId) continue;
       const seen = made ? seenBy(made.move, made.player, playerId) : null;
-      this.send(socket, { type: 'state', view: playerView(this.game, playerId), online, bots, ...(seen && made ? { last: { player: made.player, move: seen } } : {}), ...(fights ? { fights } : {}) });
+      this.send(socket, { type: 'state', view: playerView(this.game, playerId), online, bots, hintKey: hintKey(this.game, playerId), ...(seen && made ? { last: { player: made.player, move: seen } } : {}), ...(fights ? { fights } : {}) });
     }
   }
 

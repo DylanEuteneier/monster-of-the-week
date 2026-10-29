@@ -113,9 +113,12 @@ const ui = {
    * mode (designer, 2026-10-11, cycled by the Hints button): off; marks (the
    * card, its way of playing and the locations marked on the table); full
    * (marks and the panel).
-   * @type {{ on: boolean, mode: 'off' | 'marks' | 'full', hint: import('./hints.js').Hint | null, asked: number, got: number, source: (() => import('./hints.js').Hint | null) | null }}
+   * want: the position (hint key) a hint was asked for; byKey: the last hint the server sent, by its position
+   * @type {{ on: boolean, mode: 'off' | 'marks' | 'full', hint: import('./hints.js').Hint | null, asked: number, got: number, source: (() => import('./hints.js').Hint | null) | null, want: string, byKey: Record<string, import('./hints.js').Hint | null> }}
    */
-  hints: { on: false, mode: 'off', hint: null, asked: 0, got: 0, source: null },
+  hints: { on: false, mode: 'off', hint: null, asked: 0, got: 0, source: null, want: '', byKey: {} },
+  /** the server's hint key for the view on screen (which position a hint must be for) */
+  viewKey: '',
   /** the slayer group card open in the accordion (null: your own) */
   /** @type {string | null} */
   expanded: null,
@@ -212,7 +215,7 @@ function handleServerMessage(raw) {
   if (message.type === 'state') {
     ui.bots = message.bots ?? [];
     ui.sending = false; // any new view answers a sent move (a draft pick's view names no move: it's secret)
-    return void receiveState(message.view, message.online, false, undefined, { last: message.last, fights: message.fights });
+    return void receiveState(message.view, message.online, false, undefined, { last: message.last, fights: message.fights, hintKey: message.hintKey });
   }
   if (message.type === 'presence') {
     ui.online = message.online;
@@ -222,8 +225,10 @@ function handleServerMessage(raw) {
   if (message.type === 'error') { if (ui.sending) { ui.sending = false; renderPhase(); } return toast(message.reason); }
   if (message.type === 'stale') { ui.stale = true; return renderHeader(); }
   if (message.type === 'hint') {
-    ui.hints.got++;
-    if (ui.hints.got === ui.hints.asked) { ui.hints.hint = message.hint; renderHint(); }
+    // Hints come when they are ready, asked for or worked out ahead (designer, 2026-10-28: they never block): kept by
+    // position, shown if it is the one on screen.
+    ui.hints.byKey = { [message.key]: message.hint };
+    if (message.key === ui.hints.want) { ui.hints.got = ui.hints.asked; ui.hints.hint = message.hint; renderHint(); }
   }
 }
 
@@ -233,7 +238,7 @@ function handleServerMessage(raw) {
  * bot turns included, is seen in order. A long queue flies faster.
  * meta: the move that made the view (another seat's turn is told by the
  * guide, at this screen's speed) and, at a round's end, its fights.
- * @typedef {{ last?: { player: string, move: import('./guide.js').SeenMove }, fights?: import('./guide.js').Fight[] }} ViewMeta
+ * @typedef {{ last?: { player: string, move: import('./guide.js').SeenMove }, fights?: import('./guide.js').Fight[], hintKey?: string }} ViewMeta
  * @type {{ view: PlayerView, online: string[], instant: boolean, speed?: number, meta?: ViewMeta, done: () => void }[]}
  */
 const incoming = [];
@@ -285,6 +290,7 @@ async function showNext() {
     const flights = before && !instant ? planFlights(before, item.view, colourOf) : [];
     mark(`fly ${flights.length}`);
     if (flights.length) await fly(flights, item.view.you, { speed: item.speed ?? (other ? s.speed : 1) + incoming.length * 0.75 });
+    if (item.meta?.hintKey) ui.viewKey = item.meta.hintKey;
     showState(item.view, item.online);
     item.done();
   }
@@ -1178,6 +1184,9 @@ function requestHint() {
     return renderHint();
   }
   if (!ui.socket || ui.socket.readyState !== WebSocket.OPEN) return;
+  ui.hints.want = ui.viewKey;
+  // Worked out ahead and already here: shown at once.
+  if (ui.viewKey && ui.viewKey in ui.hints.byKey) { ui.hints.got = ui.hints.asked; ui.hints.hint = ui.hints.byKey[ui.viewKey]; return renderHint(); }
   renderHint();
   ui.socket.send(JSON.stringify({ type: 'hint' }));
 }
