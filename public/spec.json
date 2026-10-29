@@ -730,8 +730,8 @@
     {
       "id": "startOthers",
       "label": "Starting standing with other factions",
-      "description": "Designer (2026-10-07): each player starts with 1 sway with every faction other than their affinity faction. 0 was the first draft before.",
-      "default": "1",
+      "description": "Designer (2026-10-07): each player starts with 1 sway with every faction other than their affinity faction. 0 was the first draft before. Designer (2026-10-29, D32): 2 by default, a bit more standing with the factions that aren't your suit's.",
+      "default": "2",
       "choices": [
         {
           "id": "0",
@@ -848,8 +848,8 @@
     {
       "id": "seeding",
       "label": "Starting tokens",
-      "description": "SD1 (designer): how each faction's tokens start on its three aligned locations; 2 on each since 2026-10-21.",
-      "default": "two",
+      "description": "SD1 (designer): how each faction's tokens start on its three aligned locations; 2 on each from 2026-10-21; 3 on each (even) by default since 2026-10-29 (designer, D32: more tokens on the board).",
+      "default": "even",
       "choices": [
         {
           "id": "home",

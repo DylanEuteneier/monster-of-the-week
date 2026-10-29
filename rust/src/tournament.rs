@@ -38,6 +38,18 @@ pub struct Game {
     /// With `board` on: on every turn of play, the board and the hand to act (how much is happening, and how many
     /// options the cards have).
     pub turns: Vec<Turn>,
+    /// Per round: tokens the cards added and removed (play by play), lost in fights, grown.
+    pub flow: Vec<Flow>,
+}
+
+/// Where a round's tokens came from and went.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Flow {
+    pub round: i32,
+    pub cards_in: i32,
+    pub cards_out: i32,
+    pub fights: i32,
+    pub growth: i32,
 }
 
 /// One turn of play, as the seat to act sees it.
@@ -138,6 +150,8 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let mut passes: Vec<Pass> = Vec::new();
     let mut plays: Vec<(Pid, i32, bool)> = Vec::new();
     let mut turns: Vec<Turn> = Vec::new();
+    let mut flow: Vec<Flow> = Vec::new();
+    crate::game::take_flow();
     let mut played_round = 0usize;
     let mut round = s.round;
     let mut moves = 0;
@@ -180,8 +194,10 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                                 p.played_later = true;
                             }
                             let before = crate::board::total_presence(&s);
+                            let round_now = s.round;
                             let next = apply_legal(&s, pid, &m);
-                            plays.push((pid, crate::board::total_presence(&next) - before, waited));
+                            let (lost, grown) = note(&mut flow, round_now, before, crate::board::total_presence(&next), true);
+                            plays.push((pid, crate::board::total_presence(&next) - before + lost - grown, waited));
                             s = next;
                             moved = true;
                             break;
@@ -189,7 +205,10 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                         _ => {}
                     }
                 }
+                let round_now = s.round;
+                let before = crate::board::total_presence(&s);
                 s = apply_legal(&s, pid, &m);
+                note(&mut flow, round_now, before, crate::board::total_presence(&s), matches!(m, crate::types::Move::Play { .. }));
                 moved = true;
                 break;
             }
@@ -216,6 +235,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         passes,
         plays,
         turns,
+        flow,
     }
 }
 
@@ -245,4 +265,21 @@ pub fn run_with(seed: i64, games: usize, list: &[String], options: &[(String, St
     let mut v = out.into_inner().unwrap();
     v.sort_by_key(|x| x.g);
     v
+}
+
+/// Adds one move's tokens to its round's flow: the fights and growth it set off (from the engine's counters), and
+/// what is left of the change, the card's own. Returns the fights and growth.
+fn note(flow: &mut Vec<Flow>, round: i32, before: i32, after: i32, card: bool) -> (i32, i32) {
+    let (lost, grown) = crate::game::take_flow();
+    if !flow.iter().any(|f| f.round == round) {
+        flow.push(Flow { round, ..Default::default() });
+    }
+    let f = flow.iter_mut().find(|f| f.round == round).unwrap();
+    f.fights += lost;
+    f.growth += grown;
+    let own = after - before + lost - grown;
+    if card {
+        if own > 0 { f.cards_in += own } else { f.cards_out -= own }
+    }
+    (lost, grown)
 }

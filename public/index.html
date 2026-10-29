@@ -15,10 +15,10 @@
     <nav class="topbar-buttons" aria-label="Table tools">
       <button class="btn" id="speed-button" data-action="cycle-speed">Turns: Normal + guide</button>
       <button class="btn" id="hint-button" data-action="toggle-overlay" data-target="hint-overlay" hidden>Hints: off</button>
-      <label class="hint-aim" id="hint-aim" hidden>
-        <span class="small">Hints play for</span>
-        <input type="range" id="hint-lean" min="0" max="4" step="1" aria-label="What hints play for">
-        <span class="small" id="hint-aim-text"></span>
+      <label class="hint-aim" id="hint-aim" title="What the hints play for: the island, or backing a faction" hidden>
+        <span class="small">Island</span>
+        <input type="range" id="hint-lean" min="0" max="4" step="1" aria-label="What hints play for, from the island to backing a faction">
+        <span class="small">Back a faction</span>
       </label>
       <button class="btn" data-action="toggle-overlay" data-target="log-overlay">Log</button>
       <button class="btn" data-action="toggle-overlay" data-target="chat-overlay">Table talk <span class="tag" id="chat-unread" hidden></span></button>

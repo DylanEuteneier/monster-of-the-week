@@ -300,10 +300,26 @@ fn end_of_play(s: &mut GameState) {
     if !marks.is_empty() {
         s.phase = Phase::Night;
         s.night = Some(Night { player: s.board[marks[0] as usize].terror.unwrap(), left: Locs::from_slice(&marks) });
-        log_line(s, |_| "Everyone passed. Night falls.".to_string());
+        let why = if s.options.passing { "Everyone passed" } else { "Every card is played" };
+        log_line(s, |_| format!("{why}. Night falls."));
         return;
     }
     close_round(s);
+}
+
+// Tokens leaving the board in the real game's fights and coming onto it by growth, since last taken (the game-feel
+// measurements, `motw tournament`; imagined states don't count). A measuring aid.
+thread_local! {
+    static FLOW: std::cell::Cell<(i32, i32)> = const { std::cell::Cell::new((0, 0)) };
+}
+
+/// Takes the flow since last taken: (lost in fights, grown).
+pub fn take_flow() -> (i32, i32) {
+    FLOW.with(|f| f.replace((0, 0)))
+}
+
+fn note_flow(lost: i32, grown: i32) {
+    FLOW.with(|f| { let (a, b) = f.get(); f.set((a + lost, b + grown)); });
 }
 
 /// The fights, then growth.
@@ -311,8 +327,12 @@ fn close_round(s: &mut GameState) {
     s.phase = Phase::Play;
     s.night = None;
     log_line(s, |_| "Fights:".to_string());
+    let before = total_presence(s);
     for l in 0..s.board.len() as Loc {
         fight_at(s, l);
+    }
+    if !s.quiet {
+        note_flow(before - total_presence(s), 0);
     }
     for p in s.board.iter_mut() {
         p.gate = None;
@@ -631,6 +651,9 @@ fn begin_growth(s: &mut GameState, from: usize) {
                 s.board[l as usize].tokens.add(f, n);
             }
             s.supply[f as usize] -= wants;
+            if !s.quiet {
+                note_flow(0, wants);
+            }
             let k = due.len();
             let fnm = fname(s, f);
             log_line(s, |_| format!("{fnm} grows at {k} location{}.", if k == 1 { "" } else { "s" }));
@@ -648,6 +671,9 @@ fn grow_one(s: &mut GameState, loc: Loc) {
     let f = s.growing.as_ref().unwrap().faction;
     s.board[loc as usize].tokens.add(f, 1);
     s.supply[f as usize] -= 1;
+    if !s.quiet {
+        note_flow(0, 1);
+    }
     let g = s.growing.as_mut().unwrap();
     let v = g.due.get(loc) - 1;
     g.due.set(loc, v);

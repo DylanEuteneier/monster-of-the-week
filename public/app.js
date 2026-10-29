@@ -660,7 +660,9 @@ const ACTION_ICONS = /** @type {Record<string, string>} */ ({ 'ask-hint': 'HINT'
 function handAction(action, o = {}) {
   const name = o.label ?? LABELS[action];
   const tip = o.tip ? `${name}: ${o.tip}` : name;
-  handNext.actions.push(`<button class="bar-btn bar-icon${o.primary ? ' is-primary' : ''}" data-action="${action}" title="${esc(tip)}" aria-label="${esc(name)}"${o.disabled ? ' disabled' : ''}>${ACTION_ICONS[action] ?? esc(name)}</button>`);
+  // An icon button is square; a button with words keeps its own width.
+  const icon = ACTION_ICONS[action];
+  handNext.actions.push(`<button class="bar-btn${icon && icon.length <= 2 ? ' bar-icon' : ''}${o.primary ? ' is-primary' : ''}" data-action="${action}" title="${esc(tip)}" aria-label="${esc(name)}"${o.disabled ? ' disabled' : ''}>${icon ?? esc(name)}</button>`);
   return '';
 }
 
@@ -969,9 +971,7 @@ function render() {
     aim.hidden = !hintsAvailable() || !ui.hints.on || !!ui.hints.source;
     const at = Math.max(0, HINT_LEANS.findIndex(([v]) => v === ui.hints.lean));
     const slider = /** @type {HTMLInputElement | null} */ (document.getElementById('hint-lean'));
-    if (slider) slider.value = String(at);
-    const words = document.getElementById('hint-aim-text');
-    if (words) words.textContent = HINT_LEANS[at][1];
+    if (slider) { slider.value = String(at); slider.style.setProperty('--aim', `${at * 25}%`); }
   }
   renderSpeed();
   markHint();
@@ -1968,7 +1968,8 @@ function main() {
   globalThis.addEventListener?.('scroll', replace, { passive: true });
   document.addEventListener('click', onClick);
   document.getElementById('hint-lean')?.addEventListener('change', (event) => setHintLean(HINT_LEANS[Number(/** @type {HTMLInputElement} */ (event.target).value)]?.[0] ?? -0.3));
-  document.getElementById('hint-lean')?.addEventListener('input', (event) => { const w = document.getElementById('hint-aim-text'); if (w) w.textContent = HINT_LEANS[Number(/** @type {HTMLInputElement} */ (event.target).value)]?.[1] ?? ''; });
+  document.getElementById('hint-lean')?.addEventListener('input', (event) => { const el = /** @type {HTMLInputElement} */ (event.target); el.style.setProperty('--aim', `${Number(el.value) * 25}%`); });
+
   document.addEventListener('pointerover', onPreview);
   document.addEventListener('click', onCardClick);
   $('chat-form').addEventListener('submit', onChatSubmit);

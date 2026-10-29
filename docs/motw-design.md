@@ -498,6 +498,8 @@ The board empties (by round 5 fewer than half the locations hold tokens; about 2
 
 **What blocks them (same games):** mostly **cost**, no standing to pay the sway a move or mark places (IC1, D21): Spoof the Signal, Bait the Herd, The Big Chase, Cut the Powerlines, Draw Them Away, Light of the Cross, the Gate, Night Terrors, Spill Blood on the Altar, Study the Bodies, Perform the Ritual, Wake the Dead. Mostly **the board**, nothing that fits: Take Control and Plough Through (they need fights), Showdown (a lone group where you have sway), Invite Them In's location reading.
 
+**Token flow (2026-10-29; 16 games, balanced leans, passing off, before D32).** Per round, a game's tokens added by cards / removed by cards / lost in fights / grown: R1 0.4 / 1.1 / 10.1 / 14.2; R2 1.7 / 1.1 / 14.1 / 9.4; R3 2.6 / 1.1 / 10.2 / 6.4; R4 2.9 / 1.2 / 10.2 / 4.9; R5 3.2 / 1.4 / 6.9 / 3.5. Fights take about 10 a round throughout while growth dries up (it needs a lone group of 2 or more, and fights and scatters break groups up): the inflow is the limit (designer: "that is the real limit here").
+
 **More sway (designer, 2026-10-29: bump up sway values; variant `cardSway`; 60 games each, seed 2001, balanced bot leans, passing off).** Cards with a legal action per turn, rounds 1–5; locations occupied and presence after round 5; invaders' ending:
 
 | | Action per turn | Occupied R5 | Presence R5 | Invaders |
@@ -1321,6 +1323,13 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Scope:** prototype only (the bots); not a rule of the game.
 - **Date:** 2026-10-29
 
+#### D32. A fuller start: 3 tokens on each location, more standing with other factions
+
+- **Decided (designer, 2026-10-29):** each faction starts with 3 tokens on each of its archetype's three locations (variant `seeding`, `even` by default; 45 on the board in all, from 30), and each player starts with 2 standing with every faction that isn't their slayer group's (variant `startOthers`, 2 by default, from 1).
+- **Why (designer):** "it's safe to say we can start with 3 tokens on each location by default at least"; starting sway "should likely also be increased by a bit for non-suited factions". Behind it (1.7): the board empties as the game goes on; fights remove about 10 tokens a round while growth falls from 14 to under 4, and most stuck cards lack standing with a faction other than their own.
+- **Scope:** variant defaults; the variants stay, so the old starts can still be dealt.
+- **Date:** 2026-10-29
+
 #### D14. Tokens and cubes
 
 - **Decided:** faction presence on the board is made of **tokens**; **cubes** are always players' sway. A faction never has cubes, and a player never has tokens (apart from hidden and bluff tokens, which are separate pieces).
@@ -1433,6 +1442,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
 | 2026-10-29 | Steal Their Playbook (D30, designer): theirs takes a card another player played this round (however played) from the played cards into your hand, played at once as your own; it can't be your last card played (discarded for no effect) | |
 | 2026-10-29 | One bot, its lean set per seat (D31, designer): trophy and backer become the two ends of one bot's lean; tables deal balanced or random leans, always fewer backing a faction | Prototype only; the old profiles' games replay unchanged |
+| 2026-10-29 | A fuller start (D32, designer): 3 tokens on each location (seeding even) and 2 standing with every other faction by default | The token-flow measurements in 1.7 |
 | 2026-10-28 | Bot tests run natively (`npm run bots`, `motw tournament`: the tournament's games in Rust on every core, about twice as fast as WebAssembly). Budget map: more search for the trophy bot (16 kept moves, 12 play-outs, both) gained nothing; the trophy bot now plans its hand (designer), +6 points a seat pooled over two seeds; then drops the random jitter on its one-step values, ahead on all three seeds. Measured and not adopted: blending the one-step value into play-outs (worse), play-out bots listing targets (worse, slower), 12 draft samples, the backer keeping 16 moves. Planning confirmed for the backer (+5.6 pooled) | Bot tuning, not rules. The standard table's endings split 50/50 over 2,080 games, against the 40% invaders' ending aimed for: balance to revisit (designer) |
 
 ---

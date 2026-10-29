@@ -179,6 +179,16 @@ fn tournament(args: &[String]) {
     }
     let by_seat: Vec<String> = (0..list.len()).map(|i| format!("P{} {:.0}%", i + 1, 100.0 * played.iter().filter(|x| x.winners.contains(&(i as u8))).count() as f64 / games.max(1) as f64)).collect();
     println!("wins by seat: {}", by_seat.join(" · "));
+    // Where the tokens came from and went, round by round (a game's average).
+    {
+        let g = played.len().max(1) as f64;
+        println!("{:<7} {:>10} {:>11} {:>11} {:>9}", "round", "cards in", "cards out", "fights out", "growth");
+        for r in 1..=5 {
+            let rows: Vec<_> = played.iter().flat_map(|x| x.flow.iter().filter(move |f| f.round == r)).collect();
+            let sum = |k: fn(&motw::tournament::Flow) -> i32| rows.iter().map(|f| k(f) as f64).sum::<f64>() / g;
+            println!("{:<7} {:>10.1} {:>11.1} {:>11.1} {:>9.1}", r, sum(|f| f.cards_in), sum(|f| f.cards_out), sum(|f| f.fights), sum(|f| f.growth));
+        }
+    }
     // board=1: how much is happening on the board, and how many options the hand to act has, turn by turn.
     let turns: Vec<&motw::tournament::Turn> = played.iter().flat_map(|x| x.turns.iter()).collect();
     if !turns.is_empty() {

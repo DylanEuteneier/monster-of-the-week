@@ -734,18 +734,19 @@ fn half_from_a_fight_a_card_moves_at_most_half_a_group() {
 }
 
 #[test]
-fn sd1_each_faction_starts_with_2_on_each_aligned_location_even_3() {
+fn sd1_each_faction_starts_with_3_on_each_aligned_location_two_2() {
+    // D32: 3 on each by default (seeding even); seeding two, 2 on each.
     let s = game(3);
     let x = v(&s);
     for f in factions(&s) {
         for (l, arch) in locs() {
             if arch == arch_of_faction(&f) {
-                assert_eq!(x["board"][&l]["tokens"][&f], 2);
+                assert_eq!(x["board"][&l]["tokens"][&f], 3);
             }
         }
     }
-    assert_eq!(total(&s), 30);
-    assert_eq!(total(&game_opts(3, &[("seeding", "even")])), 45);
+    assert_eq!(total(&s), 45);
+    assert_eq!(total(&game_opts(3, &[("seeding", "two")])), 30);
 }
 
 #[test]

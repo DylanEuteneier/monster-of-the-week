@@ -21,7 +21,7 @@ export const BOTS = /** @type {const} */ ([['Ash', 'bot:lean=0.3'], ['Bea', 'bot
  * shows every part of a round (both uses of a card, fights with piles, growth).
  * A different engine or deck may need a new seed; the narration adapts either way.
  */
-export const SEED = 157;
+export const SEED = 98;
 /** Seats in order, so the learner is Slayerettes. */
 export const OPTIONS = { groups: 'seat', passing: 'on' }; // passing on: the tutorial's lessons teach it (to rewrite for no passing)
 
