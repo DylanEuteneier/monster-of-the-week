@@ -434,6 +434,7 @@ fn scratch_base(s: &GameState) -> GameState {
         turn: s.turn,
         passes_in_row: s.passes_in_row,
         opened: s.opened,
+        copying: s.copying,
         round_plays: Vec::new(),
         growing: s.growing.clone(),
         night: s.night.clone(),
@@ -876,8 +877,8 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
         Action::Playbook => match t.use_ {
             Some(Use::Yours) => if matches!(t.back, Some(Id::Card(b)) if own_plays(s, pid).contains(&b)) { None } else { e("Pick a card you played earlier this round.") },
             Some(Use::Theirs) => match t.back {
-                Some(Id::Card(copied)) if copy_options(s, pid).contains(&copied) => check_shape(s, pid, copied, Some(t)),
-                _ => e("Pick a card another player played this round, to copy."),
+                Some(Id::Card(copied)) if copy_options(s, pid).contains(&copied) => None,
+                _ => e("Pick a card another player played this round, to take."),
             },
             _ => e("Pick a use: theirs, or yours."),
         },
@@ -1265,8 +1266,13 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 s.players[me].hand.push(back);
                 log_line(s, |_| format!("{who}: {}: takes {} back.", c.name, card(back).name));
             } else if let Some(Id::Card(copied)) = t.back {
-                log_line(s, |_| format!("{who}: {}: plays {} as their own.", c.name, card(copied).name));
-                act(s, pid, copied, t);
+                // Theirs (D30): the card comes from another player's plays into your hand, to be played now as your own.
+                if let Some(i) = s.round_plays.iter().rposition(|x| x.pid != pid && x.card == copied) {
+                    s.round_plays.remove(i);
+                }
+                s.players[me].hand.push(copied);
+                s.copying = Some(copied);
+                log_line(s, |_| format!("{who}: {}: takes {} from the cards played this round, to play as their own.", c.name, card(copied).name));
             }
         }
         Action::Altar | Action::Terror | Action::Study => {

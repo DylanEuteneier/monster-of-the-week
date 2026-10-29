@@ -347,6 +347,8 @@ pub struct GameState {
     pub turn: usize,
     pub passes_in_row: i32,
     pub opened: bool,
+    /// Steal Their Playbook, theirs (D30): the card taken from another player, to be played now as one's own.
+    pub copying: Option<CardIx>,
     pub round_plays: Vec<RoundPlay>,
     pub growing: Option<Growing>,
     pub night: Option<Night>,

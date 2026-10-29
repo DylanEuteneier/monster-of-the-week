@@ -530,7 +530,7 @@
         "yours"
       ],
       "round": 22,
-      "text": "Choose one. Theirs: pick a card another player played this round, however they played it, and play its action as if it were yours. Yours: take back into your hand a card you played earlier this round. It can't be your last card played: as the last card in your hand it is discarded, for no effect."
+      "text": "Choose one. Theirs: take a card another player played this round, however they played it, from the played cards into your hand, and play it now as your own. Yours: take back into your hand a card you played earlier this round. It can't be your last card played: as the last card in your hand it is discarded, for no effect."
     }
   ],
   "variants": [

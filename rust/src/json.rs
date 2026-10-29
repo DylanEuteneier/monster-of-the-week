@@ -294,6 +294,7 @@ pub fn state_to_value(s: &GameState) -> Value {
     o.insert("turn".into(), Value::from(s.turn));
     o.insert("passesInRow".into(), Value::from(s.passes_in_row));
     o.insert("opened".into(), Value::from(s.opened));
+    o.insert("copying".into(), s.copying.map(|c| Value::from(spec().cards[c as usize].id.as_str())).unwrap_or(Value::Null));
     o.insert("growing".into(), growing_value(s));
     o.insert("night".into(), night_value(s));
     o.insert("log".into(), log_value(s));
@@ -407,6 +408,7 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
         turn: v["turn"].as_u64().unwrap_or(0) as usize,
         passes_in_row: v["passesInRow"].as_i64().unwrap_or(0) as i32,
         opened: v["opened"].as_bool().unwrap_or(false),
+        copying: card(&v["copying"]),
         round_plays,
         growing,
         night,
@@ -490,7 +492,7 @@ pub fn game_of(s: &GameState) -> Value {
     }).collect());
     json!({
         "phase": v["phase"], "round": v["round"], "rngState": v["rngState"], "seating": v["seating"], "factions": v["factions"], "supply": v["supply"],
-        "pass": v["pass"], "first": v["first"], "turn": v["turn"], "passesInRow": v["passesInRow"], "opened": v["opened"],
+        "pass": v["pass"], "first": v["first"], "turn": v["turn"], "passesInRow": v["passesInRow"], "opened": v["opened"], "copying": v["copying"],
         "board": board, "players": players, "growing": v["growing"], "night": v["night"], "roundPlays": v["roundPlays"], "result": v["result"], "log": v["log"],
     })
 }

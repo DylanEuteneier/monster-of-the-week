@@ -98,7 +98,7 @@ pub fn describe_target(factions: &[u8; 5], ci: CardIx, t: Option<&Target>) -> St
         Action::Playbook => if t.use_ == Some(Use::Yours) {
             format!("takes {} back", match t.back { Some(Id::Card(c)) => sp.cards[c as usize].name.clone(), _ => "?".into() })
         } else {
-            format!("plays {} as their own", match t.back { Some(Id::Card(c)) => sp.cards[c as usize].name.clone(), _ => "?".into() })
+            format!("takes {} to play as their own", match t.back { Some(Id::Card(c)) => sp.cards[c as usize].name.clone(), _ => "?".into() })
         },
         Action::Terror | Action::Study | Action::Altar => {
             let mut at: Vec<Id> = t.moves.as_deref().unwrap_or(&[]).iter().map(|m| m.location).collect();
@@ -147,6 +147,7 @@ pub fn player_view(s: &GameState, pid: Pid) -> Value {
     o.insert("night".into(), v["night"].clone());
     o.insert("first".into(), v["first"].clone());
     o.insert("opened".into(), v["opened"].clone());
+    o.insert("copying".into(), v["copying"].clone());
     o.insert("toAct".into(), waiting_on(s).first().map(|&p| Value::from(s.seating[p as usize].as_str())).unwrap_or(Value::Null));
     o.insert("log".into(), v["log"].clone());
     o.insert("result".into(), v["result"].clone());

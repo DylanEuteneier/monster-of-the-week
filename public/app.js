@@ -808,16 +808,20 @@ function renderPlay() {
   if (ui.returning && !(myTurn && me.hand.includes(ui.returning.card))) ui.returning = null;
   toHand(me.hand.map((c) => {
     const card = cardById(c);
-    const canAct = myTurn && !!card.action && (!mustOpen || c === opener);
+    // A card taken with Steal Their Playbook is played now: only it (D30).
+    const taken = view.copying ?? null;
+    const canAct = myTurn && !!card.action && (!mustOpen || c === opener) && (!taken || c === taken);
     const mode = canAct ? 'act' : '';
     // Steal Their Playbook says what it would copy now.
     const copies = c !== 'playbook' ? undefined
       : me.hand.length === 1 ? '<div class="card-copy small">Your last card: it can only be discarded, for no effect</div>'
-      : copyable().length ? `<div class="card-copy small">Can copy: <b>${copyable().map((x) => esc(cardById(x).name)).join(', ')}</b></div>` : undefined;
-    return cardHtml(c, { mode, sway: myTurn && !mustOpen && !!card.suit, back: myTurn && !mustOpen && returnRoom(/** @type {any} */ (view), view.you, c).max > 0, dim: !mode, extra: copies });
+      : copyable().length ? `<div class="card-copy small">Can take: <b>${copyable().map((x) => esc(cardById(x).name)).join(', ')}</b></div>` : undefined;
+    const free = myTurn && !mustOpen && (!taken || c === taken);
+    return cardHtml(c, { mode, sway: free && !!card.suit, back: free && returnRoom(/** @type {any} */ (view), view.you, c).max > 0, dim: !mode && !(free && !!card.suit), extra: copies });
   }), false);
   if (myTurn) {
-    if (!mustOpen && view.options.passing !== 'off') handAction('pass');
+    if (!mustOpen && !view.copying && view.options.passing !== 'off') handAction('pass');
+    if (view.copying) return step('turn', `Play ${esc(cardById(view.copying).name)} now: you took it with Steal Their Playbook`);
     return step('turn', mustOpen ? `You go first: open with ${opener ? cardById(opener).name : 'your marked card'}` : 'Your turn');
   }
   return step('wait', waitingText());
@@ -835,10 +839,7 @@ function copyable() {
 /** Building a card's target: the bar names the step in a few words. @param {string} cardId */
 function renderTargeting(cardId) {
   const choice = /** @type {NonNullable<ReturnType<typeof currentChoice>>} */ (currentChoice());
-  // Steal Their Playbook, theirs (designer, 2026-10-28): you play the copied card as your own, so the bar names it and
-  // asks its steps in its words; a suit card's reading is picked here (the Playbook has no readings of its own).
-  const copied = cardId === 'playbook' && ui.target.use === 'theirs' && ui.target.back ? ui.target.back : null;
-  const card = cardById(copied ?? cardId);
+  const card = cardById(cardId);
   const suit = spec.archetypes.find((a) => a.id === card.suit);
   const WORDS = /** @type {Record<string, string>} */ ({
     mode: 'Pick a reading', location: 'Pick a location', to: 'Pick where they go', path: 'Pick the next step',
@@ -847,7 +848,7 @@ function renderTargeting(cardId) {
   const key = choice.kind === 'location' ? choice.key : choice.kind;
   const gateWords = /** @type {Record<string, string>} */ ({ location: 'Pick one end of the Gate', to: 'Pick the other end', losses: 'Pick which end the winner\'s losses come off first (they leave the board)' });
   const words = card.action === 'gate' && choice.kind === 'location' && gateWords[choice.key] ? gateWords[choice.key]
-    : choice.kind === 'use' && choice.key === 'back' ? (ui.target.use === 'theirs' ? 'Pick a card another player played this round, to copy' : 'Pick a card you played to take back')
+    : choice.kind === 'use' && choice.key === 'back' ? (ui.target.use === 'theirs' ? 'Pick a card another player played this round: it comes into your hand, to play now' : 'Pick a card you played to take back')
     : card.action === 'favours' && choice.kind === 'location' ? `Pick a fight for 1 sway from your supply · up to ${choice.left} more`
     : card.action === 'favours' && choice.kind === 'faction' ? 'Pick the faction: 1 standing from your supply each click'
     : card.action === 'stakes' && choice.kind === 'faction' && choice.key === 'faction' ? 'Pick the faction it all goes into'
@@ -875,18 +876,16 @@ function renderTargeting(cardId) {
     : card.action === 'plough' && choice.kind === 'location' && choice.key === 'from' ? `Pick an exit for the next token · ${choice.left} left`
     : choice.kind === 'split' ? `Send tokens: ${choice.left} left`
     : choice.kind === 'location' && choice.key === 'path' ? `Pick the next step · ${choice.left} left` : WORDS[key] ?? '';
-  const USE_LABELS = /** @type {Record<string, string>} */ ({ standing: 'Standing', sway: 'Sway on the board', tokens: 'Tokens', theirs: "Theirs: copy another player's card", yours: 'Yours: take one back' });
+  const USE_LABELS = /** @type {Record<string, string>} */ ({ standing: 'Standing', sway: 'Sway on the board', tokens: 'Tokens', theirs: "Theirs: take another player's played card", yours: 'Yours: take one back' });
   const useLabel = (/** @type {string} */ u) => (choice.kind === 'use' && choice.key === 'back' ? cardById(u).name : USE_LABELS[u] ?? u);
   const arrows = choice.kind === 'use' ? `<span class="bar-actions">${choice.options.map((u) => `<button class="bar-btn" data-action="pick-use" data-use="${esc(u)}">${esc(useLabel(u))}</button>`).join('')}</span>` : '';
   const t = ui.target;
   // A step with no candidates: say so, and point at playing it for no effect.
   const none = 'options' in choice && choice.options.length === 0 && !('optional' in choice && choice.optional);
   const view = /** @type {PlayerView} */ (ui.view);
-  const hasOptions = (/** @type {'location' | 'faction'} */ mode) => { const c = nextChoice(/** @type {any} */ (view), view.you, cardId, copied ? { use: 'theirs', mode } : { mode }); return c.kind === 'done' || ('options' in c && c.options.length > 0); };
+  const hasOptions = (/** @type {'location' | 'faction'} */ mode) => { const c = nextChoice(/** @type {any} */ (view), view.you, cardId, { mode }); return c.kind === 'done' || ('options' in c && c.options.length > 0); };
   const empty = card.suit && card.action ? /** @type {('location' | 'faction')[]} */ (['location', 'faction']).filter((m) => !hasOptions(m)) : [];
-  // Copying a suit card: its two readings as buttons on the bar.
-  const readingButtons = copied && choice.kind === 'mode' ? `<span class="bar-actions">${(/** @type {const} */ (['location', 'faction'])).filter((m) => !empty.includes(m)).map((m) => `<button class="bar-btn" data-action="set-mode" data-card="playbook" data-mode="${m}" title="${esc(('readings' in card ? card.readings?.[m] : '') ?? '')}">${m === 'location' ? 'LOC' : 'FAC'}</button>`).join('')}</span>` : '';
-  const copying = copied ? `<b>Copying ${esc(card.name)}</b> · ` : '';
+
   // Steal Their Playbook as the last card in hand (designer, 2026-10-29): it can only be discarded.
   if (cardId === 'playbook' && view.me.hand.length === 1) {
     step('turn', "Steal Their Playbook can't be your last card played: discard it for no effect");
@@ -894,15 +893,13 @@ function renderTargeting(cardId) {
     handAction('back', { tip: 'Put the card down' });
     return toHand(view.me.hand.map((c) => cardHtml(c, { selected: true })), false);
   }
-  step('turn', copying + esc(choice.kind === 'mode' ? (empty.length === 2 ? 'Nothing to target: play it for no effect' : copied ? 'Pick its reading' : 'Pick an option on the card') : none ? 'Nothing to target: play it for no effect' : words), arrows + readingButtons);
+  step('turn', esc(choice.kind === 'mode' ? (empty.length === 2 ? 'Nothing to target: play it for no effect' : 'Pick an option on the card') : none ? 'Nothing to target: play it for no effect' : words), arrows);
   if ((choice.kind === 'location' || choice.kind === 'group' || choice.kind === 'faction') && 'optional' in choice && choice.optional) handAction('skip', { label: 'Done' });
   handAction('target-none', { tip: 'Play it for no effect' });
   handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
   // A reading with nothing to target says what it needs, on the card.
   const why = Object.fromEntries(empty.map((m) => [m, readingConditions(/** @type {any} */ (view), view.you, cardId, m)]).filter(([, c]) => c));
-  // The Playbook copying a card shows what it copies, on the card.
-  const extra = copied ? `<div class="card-copy small"><b>Copying ${esc(card.name)}:</b> ${esc(card.text)}</div>` : undefined;
-  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit && !copied, reading: t.mode, empty: copied ? [] : empty, why: copied ? {} : why, extra } : { dim: true })), false);
+  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, reading: t.mode, empty, why } : { dim: true })), false);
 }
 
 function renderGrowth() {
@@ -1630,8 +1627,7 @@ function onClick(event) {
     ui.choosing = target.dataset.card ?? ui.choosing;
     ui.undo.push(structuredClone(ui.target));
     const mode = /** @type {'location' | 'faction'} */ (target.dataset.mode);
-    // The Playbook copying a suit card keeps its use; any other card starts again in the reading.
-    ui.target = ui.choosing === 'playbook' && ui.target.use === 'theirs' ? { use: 'theirs', back: ui.target.back, mode } : { mode };
+    ui.target = { mode };
     return render();
   }
   if (action === 'expand-player') {

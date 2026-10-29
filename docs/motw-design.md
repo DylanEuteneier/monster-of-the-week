@@ -1266,9 +1266,8 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 #### D30. Steal Their Playbook copies any other player's card; never your last card
 
-- **Decided (designer, 2026-10-29):** *Theirs:* pick a card another player played this round, however they played it (for its action, for sway, or to bring tokens back), and play its action as if it were yours (a signature copied uses your hand size, D24). Your own plays can no longer be copied (replacing the 2026-10-24 note that it may copy your own last play). Before, it copied only the last card played for its action this round.
+- **Decided (designer, 2026-10-29):** *Theirs:* take a card another player played this round, however they played it (for its action, for sway, or to bring tokens back), from the round's played cards (never a hand) into your hand, and play it now, in the same turn, as your own: any way it plays (its action with its own uses and readings, or for sway). Your own plays can't be taken (replacing the 2026-10-24 note that it may copy your own last play). Before, it played the last card played for its action this round as if it were yours.
 - **Decided (designer, 2026-10-29):** Steal Their Playbook can't be your last card played: as the last card in your hand it is discarded, for no effect (with passing off, so the round still ends when every hand is empty).
-- **Open:** a copied card that has uses of its own (Call in Favours, Raise the Stakes, Cover Every Exit, Switch Allegiance): whether you choose among them as if you had played it (today the Playbook's own use stands in, and its first use's steps follow).
 - **Scope:** the card (Appendix H); the prototype (engine, table, bots).
 - **Date:** 2026-10-29
 
@@ -1382,7 +1381,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | Bots: each card in the search gets its own count of targets to sample; the count no longer grew across the hand (designer) | A slip from 2026-10-08; play changed slightly, fingerprints re-recorded; no effect on speed |
 | 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
 | 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
-| 2026-10-29 | Steal Their Playbook (D30, designer): theirs copies any card another player played this round, however played, you choose which; it can't be your last card played (discarded for no effect) | |
+| 2026-10-29 | Steal Their Playbook (D30, designer): theirs takes a card another player played this round (however played) from the played cards into your hand, played at once as your own; it can't be your last card played (discarded for no effect) | |
 | 2026-10-28 | Bot tests run natively (`npm run bots`, `motw tournament`: the tournament's games in Rust on every core, about twice as fast as WebAssembly). Budget map: more search for the trophy bot (16 kept moves, 12 play-outs, both) gained nothing; the trophy bot now plans its hand (designer), +6 points a seat pooled over two seeds; then drops the random jitter on its one-step values, ahead on all three seeds. Measured and not adopted: blending the one-step value into play-outs (worse), play-out bots listing targets (worse, slower), 12 draft samples, the backer keeping 16 moves. Planning confirmed for the backer (+5.6 pooled) | Bot tuning, not rules. The standard table's endings split 50/50 over 2,080 games, against the 40% invaders' ending aimed for: balance to revisit (designer) |
 
 ---

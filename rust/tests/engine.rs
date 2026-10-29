@@ -1343,9 +1343,18 @@ fn steal_their_playbook_copies_any_card_another_player_played_this_round_and_can
     let opts: Vec<String> = c["options"].as_array().unwrap().iter().map(|x| x.as_str().unwrap().to_string()).collect();
     assert_eq!(opts, vec!["showdown".to_string(), "invite-in".to_string()]);
     assert!(check(&s, &who, "playbook", json!({ "use": "theirs", "back": "gate" })).is_some(), "your own play can't be copied");
-    // Copying goes on with the copied card's own steps.
-    let next = choice(&s, &who, "playbook", json!({ "use": "theirs", "back": "invite-in" }));
-    assert_ne!(next["kind"], "use");
+    // The card comes from this round's played cards into your hand, and you play it now, as your own, any way it plays.
+    assert_eq!(choice(&s, &who, "playbook", json!({ "use": "theirs", "back": "invite-in" }))["kind"], "done");
+    let took = apply(&s, &who, json!({ "type": "play", "card": "playbook", "use": "action", "target": { "use": "theirs", "back": "invite-in" } }));
+    let tv = v(&took);
+    assert!(tv["players"][&who]["hand"].as_array().unwrap().contains(&json!("invite-in")));
+    assert_eq!(tv["copying"], "invite-in");
+    assert_eq!(took.seating[took.turn], who, "the same turn");
+    assert!(!tv["roundPlays"].as_array().unwrap().iter().any(|x| x["card"] == "invite-in"), "taken from the played cards");
+    assert!(!valid(&took, &who, json!({ "type": "play", "card": "plough", "use": "sway" })), "only the taken card now");
+    let played = apply(&took, &who, json!({ "type": "play", "card": "invite-in", "use": "sway" }));
+    assert_eq!(v(&played)["copying"], Value::Null);
+    assert_ne!(played.seating[played.turn], who, "then the turn moves on");
     // As the last card in hand it can't be played, only discarded for no effect.
     let last = edit(&s, |x| set_hand(x, &who, &["playbook"]));
     assert!(check(&last, &who, "playbook", json!({ "use": "yours", "back": "gate" })).is_some());

@@ -69,6 +69,12 @@ pub fn validate(s: &GameState, pid: Pid, m: &Move) -> Verdict {
                 return no("It is not your turn.");
             }
             let must_open = !s.opened && Some(pid) == s.first;
+            // A card taken with Steal Their Playbook is played now (D30).
+            if let Some(x) = s.copying {
+                if !matches!(m, Move::Play { card, .. } if *card == x) {
+                    return Some(format!("Play {} now: you took it with Steal Their Playbook.", spec().cards[x as usize].name));
+                }
+            }
             match m {
                 Move::Pass => {
                     if must_open && p.hand.iter().any(|&c| marked(c).is_some()) {
@@ -179,6 +185,9 @@ pub fn apply_legal(s: &GameState, pid: Pid, m: &Move) -> GameState {
         }
         Move::Play { card, use_, target, places } => {
             let ci = *card;
+            if next.copying == Some(ci) {
+                next.copying = None; // the card taken with Steal Their Playbook, played
+            }
             next.players[me].hand.retain(|c| c != ci);
             next.round_plays.push(RoundPlay { pid, card: ci, use_: *use_ });
             next.passes_in_row = 0;
@@ -223,6 +232,10 @@ pub fn apply_legal(s: &GameState, pid: Pid, m: &Move) -> GameState {
                         _ => log_line(&mut next, |_| format!("{} has nothing to act on.", c.name)),
                     }
                 }
+            }
+            if next.copying.is_some() {
+                // Steal Their Playbook took a card: the same seat plays it now, in the same turn.
+                return next;
             }
             next.turn = (next.turn + 1) % next.n();
             if !next.options.passing {

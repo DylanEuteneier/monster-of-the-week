@@ -131,6 +131,7 @@ pub fn create_game(seed: i64, players: &[String], raw_options: &[(String, String
         turn: 0,
         passes_in_row: 0,
         opened: false,
+        copying: None,
         round_plays: vec![],
         growing: None,
         night: None,
@@ -209,7 +210,7 @@ pub fn sway_for(s: &GameState, pid: Pid, card: CardIx) -> i32 {
         return printed_of(card);
     }
     let hand = &s.players[pid as usize].hand;
-    let held = hand.contains(&card) || (hand.contains(&playbook()) && copy_options(s, pid).contains(&card));
+    let held = hand.contains(&card);
     hand.len() as i32 + if held { 0 } else { 1 }
 }
 

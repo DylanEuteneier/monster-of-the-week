@@ -86,6 +86,7 @@ export { spec };
  * @property {number} turn         index into seating of the player to act
  * @property {number} passesInRow
  * @property {boolean} opened      the first player has opened with their marked card
+ * @property {string | null} [copying]  Steal Their Playbook, theirs: the card taken, to be played now (D30)
  * @property {{ pid: string, card: string, use: string }[]} roundPlays  this round's plays, in order (Steal Their Playbook, unsuited, 2026-10-24)
  * @property {{ faction: string, left: number, leaders: string[], next: number, due: Record<string, number> } | null} growing  growth phase when a supply runs short
  * @property {{ player: string, left: string[] } | null} [night]  Night Terrors (◐ signature): nightfall, before the fights; the player's marks still to decide
@@ -144,6 +145,7 @@ export { spec };
  * @property {{ pid: string, card: string, use: string }[]} roundPlays  this round's plays
  * @property {string | null} first
  * @property {boolean} opened  the first player has opened with their marked card
+ * @property {string | null} [copying]  a card taken with Steal Their Playbook, to be played now (D30)
  * @property {string | null} toAct
  * @property {RoundLog[]} log
  * @property {GameState['result']} result
