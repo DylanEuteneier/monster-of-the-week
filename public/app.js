@@ -114,7 +114,7 @@ const ui = {
    * card, its way of playing and the locations marked on the table); full
    * (marks and the panel).
    * want: the position (hint key) a hint was asked for; byKey: the last hint the server sent, by its position
-   * @type {{ on: boolean, mode: 'off' | 'marks' | 'full', hint: import('./hints.js').Hint | null, asked: number, got: number, source: (() => import('./hints.js').Hint | null) | null, want: string, byKey: Record<string, import('./hints.js').Hint | null> }}
+   * @type {{ on: boolean, mode: 'off' | 'marks' | 'full' | 'ask', hint: import('./hints.js').Hint | null, asked: number, got: number, source: (() => import('./hints.js').Hint | null) | null, want: string, byKey: Record<string, import('./hints.js').Hint | null> }}
    */
   hints: { on: false, mode: 'off', hint: null, asked: 0, got: 0, source: null, want: '', byKey: {} },
   /** the move being shown as it animates (another seat's, or your own): the bar says it in its chip */
@@ -653,8 +653,8 @@ const cardHtml = (id, o = {}) => baseCardHtml(id, { ...o, view: ui.view });
 /** @type {BarNext} */
 let handNext = { cards: [], open: false, actions: [], state: 'wait', text: '', extra: '' };
 
-const LABELS = /** @type {Record<string, string>} */ ({ 'let-be': 'Let them be', 'flee-follow': 'Your sway follows', 'flee-stay': 'Your sway stays', pass: 'Pass', pick: 'Keep', 'target-none': 'No effect', back: 'Back', skip: 'Done' });
-const ACTION_ICONS = /** @type {Record<string, string>} */ ({ pass: '»', pick: '✓', 'target-none': '⊘', back: '↩', skip: '✓' });
+const LABELS = /** @type {Record<string, string>} */ ({ 'ask-hint': 'Hint', 'let-be': 'Let them be', 'flee-follow': 'Your sway follows', 'flee-stay': 'Your sway stays', pass: 'Pass', pick: 'Keep', 'target-none': 'No effect', back: 'Back', skip: 'Done' });
+const ACTION_ICONS = /** @type {Record<string, string>} */ ({ 'ask-hint': 'HINT', pass: '»', pick: '✓', 'target-none': '⊘', back: '↩', skip: '✓' });
 
 /** A labelled button on the bar. @param {string} action @param {{ primary?: boolean, disabled?: boolean, label?: string, tip?: string }} [o] */
 function handAction(action, o = {}) {
@@ -758,6 +758,8 @@ function renderPhase() {
   if (ui.note) handNext = { ...handNext, actions: [], state: 'wait', text: esc(ui.note) };
   // A move on its way to the server: said at once, so a click never looks dead (designer, 2026-10-11).
   // A move playing out on the table (another seat's, or yours): said in the chip while it animates.
+  // Hints on demand (designer, 2026-10-28): a Hint button on your decisions; nothing is worked out until it is pressed.
+  if (ui.hints.mode === 'ask' && hintsAvailable() && myDecision(view) && !ui.sending && !ui.acting) handNext = { ...handNext, actions: [...handNext.actions, `<button class="bar-btn" data-action="ask-hint" title="Hint: the best play now, or with your chosen card">HINT</button>`] };
   if (ui.acting) handNext = { ...handNext, actions: [], state: 'wait', text: status(ui.acting.player === view.you ? 'You are' : `${esc(ui.acting.player)} is`, moveWords(ui.acting.move), false) };
   else if (ui.sending) handNext = { ...handNext, actions: [], text: ui.sendingMove ? status('You are', moveWords(ui.sendingMove)) : status('', `sending`) };
   setHtml('phase', `<span class="bar-text">${handNext.text}</span>${handNext.extra}<span class="bar-actions">${handNext.actions.join('')}</span>`);
@@ -808,7 +810,9 @@ function renderPlay() {
     const card = cardById(c);
     const canAct = myTurn && !!card.action && (!mustOpen || c === opener);
     const mode = canAct ? 'act' : '';
-    return cardHtml(c, { mode, sway: myTurn && !mustOpen && !!card.suit, back: myTurn && !mustOpen && returnRoom(/** @type {any} */ (view), view.you, c).max > 0, dim: !mode });
+    // Steal Their Playbook says what it would copy now.
+    const copies = c === 'playbook' && copiedCard() ? `<div class="card-copy small">Now copies <b>${esc(cardById(/** @type {string} */ (copiedCard())).name)}</b></div>` : undefined;
+    return cardHtml(c, { mode, sway: myTurn && !mustOpen && !!card.suit, back: myTurn && !mustOpen && returnRoom(/** @type {any} */ (view), view.you, c).max > 0, dim: !mode, extra: copies });
   }), false);
   if (myTurn) {
     if (!mustOpen && view.options.passing !== 'off') handAction('pass');
@@ -820,17 +824,27 @@ function renderPlay() {
 /** The current view (for helpers that need it). */
 const view0 = () => /** @type {PlayerView} */ (ui.view);
 
+/** The card Steal Their Playbook copies now ("theirs": the last card played for its action this round), if any. */
+function copiedCard() {
+  const view = ui.view;
+  const play = view?.roundPlays.filter((p) => p.use === 'action' && p.card !== 'playbook').at(-1);
+  return play?.card ?? null;
+}
+
 /** Building a card's target: the bar names the step in a few words. @param {string} cardId */
 function renderTargeting(cardId) {
   const choice = /** @type {NonNullable<ReturnType<typeof currentChoice>>} */ (currentChoice());
-  const card = cardById(cardId);
+  // Steal Their Playbook, theirs (designer, 2026-10-28): you play the copied card as your own, so the bar names it and
+  // asks its steps in its words; a suit card's reading is picked here (the Playbook has no readings of its own).
+  const copied = cardId === 'playbook' && ui.target.use === 'theirs' ? copiedCard() : null;
+  const card = cardById(copied ?? cardId);
   const suit = spec.archetypes.find((a) => a.id === card.suit);
   const WORDS = /** @type {Record<string, string>} */ ({
     mode: 'Pick a reading', location: 'Pick a location', to: 'Pick where they go', path: 'Pick the next step',
     from: 'Pick where they come from', group: 'Pick a group', faction: 'Pick a faction', use: 'Pick a use', done: 'Ready',
   });
   const key = choice.kind === 'location' ? choice.key : choice.kind;
-  const gateWords = /** @type {Record<string, string>} */ ({ location: 'Pick one end of the Gate', to: 'Pick the other end', losses: 'Pick the end that takes the winner\'s losses' });
+  const gateWords = /** @type {Record<string, string>} */ ({ location: 'Pick one end of the Gate', to: 'Pick the other end', losses: 'Pick which end the winner\'s losses come off first (they leave the board)' });
   const words = card.action === 'gate' && choice.kind === 'location' && gateWords[choice.key] ? gateWords[choice.key]
     : choice.kind === 'use' && choice.key === 'back' ? 'Pick a card you played to take back'
     : card.action === 'favours' && choice.kind === 'location' ? `Pick a fight for 1 sway from your supply · up to ${choice.left} more`
@@ -860,22 +874,27 @@ function renderTargeting(cardId) {
     : card.action === 'plough' && choice.kind === 'location' && choice.key === 'from' ? `Pick an exit for the next token · ${choice.left} left`
     : choice.kind === 'split' ? `Send tokens: ${choice.left} left`
     : choice.kind === 'location' && choice.key === 'path' ? `Pick the next step · ${choice.left} left` : WORDS[key] ?? '';
-  const USE_LABELS = /** @type {Record<string, string>} */ ({ standing: 'Standing', sway: 'Sway on the board', tokens: 'Tokens', theirs: 'Theirs: the last card played', yours: 'Yours: take one back' });
+  const USE_LABELS = /** @type {Record<string, string>} */ ({ standing: 'Standing', sway: 'Sway on the board', tokens: 'Tokens', theirs: copiedCard() ? `Theirs: copy ${cardById(/** @type {string} */ (copiedCard())).name}` : 'Theirs: the last card played', yours: 'Yours: take one back' });
   const useLabel = (/** @type {string} */ u) => (choice.kind === 'use' && choice.key === 'back' ? cardById(u).name : USE_LABELS[u] ?? u);
   const arrows = choice.kind === 'use' ? `<span class="bar-actions">${choice.options.map((u) => `<button class="bar-btn" data-action="pick-use" data-use="${esc(u)}">${esc(useLabel(u))}</button>`).join('')}</span>` : '';
   const t = ui.target;
   // A step with no candidates: say so, and point at playing it for no effect.
   const none = 'options' in choice && choice.options.length === 0 && !('optional' in choice && choice.optional);
   const view = /** @type {PlayerView} */ (ui.view);
-  const hasOptions = (/** @type {'location' | 'faction'} */ mode) => { const c = nextChoice(/** @type {any} */ (view), view.you, cardId, { mode }); return c.kind === 'done' || ('options' in c && c.options.length > 0); };
+  const hasOptions = (/** @type {'location' | 'faction'} */ mode) => { const c = nextChoice(/** @type {any} */ (view), view.you, cardId, copied ? { use: 'theirs', mode } : { mode }); return c.kind === 'done' || ('options' in c && c.options.length > 0); };
   const empty = card.suit && card.action ? /** @type {('location' | 'faction')[]} */ (['location', 'faction']).filter((m) => !hasOptions(m)) : [];
-  step('turn', esc(choice.kind === 'mode' ? (empty.length === 2 ? 'Nothing to target: play it for no effect' : 'Pick an option on the card') : none ? 'Nothing to target: play it for no effect' : words), arrows);
+  // Copying a suit card: its two readings as buttons on the bar.
+  const readingButtons = copied && choice.kind === 'mode' ? `<span class="bar-actions">${(/** @type {const} */ (['location', 'faction'])).filter((m) => !empty.includes(m)).map((m) => `<button class="bar-btn" data-action="set-mode" data-card="playbook" data-mode="${m}" title="${esc(('readings' in card ? card.readings?.[m] : '') ?? '')}">${m === 'location' ? 'LOC' : 'FAC'}</button>`).join('')}</span>` : '';
+  const copying = copied ? `<b>Copying ${esc(card.name)}</b> · ` : '';
+  step('turn', copying + esc(choice.kind === 'mode' ? (empty.length === 2 ? 'Nothing to target: play it for no effect' : copied ? 'Pick its reading' : 'Pick an option on the card') : none ? 'Nothing to target: play it for no effect' : words), arrows + readingButtons);
   if ((choice.kind === 'location' || choice.kind === 'group' || choice.kind === 'faction') && 'optional' in choice && choice.optional) handAction('skip', { label: 'Done' });
   handAction('target-none', { tip: 'Play it for no effect' });
   handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
   // A reading with nothing to target says what it needs, on the card.
   const why = Object.fromEntries(empty.map((m) => [m, readingConditions(/** @type {any} */ (view), view.you, cardId, m)]).filter(([, c]) => c));
-  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, reading: t.mode, empty, why } : { dim: true })), false);
+  // The Playbook copying a card shows what it copies, on the card.
+  const extra = copied ? `<div class="card-copy small"><b>Copying ${esc(card.name)}:</b> ${esc(card.text)}</div>` : undefined;
+  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit && !copied, reading: t.mode, empty: copied ? [] : empty, why: copied ? {} : why, extra } : { dim: true })), false);
 }
 
 function renderGrowth() {
@@ -1211,10 +1230,12 @@ function myDecision(view) {
 }
 
 /** Ask for a hint for the view now showing (when hints are on and it's this seat's move). */
-function requestHint() {
+/** @param {boolean} [asked]  pressed Hint (on demand); otherwise automatic, which on demand never is */
+function requestHint(asked = false) {
   const view = ui.view;
   if (!ui.hints.on || !view || !hintsAvailable() || ui.sending) return;
   ui.hints.hint = null;
+  if (ui.hints.mode === 'ask' && !asked) return renderHint();
   if (!myDecision(view)) return renderHint();
   ui.hints.asked++;
   if (ui.hints.source) {
@@ -1230,7 +1251,9 @@ function requestHint() {
   ui.hints.want = key;
   if (key in ui.hints.byKey) { ui.hints.got = ui.hints.asked; ui.hints.hint = ui.hints.byKey[key]; return renderHint(); }
   renderHint();
-  ui.socket.send(JSON.stringify(focus ? { type: 'hint', focus } : { type: 'hint' }));
+  // auto: the Worker may work out this seat's next hints as its turns come (not on demand).
+  const auto = ui.hints.mode !== 'ask';
+  ui.socket.send(JSON.stringify(focus ? { type: 'hint', focus, auto } : { type: 'hint', auto }));
 }
 
 /** What the hint is for: the card being played and the target so far, while one is chosen in the play phase. */
@@ -1240,9 +1263,9 @@ function hintFocus() {
 /** The focus a hint was last asked for, so a change of choice asks again. */
 let hintFocusAsked = '';
 
-const HINT_MODES = /** @type {const} */ (['off', 'marks', 'full']);
-const HINT_LABELS = { off: 'Hints: off', marks: 'Hints: marks', full: 'Hints: full' };
-/** Set the hint mode (the Hints button cycles it; the tutorial starts full). @param {'off' | 'marks' | 'full'} mode */
+const HINT_MODES = /** @type {const} */ (['off', 'marks', 'full', 'ask']);
+const HINT_LABELS = { off: 'Hints: off', marks: 'Hints: marks', full: 'Hints: full', ask: 'Hints: on demand' };
+/** Set the hint mode (the Hints button cycles it; the tutorial starts full). @param {'off' | 'marks' | 'full' | 'ask'} mode */
 function setHints(mode) {
   ui.hints.mode = mode;
   const on = mode !== 'off';
@@ -1251,6 +1274,7 @@ function setHints(mode) {
   if (on) requestHint();
   else ui.hints.hint = null;
   renderHint();
+  renderPhase(); // the Hint button, on demand
 }
 
 /**
@@ -1266,11 +1290,11 @@ function renderHint() {
   // A chosen card or reading with no legal play: the hint says so.
   const nothing = !h && !waiting && !!view && myDecision(view) && !!hintFocus();
   const panel = $('hint-overlay');
-  panel.hidden = ui.hints.mode !== 'full' || (!h && !waiting && !nothing);
+  panel.hidden = (ui.hints.mode !== 'full' && ui.hints.mode !== 'ask') || (!h && !waiting && !nothing);
   const button = $('hint-button');
   button.classList.toggle('is-on', ui.hints.on);
   button.textContent = HINT_LABELS[ui.hints.mode];
-  button.title = 'Hints: off → marks on the table → marks and the panel';
+  button.title = 'Hints: off → marks on the table → marks and the panel → on demand (a Hint button)';
   if (panel.hidden) return markHint();
   panel.classList.remove('is-open');
   $('hint').innerHTML = nothing
@@ -1521,6 +1545,7 @@ function onClick(event) {
   const action = target.dataset.action;
   const view = ui.view;
   const card = target.dataset.card ?? '';
+  if (action === 'ask-hint') return requestHint(true);
   if (action === 'pick') return sendMove({ type: 'pick', keep: ui.keep.slice() });
   if (action === 'pass') return sendMove({ type: 'pass' });
   if (action === 'sway') {
@@ -1596,7 +1621,9 @@ function onClick(event) {
     // Picking or switching the reading (on the card) restarts the target in that reading.
     ui.choosing = target.dataset.card ?? ui.choosing;
     ui.undo.push(structuredClone(ui.target));
-    ui.target = { mode: /** @type {'location' | 'faction'} */ (target.dataset.mode) };
+    const mode = /** @type {'location' | 'faction'} */ (target.dataset.mode);
+    // The Playbook copying a suit card keeps its use; any other card starts again in the reading.
+    ui.target = ui.choosing === 'playbook' && ui.target.use === 'theirs' ? { use: 'theirs', mode } : { mode };
     return render();
   }
   if (action === 'expand-player') {
@@ -1920,7 +1947,7 @@ function main() {
   render();
   let saved = null;
   try { saved = localStorage.getItem('motw-hints'); } catch { /* a convenience only */ }
-  if (!ui.tutorial && (saved === 'marks' || saved === 'full')) { ui.hints.mode = saved; ui.hints.on = true; }
+  if (!ui.tutorial && (saved === 'marks' || saved === 'full' || saved === 'ask')) { ui.hints.mode = saved; ui.hints.on = true; }
   if (ui.tutorial) return void import('./tutorial.js').then((m) => m.start(tableHooks));
   if (ui.hotseat.enabled) return void loadHotseat();
   if (ui.token) connect();

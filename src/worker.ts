@@ -52,7 +52,7 @@ interface ChatLine {
 type ClientMessage =
   | { type: 'move'; move: Move }
   | { type: 'chat'; text: string }
-  | { type: 'hint'; focus?: HintFocus };
+  | { type: 'hint'; focus?: HintFocus; auto?: boolean };
 
 type ServerMessage =
   | { type: 'state'; view: PlayerView; online: string[]; bots: string[]; hintKey: string; last?: { player: string; move: SeenMove }; fights?: Fight[] }
@@ -362,13 +362,15 @@ export class Game extends DurableObject<Env> {
       if (this.game.seating.filter((id) => !this.bots?.includes(id)).length > 1) return this.send(ws, { type: 'error', reason: 'hints are off in multiplayer games' });
       // Hints never hold up a move (designer, 2026-10-28): one worked out ahead answers at once; otherwise it is
       // worked out after anything already waiting, and sent when ready.
-      this.hintWanted.add(playerId);
+      // Automatic hints: this seat's next ones are worked out as its turns come; on demand: only what is asked.
+      if (message.auto !== false) this.hintWanted.add(playerId);
+      else this.hintWanted.delete(playerId);
       const key = hintKey(this.game, playerId) + focusKey(message.focus);
       const cached = this.hintCache.get(`${playerId}|${key}`);
       if (cached !== undefined) return this.send(ws, { type: 'hint', key, hint: cached });
       // A hint for a choice the player has begun (a card, a reading, part of a target): worked out after anything
       // already waiting, and sent when ready.
-      if (message.focus) { this.ctx.waitUntil(this.prepareFocused(playerId, message.focus)); return; }
+      if (message.focus || message.auto === false) { this.ctx.waitUntil(this.prepareFocused(playerId, message.focus)); return; }
       this.ctx.waitUntil(this.prepareHints());
       return;
     }
@@ -463,10 +465,10 @@ export class Game extends DurableObject<Env> {
   }
 
   /** A hint for a choice the player has begun, sent to that seat when ready (none if the position moved on). */
-  private async prepareFocused(playerId: string, focus: HintFocus): Promise<void> {
+  private async prepareFocused(playerId: string, focus?: HintFocus): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 0));
     const game = this.game;
-    if (!game || game.phase !== 'play' || !waitingOn(game).includes(playerId)) return;
+    if (!game || game.phase === 'ended' || !waitingOn(game).includes(playerId) || (focus && game.phase !== 'play')) return;
     const key = hintKey(game, playerId) + focusKey(focus);
     const at = `${playerId}|${key}`;
     if (!this.hintCache.has(at)) {
@@ -564,7 +566,8 @@ function parseClientMessage(raw: string | ArrayBuffer): ClientMessage | null {
   if (candidate.type === 'chat' && typeof candidate.text === 'string') return { type: 'chat', text: candidate.text };
   if (candidate.type === 'hint') {
     const f = (parsed as { focus?: { card?: unknown; target?: unknown } }).focus;
-    return f && typeof f.card === 'string' && typeof f.target === 'object' && f.target !== null ? { type: 'hint', focus: { card: f.card, target: f.target as Record<string, unknown> } } : { type: 'hint' };
+    const auto = (parsed as { auto?: unknown }).auto !== false; // on demand sends auto: false
+    return f && typeof f.card === 'string' && typeof f.target === 'object' && f.target !== null ? { type: 'hint', focus: { card: f.card, target: f.target as Record<string, unknown> }, auto } : { type: 'hint', auto };
   }
   if (candidate.type === 'move' && typeof candidate.move === 'object' && candidate.move !== null) {
     return { type: 'move', move: candidate.move as Move };

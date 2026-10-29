@@ -67,7 +67,7 @@ pub fn describe_target(factions: &[u8; 5], ci: CardIx, t: Option<&Target>) -> St
             l(t.location),
             l(t.to),
             if t.payer.is_some() { format!(", {} paying", f(t.payer)) } else { String::new() },
-            if t.losses.is_some() { format!("; the winner's losses from {}", l(t.losses)) } else { String::new() }
+            if t.losses.is_some() { format!("; the winner's losses come off {} first", l(t.losses)) } else { String::new() }
         ),
         Action::Invite => format!(
             "{} into {}{}",

@@ -201,6 +201,18 @@ fn tournament(args: &[String]) {
             v.get(v.len() / 2).copied().unwrap_or(f64::NAN)
         };
         println!("  median margin: deferrals {:+.3}, held to the end {:+.3}", median(true), median(false));
+        // By profile: how often each passes, how often it comes back, and what its plays after waiting do to presence.
+        for p in &profiles {
+            let seats_p = list.iter().filter(|x| *x == p).count() as f64;
+            let mine: Vec<_> = passes.iter().filter(|(g, x)| g.seats[x.seat as usize] == *p).collect();
+            let later = mine.iter().filter(|(_, x)| x.played_later).count();
+            let plays: Vec<(i32, bool)> = played.iter().flat_map(|g| g.plays.iter().filter(move |x| g.seats[x.0 as usize] == *p).map(|x| (x.1, x.2))).collect();
+            let mean = |w: bool| { let v: Vec<i32> = plays.iter().filter(|x| x.1 == w).map(|x| x.0).collect(); (v.iter().sum::<i32>() as f64 / v.len().max(1) as f64, v.len()) };
+            let (after, n_after) = mean(true);
+            let (other, n_other) = mean(false);
+            println!("  {p}: {:.1} passes a seat-round, {:.0}% played later; presence change a play: after waiting {after:+.2} ({n_after}), otherwise {other:+.2} ({n_other})",
+                mine.len() as f64 / (rounds * seats_p).max(1.0), 100.0 * later as f64 / mine.len().max(1) as f64);
+        }
         let by_round: Vec<String> = (1..=5).map(|r| format!("r{r} {}", passes.iter().filter(|(_, p)| p.round == r).count())).collect();
         let early = passes.iter().filter(|(_, p)| p.played_before < 5).count();
         println!("  by round: {}; before 5 cards were played in the round: {:.0}%", by_round.join(" "), 100.0 * early as f64 / passes.len() as f64);

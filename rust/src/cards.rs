@@ -680,7 +680,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             if req && standing(s, pid, payer.unwrap()) < 1 {
                 return e("You need the sway to pay (all or nothing).");
             }
-            if t.losses == Some(Id::Loc(a)) || t.losses == Some(Id::Loc(b)) { None } else { e("Choose the end the winner's losses come from.") }
+            if t.losses == Some(Id::Loc(a)) || t.losses == Some(Id::Loc(b)) { None } else { e("Choose which end the winner's losses come off first (they leave the board).") }
         }
         Action::Invite => {
             let Some(to) = as_loc(t.location) else { return e("Choose a location on the board.") };

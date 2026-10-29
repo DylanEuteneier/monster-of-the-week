@@ -32,6 +32,9 @@ pub struct Game {
     pub seconds: f64,
     /// Every pass made while holding cards (the pass study).
     pub passes: Vec<Pass>,
+    /// Every card play: the seat, the change in total invader presence it made, and whether the seat had passed earlier
+    /// that round (a play after waiting).
+    pub plays: Vec<(Pid, i32, bool)>,
 }
 
 /// A pass made while holding cards, with the passing bot's own estimates, and whether it played again that round.
@@ -73,6 +76,7 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
     let profiles: HashMap<Pid, String> = seats.iter().enumerate().map(|(i, p)| (i as Pid, p.clone())).collect();
     let mut presence = vec![crate::board::total_presence(&s)];
     let mut passes: Vec<Pass> = Vec::new();
+    let mut plays: Vec<(Pid, i32, bool)> = Vec::new();
     let mut played_round = 0usize;
     let mut round = s.round;
     let mut moves = 0;
@@ -93,9 +97,16 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
                         crate::types::Move::Pass if hand > 0 => passes.push(Pass { round: s.round, seat: pid, hand, played_before: played_round, left: s.players.iter().map(|p| p.hand.len()).sum(), decision, played_later: false }),
                         crate::types::Move::Play { .. } => {
                             played_round += 1;
+                            let waited = passes.iter().any(|p| p.round == s.round && p.seat == pid);
                             for p in passes.iter_mut().filter(|p| p.round == s.round && p.seat == pid) {
                                 p.played_later = true;
                             }
+                            let before = crate::board::total_presence(&s);
+                            let next = apply_legal(&s, pid, &m);
+                            plays.push((pid, crate::board::total_presence(&next) - before, waited));
+                            s = next;
+                            moved = true;
+                            break;
                         }
                         _ => {}
                     }
@@ -125,6 +136,7 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
         moves,
         seconds: t0.elapsed().as_secs_f64(),
         passes,
+        plays,
     }
 }
 
