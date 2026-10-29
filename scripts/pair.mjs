@@ -3,7 +3,7 @@
  * Two tables compared deal by deal (a measuring tool, not rules). Run the
  * tournament twice with duplicate=1 and the same seed, once per table:
  *
- *   node scripts/tournament.js 20 5 duplicate=1 log=a.jsonl profiles=backer:race=3,backer:race=3,trophy,trophy,trophy
+ *   node scripts/tournament.js 20 5 duplicate=1 log=a.jsonl profiles='bot:lean=0.3,race=3;bot:lean=0.3,race=3;bot:lean=-0.3;bot:lean=-0.3;bot:lean=-0.3'
  *   node scripts/tournament.js 20 5 duplicate=1 log=b.jsonl
  *   node scripts/pair.mjs a.jsonl b.jsonl
  *

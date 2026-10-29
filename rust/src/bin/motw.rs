@@ -9,7 +9,7 @@
 //!     Whole bot games natively, the profiles rotated through the seats (src/tournament.rs): wins by profile and seat,
 //!     the endings, and a line per game in log= (the same games scripts/tournament.js plays on the same seed).
 //!
-//!   motw time profile=backer [seed=9] [decisions=5]
+//!   motw time profile=bot:lean=0.3 [seed=9] [decisions=5]
 //!     Seconds per decision for a profile: from the start of round 2, seat 5's next decisions (others fast bots).
 
 use motw::game::apply_move;
@@ -22,7 +22,7 @@ fn main() {
         Some("fingerprint") => fingerprint(&args[1..]),
         Some("time") => time(&args[1..]),
         Some("tournament") => tournament(&args[1..]),
-        _ => eprintln!("usage: motw fingerprint games=20 seed=1 profiles=a;b;... | motw time profile=backer"),
+        _ => eprintln!("usage: motw fingerprint games=20 seed=1 profiles=a;b;... | motw time profile=bot:lean=0.3"),
     }
 }
 fn opts(args: &[String]) -> (BTreeMap<String, String>, Vec<(String, String)>) {
@@ -46,7 +46,7 @@ fn fingerprint(args: &[String]) {
     let (kv, options) = opts(args);
     let games: i64 = kv.get("games").map(|x| x.parse().unwrap()).unwrap_or(20);
     let seed0: i64 = kv.get("seed").map(|x| x.parse().unwrap()).unwrap_or(1);
-    let profiles: Vec<String> = kv.get("profiles").cloned().unwrap_or_else(|| "backer:sim=0;backer:sim=0;trophy:sim=0;trophy:sim=0;trophy:sim=0".into()).split(';').map(|s| s.to_string()).collect();
+    let profiles: Vec<String> = kv.get("profiles").cloned().unwrap_or_else(|| "bot:lean=0.3,sim=0;bot:lean=0.3,sim=0;bot:lean=-0.3,sim=0;bot:lean=-0.3,sim=0;bot:lean=-0.3,sim=0".into()).split(';').map(|s| s.to_string()).collect();
     let names: Vec<String> = (1..=profiles.len()).map(|i| format!("P{i}")).collect();
     let want: Option<BTreeMap<i64, Vec<serde_json::Value>>> = kv.get("check").map(|f| {
         let mut m: BTreeMap<i64, Vec<serde_json::Value>> = BTreeMap::new();
@@ -92,7 +92,7 @@ fn time(args: &[String]) {
     use motw::bots::{bot_move, fast, BotMemory, Seats};
     use motw::game::waiting_on;
     let (kv, options) = opts(args);
-    let profile = kv.get("profile").cloned().unwrap_or_else(|| "backer".into());
+    let profile = kv.get("profile").cloned().unwrap_or_else(|| "bot:lean=0.3".into());
     let seed: i64 = kv.get("seed").map(|x| x.parse().unwrap()).unwrap_or(9);
     let decisions: usize = kv.get("decisions").map(|x| x.parse().unwrap()).unwrap_or(5);
     let names: Vec<String> = (1..=5).map(|i| format!("P{i}")).collect();
@@ -100,7 +100,7 @@ fn time(args: &[String]) {
     let mut memory = vec![BotMemory::default(); 5];
     let mut x: u64 = seed as u64 * 2654435761 + 1;
     let mut rng = move || { x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407); (x >> 11) as f64 / (1u64 << 53) as f64 };
-    let quick = fast("trophy");
+    let quick = fast("bot:lean=-0.3");
     let (mut timed, mut total) = (0usize, 0f64);
     let mut worst = 0f64;
     while s.phase != motw::types::Phase::Ended && timed < decisions {
@@ -124,7 +124,7 @@ fn tournament(args: &[String]) {
     let (kv, options) = opts(args);
     let games: usize = kv.get("games").map(|x| x.parse().unwrap()).unwrap_or(20);
     let seed: i64 = kv.get("seed").map(|x| x.parse().unwrap()).unwrap_or(1);
-    let list: Vec<String> = kv.get("profiles").cloned().unwrap_or_else(|| "backer;backer;trophy;trophy;trophy".into()).split(';').map(|s| s.to_string()).collect();
+    let list: Vec<String> = kv.get("profiles").cloned().unwrap_or_else(|| "bot:lean=0.3;bot:lean=0.3;bot:lean=-0.3;bot:lean=-0.3;bot:lean=-0.3".into()).split(';').map(|s| s.to_string()).collect();
     let workers: usize = kv.get("workers").map(|x| x.parse().unwrap()).unwrap_or_else(|| std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4));
     let duplicate = kv.get("duplicate").is_some_and(|x| x == "1");
     let log = kv.get("log").map(|f| std::sync::Mutex::new(std::fs::OpenOptions::new().create(true).append(true).open(f).expect("log")));

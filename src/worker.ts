@@ -9,7 +9,7 @@
  *   GET  /tutorial           the table UI with a guided walkthrough, played in the browser against bots
  *   GET  /assets             the assets page (assets.html): every sprite and the palette
  *   GET  /assets/…           sprite PNGs, token outlines (SVG), and sprites.json, served straight from public/assets/
- *   POST /admin/new-game     { players?, seed?, force?, options?: Record<string,string>, bots?: string[], botProfiles?: Record<seat, profile | 'random'> }  → magic links
+ *   POST /admin/new-game     { players?, seed?, force?, options?: Record<string,string>, bots?: string[], leans?: 'balanced' | 'random', botProfiles?: Record<seat, 'bot:lean=…'> }  → magic links
  *   GET  /admin/links        re-list the magic links for the current game
  *   GET  /admin/status       phase, round, options, and seats of the current game
  *   *                        static assets from public/
@@ -23,7 +23,7 @@
  */
 import { DurableObject } from 'cloudflare:workers';
 import rulesModule from '../public/motw.wasm';
-import { applyMove, createGame, playerView, IllegalMoveError, spec, botMove, PROFILES, useModule, waitingOn } from '../public/rules.js';
+import { applyMove, createGame, playerView, IllegalMoveError, spec, botMove, useModule, waitingOn, tableLeans, personaOf } from '../public/rules.js';
 import { suggest, hintKey } from '../public/hints.js';
 import type { Hint } from '../public/hints.js';
 import { seenBy, roundFights } from '../public/guide.js';
@@ -69,6 +69,7 @@ interface NewGameRequest {
   options?: unknown;
   bots?: unknown;
   botProfiles?: unknown;
+  leans?: unknown;
 }
 
 const GAME_NAME = 'the-game';
@@ -148,16 +149,20 @@ function parseBots(raw: unknown, players: string[]): string[] {
   return [...new Set(bots)];
 }
 
-/** Each bot seat's profile: a core profile, or 'random' (one picked at the deal). Unnamed seats play goal. */
-function parseBotProfiles(raw: unknown, bots: string[]): Record<string, Profile> {
+/**
+ * Each bot seat's profile (designer, 2026-10-29: one bot, its lean set per seat). A seat given a full profile
+ * ('bot:lean=0.2', persona overrides allowed) keeps it; the rest get the table's leans: balanced (fewer leaning to back
+ * a faction than to the island, in seat order) or random (the same leans, shuffled).
+ */
+function parseBotProfiles(raw: unknown, bots: string[], leans: unknown): Record<string, Profile> {
   if (raw !== undefined && (typeof raw !== 'object' || raw === null || Array.isArray(raw))) throw new Error('botProfiles must be an object of seat name → profile');
+  if (leans !== undefined && leans !== 'balanced' && leans !== 'random') throw new Error('leans must be balanced or random');
   const given = (raw ?? {}) as Record<string, unknown>;
-  return Object.fromEntries(bots.map((id) => {
-    const p = given[id] ?? 'trophy';
-    if (p === 'random') return [id, PROFILES[Math.floor(Math.random() * PROFILES.length)]];
-    if (typeof p !== 'string' || !PROFILES.includes(p as Profile)) throw new Error(`unknown bot profile ${String(p)} (one of ${PROFILES.join(', ')}, or random)`);
-    return [id, p as Profile];
-  }));
+  const set = (p: unknown) => typeof p === 'string' && p.startsWith('bot:') && personaOf(p) !== undefined;
+  const open = bots.filter((id) => !set(given[id]));
+  const spread = tableLeans(open.length);
+  if (leans === 'random') for (let i = spread.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [spread[i], spread[j]] = [spread[j], spread[i]]; }
+  return Object.fromEntries(bots.map((id) => [id, set(given[id]) ? String(given[id]) : `bot:lean=${spread[open.indexOf(id)]}`]));
 }
 
 function parseSeed(raw: unknown): number {
@@ -268,7 +273,7 @@ export class Game extends DurableObject<Env> {
       const seed = parseSeed(body.seed);
       const game = createGame({ seed, players, options: parseOptions(body.options) });
       const bots = parseBots(body.bots, players);
-      await this.replaceGame({ game, tokens: this.tokensFor(players), bots, botProfiles: parseBotProfiles(body.botProfiles, bots) });
+      await this.replaceGame({ game, tokens: this.tokensFor(players), bots, botProfiles: parseBotProfiles(body.botProfiles, bots, body.leans) });
       return json({ seed, options: game.options, bots: this.bots, botProfiles: this.botProfiles, links: this.links(new URL(request.url)) }, 201);
     } catch (error) {
       if (error instanceof Error) return json({ error: error.message }, 400);
@@ -436,9 +441,9 @@ export class Game extends DurableObject<Env> {
   private hintFor(playerId: string, focus?: HintFocus): Hint | null {
     if (!this.game || this.game.phase === 'ended') return null;
     const memory = (this.hintMemory[playerId] ??= { jitter: 0 }); // no random lean in a hint
-    const table = Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'trophy']));
+    const table = Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'bot:lean=-0.3']));
     let move: Move | null = null;
-    try { move = botMove(this.game, { playerId, rng: Math.random, profile: 'trophy', memory, table, memories: { ...this.botMemory, [playerId]: memory }, ...(focus ? { focus } : {}) }); } catch (error) { console.error('hint failed:', error); }
+    try { move = botMove(this.game, { playerId, rng: Math.random, profile: 'bot:lean=-0.3', memory, table, memories: { ...this.botMemory, [playerId]: memory }, ...(focus ? { focus } : {}) }); } catch (error) { console.error('hint failed:', error); }
     if (focus && !move) return null; // nothing to play with that choice (never a hint about another play)
     try { return suggest(this.game, playerId, memory, move ?? undefined); } catch (error) { console.error('hint failed:', error); return null; }
   }
@@ -482,7 +487,7 @@ export class Game extends DurableObject<Env> {
   private tryBotMove(playerId: string): Move | null {
     if (!this.game) return null;
     try {
-      const move = botMove(this.game, { playerId, rng: Math.random, profile: this.botProfiles[playerId] ?? 'trophy', memory: (this.botMemory[playerId] ??= {}), table: Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'trophy'])), memories: this.botMemory });
+      const move = botMove(this.game, { playerId, rng: Math.random, profile: this.botProfiles[playerId] ?? 'bot:lean=-0.3', memory: (this.botMemory[playerId] ??= {}), table: Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'bot:lean=-0.3'])), memories: this.botMemory });
       if (!move) return null;
       this.game = applyMove(this.game, { playerId, move });
       return move;

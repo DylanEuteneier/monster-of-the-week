@@ -12,7 +12,7 @@
  *   node scripts/experiment.js                  one jittered experiment, committed locally
  *   node scripts/experiment.js --loop --push    keep going; pull before and push after each
  *   node scripts/experiment.js --count 5 --hours 8 --games 20 --workers 8
- *   node scripts/experiment.js --profile trophy --set threat=4,margin=2 --note "why"   a chosen change, no jitter
+ *   node scripts/experiment.js --profile bot:lean=-0.3 --set threat=4,margin=2 --note "why"   a chosen change, no jitter
  *   node scripts/experiment.js report           rebuild experiments/CATALOGUE.md from the entries
  *   (also: --seed N for the first run's deals, --design single for one changed seat, --no-commit, --no-confirm)
  *
@@ -248,7 +248,7 @@ async function experiment(/** @type {any} */ opts) {
       params[name] = { base, value: v, sd: p.sd };
     }
   }
-  const variantProfile = `${profile}:${Object.entries(params).map(([k, p]) => `${k}=${p.value}`).join(',')}`;
+  const variantProfile = `${profile}${profile.includes(':') ? ',' : ':'}${Object.entries(params).map(([k, p]) => `${k}=${p.value}`).join(',')}`;
   const seats = /** @type {string[]} */ (space.table.split(';'));
   const variant = seats.map((s, i) => (s === profile && (opts.design !== 'single' || i === seats.lastIndexOf(profile)) ? variantProfile : s)).join(';');
   const seedPool = Number(space.seeds ?? 40), games = Number(opts.games ?? space.games ?? 20);

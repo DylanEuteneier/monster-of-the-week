@@ -4,7 +4,7 @@ use motw::tournament::run;
 
 #[test]
 fn profiles_rotate_and_runs_repeat() {
-    let list: Vec<String> = ["backer:sim=0", "trophy:sim=0", "trophy:sim=0"].iter().map(|s| s.to_string()).collect();
+    let list: Vec<String> = ["bot:lean=0.3,sim=0", "bot:lean=-0.3,sim=0", "bot:lean=-0.3,sim=0"].iter().map(|s| s.to_string()).collect();
     let a = run(3, 3, &list, &[], false, 2, &|_| {});
     let b = run(3, 3, &list, &[], false, 3, &|_| {});
     for g in 0..3 {

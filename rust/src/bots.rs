@@ -45,7 +45,7 @@ const SIM_MAX_MOVES: usize = 400;
 const PLAN_BUDGET: usize = 450;
 const PLAN_DEPTH: usize = 2;
 const PLAN_MOVES: usize = 99;
-const ROLLOUT: &str = "trophy:sim=0,enum=0,combo=0";
+const ROLLOUT: &str = "bot:lean=-0.3,sim=0,enum=0,combo=0";
 const TABLE_BACKING: i32 = 8;
 const TABLE_BASE: f64 = 0.3;
 const TABLE_STEP: f64 = 0.15;
@@ -114,20 +114,28 @@ pub struct Persona {
     pub no_pass: f64,
 }
 
+/// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
+/// bot) to the faction-backing ones (+0.3, the old backer), the backer's habits growing with the lean; beyond those
+/// ends the habits stay as at the end.
+pub fn at_lean(lean: f64) -> Persona {
+    let t = ((lean + 0.3) / 0.6).clamp(0.0, 1.0);
+    let mix = |a: f64, b: f64| if t == 0.0 { a } else if t == 1.0 { b } else { a + (b - a) * t };
+    Persona {
+        lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
+        table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
+        race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0,
+    }
+}
+
 fn base(name: &str) -> Option<Persona> {
-    let trophy = Persona {
-        lean: -0.3, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: 3.0, enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
-        table: 1.0, commit: 0.0, protect: 0.0, top: 0.0,
-        race: 0.0, even: 1.0, plan: 1.0, steer: 1.0, keep: Some(12), playouts: None, plan_budget: None, plan_depth: None, noise: Some(0.0), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0,
-    };
     match name {
-        "trophy" => Some(trophy),
-        "backer" => Some(Persona { lean: 0.3, threat: 1.0, protect: 4.0, commit: 2.0, top: 2.0, race: 2.0, plan: 1.0, steer: 1.0, noise: None, keep: None, ..trophy }),
+        "bot" => Some(at_lean(0.0)),
         _ => None,
     }
 }
 
-/// A profile's persona ("trophy", "backer", or "trophy:lean=0,hold=0.1").
+/// A profile's persona ("bot", or "bot:lean=0.3,hold=0.1": the lean sets the settings it slides, then the others apply).
 pub fn persona_of(profile: &str) -> Option<Persona> {
     thread_local! {
         static CACHE: std::cell::RefCell<std::collections::HashMap<String, Option<Persona>>> = std::cell::RefCell::new(std::collections::HashMap::new());
@@ -146,6 +154,10 @@ fn parse_persona(profile: &str) -> Option<Persona> {
         None => (profile, None),
     };
     let mut p = base(name)?;
+    // The lean first: it sets the settings that slide with it.
+    if let Some(l) = over.and_then(|o| o.split(',').find_map(|kv| kv.strip_prefix("lean=")).and_then(|v| v.trim().parse::<f64>().ok())) {
+        p = at_lean(l);
+    }
     if let Some(o) = over {
         for kv in o.split(',') {
             let (k, v) = kv.split_once('=').unwrap_or((kv, ""));
@@ -508,7 +520,7 @@ fn chances_after(s: &GameState, pid: Pid) -> Chances {
 
 /// How good a position is for `pid` (evaluate).
 pub fn evaluate(s: &GameState, pid: Pid, profile: &str, goal: Option<Goal>) -> f64 {
-    let persona = persona_of(profile).unwrap_or_else(|| base("trophy").unwrap());
+    let persona = persona_of(profile).unwrap_or_else(|| at_lean(-0.3));
     goal_value(s, pid, goal.unwrap_or(Goal::Island), &persona)
 }
 
@@ -1202,7 +1214,7 @@ pub fn rank_for_hint(s: &GameState, pid: Pid, memory: &mut BotMemory, profile: &
         (x as u32) as f64 / 4294967296.0
     };
     let rng: Rng = &mut r;
-    let persona = persona_of(profile).or_else(|| persona_of("trophy")).expect("trophy persona");
+    let persona = persona_of(profile).unwrap_or_else(|| at_lean(-0.3));
     if memory.jitter.is_none() {
         memory.jitter = Some(0.0); // no random lean in a hint
     }
@@ -1297,4 +1309,16 @@ pub fn features(s0: &GameState, pid: Pid) -> Vec<(&'static str, f64)> {
         ("access", set_access(s0, pid)),
     ];
     raw.into_iter().map(|(k, v)| (k, r3(v))).collect()
+}
+
+/// A table's leans for its bot seats (designer, 2026-10-29): always fewer leaning to back a faction than to the
+/// island. Balanced: the backing ones evenly between +0.15 and +0.3, the rest evenly from -0.3 to -0.1; random: the same
+/// leans in a shuffled order (`shuffle` gives the order).
+pub fn table_leans(bots: usize) -> Vec<f64> {
+    let backing = bots.saturating_sub(1) / 2;
+    let island = bots - backing;
+    let spread = |n: usize, a: f64, b: f64| -> Vec<f64> { if n == 1 { vec![a] } else { (0..n).map(|i| a + (b - a) * i as f64 / (n - 1) as f64).collect() } };
+    let mut out = spread(island, -0.3, -0.1);
+    out.extend(spread(backing, 0.3, 0.15).into_iter().rev());
+    out.iter().map(|x| (x * 1000.0).round() / 1000.0).collect()
 }

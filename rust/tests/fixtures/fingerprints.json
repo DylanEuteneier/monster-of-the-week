@@ -5,7 +5,7 @@
    "name": "a",
    "note": "5 seats, fast bots",
    "seed": 1,
-   "profiles": "backer:sim=0;backer:sim=0;trophy:sim=0;trophy:sim=0;trophy:sim=0",
+   "profiles": "bot:lean=0.3,sim=0;bot:lean=0.3,sim=0;bot:lean=-0.3,sim=0;bot:lean=-0.3,sim=0;bot:lean=-0.3,sim=0",
    "options": {},
    "games": 60,
    "digests": [
@@ -75,7 +75,7 @@
    "name": "b",
    "note": "3 seats",
    "seed": 1001,
-   "profiles": "backer:sim=0;trophy:sim=0;trophy:sim=0",
+   "profiles": "bot:lean=0.3,sim=0;bot:lean=-0.3,sim=0;bot:lean=-0.3,sim=0",
    "options": {},
    "games": 60,
    "digests": [
@@ -145,7 +145,7 @@
    "name": "c",
    "note": "4 seats, variants",
    "seed": 2001,
-   "profiles": "backer:sim=0;backer:sim=0;trophy:sim=0;trophy:sim=0",
+   "profiles": "bot:lean=0.3,sim=0;bot:lean=0.3,sim=0;bot:lean=-0.3,sim=0;bot:lean=-0.3,sim=0",
    "options": {
     "seeding": "even",
     "wayBack": "off"
@@ -218,7 +218,7 @@
    "name": "d",
    "note": "variants",
    "seed": 3001,
-   "profiles": "backer:sim=0;backer:sim=0;trophy:sim=0;trophy:sim=0;trophy:sim=0",
+   "profiles": "bot:lean=0.3,sim=0;bot:lean=0.3,sim=0;bot:lean=-0.3,sim=0;bot:lean=-0.3,sim=0;bot:lean=-0.3,sim=0",
    "options": {
     "alignedGrowth": "off",
     "growth": "3"
@@ -291,7 +291,7 @@
    "name": "e",
    "note": "starting sway 2, seat groups",
    "seed": 4001,
-   "profiles": "backer:sim=0;backer:sim=0;trophy:sim=0;trophy:sim=0;trophy:sim=0",
+   "profiles": "bot:lean=0.3,sim=0;bot:lean=0.3,sim=0;bot:lean=-0.3,sim=0;bot:lean=-0.3,sim=0;bot:lean=-0.3,sim=0",
    "options": {
     "startSway": "2",
     "groups": "seat"
@@ -344,7 +344,7 @@
    "name": "s0",
    "note": "the play-out search, unplanned backers",
    "seed": 9001,
-   "profiles": "backer:plan=0,steer=0;backer:plan=0,steer=0;trophy;trophy;trophy",
+   "profiles": "bot:lean=0.3,plan=0,steer=0;bot:lean=0.3,plan=0,steer=0;bot:lean=-0.3;bot:lean=-0.3;bot:lean=-0.3",
    "options": {},
    "games": 1,
    "digests": [
@@ -355,7 +355,7 @@
    "name": "p0",
    "note": "the standard table: planning backers",
    "seed": 9101,
-   "profiles": "backer;backer;trophy;trophy;trophy",
+   "profiles": "bot:lean=0.3;bot:lean=0.3;bot:lean=-0.3;bot:lean=-0.3;bot:lean=-0.3",
    "options": {},
    "games": 1,
    "digests": [

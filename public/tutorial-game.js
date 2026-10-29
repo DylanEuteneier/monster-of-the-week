@@ -15,7 +15,7 @@ import { botMove, fast } from './rules.js';
 /** The seat the learner sits in. */
 export const YOU = 'You';
 /** The bot seats and their profiles (one faction backer, two trophy players, as at the tuning table). */
-export const BOTS = /** @type {const} */ ([['Ash', 'backer'], ['Bea', 'trophy'], ['Cy', 'trophy']]);
+export const BOTS = /** @type {const} */ ([['Ash', 'bot:lean=0.3'], ['Bea', 'bot:lean=-0.3'], ['Cy', 'bot:lean=-0.3']]);
 /**
  * The tutorial's deal: found by scripts/tutorial-seed.js so the first round
  * shows every part of a round (both uses of a card, fights with piles, growth).
@@ -40,7 +40,7 @@ export function newTable(seed = SEED) {
 export const copyTable = (table) => clone(table);
 
 /** Seat → profile, every seat (the learner's automatic moves play as a trophy player). */
-const PROFILES = /** @type {Record<string, string>} */ (Object.fromEntries([[YOU, 'trophy'], ...BOTS]));
+const PROFILES = /** @type {Record<string, string>} */ (Object.fromEntries([[YOU, 'bot:lean=-0.3'], ...BOTS]));
 
 /**
  * The move a bot (or the learner, when the tutorial plays for them) makes now.

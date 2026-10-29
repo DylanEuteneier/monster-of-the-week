@@ -139,7 +139,7 @@ fn play_out(s: &GameState, seed: u64) -> GameState {
             break;
         }
         let p = waiting_on(&s)[0];
-        let m = bot_move(&s, p, &mut rng, &fast("trophy"), Some(&mut memory[p as usize]), &Seats::default()).unwrap();
+        let m = bot_move(&s, p, &mut rng, &fast("bot:lean=-0.3"), Some(&mut memory[p as usize]), &Seats::default()).unwrap();
         s = apply_move(&s, p, &m).unwrap();
     }
     s
@@ -1315,7 +1315,7 @@ fn with_passing_off_every_card_is_played_and_the_last_ends_the_round() {
         assert!(!valid(&g, &p, json!({ "type": "pass" })), "no passing while passing is off");
         assert!(!g.players[g.turn].hand.is_empty(), "an empty hand is skipped");
         // Any legal play: the first card in hand, for sway when it has a suit, else for whatever it can do.
-        let m = motw::bots::bot_move(&g, pid(&g, &p), &mut || 0.5, "trophy:sim=0,enum=0,combo=0", None, &Default::default()).unwrap();
+        let m = motw::bots::bot_move(&g, pid(&g, &p), &mut || 0.5, "bot:lean=-0.3,sim=0,enum=0,combo=0", None, &Default::default()).unwrap();
         g = apply_move(&g, pid(&g, &p), &m).unwrap();
         plays += 1;
     }

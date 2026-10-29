@@ -1,10 +1,10 @@
 {
   "note": "What scripts/experiment.js may jitter (a measuring tool, not rules). Each value moves from the profile's current setting by a normal draw with this sd, clipped to [min, max]; default is used only for values the profile does not set. Competence values only: style (lean, jitter) and search size (keep, playouts: they change the time) are left out. table is the standard table every experiment is measured against; seeds is the pool of deal seeds (so baselines get reused); games is a run's length.",
-  "table": "backer;backer;trophy;trophy;trophy",
+  "table": "bot:lean=0.3;bot:lean=0.3;bot:lean=-0.3;bot:lean=-0.3;bot:lean=-0.3",
   "seeds": 40,
   "games": 20,
   "profiles": {
-    "trophy": {
+    "bot:lean=-0.3": {
       "params": {
         "threat": {
           "sd": 0.75,
@@ -38,7 +38,7 @@
         }
       }
     },
-    "backer": {
+    "bot:lean=0.3": {
       "params": {
         "threat": {
           "sd": 0.5,

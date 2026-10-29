@@ -23,7 +23,7 @@ test('bots only ever propose legal moves and play games to the end', () => {
     for (let moves = 0; state.phase !== 'ended' && moves < 20000; moves++) {
       let moved = false;
       for (const playerId of state.seating) {
-        const move = botMove(state, { playerId, rng: random, profile: /** @type {import('../public/rules.js').Profile} */ (fast('trophy')) });
+        const move = botMove(state, { playerId, rng: random, profile: /** @type {import('../public/rules.js').Profile} */ (fast('bot:lean=-0.3')) });
         if (!move) continue;
         assert.deepEqual(validate(state, { playerId, move }), { ok: true }, JSON.stringify(move));
         state = applyMove(state, { playerId, move });
@@ -48,7 +48,7 @@ test('the rules module: profiles, refused moves, views and memory cross the brid
   assert.throws(() => applyMove(s, { playerId: 'zed', move: { type: 'pass' } }), /not seated/);
   // The table builds targets on its own view.
   let t = s;
-  for (const playerId of t.seating) t = applyMove(t, { playerId, move: /** @type {any} */ (botMove(t, { playerId, rng: rng(5), profile: /** @type {any} */ (fast('trophy')) })) });
+  for (const playerId of t.seating) t = applyMove(t, { playerId, move: /** @type {any} */ (botMove(t, { playerId, rng: rng(5), profile: /** @type {any} */ (fast('bot:lean=-0.3')) })) });
   const view = playerView(t, 'ann');
   assert.deepEqual(waitingOn(view), waitingOn(t).filter((id) => !view.players[id].picked));
   const card = view.me.kept[0] ?? view.me.hand[0];

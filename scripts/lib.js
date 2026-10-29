@@ -37,7 +37,7 @@ export const chance = (s, pid) => {
  * move; the first that has a move makes it.
  * @param {GameState} state @param {() => number} rng
  * @param {(game: GameState) => void} [onRound]
- * @param {Record<string, string>} [profiles]  seat → bot profile (default trophy; persona overrides allowed)
+ * @param {Record<string, string>} [profiles]  seat → bot profile (default bot:lean=-0.3; persona overrides allowed)
  */
 export function playOut(state, rng, onRound, profiles = {}) {
   let game = state;
@@ -48,7 +48,7 @@ export function playOut(state, rng, onRound, profiles = {}) {
     if (game.phase === 'ended') return game;
     let moved = false;
     for (const playerId of game.seating) {
-      const move = botMove(game, { playerId, rng, profile: /** @type {Profile} */ (profiles[playerId] ?? 'trophy'), memory: memory[playerId], table: profiles, memories: memory });
+      const move = botMove(game, { playerId, rng, profile: /** @type {Profile} */ (profiles[playerId] ?? 'bot:lean=-0.3'), memory: memory[playerId], table: profiles, memories: memory });
       if (!move) continue;
       game = applyMove(game, { playerId, move });
       moved = true;
@@ -73,7 +73,7 @@ export function playRest(state, seed, bots, memories = undefined) {
   for (let n = 0; n < MAX_MOVES && s.phase === 'play' && s.round === round; n++) {
     let moved = false;
     for (const playerId of s.seating) {
-      const move = botMove(s, { playerId, rng, profile: /** @type {Profile} */ (typeof bots === 'string' ? bots : bots[playerId] ?? 'trophy'), memory: memory[playerId], table: typeof bots === 'string' ? undefined : bots, memories: memory });
+      const move = botMove(s, { playerId, rng, profile: /** @type {Profile} */ (typeof bots === 'string' ? bots : bots[playerId] ?? 'bot:lean=-0.3'), memory: memory[playerId], table: typeof bots === 'string' ? undefined : bots, memories: memory });
       if (!move) continue;
       s = applyMove(s, { playerId, move });
       moved = true;
@@ -102,7 +102,7 @@ export const play = (state, pid, move) => applyMove(state, { playerId: pid, move
 export function measureState(state, cardIds, o) {
   const pid = state.seating[state.turn];
   const seeds = Array.from({ length: o.playouts }, (_, i) => o.seed * 7919 + i);
-  const profile = /** @type {Profile} */ (typeof o.bots === 'string' ? o.bots : o.bots[pid] ?? 'trophy');
+  const profile = /** @type {Profile} */ (typeof o.bots === 'string' ? o.bots : o.bots[pid] ?? 'bot:lean=-0.3');
   /** The player's chance after its bot chooses freely from this state, the round played out. @param {GameState} s */
   const value = (s) => {
     const move = botMove(s, { playerId: pid, rng: seededRng(o.seed), profile, memory: clone(o.memories?.[pid] ?? {}), table: typeof o.bots === 'string' ? undefined : o.bots, memories: o.memories });

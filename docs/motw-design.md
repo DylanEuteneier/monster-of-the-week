@@ -1300,6 +1300,14 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Scope:** the card (Appendix H); the prototype (engine, table, bots).
 - **Date:** 2026-10-29
 
+#### D31. One bot, its lean set per seat
+
+- **Decided (designer, 2026-10-29):** the trophy and backer profiles become one bot (`bot`). Its lean slides it from the island-minded settings (lean −0.3, what the trophy bot was) to the faction-backing ones (+0.3, what the backer was); the backer's habits (guarding its faction's presence, holding its plan, pushing its faction to the top, the race) grow with the lean, as do the other settings that differed (rival threat 3 → 1, the jitter off → on, moves kept for play-outs 12 → 8). The names trophy and backer are gone.
+- **Decided (designer, 2026-10-29):** a table always has fewer bots leaning to back a faction than to the island ("we wouldn't ever really want more backers than trophy bots"). The host page deals bot leans *balanced* (the backing ones evenly between +0.15 and +0.3, the rest evenly from −0.3 to −0.1, in seat order: at five bot seats −0.3, −0.2, −0.1, +0.15, +0.3) or *random* (the same leans, dealt in a random order).
+- **Checked:** at leans −0.3 and +0.3 the bot plays exactly as the two old profiles did: all 282 recorded games replay unchanged.
+- **Scope:** prototype only (the bots); not a rule of the game.
+- **Date:** 2026-10-29
+
 #### D14. Tokens and cubes
 
 - **Decided:** faction presence on the board is made of **tokens**; **cubes** are always players' sway. A faction never has cubes, and a player never has tokens (apart from hidden and bluff tokens, which are separate pieces).
@@ -1411,6 +1419,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
 | 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
 | 2026-10-29 | Steal Their Playbook (D30, designer): theirs takes a card another player played this round (however played) from the played cards into your hand, played at once as your own; it can't be your last card played (discarded for no effect) | |
+| 2026-10-29 | One bot, its lean set per seat (D31, designer): trophy and backer become the two ends of one bot's lean; tables deal balanced or random leans, always fewer backing a faction | Prototype only; the old profiles' games replay unchanged |
 | 2026-10-28 | Bot tests run natively (`npm run bots`, `motw tournament`: the tournament's games in Rust on every core, about twice as fast as WebAssembly). Budget map: more search for the trophy bot (16 kept moves, 12 play-outs, both) gained nothing; the trophy bot now plans its hand (designer), +6 points a seat pooled over two seeds; then drops the random jitter on its one-step values, ahead on all three seeds. Measured and not adopted: blending the one-step value into play-outs (worse), play-out bots listing targets (worse, slower), 12 draft samples, the backer keeping 16 moves. Planning confirmed for the backer (+5.6 pooled) | Bot tuning, not rules. The standard table's endings split 50/50 over 2,080 games, against the 40% invaders' ending aimed for: balance to revisit (designer) |
 
 ---
@@ -2714,6 +2723,7 @@ Where a game is started. The host page holds no game rules. Everything it does i
 #### Bots that play to win (designer, 2026-10-07)
 
 - **Purpose.** Bots play out rounds to measure cards and play whole games to test the systems. *Designer:* bot speed is not a concern; bots should play as tactically and strategically as we can make them, and their reactions should be designed carefully.
+- **One bot, by lean (D31, 2026-10-29):** the trophy and backer profiles below are now the two ends of one bot's lean (−0.3 and +0.3); the notes keep their old names as history.
 - **Profiles** (`rust/src/bots.rs`; tuning, not rules). *Pruned (designer, 2026-10-08): every dumb or weak bot was removed; three remain.*
   - *trophy* (named *goal* until 2026-10-09; designer renamed it, as both profiles are goal-driven): the trophy player, the standard bot (server, scripts, tests). *Plans its hand (designer, 2026-10-28: a 4-point gain is good):* as a challenger with hand planning and steered targets it won 24.4% a seat against 20.9% and 15.9% for the plain trophy bot (160 games on each of two seeds, `motw tournament`), so planning is now standard for both profiles (about 0.4 s a decision natively). *No jitter (2026-10-28):* without the random jitter on its one-step values (the draft, growth, nightfall and its quick moves) it won 23.1%, 21.2% and 25.6% a seat against 16.9%, 18.4% and 18.4% on three seeds, so the trophy bot plays without it; the backer keeps it (no difference measured). *Twelve moves to play out (2026-10-28):* keeping its 12 best one-step moves for the play-outs and planning (8 before) it won 26.2%, 19.4% and 23.8% a seat against 18.1%, 16.2% and 17.5% on three seeds; 16 was no better, and the backer gained nothing from 12. Planning deeper (3 cards) or with twice the budget gained nothing for either profile. Goal-driven, below; leans toward the island and trophy sets. Older notes say *goal* for it.
   - *backer:* the faction backer: leans toward backing a faction for the invaders, guards presence (`protect`), holds its plan unless the island is clearly better (`commit`) and pushes its faction to the top (`top`).

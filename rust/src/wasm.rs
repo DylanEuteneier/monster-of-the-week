@@ -195,7 +195,8 @@ pub fn call(name: &str, a: &[Value]) -> Out {
             Ok(conds_value(crate::why::pick_conditions(&s, pid, ci, mode, l, f)))
         }
         // The bots.
-        "profiles" => Ok(json!(["trophy", "backer"])),
+        "profiles" => Ok(json!(["bot"])),
+        "tableLeans" => Ok(json!(bots::table_leans(arg(0).as_u64().unwrap_or(0) as usize))),
         "fast" => Ok(Value::from(bots::fast(arg(0).as_str().unwrap_or("")))),
         "personaOf" => Ok(bots::persona_of(arg(0).as_str().unwrap_or("")).map(|p| persona_value(&p)).unwrap_or(Value::Null)),
         "botMove" => {
@@ -205,7 +206,7 @@ pub fn call(name: &str, a: &[Value]) -> Out {
             if s.phase == Phase::Ended {
                 return Ok(json!({ "move": null }));
             }
-            let profile = input["profile"].as_str().unwrap_or("trophy");
+            let profile = input["profile"].as_str().unwrap_or("bot");
             let mut memory = input.get("memory").filter(|m| m.is_object()).map(memory_from);
             let seats = Seats {
                 profiles: input["table"].as_object().map(|t| t.iter().filter_map(|(id, p)| Some((s.pid_of(id)?, p.as_str()?.to_string()))).collect()),
@@ -237,7 +238,7 @@ pub fn call(name: &str, a: &[Value]) -> Out {
         "evaluate" => {
             let s = state(arg(0))?;
             let pid = seat(&s, arg(1))?;
-            Ok(json!(bots::evaluate(&s, pid, arg(2).as_str().unwrap_or("trophy"), goal_of(arg(3)))))
+            Ok(json!(bots::evaluate(&s, pid, arg(2).as_str().unwrap_or("bot"), goal_of(arg(3)))))
         }
         "features" => {
             let s = state(arg(0))?;
@@ -248,7 +249,7 @@ pub fn call(name: &str, a: &[Value]) -> Out {
             let s = state(arg(0))?;
             let pid = seat(&s, arg(1))?;
             let mut memory = memory_from(arg(2));
-            let r = bots::rank_for_hint(&s, pid, &mut memory, arg(3).as_str().unwrap_or("trophy:enum=1"));
+            let r = bots::rank_for_hint(&s, pid, &mut memory, arg(3).as_str().unwrap_or("bot:lean=-0.3,enum=1"));
             Ok(json!({
                 "goal": goal_name(r.goal),
                 "moves": r.moves.iter().map(|(m, x, v)| json!({ "move": move_to_value(&s.factions, m), "s": state_to_value(x), "v": v })).collect::<Vec<_>>(),

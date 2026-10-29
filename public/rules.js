@@ -152,7 +152,7 @@ export { spec };
  * @property {{ hand: string[], kept: string[], batch: string[], picked: boolean, trophies: Record<string, number> }} me
  */
 
-/** @typedef {'trophy' | 'backer'} Profile */
+/** @typedef {string} Profile  a bot profile: 'bot', or 'bot:lean=0.3' (persona overrides after the colon) */
 /** @typedef {{ rng: () => number, profile?: Profile | string, memory?: BotMemory, table?: Record<string, string>, memories?: Record<string, BotMemory>, focus?: { card: string, target: Record<string, unknown> } }} BotOptions  table, memories: every seat's profile and memory, for play-outs (persona table); focus: the best move with that card, going on from that target (hints) */
 /** What a bot remembers between its turns: its goal, and this game's variation in its lean. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal, jitter?: number }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
@@ -385,8 +385,10 @@ export const shuffle = (items, rngState) => call('shuffle', items, rngState);
 // The bots
 // ---------------------------------------------------------------------------
 
-/** The bot profiles (Appendix F.9; the engine's list, checked by test/bots.test.js). @type {Profile[]} */
-export const PROFILES = ['trophy', 'backer'];
+/** The bot profiles (Appendix F.9; the engine's list, checked by test/bots.test.js): one bot, its lean set per seat. @type {Profile[]} */
+export const PROFILES = ['bot'];
+/** A table's leans for its bot seats: fewer leaning to back a faction than to the island (designer, 2026-10-29). @param {number} bots @returns {number[]} */
+export const tableLeans = (bots) => call('tableLeans', bots);
 /** The engine's own list of profiles. @returns {string[]} */
 export const engineProfiles = () => call('profiles');
 /** A profile with the slow search switched off. @param {string} profile @returns {string} */
@@ -408,7 +410,7 @@ export function botMove(state, input) {
 /** The chance of winning, by ending. @param {GameState} state @param {string} pid */
 export const winChances = (state, pid) => /** @type {{ pInvaders: number, prior: number, known: number, backers: number, linearIsland: number, rivalInvaders: number, asInvaders: number, asIsland: number, marginInvaders: number, marginIsland: number, projected: number, threshold: number, spreadP: number, roundsLeft: number }} */ (call('winChances', lean(state), pid));
 /** How good a position is for a seat. @param {GameState} state @param {string} pid @param {string} [profile] @param {Goal} [goal] @returns {number} */
-export const evaluate = (state, pid, profile = 'trophy', goal) => call('evaluate', lean(state), pid, profile, goal ?? null);
+export const evaluate = (state, pid, profile = 'bot', goal) => call('evaluate', lean(state), pid, profile, goal ?? null);
 /** A seat's position as numbers (a measuring tool). @param {GameState} state @param {string} pid @returns {Record<string, number>} */
 export const features = (state, pid) => call('features', lean(state), pid);
 
@@ -418,7 +420,7 @@ export const features = (state, pid) => call('features', lean(state), pid);
  * @param {GameState} state @param {string} pid @param {BotMemory} memory @param {string} [profile]
  * @returns {{ goal: Goal, moves: { move: Move, s: GameState, v: number }[], worth: { card: string, v: number }[] }}
  */
-export function rankForHint(state, pid, memory, profile = 'trophy:enum=1') {
+export function rankForHint(state, pid, memory, profile = 'bot:lean=-0.3,enum=1') {
   const answer = call('rankForHint', lean(state), pid, memory, profile);
   remember(memory, answer.memory);
   return { goal: answer.goal, moves: answer.moves, worth: answer.worth };

@@ -5,20 +5,19 @@
  * game rules. The option pickers are built from the variants in spec.json.
  */
 import { spec, variants } from './rules.js';
-import { PROFILES } from './rules.js';
 
 const KEY_STORAGE = 'motw-host-key';
 const MIN_SEATS = spec.meta.players.min;
 const MAX_SEATS = spec.meta.players.max;
 const DEFAULT_SEATS = ['Ann', 'Bob', 'Cat', 'Dan', 'Eve'];
 const TOAST_MS = 3000;
-/** The bot profiles (rules.js), as the host sees them. */
-const PROFILE_LABELS = /** @type {Record<string, string>} */ ({
-  trophy: 'trophy (adapts; plays for trophy sets)',
-  backer: 'backer (adapts; leans to backing a faction)',
-});
-/** What can sit in a seat: a human, a bot with a random profile, or a bot with a chosen one. */
-const SEAT_KINDS = [['', 'Human'], ['random', 'Bot: random profile'], ...PROFILES.map((p) => [p, `Bot: ${PROFILE_LABELS[p] ?? p}`])];
+/** What can sit in a seat: a human or a bot (one bot, its lean set by the table's leans; designer, 2026-10-29). */
+const SEAT_KINDS = [['', 'Human'], ['bot', 'Bot']];
+/** A bot's profile in words: its lean, toward backing a faction (+) or the island (−). @param {string} profile */
+function profileLabel(profile) {
+  const lean = Number(/lean=(-?[0-9.]+)/.exec(profile)?.[1] ?? 0);
+  return `lean ${lean > 0 ? '+' : ''}${lean} (${lean > 0 ? 'backs a faction' : lean < 0 ? 'plays for the island' : 'neutral'})`;
+}
 
 /** @typedef {{ player: string, url: string }} Link */
 /** @typedef {{ hasGame: boolean, options?: Record<string, string>, phase?: string, round?: number, bots?: string[], botProfiles?: Record<string, string>, players?: { id: string, online: boolean, bot?: boolean, profile?: string }[] }} Status */
@@ -103,7 +102,7 @@ function renderStatus() {
     <div class="player">
       <span class="swatch" style="background:var(--color-border)"></span>
       <span class="player-name"><span class="presence ${player.online ? 'presence-on' : ''}"></span>${esc(player.id)}</span>
-      <span class="player-status">${player.bot ? `bot · ${esc(PROFILE_LABELS[player.profile ?? ''] ?? player.profile ?? 'trophy')}` : player.online ? 'connected' : 'away'}</span>
+      <span class="player-status">${player.bot ? `bot · ${esc(profileLabel(player.profile ?? ''))}` : player.online ? 'connected' : 'away'}</span>
     </div>`);
   $('status').innerHTML = `<p>Round <b>${status.round}</b> — <b>${esc(status.phase)}</b> · ${esc(optionsLabel(status.options))}</p><div class="player-list">${players.join('')}</div>`;
 }
@@ -120,7 +119,14 @@ function renderSeats() {
 
 /** One radio group per variant in spec.json; empty until candidate rules become variants. */
 function renderOptions() {
-  $('options').innerHTML = variants.map((variant) => `
+  // The bots' leans: always fewer backing a faction than playing for the island (designer, 2026-10-29).
+  const leans = `
+    <fieldset class="option-choice">
+      <legend class="small muted">Bot leans</legend>
+      <label class="inline"><input type="radio" name="bot-leans" value="balanced" checked> <span><b>Balanced</b> — leans spread evenly over the bot seats, fewer backing a faction than playing for the island</span></label>
+      <label class="inline"><input type="radio" name="bot-leans" value="random"> <span><b>Random</b> — the same leans, dealt to the bot seats in a random order</span></label>
+    </fieldset>`;
+  $('options').innerHTML = leans + variants.map((variant) => `
     <fieldset class="option-choice">
       <legend class="small muted">${esc(variant.label)}</legend>
       ${variant.choices.map((choice) => `
@@ -156,7 +162,7 @@ async function refresh() {
     if (host.status?.hasGame) {
       host.links = (await call({ path: '/admin/links' })).links;
       host.seats = host.links.map((link) => link.player);
-      host.botSeats = host.seats.map((seat) => (host.status?.bots?.includes(seat) ? host.status.botProfiles?.[seat] ?? 'trophy' : ''));
+      host.botSeats = host.seats.map((seat) => (host.status?.bots?.includes(seat) ? 'bot' : ''));
     }
     render();
   } catch (error) {
@@ -210,8 +216,8 @@ async function onDeal(event) {
   const kinds = readBotSeats();
   const bots = players.filter((_, idx) => kinds[idx]);
   if (bots.length >= players.length) return toast('At least one seat must be human');
-  const botProfiles = Object.fromEntries(players.map((id, idx) => [id, kinds[idx]]).filter(([, kind]) => kind));
-  const body = { players, bots, botProfiles, force: true, options: readOptions(), ...(seedRaw ? { seed: Number(seedRaw) } : {}) };
+  const leans = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="bot-leans"]:checked'))?.value ?? 'balanced';
+  const body = { players, bots, leans, force: true, options: readOptions(), ...(seedRaw ? { seed: Number(seedRaw) } : {}) };
   const button = /** @type {HTMLButtonElement} */ ($('deal-button'));
   button.disabled = true;
   try {

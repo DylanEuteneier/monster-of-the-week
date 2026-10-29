@@ -14,7 +14,7 @@ fn bots_only_ever_propose_legal_moves_and_play_games_to_the_end() {
         let mut st = 100 + g;
         let mut random = move || { let (v, n) = next_random(st); st = n; v };
         let mut s = create_game(100 + g as i64, &names, &[]).unwrap();
-        let profile = fast("trophy");
+        let profile = fast("bot:lean=-0.3");
         let mut moves = 0;
         while s.phase != Phase::Ended && moves < 20000 {
             moves += 1;
@@ -37,5 +37,19 @@ fn a_seat_that_is_not_at_the_table_gets_no_move() {
     let names: Vec<String> = PLAYERS.iter().map(|s| s.to_string()).collect();
     let s = create_game(1, &names, &[]).unwrap();
     let mut r = || 0.5;
-    assert!(bot_move(&s, 9, &mut r, "trophy", None, &Seats::default()).is_none());
+    assert!(bot_move(&s, 9, &mut r, "bot:lean=-0.3", None, &Seats::default()).is_none());
+}
+
+#[test]
+fn table_leans_always_have_fewer_backing_than_island_seats() {
+    use motw::bots::table_leans;
+    assert_eq!(table_leans(5), vec![-0.3, -0.2, -0.1, 0.15, 0.3]);
+    assert_eq!(table_leans(4), vec![-0.3, -0.2, -0.1, 0.3]);
+    assert_eq!(table_leans(3), vec![-0.3, -0.1, 0.3]);
+    assert_eq!(table_leans(2), vec![-0.3, -0.1]);
+    assert_eq!(table_leans(1), vec![-0.3]);
+    for n in 1..=5 {
+        let l = table_leans(n);
+        assert!(l.iter().filter(|&&x| x > 0.0).count() < l.iter().filter(|&&x| x < 0.0).count());
+    }
 }
