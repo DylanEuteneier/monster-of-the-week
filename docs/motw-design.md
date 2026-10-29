@@ -507,6 +507,13 @@ The board empties (by round 5 fewer than half the locations hold tokens; about 2
 - D32 with aligned growth off: growth halves (8.5 → 1.9), presence ends 16; invaders 7%.
 Reading: the fuller start lifts the early rounds (4.6 fights in round 1 against 2.6) but the board still drains to the same shape by round 5 (about 7 locations, 2 fights); the start and the supply move only the presence total, and with it the ending split. The decline is the fights' outflow outrunning a growth that shrinks as groups break up (designer, 2026-10-29: more seed tokens and sway can't fix it; the tension has to stay high into the late game without making backing too easy or sitting out of fights too valuable).
 
+**GR5, sway brings tokens (2026-10-29; 60 games each, seed 2101, balanced leans, D32 start).** Presence R1→R5 / occupied R5 / fights R1 and R5 / cards in by round / invaders' endings:
+- Off: 45→25 / 7.1 / 4.6, 2.0 / 1, 1, 2, 2, 3 / 47%.
+- On: 58→20 / 7.1 / 5.3, 1.9 / 24, 12, 4, 2, 2 / 13%. Fights take 35 and 27 in rounds 1–2 (20 and 16 off).
+- On, old start: 37→26 / 8.1 / 3.2, 2.5 / 17, 18, 9, 4, 4 / 32%.
+- On, 15 faction tokens: 57→11 / 5.3 / 5.7, 1.3 / 22, 2, 1, 2, 2 / 2%.
+Reading: GR5 front-loads. It pours the supplies onto the board in the first two rounds, the extra presence feeds bigger fights, the casualties leave as trophies, and the supplies are empty by round 3, so the late game is as thin as before (or thinner) and the invaders rarely win. The limit is the faction's whole pool of tokens: casualties never come back, so any inflow from the supply only spends the pool faster.
+
 **More sway (designer, 2026-10-29: bump up sway values; variant `cardSway`; 60 games each, seed 2001, balanced bot leans, passing off).** Cards with a legal action per turn, rounds 1–5; locations occupied and presence after round 5; invaders' ending:
 
 | | Action per turn | Occupied R5 | Presence R5 | Invaders |
