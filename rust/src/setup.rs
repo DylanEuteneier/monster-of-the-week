@@ -207,7 +207,8 @@ pub fn own_plays(s: &GameState, pid: Pid) -> Vec<CardIx> {
 /// A card's sway for a player now (D24): a signature's is the cards in hand, itself included.
 pub fn sway_for(s: &GameState, pid: Pid, card: CardIx) -> i32 {
     if spec().cards[card as usize].slot != Slot::Signature {
-        return printed_of(card);
+        let suited = spec().cards[card as usize].suit.is_some();
+        return printed_of(card) + if suited { s.options.card_sway } else { 0 };
     }
     let hand = &s.players[pid as usize].hand;
     let held = hand.contains(&card);

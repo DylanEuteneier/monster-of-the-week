@@ -885,6 +885,29 @@
           "description": "No passing: play a card each turn; the round ends when every card is played."
         }
       ]
+    },
+    {
+      "id": "cardSway",
+      "label": "Extra card sway",
+      "description": "Designer (2026-10-29): bump up sway values, to make more card actions payable (the game feel tuning, 1.7). Added to every strike's and shift's printed sway (a signature's sway stays your hand size, D24; unsuited cards have none). The amount is being measured.",
+      "default": "0",
+      "choices": [
+        {
+          "id": "0",
+          "label": "+0",
+          "description": "The printed sway."
+        },
+        {
+          "id": "1",
+          "label": "+1",
+          "description": "Strikes 3, shifts 4."
+        },
+        {
+          "id": "2",
+          "label": "+2",
+          "description": "Strikes 4, shifts 5."
+        }
+      ]
     }
   ],
   "map": {

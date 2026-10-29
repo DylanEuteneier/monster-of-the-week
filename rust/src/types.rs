@@ -183,6 +183,8 @@ pub struct Options {
     pub way_back: bool,
     /// Passing while holding cards (TU1; variant passing, designer 2026-10-28: a switch).
     pub passing: bool,
+    /// Added to each strike's and shift's printed sway (variant cardSway; designer 2026-10-29, amount being measured).
+    pub card_sway: i32,
     pub seeding: Seeding,
     /// The same options with sway not required (checkTarget's comparison), made once.
     pub unpaid: std::cell::OnceCell<Rc<Options>>,
@@ -222,6 +224,7 @@ impl Options {
             aligned_growth: get("alignedGrowth") == "on",
             way_back: get("wayBack") != "off",
             passing: get("passing") != "off",
+            card_sway: num("cardSway"),
             seeding: match get("seeding") {
                 "even" => Seeding::Even,
                 "home" => Seeding::Home,
