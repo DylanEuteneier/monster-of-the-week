@@ -191,7 +191,8 @@ pub fn call(name: &str, a: &[Value]) -> Out {
             let s = state(arg(0))?;
             let (pid, ci) = (seat(&s, arg(1))?, card_of(arg(2))?);
             let mode = mode_of(arg(3))?;
-            let (l, f) = (loc_of(arg(4))?, fac_of(&s, arg(5))?);
+            let l = loc_of(arg(4))?;
+            let f = if arg(5).is_null() || arg(5).as_str() == Some("") { None } else { Some(fac_of(&s, arg(5))?) };
             Ok(conds_value(crate::why::pick_conditions(&s, pid, ci, mode, l, f)))
         }
         // The bots.

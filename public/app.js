@@ -1819,18 +1819,19 @@ function showWhy(event) {
   const tile = /** @type {HTMLElement | null} */ (el.closest('#board .board-tile'));
   if (!view || !ui.choosing || !tile) return false;
   const choice = currentChoice();
-  if (!choice || !(choice.kind === 'mode' || (choice.kind === 'group' && choice.key === 'group'))) return false;
+  // The card's first pick only: a reading still open, or its first group or location (or a marking card's first mark).
+  const first = !!choice && (choice.kind === 'mode' || (choice.kind === 'group' && (choice.key === 'group' || (choice.key === 'move' && !(ui.target.moves ?? []).length))) || (choice.kind === 'location' && choice.key === 'location'));
+  if (!first) return false;
   const loc = tile.dataset.tile ?? '';
   const here = Object.entries(view.board[loc]?.tokens ?? {}).filter(([, n]) => n > 0).map(([f]) => f);
   const stack = /** @type {HTMLElement | null} */ (el.closest('.token-stack[data-faction]'));
   const faction = stack?.dataset.faction ?? (here.length === 1 ? here[0] : '');
-  if (!faction) return false;
   const card = cardById(ui.choosing);
   const mode = ui.target.mode ?? (locationById(loc).archetype === card.suit ? 'location' : 'faction');
   const conds = pickConditions(/** @type {any} */ (view), view.you, ui.choosing, mode, loc, faction);
   if (!conds) return false;
   const tip = $('why-tip');
-  tip.innerHTML = `<button class="why-close" data-action="close-why" aria-label="Close">×</button><div class="why-title">${esc(card.name)}: ${esc(fname(faction))} at ${esc(lname(loc))}</div><ul>${conds.map((x) => `<li class="${x.met ? 'is-met' : 'is-unmet'}">${x.met ? '✓' : '✗'} ${esc(x.label)}</li>`).join('')}</ul>`;
+  tip.innerHTML = `<button class="why-close" data-action="close-why" aria-label="Close">×</button><div class="why-title">${esc(card.name)}: ${faction ? `${esc(fname(faction))} at ` : ''}${esc(lname(loc))}</div><ul>${conds.map((x) => `<li class="${x.met ? 'is-met' : 'is-unmet'}">${x.met ? '✓' : '✗'} ${esc(x.label)}</li>`).join('')}</ul>`;
   tip.hidden = false;
   const w = tip.offsetWidth, h = tip.offsetHeight;
   tip.style.left = `${Math.max(8, Math.min(event.clientX + 12, window.innerWidth - w - 8))}px`;

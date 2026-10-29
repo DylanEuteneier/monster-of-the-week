@@ -374,7 +374,7 @@ export const swayFor = (state, pid, cardId) => call('swayFor', lean(state), pid,
 /** @typedef {{ label: string, met: boolean }} Condition  one thing an action needs, and whether it is met */
 /** Why a card's reading can't be played: the conditions of the candidate that comes closest, or null for a card not yet described. @param {GameState | PlayerView} state @param {string} pid @param {string} cardId @param {'location' | 'faction'} mode @returns {Condition[] | null} */
 export const readingConditions = (state, pid, cardId, mode) => call('readingConditions', lean(state), pid, cardId, mode);
-/** A clicked group's conditions as a card's first pick, or null for a card not yet described. @param {GameState | PlayerView} state @param {string} pid @param {string} cardId @param {'location' | 'faction'} mode @param {string} loc @param {string} faction @returns {Condition[] | null} */
+/** A clicked location's (and faction's, '' for none) conditions as a card's first pick, or null for a card not described. @param {GameState | PlayerView} state @param {string} pid @param {string} cardId @param {'location' | 'faction'} mode @param {string} loc @param {string} faction @returns {Condition[] | null} */
 export const pickConditions = (state, pid, cardId, mode, loc, faction) => call('pickConditions', lean(state), pid, cardId, mode, loc, faction);
 /** One step of the seeded generator (Appendix F.4). @param {number} state @returns {{ value: number, state: number }} */
 export const nextRandom = (state) => call('nextRandom', state);
