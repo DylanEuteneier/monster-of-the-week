@@ -146,7 +146,8 @@ fn tournament(args: &[String]) {
             writeln!(f.lock().unwrap(), "{line}").unwrap();
         }
     };
-    let played = motw::tournament::run(seed, games, &list, &options, duplicate, workers, &done);
+    let board = kv.get("board").is_some_and(|x| x == "1");
+    let played = motw::tournament::run_with(seed, games, &list, &options, duplicate, workers, board, &done);
     eprintln!();
     let island = played.iter().filter(|x| x.island).count();
     let all_wins: usize = played.iter().map(|x| x.winners.len()).sum();
@@ -178,6 +179,36 @@ fn tournament(args: &[String]) {
     }
     let by_seat: Vec<String> = (0..list.len()).map(|i| format!("P{} {:.0}%", i + 1, 100.0 * played.iter().filter(|x| x.winners.contains(&(i as u8))).count() as f64 / games.max(1) as f64)).collect();
     println!("wins by seat: {}", by_seat.join(" · "));
+    // board=1: how much is happening on the board, and how many options the hand to act has, turn by turn.
+    let turns: Vec<&motw::tournament::Turn> = played.iter().flat_map(|x| x.turns.iter()).collect();
+    if !turns.is_empty() {
+        println!("turns of play: {}", turns.len());
+        println!("{:<7} {:>9} {:>9} {:>9} {:>10} {:>12} {:>13}", "round", "occupied", "contested", "presence", "hand", "with action", "targets/card");
+        for r in 1..=5 {
+            let t: Vec<_> = turns.iter().filter(|x| x.round == r).collect();
+            if t.is_empty() { continue; }
+            let n = t.len() as f64;
+            let hand: f64 = t.iter().map(|x| x.cards.len() as f64).sum::<f64>() / n;
+            let acting: f64 = t.iter().map(|x| x.cards.iter().filter(|c| c.1 > 0).count() as f64).sum::<f64>() / n;
+            let all: Vec<f64> = t.iter().flat_map(|x| x.cards.iter().filter(|c| c.1 > 0).map(|c| c.1 as f64)).collect();
+            println!("{:<7} {:>9.1} {:>9.1} {:>9.1} {:>10.1} {:>12.1} {:>13.1}", r, t.iter().map(|x| x.occupied as f64).sum::<f64>() / n, t.iter().map(|x| x.contested as f64).sum::<f64>() / n, t.iter().map(|x| x.presence as f64).sum::<f64>() / n, hand, acting, all.iter().sum::<f64>() / all.len().max(1) as f64);
+        }
+        // Per card: how often it had a legal action when held on a turn, and how many targets then.
+        let mut per: std::collections::BTreeMap<String, (usize, usize, usize)> = Default::default();
+        for t in &turns {
+            for c in &t.cards {
+                let e = per.entry(motw::spec::spec().cards[c.0 as usize].name.clone()).or_default();
+                e.0 += 1;
+                if c.1 > 0 { e.1 += 1; e.2 += c.1; }
+            }
+        }
+        let mut rows: Vec<_> = per.into_iter().collect();
+        rows.sort_by(|a, b| ((a.1).1 as f64 / (a.1).0 as f64).partial_cmp(&((b.1).1 as f64 / (b.1).0 as f64)).unwrap());
+        println!("{:<28} {:>7} {:>12} {:>13}", "card (fewest options first)", "held", "has action", "targets when");
+        for (name, (held, ok, sum)) in rows {
+            println!("{:<28} {:>7} {:>11.0}% {:>13.1}", name, held, 100.0 * ok as f64 / held as f64, sum as f64 / ok.max(1) as f64);
+        }
+    }
     // The pass study: every pass made while holding cards, with the passing bot's own play-out estimates.
     let passes: Vec<(&motw::tournament::Game, &motw::tournament::Pass)> = played.iter().flat_map(|x| x.passes.iter().map(move |p| (x, p))).collect();
     if !passes.is_empty() {

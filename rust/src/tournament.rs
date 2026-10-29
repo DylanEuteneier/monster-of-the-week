@@ -35,6 +35,20 @@ pub struct Game {
     /// Every card play: the seat, the change in total invader presence it made, and whether the seat had passed earlier
     /// that round (a play after waiting).
     pub plays: Vec<(Pid, i32, bool)>,
+    /// With `board` on: on every turn of play, the board and the hand to act (how much is happening, and how many
+    /// options the cards have).
+    pub turns: Vec<Turn>,
+}
+
+/// One turn of play, as the seat to act sees it.
+#[derive(Clone, Debug)]
+pub struct Turn {
+    pub round: i32,
+    /// Per card in hand: (card, its legal action targets, up to 40; whether the list is complete).
+    pub cards: Vec<(crate::types::CardIx, usize, bool)>,
+    pub occupied: usize,
+    pub contested: usize,
+    pub presence: i32,
 }
 
 /// A pass made while holding cards, with the passing bot's own estimates, and whether it played again that round.
@@ -63,6 +77,11 @@ fn seeded(seed: i64) -> impl FnMut() -> f64 {
 
 /// Game `g` of a run: profile list `list` rotated so seat i plays list[(i + g) mod n].
 pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], duplicate: bool) -> Game {
+    play_with(seed, g, list, options, duplicate, false)
+}
+
+/// play, and with `board` the board and hand at every turn of play.
+pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, String)], duplicate: bool, board: bool) -> Game {
     let t0 = std::time::Instant::now();
     let n = list.len();
     let names: Vec<String> = (1..=n).map(|i| format!("P{i}")).collect();
@@ -77,11 +96,23 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
     let mut presence = vec![crate::board::total_presence(&s)];
     let mut passes: Vec<Pass> = Vec::new();
     let mut plays: Vec<(Pid, i32, bool)> = Vec::new();
+    let mut turns: Vec<Turn> = Vec::new();
     let mut played_round = 0usize;
     let mut round = s.round;
     let mut moves = 0;
     while moves < MAX_MOVES && s.phase != Phase::Ended {
         let mut moved = false;
+        if board && s.phase == Phase::Play {
+            let pid = s.turn as Pid;
+            let mut cards = Vec::new();
+            for &c in s.players[pid as usize].hand.iter() {
+                let (ts, complete) = crate::choice::list_targets(&s, pid, c, 40, false);
+                cards.push((c, ts.len(), complete));
+            }
+            let occupied = (0..s.board.len() as u8).filter(|&l| crate::board::count_at(&s, l) >= 1).count();
+            let contested = crate::game::fights_due(&s).len();
+            turns.push(Turn { round: s.round, cards, occupied, contested, presence: crate::board::total_presence(&s) });
+        }
         // Every seat is offered the move in seat order, as the JavaScript tournament does; the first with one makes it.
         for pid in 0..n as Pid {
             let table = Seats { profiles: Some(profiles.clone()), memories: Some(memory.iter().enumerate().map(|(i, m)| (i as Pid, m.clone())).collect()), ..Default::default() };
@@ -137,12 +168,18 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
         seconds: t0.elapsed().as_secs_f64(),
         passes,
         plays,
+        turns,
     }
 }
 
 /// Games 0..games of a run on `workers` threads (each game on one thread; results in game order). `done` is told of
 /// each game as it finishes.
 pub fn run(seed: i64, games: usize, list: &[String], options: &[(String, String)], duplicate: bool, workers: usize, done: &(dyn Fn(&Game) + Sync)) -> Vec<Game> {
+    run_with(seed, games, list, options, duplicate, workers, false, done)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn run_with(seed: i64, games: usize, list: &[String], options: &[(String, String)], duplicate: bool, workers: usize, board: bool, done: &(dyn Fn(&Game) + Sync)) -> Vec<Game> {
     let next = std::sync::atomic::AtomicUsize::new(0);
     let out = std::sync::Mutex::new(Vec::with_capacity(games));
     std::thread::scope(|scope| {
@@ -152,7 +189,7 @@ pub fn run(seed: i64, games: usize, list: &[String], options: &[(String, String)
                 if g >= games {
                     break;
                 }
-                let game = play(seed, g, list, options, duplicate);
+                let game = play_with(seed, g, list, options, duplicate, board);
                 done(&game);
                 out.lock().unwrap().push(game);
             });
