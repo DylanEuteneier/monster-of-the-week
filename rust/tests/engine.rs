@@ -1037,6 +1037,7 @@ fn night_terrors_marks_then_at_nightfall_1_token_may_flee_each_mark() {
     let b = adjacent(&loc)[1].clone();
     let hand: Vec<String> = std::iter::once("night-terrors".to_string()).chain(v(&d)["players"][&who]["hand"].as_array().unwrap().iter().map(|c| c.as_str().unwrap().to_string()).filter(|c| c != "night-terrors")).take(2).collect();
     let s = edit(&s0, |x| {
+        x["options"]["passing"] = json!("on"); // the round ends by passing here
         x["opened"] = json!(true);
         x["board"][&loc]["tokens"] = obj(&[(&noct, 3)]);
         x["board"][&b]["tokens"] = obj(&[(&f, 2)]);
@@ -1295,4 +1296,29 @@ fn ic1_a_card_is_played_only_if_its_sway_can_be_paid() {
     });
     let cut = json!({ "mode": "faction", "location": from, "faction": sen, "from": [] });
     assert!(check(&s, "ann", "cut-powerlines", cut).is_some());
+}
+
+#[test]
+fn with_passing_off_every_card_is_played_and_the_last_ends_the_round() {
+    let mut g = game(1);
+    while g.phase == Phase::Draft {
+        let p = waiting_on(&g)[0];
+        let me = &g.players[p as usize];
+        let keep: Vec<Value> = me.kept.iter().chain(me.batch.iter()).take(me.kept.len() + 1).map(|&c| json!(motw::spec::spec().cards[c as usize].id)).collect();
+        g = apply_move(&g, p, &mv(&g, json!({ "type": "pick", "keep": keep }))).unwrap();
+    }
+    assert_eq!(g.phase, Phase::Play);
+    let round = g.round;
+    let mut plays = 0;
+    while g.phase == Phase::Play && g.round == round {
+        let p = g.seating[g.turn].clone();
+        assert!(!valid(&g, &p, json!({ "type": "pass" })), "no passing while passing is off");
+        assert!(!g.players[g.turn].hand.is_empty(), "an empty hand is skipped");
+        // Any legal play: the first card in hand, for sway when it has a suit, else for whatever it can do.
+        let m = motw::bots::bot_move(&g, pid(&g, &p), &mut || 0.5, "trophy:sim=0,enum=0,combo=0", None, &Default::default()).unwrap();
+        g = apply_move(&g, pid(&g, &p), &m).unwrap();
+        plays += 1;
+    }
+    assert!(g.players.iter().all(|p| p.hand.is_empty()), "the round's play ends when every card is played");
+    assert!(plays >= 5 * 4, "five seats, four cards each (more if Steal Their Playbook took one back)");
 }
