@@ -126,7 +126,12 @@ pub fn player_view(s: &GameState, pid: Pid) -> Value {
     let players = Value::Object(s.seating.iter().enumerate().map(|(i, id)| {
         let p = &v["players"][id];
         let pl = &s.players[i];
-        (id.clone(), json!({ "group": p["group"], "standing": p["standing"], "supply": p["supply"], "handSize": if s.phase == Phase::Draft { pl.kept.len() } else { pl.hand.len() }, "picked": p["picked"] }))
+        let mut seat = json!({ "group": p["group"], "standing": p["standing"], "supply": p["supply"], "handSize": if s.phase == Phase::Draft { pl.kept.len() } else { pl.hand.len() }, "picked": p["picked"] });
+        // At the game's end nothing is secret: every seat's trophies are shown (designer, 2026-10-29).
+        if s.phase == Phase::Ended {
+            seat["trophies"] = p["trophies"].clone();
+        }
+        (id.clone(), seat)
     }).collect());
     let printed = Value::Object(deck().into_iter().map(|c| (spec().cards[c as usize].id.clone(), Value::from(sway_for(s, pid, c)))).collect());
     let mut o = Map::new();

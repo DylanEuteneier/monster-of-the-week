@@ -134,7 +134,7 @@ export { spec };
  * @property {number} round
  * @property {number} rounds
  * @property {string[]} seating
- * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, handSize: number, picked: boolean }>} players
+ * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, handSize: number, picked: boolean, trophies?: Record<string, number> }>} players  (trophies: every seat's, once the game has ended)
  * @property {{ faction: string, left: number, leaders: string[], next: number, due: Record<string, number> } | null} growing
  * @property {{ player: string, left: string[] } | null} [night]
  * @property {string[]} factions

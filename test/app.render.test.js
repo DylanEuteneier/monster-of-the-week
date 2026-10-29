@@ -127,4 +127,9 @@ test('the log and the ended phase render', () => {
   assert.match(html('phase'), /win/);
   assert.match(html('phase'), /(winner)/);
   assert.match(html('log'), /cards dealt/);
+  // The end summary: the story of why the winner won, and every seat's trophies (all revealed at the end).
+  assert.match(html('end-summary'), /class="end-story"/);
+  assert.match(html('end-summary'), /won with/);
+  for (const id of PLAYERS) assert.ok(html('end-summary').includes(id), id);
+  assert.equal((html('players').match(/field-label">Trophies/g) ?? []).length, PLAYERS.length);
 });

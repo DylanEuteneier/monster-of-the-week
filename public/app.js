@@ -88,6 +88,8 @@ const ui = {
   choosing: null,
   /** @type {import('./rules.js').Target} */
   target: {},
+  /** the game end the summary was shown for (it opens once by itself) */
+  endShown: '',
   /** a marking card (Spill Blood, Study the Bodies): the location picked whose payer is still to choose */
   /** @type {string | null} */
   payerAt: null,
@@ -454,13 +456,15 @@ function renderPlayers() {
     const p = view.players[id];
     const group = spec.slayerGroups.find((g) => g.id === p.group);
     const isOpen = id === open;
-    const trophies = view.factions.filter((f) => view.me.trophies[f]).map((f) => Array.from({ length: view.me.trophies[f] }, () => tokenHtml(f, 1)).join('')).join('');
+    // Your trophies; everyone's once the game has ended (nothing is secret then).
+    const theirs = id === view.you ? view.me.trophies : p.trophies;
+    const trophies = theirs ? view.factions.filter((f) => theirs[f]).map((f) => Array.from({ length: theirs[f] }, () => tokenHtml(f, 1)).join('')).join('') : '';
     const row = (/** @type {string} */ label, /** @type {string} */ value) => `<span class="player-row"><span class="field-label">${label}</span><span class="field-value">${value}</span></span>`;
     const rows = [
       row('Group', `${suitIcon(group?.archetype)} ${esc(group?.name ?? '')}`),
       row('Supply', `<span class="supply-row tokens" title="${p.supply} in supply">${pile(p.supply, () => cubeHtml(colourOf(id), 8))}</span>`),
       row('Hand', miniCards(p.handSize) || '<span class="muted">empty</span>'),
-      id === view.you ? row('Trophies', `<span class="trophies" title="Secret: only you see these (IN2)">${trophies || '<span class="muted">none yet</span>'}</span>`) : '',
+      id === view.you || theirs ? row('Trophies', `<span class="trophies" title="${view.phase === 'ended' ? 'The game is over: every seat\'s trophies are shown' : 'Secret: only you see these (IN2)'}">${trophies || '<span class="muted">none</span>'}</span>`) : '',
     ].join('');
     return `
       <div class="player ${id === view.you ? 'player-you' : ''} ${isOpen ? 'is-open' : ''}" data-action="expand-player" data-player="${esc(id)}" aria-expanded="${isOpen}" style="--seat:${colourOf(id)}">
@@ -653,7 +657,7 @@ const cardHtml = (id, o = {}) => baseCardHtml(id, { ...o, view: ui.view });
 /** @type {BarNext} */
 let handNext = { cards: [], open: false, actions: [], state: 'wait', text: '', extra: '' };
 
-const LABELS = /** @type {Record<string, string>} */ ({ 'ask-hint': 'Hint', 'let-be': 'Let them be', 'flee-follow': 'Your sway follows', 'flee-stay': 'Your sway stays', pass: 'Pass', pick: 'Keep', 'target-none': 'No effect', back: 'Back', skip: 'Done' });
+const LABELS = /** @type {Record<string, string>} */ ({ results: 'Results', 'ask-hint': 'Hint', 'let-be': 'Let them be', 'flee-follow': 'Your sway follows', 'flee-stay': 'Your sway stays', pass: 'Pass', pick: 'Keep', 'target-none': 'No effect', back: 'Back', skip: 'Done' });
 const ACTION_ICONS = /** @type {Record<string, string>} */ ({ 'ask-hint': 'HINT', pass: '»', pick: '✓', 'target-none': '⊘', back: '↩', skip: '✓' });
 
 /** A labelled button on the bar. @param {string} action @param {{ primary?: boolean, disabled?: boolean, label?: string, tip?: string }} [o] */
@@ -929,7 +933,71 @@ function renderEnded() {
   const r = view.result;
   if (!r) return step('end', 'Game over');
   const side = r.side === 'island' ? 'The island wins' : `${r.factions.map(fname).join(' and ')} win`;
+  handAction('results', { label: 'Results' });
   step('end', `${esc(side)} · winner: <b>${r.players.map(esc).join(', ')}</b>`);
+  // The summary opens by itself once, when the game ends; Results opens it again.
+  const key = `${view.round}:${r.players.join(',')}:${r.side}`;
+  if (ui.endShown !== key) { ui.endShown = key; renderEndSummary(); $('end-overlay').hidden = false; }
+}
+
+/**
+ * The game's end in a few sentences (designer, 2026-10-29: why the winner won, and how), from what decided it: the
+ * presence against the threshold, then the island's complete sets or the invaders' backers. @param {PlayerView} view
+ */
+function endStory(view) {
+  const r = /** @type {NonNullable<PlayerView['result']>} */ (view.result);
+  const total = Object.values(view.board).reduce((n, place) => n + Object.values(place.tokens).reduce((a, b) => a + b, 0), 0);
+  const threshold = Number(view.options.threshold);
+  const order = r.placings?.length ? r.placings : view.seating;
+  const lines = [];
+  const trophiesOf = (/** @type {string} */ id) => (id === view.you ? view.me.trophies : view.players[id].trophies) ?? {};
+  const [w, second] = [order[0], order[1]];
+  const all = (/** @type {string} */ id) => Object.values(trophiesOf(id)).reduce((a, b) => a + b, 0);
+  if (r.side === 'island') {
+    lines.push(`${total} monsters were left on the island, not more than ${threshold}: <b>the island held</b>, and complete trophy sets decided it. Each slayer group scores the colour they hold fewest of.`);
+    // Each seat's colours, weakest first.
+    const sets = (/** @type {string} */ id) => view.factions.map((f) => ({ f, n: trophiesOf(id)[f] ?? 0 })).sort((a, b) => a.n - b.n);
+    const sw = sets(w);
+    lines.push(`<b>${esc(w)}</b> won with ${sw[0].n} complete set${sw[0].n === 1 ? '' : 's'} from ${all(w)} trophies: at least ${sw[0].n} of every colour, ${esc(fname(sw[0].f))} the scarcest.`);
+    if (second) {
+      const ss = sets(second);
+      if (ss[0].n === sw[0].n) {
+        // WT1: the tie goes to the next weakest colour, then the next, until they differ.
+        const k = sw.findIndex((x, i) => i > 0 && x.n !== ss[i].n);
+        lines.push(k > 0 ? `${esc(second)} also had ${ss[0].n}; the tie went to the next weakest colours, and at the ${['', 'second', 'third', 'fourth', 'fifth'][k]} weakest ${esc(w)} held ${sw[k].n} to ${esc(second)}'s ${ss[k].n}.` : `${esc(second)} also had ${ss[0].n}, with the same colours: they share the win.`);
+      } else lines.push(`${esc(second)} came next with ${ss[0].n}, held back by ${esc(fname(ss[0].f))} (${ss[0].n}) despite ${all(second)} trophies.`);
+    }
+    const hoard = order.slice(1).find((id) => all(id) > all(w));
+    if (hoard) lines.push(`${esc(hoard)} took more trophies (${all(hoard)}) but too few of one colour: sets count, not piles.`);
+  } else {
+    const facs = r.factions;
+    const presence = (/** @type {string} */ f) => Object.values(view.board).reduce((n, place) => n + (place.tokens[f] ?? 0), 0);
+    lines.push(`${total} monsters were left on the island, more than ${threshold}: <b>the invaders took it</b>. ${facs.map((f) => `The ${esc(fname(f))} had the most presence (${presence(f)})`).join('; ')}, so their backers decided it.`);
+    const net = (/** @type {string} */ id) => facs.map((f) => `${view.players[id].standing[f] ?? 0} standing less ${trophiesOf(id)[f] ?? 0} trophies`).join(', ');
+    lines.push(`A backer scores standing with ${facs.length === 1 ? 'that faction' : 'those factions'}, less the trophies they took of ${facs.length === 1 ? 'it' : 'them'}.`);
+    lines.push(`<b>${esc(w)}</b> won with ${r.scores[w]} (${net(w)})${second ? `; ${esc(second)} came next with ${r.scores[second]} (${net(second)})` : ''}.`);
+  }
+  return lines.map((l) => `<p>${l}</p>`).join('');
+}
+
+/** The end summary panel: the story, then every seat's result (all revealed). */
+function renderEndSummary() {
+  const view = ui.view;
+  const r = view?.result;
+  if (!view || !r) return;
+  const order = r.placings?.length ? r.placings : view.seating;
+  const cells = (/** @type {string} */ id) => view.factions.map((f) => {
+    const t = id === view.you ? view.me.trophies : view.players[id].trophies;
+    return `<td>${t?.[f] ?? 0}</td>`;
+  }).join('');
+  const rows = order.map((id, i) => `<tr class="${r.players.includes(id) ? 'is-winner' : ''}"><td>${i + 1}</td><td><b style="color:${colourOf(id)}">${esc(id)}</b>${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}</td>${cells(id)}<td><b>${r.scores[id] ?? ''}</b></td></tr>`).join('');
+  $('end-summary').innerHTML = `
+    <h2>${r.side === 'island' ? 'The island holds' : 'The invaders take the island'}</h2>
+    <div class="end-story">${endStory(view)}</div>
+    <table class="end-table">
+      <thead><tr><th>#</th><th>Seat</th>${view.factions.map((f) => `<th title="${esc(fname(f))} trophies">${tokenHtml(f, 1)}</th>`).join('')}<th>${r.side === 'island' ? 'Sets' : 'Score'}</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1282,6 +1350,7 @@ function renderHintAim() {
   const at = Math.max(0, HINT_LEANS.findIndex(([v]) => v === ui.hints.lean));
   const slider = /** @type {HTMLInputElement | null} */ (document.getElementById('hint-lean'));
   if (slider) { slider.value = String(at); slider.style.setProperty('--aim', `${at * 25}%`); }
+  aim.style.setProperty('--aim-n', String(at / 4));
 }
 
 /** The hint aim: the lean of the bot that suggests your moves, from the island (−0.3) to backing a faction (+0.3). */
@@ -1576,6 +1645,7 @@ function onClick(event) {
   const view = ui.view;
   const card = target.dataset.card ?? '';
   if (action === 'ask-hint') return requestHint(true);
+  if (action === 'results') { renderEndSummary(); $('end-overlay').hidden = false; return; }
   if (action === 'pick') return sendMove({ type: 'pick', keep: ui.keep.slice() });
   if (action === 'pass') return sendMove({ type: 'pass' });
   if (action === 'sway') {
@@ -1972,7 +2042,7 @@ function main() {
   globalThis.addEventListener?.('scroll', replace, { passive: true });
   document.addEventListener('click', onClick);
   document.getElementById('hint-lean')?.addEventListener('change', (event) => setHintLean(HINT_LEANS[Number(/** @type {HTMLInputElement} */ (event.target).value)]?.[0] ?? -0.3));
-  document.getElementById('hint-lean')?.addEventListener('input', (event) => { const el = /** @type {HTMLInputElement} */ (event.target); el.style.setProperty('--aim', `${Number(el.value) * 25}%`); });
+  document.getElementById('hint-lean')?.addEventListener('input', (event) => { const el = /** @type {HTMLInputElement} */ (event.target); el.style.setProperty('--aim', `${Number(el.value) * 25}%`); document.getElementById('hint-aim')?.style.setProperty('--aim-n', String(Number(el.value) / 4)); });
 
   document.addEventListener('pointerover', onPreview);
   document.addEventListener('click', onCardClick);

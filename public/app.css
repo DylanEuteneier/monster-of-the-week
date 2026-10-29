@@ -639,6 +639,17 @@ button.card-opt:hover { background: #f6cca1; }
 @media (prefers-reduced-motion: reduce) { .dots span { animation: none; opacity: 0.6; } }
 /* Why an action can't be played: on the card (an empty reading's needs) and by a click on the board (3 s, closable). */
 .hint-aim { display: inline-flex; align-items: center; gap: 6px; }
+/* The poles light with the aim: the island's when it leans that way, backing's the other way. */
+.aim-pole { transition: opacity 120ms, color 120ms, font-weight 120ms; }
+.aim-island { opacity: calc(1 - var(--aim-n, 0) * 0.6); color: color-mix(in srgb, var(--color-link) calc((1 - var(--aim-n, 0)) * 100%), var(--color-muted)); font-weight: calc(800 - var(--aim-n, 0) * 400); }
+.aim-back { opacity: calc(0.4 + var(--aim-n, 0) * 0.6); color: color-mix(in srgb, var(--color-accent) calc(var(--aim-n, 0) * 100%), var(--color-muted)); font-weight: calc(400 + var(--aim-n, 0) * 400); }
+/* The game's end: the story and every seat's result. */
+.end-overlay { max-width: 560px; }
+.end-story p { margin: 6px 0; font-size: 13px; line-height: 1.45; }
+.end-table { border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+.end-table th, .end-table td { padding: 4px 8px; text-align: center; border-bottom: 2px solid var(--color-border); }
+.end-table td:nth-child(2) { text-align: left; }
+.end-table tr.is-winner td { background: var(--color-accent-soft); }
 /* The hint aim: a slider between two poles; its colour moves from the island's (link blue) to backing's (gold). */
 .hint-aim input { width: 110px; accent-color: color-mix(in srgb, var(--color-accent) var(--aim, 0%), var(--color-link)); }
 .card-copy { margin: 4px 0 0; padding: 4px 6px; border: 2px solid var(--color-border); background: var(--color-panel-2); }

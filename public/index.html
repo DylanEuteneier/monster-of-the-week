@@ -16,9 +16,9 @@
       <button class="btn" id="speed-button" data-action="cycle-speed">Turns: Normal + guide</button>
       <button class="btn" id="hint-button" data-action="toggle-overlay" data-target="hint-overlay" hidden>Hints: off</button>
       <label class="hint-aim" id="hint-aim" title="What the hints play for: the island, or backing a faction" hidden>
-        <span class="small">Island</span>
+        <span class="small aim-pole aim-island">Island</span>
         <input type="range" id="hint-lean" min="0" max="4" step="1" aria-label="What hints play for, from the island to backing a faction">
-        <span class="small">Back a faction</span>
+        <span class="small aim-pole aim-back">Back a faction</span>
       </label>
       <button class="btn" data-action="toggle-overlay" data-target="log-overlay">Log</button>
       <button class="btn" data-action="toggle-overlay" data-target="chat-overlay">Table talk <span class="tag" id="chat-unread" hidden></span></button>
@@ -44,6 +44,10 @@
   <aside class="side-stack side-right" id="score" data-action="toggle-side" aria-label="Your trophies"></aside>
 
   <div class="why-tip" id="why-tip" role="status" hidden></div>
+  <aside class="overlay panel end-overlay" id="end-overlay" hidden aria-label="The game's end">
+    <button class="btn overlay-close" data-action="toggle-overlay" data-target="end-overlay" aria-label="Close the summary">×</button>
+    <div id="end-summary"></div>
+  </aside>
   <aside class="overlay panel" id="log-overlay" hidden aria-label="Log">
     <button class="btn overlay-close" data-action="toggle-overlay" data-target="log-overlay" aria-label="Close the log">×</button>
     <div id="log"></div>
