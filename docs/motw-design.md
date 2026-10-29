@@ -469,6 +469,35 @@ Detailed notes on how each game's mechanisms work are in Appendix C.
 
 ---
 
+### 1.7 Game feel tuning (working notes)
+
+Working notes, not decisions: measurements and leads for how the game feels in play. **Direction (designer, 2026-10-29):** the board has gone stale; lean toward effective ways to make the game feel more dynamic and active again. Bot tuning is paused until this is worked through.
+
+**Passing (2026-10-29; D29).** With passing on, the bots passed 8.6 times a round while holding cards: 62% deferrals (played later that round; waiting beat their best play by a median 0.46 value points, about 5% of a game) and 38% held to the round's end (about indifferent: cards not worth playing then). A seat that never passes lost about 6–9 win points a seat. Read: a strong tactic, but a stall (free waiting for the last word before the fights), not a crunchy choice. Off is now the default.
+
+**Presence (160 games each, seed 1601, standard table, threshold 20).** Average presence at the start and after each round:
+
+| | Start | R1 | R2 | R3 | R4 | R5 | Invaders' ending |
+|---|---|---|---|---|---|---|---|
+| Passing on | 30.0 | 34.1 | 32.2 | 28.6 | 25.6 | 21.8 | 51% |
+| Passing off | 30.0 | 32.4 | 29.0 | 24.8 | 21.4 | 17.8 | 36% (target 40%) |
+
+The designer: presence feels a bit too low throughout the game now. Raising presence pushes the ending split back toward the invaders; the two need balancing together.
+
+**Board and options (40 games, seed 1901, passing off; `motw tournament ... board=1`).** On every turn of play:
+
+| Round | Locations occupied (of 15) | Contested | Presence | Cards in hand | With a legal action |
+|---|---|---|---|---|---|
+| 1 | 13.9 | 2.3 | 29.9 | 2.5 | 1.6 |
+| 3 | 8.7 | 2.7 | 34.3 | 2.5 | 1.8 |
+| 5 | 6.9 | 2.1 | 25.9 | 2.5 | 1.6 |
+
+The board empties (by round 5 fewer than half the locations hold tokens; about 2 fights at a time), and about one card in three held on a turn can only be played for sway. The designer: too little happening on the board, too few options to play cards in a round.
+
+**How often a card held on a turn has a legal action:** Take Control 28%, Light of the Cross 39%, Plough Through 40%, Draw Them Away 47%, Cut the Powerlines 48%, Bait the Herd 51%, The Big Chase 54%, Invite Them In 59%, Spoof the Signal 63%, Wake the Dead 70%; the signatures 81–93%; the unsuited cards 88–100%.
+
+**What blocks them (same games):** mostly **cost**, no standing to pay the sway a move or mark places (IC1, D21): Spoof the Signal, Bait the Herd, The Big Chase, Cut the Powerlines, Draw Them Away, Light of the Cross, the Gate, Night Terrors, Spill Blood on the Altar, Study the Bodies, Perform the Ritual, Wake the Dead. Mostly **the board**, nothing that fits: Take Control and Plough Through (they need fights), Showdown (a lone group where you have sway), Invite Them In's location reading.
+
 ## 2. Game foundation
 
 ### 2.1 Core tension and experience goals

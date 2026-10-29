@@ -49,6 +49,47 @@ pub struct Turn {
     pub occupied: usize,
     pub contested: usize,
     pub presence: i32,
+    /// For each card with no legal action: per reading, what stopped it (a step with nothing to pick, or why the
+    /// finished targets were refused, by the engine's own words).
+    pub blocked: Vec<(crate::types::CardIx, String)>,
+}
+
+/// Why a card has no legal action now, per reading: the first step with nothing to pick, or the most common reason
+/// the engine refuses random finished targets.
+fn blockers(s: &crate::types::GameState, pid: Pid, ci: crate::types::CardIx) -> Vec<String> {
+    use crate::choice::{complete_target, next_choice};
+    use crate::types::{Mode, Target};
+    let suited = crate::cards::card(ci).suit.is_some();
+    let modes: Vec<Option<Mode>> = if suited { vec![Some(Mode::Location), Some(Mode::Faction)] } else { vec![None] };
+    let mut x: u64 = 0x5eed;
+    let mut rng = move || { x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407); (x >> 11) as f64 / (1u64 << 53) as f64 };
+    let mut out = Vec::new();
+    for m in modes {
+        let t = match m { Some(m) => Target::with_mode(m), None => Target::default() };
+        let label = match m { Some(Mode::Location) => "LOC: ", Some(Mode::Faction) => "FAC: ", None => "" };
+        let first = next_choice(s, pid, ci, &t);
+        let key = crate::json::choice_to_value(&s.factions, &first);
+        if first.options.is_empty() && !matches!(first.kind, crate::choice::Kind::Done) {
+            // Cost or board: with the sway requirement off, would anything be offered?
+            let mut free = crate::cards::imagined(s);
+            free.options = s.options.unpaid();
+            let freed = next_choice(&free, pid, ci, &t);
+            let what = key["key"].as_str().unwrap_or(key["kind"].as_str().unwrap_or("choice")).to_string();
+            out.push(if freed.options.is_empty() { format!("{label}board: no {what} fits") } else { format!("{label}cost: no standing to pay for any {what}") });
+            continue;
+        }
+        let mut reasons: std::collections::BTreeMap<String, usize> = Default::default();
+        for _ in 0..12 {
+            let reason = match complete_target(s, pid, ci, &t, &mut rng) {
+                Some(done) => crate::cards::check_target(s, pid, ci, Some(&done)).unwrap_or_else(|| "(legal)".into()),
+                None => "a later step had nothing to pick".into(),
+            };
+            *reasons.entry(reason).or_default() += 1;
+        }
+        let top = reasons.into_iter().filter(|r| r.0 != "(legal)").max_by_key(|r| r.1).map(|r| r.0).unwrap_or_else(|| "?".into());
+        out.push(format!("{label}{top}"));
+    }
+    out
 }
 
 /// A pass made while holding cards, with the passing bot's own estimates, and whether it played again that round.
@@ -105,13 +146,19 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         if board && s.phase == Phase::Play {
             let pid = s.turn as Pid;
             let mut cards = Vec::new();
+            let mut blocked = Vec::new();
             for &c in s.players[pid as usize].hand.iter() {
                 let (ts, complete) = crate::choice::list_targets(&s, pid, c, 40, false);
                 cards.push((c, ts.len(), complete));
+                if ts.is_empty() {
+                    for b in blockers(&s, pid, c) {
+                        blocked.push((c, b));
+                    }
+                }
             }
             let occupied = (0..s.board.len() as u8).filter(|&l| crate::board::count_at(&s, l) >= 1).count();
             let contested = crate::game::fights_due(&s).len();
-            turns.push(Turn { round: s.round, cards, occupied, contested, presence: crate::board::total_presence(&s) });
+            turns.push(Turn { round: s.round, cards, occupied, contested, presence: crate::board::total_presence(&s), blocked });
         }
         // Every seat is offered the move in seat order, as the JavaScript tournament does; the first with one makes it.
         for pid in 0..n as Pid {

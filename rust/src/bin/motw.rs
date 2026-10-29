@@ -208,6 +208,21 @@ fn tournament(args: &[String]) {
         for (name, (held, ok, sum)) in rows {
             println!("{:<28} {:>7} {:>11.0}% {:>13.1}", name, held, 100.0 * ok as f64 / held as f64, sum as f64 / ok.max(1) as f64);
         }
+        // What stops a card when it has no legal action: per reading, the most common blockers.
+        let mut why: std::collections::BTreeMap<String, std::collections::BTreeMap<String, usize>> = Default::default();
+        for t in &turns {
+            for (c, reason) in &t.blocked {
+                *why.entry(motw::spec::spec().cards[*c as usize].name.clone()).or_default().entry(reason.clone()).or_default() += 1;
+            }
+        }
+        println!("what blocks a card with no legal action (share of its blocked readings):");
+        for (name, reasons) in why {
+            let total: usize = reasons.values().sum();
+            let mut v: Vec<_> = reasons.into_iter().collect();
+            v.sort_by(|a, b| b.1.cmp(&a.1));
+            let top: Vec<String> = v.iter().take(3).map(|(r, n)| format!("{:.0}% {r}", 100.0 * *n as f64 / total as f64)).collect();
+            println!("  {name}: {}", top.join(" · "));
+        }
     }
     // The pass study: every pass made while holding cards, with the passing bot's own play-out estimates.
     let passes: Vec<(&motw::tournament::Game, &motw::tournament::Pass)> = played.iter().flat_map(|x| x.passes.iter().map(move |p| (x, p))).collect();
