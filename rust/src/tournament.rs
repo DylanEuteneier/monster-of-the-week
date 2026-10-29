@@ -30,6 +30,22 @@ pub struct Game {
     pub presence: Vec<i32>,
     pub moves: usize,
     pub seconds: f64,
+    /// Every pass made while holding cards (the pass study).
+    pub passes: Vec<Pass>,
+}
+
+/// A pass made while holding cards, with the passing bot's own estimates, and whether it played again that round.
+#[derive(Clone, Debug)]
+pub struct Pass {
+    pub round: i32,
+    pub seat: Pid,
+    pub hand: usize,
+    /// Cards played this round before the pass (by anyone), and still in hands across the table.
+    pub played_before: usize,
+    pub left: usize,
+    pub decision: Option<crate::bots::Decision>,
+    /// The seat played a card later in the same round (a deferral); false: the pass held to the round's end.
+    pub played_later: bool,
 }
 
 /// A seeded stream as scripts/lib.js seededRng: mulberry32 from `seed | 0`.
@@ -56,6 +72,8 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
     let mut memory: Vec<BotMemory> = vec![BotMemory::default(); n];
     let profiles: HashMap<Pid, String> = seats.iter().enumerate().map(|(i, p)| (i as Pid, p.clone())).collect();
     let mut presence = vec![crate::board::total_presence(&s)];
+    let mut passes: Vec<Pass> = Vec::new();
+    let mut played_round = 0usize;
     let mut round = s.round;
     let mut moves = 0;
     while moves < MAX_MOVES && s.phase != Phase::Ended {
@@ -68,6 +86,20 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
                 bot_move(&s, pid, rng, &seats[pid as usize], Some(&mut memory[pid as usize]), &table)
             };
             if let Some(m) = m {
+                let decision = crate::bots::take_decision();
+                if s.phase == Phase::Play {
+                    let hand = s.players[pid as usize].hand.len();
+                    match m {
+                        crate::types::Move::Pass if hand > 0 => passes.push(Pass { round: s.round, seat: pid, hand, played_before: played_round, left: s.players.iter().map(|p| p.hand.len()).sum(), decision, played_later: false }),
+                        crate::types::Move::Play { .. } => {
+                            played_round += 1;
+                            for p in passes.iter_mut().filter(|p| p.round == s.round && p.seat == pid) {
+                                p.played_later = true;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
                 s = apply_legal(&s, pid, &m);
                 moved = true;
                 break;
@@ -78,6 +110,7 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
         if s.round != round || s.phase == Phase::Ended {
             presence.push(crate::board::total_presence(&s));
             round = s.round;
+            played_round = 0;
         }
     }
     let r = s.result.as_ref().expect("a finished game");
@@ -91,6 +124,7 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
         presence,
         moves,
         seconds: t0.elapsed().as_secs_f64(),
+        passes,
     }
 }
 

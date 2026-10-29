@@ -178,4 +178,31 @@ fn tournament(args: &[String]) {
     }
     let by_seat: Vec<String> = (0..list.len()).map(|i| format!("P{} {:.0}%", i + 1, 100.0 * played.iter().filter(|x| x.winners.contains(&(i as u8))).count() as f64 / games.max(1) as f64)).collect();
     println!("wins by seat: {}", by_seat.join(" · "));
+    // The pass study: every pass made while holding cards, with the passing bot's own play-out estimates.
+    let passes: Vec<(&motw::tournament::Game, &motw::tournament::Pass)> = played.iter().flat_map(|x| x.passes.iter().map(move |p| (x, p))).collect();
+    if !passes.is_empty() {
+        let rounds = (games * 5) as f64;
+        let later = passes.iter().filter(|(_, p)| p.played_later).count();
+        let margins: Vec<f64> = {
+            let mut v: Vec<f64> = passes.iter().filter_map(|(_, p)| p.decision.and_then(|d| Some(d.pass? - d.best_play?))).collect();
+            v.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            v
+        };
+        let q = |f: f64| margins.get(((margins.len() as f64 - 1.0) * f).round() as usize).copied().unwrap_or(f64::NAN);
+        let share = |t: &dyn Fn(f64) -> bool| 100.0 * margins.iter().filter(|&&m| t(m)).count() as f64 / margins.len().max(1) as f64;
+        println!("passes with cards in hand: {} ({:.1} a round); played a card later that round {:.0}% (deferrals), held to the round's end {:.0}%",
+            passes.len(), passes.len() as f64 / rounds, 100.0 * later as f64 / passes.len() as f64, 100.0 * (passes.len() - later) as f64 / passes.len() as f64);
+        println!("  pass over best play, by the bot's play-outs (value points; ~10 = the whole game): median {:+.3}, quartiles {:+.3} / {:+.3}; under 0.05 (a coin flip) {:.0}%, over 0.3 (clearly better) {:.0}%",
+            q(0.5), q(0.25), q(0.75), share(&|m| m.abs() < 0.05), share(&|m| m > 0.3));
+        // Deferrals (played later: waiting for the last word) against passes held to the end (nothing worth playing).
+        let median = |later: bool| {
+            let mut v: Vec<f64> = passes.iter().filter(|(_, p)| p.played_later == later).filter_map(|(_, p)| p.decision.and_then(|d| Some(d.pass? - d.best_play?))).collect();
+            v.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            v.get(v.len() / 2).copied().unwrap_or(f64::NAN)
+        };
+        println!("  median margin: deferrals {:+.3}, held to the end {:+.3}", median(true), median(false));
+        let by_round: Vec<String> = (1..=5).map(|r| format!("r{r} {}", passes.iter().filter(|(_, p)| p.round == r).count())).collect();
+        let early = passes.iter().filter(|(_, p)| p.played_before < 5).count();
+        println!("  by round: {}; before 5 cards were played in the round: {:.0}%", by_round.join(" "), 100.0 * early as f64 / passes.len() as f64);
+    }
 }

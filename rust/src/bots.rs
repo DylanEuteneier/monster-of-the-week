@@ -53,6 +53,30 @@ const ISLAND: [f64; 4] = [1.0, 0.35, 0.12, 0.02];
 /// What a cube in a bot's own supply is worth to it.
 const SUPPLY_VALUE: f64 = 0.02;
 
+/// The last top-level play decision's estimates, for the pass study (motw tournament): the play-out value of passing
+/// (None if passing wasn't a candidate), of the best play, and of the position before moving. A measuring aid.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Decision {
+    pub pass: Option<f64>,
+    pub best_play: Option<f64>,
+    pub now: f64,
+}
+
+thread_local! {
+    static DECISION: std::cell::Cell<Option<Decision>> = const { std::cell::Cell::new(None) };
+}
+
+/// Takes the estimates the last top-level play decision left (None if it made none).
+pub fn take_decision() -> Option<Decision> {
+    DECISION.with(|d| d.take())
+}
+
+fn note_decision(ranked: &[(Move, GameState, f64)], values: &[(usize, f64)], now: f64) {
+    let pass = values.iter().find(|(i, _)| ranked[*i].0 == Move::Pass).map(|x| x.1);
+    let best_play = values.iter().filter(|(i, _)| ranked[*i].0 != Move::Pass).map(|x| x.1).fold(None, |m: Option<f64>, v| Some(m.map_or(v, |m| m.max(v))));
+    DECISION.with(|d| d.set(Some(Decision { pass, best_play, now })));
+}
+
 /// A goal bot's persona; 0 is a switch off.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Persona {
@@ -86,13 +110,15 @@ pub struct Persona {
     pub draft: Option<usize>,
     pub mix: f64,
     pub roll_list: f64,
+    /// Testing (the pass study): never pass while a card can be played.
+    pub no_pass: f64,
 }
 
 fn base(name: &str) -> Option<Persona> {
     let trophy = Persona {
         lean: -0.3, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: 3.0, enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: 0.0, protect: 0.0, top: 0.0,
-        race: 0.0, even: 1.0, plan: 1.0, steer: 1.0, keep: Some(12), playouts: None, plan_budget: None, plan_depth: None, noise: Some(0.0), draft: None, mix: 0.0, roll_list: 0.0,
+        race: 0.0, even: 1.0, plan: 1.0, steer: 1.0, keep: Some(12), playouts: None, plan_budget: None, plan_depth: None, noise: Some(0.0), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0,
     };
     match name {
         "trophy" => Some(trophy),
@@ -152,6 +178,7 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "draft" => p.draft = Some(x as usize),
                 "mix" => p.mix = x,
                 "rollList" => p.roll_list = x,
+                "noPass" => p.no_pass = x,
                 _ => {}
             }
         }
@@ -834,6 +861,7 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
                 Some((card, so_far)) => moves.into_iter().filter(|m| fits(m, card, so_far)).collect(),
                 None => moves,
             };
+            let moves: Vec<Move> = if pe.as_ref().is_some_and(|x| on(x.no_pass)) && moves.iter().any(|m| *m != Move::Pass) { moves.into_iter().filter(|m| *m != Move::Pass).collect() } else { moves };
             if moves.is_empty() {
                 return None;
             }
@@ -884,17 +912,20 @@ fn sim_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&Ga
     let seeds: Vec<i64> = (0..playouts).map(|_| seed_of(rng)).collect();
     let mut best = short.first().map(|&i| ranked[i].0.clone());
     let mut best_v = f64::NEG_INFINITY;
+    let mut values: Vec<(usize, f64)> = Vec::new();
     for &i in &short {
         let mut total = 0.0;
         for &seed in &seeds {
             total += ev(&play_out_round(&ranked[i].1, seed, pid, memory, table, None));
         }
         let v = (1.0 - mix) * (total / seeds.len() as f64) + mix * ranked[i].2;
+        values.push((i, v));
         if v > best_v {
             best = Some(ranked[i].0.clone());
             best_v = v;
         }
     }
+    note_decision(&ranked, &values, ev(s));
     best
 }
 
@@ -920,6 +951,7 @@ fn plan_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&G
         (i, n / seeds.len() as f64)
     }).collect();
     plain.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    note_decision(&ranked, &plain, ev(s));
     // (index into ranked, plan)
     let mut arms: Vec<(usize, Vec<CardIx>)> = Vec::new();
     for &(i, _) in plain.iter().take(PLAN_MOVES) {
