@@ -40,6 +40,8 @@ export interface Env {
 }
 
 type TokenMap = Record<string, string>; // token → playerId
+/** What a hint is for (designer, 2026-10-28: hints follow the player's choice): a chosen card and the target so far. */
+type HintFocus = { card: string; target: Record<string, unknown> };
 
 interface ChatLine {
   from: string;
@@ -50,7 +52,7 @@ interface ChatLine {
 type ClientMessage =
   | { type: 'move'; move: Move }
   | { type: 'chat'; text: string }
-  | { type: 'hint' };
+  | { type: 'hint'; focus?: HintFocus };
 
 type ServerMessage =
   | { type: 'state'; view: PlayerView; online: string[]; bots: string[]; hintKey: string; last?: { player: string; move: SeenMove }; fights?: Fight[] }
@@ -361,9 +363,12 @@ export class Game extends DurableObject<Env> {
       // Hints never hold up a move (designer, 2026-10-28): one worked out ahead answers at once; otherwise it is
       // worked out after anything already waiting, and sent when ready.
       this.hintWanted.add(playerId);
-      const key = hintKey(this.game, playerId);
+      const key = hintKey(this.game, playerId) + focusKey(message.focus);
       const cached = this.hintCache.get(`${playerId}|${key}`);
       if (cached !== undefined) return this.send(ws, { type: 'hint', key, hint: cached });
+      // A hint for a choice the player has begun (a card, a reading, part of a target): worked out after anything
+      // already waiting, and sent when ready.
+      if (message.focus) { this.ctx.waitUntil(this.prepareFocused(playerId, message.focus)); return; }
       this.ctx.waitUntil(this.prepareHints());
       return;
     }
@@ -426,12 +431,13 @@ export class Game extends DurableObject<Env> {
    * A seat's hint for the position now. The move is the strongest bot's (designer, 2026-10-11: full search, seeing
    * what any bot sees, set up as this table's bots are); hints.js explains it from what the seat can see.
    */
-  private hintFor(playerId: string): Hint | null {
+  private hintFor(playerId: string, focus?: HintFocus): Hint | null {
     if (!this.game || this.game.phase === 'ended') return null;
     const memory = (this.hintMemory[playerId] ??= { jitter: 0 }); // no random lean in a hint
     const table = Object.fromEntries(this.game.seating.map((id) => [id, this.botProfiles[id] ?? 'trophy']));
     let move: Move | null = null;
-    try { move = botMove(this.game, { playerId, rng: Math.random, profile: 'trophy', memory, table, memories: { ...this.botMemory, [playerId]: memory } }); } catch (error) { console.error('hint failed:', error); }
+    try { move = botMove(this.game, { playerId, rng: Math.random, profile: 'trophy', memory, table, memories: { ...this.botMemory, [playerId]: memory }, ...(focus ? { focus } : {}) }); } catch (error) { console.error('hint failed:', error); }
+    if (focus && !move) return null; // nothing to play with that choice (never a hint about another play)
     try { return suggest(this.game, playerId, memory, move ?? undefined); } catch (error) { console.error('hint failed:', error); return null; }
   }
 
@@ -450,10 +456,25 @@ export class Game extends DurableObject<Env> {
       if (this.hintCache.has(at)) continue;
       const hint = this.hintFor(playerId);
       if (this.game !== game) return; // a move came in: that position's hint is no longer wanted
-      this.hintCache.clear(); // only the position now matters
+      for (const k of [...this.hintCache.keys()]) if (!k.startsWith(`${playerId}|${key}`)) this.hintCache.delete(k); // only the position now matters
       this.hintCache.set(at, hint);
       for (const socket of this.ctx.getWebSockets()) if (this.playerOf(socket) === playerId) this.send(socket, { type: 'hint', key, hint });
     }
+  }
+
+  /** A hint for a choice the player has begun, sent to that seat when ready (none if the position moved on). */
+  private async prepareFocused(playerId: string, focus: HintFocus): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const game = this.game;
+    if (!game || game.phase !== 'play' || !waitingOn(game).includes(playerId)) return;
+    const key = hintKey(game, playerId) + focusKey(focus);
+    const at = `${playerId}|${key}`;
+    if (!this.hintCache.has(at)) {
+      const hint = this.hintFor(playerId, focus);
+      if (this.game !== game) return;
+      this.hintCache.set(at, hint);
+    }
+    for (const socket of this.ctx.getWebSockets()) if (this.playerOf(socket) === playerId) this.send(socket, { type: 'hint', key, hint: this.hintCache.get(at) ?? null });
   }
 
   private tryBotMove(playerId: string): Move | null {
@@ -525,6 +546,11 @@ export class Game extends DurableObject<Env> {
   }
 }
 
+/** A hint focus as part of a hint's key (none: the best play overall). */
+function focusKey(focus?: HintFocus): string {
+  return focus ? `|${focus.card}|${JSON.stringify(focus.target)}` : '';
+}
+
 function parseClientMessage(raw: string | ArrayBuffer): ClientMessage | null {
   if (typeof raw !== 'string') return null;
   let parsed: unknown;
@@ -536,7 +562,10 @@ function parseClientMessage(raw: string | ArrayBuffer): ClientMessage | null {
   if (typeof parsed !== 'object' || parsed === null) return null;
   const candidate = parsed as { type?: unknown; move?: unknown; text?: unknown };
   if (candidate.type === 'chat' && typeof candidate.text === 'string') return { type: 'chat', text: candidate.text };
-  if (candidate.type === 'hint') return { type: 'hint' };
+  if (candidate.type === 'hint') {
+    const f = (parsed as { focus?: { card?: unknown; target?: unknown } }).focus;
+    return f && typeof f.card === 'string' && typeof f.target === 'object' && f.target !== null ? { type: 'hint', focus: { card: f.card, target: f.target as Record<string, unknown> } } : { type: 'hint' };
+  }
   if (candidate.type === 'move' && typeof candidate.move === 'object' && candidate.move !== null) {
     return { type: 'move', move: candidate.move as Move };
   }

@@ -213,7 +213,15 @@ pub fn call(name: &str, a: &[Value]) -> Out {
                 ..Default::default()
             };
             let mut rng = host_rng();
-            let m = bots::bot_move(&s, pid, &mut rng, profile, memory.as_mut(), &seats);
+            // focus: { card, target }: the best move with that card, going on from the target chosen so far (hints).
+            let m = match input.get("focus").filter(|f| f.is_object()) {
+                Some(f) => {
+                    let ci = card_of(&f["card"])?;
+                    let so_far = target(&s, &f["target"]).unwrap_or_default();
+                    bots::bot_move_with(&s, pid, &mut rng, profile, memory.as_mut(), &seats, ci, &so_far)
+                }
+                None => bots::bot_move(&s, pid, &mut rng, profile, memory.as_mut(), &seats),
+            };
             Ok(json!({ "move": m.map(|m| move_to_value(&s.factions, &m)).unwrap_or(Value::Null), "memory": memory.as_ref().map(memory_value).unwrap_or(Value::Null) }))
         }
         "winChances" => {

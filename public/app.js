@@ -233,7 +233,7 @@ function handleServerMessage(raw) {
   if (message.type === 'hint') {
     // Hints come when they are ready, asked for or worked out ahead (designer, 2026-10-28: they never block): kept by
     // position, shown if it is the one on screen.
-    ui.hints.byKey = { [message.key]: message.hint };
+    ui.hints.byKey = { ...ui.hints.byKey, [message.key]: message.hint };
     if (message.key === ui.hints.want) { ui.hints.got = ui.hints.asked; ui.hints.hint = message.hint; renderHint(); }
   }
 }
@@ -301,7 +301,7 @@ async function showNext() {
     const flights = before && !instant ? planFlights(before, item.view, colourOf) : [];
     mark(`fly ${flights.length}`);
     if (flights.length) await fly(flights, item.view.you, { speed: item.speed ?? (other ? s.speed : 1) + incoming.length * 0.75 });
-    if (item.meta?.hintKey) ui.viewKey = item.meta.hintKey;
+    if (item.meta?.hintKey && item.meta.hintKey !== ui.viewKey) { ui.viewKey = item.meta.hintKey; ui.hints.byKey = Object.fromEntries(Object.entries(ui.hints.byKey).filter(([k]) => k.startsWith(ui.viewKey))); }
     ui.acting = null;
     showState(item.view, item.online);
     item.done();
@@ -941,6 +941,10 @@ function render() {
   $('hint-button').hidden = !hintsAvailable();
   renderSpeed();
   markHint();
+  // A new choice (a card picked or put down, a reading, a pick): the hint recomputes for it.
+  const focus = hintFocus();
+  const fk = focus ? `${focus.card}|${JSON.stringify(focus.target)}` : '';
+  if (fk !== hintFocusAsked) { hintFocusAsked = fk; requestHint(); }
 }
 
 // ---------------------------------------------------------------------------
@@ -1219,12 +1223,22 @@ function requestHint() {
     return renderHint();
   }
   if (!ui.socket || ui.socket.readyState !== WebSocket.OPEN) return;
-  ui.hints.want = ui.viewKey;
-  // Worked out ahead and already here: shown at once.
-  if (ui.viewKey && ui.viewKey in ui.hints.byKey) { ui.hints.got = ui.hints.asked; ui.hints.hint = ui.hints.byKey[ui.viewKey]; return renderHint(); }
+  // The hint follows the player's choice (designer, 2026-10-28): the best play overall, or with the chosen card, its
+  // reading and what is picked so far. Each has its own key; a hint is shown only for the choice on screen.
+  const focus = hintFocus();
+  const key = ui.viewKey + (focus ? `|${focus.card}|${JSON.stringify(focus.target)}` : '');
+  ui.hints.want = key;
+  if (key in ui.hints.byKey) { ui.hints.got = ui.hints.asked; ui.hints.hint = ui.hints.byKey[key]; return renderHint(); }
   renderHint();
-  ui.socket.send(JSON.stringify({ type: 'hint' }));
+  ui.socket.send(JSON.stringify(focus ? { type: 'hint', focus } : { type: 'hint' }));
 }
+
+/** What the hint is for: the card being played and the target so far, while one is chosen in the play phase. */
+function hintFocus() {
+  return ui.choosing && ui.view?.phase === 'play' ? { card: ui.choosing, target: ui.target } : null;
+}
+/** The focus a hint was last asked for, so a change of choice asks again. */
+let hintFocusAsked = '';
 
 const HINT_MODES = /** @type {const} */ (['off', 'marks', 'full']);
 const HINT_LABELS = { off: 'Hints: off', marks: 'Hints: marks', full: 'Hints: full' };
@@ -1249,16 +1263,20 @@ function renderHint() {
   const h = ui.hints.hint;
   const view = ui.view;
   const waiting = !!view && myDecision(view) && ui.hints.got < ui.hints.asked;
+  // A chosen card or reading with no legal play: the hint says so.
+  const nothing = !h && !waiting && !!view && myDecision(view) && !!hintFocus();
   const panel = $('hint-overlay');
-  panel.hidden = ui.hints.mode !== 'full' || (!h && !waiting);
+  panel.hidden = ui.hints.mode !== 'full' || (!h && !waiting && !nothing);
   const button = $('hint-button');
   button.classList.toggle('is-on', ui.hints.on);
   button.textContent = HINT_LABELS[ui.hints.mode];
   button.title = 'Hints: off → marks on the table → marks and the panel';
   if (panel.hidden) return markHint();
   panel.classList.remove('is-open');
-  $('hint').innerHTML = !h
-    ? '<p class="muted small">Thinking…</p>'
+  $('hint').innerHTML = nothing
+    ? '<p class="muted small">Nothing to play with this choice.</p>'
+    : !h
+    ? `<p class="muted small">Thinking${DOTS}</p>`
     : `<h3 class="hint-title">${esc(h.short ?? h.title)}</h3>
       <p class="hint-gist">${esc(h.why[0] ?? '')}</p>
       <div class="hint-more"><div class="hint-more-inner">

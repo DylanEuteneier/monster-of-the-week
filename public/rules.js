@@ -151,7 +151,7 @@ export { spec };
  */
 
 /** @typedef {'trophy' | 'backer'} Profile */
-/** @typedef {{ rng: () => number, profile?: Profile | string, memory?: BotMemory, table?: Record<string, string>, memories?: Record<string, BotMemory> }} BotOptions  table, memories: every seat's profile and memory, for play-outs (persona table) */
+/** @typedef {{ rng: () => number, profile?: Profile | string, memory?: BotMemory, table?: Record<string, string>, memories?: Record<string, BotMemory>, focus?: { card: string, target: Record<string, unknown> } }} BotOptions  table, memories: every seat's profile and memory, for play-outs (persona table); focus: the best move with that card, going on from that target (hints) */
 /** What a bot remembers between its turns: its goal, and this game's variation in its lean. The caller keeps one per seat; a bot without it has no hysteresis. @typedef {{ goal?: Goal, jitter?: number }} BotMemory */
 /** @typedef {'island' | 'invaders'} Goal */
 /**

@@ -725,10 +725,50 @@ pub fn bot_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option
     if pid as usize >= s.n() || s.phase == Phase::Ended {
         return None;
     }
-    play_move(s, pid, rng, profile, memory, seats)
+    play_move(s, pid, rng, profile, memory, seats, None)
 }
 
-fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&mut BotMemory>, seats: &Seats) -> Option<Move> {
+/// The bot's best move with a chosen card, extending the target chosen so far (for hints that follow the player's
+/// choice, designer 2026-10-28): a card alone, its best use (action, sway or bringing tokens back); a reading or
+/// part of a target, the best action that goes on from there. None if no such move is legal.
+pub fn bot_move_with(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&mut BotMemory>, seats: &Seats, card: CardIx, so_far: &Target) -> Option<Move> {
+    if pid as usize >= s.n() || s.phase != Phase::Play {
+        return None;
+    }
+    play_move(s, pid, rng, profile, memory, seats, Some((card, so_far)))
+}
+
+/// Does a finished target go on from a partial one (every field chosen so far the same; lists begun the same way)?
+fn extends(t: &Target, p: &Target) -> bool {
+    fn same<T: PartialEq>(a: &Option<T>, b: &Option<T>) -> bool {
+        b.is_none() || a == b
+    }
+    fn starts(a: &Option<Ids>, b: &Option<Ids>) -> bool {
+        let want: Vec<Id> = b.as_deref().unwrap_or(&[]).iter().copied().filter(|&x| x != Id::Stop).collect();
+        let have: &[Id] = a.as_deref().unwrap_or(&[]);
+        have.len() >= want.len() && have[..want.len()] == want[..]
+    }
+    let want: Vec<(Id, Id)> = p.moves.as_deref().unwrap_or(&[]).iter().filter(|g| g.location != Id::Stop).map(|g| (g.location, g.faction)).collect();
+    let have: Vec<(Id, Id)> = t.moves.as_deref().unwrap_or(&[]).iter().map(|g| (g.location, g.faction)).collect();
+    same(&t.mode, &p.mode) && same(&t.location, &p.location) && same(&t.faction, &p.faction) && same(&t.to, &p.to) && same(&t.payer, &p.payer)
+        && same(&t.use_, &p.use_) && same(&t.back, &p.back) && same(&t.losses, &p.losses)
+        && starts(&t.from, &p.from) && starts(&t.path, &p.path) && starts(&t.payers, &p.payers)
+        && have.len() >= want.len() && have[..want.len()] == want[..]
+}
+
+/// A move that fits a hint's focus: the chosen card; once a reading or a pick is made, its action going on from them.
+fn fits(m: &Move, card: CardIx, so_far: &Target) -> bool {
+    let Move::Play { card: c, use_, target, .. } = m else { return false };
+    if *c != card {
+        return false;
+    }
+    if *so_far == Target::default() {
+        return true;
+    }
+    matches!((use_, target), (PlayUse::Action, Some(Some(t))) if extends(t, so_far))
+}
+
+fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&mut BotMemory>, seats: &Seats, focus: Option<(CardIx, &Target)>) -> Option<Move> {
     let me = pid as usize;
     let persona = persona_of(profile);
     let mut memory = memory;
@@ -789,7 +829,14 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
             let pe = persona.clone();
             let steer_fn = |x: &GameState| ev(x);
             let steer: Option<&dyn Fn(&GameState) -> f64> = if pe.as_ref().is_some_and(|x| on(x.steer)) { Some(&steer_fn) } else { None };
-            let moves = candidates(s, pid, rng, SEARCH_TARGETS, pe.as_ref().is_some_and(|x| on(x.enumerate)), pe.as_ref().is_some_and(|x| on(x.even)), steer, None);
+            let moves = candidates(s, pid, rng, SEARCH_TARGETS, pe.as_ref().is_some_and(|x| on(x.enumerate)), pe.as_ref().is_some_and(|x| on(x.even)), steer, focus.map(|f| f.0));
+            let moves: Vec<Move> = match focus {
+                Some((card, so_far)) => moves.into_iter().filter(|m| fits(m, card, so_far)).collect(),
+                None => moves,
+            };
+            if moves.is_empty() {
+                return None;
+            }
             let table = pe.as_ref().filter(|x| on(x.table)).map(|x| {
                 let mut profiles = seats.profiles.clone().unwrap_or_default();
                 profiles.insert(pid, profile.to_string());
@@ -991,7 +1038,7 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
                     }
                 }
                 if let Some(planned) = m.clone() {
-                    let own = play_move(&s, id, &mut r, profile, Some(&mut mem[id as usize]), &Seats::default());
+                    let own = play_move(&s, id, &mut r, profile, Some(&mut mem[id as usize]), &Seats::default(), None);
                     let goal = mem[id as usize].goal;
                     let v = |x: &Move| evaluate(&after(&s, pid, x), pid, profile, goal);
                     if let Some(own) = own {
@@ -1005,7 +1052,7 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
                 }
             }
             if m.is_none() {
-                m = play_move(&s, id, &mut r, profile, Some(&mut mem[id as usize]), &Seats::default());
+                m = play_move(&s, id, &mut r, profile, Some(&mut mem[id as usize]), &Seats::default(), None);
             }
             let Some(m) = m else { continue };
             s = after(&s, id, &m);
