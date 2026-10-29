@@ -963,10 +963,16 @@ function render() {
   renderBoard();
   renderLog();
   $('hint-button').hidden = !hintsAvailable();
-  const aim = /** @type {HTMLSelectElement} */ ($('hint-lean'));
-  aim.hidden = !hintsAvailable() || !ui.hints.on || !!ui.hints.source;
-  if (aim.options.length === 0) aim.innerHTML = HINT_LEANS.map(([v, label]) => `<option value="${v}">${label}</option>`).join('');
-  aim.value = String(ui.hints.lean);
+  // The hint aim: a slider from the island to backing a faction, said in words.
+  const aim = document.getElementById('hint-aim');
+  if (aim) {
+    aim.hidden = !hintsAvailable() || !ui.hints.on || !!ui.hints.source;
+    const at = Math.max(0, HINT_LEANS.findIndex(([v]) => v === ui.hints.lean));
+    const slider = /** @type {HTMLInputElement | null} */ (document.getElementById('hint-lean'));
+    if (slider) slider.value = String(at);
+    const words = document.getElementById('hint-aim-text');
+    if (words) words.textContent = HINT_LEANS[at][1];
+  }
   renderSpeed();
   markHint();
   // A new choice (a card picked or put down, a reading, a pick): the hint recomputes for it.
@@ -1276,7 +1282,7 @@ let hintFocusAsked = '';
 const HINT_MODES = /** @type {const} */ (['off', 'marks', 'full', 'ask']);
 const HINT_LABELS = { off: 'Hints: off', marks: 'Hints: marks', full: 'Hints: full', ask: 'Hints: on demand' };
 /** The hint aim: the lean of the bot that suggests your moves, from the island (−0.3) to backing a faction (+0.3). */
-const HINT_LEANS = /** @type {const} */ ([[-0.3, 'Aim: island'], [-0.15, 'Aim: leaning island'], [0, 'Aim: either'], [0.15, 'Aim: leaning to back a faction'], [0.3, 'Aim: back a faction']]);
+const HINT_LEANS = /** @type {const} */ ([[-0.3, 'the island'], [-0.15, 'mostly the island'], [0, 'either side'], [0.15, 'mostly backing a faction'], [0.3, 'backing a faction']]);
 /** Set the hint aim (the player's preference; remembered in this browser). @param {number} lean */
 function setHintLean(lean) {
   ui.hints.lean = lean;
@@ -1960,7 +1966,8 @@ function main() {
   globalThis.addEventListener?.('resize', replace);
   globalThis.addEventListener?.('scroll', replace, { passive: true });
   document.addEventListener('click', onClick);
-  $('hint-lean').addEventListener('change', (event) => setHintLean(Number(/** @type {HTMLSelectElement} */ (event.target).value)));
+  document.getElementById('hint-lean')?.addEventListener('change', (event) => setHintLean(HINT_LEANS[Number(/** @type {HTMLInputElement} */ (event.target).value)]?.[0] ?? -0.3));
+  document.getElementById('hint-lean')?.addEventListener('input', (event) => { const w = document.getElementById('hint-aim-text'); if (w) w.textContent = HINT_LEANS[Number(/** @type {HTMLInputElement} */ (event.target).value)]?.[1] ?? ''; });
   document.addEventListener('pointerover', onPreview);
   document.addEventListener('click', onCardClick);
   $('chat-form').addEventListener('submit', onChatSubmit);
