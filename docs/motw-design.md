@@ -2583,6 +2583,9 @@ The page a player sees. It is one script with no framework and no build step.
 
 #### Cards that reach a whole region
 
+- **Why an action can't be played (designer, 2026-10-28):** when a card's whole reading can't be played, the card itself lists what that reading needs, each condition met (✓) or not (✗), for the candidate that comes closest; when the action can be played but a clicked location or group can't be taken, a tooltip by the click lists that choice's conditions the same way, for 3 seconds, with a close button. The conditions come from the engine (`rust/src/why.rs`); built first for Spoof the Signal, the other cards to follow once the format is agreed.
+- **Marking by location (designer, 2026-10-28):** a marking card's location reading (Spill Blood on the Altar, Study the Bodies) is picked by location, in the location spotlight; the faction whose standing pays is asked only where more than one could.
+- **Who is thinking (designer, 2026-10-28):** the bar says whom the table waits on and what for, with animated dots: a bot "is picking a card", "choosing a play", "choosing where it grows" or "deciding at nightfall"; people are waited for; a move being sent says so.
 - **The region is lit (designer):** while targeting a card that acts on a whole region (Lock Down the Town, Reroute the Power Grid, Reprogram the Traffic Lights' location reading, Open the Pit) or on the neighbouring regions (Draw a Summoning Circle), hovering a candidate location lights every location the card will touch, in the hexes' hover art. Regions stay in the rules as geography that cards refer to (D19); the tutorial says briefly what a region is next to a location.
 
 #### The presence gauge and the trophy tab

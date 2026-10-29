@@ -18,3 +18,4 @@ pub mod tournament;
 pub mod types;
 pub mod view;
 pub mod wasm;
+pub mod why;

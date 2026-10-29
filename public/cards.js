@@ -23,7 +23,7 @@ export function suitIcon(archetype, scale = 2) {
 const fname = (f) => factionById(f).name;
 
 /**
- * @typedef {{ mode?: '' | 'act' | 'keep', ticked?: boolean, sway?: boolean, back?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string, empty?: string[], view?: PlayerView | null, extra?: string }} CardOptions
+ * @typedef {{ mode?: '' | 'act' | 'keep', ticked?: boolean, sway?: boolean, back?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string, empty?: string[], why?: Partial<Record<'location' | 'faction', { label: string, met: boolean }[]>>, view?: PlayerView | null, extra?: string }} CardOptions
  */
 
 /**
@@ -46,7 +46,9 @@ export function cardHtml(id, o = {}) {
   const live = !!o.sway;
   // What each reading targets, under the effect; once one is chosen the other fades.
   const r = 'readings' in c ? c.readings : undefined;
-  const reading = (/** @type {'location' | 'faction'} */ m, /** @type {string} */ label, /** @type {string} */ text) => `<div class="card-reading${o.reading ? (o.reading === m ? ' is-on' : ' is-off') : ''}"><dt>${label}</dt><dd>${esc(text)}</dd></div>`;
+  // A reading that can't be played lists what it needs, met (✓) or not (✗) (designer, 2026-10-28).
+  const why = (/** @type {'location' | 'faction'} */ m) => o.why?.[m]?.length ? `<ul class="card-why">${(o.why[m] ?? []).map((x) => `<li class="${x.met ? 'is-met' : 'is-unmet'}">${x.met ? '✓' : '✗'} ${esc(x.label)}</li>`).join('')}</ul>` : '';
+  const reading = (/** @type {'location' | 'faction'} */ m, /** @type {string} */ label, /** @type {string} */ text) => `<div class="card-reading${o.reading ? (o.reading === m ? ' is-on' : ' is-off') : ''}"><dt>${label}</dt><dd>${esc(text)}${why(m)}</dd></div>`;
   const readings = r ? `<dl class="card-readings small">${reading('location', 'LOC', r.location)}${reading('faction', 'FAC', `${r.faction}${sf ? ` (${fname(sf)})` : ''}`)}</dl>` : '';
   const opt = (/** @type {string} */ action, /** @type {string} */ inner, /** @type {string} */ tip, /** @type {boolean} */ on, /** @type {Record<string, string>} */ data = {}) => live
     ? `<button class="card-opt${on ? ' is-on' : ''}${o.next ? ' is-next' : ''}${o.empty?.includes(data.mode ?? '') ? ' is-empty' : ''}" data-action="${action}" data-card="${esc(id)}"${Object.entries(data).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('')} title="${esc(tip)}">${inner}</button>`

@@ -180,6 +180,20 @@ pub fn call(name: &str, a: &[Value]) -> Out {
             let (out, next) = shuffle(&items, arg(1).as_f64().unwrap_or(0.0) as i64 as i32);
             Ok(json!({ "items": out, "rngState": next }))
         }
+        // Why an action can't be played (the table's card notes and tooltips).
+        "readingConditions" => {
+            let s = state(arg(0))?;
+            let (pid, ci) = (seat(&s, arg(1))?, card_of(arg(2))?);
+            let mode = mode_of(arg(3))?;
+            Ok(conds_value(crate::why::reading_conditions(&s, pid, ci, mode)))
+        }
+        "pickConditions" => {
+            let s = state(arg(0))?;
+            let (pid, ci) = (seat(&s, arg(1))?, card_of(arg(2))?);
+            let mode = mode_of(arg(3))?;
+            let (l, f) = (loc_of(arg(4))?, fac_of(&s, arg(5))?);
+            Ok(conds_value(crate::why::pick_conditions(&s, pid, ci, mode, l, f)))
+        }
         // The bots.
         "profiles" => Ok(json!(["trophy", "backer"])),
         "fast" => Ok(Value::from(bots::fast(arg(0).as_str().unwrap_or("")))),
@@ -361,6 +375,18 @@ fn resolve_options(raw: &[(String, String)]) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+fn mode_of(v: &Value) -> Result<Mode, String> {
+    match v.as_str() {
+        Some("location") => Ok(Mode::Location),
+        Some("faction") => Ok(Mode::Faction),
+        _ => Err("expected a reading (location or faction)".into()),
+    }
+}
+
+fn conds_value(c: Option<Vec<crate::why::Cond>>) -> Value {
+    c.map(|cs| json!(cs.iter().map(|x| json!({ "label": x.label, "met": x.met })).collect::<Vec<_>>())).unwrap_or(Value::Null)
 }
 
 fn goal_of(v: &Value) -> Option<Goal> {

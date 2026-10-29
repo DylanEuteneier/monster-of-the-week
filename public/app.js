@@ -10,7 +10,7 @@
  * are chosen on the board one step at a time: each step's candidates are
  * spotlit (hexes) or lit gold (tokens), and the server checks the result.
  */
-import { spec, factionById, locationById, cardById, waitingOn, nextChoice, checkTarget, previewTarget, fleeOptions, returnRoom } from './rules.js';
+import { spec, factionById, locationById, cardById, waitingOn, nextChoice, checkTarget, previewTarget, fleeOptions, returnRoom, readingConditions, pickConditions } from './rules.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { SEAT_COLOURS, tokenHtml, cubeHtml, hexHtml, effectHtml, markImg, EFFECTS } from './pieces.js';
 import { cardHtml as baseCardHtml, suitIcon } from './cards.js';
@@ -664,7 +664,9 @@ function waitingText() {
   const view = /** @type {PlayerView} */ (ui.view);
   const others = waitingOn(view).filter((id) => id !== view.you);
   if (!others.length) return `Waiting${DOTS}`;
-  if (others.every((id) => ui.bots.includes(id))) return `${esc(others.join(', '))} ${others.length === 1 ? 'is' : 'are'} thinking${DOTS}`;
+  // A bot is said to be thinking, and about what (designer, 2026-10-28).
+  const about = view.phase === 'draft' ? 'picking a card' : view.phase === 'growth' ? 'choosing where it grows' : view.phase === 'night' ? 'deciding at nightfall' : 'choosing a play';
+  if (others.every((id) => ui.bots.includes(id))) return `${esc(others.join(', '))} ${others.length === 1 ? 'is' : 'are'} ${about}${DOTS}`;
   return `Waiting for ${esc(others.join(', '))}${DOTS}`;
 }
 
@@ -830,7 +832,9 @@ function renderTargeting(cardId) {
   if ((choice.kind === 'location' || choice.kind === 'group' || choice.kind === 'faction') && 'optional' in choice && choice.optional) handAction('skip', { label: 'Done' });
   handAction('target-none', { tip: 'Play it for no effect' });
   handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
-  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, reading: t.mode, empty } : { dim: true })), false);
+  // A reading with nothing to target says what it needs, on the card.
+  const why = Object.fromEntries(empty.map((m) => [m, readingConditions(/** @type {any} */ (view), view.you, cardId, m)]).filter(([, c]) => c));
+  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, reading: t.mode, empty, why } : { dim: true })), false);
 }
 
 function renderGrowth() {
@@ -1440,6 +1444,9 @@ function renderSeatbar() {
 
 /** @param {MouseEvent} event */
 function onClick(event) {
+  if (event.target instanceof HTMLElement && event.target.closest('[data-action="close-why"]')) return hideWhy();
+  // Clicking a group the card can't take: say why, for a moment (designer, 2026-10-28).
+  if (ui.choosing && event.target instanceof HTMLElement && !event.target.closest('[data-action]') && showWhy(event)) return;
   // Clicking away from a selected card (on nothing you can choose) unselects it.
   if (ui.choosing && event.target instanceof HTMLElement
     && !event.target.closest('[data-action], .card-selected, #dock, .side-stack, .overlay, .topbar-buttons, .tut')) {
@@ -1679,6 +1686,51 @@ function finish(t) {
   if (out.from) out.from = out.from.filter((l) => l !== '__stop');
   if (out.moves) out.moves = out.moves.filter((m) => m.location !== '__stop');
   return out;
+}
+
+/** How long a "why not" tooltip stays (designer, 2026-10-28: three seconds, with a close button). */
+const WHY_MS = 3000;
+/** @type {ReturnType<typeof setTimeout> | null} */
+let whyTimer = null;
+
+/**
+ * A click on the board that the card being played can't take: a tooltip by the click listing what that choice needs,
+ * met (✓) or not (✗). Only for a card's first pick of a group, and only for cards the engine describes; false if
+ * there is nothing to say (the click then puts the card down, as before).
+ * @param {MouseEvent} event
+ */
+function showWhy(event) {
+  const view = ui.view;
+  const el = /** @type {HTMLElement} */ (event.target);
+  const tile = /** @type {HTMLElement | null} */ (el.closest('#board .board-tile'));
+  if (!view || !ui.choosing || !tile) return false;
+  const choice = currentChoice();
+  if (!choice || !(choice.kind === 'mode' || (choice.kind === 'group' && choice.key === 'group'))) return false;
+  const loc = tile.dataset.tile ?? '';
+  const here = Object.entries(view.board[loc]?.tokens ?? {}).filter(([, n]) => n > 0).map(([f]) => f);
+  const stack = /** @type {HTMLElement | null} */ (el.closest('.token-stack[data-faction]'));
+  const faction = stack?.dataset.faction ?? (here.length === 1 ? here[0] : '');
+  if (!faction) return false;
+  const card = cardById(ui.choosing);
+  const mode = ui.target.mode ?? (locationById(loc).archetype === card.suit ? 'location' : 'faction');
+  const conds = pickConditions(/** @type {any} */ (view), view.you, ui.choosing, mode, loc, faction);
+  if (!conds) return false;
+  const tip = $('why-tip');
+  tip.innerHTML = `<button class="why-close" data-action="close-why" aria-label="Close">×</button><div class="why-title">${esc(card.name)}: ${esc(fname(faction))} at ${esc(lname(loc))}</div><ul>${conds.map((x) => `<li class="${x.met ? 'is-met' : 'is-unmet'}">${x.met ? '✓' : '✗'} ${esc(x.label)}</li>`).join('')}</ul>`;
+  tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = `${Math.max(8, Math.min(event.clientX + 12, window.innerWidth - w - 8))}px`;
+  tip.style.top = `${Math.max(8, Math.min(event.clientY + 12, window.innerHeight - h - 8))}px`;
+  if (whyTimer) clearTimeout(whyTimer);
+  whyTimer = setTimeout(hideWhy, WHY_MS);
+  return true;
+}
+
+function hideWhy() {
+  if (whyTimer) clearTimeout(whyTimer);
+  whyTimer = null;
+  const tip = document.getElementById('why-tip');
+  if (tip) tip.hidden = true;
 }
 
 /** Clicking a card: keep it (draft) or play its action. @param {MouseEvent} event */

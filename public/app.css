@@ -22,6 +22,8 @@
         .hint          the hint panel, beside what it suggests (left/top or
                        bottom set by app.js placeHint; top right by default)  z: --z-overlay
         .toast         messages, centred just above the resting hand            z: --z-toast
+        .why-tip       why a click can't be taken, by the click (app.js
+                       showWhy sets left/top; 3 s, closable)                    z: --z-toast
         .flight-layer  pieces flying between places (motion.js)                 z: --z-flight
         .tut           the tutorial: blocker, spotlight, tooltip, modal         z: --z-tut
       On phones the hand, bar and tabs drop back into normal flow (1), after
@@ -631,6 +633,14 @@ button.card-opt:hover { background: #f6cca1; }
 .dots span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes dots { 0%, 60%, 100% { opacity: 0.2; } 30% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .dots span { animation: none; opacity: 0.6; } }
+/* Why an action can't be played: on the card (an empty reading's needs) and by a click on the board (3 s, closable). */
+.card-why { list-style: none; margin: 4px 0 0; padding: 0; font-size: 11px; line-height: 1.35; }
+.card-why .is-met, .why-tip .is-met { color: var(--color-muted); }
+.card-why .is-unmet, .why-tip .is-unmet { color: var(--color-danger); font-weight: 600; }
+.why-tip { position: fixed; z-index: var(--z-toast); max-width: 320px; padding: 8px 28px 8px 10px; background: var(--color-panel); border: 2px solid var(--color-border); font-size: 12px; line-height: 1.4; }
+.why-tip ul { list-style: none; margin: 4px 0 0; padding: 0; }
+.why-title { font-weight: 600; }
+.why-close { position: absolute; top: 2px; right: 4px; border: 0; background: none; font-size: 16px; cursor: pointer; color: inherit; }
 .dock.is-turn .bar-text { color: var(--color-accent); }
 .bar-actions { display: flex; gap: 6px; flex: none; }
 .bar-btn { padding: 3px 10px; font-size: 12px; cursor: pointer; background: var(--color-cell); color: var(--color-text); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
