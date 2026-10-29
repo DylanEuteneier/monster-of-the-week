@@ -180,6 +180,8 @@ pub struct Options {
     /// IC1 (D15): a move's sway must be paid. Always so in a game; off only in checkTarget's comparison copy (unpaid).
     pub sway_required: bool,
     pub aligned_growth: bool,
+    /// GR5 (designer's seed, a switch): each sway placed on the board brings 1 of the paying faction's tokens there.
+    pub sway_tokens: bool,
     pub way_back: bool,
     /// Passing while holding cards (TU1; variant passing, designer 2026-10-28: a switch).
     pub passing: bool,
@@ -222,6 +224,7 @@ impl Options {
             sway_per_move: num("swayPerMove"),
             sway_required: true,
             aligned_growth: get("alignedGrowth") == "on",
+            sway_tokens: get("swayTokens") == "on",
             way_back: get("wayBack") != "off",
             passing: get("passing") != "off",
             card_sway: num("cardSway"),

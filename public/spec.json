@@ -828,6 +828,24 @@
       ]
     },
     {
+      "id": "swayTokens",
+      "label": "Sway brings tokens",
+      "description": "GR5 (designer's seed, 2026-10-29; a switch, not a core rule): each sway placed on the board, from standing with a faction, brings 1 of that faction's tokens from its supply to the same location, if it can (the supply has one, and the faction may enter there).",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "Sway brings no tokens."
+        },
+        {
+          "id": "on",
+          "label": "On",
+          "description": "Each sway placed brings 1 of its faction's tokens, if it can."
+        }
+      ]
+    },
+    {
       "id": "wayBack",
       "label": "A way back for factions",
       "description": "Designer (2026-10-26), first draft: a suit card may be played to bring its faction back while it has no location with 2 or more of its tokens: up to the card's sway of its tokens at its suit locations or where it is, 1 standing with it each.",

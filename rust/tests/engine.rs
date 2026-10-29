@@ -780,6 +780,32 @@ fn the_big_chase_leaves_1_token_and_1_sway_at_each_location_passed() {
 }
 
 #[test]
+fn gr5_sway_brings_1_of_its_factions_tokens_if_it_can() {
+    // Variant swayTokens (GR5): The Big Chase's 4 sway each bring 1 of the paying faction, while the supply lasts.
+    let s0 = clear(&game(1));
+    let sci = of_arch(&s0, "scifi");
+    let others: Vec<String> = factions(&s0).into_iter().filter(|x| *x != sci).collect();
+    let (f, g) = (others[0].clone(), others[1].clone());
+    let start = "military-facility".to_string();
+    let a = adjacent(&start)[0].clone();
+    let b = adjacent(&a).into_iter().find(|l| *l != start && !adjacent(&start).contains(l)).unwrap();
+    let c = adjacent(&b).into_iter().find(|l| *l != start && *l != a).unwrap();
+    let s = edit(&s0, |x| {
+        x["options"]["swayTokens"] = json!("on");
+        x["board"][&start]["tokens"] = obj(&[(&f, 5)]);
+        x["board"][&b]["tokens"] = obj(&[(&g, 2)]);
+        x["players"]["ann"]["standing"][&f] = json!(4);
+    });
+    let t = json!({ "mode": "location", "location": start, "faction": f, "path": [a, b, c] });
+    let after = preview(&s, "ann", "big-chase", t.clone());
+    assert_eq!((after["board"][&start]["tokens"][&f].clone(), after["board"][&a]["tokens"][&f].clone(), after["board"][&b]["tokens"][&f].clone(), after["board"][&c]["tokens"][&f].clone()), (json!(1), json!(2), json!(2), json!(4)));
+    // A supply of 2 brings only 2: 5 chased, 7 on the board.
+    let low = preview(&edit(&s, |x| x["supply"][&f] = json!(2)), "ann", "big-chase", t);
+    let on_board: i64 = [&start, &a, &b, &c].iter().map(|l| low["board"][*l]["tokens"][&f].as_i64().unwrap_or(0)).sum();
+    assert_eq!(on_board, 7);
+}
+
+#[test]
 fn the_big_chase_sets_off_from_a_fight_too_with_half() {
     let s0 = clear(&game(1));
     let sci = of_arch(&s0, "scifi");

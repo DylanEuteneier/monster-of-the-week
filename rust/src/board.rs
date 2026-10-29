@@ -241,8 +241,22 @@ pub fn mv(s: &mut GameState, pid: Pid, f: Fac, from: Loc, to: Loc, count: i32, p
     if k > 0 {
         s.players[pid as usize].standing[f as usize] -= k;
         s.board[to as usize].sway.add(pid, k);
+        bring(s, f, to, k);
     }
     n
+}
+
+/// GR5 (variant swayTokens): sway placed on the board brings as many of its faction's tokens there from the supply,
+/// if it can: as many as the supply has, and only where the faction may enter (common rule 5).
+fn bring(s: &mut GameState, f: Fac, loc: Loc, k: i32) {
+    if !s.options.sway_tokens || !can_enter(s, loc, f) {
+        return;
+    }
+    let n = k.min(s.supply[f as usize]);
+    if n > 0 {
+        s.supply[f as usize] -= n;
+        add_tokens(s, loc, f, n);
+    }
 }
 
 /// Place 1 of the player's sway at a location, from standing with a faction (if they have it).
@@ -252,6 +266,7 @@ pub fn place_one(s: &mut GameState, pid: Pid, f: Fac, loc: Loc) {
     }
     s.players[pid as usize].standing[f as usize] -= 1;
     s.board[loc as usize].sway.add(pid, 1);
+    bring(s, f, loc, 1);
 }
 
 /// The fights now (not scorched): locations with two or more factions, a Gate's ends each listed.
