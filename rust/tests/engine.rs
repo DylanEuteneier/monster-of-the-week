@@ -1322,3 +1322,33 @@ fn with_passing_off_every_card_is_played_and_the_last_ends_the_round() {
     assert!(g.players.iter().all(|p| p.hand.is_empty()), "the round's play ends when every card is played");
     assert!(plays >= 5 * 4, "five seats, four cards each (more if Steal Their Playbook took one back)");
 }
+
+#[test]
+fn steal_their_playbook_copies_any_card_another_player_played_this_round_and_cant_be_the_last_card() {
+    let d = draft_all(&game(1));
+    let who = d.seating[d.turn].clone();
+    let other = d.seating[(d.turn + 1) % d.n()].clone();
+    let s = edit(&clear(&d), |x| {
+        x["opened"] = json!(true);
+        set_hand(x, &who, &["playbook", "plough"]);
+        x["roundPlays"] = json!([
+            { "pid": who, "card": "gate", "use": "sway" },
+            { "pid": other, "card": "showdown", "use": "action" },
+            { "pid": other, "card": "invite-in", "use": "sway" }
+        ]);
+    });
+    // Theirs: first the card to copy, from other players' plays this round however they were played; never your own.
+    let c = choice(&s, &who, "playbook", json!({ "use": "theirs" }));
+    assert_eq!(c["kind"], "use");
+    let opts: Vec<String> = c["options"].as_array().unwrap().iter().map(|x| x.as_str().unwrap().to_string()).collect();
+    assert_eq!(opts, vec!["showdown".to_string(), "invite-in".to_string()]);
+    assert!(check(&s, &who, "playbook", json!({ "use": "theirs", "back": "gate" })).is_some(), "your own play can't be copied");
+    // Copying goes on with the copied card's own steps.
+    let next = choice(&s, &who, "playbook", json!({ "use": "theirs", "back": "invite-in" }));
+    assert_ne!(next["kind"], "use");
+    // As the last card in hand it can't be played, only discarded for no effect.
+    let last = edit(&s, |x| set_hand(x, &who, &["playbook"]));
+    assert!(check(&last, &who, "playbook", json!({ "use": "yours", "back": "gate" })).is_some());
+    let gone = apply(&last, &who, json!({ "type": "play", "card": "playbook", "use": "action", "target": null }));
+    assert!(v(&gone)["players"][&who]["hand"].as_array().unwrap().is_empty());
+}

@@ -379,6 +379,12 @@ pub fn return_room(s: &GameState, pid: Pid, ci: CardIx) -> (Vec<Loc>, i32, Optio
 /// Check a target for a card's turn action. Returns an error, or None.
 // PERF: runs the action on a copy, twice when a move was refused (paid and free); bots memoise it per decision.
 pub fn check_target(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> Option<String> {
+    // Steal Their Playbook can't be your last card played (designer, 2026-10-29): as the last card in hand it is only
+    // discarded, for no effect.
+    let hand = &s.players[pid as usize].hand;
+    if card(ci).action == Action::Playbook && hand.len() == 1 && hand.contains(&ci) {
+        return if t.is_some() { Some("Steal Their Playbook can't be your last card played: discard it for no effect.".into()) } else { None };
+    }
     let reason = check_shape(s, pid, ci, t);
     let Some(t) = t else { return reason };
     if reason.is_some() || !s.options.sway_required {
@@ -869,9 +875,9 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
         }
         Action::Playbook => match t.use_ {
             Some(Use::Yours) => if matches!(t.back, Some(Id::Card(b)) if own_plays(s, pid).contains(&b)) { None } else { e("Pick a card you played earlier this round.") },
-            Some(Use::Theirs) => match last_action(s) {
-                Some(last) => check_shape(s, pid, last, Some(t)),
-                None => e("Nothing has been played for its action this round."),
+            Some(Use::Theirs) => match t.back {
+                Some(Id::Card(copied)) if copy_options(s, pid).contains(&copied) => check_shape(s, pid, copied, Some(t)),
+                _ => e("Pick a card another player played this round, to copy."),
             },
             _ => e("Pick a use: theirs, or yours."),
         },
@@ -1258,9 +1264,9 @@ pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 }
                 s.players[me].hand.push(back);
                 log_line(s, |_| format!("{who}: {}: takes {} back.", c.name, card(back).name));
-            } else if let Some(last) = last_action(s) {
-                log_line(s, |_| format!("{who}: {}: plays {} as their own.", c.name, card(last).name));
-                act(s, pid, last, t);
+            } else if let Some(Id::Card(copied)) = t.back {
+                log_line(s, |_| format!("{who}: {}: plays {} as their own.", c.name, card(copied).name));
+                act(s, pid, copied, t);
             }
         }
         Action::Altar | Action::Terror | Action::Study => {

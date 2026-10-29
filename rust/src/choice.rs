@@ -571,9 +571,10 @@ fn unsuited_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             if t.use_ == Some(Use::Yours) {
                 return if truthy(t.back) { Choice::done() } else { Choice { kind: Kind::Use(UseKey::Back), options: own_plays(s, pid).into_iter().map(Opt::Card).collect(), optional: None, left: None } };
             }
-            match last_action(s) {
-                Some(last) => next_shape(s, pid, last, t),
-                None => Choice { kind: Kind::Use(UseKey::Back), options: vec![], optional: None, left: None },
+            // Theirs: first the card to copy, then that card's own steps, as if it were yours.
+            match t.back {
+                Some(Id::Card(copied)) => next_shape(s, pid, copied, t),
+                _ => Choice { kind: Kind::Use(UseKey::Back), options: copy_options(s, pid).into_iter().map(Opt::Card).collect(), optional: None, left: None },
             }
         }
         _ => Choice::done(),

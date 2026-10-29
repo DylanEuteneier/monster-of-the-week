@@ -219,6 +219,7 @@ pub fn apply_legal(s: &GameState, pid: Pid, m: &Move) -> GameState {
                     log_line(&mut next, |_| format!("{who} plays {}.", c.name));
                     match target {
                         Some(Some(t)) => act(&mut next, pid, ci, t),
+                        _ if c.action == crate::spec::Action::Playbook && s.players[me].hand.len() == 1 => log_line(&mut next, |_| format!("{who} discards {}: it can't be the last card played.", c.name)),
                         _ => log_line(&mut next, |_| format!("{} has nothing to act on.", c.name)),
                     }
                 }

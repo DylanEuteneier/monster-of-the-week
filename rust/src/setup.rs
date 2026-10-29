@@ -178,10 +178,17 @@ pub fn playbook() -> CardIx {
     *PLAYBOOK.get_or_init(|| spec().card_ix("playbook").expect("playbook"))
 }
 
-/// This round's last card played for its action, the Playbook's own plays aside.
-pub fn last_action(s: &GameState) -> Option<CardIx> {
+/// The cards Steal Their Playbook may copy (theirs; designer, 2026-10-29): any card another player played this round,
+/// however they played it, each once; a Playbook aside.
+pub fn copy_options(s: &GameState, pid: Pid) -> Vec<CardIx> {
     let pb = playbook();
-    s.round_plays.iter().rev().find(|x| x.use_ == PlayUse::Action && x.card != pb).map(|x| x.card)
+    let mut out = Vec::new();
+    for x in &s.round_plays {
+        if x.pid != pid && x.card != pb && !out.contains(&x.card) {
+            out.push(x.card);
+        }
+    }
+    out
 }
 
 /// The cards a player played earlier this round, each once, that the Playbook may take back.
@@ -202,7 +209,7 @@ pub fn sway_for(s: &GameState, pid: Pid, card: CardIx) -> i32 {
         return printed_of(card);
     }
     let hand = &s.players[pid as usize].hand;
-    let held = hand.contains(&card) || (hand.contains(&playbook()) && last_action(s) == Some(card));
+    let held = hand.contains(&card) || (hand.contains(&playbook()) && copy_options(s, pid).contains(&card));
     hand.len() as i32 + if held { 0 } else { 1 }
 }
 

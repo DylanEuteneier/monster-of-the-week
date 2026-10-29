@@ -98,7 +98,7 @@ pub fn describe_target(factions: &[u8; 5], ci: CardIx, t: Option<&Target>) -> St
         Action::Playbook => if t.use_ == Some(Use::Yours) {
             format!("takes {} back", match t.back { Some(Id::Card(c)) => sp.cards[c as usize].name.clone(), _ => "?".into() })
         } else {
-            "plays the last card as their own".into()
+            format!("plays {} as their own", match t.back { Some(Id::Card(c)) => sp.cards[c as usize].name.clone(), _ => "?".into() })
         },
         Action::Terror | Action::Study | Action::Altar => {
             let mut at: Vec<Id> = t.moves.as_deref().unwrap_or(&[]).iter().map(|m| m.location).collect();
