@@ -512,7 +512,9 @@ Reading: the fuller start lifts the early rounds (4.6 fights in round 1 against 
 - On: 58→20 / 7.1 / 5.3, 1.9 / 24, 12, 4, 2, 2 / 13%. Fights take 35 and 27 in rounds 1–2 (20 and 16 off).
 - On, old start: 37→26 / 8.1 / 3.2, 2.5 / 17, 18, 9, 4, 4 / 32%.
 - On, 15 faction tokens: 57→11 / 5.3 / 5.7, 1.3 / 22, 2, 1, 2, 2 / 2%.
-Reading: GR5 front-loads. It pours the supplies onto the board in the first two rounds, the extra presence feeds bigger fights, the casualties leave as trophies, and the supplies are empty by round 3, so the late game is as thin as before (or thinner) and the invaders rarely win. The limit is the faction's whole pool of tokens: casualties never come back, so any inflow from the supply only spends the pool faster.
+- On, 30 faction tokens: 58→42 / 10.1 / 5.4, 2.7 / 25, 22, 16, 8, 5 / 87%.
+- On, old start, 30 faction tokens: 37→47 / 11.2 / 3.1, 3.1 / 16, 21, 18, 14, 8 / 90%. The liveliest late game measured: fights still take 18 in round 5 (9 today).
+Reading: GR5 front-loads. It pours the supplies onto the board in the first two rounds, the extra presence feeds bigger fights, the casualties leave as trophies, and the supplies are empty by round 3, so the late game is as thin as before (or thinner) and the invaders rarely win. The limit is the faction's whole pool of tokens: casualties never come back, so any inflow from the supply only spends the pool faster. With a pool big enough (30), the late game stays busy, but presence ends far over the threshold of 20: the threshold would have to move with it.
 
 **More sway (designer, 2026-10-29: bump up sway values; variant `cardSway`; 60 games each, seed 2001, balanced bot leans, passing off).** Cards with a legal action per turn, rounds 1–5; locations occupied and presence after round 5; invaders' ending:
 
