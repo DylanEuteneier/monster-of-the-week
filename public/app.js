@@ -965,14 +965,7 @@ function render() {
   renderBoard();
   renderLog();
   $('hint-button').hidden = !hintsAvailable();
-  // The hint aim: a slider from the island to backing a faction, said in words.
-  const aim = document.getElementById('hint-aim');
-  if (aim) {
-    aim.hidden = !hintsAvailable() || !ui.hints.on || !!ui.hints.source;
-    const at = Math.max(0, HINT_LEANS.findIndex(([v]) => v === ui.hints.lean));
-    const slider = /** @type {HTMLInputElement | null} */ (document.getElementById('hint-lean'));
-    if (slider) { slider.value = String(at); slider.style.setProperty('--aim', `${at * 25}%`); }
-  }
+  renderHintAim();
   renderSpeed();
   markHint();
   // A new choice (a card picked or put down, a reading, a pick): the hint recomputes for it.
@@ -1281,6 +1274,16 @@ let hintFocusAsked = '';
 
 const HINT_MODES = /** @type {const} */ (['off', 'marks', 'full', 'ask']);
 const HINT_LABELS = { off: 'Hints: off', marks: 'Hints: marks', full: 'Hints: full', ask: 'Hints: on demand' };
+/** The hint aim's slider: shown only while hints are on (not in the tutorial, whose hints are scripted). */
+function renderHintAim() {
+  const aim = document.getElementById('hint-aim');
+  if (!aim) return;
+  aim.hidden = !ui.view || !hintsAvailable() || !ui.hints.on || !!ui.hints.source;
+  const at = Math.max(0, HINT_LEANS.findIndex(([v]) => v === ui.hints.lean));
+  const slider = /** @type {HTMLInputElement | null} */ (document.getElementById('hint-lean'));
+  if (slider) { slider.value = String(at); slider.style.setProperty('--aim', `${at * 25}%`); }
+}
+
 /** The hint aim: the lean of the bot that suggests your moves, from the island (−0.3) to backing a faction (+0.3). */
 const HINT_LEANS = /** @type {const} */ ([[-0.3, 'the island'], [-0.15, 'mostly the island'], [0, 'either side'], [0.15, 'mostly backing a faction'], [0.3, 'backing a faction']]);
 /** Set the hint aim (the player's preference; remembered in this browser). @param {number} lean */
@@ -1317,6 +1320,7 @@ function renderHint() {
   const nothing = !h && !waiting && !!view && myDecision(view) && !!hintFocus();
   const panel = $('hint-overlay');
   panel.hidden = (ui.hints.mode !== 'full' && ui.hints.mode !== 'ask') || (!h && !waiting && !nothing);
+  renderHintAim();
   const button = $('hint-button');
   button.classList.toggle('is-on', ui.hints.on);
   button.textContent = HINT_LABELS[ui.hints.mode];
