@@ -10,6 +10,7 @@ import art from './assets/sprites.json' with { type: 'json' };
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { LAYOUT_SUGGESTIONS } from './layout-suggestions.js';
 import { cardHtml } from './cards.js';
+import { NOUNS, VERBS, iconHtml, nounHtml } from './icons.js';
 
 
 /** @param {unknown} value */
@@ -37,7 +38,47 @@ const panel = (title, note, body) => `<section class="panel"><div class="row-bet
 /** @param {{ width: number, height: number, src: string } | undefined} sprite @param {number} scale */
 const img = (sprite, scale) => (sprite ? `<img class="sprite" src="${esc(sprite.src)}" width="${sprite.width * scale}" height="${sprite.height * scale}" alt="">` : '');
 
+/** The action icons, a first draft (IK1, D34): every mark, then cards written in blocks. */
+function renderIcons() {
+  const marks = (/** @type {Record<string, { label: string, svg: string }>} */ set, /** @type {string} */ cls) => Object.values(set).map((m) => `<figure class="ik-mark"><span class="ik ik-solo"><span class="${cls}">${m.svg}</span></span><figcaption class="small">${esc(m.label)}</figcaption></figure>`).join('');
+  /** One line of a card in blocks: the blocks, then a few words. @param {string} blocks @param {string} words */
+  const line = (blocks, words) => `<div class="ik-line"><span class="ik-blocks">${blocks}</span><span class="small muted">${esc(words)}</span></div>`;
+  const to = '<span class="ik-to">→</span>';
+  const examples = [
+    ['Raise the Stakes', 'Gather up to X into one: standing, sway or tokens.', [
+      line(`${iconHtml('gather', 'standing', 'X')}`, '1 from each of up to X factions, into one'),
+      line(`${iconHtml('gather', 'sway', 'X')}${to}${nounHtml('location')}`, 'up to X of yours from next door, into one location'),
+      line(`${iconHtml('gather', 'token', 'X')}${to}${nounHtml('location')}`, 'up to X of one faction from next door, to where you have sway'),
+    ]],
+    ['Cover Every Exit', 'Spread 1 to each of up to X.', [
+      line(`${iconHtml('spread', 'standing', 'X')}`, 'from one faction to up to X others'),
+      line(`${iconHtml('spread', 'sway', 'X')}${to}${nounHtml('neighbour')}`, 'from one location to up to X neighbours'),
+      line(`${iconHtml('spread', 'token', 'X')}${to}${nounHtml('neighbour')}`, 'a group sends 1 to each of up to X neighbours'),
+    ]],
+    ['Switch Allegiance', 'Move up to X from one to another.', [
+      line(`${iconHtml('burn', 'standing', 'X')}${to}${iconHtml('gain', 'standing', 'X')}`, 'with one faction, gain the same with another'),
+      line(`${iconHtml('move', 'sway', 'X')}`, 'from one location to any other'),
+    ]],
+    ['Call in Favours', 'Gain up to X from your supply.', [
+      line(`${iconHtml('gain', 'sway', 'X')}${to}${nounHtml('fight')}`, '1 at each of up to X fights'),
+      line(`${iconHtml('gain', 'standing', 'X')}`, 'with one faction'),
+    ]],
+    ['Draw Them Away', 'A group spreads to at least two neighbours.', [line(`${nounHtml('group')}${to}${iconHtml('spread', 'token', '2+')}`, '1 to each chosen neighbour; the rest stay')]],
+    ['Light of the Cross', 'A group splits evenly in two.', [line(`${nounHtml('group')}${to}${iconHtml('split', 'neighbour')}`, 'between two neighbours')]],
+    ['The Big Chase', 'A group is chased step by step.', [line(`${nounHtml('group')}${to}${iconHtml('trail', 'token', '1')}`, '1 stays at each step; the rest arrive at the end')]],
+    ['Showdown', 'Burn sway at a lone group to slay as many.', [line(`${nounHtml('lone')}${to}${iconHtml('burn', 'sway', 'X')}${to}${iconHtml('slay', 'token', 'X')}`, 'never a fight; they are your trophies')]],
+    ['Spill Blood on the Altar', 'Mark locations; their fights are bent.', [line(`${iconHtml('mark', 'location', 'N')}${to}${iconHtml('bend', 'fight')}`, 'the winner loses as many as the loser')]],
+    ['Wake the Dead', 'The dead rise from the supply.', [line(`${iconHtml('raise', 'token', 'N')}${to}${nounHtml('location')}`, '1 sway each; a third side at a fight')]],
+  ].map(([name, gist, lines]) => `<div class="ik-example"><b>${esc(String(name))}</b><div class="small">${esc(String(gist))}</div>${/** @type {string[]} */ (lines).join('')}</div>`).join('');
+  $('icons').innerHTML = `<div class="row-between"><h2>Action icons (draft)</h2><span class="small muted">IK1, D34: a verb block plus a noun block</span></div>
+    <p class="small muted">A first draft for review: clean vector marks, not pixel art. A verb (filled) and a noun (outlined) combine into one icon, with an amount (1, X, ½, all) where it matters. No card uses them yet.</p>
+    <h3 class="small">Verbs</h3><div class="ik-marks">${marks(VERBS, 'ik-v')}</div>
+    <h3 class="small">Nouns</h3><div class="ik-marks">${marks(NOUNS, 'ik-n')}</div>
+    <h3 class="small">Cards in blocks</h3><div class="ik-examples">${examples}</div>`;
+}
+
 function render() {
+  renderIcons();
   const headers = /** @type {SpriteMap} */ (art.headers ?? {});
   const hexes = /** @type {SpriteMap} */ (art.hexes ?? {});
   const schemes = /** @type {SpriteMap} */ (art.hexSchemes ?? {});
