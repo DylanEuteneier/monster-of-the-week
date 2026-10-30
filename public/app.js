@@ -847,6 +847,104 @@ function copyable() {
   return [...new Set((view?.roundPlays ?? []).filter((p) => p.pid !== view?.you && p.card !== 'playbook').map((p) => p.card))];
 }
 
+/** The suits' glyphs, for the prompts. */
+const SUIT_GLYPH = /** @type {Record<string, string>} */ ({ nocturnals: '◐', scifi: 'ↂ', sentients: '⏏', undead: '☾', demonic: '⎈' });
+
+/** The Done button says what stopping does (designer, 2026-10-29: so no one presses it too early). @param {string | undefined} action */
+function doneLabel(action) {
+  if (action === 'chase') return 'End the chase here';
+  if (action === 'herd') return 'Stop the herd here';
+  if (action === 'altar' || action === 'study' || action === 'terror') return 'Done marking';
+  if (action === 'burst') return 'Done sending';
+  if (action === 'well') return 'Done calling';
+  return 'Done';
+}
+
+/**
+ * The bar's words for each step of a suited card or Showdown (designer, 2026-10-29: walk the rules through as you
+ * go: what this click does, how many so far, and what Done leaves). '' where the older wording stands.
+ * @param {import('./rules.js').Card} card @param {NonNullable<ReturnType<typeof currentChoice>>} choice
+ */
+function cardSteps(card, choice) {
+  const view = view0();
+  const t = ui.target;
+  const locMode = t.mode === 'location';
+  const glyph = SUIT_GLYPH[card.suit ?? ''] ?? '';
+  const suitFac = view.factions.find((f) => factionById(f).archetype === card.suit);
+  const SF = suitFac ? `the ${fname(suitFac)}` : '';
+  const F = t.faction ? `the ${fname(String(t.faction))}` : '';
+  const L = t.location ? lname(String(t.location)) : '';
+  const left = 'left' in choice && choice.left ? choice.left : 0;
+  const from = Array.isArray(t.from) ? t.from.filter((x) => x !== 'stop') : [];
+  const path = Array.isArray(t.path) ? t.path.filter((x) => x !== 'stop') : [];
+  const key = choice.kind === 'mode' ? 'mode' : choice.kind === 'split' ? 'split' : `${choice.kind}:${'key' in choice ? choice.key ?? '' : ''}`;
+  const where = locMode ? `at a ${glyph} location` : `of ${SF}`;
+  if (key === 'mode' && card.suit) return `Choose how to play it: LOC (a group or place at a ${glyph} location) or FAC (${SF}), or its +${view.printed?.[card.id] ?? card.sway} to spend it for sway with ${SF}`;
+  switch (card.action) {
+    case 'invite':
+      if (key === 'location:location') return locMode ? `Pick an empty ${glyph} location to invite them into` : `Pick where ${SF} are invited: a location held by a lone group of another faction, next to ${SF}`;
+      if (choice.kind === 'group') return locMode ? ((t.moves?.length ?? 0) ? `Pick the second group next door, of another faction` : `Pick the first group next door to invite into ${L}`) : `Pick the group of ${SF} that comes into ${L}`;
+      if (key === 'faction:payer') return `Pick whose standing pays the sway at ${L} (one of the two invited factions)`;
+      return '';
+    case 'gate':
+      if (key === 'faction:payer') return `Pick whose standing pays the Gate's 1 sway: ${SF}, or a faction at either end`;
+      return '';
+    case 'threat':
+      if (choice.kind === 'group') return `Pick the group to fool (${where})`;
+      if (key === 'location:to') return `Pick the group they march on: the largest lone group of another faction within two (a tie is your choice)`;
+      return '';
+    case 'herd':
+      if (choice.kind === 'group') return `Pick the herd (${where}): it follows the bait from neighbour to neighbour`;
+      if (key === 'location:path') return path.length ? `${path.length} step${path.length === 1 ? '' : 's'} laid: pick the next one (it picks up its own kind there, or crashes into a lone rival), or stop the herd here (up to ${left} more)` : `Lay the bait: pick the first neighbour (it picks up its own kind there, or crashes into a lone rival)`;
+      return '';
+    case 'well':
+      if (key === 'location:location') return locMode ? `Pick the centre: a ${glyph} location that is empty or holds one faction` : `Pick the centre: a location next to ${SF} that is empty or holds one faction`;
+      if (choice.kind === 'faction') return `Pick the faction called to ${L}: every lone group of it next door comes whole`;
+      if (key === 'location:from') return `${from.length ? `${from.length} pulled from fights: ` : ''}pick a fight next door to pull 1 more of ${F} from (lone groups come anyway), or Done calling`;
+      return '';
+    case 'burst':
+      if (choice.kind === 'group') return `Pick the group (${where}): it sends 1 token to each of at least two neighbours`;
+      if (key === 'location:from') return from.length < 2 ? `Pick a neighbour to send 1 token to (${from.length} of at least 2)` : `${from.length} sent: pick another neighbour for 1 more, or Done sending (the rest stay)`;
+      return '';
+    case 'chase':
+      if (choice.kind === 'group') return `Pick the group to chase (${where})`;
+      if (key === 'location:path') return path.length ? `${path.length} step${path.length === 1 ? '' : 's'}, 1 token left at each: pick the next, or end the chase here (the rest arrive) · up to ${left} more` : `Pick the first step of the chase: 1 token stays at each location passed`;
+      return '';
+    case 'rejoin':
+      if (choice.kind === 'group') return `Pick the group (${where}): it scatters to its faction's other groups`;
+      if (key === 'location:from') return `Pick which of its groups gets the next token (each gets one before any gets a second) · ${left} left`;
+      return '';
+    case 'plough':
+      if (key === 'location:location') return locMode ? `Pick a fight at a ${glyph} location to plough through` : `Pick a fight ${SF} are in to plough through`;
+      if (key === 'location:from') return `Pick a neighbour for the next token leaving (each side leaves by half, never two sides to one place) · ${left} left`;
+      return '';
+    case 'split':
+      if (choice.kind === 'group') return `Pick the group (${where}): it splits evenly between two neighbours`;
+      if (key === 'split') return `Pick a neighbour for the next token: they split evenly between two · ${left} left`;
+      return '';
+    case 'raise':
+      if (key === 'location:location') return locMode ? `Pick a ${glyph} location for the dead to rise at` : `Pick where ${SF} are: the risen join them`;
+      if (key === 'location:from') return from.length ? `${from.length} risen: click ${L} again to raise 1 more (1 sway each, up to ${left} more), or Done` : `Click ${L} to raise 1 of the dead (1 sway each); again for each more (up to ${left})`;
+      return '';
+    case 'control':
+      if (key === 'location:location') return locMode ? `Pick a fight at a ${glyph} location` : `Pick a fight ${SF} are in`;
+      if (key === 'location:from') return from.length ? `${from.length} cut down: click ${L} again to spend 1 more of your sway there and cut down 1 more (up to ${left} more), or Done` : `Click ${L} to spend 1 of your sway there and cut down 1 of ${F} (your trophy); again for each more (up to ${left})`;
+      return '';
+    case 'showdown':
+      if (choice.kind === 'group') return 'Pick a lone group (never a fight) where you have sway';
+      if (key === 'location:from') return from.length ? `${from.length} slain: click ${L} again to burn 1 more of your sway and slay 1 more (up to ${left} more), or Done` : `Click ${L} to burn 1 of your sway there and slay 1 token (your trophy); again for each more (up to ${left})`;
+      return '';
+    case 'altar': case 'study': case 'terror': {
+      const marks = (t.moves ?? []).filter((m) => m.location !== 'stop').length + from.length;
+      if (choice.kind === 'group' && ui.payerAt) return '';
+      const what = locMode ? `a ${glyph} location` : `a location holding ${SF}`;
+      return marks ? `${marks} marked: pick another ${what} to mark (1 sway each), or Done marking` : `Pick ${what} to mark: 1 of your sway goes on it`;
+    }
+    default:
+      return '';
+  }
+}
+
 /**
  * What each use of an unsuited card gives, with X (the cards in your hand, this one included; Call in Favours also
  * capped by your supply). @param {string | undefined} action @param {number} favoursX @returns {Record<string, string>}
@@ -925,7 +1023,7 @@ function renderTargeting(cardId) {
   const favoursN = (ui.target.payers?.length ?? 0) + (Array.isArray(ui.target.from) ? ui.target.from.length : 0);
   const favoursFac = ui.target.payers?.[0] ? fname(String(ui.target.payers[0])) : '';
   const gateWords = /** @type {Record<string, string>} */ ({ location: 'Pick one end of the Gate', to: 'Pick the other end', losses: 'Pick which end the winner\'s losses come off first (they leave the board)' });
-  const words = unsuitedWords(card.action, choice) || (card.action === 'gate' && choice.kind === 'location' && gateWords[choice.key] ? gateWords[choice.key]
+  const words = cardSteps(card, choice) || unsuitedWords(card.action, choice) || (card.action === 'gate' && choice.kind === 'location' && gateWords[choice.key] ? gateWords[choice.key]
     : choice.kind === 'use' && choice.key === 'back' ? (ui.target.use === 'theirs' ? 'Pick a card another player played this round: it comes into your hand, to play now' : 'Pick a card you played to take back')
     : card.action === 'favours' && choice.kind === 'location' ? (favoursN ? `${favoursN} placed: pick another fight for 1 more sway, up to ${choice.left} more, or Done` : `Pick a fight: 1 of your sway goes there, from your supply (up to ${favoursX} fights, each once)`)
     : card.action === 'favours' && choice.kind === 'faction' ? (favoursN ? `${favoursN} standing with the ${esc(favoursFac)} so far: click them again for 1 more (up to ${favoursX}), or Done` : `Pick one faction: each click gives you 1 standing with it, from your supply (up to ${favoursX})`)
@@ -963,7 +1061,7 @@ function renderTargeting(cardId) {
     return toHand(view.me.hand.map((c) => cardHtml(c, { selected: true })), false);
   }
   step('turn', esc(choice.kind === 'mode' ? (empty.length === 2 ? 'Nothing to target: play it for no effect' : 'Pick an option on the card') : none ? 'Nothing to target: play it for no effect' : words), arrows);
-  if ((choice.kind === 'location' || choice.kind === 'group' || choice.kind === 'faction') && 'optional' in choice && choice.optional) handAction('skip', { label: 'Done' });
+  if ((choice.kind === 'location' || choice.kind === 'group' || choice.kind === 'faction') && 'optional' in choice && choice.optional) handAction('skip', { label: doneLabel(card.action) });
   handAction('target-none', { tip: 'Play it for no effect' });
   handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
   // A reading with nothing to target says what it needs, on the card.
