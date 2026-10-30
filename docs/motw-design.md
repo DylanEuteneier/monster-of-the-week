@@ -783,6 +783,22 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
     - **The cards.** Card in hand, and X (the cards in your hand). A reading: LOC (at a suit's location) or FAC (the suit's faction). A card's printed sway (+N). A played card (this round). A mark (Spill Blood, Study the Bodies, Night Terrors). The Gate.
     - **Who leads.** Sway leader (the most sway at a location, or with a faction). Runner-up.
     - **Amounts.** 1, X, half (from a fight), all.
+  - *The verbs (compiled by Claude from what the cards in play do; designer, 2026-10-29).* Most verbs act on more than one noun, which is the pattern the designer saw in Raise the Stakes: one action, applied to different sets.
+    - **Gather** (into one place): tokens (Invite Them In, Perform the Ritual, Raise the Stakes), sway (Raise the Stakes), standing (Raise the Stakes).
+    - **Spread** (1 to each of several): tokens (Draw Them Away, Cover Every Exit; Cut the Powerlines to its own groups), sway (Cover Every Exit), standing (Cover Every Exit).
+    - **Move** (from one to another): sway (Switch Allegiance; Night Terrors' sway following), standing (Switch Allegiance).
+    - **Split** (evenly in two): tokens (Light of the Cross).
+    - **Trail** (step by step from neighbour to neighbour): drop 1 at each step (The Big Chase), pick up its own kind at each step (Bait the Herd).
+    - **March on** (to a rival within two): tokens (Spoof the Signal).
+    - **Drive out** (every side leaves a fight): tokens (Plough Through). **Flee** (1 token at night): Night Terrors.
+    - **Slay** (tokens become your trophies): Take Control, Showdown.
+    - **Raise / bring** (tokens from a faction's supply onto the board): Wake the Dead, BACK, sway bringing tokens (GR5), growth.
+    - **Join** (two locations as one): The Gate.
+    - **Mark** (a location, with 1 sway): Spill Blood, Study the Bodies, Night Terrors.
+    - **Pay / gain / burn**: pay sway from standing (every action); gain standing (+N, Call in Favours, BACK); burn sway back to your supply (Take Control, Showdown); place sway from your supply (Call in Favours).
+    - **Take a card**: Steal Their Playbook (another's played card, or your own back).
+    - **Bend a fight** (a rule for one fight this round): the winner loses as many as the loser (Spill Blood); the leader also takes 1 from the runner-up's pile (Study the Bodies).
+    - **The game's own verbs** (no card): fight, grow, night falls.
 - `CD1` Player actions and player sway run on cards.
 - `MP1` **Multi-purpose cards:** each card can serve several purposes:
   - determine the board state action being taken;
