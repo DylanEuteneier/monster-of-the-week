@@ -272,6 +272,9 @@ async function showNext() {
   while (incoming.length) {
     const item = /** @type {(typeof incoming)[number]} */ (incoming.shift());
     const before = ui.view;
+    // The position's hint key first, whichever way the view is shown (a guided turn shows it too): a hint asked for
+    // under an old key never matches the one that comes back.
+    if (item.meta?.hintKey && item.meta.hintKey !== ui.viewKey) { ui.viewKey = item.meta.hintKey; ui.hints.byKey = Object.fromEntries(Object.entries(ui.hints.byKey).filter(([k]) => k.startsWith(ui.viewKey))); }
     const last = item.meta?.last;
     mark(`view ${item.view.round}:${item.view.phase} after ${last ? `${last.player} ${last.move.type}` : 'nothing'}`);
     // Another seat's move plays at this screen's speed (your own always at once, unpaused: designer, 2026-10-11).
@@ -285,6 +288,7 @@ async function showNext() {
         if (other && last && s.guide) await guideTurn(before, before, last, s);
         await tellRoundEnd(before, item.view, item.meta.fights, s);
         ui.acting = null;
+        renderPhase(); // the bar leaves the move it was telling
         item.done();
         continue;
       }
@@ -292,18 +296,19 @@ async function showNext() {
         mark(`guide ${last.player} ${last.move.type}`);
         await guideTurn(before, item.view, last, s);
         ui.acting = null;
+        renderPhase(); // the bar leaves the move it was telling
         item.done();
         continue;
       }
     } catch (error) {
       console.error('telling a turn failed:', error);
       $('guide').hidden = true; $('round-frame').hidden = true; unlight();
+      ui.acting = null;
     }
     const instant = item.instant || (other && s.instant);
     const flights = before && !instant ? planFlights(before, item.view, colourOf) : [];
     mark(`fly ${flights.length}`);
     if (flights.length) await fly(flights, item.view.you, { speed: item.speed ?? (other ? s.speed : 1) + incoming.length * 0.75 });
-    if (item.meta?.hintKey && item.meta.hintKey !== ui.viewKey) { ui.viewKey = item.meta.hintKey; ui.hints.byKey = Object.fromEntries(Object.entries(ui.hints.byKey).filter(([k]) => k.startsWith(ui.viewKey))); }
     ui.acting = null;
     showState(item.view, item.online);
     item.done();
