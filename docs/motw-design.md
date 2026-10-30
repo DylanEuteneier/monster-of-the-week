@@ -775,6 +775,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
+- `IK1` **An icon set (designer's seed, 2026-10-29):** icons for the kinds of action and for the things with meaning (a location, standing with a faction, a faction token, a fight, and so on), so a card communicates its action without whole sentences, glanceable like a flow chart. Prompted by Raise the Stakes reading as a paragraph; with it, the cards that apply one action to different sets should state the action at a high level before each use's details. *Open:* the vocabulary (which things and which verbs get icons), and the high-level line for each such card.
 - `CD1` Player actions and player sway run on cards.
 - `MP1` **Multi-purpose cards:** each card can serve several purposes:
   - determine the board state action being taken;
