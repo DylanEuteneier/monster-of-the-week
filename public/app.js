@@ -857,11 +857,16 @@ function renderTargeting(cardId) {
     from: 'Pick where they come from', group: 'Pick a group', faction: 'Pick a faction', use: 'Pick a use', done: 'Ready',
   });
   const key = choice.kind === 'location' ? choice.key : choice.kind;
+  // Call in Favours: X is the cards in your hand (this one included), capped by your supply; the count so far.
+  const favoursX = Math.min(view0().me.hand.length, view0().players[view0().you].supply);
+  const favoursN = (ui.target.payers?.length ?? 0) + (Array.isArray(ui.target.from) ? ui.target.from.length : 0);
+  const favoursFac = ui.target.payers?.[0] ? fname(String(ui.target.payers[0])) : '';
   const gateWords = /** @type {Record<string, string>} */ ({ location: 'Pick one end of the Gate', to: 'Pick the other end', losses: 'Pick which end the winner\'s losses come off first (they leave the board)' });
   const words = card.action === 'gate' && choice.kind === 'location' && gateWords[choice.key] ? gateWords[choice.key]
     : choice.kind === 'use' && choice.key === 'back' ? (ui.target.use === 'theirs' ? 'Pick a card another player played this round: it comes into your hand, to play now' : 'Pick a card you played to take back')
-    : card.action === 'favours' && choice.kind === 'location' ? `Pick a fight for 1 sway from your supply · up to ${choice.left} more`
-    : card.action === 'favours' && choice.kind === 'faction' ? 'Pick the faction: 1 standing from your supply each click'
+    : card.action === 'favours' && choice.kind === 'location' ? (favoursN ? `${favoursN} placed: pick another fight for 1 more sway, up to ${choice.left} more, or Done` : `Pick a fight: 1 of your sway goes there, from your supply (up to ${favoursX} fights, each once)`)
+    : card.action === 'favours' && choice.kind === 'faction' ? (favoursN ? `${favoursN} standing with the ${esc(favoursFac)} so far: click them again for 1 more (up to ${favoursX}), or Done` : `Pick one faction: each click gives you 1 standing with it, from your supply (up to ${favoursX})`)
+    : card.action === 'favours' && choice.kind === 'use' ? `Choose one: sway at fights, or standing with one faction (X = ${favoursX})`
     : card.action === 'stakes' && choice.kind === 'faction' && choice.key === 'faction' ? 'Pick the faction it all goes into'
     : card.action === 'stakes' && choice.kind === 'faction' ? 'Pick a faction to take 1 standing from'
     : card.action === 'stakes' && choice.kind === 'location' && choice.key === 'location' ? 'Pick where it gathers'
@@ -888,7 +893,9 @@ function renderTargeting(cardId) {
     : choice.kind === 'split' ? `Send tokens: ${choice.left} left`
     : choice.kind === 'location' && choice.key === 'path' ? `Pick the next step · ${choice.left} left` : WORDS[key] ?? '';
   const USE_LABELS = /** @type {Record<string, string>} */ ({ standing: 'Standing', sway: 'Sway on the board', tokens: 'Tokens', theirs: "Theirs: take another player's played card", yours: 'Yours: take one back' });
-  const useLabel = (/** @type {string} */ u) => (choice.kind === 'use' && choice.key === 'back' ? cardById(u).name : USE_LABELS[u] ?? u);
+  // Call in Favours says what each use gives.
+  const FAVOURS_USES = /** @type {Record<string, string>} */ ({ sway: `Sway: 1 at each of up to ${favoursX} fights`, standing: `Standing: up to ${favoursX} with one faction` });
+  const useLabel = (/** @type {string} */ u) => (choice.kind === 'use' && choice.key === 'back' ? cardById(u).name : card.action === 'favours' && FAVOURS_USES[u] ? FAVOURS_USES[u] : USE_LABELS[u] ?? u);
   const arrows = choice.kind === 'use' ? `<span class="bar-actions">${choice.options.map((u) => `<button class="bar-btn" data-action="pick-use" data-use="${esc(u)}">${esc(useLabel(u))}</button>`).join('')}</span>` : '';
   const t = ui.target;
   // A step with no candidates: say so, and point at playing it for no effect.
