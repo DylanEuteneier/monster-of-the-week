@@ -1390,7 +1390,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 #### D34. Action icons: a verb mark plus a noun mark
 
-- **Decided (designer, 2026-10-29):** cards and prompts may show actions as icons (IK1, 3.7), each composed of a verb mark and a noun mark: one mark per verb (gather, spread, move, slay, mark, and so on) and one per noun (token, sway, standing, location, fight, and so on), so "gather + token", "gather + sway" and "gather + standing" share the gather mark. The icons are clean vector shapes, not pixel art.
+- **Decided (designer, 2026-10-29):** cards and prompts may show actions as icons (IK1, 3.7), each composed of a verb mark and a noun mark: one mark per verb (gather, spread, move, slay, mark, and so on) and one per noun (token, sway, standing, location, fight, and so on), so "gather + token", "gather + sway" and "gather + standing" share the gather mark. The icons are clean vector shapes, not pixel art. Composable blocks, not a unique icon for everything (designer): a new card is written with the existing marks, and a new mark is added only for a new verb or noun.
 - **Why (designer):** to communicate an action without whole sentences, glanceable like a flow chart; pixel icons this small would be an unreadable mess. The verb and noun lists are in IK1.
 - **Open:** the look of each mark; which cards and prompts use them first.
 - **Date:** 2026-10-29
