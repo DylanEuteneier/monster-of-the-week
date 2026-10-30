@@ -775,7 +775,14 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- `IK1` **An icon set (designer's seed, 2026-10-29):** icons for the kinds of action and for the things with meaning (a location, standing with a faction, a faction token, a fight, and so on), so a card communicates its action without whole sentences, glanceable like a flow chart. Prompted by Raise the Stakes reading as a paragraph; with it, the cards that apply one action to different sets should state the action at a high level before each use's details. *Open:* the vocabulary (which things and which verbs get icons), and the high-level line for each such card.
+- `IK1` **An icon set (designer's seed, 2026-10-29):** icons for the kinds of action and for the things with meaning (a location, standing with a faction, a faction token, a fight, and so on), so a card communicates its action without whole sentences, glanceable like a flow chart. Prompted by Raise the Stakes reading as a paragraph; with it, the cards that apply one action to different sets should state the action at a high level before each use's details. *Open:* the verbs (which kinds of action get icons), the look of each icon, and the high-level line for each such card.
+  - *The nouns (compiled by Claude from the rules and cards in play; designer, 2026-10-29: "you can likely do the noun list on your own").* Each is something the current cards or rules refer to; *has a look* marks one the table already draws.
+    - **The board.** Location (a hex; *has a look*). A suit's location, ◐ ↂ ⏏ ☾ ⎈ (*has a look*: the suit glyphs). Neighbour (next door). Empty location. Scorched location. Region.
+    - **The monsters.** Faction token (*has a look*). Group: a faction's tokens at one location. Lone group: a group with no rival there. Fight: two factions at one location (three-way only through Wake the Dead). A faction's supply.
+    - **The players.** Sway: your cube on a location (*has a look*). Standing: your sway with a faction, off the board (*has a look*: the faction rows' cubes). Your supply of cubes. Trophy: a token you took (*has a look*). Pile: one side's dead from a fight, as trophies.
+    - **The cards.** Card in hand, and X (the cards in your hand). A reading: LOC (at a suit's location) or FAC (the suit's faction). A card's printed sway (+N). A played card (this round). A mark (Spill Blood, Study the Bodies, Night Terrors). The Gate.
+    - **Who leads.** Sway leader (the most sway at a location, or with a faction). Runner-up.
+    - **Amounts.** 1, X, half (from a fight), all.
 - `CD1` Player actions and player sway run on cards.
 - `MP1` **Multi-purpose cards:** each card can serve several purposes:
   - determine the board state action being taken;
