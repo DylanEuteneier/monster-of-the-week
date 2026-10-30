@@ -23,8 +23,32 @@ export function suitIcon(archetype, scale = 2) {
 const fname = (f) => factionById(f).name;
 
 /**
- * @typedef {{ mode?: '' | 'act' | 'keep', ticked?: boolean, sway?: boolean, back?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string, empty?: string[], why?: Partial<Record<'location' | 'faction', { label: string, met: boolean }[]>>, view?: PlayerView | null, extra?: string }} CardOptions
+ * @typedef {{ mode?: '' | 'act' | 'keep', ticked?: boolean, sway?: boolean, back?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string, use?: string, empty?: string[], why?: Partial<Record<'location' | 'faction', { label: string, met: boolean }[]>>, view?: PlayerView | null, extra?: string }} CardOptions
  */
+
+/** The uses' names on a card, and their short tags. */
+const USE_TAGS = /** @type {Record<string, string>} */ ({ Standing: 'STAND', Sway: 'SWAY', Tokens: 'TOKENS', Theirs: 'THEIRS', Yours: 'YOURS' });
+
+/**
+ * A card text with uses ("Choose one. Standing: … Sway: … X is …") split into its head, a row per use, and its foot
+ * (what X is, or a closing rule); null for any other text. @param {string} text
+ */
+export function usesOf(text) {
+  if (!/^Choose one\./.test(text)) return null;
+  const names = Object.keys(USE_TAGS).join('|');
+  const parts = text.split(new RegExp(`(?:^|\\s)(${names}): `));
+  if (parts.length < 3) return null;
+  const head = parts[0].trim();
+  /** @type {{ id: string, tag: string, text: string }[]} */
+  const rows = [];
+  for (let i = 1; i < parts.length; i += 2) { const body = parts[i + 1].trim(); rows.push({ id: parts[i].toLowerCase(), tag: USE_TAGS[parts[i]], text: body.charAt(0).toUpperCase() + body.slice(1) }); }
+  // The foot: a closing sentence on the last use that is about the whole card (X, or the last-card rule).
+  const last = rows[rows.length - 1];
+  const m = /\s((?:X is|It can't be)[^]*)$/.exec(last.text);
+  const foot = m ? m[1] : '';
+  if (m) last.text = last.text.slice(0, m.index).trim();
+  return { head, rows, foot };
+}
 
 /**
  * A card. `mode` says what clicking it does: 'act' (play its action),
@@ -50,6 +74,9 @@ export function cardHtml(id, o = {}) {
   const why = (/** @type {'location' | 'faction'} */ m) => o.why?.[m]?.length ? `<ul class="card-why">${(o.why[m] ?? []).map((x) => `<li class="${x.met ? 'is-met' : 'is-unmet'}">${x.met ? '✓' : '✗'} ${esc(x.label)}</li>`).join('')}</ul>` : '';
   const reading = (/** @type {'location' | 'faction'} */ m, /** @type {string} */ label, /** @type {string} */ text) => `<div class="card-reading${o.reading ? (o.reading === m ? ' is-on' : ' is-off') : ''}"><dt>${label}</dt><dd>${esc(text)}${why(m)}</dd></div>`;
   const readings = r ? `<dl class="card-readings small">${reading('location', 'LOC', r.location)}${reading('faction', 'FAC', `${r.faction}${sf ? ` (${fname(sf)})` : ''}`)}</dl>` : '';
+  // A card with uses (Choose one. Standing: … Sway: …) reads as a list, one row per use, not a paragraph
+  // (designer, 2026-10-29: glanceable); the chosen use stays lit. Presentation only: the words are the card's.
+  const uses = usesOf(c.text);
   const opt = (/** @type {string} */ action, /** @type {string} */ inner, /** @type {string} */ tip, /** @type {boolean} */ on, /** @type {Record<string, string>} */ data = {}) => live
     ? `<button class="card-opt${on ? ' is-on' : ''}${o.next ? ' is-next' : ''}${o.empty?.includes(data.mode ?? '') ? ' is-empty' : ''}" data-action="${action}" data-card="${esc(id)}"${Object.entries(data).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('')} title="${esc(tip)}">${inner}</button>`
     : `<span class="card-opt is-off" title="${esc(tip)}">${inner}</span>`;
@@ -66,7 +93,7 @@ export function cardHtml(id, o = {}) {
     <div class="card-main">
       <div class="card-text">
         <span class="card-name">${esc(c.name)}</span>
-        <p class="small">${esc(c.text)}</p>
+        ${uses ? `${uses.head ? `<p class="small">${esc(uses.head)}</p>` : ''}<dl class="card-uses small">${uses.rows.map((u) => `<div class="card-use${o.use ? (o.use === u.id ? ' is-on' : ' is-off') : ''}"><dt>${esc(u.tag)}</dt><dd>${esc(u.text)}</dd></div>`).join('')}</dl>${uses.foot ? `<p class="small card-x">${esc(uses.foot)}</p>` : ''}` : `<p class="small">${esc(c.text)}</p>`}
         ${readings}
       </div>
       ${options}

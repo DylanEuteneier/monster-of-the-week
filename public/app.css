@@ -602,6 +602,13 @@ body { min-width: calc(var(--map-width, 0px) + 2 * var(--space-3) + 4px + 2 * va
 .card-reading dd { margin: 0; }
 .card-reading.is-on { color: var(--ink); }
 .card-reading.is-off { opacity: 0.4; }
+/* A card's uses, one row each (Choose one); the chosen one lit. */
+.card-uses { margin: 0; display: flex; flex-direction: column; gap: 3px; }
+.card-use { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px; align-items: baseline; }
+.card-use dt { font-family: var(--font-display); font-size: 9px; color: var(--ink); }
+.card-use dd { margin: 0; }
+.card-use.is-off { opacity: 0.4; }
+.card-x { color: #5a5454; font-style: italic; }
 /* Text on the left, the card's options (readings, sway) on the right. */
 .card-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: start; }
 .card-text { min-width: 0; display: flex; flex-direction: column; gap: 4px; }

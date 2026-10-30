@@ -1066,7 +1066,7 @@ function renderTargeting(cardId) {
   handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
   // A reading with nothing to target says what it needs, on the card.
   const why = Object.fromEntries(empty.map((m) => [m, readingConditions(/** @type {any} */ (view), view.you, cardId, m)]).filter(([, c]) => c));
-  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, reading: t.mode, empty, why } : { dim: true })), false);
+  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, reading: t.mode, use: t.use ? String(t.use) : undefined, empty, why } : { dim: true })), false);
 }
 
 function renderGrowth() {
