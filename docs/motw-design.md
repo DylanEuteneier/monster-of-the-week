@@ -775,7 +775,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- `IK1` **An icon set (designer's seed, 2026-10-29):** icons for the kinds of action and for the things with meaning (a location, standing with a faction, a faction token, a fight, and so on), so a card communicates its action without whole sentences, glanceable like a flow chart. Prompted by Raise the Stakes reading as a paragraph; with it, the cards that apply one action to different sets should state the action at a high level before each use's details. *Open:* the look of each icon, whether an icon is a verb mark plus a noun mark or one icon per action, and the high-level line for each such card. *Designer (2026-10-29):* not pixel art: pixel icons this small would be an unreadable mess; they are clean vector shapes, an exception to the printed art's pixel rule (F.17).
+- `IK1` **An icon set (designer's seed, 2026-10-29):** icons for the kinds of action and for the things with meaning (a location, standing with a faction, a faction token, a fight, and so on), so a card communicates its action without whole sentences, glanceable like a flow chart. Prompted by Raise the Stakes reading as a paragraph; with it, the cards that apply one action to different sets should state the action at a high level before each use's details. *Decided (designer, 2026-10-29; D34):* an icon is composed of a verb mark plus a noun mark (one gather mark, with a token, sway or standing). *Open:* the look of each mark, and the high-level line for each card that applies one action to different sets. *Designer (2026-10-29):* not pixel art: pixel icons this small would be an unreadable mess; they are clean vector shapes, an exception to the printed art's pixel rule (F.17).
   - *The nouns (compiled by Claude from the rules and cards in play; designer, 2026-10-29: "you can likely do the noun list on your own").* Each is something the current cards or rules refer to; *has a look* marks one the table already draws.
     - **The board.** Location (a hex; *has a look*). A suit's location, ◐ ↂ ⏏ ☾ ⎈ (*has a look*: the suit glyphs). Neighbour (next door). Empty location. Scorched location. Region.
     - **The monsters.** Faction token (*has a look*). Group: a faction's tokens at one location. Lone group: a group with no rival there. Fight: two factions at one location (three-way only through Wake the Dead). A faction's supply.
@@ -1388,6 +1388,13 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Supersedes:** D32's start (its numbers; the variants remain).
 - **Date:** 2026-10-29
 
+#### D34. Action icons: a verb mark plus a noun mark
+
+- **Decided (designer, 2026-10-29):** cards and prompts may show actions as icons (IK1, 3.7), each composed of a verb mark and a noun mark: one mark per verb (gather, spread, move, slay, mark, and so on) and one per noun (token, sway, standing, location, fight, and so on), so "gather + token", "gather + sway" and "gather + standing" share the gather mark. The icons are clean vector shapes, not pixel art.
+- **Why (designer):** to communicate an action without whole sentences, glanceable like a flow chart; pixel icons this small would be an unreadable mess. The verb and noun lists are in IK1.
+- **Open:** the look of each mark; which cards and prompts use them first.
+- **Date:** 2026-10-29
+
 #### D14. Tokens and cubes
 
 - **Decided:** faction presence on the board is made of **tokens**; **cubes** are always players' sway. A faction never has cubes, and a player never has tokens (apart from hidden and bluff tokens, which are separate pieces).
@@ -1502,6 +1509,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-29 | One bot, its lean set per seat (D31, designer): trophy and backer become the two ends of one bot's lean; tables deal balanced or random leans, always fewer backing a faction | Prototype only; the old profiles' games replay unchanged |
 | 2026-10-29 | A fuller start (D32, designer): 3 tokens on each location (seeding even) and 2 standing with every other faction by default | The token-flow measurements in 1.7 |
 | 2026-10-29 | Shifts bring tokens (D33, designer): GR5 shifts only, 30 tokens a faction, threshold 30, the start back to 2 on each and 1 standing | The GR5 measurements in 1.7 |
+| 2026-10-29 | Action icons: a verb mark plus a noun mark, not pixel art (D34, designer) | IK1's noun and verb lists |
 | 2026-10-28 | Bot tests run natively (`npm run bots`, `motw tournament`: the tournament's games in Rust on every core, about twice as fast as WebAssembly). Budget map: more search for the trophy bot (16 kept moves, 12 play-outs, both) gained nothing; the trophy bot now plans its hand (designer), +6 points a seat pooled over two seeds; then drops the random jitter on its one-step values, ahead on all three seeds. Measured and not adopted: blending the one-step value into play-outs (worse), play-out bots listing targets (worse, slower), 12 draft samples, the backer keeping 16 moves. Planning confirmed for the backer (+5.6 pooled) | Bot tuning, not rules. The standard table's endings split 50/50 over 2,080 games, against the 40% invaders' ending aimed for: balance to revisit (designer) |
 
 ---
