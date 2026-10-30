@@ -830,6 +830,8 @@ button.card-opt:hover { background: #f6cca1; }
 .card-opt.is-suggested { outline: var(--line) solid var(--color-link); outline-offset: 1px; box-shadow: 0 0 0 4px rgb(61 195 216 / 0.35); }
 #hint-button.is-on { border-color: var(--color-accent); color: var(--color-accent); }
 .hand .card.is-suggested::before { content: "HINT" attr(data-hint); white-space: nowrap; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); padding: 1px var(--space-2); font-family: var(--font-display); font-size: 11px; color: var(--ink); background: var(--color-link); border: var(--border); pointer-events: none; }
+/* Lifted (hovered, active or open), the tab sits on the card's top edge and moves with it, clear of what is above. */
+.hand .card.is-suggested:is(:hover, .is-active, .card-selected)::before, .hand.is-open .card.is-suggested::before { top: -15px; z-index: 2; }
 .overlay-close { position: absolute; top: var(--space-2); right: var(--space-2); padding: 0 var(--space-2); }
 .log-round { display: flex; flex-direction: column; gap: 2px; font-size: 12px; padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-cell); }
 .chat-lines { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow-y: auto; font-size: 12px; }

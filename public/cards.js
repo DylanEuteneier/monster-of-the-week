@@ -88,7 +88,8 @@ export function cardHtml(id, o = {}) {
     </div>` : '';
   const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : '', o.selected && o.next ? 'card-needs-reading' : ''].filter(Boolean).join(' ');
   const full = `${c.name}. ${c.text}`;
-  return `<div class="${classes}" data-card="${esc(id)}" title="${esc(full)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
+  // No title tooltip: the card itself shows the text, and a tooltip only covered it (designer, 2026-10-29).
+  return `<div class="${classes}" data-card="${esc(id)}" aria-label="${esc(full)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
     <div class="card-band">${band}</div>
     <div class="card-main">
       <div class="card-text">
