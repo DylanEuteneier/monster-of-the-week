@@ -6,7 +6,7 @@
  *
  *   node scripts/tutorial-seed.js [count=300] [from=1]
  */
-import { newTable, nextActor, autoMove, play, botPicks, YOU } from '../public/tutorial-game.js';
+import { newTable, nextActor, autoMove, play, botPicks, endsPlay, beforeFights, YOU } from '../public/tutorial-game.js';
 import { cardById } from '../public/rules.js';
 
 const [count = 300, from = 1] = process.argv.slice(2).map(Number);
@@ -26,7 +26,7 @@ function roundOne(seed) {
     const pid = /** @type {string} */ (nextActor(s));
     const move = /** @type {any} */ (autoMove(table, pid));
     if (move.type === 'play') plays.push({ pid, use: move.use, card: move.card });
-    if (move.type === 'pass' && s.passesInRow === s.seating.length - 1) fightsState = s;
+    if (endsPlay(s, move)) fightsState = beforeFights(s, pid, move);
     play(table, pid, move);
   }
   const log = table.state.log.find((e) => e.round === 1)?.events ?? [];

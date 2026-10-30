@@ -29,7 +29,7 @@
  * read from the game's options.
  */
 import { spec, factionById, locationById, cardById, describeTarget, playerView, resolveFight, clone, listTargets, previewTarget, deckOf, printedOf, controllerOf, growthDue } from './rules.js';
-import { newTable, copyTable, autoMove, nextActor, play, botPicks, check, YOU, BOTS } from './tutorial-game.js';
+import { newTable, copyTable, autoMove, nextActor, play, botPicks, check, YOU, BOTS, endsPlay, beforeFights } from './tutorial-game.js';
 import { suggest } from './hints.js';
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { flyPaths, SLOW } from './motion.js';
@@ -99,6 +99,8 @@ const view = () => playerView(R.table.state, YOU);
 const opt = (/** @type {string} */ id) => Number(R.table.state.options[id]);
 /** Growth on own ground (AL3), a variant off by default (designer, 2026-10-21). */
 const boosted = () => R.table.state.options.alignedGrowth === 'on';
+/** Is passing on? Off by default (D29): everyone plays every card they keep. */
+const passingOn = () => R.table.state.options.passing === 'on';
 const rounds = () => view().rounds;
 
 /** Your slayer group, its archetype and its faction in this game. */
@@ -703,10 +705,10 @@ function chapterRound() {
     modal('Every round, three phases', `
       <div class="tut-phases">
         <div><b>1 · Draft</b>${eq(miniCard(first))}<span>plan your week: ${hand} cards each</span></div>
-        <div><b>2 · Play</b>${eq(tokenHtml(c.F0, 1), op('→'), cubeHtml(colour(YOU), 9))}<span>one card at a time, until everyone passes</span></div>
+        <div><b>2 · Play</b>${eq(tokenHtml(c.F0, 1), op('→'), cubeHtml(colour(YOU), 9))}<span>one card at a time, ${passingOn() ? 'until everyone passes' : 'until every card is played'}</span></div>
         <div><b>3 · Resolve</b>${eq(CLASH, op('then'), '+1')}<span>fights, then growth</span></div>
       </div>
-      <p><b>The draft:</b> pick and pass, left, to ${hand} cards each (${plural(st.leftOut.length, 'card')} left out, unseen). When a new batch arrives, your picks so far rejoin it, so you can put one back for something better. Cards you don't play are lost; every round drafts the whole deck again.</p>
+      <p><b>The draft:</b> pick and pass, left, to ${hand} cards each (${plural(st.leftOut.length, 'card')} left out, unseen). When a new batch arrives, your picks so far rejoin it, so you can put one back for something better. ${passingOn() ? "Cards you don't play are lost" : 'You play every card you keep'}; every round drafts the whole deck again.</p>
       <p class="small muted">${rounds()} rounds, then the count.</p>`),
   ];
 }
@@ -776,7 +778,7 @@ function drive() {
 function fastStep(pid, move) {
   return () => {
     const s = R.table.state;
-    if (move.type === 'pass' && s.phase === 'play' && s.passesInRow === s.seating.length - 1) {
+    if (endsPlay(s, move)) {
       hooks.ui.note = null;
       next(...resolveSteps(pid, move, 'teach'));
       return null;
@@ -826,7 +828,7 @@ function yourTurn() {
   hooks.ui.note = null;
   const s = R.table.state;
   const mustOpen = s.first === YOU && !s.opened;
-  return { type: 'spot', target: SEL.hand, title: 'Your turn', html: `${eq(chip('LOC'), chip('FAC'), chip('+N'), op('·'), '<span class="bar-btn bar-icon">»</span>')}<p>Play one card or pass. Click a card, then LOC or FAC on it, then a lit target; its +N spends it as an offering; » passes.${mustOpen ? ' You must open with your marked card.' : ''}</p>` };
+  return { type: 'spot', target: SEL.hand, title: 'Your turn', html: `${passingOn() ? eq(chip('LOC'), chip('FAC'), chip('+N'), op('·'), '<span class="bar-btn bar-icon">»</span>') : eq(chip('LOC'), chip('FAC'), chip('+N'))}<p>${passingOn() ? 'Play one card or pass' : 'Play one card: every card you keep gets played'}. Click a card, then LOC or FAC on it, then a lit target; its +N spends it as an offering${passingOn() ? '; » passes' : ''}.${mustOpen ? ' You must open with your marked card.' : ''}</p>` };
 }
 
 /**
@@ -913,7 +915,7 @@ function turnSteps(pid, given, taught = false) {
     hooks.ui.note = null;
     hooks.choose(null);
     const s = R.table.state;
-    if (m.type === 'pass' && s.phase === 'play' && s.passesInRow === s.seating.length - 1) {
+    if (endsPlay(s, m)) {
       next(...resolveSteps(pid, m, R.mode === 'guided' ? 'teach' : 'show'));
       return null;
     }
@@ -932,7 +934,7 @@ function turnSteps(pid, given, taught = false) {
 }
 
 /**
- * The last pass: the round's fights, then growth. The fights are shown on
+ * The move that ends play (the last card, or with passing on the last pass), then the round's fights, then growth. The fights are shown on
  * copies (the engine's own fight, a location at a time, in board order as at
  * round end); the game itself moves on with the real pass.
  * - teach: the first fight before and after, the rest fast-forwarded into one summary;
@@ -940,7 +942,10 @@ function turnSteps(pid, given, taught = false) {
  * @param {string} pid @param {Move} move @param {'teach' | 'show'} style @returns {Step[]}
  */
 function resolveSteps(pid, move, style) {
-  const start = clone(R.table.state);
+  // The last card's effect first (shown on a copy), so the fights are the ones it leaves.
+  const pre = beforeFights(R.table.state, pid, move);
+  const lastCard = move.type === 'play' ? narrate(pid, move, R.table.state, pre) : null;
+  const start = clone(pre);
   for (const id of start.seating) start.players[id].hand = [];
   const fights = Object.keys(start.board).filter((l) => !start.board[l].scorched && Object.values(start.board[l].tokens).filter((n) => n > 0).length === 2);
   /** @type {GameState[]} */
@@ -949,12 +954,14 @@ function resolveSteps(pid, move, style) {
   const end = chain[chain.length - 1];
   const teach = style === 'teach';
   /** @type {Step[]} */
-  const steps = [() => {
+  const steps = [];
+  if (lastCard) steps.push(() => present(pre).then(() => (lastCard.type === 'spot' ? { ...lastCard, auto: lastCard.auto && style !== 'show' } : null)));
+  steps.push(() => {
     if (teach) R.chapter = '7 · Round 1';
     hooks.ui.note = 'Resolve: fights';
-    return present(start).then(() => ({ type: 'spot', target: fights.length ? fights.map(SEL.hex) : SEL.board, title: `${who(pid)} ${verb(pid, 'passes', 'pass')}: play is over`,
-      html: `${fights.length ? `${eq(op('2 factions'), op('='), 'a fight')}<p>${plural(fights.length, 'fight')} now. Unplayed cards are lost.</p>` : '<p>No location holds two factions: no fights.</p>'}`, dwell: 1800 }));
-  }];
+    return present(start).then(() => ({ type: 'spot', target: fights.length ? fights.map(SEL.hex) : SEL.board, title: move.type === 'pass' ? `${who(pid)} ${verb(pid, 'passes', 'pass')}: play is over` : 'Every card is played: play is over',
+      html: `${fights.length ? `${eq(op('2 factions'), op('='), 'a fight')}<p>${plural(fights.length, 'fight')} now.${move.type === 'pass' ? ' Unplayed cards are lost.' : ''}</p>` : '<p>No location holds two factions: no fights.</p>'}`, dwell: 1800 }));
+  });
   fights.forEach((loc, i) => {
     const a = chain[i], b = chain[i + 1];
     if (teach && i > 0) return;
@@ -1071,14 +1078,14 @@ function playHelp() {
       <li><b>Draft:</b> tick the cards to keep in your hand, then ✓.</li>
       <li><b>A plan:</b> click a card, choose LOC or FAC on it, then click the lit targets on the board.</li>
       <li><b>An offering:</b> the +N on a suit card spends it for sway.</li>
-      <li><b>Pass:</b> » on the bar.</li>
+      ${passingOn() ? '<li><b>Pass:</b> » on the bar.</li>' : '<li><b>Every card:</b> you play every card you keep, one a turn.</li>'}
       <li><b>Hints:</b> the Hints button, top right, cycles off → marks → marks and panel.</li>
     </ul>
     <p class="small muted">Hover a lit target to preview what it does.</p>`,
   buttons: [{ label: 'Play', primary: true, run: () => { R.mode = 'play'; R.chapter = 'Your game'; next(drive); void go(); } }] };
 }
 
-/** Fast-forward (unseen) to the last round's final pass, then show its fights and the end. @type {Step} */
+/** Fast-forward (unseen) to the move that ends the last round's play, then show its fights and the end. @type {Step} */
 function skipStep() {
   R.chapter = 'The end';
   const last = rounds();
@@ -1094,7 +1101,7 @@ function skipStep() {
     }
     const pid = /** @type {string} */ (nextActor(s));
     const move = /** @type {Move} */ (autoMove(R.table, pid));
-    if (s.round === last && s.phase === 'play' && move.type === 'pass' && s.passesInRow === s.seating.length - 1) final = { pid, move };
+    if (s.round === last && endsPlay(s, move)) final = { pid, move };
     else play(R.table, pid, move);
   }
   return present(R.table.state, { instant: true }).then(() => {

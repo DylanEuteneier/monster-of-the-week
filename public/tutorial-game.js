@@ -21,9 +21,9 @@ export const BOTS = /** @type {const} */ ([['Ash', 'bot:lean=0.3'], ['Bea', 'bot
  * shows every part of a round (both uses of a card, fights with piles, growth).
  * A different engine or deck may need a new seed; the narration adapts either way.
  */
-export const SEED = 19;
-/** Seats in order, so the learner is Slayerettes. */
-export const OPTIONS = { groups: 'seat', passing: 'on' }; // passing on: the tutorial's lessons teach it (to rewrite for no passing)
+export const SEED = 7;
+/** Seats in order, so the learner is Slayerettes; otherwise the game's defaults (passing off, D29). */
+export const OPTIONS = { groups: 'seat' };
 
 /**
  * Everything the tutorial's table holds. Plain data, so a snapshot is a copy.
@@ -38,6 +38,28 @@ export function newTable(seed = SEED) {
 
 /** @param {Table} table */
 export const copyTable = (table) => clone(table);
+
+/**
+ * Does this move end the round's play? With passing off (D29), the last card in anyone's hand; with passing on, the
+ * last pass in a row. @param {GameState} state @param {Move} move
+ */
+export function endsPlay(state, move) {
+  if (state.phase !== 'play') return false;
+  if (state.options.passing === 'on') return move.type === 'pass' && state.passesInRow === state.seating.length - 1;
+  return move.type === 'play' && state.seating.reduce((n, id) => n + state.players[id].hand.length, 0) === 1;
+}
+
+/**
+ * The board after a move that ends play, before the fights: a last card played as if passing were on, so play
+ * doesn't end yet (a last pass changes nothing). For showing only; the game moves on with the real move.
+ * @param {GameState} state @param {string} pid @param {Move} move @returns {GameState}
+ */
+export function beforeFights(state, pid, move) {
+  if (move.type !== 'play') return state;
+  const open = clone(state);
+  open.options = { ...open.options, passing: 'on' };
+  return applyMove(open, { playerId: pid, move });
+}
 
 /** Seat → profile, every seat (the learner's automatic moves play as a trophy player). */
 const PROFILES = /** @type {Record<string, string>} */ (Object.fromEntries([[YOU, 'bot:lean=-0.3'], ...BOTS]));
