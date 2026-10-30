@@ -37,6 +37,8 @@ fn edit(s: &GameState, f: impl FnOnce(&mut Value)) -> GameState {
 /// An empty board to stage a fight on, and standing 10 with every faction.
 fn clear(s: &GameState) -> GameState {
     edit(s, |x| {
+        // The cards alone: no tokens brought by sway (GR5 has its own test).
+        x["options"]["swayTokens"] = json!("off");
         for (_, place) in x["board"].as_object_mut().unwrap() {
             place["tokens"] = json!({});
             place["sway"] = json!({});
@@ -216,7 +218,7 @@ fn seeding_home_puts_5_1_1_of_each_faction_on_its_own_locations() {
     let x = v(&s);
     for f in factions(&s) {
         assert_eq!(presence(&s, &f), 7);
-        assert_eq!(x["supply"][&f], 13);
+        assert_eq!(x["supply"][&f], 23); // 30 a faction (D33)
         for (loc, arch) in locs() {
             if x["board"][&loc]["tokens"][&f].as_i64().unwrap_or(0) > 0 {
                 assert_eq!(arch, arch_of_faction(&f));
@@ -734,19 +736,19 @@ fn half_from_a_fight_a_card_moves_at_most_half_a_group() {
 }
 
 #[test]
-fn sd1_each_faction_starts_with_3_on_each_aligned_location_two_2() {
-    // D32: 3 on each by default (seeding even); seeding two, 2 on each.
+fn sd1_each_faction_starts_with_2_on_each_aligned_location_even_3() {
+    // D33: 2 on each by default (seeding two); seeding even, 3 on each.
     let s = game(3);
     let x = v(&s);
     for f in factions(&s) {
         for (l, arch) in locs() {
             if arch == arch_of_faction(&f) {
-                assert_eq!(x["board"][&l]["tokens"][&f], 3);
+                assert_eq!(x["board"][&l]["tokens"][&f], 2);
             }
         }
     }
-    assert_eq!(total(&s), 45);
-    assert_eq!(total(&game_opts(3, &[("seeding", "two")])), 30);
+    assert_eq!(total(&s), 30);
+    assert_eq!(total(&game_opts(3, &[("seeding", "even")])), 45);
 }
 
 #[test]

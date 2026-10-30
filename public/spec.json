@@ -570,8 +570,8 @@
     {
       "id": "threshold",
       "label": "Presence threshold",
-      "description": "The invaders win if total presence is more than this (TH1). First-draft guess 20 (G.7).",
-      "default": "20",
+      "description": "The invaders win if total presence is more than this (TH1). First-draft guess 20 (G.7). 30 by default (designer, 2026-10-29, D33).",
+      "default": "30",
       "choices": [
         {
           "id": "10",
@@ -626,8 +626,8 @@
     {
       "id": "factionTokens",
       "label": "Tokens per faction",
-      "description": "Each faction's tokens, board and supply together (G.7).",
-      "default": "20",
+      "description": "Each faction's tokens, board and supply together (G.7). 30 by default (designer, 2026-10-29, D33).",
+      "default": "30",
       "choices": [
         {
           "id": "15",
@@ -740,8 +740,8 @@
     {
       "id": "startOthers",
       "label": "Starting standing with other factions",
-      "description": "Designer (2026-10-07): each player starts with 1 sway with every faction other than their affinity faction. 0 was the first draft before. Designer (2026-10-29, D32): 2 by default, a bit more standing with the factions that aren't your suit's.",
-      "default": "2",
+      "description": "Designer (2026-10-07): each player starts with 1 sway with every faction other than their affinity faction. 0 was the first draft before. Designer (2026-10-29, D32): 2 by default, a bit more standing with the factions that aren't your suit's. Back to 1 by default (designer, 2026-10-29, D33).",
+      "default": "1",
       "choices": [
         {
           "id": "0",
@@ -840,8 +840,8 @@
     {
       "id": "swayTokens",
       "label": "Sway brings tokens",
-      "description": "GR5 (designer's seed, 2026-10-29; a switch, not a core rule): each sway placed on the board, from standing with a faction, brings 1 of that faction's tokens from its supply to the same location, if it can (the supply has one, and the faction may enter there). Or one slot's cards only (designer, 2026-10-29): the shifts (scatters), the strikes (gathers) or the signatures.",
-      "default": "off",
+      "description": "GR5 (designer's seed, 2026-10-29; a switch, not a core rule): each sway placed on the board, from standing with a faction, brings 1 of that faction's tokens from its supply to the same location, if it can (the supply has one, and the faction may enter there). Or one slot's cards only (designer, 2026-10-29): the shifts (scatters), the strikes (gathers) or the signatures. Shifts only by default (designer, 2026-10-29, D33).",
+      "default": "shifts",
       "choices": [
         {
           "id": "off",
@@ -891,8 +891,8 @@
     {
       "id": "seeding",
       "label": "Starting tokens",
-      "description": "SD1 (designer): how each faction's tokens start on its three aligned locations; 2 on each from 2026-10-21; 3 on each (even) by default since 2026-10-29 (designer, D32: more tokens on the board).",
-      "default": "even",
+      "description": "SD1 (designer): how each faction's tokens start on its three aligned locations; 2 on each from 2026-10-21; 3 on each (even) by default since 2026-10-29 (designer, D32: more tokens on the board). Back to 2 on each (two) by default (designer, 2026-10-29, D33).",
+      "default": "two",
       "choices": [
         {
           "id": "home",
@@ -932,7 +932,7 @@
     {
       "id": "cardSway",
       "label": "Extra card sway",
-      "description": "Designer (2026-10-29): bump up sway values, to make more card actions payable (the game feel tuning, 1.7). Added to every strike's and shift's printed sway (a signature's sway stays your hand size, D24; unsuited cards have none). The amount is being measured.",
+      "description": "Designer (2026-10-29): bump up sway values, to make more card actions payable (the game feel tuning, 1.7). Added to every strike's and shift's printed sway (a signature's sway stays your hand size, D24; unsuited cards have none). The amount is being measured. Designer (2026-10-29): stays as a switch at +0.",
       "default": "0",
       "choices": [
         {
