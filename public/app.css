@@ -418,6 +418,20 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .link-row a { overflow-wrap: anywhere; }
 .option-choice { border: var(--border); border-radius: var(--radius); padding: var(--space-2) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
 .option-choice label { align-items: flex-start; }
+/* Deal first; the rest folded away in small groups. */
+#deal-panel { grid-column: 1 / -1; }
+.deal-big { font-size: 16px; padding: var(--space-2) var(--space-4); }
+.advanced > summary, .setting-group > summary { cursor: pointer; font-weight: 600; padding: var(--space-1) 0; }
+.advanced-body { margin-top: var(--space-2); gap: var(--space-2); }
+.setting-group { border: var(--border); border-radius: var(--radius); padding: var(--space-2) var(--space-3); }
+.setting-group[open] > summary { margin-bottom: var(--space-2); }
+.option-row { display: grid; grid-template-columns: minmax(10rem, max-content) minmax(0, 1fr); gap: 2px var(--space-3); align-items: center; padding: var(--space-1) 0; }
+.option-row .option-note { grid-column: 2; }
+.option-row select { max-width: 20rem; }
+.seat { display: flex; flex-direction: column; gap: var(--space-1); }
+.seat-lean { display: flex; align-items: center; gap: var(--space-2); padding-left: var(--space-3); flex-wrap: wrap; }
+.seat-lean input { width: 140px; accent-color: var(--color-accent); }
+.seat-lean-value { min-width: 13rem; }
 
 /* ---------------------------------------------------------------------------
    Assets page

@@ -26,26 +26,37 @@
       </form>
     </section>
 
+    <section class="panel" id="deal-panel" hidden>
+      <h2>Deal a game</h2>
+      <form class="stack" id="deal-form" autocomplete="off">
+        <div class="inline">
+          <button class="btn btn-primary deal-big" type="submit" id="deal-button">Deal new game</button>
+          <span class="small muted" id="deal-note"></span>
+        </div>
+        <p class="small muted" id="deal-summary"></p>
+        <details class="advanced">
+          <summary>Advanced settings</summary>
+          <div class="stack advanced-body">
+            <details class="setting-group" open>
+              <summary>Seats and bots <span class="small muted" id="seats-count"></span></summary>
+              <p class="small muted">Three to five slayer groups. Seats with the same name keep their links; open tabs flip straight to round 1. A bot's lean runs from playing for the island to backing a faction.</p>
+              <div class="seats" id="seats"></div>
+              <div class="inline">
+                <button class="btn" type="button" data-action="add-seat">Add seat</button>
+                <button class="btn" type="button" data-action="spread-leans" title="Spread the bots' leans evenly: fewer backing a faction than playing for the island">Balance leans</button>
+                <button class="btn" type="button" data-action="shuffle-leans" title="The same leans, dealt to the bot seats in a random order">Shuffle leans</button>
+                <label class="inline small muted">Seed <input type="number" id="seed-input" placeholder="random" aria-label="Seed"></label>
+              </div>
+            </details>
+            <div class="stack" id="options"></div>
+          </div>
+        </details>
+      </form>
+    </section>
+
     <section class="panel" id="status-panel" hidden>
       <div class="row-between"><h2>Current table</h2><button class="btn" data-action="refresh">Refresh</button></div>
       <div id="status"></div>
-    </section>
-
-    <section class="panel" id="deal-panel" hidden>
-      <h2>Deal a game</h2>
-      <p class="small muted">Three to five slayer groups. Seats with the same name keep their links; open tabs flip straight to round 1. Tick <b>bot</b> to have the server play that seat with random legal moves.</p>
-      <form class="stack" id="deal-form" autocomplete="off">
-        <div class="seats" id="seats"></div>
-        <div class="inline">
-          <button class="btn" type="button" data-action="add-seat">Add seat</button>
-          <label class="inline small muted">Seed <input type="number" id="seed-input" placeholder="random" aria-label="Seed"></label>
-        </div>
-        <div class="stack" id="options"></div>
-        <div class="inline">
-          <button class="btn btn-primary" type="submit" id="deal-button">Deal new game</button>
-          <span class="small muted" id="deal-note"></span>
-        </div>
-      </form>
     </section>
 
     <section class="panel" id="links-panel" hidden>
