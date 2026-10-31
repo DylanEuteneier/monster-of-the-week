@@ -930,6 +930,44 @@
       ]
     },
     {
+      "id": "thresholdPerPlayer",
+      "label": "Presence threshold per player",
+      "description": "D40 (designer, 2026-10-30): the threshold is this many per player (10 a player: 30 at 3, 40 at 4, 50 at 5), in place of the fixed threshold. Off uses the fixed threshold.",
+      "default": "10",
+      "choices": [
+        {
+          "id": "off",
+          "label": "off",
+          "description": ""
+        },
+        {
+          "id": "8",
+          "label": "8",
+          "description": ""
+        },
+        {
+          "id": "9",
+          "label": "9",
+          "description": ""
+        },
+        {
+          "id": "10",
+          "label": "10",
+          "description": ""
+        },
+        {
+          "id": "11",
+          "label": "11",
+          "description": ""
+        },
+        {
+          "id": "12",
+          "label": "12",
+          "description": ""
+        }
+      ]
+    },
+    {
       "id": "threshold",
       "label": "Presence threshold",
       "description": "The invaders win if total presence is more than this (TH1). First-draft guess 20 (G.7). 30 by default (designer, 2026-10-29, D33).",

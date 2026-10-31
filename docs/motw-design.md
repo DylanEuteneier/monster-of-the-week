@@ -1400,6 +1400,12 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Open:** the look of each mark; which cards and prompts use them first.
 - **Date:** 2026-10-29
 
+#### D40. The presence threshold is 10 per player
+
+- **Decided (designer, 2026-10-30):** the invaders win if total presence at the end is more than 10 per player (30 at 3 players, 40 at 4, 50 at 5), in place of the fixed 30 (D33), leaning slightly toward the invaders. Variant `thresholdPerPlayer` (default 10; off uses the fixed `threshold`).
+- **Why:** under nightfall (D38) final presence grows with the players (averages 33, 42, 46 at 3, 4, 5 players; 40 bot games each, seed 2101) while total trophies stay near 60 (61, 60, 62), so a fixed threshold or trophies against presence (Claude's measure of the designer's idea) favour one side by table size. Re-scoring those games, 10 per player gives the invaders 25, 20 and 17 of 40 (11 per player 20, 15, 12; the fixed 30: 25, 34, 33). The bots played to the old threshold: to confirm with bots playing to it.
+- **Date:** 2026-10-30
+
 #### D39. Steal Their Playbook takes any played card into your hand
 
 - **Decided (designer, 2026-10-30):** Steal Their Playbook has one use: take any card played earlier this round, by anyone (yours or another player's), however it was played, from the played cards into your hand, to play later. Theirs (play another player's card now, as your own, D30) and Yours (take back your own) merge into it; the card is never played at once. It still can't be your last card played: as the last card in your hand it is discarded, for no effect.
@@ -1547,6 +1553,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
 | 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
 | 2026-10-29 | Steal Their Playbook (D30, designer): theirs takes a card another player played this round (however played) from the played cards into your hand, played at once as your own; it can't be your last card played (discarded for no effect) | |
+| 2026-10-30 | Threshold 10 per player (D40, designer) | To confirm with bots playing to it; fingerprints re-recorded |
 | 2026-10-30 | Steal Their Playbook: one use, any card played earlier this round into your hand to play later (D39, designer) | Fingerprints re-recorded |
 | 2026-10-30 | Nightfall tokens replace growth (D38, designer): swayTokens nightfall, growth and aligned growth off | Invaders' share to tune; the tutorial pinned to growth until rewritten; fingerprints re-recorded |
 | 2026-10-30 | The card layout for every card, thematic text on each; the archetype glyphs retired for suit names (D37, designer) | Draft gists and flavour to review |

@@ -55,7 +55,14 @@ pub fn create_game(seed: i64, players: &[String], raw_options: &[(String, String
             return Err("player names must be unique".into());
         }
     }
-    let options = Options::resolve(raw_options)?;
+    let mut options = Options::resolve(raw_options)?;
+    // D40: a threshold per player sets the game's threshold from its seat count, kept in its saved choices.
+    if let Some(per) = options.raw.iter().find(|(k, _)| k == "thresholdPerPlayer").and_then(|(_, v)| v.parse::<i32>().ok()) {
+        options.threshold = per * players.len() as i32;
+        if let Some(x) = options.raw.iter_mut().find(|(k, _)| k == "threshold") {
+            x.1 = options.threshold.to_string();
+        }
+    }
     let mut rng = seed as i32;
     // One faction picked at random from each archetype (3.4).
     let mut factions = [0u8; 5];
