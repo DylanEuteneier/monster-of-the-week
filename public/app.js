@@ -1066,7 +1066,7 @@ function renderTargeting(cardId) {
   handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
   // A reading with nothing to target says what it needs, on the card.
   const why = Object.fromEntries(empty.map((m) => [m, readingConditions(/** @type {any} */ (view), view.you, cardId, m)]).filter(([, c]) => c));
-  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, reading: t.mode, use: t.use ? String(t.use) : undefined, empty, why } : { dim: true })), false);
+  toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, raise: choice.kind === 'mode' || choice.kind === 'use', reading: t.mode, use: t.use ? String(t.use) : undefined, uses: choice.kind === 'use' && choice.key === 'use' ? choice.options.map(String) : undefined, empty, why } : { dim: true })), false);
 }
 
 function renderGrowth() {
@@ -1598,8 +1598,11 @@ function placeHint(fresh = false) {
   const vw = window.innerWidth, vh = window.innerHeight, gap = 12, m = 12;
   const rect = (/** @type {Element} */ x) => x.getBoundingClientRect();
   const tiles = h.tiles.map((l) => document.querySelector(`#board [data-tile="${CSS.escape(l)}"] .hex`)).filter((x) => !!x).map((x) => rect(/** @type {Element} */ (x)));
-  const cards = [...document.querySelectorAll('#hand .card.is-suggested')].map(rect);
-  const hand = [...document.querySelectorAll('#hand .card, #dock')].map(rect);
+  // A hand card where it stands raised (hovered or picked), not tucked: the panel never sits where a card will rise.
+  const base = document.getElementById('hand')?.getBoundingClientRect().bottom ?? vh;
+  const raised = (/** @type {Element} */ x) => { const r = rect(x); return { left: r.left, right: r.right, bottom: Math.max(r.bottom, base), top: Math.min(r.top, base - r.height) }; };
+  const cards = [...document.querySelectorAll('#hand .card.is-suggested')].map(raised);
+  const hand = [...document.querySelectorAll('#hand .card')].map(raised).concat([...document.querySelectorAll('#dock, .tut-tip')].map(rect));
   const anchors = (tiles.length ? tiles : cards).filter((r) => r.bottom > 0 && r.top < vh);
   const avoid = [...tiles, ...cards, ...hand];
   const pw = panel.offsetWidth, ph = panel.offsetHeight;
@@ -1645,10 +1648,11 @@ function markHint() {
   const card = q(`#hand .card[data-card="${CSS.escape(m.card)}"]`);
   const mode = m.use === 'sway' ? 'sway' : m.target?.mode;
   card?.classList.add('is-suggested');
-  if (card instanceof HTMLElement) card.dataset.hint = mode === 'sway' ? ` · ${card.querySelector('.card-opt[data-action="sway"]')?.textContent?.trim() ?? 'SWAY'}` : mode === 'faction' ? ' · FAC' : mode === 'location' ? ' · LOC' : '';
+  // The tab names the way to play it; the button or row itself is lit too.
+  if (card instanceof HTMLElement) card.dataset.hint = mode === 'sway' ? ' · SWAY' : mode === 'faction' ? ' · FACTION' : mode === 'location' ? ' · LOCATION' : '';
   if (ui.choosing !== m.card || m.use === 'sway') {
     // The way to play it: its LOC, FAC or +N button; an unsuited card has none, so the card itself is the click.
-    if (mode) card?.querySelector(mode === 'sway' ? '.card-opt[data-action="sway"]' : `.card-opt[data-mode="${mode}"]`)?.classList.add('is-suggested');
+    if (mode) card?.querySelector(mode === 'sway' ? '[data-action="sway"]' : `[data-action="set-mode"][data-mode="${mode}"]`)?.classList.add('is-suggested');
     else card?.classList.add('is-hint-next');
     return;
   }
@@ -1663,7 +1667,7 @@ function markHint() {
     q(`#factions .faction-row[data-faction="${CSS.escape(next.faction)}"]`)?.classList.add('is-hint-next');
     for (const x of document.querySelectorAll(`#board .token-stack[data-faction="${CSS.escape(next.faction)}"][data-action="pick-faction"]`)) x.classList.add('is-hint-next');
   }
-  if (next.kind === 'use') q(`[data-action="pick-use"][data-use="${CSS.escape(next.use)}"]`)?.classList.add('is-hint-next');
+  if (next.kind === 'use') for (const x of document.querySelectorAll(`[data-action="pick-use"][data-use="${CSS.escape(next.use)}"]`)) x.classList.add('is-hint-next');
   if (next.kind === 'skip') q('[data-action="skip"]')?.classList.add('is-hint-next');
 }
 

@@ -1165,4 +1165,6 @@ button.lay-row { width: 100%; padding: 0; text-align: left; font: inherit; color
 .lay-row.is-off { opacity: 0.45; }
 .lay-row.is-next { background: #fff2c2; }
 .lay-row.is-empty { opacity: 0.5; text-decoration: line-through; }
+/* The hint's way to play a card: its reading or use row, or its sway button, ringed in the hint's cyan. */
+.lay-row.is-suggested, .lay-row.is-hint-next { outline: var(--line) solid var(--color-link); outline-offset: 1px; box-shadow: 0 0 0 4px rgb(61 195 216 / 0.35); }
 .lay-card .card-why { margin: 0 0 2px; }

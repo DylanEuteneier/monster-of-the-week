@@ -24,7 +24,7 @@ export function suitIcon(archetype, scale = 2) {
 const fname = (f) => factionById(f).name;
 
 /**
- * @typedef {{ mode?: '' | 'act' | 'keep', ticked?: boolean, sway?: boolean, back?: boolean, dim?: boolean, selected?: boolean, next?: boolean, reading?: string, use?: string, empty?: string[], why?: Partial<Record<'location' | 'faction', { label: string, met: boolean }[]>>, view?: PlayerView | null, extra?: string }} CardOptions
+ * @typedef {{ mode?: '' | 'act' | 'keep', ticked?: boolean, sway?: boolean, back?: boolean, dim?: boolean, selected?: boolean, next?: boolean, raise?: boolean, reading?: string, use?: string, uses?: string[], empty?: string[], why?: Partial<Record<'location' | 'faction', { label: string, met: boolean }[]>>, view?: PlayerView | null, extra?: string }} CardOptions
  */
 
 /** The uses' names on a card, and their short tags. */
@@ -90,7 +90,7 @@ export function cardHtml(id, o = {}) {
       ${opt('sway', `<b>+${printed}</b>`, `Spend for ${printed} sway with ${sf ? fname(sf) : `the ${suit?.name ?? ''} faction`}`, false)}
       ${o.back ? opt('return', 'BACK', `Bring ${sf ? fname(sf) : 'its faction'} back: up to its sway of tokens at its own locations or where it is, 1 standing with it each`, false) : ''}
     </div>` : '';
-  const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : '', o.selected && o.next ? 'card-needs-reading' : ''].filter(Boolean).join(' ');
+  const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : '', o.selected && (o.next || o.raise) ? 'card-needs-reading' : ''].filter(Boolean).join(' ');
   const full = `${c.name}. ${c.text}`;
   if ('layout' in c && c.layout) return laidOut(c, o, { id, classes, full, band, printed, now, sf, live, opt, why, r, suitName: suit?.name ?? '' });
   // No title tooltip: the card itself shows the text, and a tooltip only covered it (designer, 2026-10-29).
@@ -137,7 +137,14 @@ function laidOut(c, o, k) {
   const target = c.suit
     ? `<div class="lay-target"><div class="lay-label">Target: ${esc(l.target)}</div>${reading('location')}${reading('faction')}</div>`
     : l.uses
-      ? `<div class="lay-target"><div class="lay-label">${l.uses.length > 1 ? 'Choose one' : 'Target'}</div>${l.uses.map((/** @type {any} */ u) => `<div class="lay-row lay-row-ic${o.use ? (o.use === u.id ? ' is-on' : ' is-off') : ''}" aria-label="${esc(u.id)}"><b title="${esc(u.id)}">${markOf(u.mark)}</b><span>${esc(u.text.charAt(0).toUpperCase() + u.text.slice(1))}</span></div>`).join('')}</div>`
+      ? `<div class="lay-target"><div class="lay-label">${l.uses.length > 1 ? 'Choose one' : 'Target'}</div>${l.uses.map((/** @type {any} */ u) => {
+        // While a use is being picked, each one you can pay for is a button; one you can't is struck through.
+        const inner = `<b title="${esc(u.id)}">${markOf(u.mark)}</b><span>${esc(u.text.charAt(0).toUpperCase() + u.text.slice(1))}</span>`;
+        const state = o.use ? (o.use === u.id ? ' is-on' : ' is-off') : o.uses && !o.uses.includes(u.id) ? ' is-empty' : '';
+        return o.uses?.includes(u.id)
+          ? `<button class="lay-row lay-row-ic is-next" data-action="pick-use" data-use="${esc(u.id)}" aria-label="${esc(u.id)}">${inner}</button>`
+          : `<div class="lay-row lay-row-ic${state}" aria-label="${esc(u.id)}" data-use="${esc(u.id)}">${inner}</div>`;
+      }).join('')}</div>`
       : `<div class="lay-target"><div class="lay-label">Target: ${esc(l.target)}</div><div class="lay-row lay-row-ic"><b>${markOf(l.single ?? 'group')}</b><span>${esc(l.target.charAt(0).toUpperCase() + l.target.slice(1))}</span></div></div>`;
   const specifics = l.specifics.length ? `<ul class="lay-specifics">${l.specifics.map((/** @type {string} */ s) => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
   const flavour = `<p class="lay-flavour">${esc(l.flavour)}</p>`;
