@@ -33,7 +33,7 @@ function roundOne(seed) {
   const fights = log.filter((l) => / beat | true tie/.test(l)).length;
   const yourPiles = log.filter((l) => l.startsWith(`  ${YOU} takes a pile`)).length;
   const piles = log.filter((l) => / takes a pile/.test(l)).length;
-  const grows = log.some((l) => / grows/.test(l));
+  const grows = log.some((l) => /^Nightfall brings/.test(l.trim()));
   const scorched = log.some((l) => /scorched/.test(l));
   const mine = plays.filter((p) => p.pid === YOU);
   const youAct = mine.some((p) => p.use === 'action');

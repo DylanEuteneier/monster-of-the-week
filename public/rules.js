@@ -365,6 +365,8 @@ export const resolveFights = (state, locs) => call('resolveFights', state, locs)
 export const fightsDue = (state) => call('fightsDue', lean(state));
 /** Where a faction grows this round, and by how much. @param {GameState} state @param {string} faction @returns {Record<string, number>} */
 export const growthDue = (state, faction) => call('growthDue', lean(state), faction);
+/** Where nightfall would bring tokens on this board (fights done), a location → count; `fought` the locations that fought. @param {GameState} state @param {string[]} fought @returns {Record<string, number>} */
+export const nightfallDue = (state, fought) => call('nightfallDue', lean(state), fought);
 /** The faction that controls a location, or null. @param {GameState | PlayerView} state @param {string} loc @returns {string | null} */
 export const controllerOf = (state, loc) => call('controllerOf', lean(state), loc);
 /** @param {GameState | PlayerView} state @param {string} faction @returns {number} */

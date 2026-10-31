@@ -13,7 +13,7 @@
  * - a spotlight (everything but the subject dimmed, scrolled into view) with
  *   a tooltip narrating it, for pointing at the table;
  * - moves played out, animated like any game (motion.js): the first time
- *   each kind of card play comes up, the first fight, and growth. Bots'
+ *   each kind of card play comes up, the first fight, and nightfall. Bots'
  *   other turns fast-forward (designer, 2026-10-10: cover the main card
  *   actions, then jump ahead).
  * From round 1 the learner makes every move on the real table (designer,
@@ -28,7 +28,7 @@
  * none. Cards are temporary, so nothing here names a card; every number is
  * read from the game's options.
  */
-import { spec, factionById, locationById, cardById, describeTarget, playerView, resolveFight, clone, listTargets, previewTarget, deckOf, printedOf, controllerOf, growthDue } from './rules.js';
+import { spec, factionById, locationById, cardById, describeTarget, playerView, resolveFight, clone, listTargets, previewTarget, deckOf, printedOf, controllerOf, nightfallDue } from './rules.js';
 import { newTable, copyTable, autoMove, nextActor, play, botPicks, check, YOU, BOTS, endsPlay, beforeFights } from './tutorial-game.js';
 import { suggest } from './hints.js';
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
@@ -97,8 +97,6 @@ const tokens = (/** @type {string} */ f, /** @type {number} */ n) => `<span clas
 const cubes = (/** @type {string} */ pid, /** @type {number} */ n) => `<span class="tut-pieces">${Array.from({ length: n }, () => cubeHtml(colour(pid), 9)).join('')}</span>`;
 const view = () => playerView(R.table.state, YOU);
 const opt = (/** @type {string} */ id) => Number(R.table.state.options[id]);
-/** Growth on own ground (AL3), a variant off by default (designer, 2026-10-21). */
-const boosted = () => R.table.state.options.alignedGrowth === 'on';
 /** Is passing on? Off by default (D29): everyone plays every card they keep. */
 const passingOn = () => R.table.state.options.passing === 'on';
 const rounds = () => view().rounds;
@@ -418,7 +416,7 @@ function factionItem(f, first, _i = 0, brawl = false, cls = '') {
 
 /**
  * How the game ends, told on copies of the real board (designer, 2026-10-10:
- * the endings need explaining properly). Fights shrink presence, growth adds
+ * the endings need explaining properly). Fights shrink presence, nightfall adds
  * to it; then each ending with its score, and what each makes worthless.
  * @returns {Step[]}
  */
@@ -444,9 +442,10 @@ function endingSteps() {
   const [g1, g2] = groups(s0).sort((x, y) => y.n - x.n);
   kill(A, g1.loc, g1.f, 3, true);
   kill(A, g2.loc, g2.f, 3, false);
-  // B: growth, by the engine's own rule.
+  // B: nightfall, by the engine's own rule (the two fights' locations gain nothing).
   const B = clone(A);
-  for (const f of B.factions) for (const [loc, n] of Object.entries(growthDue(B, f))) { const k = Math.min(n, B.supply[f]); B.board[loc].tokens[f] += k; B.supply[f] -= k; }
+  const ownFaction = (/** @type {string} */ loc) => B.factions.find((f) => factionById(f).archetype === locationById(loc).archetype) ?? '';
+  for (const [loc, n] of Object.entries(nightfallDue(A, [g1.loc, g2.loc]))) { const f = ownFaction(loc); B.board[loc].tokens[f] = (B.board[loc].tokens[f] ?? 0) + n; B.supply[f] -= n; }
   const grew = Object.keys(B.board).filter((l) => B.factions.some((f) => B.board[l].tokens[f] > (A.board[l].tokens[f] ?? 0)));
   // C, D: the island wins; your trophies lopsided, then even.
   const lopsided = v.factions.map((f, i) => (i === (fi + 1) % 5 ? 0 : [4, 3, 3, 2, 3][i]));
@@ -478,11 +477,11 @@ function endingSteps() {
   const theirScore = F_.players[rival].standing[backs] - F_.players[rival].trophies[backs];
 
   return [
-    spot(SEL.presence, 'Count the monsters', `${eq(...v.factions.map((f) => tokenHtml(f, 1)), op('on the island now'), op('='), `<b>${total(s0)}</b>`)}<p>After round ${rounds()}, count the monster tokens left on the board:</p>${eq(miniGauge(t + 8, t), `more than <b>${t}</b>`, op('→'), '<b>invader sway</b> decides the winner')}${eq(miniGauge(t - 6, t), `<b>${t}</b> or fewer`, op('→'), '<b>complete trophy sets</b> decide the winner')}`),
+    spot(SEL.presence, 'Count the monsters', `${eq(...v.factions.map((f) => tokenHtml(f, 1)), op('on the island now'), op('='), `<b>${total(s0)}</b>`)}<p>After the last round's fights (round ${rounds()}: no nightfall follows it), count the monster tokens left on the board:</p>${eq(miniGauge(t + 8, t), `more than <b>${t}</b>`, op('→'), '<b>invader sway</b> decides the winner')}${eq(miniGauge(t - 6, t), `<b>${t}</b> or fewer`, op('→'), '<b>complete trophy sets</b> decide the winner')}`),
     demo(() => s0, () => A, () => ({ type: 'spot', target: [SEL.hex(g1.loc), SEL.hex(g2.loc), SEL.presence, SEL.trophyTab], title: 'Fights kill monsters',
       html: `${eq(chip('fight'), op('→'), tokens(g1.f, 3), op('→'), 'trophies', op('·'), `<b>${total(A)}</b> monsters left`)}${recall('The fight: the dead leave the board, and the top bids take them as trophies.')}` })),
-    demo(() => A, () => B, () => ({ type: 'spot', target: [...grew.map(SEL.hex), SEL.presence], title: 'Growth breeds more',
-      html: `${eq(chip('round end'), op('→'), 'groups grow', op('·'), `<b>${total(B)}</b> monsters`)}${recall(`Growth: ${opt('growth')}+ alone grows${boosted() ? '; more on its own ground' : ''}.`)}` })),
+    demo(() => A, () => B, () => ({ type: 'spot', target: [...grew.map(SEL.hex), SEL.presence], title: 'Nightfall brings more',
+      html: `${eq(chip('nightfall'), op('→'), 'quiet locations', op('→'), '+1 per sway', op('·'), `<b>${total(B)}</b> monsters`)}${recall('Nightfall: where there was no fight, each sway on a location brings 1 of its own faction.')}` })),
     demo(() => B, () => C, () => ({ type: 'spot', target: [SEL.presence, SEL.trophyTab], title: `${t} or fewer: complete sets decide`,
       html: `${eq(miniGauge(total(C), t), `<b>${total(C)}</b>`, op(`${t} or fewer`))}<p>The slayers did their job. Whoever holds the most <b>complete sets</b> of trophies wins: count your fewest colour.</p>${trophyRow(v.factions, lopsided)}${eq('no', tokenHtml(missing, 1), op('='), 'no complete set', op('='), '<b>0</b>')}<p class="small muted">Sway counts for nothing.</p>` })),
     demo(() => C, () => D, () => ({ type: 'spot', target: [SEL.trophyTab], title: 'Hunt every kind',
@@ -651,21 +650,21 @@ function chapterStory() {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Growth and control
+// 3. Control and nightfall
 // ---------------------------------------------------------------------------
 
-function chapterGrowth() {
+function chapterNight() {
   const c = sceneCast();
   const ownF = c.L1;
-  const away = Object.keys(c.st.board).find((l) => l !== c.L1 && l !== c.L2 && locationById(l).archetype !== factionById(c.G).archetype) ?? c.L2;
-  /** @type {Scene} */ const held = { rows: [{ f: c.F0, supply: 6, sway: {} }, { f: c.G, supply: 6, sway: {} }], hexes: [{ loc: away, tokens: { [c.G]: 2 } }, { loc: ownF, tokens: { [c.F0]: 3, [c.G]: 1 } }] };
-  /** @type {Scene} */ const g0 = { ...held, hexes: [{ loc: away, tokens: { [c.G]: 2 } }, { loc: ownF, tokens: { [c.F0]: 3 } }] };
-  const more = boosted() ? 1 : 0; // AL3, off by default (designer, 2026-10-21)
-  /** @type {Scene} */ const g1 = { rows: [{ f: c.F0, supply: 5 - more, sway: {} }, { f: c.G, supply: 5, sway: {} }], hexes: [{ loc: away, tokens: { [c.G]: 3 } }, { loc: ownF, tokens: { [c.F0]: 4 + more } }] };
+  // Control: the most monsters at a location.
+  /** @type {Scene} */ const held = { rows: [{ f: c.F0, supply: 6, sway: {} }, { f: c.G, supply: 6, sway: {} }], hexes: [{ loc: ownF, tokens: { [c.F0]: 3, [c.G]: 1 } }] };
+  // Nightfall (D38): a quiet location gains 1 of its own faction per sway on it, anyone's.
+  /** @type {Scene} */ const n0 = { rows: [{ f: c.F0, supply: 6, sway: {} }], hexes: [{ loc: ownF, tokens: { [c.F0]: 3 }, sway: { [YOU]: 1, [c.ash]: 1 } }] };
+  /** @type {Scene} */ const n1 = { rows: [{ f: c.F0, supply: 4, sway: {} }], hexes: [{ loc: ownF, tokens: { [c.F0]: 5 }, sway: { [YOU]: 1, [c.ash]: 1 } }] };
   return [
-    chapter('3 · Growth'),
-    sceneStep('Control', held, held, `${eq(tokens(c.F0, 3), op('vs'), tokens(c.G, 1), op('→'), `the ${F(c.F0)} control ${L(ownF)}`)}<p>The most monsters at a location control it. At most two factions share a location: no lure can bring a third.</p>`, [`hex:${ownF}`]),
-    sceneStep('Growth', g0, g1, `${eq(`${opt('growth')}+ alone`, op('→'), '+1', ...(more ? [op('·'), 'on its own ground, if it controls it', op('→'), '+1 more'] : []))}<p>After the fights, each faction alone somewhere with ${opt('growth')}+ monsters grows from its supply.${more ? ` ${L(ownF)} is the ${F(c.F0)}' own ground, so they grow twice there.` : ''} Left alone, monsters multiply.</p>`, [`hex:${away}`, `hex:${ownF}`, `row:${c.G}`, `row:${c.F0}`]),
+    chapter('3 · Nightfall'),
+    sceneStep('Control', held, held, `${eq(tokens(c.F0, 3), op('vs'), tokens(c.G, 1), op('→'), `the ${F(c.F0)} control ${L(ownF)}`)}<p>The most monsters at a location control it. At most two factions share a location: no gambit can bring a third.</p>`, [`hex:${ownF}`]),
+    sceneStep('Nightfall', n0, n1, `${eq(cubes(YOU, 1), cubes(c.ash, 1), op('→'), tokens(c.F0, 2))}<p>After the fights, night falls. Every location that didn't fight gains 1 monster of its own faction for each sway on it, anyone's. ${L(ownF)} is the ${F(c.F0)}' own ground, with 2 sway on it: 2 more ${F(c.F0)}. A location that fought gains nothing, and no nightfall follows the last round.</p>`, [`hex:${ownF}`, `hexsway:${ownF}`, `row:${c.F0}`]),
   ];
 }
 
@@ -706,7 +705,7 @@ function chapterRound() {
       <div class="tut-phases">
         <div><b>1 · Draft</b>${eq(miniCard(first))}<span>plan your week: ${hand} cards each</span></div>
         <div><b>2 · Play</b>${eq(tokenHtml(c.F0, 1), op('→'), cubeHtml(colour(YOU), 9))}<span>one card at a time, ${passingOn() ? 'until everyone passes' : 'until every card is played'}</span></div>
-        <div><b>3 · Resolve</b>${eq(CLASH, op('then'), '+1')}<span>fights, then growth</span></div>
+        <div><b>3 · Resolve</b>${eq(CLASH, op('then'), '+1')}<span>fights, then nightfall</span></div>
       </div>
       <p><b>The draft:</b> pick and pass, left, to ${hand} cards each (${plural(st.leftOut.length, 'card')} left out, unseen). When a new batch arrives, your picks so far rejoin it, so you can put one back for something better. ${passingOn() ? "Cards you don't play are lost" : 'You play every card you keep'}; every round drafts the whole deck again.</p>
       <p class="small muted">${rounds()} rounds, then the count.</p>`),
@@ -934,7 +933,7 @@ function turnSteps(pid, given, taught = false) {
 }
 
 /**
- * The move that ends play (the last card, or with passing on the last pass), then the round's fights, then growth. The fights are shown on
+ * The move that ends play (the last card, or with passing on the last pass), then the round's fights, then nightfall. The fights are shown on
  * copies (the engine's own fight, a location at a time, in board order as at
  * round end); the game itself moves on with the real pass.
  * - teach: the first fight before and after, the rest fast-forwarded into one summary;
@@ -983,14 +982,14 @@ function resolveSteps(pid, move, style) {
   steps.push(() => {
     play(R.table, pid, move);
     const post = R.table.state;
-    // Growth on the round that just ended (the new round's deal is shown next).
-    const shown = post.phase === 'growth' ? post : { ...clone(end), board: clone(post.board), supply: { ...post.supply } };
-    hooks.ui.note = 'Resolve: growth';
+    // Nightfall on the round that just ended (the new round's deal is shown next); none after the last round (D41).
+    const shown = { ...clone(end), board: clone(post.board), supply: { ...post.supply } };
+    hooks.ui.note = 'Resolve: nightfall';
     const grew = Object.keys(post.board).filter((l) => post.factions.some((f) => (post.board[l].tokens[f] ?? 0) > (end.board[l].tokens[f] ?? 0)));
-    const g = opt('growth');
-    const lesson = once('growth') ? recall(`Growth: ${g}+ alone → +1${boosted() ? '; on its own ground, if it controls it, +1 more' : ''}.`) : '';
-    return present(end, { instant: true }).then(() => lead({ type: 'spot', target: grew.length ? grew.map(SEL.hex) : SEL.board, title: 'Growth',
-      html: `<p>${grew.length ? `${plural(grew.length, 'location')} grew.` : 'Nothing grew.'}</p>${lesson}` }, () => present(shown)));
+    const lesson = once('nightfall') ? recall('Nightfall: where there was no fight, each sway on a location brings 1 of its own faction.') : '';
+    if (post.phase === 'ended') return present(end, { instant: true }).then(() => null);
+    return present(end, { instant: true }).then(() => lead({ type: 'spot', target: grew.length ? grew.map(SEL.hex) : SEL.board, title: 'Nightfall',
+      html: `<p>${grew.length ? `${plural(grew.length, 'quiet location')} gained monsters.` : 'Nightfall brought nothing: no sway on a quiet location.'}</p>${lesson}` }, () => present(shown)));
   }, () => {
     hooks.ui.note = null;
     const s = R.table.state;
@@ -1063,7 +1062,7 @@ function after(a, b, loc) {
 function choiceStep() {
   const t = opt('threshold');
   return { type: 'modal', title: 'That was a round', html: `
-    ${eq(chip('draft'), op('→'), chip('play'), op('→'), chip('fights'), op('→'), chip('growth'))}
+    ${eq(chip('draft'), op('→'), chip('play'), op('→'), chip('fights'), op('→'), chip('nightfall'))}
     <p>${totalPresence(view())} monsters on the island against the mark of ${t}, with ${plural(rounds() - 1, 'round')} to go. Skip to the ending, or play on yourself.</p>`,
   buttons: [
     { label: 'Play the rest', run: () => { next(playHelp); void go(); } },
@@ -1448,6 +1447,6 @@ export function start(h) {
   hooks.ui.local = onMove;
   hooks.ui.connectionNote = '';
   build();
-  R.queue = [...chapterTheme(), ...chapterStory(), ...chapterGrowth(), ...chapterEndings(), ...chapterTable(), ...chapterRound(), drive];
+  R.queue = [...chapterTheme(), ...chapterStory(), ...chapterNight(), ...chapterEndings(), ...chapterTable(), ...chapterRound(), drive];
   void present(R.table.state, { instant: true }).then(() => go());
 }

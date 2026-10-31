@@ -1435,7 +1435,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 - **Decided (designer, 2026-10-30):** GR6 is the way to proceed for now, instead of growth: at nightfall, during the round's close, after the fights, every location where there was no fight gains 1 of its own faction's tokens per sway there (all players' sway), if it can. Growth by groups (GR1) and growth on own ground (AL3) are off, and so is D33's shifts bringing tokens (GR6 replaces sway bringing tokens from cards). Defaults: `swayTokens` nightfall, `growth` off, `alignedGrowth` off; the old rules stay as variants.
 - **Why:** in the measurements (3.5, GR6), nightfall's inflow held level to round 5 (14–18 tokens a round) and kept the most fights late (about 3.9 in rounds 4 and 5), where growth by groups dried up as fights broke groups apart.
-- **Open:** the invaders end far too many games (75% at threshold 30 in the first measurement, against about 40% aimed for): the threshold and other end conditions need tuning (designer). The prototype choices in GR6 (arrivals before growth, board order on a short supply) stand; the tutorial still teaches growth and is pinned to the old rules until it is rewritten.
+- **Open:** the invaders end far too many games (75% at threshold 30 in the first measurement, against about 40% aimed for): the threshold and other end conditions need tuning (designer). The prototype choices in GR6 (arrivals before growth, board order on a short supply) stand; the tutorial now plays the current rules and teaches nightfall (2026-10-31; its deal re-picked, seed 11); its story chapter still needs rebuilding around the current cards.
 - **Date:** 2026-10-30
 
 #### D37. The card layout, and the archetype glyphs retired

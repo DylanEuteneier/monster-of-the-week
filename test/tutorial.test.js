@@ -32,11 +32,11 @@ test('the tutorial deal plays to the end, the same way every time', () => {
   assert.deepEqual(a.log, b.log);
 });
 
-test('the tutorial\'s first round shows fights with piles for the learner, and growth', () => {
+test('the tutorial\'s first round shows fights with piles for the learner, and nightfall', () => {
   const log = playThrough().log.find((e) => e.round === 1)?.events ?? [];
   assert.ok(log.some((l) => / beat /.test(l)), 'a fight');
   assert.ok(log.some((l) => l.startsWith(`  ${YOU} takes a pile`)), 'a pile for the learner');
-  assert.ok(log.some((l) => / grows/.test(l)), 'growth');
+  assert.ok(log.some((l) => /^Nightfall brings/.test(l.trim())), 'nightfall');
 });
 
 test('flights: every token and cube that moved is paired from where it was to where it went', () => {

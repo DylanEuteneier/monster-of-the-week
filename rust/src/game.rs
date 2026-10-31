@@ -377,15 +377,8 @@ fn close_round(s: &mut GameState) {
 /// locations in board order.
 fn nightfall_tokens(s: &mut GameState, fought: &[bool]) {
     let mut brought = 0;
-    for l in 0..s.board.len() as Loc {
-        if fought[l as usize] {
-            continue;
-        }
+    for (l, n) in nightfall_due(s, fought) {
         let f = alignment_of(l) as Fac;
-        let n = s.board[l as usize].sway.iter().map(|e| e.1).sum::<i32>().min(s.supply[f as usize]);
-        if n <= 0 || !can_enter(s, l, f) {
-            continue;
-        }
         s.board[l as usize].tokens.add(f, n);
         s.supply[f as usize] -= n;
         brought += n;
@@ -659,6 +652,26 @@ pub fn rank_at(s: &GameState, loc: Loc) -> (List<Option<Pid>, 2>, usize, Small<5
 }
 
 /// What each growth location is due: 1, plus 1 if the faction is aligned with it (AL3; variant alignedGrowth).
+/// Where nightfall brings tokens and how many (each of the location's own faction), on a board whose fights are
+/// done: every location not in `fought`, 1 per sway there, if its faction can enter and has them in supply.
+pub fn nightfall_due(s: &GameState, fought: &[bool]) -> Vec<(Loc, i32)> {
+    let mut supply = s.supply.clone();
+    let mut due = Vec::new();
+    for l in 0..s.board.len() as Loc {
+        if fought.get(l as usize).copied().unwrap_or(false) {
+            continue;
+        }
+        let f = alignment_of(l) as Fac;
+        let n = s.board[l as usize].sway.iter().map(|e| e.1).sum::<i32>().min(supply[f as usize]);
+        if n <= 0 || !can_enter(s, l, f) {
+            continue;
+        }
+        supply[f as usize] -= n;
+        due.push((l, n));
+    }
+    due
+}
+
 pub fn growth_due(s: &GameState, f: Fac) -> OMap<NLOC> {
     let mut out = OMap::<NLOC>::new();
     for l in 0..s.board.len() as Loc {

@@ -153,6 +153,14 @@ pub fn call(name: &str, a: &[Value]) -> Out {
             let s = state(arg(0))?;
             Ok(json!(fights_due(&s).iter().map(|&l| loc_id(l)).collect::<Vec<_>>()))
         }
+        "nightfallDue" => {
+            let s = state(arg(0))?;
+            let mut fought = vec![false; s.board.len()];
+            for v in arg(1).as_array().cloned().unwrap_or_default() {
+                fought[loc_of(&v)? as usize] = true;
+            }
+            Ok(Value::Object(nightfall_due(&s, &fought).iter().map(|&(l, n)| (loc_id(l).to_string(), Value::from(n))).collect()))
+        }
         "growthDue" => {
             let s = state(arg(0))?;
             let f = fac_of(&s, arg(1))?;

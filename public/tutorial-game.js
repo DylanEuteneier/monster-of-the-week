@@ -18,13 +18,13 @@ export const YOU = 'You';
 export const BOTS = /** @type {const} */ ([['Ash', 'bot:lean=0.3'], ['Bea', 'bot:lean=-0.3'], ['Cy', 'bot:lean=-0.3']]);
 /**
  * The tutorial's deal: found by scripts/tutorial-seed.js so the first round
- * shows every part of a round (both uses of a card, fights with piles, growth).
+ * shows every part of a round (both uses of a card, fights with piles, nightfall).
  * A different engine or deck may need a new seed; the narration adapts either way.
  */
-export const SEED = 7;
+export const SEED = 11;
 /** Seats in order, so the learner is Slayerettes; otherwise the game's defaults (passing off, D29). */
-// Pinned to growth by groups (GR1, with D33's shifts) and the fixed threshold until the tutorial is rewritten for nightfall tokens (D38) and D40.
-export const OPTIONS = { groups: 'seat', growth: '2', alignedGrowth: 'on', swayTokens: 'shifts', thresholdPerPlayer: 'off' };
+// The current rules: nightfall tokens (D38), no nightfall after the last round (D41), the threshold of 20 (D42).
+export const OPTIONS = { groups: 'seat' };
 
 /**
  * Everything the tutorial's table holds. Plain data, so a snapshot is a copy.
