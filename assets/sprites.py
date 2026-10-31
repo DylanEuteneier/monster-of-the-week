@@ -402,8 +402,8 @@ ARCHETYPE_BORDERS = {
     # Sci-Fi green, Sentients blue, Undead brown (designer, 2026-10-31: the Sentients' grey read as unsuited).
     "scifi": {"lit": "l", "mid": "G", "dark": "e"},
     "sentients": {"lit": "a", "mid": "c", "dark": "b"},
-    "undead": {"lit": "s", "mid": "f", "dark": "u"},
-    "demonic": {"lit": "o", "mid": "r", "dark": "R"},
+    "undead": {"lit": "U", "mid": "u", "dark": "Q"},
+    "demonic": {"lit": "O", "mid": "r", "dark": "R"},
 }
 
 # Archetype symbols (designer, 2026-10-03): moon and star, alien head, power,
