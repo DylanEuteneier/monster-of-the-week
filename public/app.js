@@ -442,7 +442,7 @@ function renderHeader() {
   if (type) type.textContent = `Game: ${ui.tutorial ? 'Tutorial' : ui.hotseat.enabled ? 'Hotseat' : 'Online'}`;
   setHtml('header-main', `
     <h1>MONSTER OF THE WEEK</h1>
-    <span class="topbar-round"><span class="phase-label">${esc(status)}</span>${view ? '<span class="topbar-status" id="topbar-status"></span>' : ''}</span>
+    <span class="topbar-round"><span class="phase-label">${view ? `<span class="round-long">${esc(status)}</span><span class="round-short">R${view.round}/${view.rounds}</span><span class="phase-word"> · ${esc(ui.note ?? PHASE_LABELS[view.phase])}</span>` : esc(status)}</span>${view ? '<span class="topbar-status" id="topbar-status"></span>' : ''}</span>
     ${ui.connectionNote && view ? `<span class="muted small">${esc(ui.connectionNote)}</span>` : ''}
     ${ui.stale ? '<span class="tag stale-tag" title="The worker hasn\'t reloaded since the game files changed; the table and the rules may not match.">Server running old code: restart npm run dev</span>' : ''}`);
 }

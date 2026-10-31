@@ -243,6 +243,8 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .topbar-status { display: inline-flex; align-items: center; min-width: 0; padding: 3px 8px; border: 2px solid var(--color-border); background: var(--color-panel); font-family: var(--font-display); font-size: 13px; text-transform: uppercase; line-height: 1; white-space: nowrap; }
 .topbar-status.is-turn { background: var(--color-accent); border-color: var(--ink); color: var(--ink); box-shadow: 2px 2px 0 var(--ink); }
 .topbar-status .status-phone { display: none; }
+/* The phase beside the round: on phones only, where the pill carries the status instead. */
+.topbar .phase-word, .topbar .round-short { display: none; }
 
 
 /* ---------------------------------------------------------------------------
@@ -1086,6 +1088,8 @@ button.card-opt:hover { background: #f6cca1; }
   .topbar-round { flex-wrap: wrap; gap: var(--space-1) var(--space-2); }
   .topbar-status { padding: 2px 6px; font-family: var(--font-body); font-size: 11px; text-transform: none; overflow: hidden; }
   .topbar-status .status-desk { display: none; }
+  .topbar .phase-word, .topbar .round-short { display: inline; }
+  .topbar .round-long { display: none; }
   .topbar-status .status-phone { display: inline; overflow: hidden; text-overflow: ellipsis; }
   .topbar-status .bar-chip { padding: 0 4px; border-width: 1px; }
 
