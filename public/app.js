@@ -825,7 +825,7 @@ function renderDraft() {
     ui.keepFor = me.kept.length;
   }
   ui.keep = ui.keep.filter((c) => pool.includes(c));
-  step('turn', `Keep ${need} · ${ui.keep.length}/${need} picked`);
+  step('turn', `Keep ${need}: tick ${need === 1 ? 'a card' : `${need} cards`} in your hand, then ✓ · ${ui.keep.length}/${need} picked`);
   handAction('pick', { primary: true, disabled: ui.keep.length !== need });
   toHand(pool.map((c) => cardHtml(c, { mode: 'keep', ticked: ui.keep.includes(c) })), true);
 }
@@ -844,7 +844,7 @@ function renderPlay() {
     if (ui.returning.places.length) handAction('skip', { label: 'Done' });
     handAction('back');
     toHand(me.hand.map((c) => cardHtml(c, c === ui.returning?.card ? { selected: true } : { dim: true })), false);
-    return step('turn', `Bring ${esc(fname(room.faction))} back: pick where each token goes · ${room.max - ui.returning.places.length} more at most`);
+    return step('turn', `Bring ${esc(fname(room.faction))} back: pick where each token goes, on the island · ${room.max - ui.returning.places.length} more at most`);
   }
   if (ui.returning && !(myTurn && me.hand.includes(ui.returning.card))) ui.returning = null;
   toHand(me.hand.map((c) => {
@@ -862,8 +862,8 @@ function renderPlay() {
   }), false);
   if (myTurn) {
     if (!mustOpen && !view.copying && view.options.passing !== 'off') handAction('pass');
-    if (view.copying) return step('turn', `Play ${esc(cardById(view.copying).name)} now: you took it with Steal Their Playbook`);
-    return step('turn', mustOpen ? `You go first: open with ${opener ? cardById(opener).name : 'your marked card'}` : 'Your turn');
+    if (view.copying) return step('turn', `Play ${esc(cardById(view.copying).name)} now, from your hand: you took it with Steal Their Playbook`);
+    return step('turn', mustOpen ? `You go first: open with ${opener ? cardById(opener).name : 'your marked card'}, from your hand` : 'Your turn: pick a card in your hand');
   }
   return step('wait', waitingText());
 }
@@ -1085,12 +1085,16 @@ function renderTargeting(cardId) {
 
   // Steal Their Playbook as the last card in hand (designer, 2026-10-29): it can only be discarded.
   if (cardId === 'playbook' && view.me.hand.length === 1) {
-    step('turn', "Steal Their Playbook can't be your last card played: discard it for no effect");
+    step('turn', "Steal Their Playbook can't be your last card played: discard it with ⊘, for no effect");
     handAction('target-none', { primary: true, tip: 'Discard it, for no effect' });
     handAction('back', { tip: 'Put the card down' });
     return toHand(view.me.hand.map((c) => cardHtml(c, { selected: true })), false);
   }
-  step('turn', esc(choice.kind === 'mode' ? (empty.length === 2 ? 'Nothing to target: play it for no effect' : 'Pick an option on the card') : none ? 'Nothing to target: play it for no effect' : words), arrows);
+  // Every prompt says where the next click is (designer, 2026-10-31): on the card, on the island, in the faction rows,
+  // or the buttons beside it.
+  const where = choice.kind === 'faction' ? 'in the faction rows' : choice.kind === 'location' || choice.kind === 'group' || choice.kind === 'split' ? 'on the island' : '';
+  const said = choice.kind === 'mode' ? (empty.length === 2 ? 'Nothing to target: play it for no effect with ⊘' : 'Pick a reading on the card: its location or faction row') : none ? 'Nothing to target: play it for no effect with ⊘' : words;
+  step('turn', `${esc(said)}${where && !none && !/island|faction rows/.test(said) ? ` <span class="bar-where">${where}</span>` : ''}`, arrows);
   if ((choice.kind === 'location' || choice.kind === 'group' || choice.kind === 'faction') && 'optional' in choice && choice.optional) handAction('skip', { label: doneLabel(card.action) });
   handAction('target-none', { tip: 'Play it for no effect' });
   handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
@@ -1104,7 +1108,7 @@ function renderGrowth() {
   const g = view.growing;
   if (!g) return step('wait', 'Growth');
   const mine = g.leaders[g.next % g.leaders.length] === view.you;
-  return mine ? step('turn', `Grow ${esc(fname(g.faction))}: pick a location`) : step('wait', `${esc(fname(g.faction))} grows · ${waitingText()}`);
+  return mine ? step('turn', `Grow ${esc(fname(g.faction))}: pick a location on the island`) : step('wait', `${esc(fname(g.faction))} grows · ${waitingText()}`);
 }
 
 function renderNight() {
@@ -1112,8 +1116,8 @@ function renderNight() {
   const n = view.night;
   if (!n || n.player !== view.you) return step('wait', `Night falls · ${waitingText()}`);
   const loc = locationById(n.left[0]).name;
-  if (!ui.flee.faction) { handAction('let-be', { label: 'Let them be' }); return step('turn', `Night terrors at ${esc(loc)}: pick a group to lose 1 token into the dark`); }
-  if (!ui.flee.to) { handAction('back'); return step('turn', `1 ${esc(fname(ui.flee.faction))} flees from ${esc(loc)}: pick where`); }
+  if (!ui.flee.faction) { handAction('let-be', { label: 'Let them be' }); return step('turn', `Night terrors at ${esc(loc)}: pick a group there, on the island, to lose 1 token into the dark, or Let them be`); }
+  if (!ui.flee.to) { handAction('back'); return step('turn', `1 ${esc(fname(ui.flee.faction))} flees from ${esc(loc)}: pick where, on the island`); }
   handAction('flee-follow', { primary: true, label: 'Your sway follows' });
   handAction('flee-stay', { label: 'Your sway stays' });
   return step('turn', `1 ${esc(fname(ui.flee.faction))} flees to ${esc(locationById(ui.flee.to).name)}: does your sway follow?`);

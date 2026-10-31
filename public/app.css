@@ -720,6 +720,8 @@ button.card-opt:hover { background: #f6cca1; }
 .why-title { font-weight: 600; }
 .why-close { position: absolute; top: 2px; right: 4px; border: 0; background: none; font-size: 16px; cursor: pointer; color: inherit; }
 .dock.is-turn .bar-text { color: var(--color-accent); }
+/* Where the next click is, after a prompt: a small tag (on the island, in the faction rows). */
+.bar-where { display: inline-block; margin-left: 6px; padding: 0 6px; border: 1px solid currentColor; font-size: 11px; opacity: 0.85; white-space: nowrap; }
 .bar-actions { display: flex; gap: 6px; flex: none; }
 .bar-btn { padding: 3px 10px; font-size: 12px; cursor: pointer; background: var(--color-cell); color: var(--color-text); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
 .bar-btn:hover:not(:disabled) { border-color: var(--color-accent); }
