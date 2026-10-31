@@ -1132,7 +1132,7 @@ button.card-opt:hover { background: #f6cca1; }
 .lay-top .ik-b svg { width: 72px; height: auto; }
 .lay-verb { display: block; font-family: var(--font-display); font-size: 12px; text-transform: uppercase; }
 .lay-gist { display: block; font-size: 11px; line-height: 1.2; }
-.lay-target { display: flex; flex-direction: column; gap: 3px; padding: 3px 4px 4px; background: color-mix(in srgb, var(--suit) 18%, var(--card-face)); border-left: 4px solid var(--suit); font-size: 11px; line-height: 1.2; }
+.lay-target { display: flex; flex-direction: column; gap: 3px; font-size: 11px; line-height: 1.2; }
 .lay-label { font-family: var(--font-display); font-size: 9px; text-transform: uppercase; }
 /* A reading or use: a button-like row, its tag cell divided from its text. */
 .lay-row { display: grid; grid-template-columns: 30px minmax(0, 1fr); background: var(--card-face); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); cursor: pointer; }
