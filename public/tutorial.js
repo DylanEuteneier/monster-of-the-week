@@ -638,8 +638,8 @@ function chapterStory() {
     sceneStep(t, qP, q5, `<p>Your cubes are your <b>sway</b>. In a faction's row: how much it has noticed you. On a location: a <b>bid</b> for the trophies when it fights.</p>`, [`hexsway:${S}`, `hexsway:${T}`, `hexsway:${W}`, `row:${F0}`, `row:${G}`]),
     sceneStep(t, q5, q5, `${eq(icon, op('card'), op('→'), `${icon} locations`, op('or'), `the ${F(F0)}`)}<p>Every card has a <b>suit</b>: an archetype, or none. A ${icon} card's action works at ${icon} locations (any faction there) or on the ${F(F0)} (anywhere). Each card is played once, one of three ways.</p>`, [`card:${offer}`, `card:${lure}`, `card:${wild}`]),
     sceneStep('1 · An offering', q5, q7, `${eq(miniCard(offer), op('→'), `+${po} sway`, op('→'), tokenHtml(G, 1))}<p>Spend a card for the sway printed on it, with the faction of its suit: this ${gIcon} card gives sway with the ${F(G)}. Its action is lost.</p>`, [`card:${offer}`, `player:${YOU}`, `row:${G}`]),
-    sceneStep(`2 · A gambit on the ${factionById(F0).name} (FAC)`, q7, q8, `<p>Play ${miniCard(lure)} on the ${F(F0)}, anywhere: bait ${L(T)} and only the ${F(F0)} come, paid with 1 of your sway with them. But ${who(ash)} has 2 there: you'd be second. Not this one.</p>`, [`card:${lure}`, `hex:${S}`, `hex:${T}`, `row:${F0}`]),
-    sceneStep(`3 · A gambit at a ${arch.name} location (LOC)`, q7, q9, `<p>Or play it at a ${icon} location: bait ${L(S)}, and the biggest group next door comes, whatever its faction: the ${F(G)} from ${L(T)}. You pay 1 sway with them, the sway your offering just bought, and it lands there with them. Now you lead, 2 to 1.</p>${frame('Luring a faction to a new place costs 1 sway with it, and that sway lands there with them: your bid.', 'Build sway with a faction before you need to move it.')}`, [`card:${lure}`, `hex:${S}`, `hex:${T}`, `row:${G}`]),
+    sceneStep(`2 · A gambit on the ${factionById(F0).name} (faction)`, q7, q8, `<p>Play ${miniCard(lure)} on the ${F(F0)}, anywhere: bait ${L(T)} and only the ${F(F0)} come, paid with 1 of your sway with them. But ${who(ash)} has 2 there: you'd be second. Not this one.</p>`, [`card:${lure}`, `hex:${S}`, `hex:${T}`, `row:${F0}`]),
+    sceneStep(`3 · A gambit at a ${arch.name} location`, q7, q9, `<p>Or play it at a ${icon} location: bait ${L(S)}, and the biggest group next door comes, whatever its faction: the ${F(G)} from ${L(T)}. You pay 1 sway with them, the sway your offering just bought, and it lands there with them. Now you lead, 2 to 1.</p>${frame('Luring a faction to a new place costs 1 sway with it, and that sway lands there with them: your bid.', 'Build sway with a faction before you need to move it.')}`, [`card:${lure}`, `hex:${S}`, `hex:${T}`, `row:${G}`]),
     sceneStep('End of round: the fights', q9, q9, `<p>When the round ends, every location holding two factions fights: here ${L(S)} and ${L(W)}. ${L(S)} first.</p>${frame('When a location fights, the most sway there takes the bigger pile of the dead; second most, the smaller.', 'Bid where the big fights will be.')}${more('Ties between players', 'Tied for the most sway: a group whose archetype matches the location wins the tie. Otherwise nobody tied collects their pile.')}`, [`hextok:${S}:${F0}`, `hextok:${S}:${G}`, `hexsway:${S}`], S),
     sceneStep('Counting the dead', q12, q12, fightMath(F0, 4, G, 3), [`hextok:${S}:${F0}`, `hextok:${S}:${G}`]),
     sceneStep('The bigger pile', q12, q13, `<p>All 3 ${F(G)}: the bigger pile, to you, the most sway here.</p>`, [`hextok:${S}:${G}`, `hexsway:${S}`, `player:${YOU}`]),
@@ -818,7 +818,7 @@ function draftSteps() {
   const intro = R.mode === 'guided' && !R.taught.draftIntro ? [chapter('7 · Round 1'), () => {
     R.taught.draftIntro = true;
     hooks.hints(true, tutorialHint);
-    return /** @type {Show} */ ({ type: 'spot', target: ['#hint-overlay', SEL.hand], title: 'Your turn now', html: `<p>From here you play: tick cards to keep, then ✓. The <b>Hint</b> panel suggests a move, says why, and recalls the rule. Take it or not: any legal move is fine. The Hints button (top right) cycles between off, marks on the table only, and marks with this panel.</p>` });
+    return /** @type {Show} */ ({ type: 'spot', target: ['#hint-overlay', SEL.hand], title: 'Your turn now', html: `<p>From here you play: tick cards to keep, then ✓. The <b>Hint</b> panel suggests a move, says why, and recalls the rule. Take it or not: any legal move is fine. Hints, in the Table menu (top right), cycles between off, marks on the table only, and marks with this panel.</p>` });
   }] : [];
   return [...intro, waitStep, () => { botPicks(R.table); return null; }, () => present(R.table.state).then(() => null)];
 }
@@ -828,7 +828,7 @@ function yourTurn() {
   hooks.ui.note = null;
   const s = R.table.state;
   const mustOpen = s.first === YOU && !s.opened;
-  return { type: 'spot', target: SEL.hand, title: 'Your turn', html: `${passingOn() ? eq(chip('LOC'), chip('FAC'), chip('+N'), op('·'), '<span class="bar-btn bar-icon">»</span>') : eq(chip('LOC'), chip('FAC'), chip('+N'))}<p>${passingOn() ? 'Play one card or pass' : 'Play one card: every card you keep gets played'}. Click a card, then LOC or FAC on it, then a lit target; its +N spends it as an offering${passingOn() ? '; » passes' : ''}.${mustOpen ? ' You must open with your marked card.' : ''}</p>` };
+  return { type: 'spot', target: SEL.hand, title: 'Your turn', html: `${passingOn() ? eq(chip('location'), chip('faction'), chip('sway'), op('·'), '<span class="bar-btn bar-icon">»</span>') : eq(chip('location'), chip('faction'), chip('sway'))}<p>${passingOn() ? 'Play one card or pass' : 'Play one card: every card you keep gets played'}. Click a card, then its location or faction row, then a lit target; the sway button by its name spends it as an offering${passingOn() ? '; » passes' : ''}.${mustOpen ? ' You must open with your marked card.' : ''}</p>` };
 }
 
 /**
@@ -1076,10 +1076,10 @@ function playHelp() {
   return { type: 'modal', title: 'Your game', html: `
     <ul class="tut-list">
       <li><b>Draft:</b> tick the cards to keep in your hand, then ✓.</li>
-      <li><b>A plan:</b> click a card, choose LOC or FAC on it, then click the lit targets on the board.</li>
-      <li><b>An offering:</b> the +N on a suit card spends it for sway.</li>
+      <li><b>A plan:</b> click a card, choose its location or faction row, then click the lit targets on the board.</li>
+      <li><b>An offering:</b> the sway button by a suit card's name spends it for sway.</li>
       ${passingOn() ? '<li><b>Pass:</b> » on the bar.</li>' : '<li><b>Every card:</b> you play every card you keep, one a turn.</li>'}
-      <li><b>Hints:</b> the Hints button, top right, cycles off → marks → marks and panel.</li>
+      <li><b>Hints:</b> Hints, in the Table menu (top right), cycles off → marks → marks and panel.</li>
     </ul>
     <p class="small muted">Hover a lit target to preview what it does.</p>`,
   buttons: [{ label: 'Play', primary: true, run: () => { R.mode = 'play'; R.chapter = 'Your game'; next(drive); void go(); } }] };
