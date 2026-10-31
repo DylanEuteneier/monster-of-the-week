@@ -749,8 +749,7 @@ function drive() {
     R.taught.playIntro = true;
     R.chapter = '7 · Round 1';
     const first = /** @type {string} */ (s.first);
-    const marked = s.players[first].hand.filter((id) => 'marked' in cardById(id) && cardById(id).marked).sort((a, b) => String(cardById(a).marked).localeCompare(String(cardById(b).marked)))[0];
-    next(spot(SEL.players, 'Who goes first', `${marked ? eq(miniCard(marked)) : ''}<p>${who(first)} ${verb(first, 'holds', 'hold')} the earliest marked card (A–D), so ${first === YOU ? 'you open' : `${esc(first)} opens`} with it, then play goes round the table. We'll stop at each new kind of play and skip the rest.</p>`), drive);
+    next(spot(SEL.players, 'Who goes first', `<p>${first === YOU ? 'You open' : `${esc(first)} opens`} round 1 (drawn at random), with any card, then play goes round the table. The first player stays the same each round, until someone plays ${miniCard('playbook')}: they go first in the next. We'll stop at each new kind of play and skip the rest.</p>`), drive);
     return null;
   }
   if (actor === YOU) {
@@ -829,8 +828,7 @@ function draftSteps() {
 function yourTurn() {
   hooks.ui.note = null;
   const s = R.table.state;
-  const mustOpen = s.first === YOU && !s.opened;
-  return { type: 'spot', target: SEL.hand, title: 'Your turn', html: `${passingOn() ? eq(chip('location'), chip('faction'), chip('sway'), op('·'), '<span class="bar-btn bar-icon">»</span>') : eq(chip('location'), chip('faction'), chip('sway'))}<p>${passingOn() ? 'Play one card or pass' : 'Play one card: every card you keep gets played'}. Click a card, then its location or faction row, then a lit target; the sway button by its name spends it as an offering${passingOn() ? '; » passes' : ''}.${mustOpen ? ' You must open with your marked card.' : ''}</p>` };
+  return { type: 'spot', target: SEL.hand, title: 'Your turn', html: `${passingOn() ? eq(chip('location'), chip('faction'), chip('sway'), op('·'), '<span class="bar-btn bar-icon">»</span>') : eq(chip('location'), chip('faction'), chip('sway'))}<p>${passingOn() ? 'Play one card or pass' : 'Play one card: every card you keep gets played'}. Click a card, then its location or faction row, then a lit target; the sway button by its name spends it as an offering${passingOn() ? '; » passes' : ''}.</p>` };
 }
 
 /**

@@ -442,6 +442,7 @@ fn scratch_base(s: &GameState) -> GameState {
         turn: s.turn,
         passes_in_row: s.passes_in_row,
         opened: s.opened,
+        next_first: s.next_first,
         copying: s.copying,
         votes: s.votes,
         round_plays: Vec::new(),

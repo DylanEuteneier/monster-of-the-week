@@ -1169,7 +1169,7 @@ fn card_worth(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, ev: &dyn Fn(&GameSt
         }
         best = best.max(ev(&after(&x, pid, &m)) - base_v);
     }
-    best + if c.marked.is_some() { 0.2 } else { 0.0 }
+    best
 }
 
 /// In the draft (persona combo): a card's worth with the cards already kept.
@@ -1196,7 +1196,7 @@ fn combo_worth(s: &GameState, pid: Pid, ci: CardIx, kept: &[CardIx], rng: Rng, e
             }
         }
     }
-    best + if card(ci).marked.is_some() { 0.2 } else { 0.0 }
+    best
 }
 
 /// A card's best few plays for its action, best first.

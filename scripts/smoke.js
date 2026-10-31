@@ -94,7 +94,7 @@ async function main() {
   await Promise.all(seats.map((seat) => seat.until(() => true)));
 
   // Every seat is human here; a simple policy drives them from their views:
-  // keep the first cards in the draft, open with a marked card when first,
+  // keep the first cards in the draft, 
   // confirm your own action, grow at the first spot, and otherwise spend a card for sway.
   /** @param {PlayerView} v @returns {any} */
   const policy = (v) => {
@@ -103,9 +103,6 @@ async function main() {
     if (v.phase === 'growth') return v.growing && v.growing.leaders[v.growing.next % v.growing.leaders.length] === v.you ? { type: 'grow', location: Object.keys(v.growing.due)[0] } : null;
     if (v.phase !== 'play') return null;
     if (v.toAct !== v.you) return null;
-    const mark = (/** @type {string} */ c) => ('marked' in cardById(c) && cardById(c).marked) || '';
-    const marked = v.first === v.you && !v.opened ? v.me.hand.filter(mark).sort((a, b) => mark(a).localeCompare(mark(b)))[0] : null;
-    if (marked) return { type: 'play', card: marked, use: 'action', target: null };
     // Passing is off by default: spend a suit card for its sway, else play an unsuited card with no target.
     const suited = v.players[v.you].supply > 0 ? v.me.hand.find((c) => cardById(c).suit) : undefined;
     return suited ? { type: 'play', card: suited, use: 'sway' } : { type: 'play', card: v.me.hand[0], use: 'action', target: null };

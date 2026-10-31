@@ -373,6 +373,8 @@ pub struct GameState {
     pub left_out: Small<21>,
     pub pass: i32,
     pub first: Option<Pid>,
+    /// D44: the seat that played Steal Their Playbook this round goes first next round.
+    pub next_first: Option<Pid>,
     pub turn: usize,
     pub passes_in_row: i32,
     pub opened: bool,

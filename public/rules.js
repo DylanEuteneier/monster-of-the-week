@@ -82,7 +82,8 @@ export { spec };
  * @property {Record<string, number>} supply  faction → tokens in its supply
  * @property {string[]} leftOut    cards not dealt this round (DR5)
  * @property {number} pass         draft: which pick this is (1-based)
- * @property {string | null} first  this round's first player (FP2)
+ * @property {string | null} first  this round's first player (D44)
+ * @property {string | null} [nextFirst]  who played Steal Their Playbook this round: next round's first player (D44)
  * @property {number} turn         index into seating of the player to act
  * @property {number} passesInRow
  * @property {boolean} opened      the first player has opened with their marked card

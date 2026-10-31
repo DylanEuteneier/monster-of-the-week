@@ -158,9 +158,9 @@ async function cards() {
       + (acts && fx.moved !== null ? tag('Moved', String(fx.moved), 'Per action play: pieces moved or placed', bandMoved(id)) : '')
       + (c.opener ? tag('Opened', String(c.opener), 'Times it was played as the round\'s first play') : '');
   };
-  /** @typedef {{ id: string, suit: string | null, action: string | null, name: string, round?: number, marked?: string }} AnyCard */
+  /** @typedef {{ id: string, suit: string | null, action: string | null, name: string, round?: number }} AnyCard */
   const deck = /** @type {AnyCard[]} */ (/** @type {unknown} */ (spec.cards));
-  const all = deck.map((c) => ({ c, status: c.marked ? `Marked ${c.marked}` : c.suit ? 'Suited' : 'Unsuited' }));
+  const all = deck.map((c) => ({ c, status: c.suit ? 'Suited' : 'Unsuited' }));
   const suits = [...spec.archetypes.map((a) => a.id), null];
   all.sort((x, y) => suits.indexOf(x.c.suit) - suits.indexOf(y.c.suit) || (x.c.action ?? '').localeCompare(y.c.action ?? '') || x.c.name.localeCompare(y.c.name));
   const tags = (/** @type {AnyCard} */ c, /** @type {string} */ status) => `<div class="review-tags">${playTags(c.id, !!c.action)}<span class="review-tag is-status">${esc(status)}</span><span class="review-tag is-status"><span class="mono">${esc(c.action ?? 'none')}</span></span></div>`;

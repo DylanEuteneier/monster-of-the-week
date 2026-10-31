@@ -67,7 +67,7 @@ export function cardHtml(id, o = {}) {
   const now = view?.printed?.[id];
   const printed = c.slot === 'signature' ? 'X' : (now ?? c.sway);
   const sf = view && c.suit ? view.factions.find((f) => factionById(f).archetype === c.suit) : undefined;
-  const band = c.suit ? `<span class="suit-line">${suitIcon(c.suit)} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)}</span>` : `<span>${c.marked ? `Marked ${esc(c.marked)}` : 'Unsuited'}</span><span>${c.marked ? 'opens' : ''}</span>`;
+  const band = c.suit ? `<span class="suit-line">${suitIcon(c.suit)} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)}</span>` : '<span>Unsuited</span><span></span>';
   // The card's options, on its right: its two readings and its sway.
   // Live (clickable) on your turn; lit as the next step once the card is picked.
   const live = !!o.sway;

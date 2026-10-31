@@ -838,9 +838,6 @@ function renderPlay() {
   const view = /** @type {PlayerView} */ (ui.view);
   const me = view.me;
   const myTurn = view.toAct === view.you;
-  const mustOpen = view.first === view.you && !view.opened && me.hand.some((c) => cardById(c).marked);
-  // Only the earliest marked card opens (FP2; the engine checks it), so only it is offered.
-  const opener = mustOpen ? me.hand.filter((c) => cardById(c).marked).sort((a, b) => String(cardById(a).marked).localeCompare(String(cardById(b).marked)))[0] : null;
   if (ui.choosing && !me.hand.includes(ui.choosing)) ui.choosing = null;
   if (myTurn && ui.choosing) return renderTargeting(ui.choosing);
   if (myTurn && ui.returning && me.hand.includes(ui.returning.card)) {
@@ -855,19 +852,20 @@ function renderPlay() {
     const card = cardById(c);
     // A card taken with Steal Their Playbook is played now: only it (D30).
     const taken = view.copying ?? null;
-    const canAct = myTurn && !!card.action && (!mustOpen || c === opener) && (!taken || c === taken);
+    const canAct = myTurn && !!card.action && (!taken || c === taken);
     const mode = canAct ? 'act' : '';
     // Steal Their Playbook says what it would copy now.
     const copies = c !== 'playbook' ? undefined
       : me.hand.length === 1 ? '<div class="card-copy small">Your last card: it can only be discarded, for no effect</div>'
       : copyable().length ? `<div class="card-copy small">Can take: <b>${copyable().map((x) => esc(cardById(x).name)).join(', ')}</b></div>` : undefined;
-    const free = myTurn && !mustOpen && (!taken || c === taken);
+    const free = myTurn && (!taken || c === taken);
     return cardHtml(c, { mode, sway: free && !!card.suit, back: free && returnRoom(/** @type {any} */ (view), view.you, c).max > 0, dim: !mode && !(free && !!card.suit), extra: copies });
   }), false);
   if (myTurn) {
-    if (!mustOpen && !view.copying && view.options.passing !== 'off') handAction('pass');
+    if (!view.copying && view.options.passing !== 'off') handAction('pass');
     if (view.copying) return step('turn', `Play ${esc(cardById(view.copying).name)} now, from your hand: you took it with Steal Their Playbook`);
-    return step('turn', mustOpen ? `You go first: open with ${opener ? cardById(opener).name : 'your marked card'}, from your hand` : 'Your turn: pick a card in your hand');
+    // D44: the round's first player opens with any card.
+    return step('turn', view.first === view.you && Object.values(view.players).every((p) => p.handSize === me.hand.length) ? 'You go first: pick any card in your hand' : 'Your turn: pick a card in your hand');
   }
   return step('wait', waitingText());
 }

@@ -130,6 +130,10 @@ pub fn create_game(seed: i64, players: &[String], raw_options: &[(String, String
             x.1 = options.threshold.to_string();
         }
     }
+    // D44: a random first player in round 1.
+    let (r, next) = next_random(rng);
+    rng = next;
+    let first = ((r * players.len() as f64) as usize).min(players.len() - 1) as Pid;
     let mut s = GameState {
         version: Rc::from(sp.version.as_str()),
         options: Rc::new(options),
@@ -143,7 +147,8 @@ pub fn create_game(seed: i64, players: &[String], raw_options: &[(String, String
         supply,
         left_out: Small::new(),
         pass: 1,
-        first: None,
+        first: Some(first),
+        next_first: None,
         turn: 0,
         passes_in_row: 0,
         opened: false,

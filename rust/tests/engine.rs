@@ -173,7 +173,7 @@ fn content_ids_are_unique_across_every_list_cards_included() {
 }
 
 #[test]
-fn the_deck_is_the_core_21_five_suits_and_six_unsuited_a_to_d_marked() {
+fn the_deck_is_the_core_21_five_suits_and_six_unsuited_none_marked() {
     let sp = spec();
     assert_eq!(deck().len(), 21);
     assert_eq!(deck().iter().filter(|&&c| sp.cards[c as usize].suit.is_none()).count(), 6);
@@ -182,9 +182,8 @@ fn the_deck_is_the_core_21_five_suits_and_six_unsuited_a_to_d_marked() {
         suit.sort();
         assert_eq!(suit, vec![("Shift".to_string(), 3), ("Signature".to_string(), 4), ("Strike".to_string(), 2)]);
     }
-    let mut marks: Vec<char> = sp.cards.iter().filter_map(|c| c.marked).collect();
-    marks.sort();
-    assert_eq!(marks, vec!['A', 'B', 'C', 'D']);
+    // D44: no marked cards.
+    assert!(sp.cards.iter().all(|c| c.marked.is_none()));
 }
 
 #[test]
@@ -288,19 +287,33 @@ fn the_draft_keeps_one_more_card_each_pass_and_ends_with_full_hands() {
 }
 
 #[test]
-fn the_earliest_marked_card_dealt_sets_the_first_player_who_must_open_with_it() {
+fn round_one_s_first_player_is_random_and_opens_with_any_card() {
+    // D44: drawn at random when the game is made (not always the same seat), and any card in hand opens.
+    let firsts: std::collections::BTreeSet<Pid> = (1..30).map(|seed| game(seed).first.unwrap()).collect();
+    assert!(firsts.len() > 1);
     let s = draft_all(&game(6));
     let first = s.first.unwrap();
     let name = s.seating[first as usize].clone();
-    let marked: Vec<CardIx> = s.players[first as usize].hand.iter().copied().filter(|&c| spec().cards[c as usize].marked.is_some()).collect();
-    if !marked.is_empty() {
-        assert!(!valid(&s, &name, json!({ "type": "pass" })));
-        if let Some(&other) = s.players[first as usize].hand.iter().find(|&&c| spec().cards[c as usize].marked.is_none()) {
-            let c = &spec().cards[other as usize];
-            assert!(!valid(&s, &name, json!({ "type": "play", "card": c.id, "use": if c.suit.is_some() { "sway" } else { "action" } })));
+    for &c in s.players[first as usize].hand.iter() {
+        let c = &spec().cards[c as usize];
+        if c.suit.is_some() {
+            assert!(valid(&s, &name, json!({ "type": "play", "card": c.id, "use": "sway" })), "{} can open", c.id);
         }
     }
     assert_eq!(waiting_on(&s), vec![first]);
+}
+
+#[test]
+fn steal_their_playbook_s_player_goes_first_next_round_else_the_first_player_stays() {
+    // D44: the seat that played it goes first after the next draft; with nobody, the first player stays.
+    let s = game(6);
+    let first = s.first.unwrap();
+    assert_eq!(draft_all(&s).first, Some(first));
+    let other = (first as usize + 1) % s.n();
+    let marked = edit(&s, |x| x["nextFirst"] = json!(s.seating[other].clone()));
+    let after = draft_all(&marked);
+    assert_eq!(after.first, Some(other as Pid));
+    assert_eq!(after.next_first, None);
 }
 
 // Fights -------------------------------------------------------------------

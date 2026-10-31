@@ -294,6 +294,7 @@ pub fn state_to_value(s: &GameState) -> Value {
     o.insert("turn".into(), Value::from(s.turn));
     o.insert("passesInRow".into(), Value::from(s.passes_in_row));
     o.insert("opened".into(), Value::from(s.opened));
+    o.insert("nextFirst".into(), s.next_first.map(|p| Value::from(s.seating[p as usize].as_str())).unwrap_or(Value::Null));
     o.insert("copying".into(), s.copying.map(|c| Value::from(spec().cards[c as usize].id.as_str())).unwrap_or(Value::Null));
     if s.options.round_votes {
         o.insert("votes".into(), serde_json::json!({ "invaders": s.votes[0], "island": s.votes[1] }));
@@ -408,6 +409,7 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
         left_out: Small::from_slice(&cardv(&v["leftOut"])),
         pass: v["pass"].as_i64().unwrap_or(1) as i32,
         first: v["first"].as_str().and_then(pid),
+        next_first: v["nextFirst"].as_str().and_then(pid),
         turn: v["turn"].as_u64().unwrap_or(0) as usize,
         passes_in_row: v["passesInRow"].as_i64().unwrap_or(0) as i32,
         opened: v["opened"].as_bool().unwrap_or(false),
@@ -496,7 +498,7 @@ pub fn game_of(s: &GameState) -> Value {
     }).collect());
     let mut lean = json!({
         "phase": v["phase"], "round": v["round"], "rngState": v["rngState"], "seating": v["seating"], "factions": v["factions"], "supply": v["supply"],
-        "pass": v["pass"], "first": v["first"], "turn": v["turn"], "passesInRow": v["passesInRow"], "opened": v["opened"], "copying": v["copying"],
+        "pass": v["pass"], "first": v["first"], "turn": v["turn"], "passesInRow": v["passesInRow"], "opened": v["opened"], "nextFirst": v["nextFirst"], "copying": v["copying"],
         "board": board, "players": players, "growing": v["growing"], "night": v["night"], "roundPlays": v["roundPlays"], "result": v["result"], "log": v["log"],
     });
     // Only with rounds as votes, so the hash of every other game is unchanged.

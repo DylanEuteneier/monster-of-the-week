@@ -698,7 +698,6 @@
       ],
       "round": 22,
       "text": "Choose one. Sway: 1 sway from your supply at each of up to X fights. Standing: up to X standing with one faction, from your supply. X is the cards in your hand, this one included.",
-      "marked": "A",
       "layout": {
         "verb": "gain",
         "noun": "cube",
@@ -737,7 +736,6 @@
       ],
       "round": 22,
       "text": "Choose one. Standing: take 1 standing from each of up to X factions, all into one. Sway: gather up to X of your sway from next door into one location. Tokens: up to X tokens of one faction come in from its groups next door, to a location where you have sway. X is the cards in your hand, this one included.",
-      "marked": "B",
       "layout": {
         "verb": "gather",
         "noun": "token",
@@ -781,7 +779,6 @@
       ],
       "round": 22,
       "text": "Choose one. Standing: move 1 standing from one faction to each of up to X others. Sway: send 1 of your sway from one location to each of up to X neighbours. Tokens: a group sends 1 token to each of up to X neighbours. X is the cards in your hand, this one included.",
-      "marked": "C",
       "layout": {
         "verb": "spread",
         "noun": "token",
@@ -820,7 +817,6 @@
       "action": "showdown",
       "round": 22,
       "text": "At a lone group, never a fight, burn your sway there, 1 for each token, to take that many of its tokens as your trophies. Burned sway goes back to your supply. Target: the group.",
-      "marked": "D",
       "layout": {
         "verb": "gain",
         "noun": "trophy",
@@ -885,7 +881,7 @@
         "yours"
       ],
       "round": 22,
-      "text": "Take any card played earlier this round, by anyone, however it was played, from the played cards into your hand, to play later. It can't be your last card played: as the last card in your hand it is discarded, for no effect.",
+      "text": "Take any card played earlier this round, by anyone, however it was played, from the played cards into your hand, to play later, and you go first next round. It can't be your last card played: as the last card in your hand it is discarded, for no effect.",
       "layout": {
         "verb": "gain",
         "noun": "hand",
@@ -899,6 +895,7 @@
           }
         ],
         "specifics": [
+          "You go first next round.",
           "It can’t be your last card played: as the last card in your hand it is discarded, for no effect."
         ],
         "flavour": "Whatever worked for them will work twice as well for us.",

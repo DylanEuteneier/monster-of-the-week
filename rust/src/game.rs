@@ -14,9 +14,6 @@ fn no(m: &str) -> Verdict {
     Some(m.to_string())
 }
 
-fn marked(c: CardIx) -> Option<char> {
-    spec().cards[c as usize].marked
-}
 
 /// Is a move legal? (validate)
 pub fn validate(s: &GameState, pid: Pid, m: &Move) -> Verdict {
@@ -68,7 +65,6 @@ pub fn validate(s: &GameState, pid: Pid, m: &Move) -> Verdict {
             if s.turn != pid as usize {
                 return no("It is not your turn.");
             }
-            let must_open = !s.opened && Some(pid) == s.first;
             // A card taken with Steal Their Playbook is played now (D30).
             if let Some(x) = s.copying {
                 if !matches!(m, Move::Play { card, .. } if *card == x) {
@@ -77,9 +73,7 @@ pub fn validate(s: &GameState, pid: Pid, m: &Move) -> Verdict {
             }
             match m {
                 Move::Pass => {
-                    if must_open && p.hand.iter().any(|&c| marked(c).is_some()) {
-                        no("The first player opens with their marked card.")
-                    } else if !s.options.passing {
+                    if !s.options.passing {
                         no("No passing: play a card.")
                     } else {
                         None
@@ -88,13 +82,6 @@ pub fn validate(s: &GameState, pid: Pid, m: &Move) -> Verdict {
                 Move::Play { card, use_, target, places } => {
                     if !p.hand.contains(card) {
                         return no("That card is not in your hand.");
-                    }
-                    if must_open {
-                        let mut mine: Vec<CardIx> = p.hand.iter().copied().filter(|&c| marked(c).is_some()).collect();
-                        mine.sort_by_key(|&c| marked(c));
-                        if !mine.is_empty() && *card != mine[0] {
-                            return no("The first player opens with their marked card.");
-                        }
                     }
                     let c = &spec().cards[*card as usize];
                     match use_ {
@@ -227,7 +214,13 @@ pub fn apply_legal(s: &GameState, pid: Pid, m: &Move) -> GameState {
                 PlayUse::Action => {
                     log_line(&mut next, |_| format!("{who} plays {}.", c.name));
                     match target {
-                        Some(Some(t)) => act(&mut next, pid, ci, t),
+                        Some(Some(t)) => {
+                            act(&mut next, pid, ci, t);
+                            // D44: Steal Their Playbook's player goes first next round.
+                            if c.action == crate::spec::Action::Playbook {
+                                next.next_first = Some(pid);
+                            }
+                        }
                         _ if c.action == crate::spec::Action::Playbook && s.players[me].hand.len() == 1 => log_line(&mut next, |_| format!("{who} discards {}: it can't be the last card played.", c.name)),
                         _ => log_line(&mut next, |_| format!("{} has nothing to act on.", c.name)),
                     }
@@ -273,18 +266,16 @@ fn pass_batches(s: &mut GameState) {
     }
 }
 
-/// The draft is done: hands are the kept cards; the earliest marked card dealt sets the first player (FP2).
+/// The draft is done: hands are the kept cards. D44: the first player stays, unless Steal Their Playbook was played
+/// last round (its player goes first); round 1's is random (create_game). The first player opens with any card.
 fn start_play(s: &mut GameState) {
     for p in s.players.iter_mut() {
         p.hand = std::mem::take(&mut p.kept);
     }
-    let first = ['A', 'B', 'C', 'D']
-        .iter()
-        .find_map(|&mark| (0..s.n()).find(|&i| s.players[i].hand.iter().any(|&c| marked(c) == Some(mark))))
-        .unwrap_or((s.round as usize - 1) % s.n()) as Pid;
+    let first = s.next_first.take().or(s.first).unwrap_or(0);
     s.first = Some(first);
     s.turn = first as usize;
-    s.opened = !s.players[first as usize].hand.iter().any(|&c| marked(c).is_some());
+    s.opened = true;
     s.passes_in_row = 0;
     s.phase = Phase::Play;
     let name = s.seating[first as usize].clone();
