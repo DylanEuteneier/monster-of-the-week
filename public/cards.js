@@ -142,7 +142,7 @@ function laidOut(c, o, k) {
   const specifics = l.specifics.length ? `<ul class="lay-specifics">${l.specifics.map((/** @type {string} */ s) => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
   const flavour = `<p class="lay-flavour">${esc(l.flavour)}</p>`;
   // Spent for sway: standing with the suit's faction, its cube in the suit's colour, and the amount.
-  const sway = c.suit ? k.opt('sway', `${suitedMark('standing', suit)}<b>${k.printed}</b>`, `Spend for ${k.printed} sway with ${k.sf ? fname(k.sf) : `the ${k.suitName} faction`}${c.slot === 'signature' ? `: 1 per card in your hand, this one included${k.now !== undefined ? ` (${k.now} now)` : ''}` : ''}`, false) : '';
+  const sway = c.suit ? k.opt('sway', `${suitedMark('standing', suit)}${c.slot === 'signature' ? `<span class="lay-hand">${NOUNS.card.svg}</span>` : `<b>${k.printed}</b>`}`, `Spend for ${k.printed} sway with ${k.sf ? fname(k.sf) : `the ${k.suitName} faction`}${c.slot === 'signature' ? `: 1 per card in your hand, this one included${k.now !== undefined ? ` (${k.now} now)` : ''}` : ''}`, false) : '';
   const back = o.back ? k.opt('return', 'BACK', `Bring ${k.sf ? fname(k.sf) : 'its faction'} back: up to its sway of tokens at its own locations or where it is, 1 standing with it each`, false) : '';
   return `<div class="${k.classes} lay-card" data-card="${esc(k.id)}" aria-label="${esc(k.full)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
     <div class="card-band">${k.band}</div>
