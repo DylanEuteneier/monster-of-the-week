@@ -207,31 +207,34 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 --------------------------------------------------------------------------- */
 .topbar {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-4);
   padding: var(--space-3) var(--space-4);
   border-bottom: var(--line) solid var(--ink);
   background: var(--color-panel-2);
   box-shadow: 0 3px 0 var(--ink);
 }
-/* The header: the title, round and seat (app.js renderHeader) and the table's tools (turn speed, hints, log, table
-   talk) in the bar itself, in flow. */
-.topbar-main { flex: 1; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4); min-width: 0; }
+/* The header, one line, one gap throughout: the title on the left; the round, your seat (not in hotseat: the seat
+   bar shows it) and the Table menu on the right (app.js renderHeader). */
+.topbar-main { flex: 1; display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-4); min-width: 0; }
+.topbar-main > h1 { margin: 0 auto 0 0; line-height: 1; }
+.topbar-seat { display: inline-flex; align-items: center; gap: var(--space-2); line-height: 1; }
+.topbar-seat .swatch { width: 4px; height: 14px; }
 .stale-tag { background: var(--color-danger); color: var(--color-text); }
-.topbar-buttons { display: flex; flex-wrap: wrap; gap: var(--space-2); align-self: center; }
+.topbar-buttons { display: flex; align-items: center; gap: var(--space-2); }
 /* The table's tools in one menu (turn speed, hints and their aim, log, table talk): a Table button, its list dropping
    below it at the right; the unread table talk count rides on the button. */
 .topbar-menu { position: relative; }
-.topbar-menu > summary { list-style: none; cursor: pointer; }
+.topbar-menu > summary { list-style: none; cursor: pointer; white-space: nowrap; }
 .topbar-menu > summary::-webkit-details-marker { display: none; }
 .topbar-menu[open] > summary { border-color: var(--color-accent); color: var(--color-accent); }
-.topbar-menu-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: var(--z-overlay); display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); min-width: 220px; padding: var(--space-2); background: var(--color-panel); border: 2px solid var(--color-border); box-shadow: 3px 3px 0 var(--ink); }
+.topbar-menu-list { position: absolute; right: 0; top: calc(100% + var(--space-2)); z-index: var(--z-overlay); display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); width: 240px; padding: var(--space-2); background: var(--color-panel); border: 2px solid var(--color-border); box-shadow: 3px 3px 0 var(--ink); }
 .topbar-menu-list > .btn { text-align: left; }
-.topbar-menu-list .hint-aim { justify-content: space-between; }
+.topbar-menu-list .hint-aim { display: flex; justify-content: space-between; gap: var(--space-2); padding: 0 var(--space-1); }
+.topbar-menu-list .hint-aim input { flex: 1; min-width: 0; width: auto; }
+.topbar-menu-list .aim-pole { white-space: nowrap; }
 .topbar h1 { font-size: 20px; letter-spacing: 0.06em; color: var(--color-accent); text-shadow: 2px 2px 0 var(--ink); }
-.topbar .phase-label { font-family: var(--font-display); font-size: 16px; text-transform: uppercase; }
+.topbar .phase-label { font-family: var(--font-display); font-size: 16px; text-transform: uppercase; line-height: 1; }
 
 .seatbar {
   display: flex;
@@ -1073,6 +1076,13 @@ button.card-opt:hover { background: #f6cca1; }
    scroll sideways in place (catalogue 5).
 =========================================================================== */
 @media (max-width: 600px), (hover: none) and (pointer: coarse) {
+  /* The header on a phone: the title over the round, the Table menu beside them; the same side padding as the seat bar. */
+  .topbar { padding: var(--space-2) var(--space-3); gap: var(--space-3); }
+  .topbar-main { flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+  .topbar-main > h1 { margin: 0; }
+  .topbar h1 { font-size: 15px; }
+  .topbar .phase-label { font-size: 12px; }
+  .seatbar { padding: var(--space-2) var(--space-3); }
   .guide, .round-frame { top: auto; bottom: var(--space-2); left: var(--space-4); right: var(--space-4); width: auto; }
   .hint { top: auto; bottom: var(--space-2); left: var(--space-4); right: var(--space-4); width: auto; }
   body { min-width: 0; }
