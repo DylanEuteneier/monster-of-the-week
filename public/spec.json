@@ -258,10 +258,10 @@
       "slot": "strike",
       "sway": 2,
       "action": "gate",
-      "text": "Join two locations for the rest of the round: they count as a single location for movement, and fight as one (strength and sway added across both; a true tie scorches both). Each end is an ↂ location or a location holding the Sci-Fi faction; never three factions across them. Only 1 sway, at one end. Target: the two ends.",
+      "text": "Join two locations for the rest of the round: they count as a single location for movement, and fight as one (strength and sway added across both; a true tie scorches both). Never three factions across them. Only 1 sway, at one end: from the Sci-Fi faction if it is at either end, otherwise a faction there. Target: the two ends.",
       "readings": {
-        "location": "either end: an ↂ location, or a location holding the Sci-Fi faction.",
-        "faction": "either end: a location holding the Sci-Fi faction, or an ↂ location."
+        "location": "two ↂ locations.",
+        "faction": "two locations holding the Sci-Fi faction."
       },
       "round": 21
     },

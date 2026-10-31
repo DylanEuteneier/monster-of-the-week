@@ -102,8 +102,8 @@ const LAYOUTS = [
     target: { head: 'the locations marked' }, specifics: ['This round, at a marked location’s fight, the winner loses as many as the loser.'],
     flavour: 'Father and the Flock spill blood on the altar.' },
   { id: 'gate', verb: 'join', noun: 'location', word: 'Join', gist: 'two locations, for the rest of the round',
-    target: { head: 'the two ends', mark: 'either' },
-    specifics: ['They count as a single location for movement.', 'They fight as one: strength and sway added across both; a true tie scorches both.', 'Never three factions across them.', 'Only 1 sway, at one end.'], flavour: '' },
+    target: { head: 'the two ends' },
+    specifics: ['They count as a single location for movement.', 'They fight as one: strength and sway added across both; a true tie scorches both.', 'Never three factions across them.', 'Only 1 sway, at one end: from the Sci-Fi faction if it is at either end, otherwise a faction there.'], flavour: '' },
   { id: 'stakes', verb: 'gather', word: 'Gather', gist: 'up to X into one', uses: [
     ['Standing', 'standing', 'take 1 standing from each of up to X factions, all into one.'],
     ['Sway', 'swayNext', 'gather up to X of your sway from next door into one location.'],

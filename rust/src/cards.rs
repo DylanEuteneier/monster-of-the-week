@@ -141,11 +141,19 @@ pub fn flee_options(s: &GameState, loc: Loc) -> Vec<(Fac, Vec<Loc>)> {
     factions_at(s, loc).into_iter().filter(|&f| free_of(s, loc, f) > 0).map(|f| (f, burst_spots(s, loc, f))).filter(|o| !o.1.is_empty()).collect()
 }
 
-/// The Gate: can this location be one of its ends?
-pub fn gate_end(s: &GameState, c: &Card, loc: Option<Loc>) -> bool {
+/// The Gate: can this location be one of its ends? The location reading joins two ↂ locations, the faction reading
+/// two locations holding the Sci-Fi faction (designer, 2026-10-30; D36).
+pub fn gate_end(s: &GameState, c: &Card, mode: Option<Mode>, loc: Option<Loc>) -> bool {
     let Some(loc) = loc else { return false };
     let p = &s.board[loc as usize];
-    !p.scorched && p.gate.is_none() && (is_suit_loc(c, loc) || factions_at(s, loc).contains(&suit_faction(c).expect("suited")))
+    !p.scorched && p.gate.is_none() && if mode == Some(Mode::Faction) { factions_at(s, loc).contains(&suit_faction(c).expect("suited")) } else { is_suit_loc(c, loc) }
+}
+/// Who may pay The Gate's 1 sway (designer, 2026-10-30; D36): the Sci-Fi faction when it is at either end (always,
+/// on the faction reading); otherwise your choice of a faction at the ends; Sci-Fi if both ends are empty.
+pub fn gate_payers(s: &GameState, c: &Card, a: Loc, b: Loc) -> Vec<Fac> {
+    let sf = suit_faction(c).expect("suited");
+    let across = factions_across(s, a, b);
+    if across.contains(&sf) || across.is_empty() { vec![sf] } else { across.iter().copied().collect() }
 }
 /// The factions present across two locations.
 pub fn factions_across(s: &GameState, a: Loc, b: Loc) -> Facs {
@@ -672,8 +680,8 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
                 return e("Choose a location target or a faction target.");
             }
             let (a, b) = (as_loc(t.location), as_loc(t.to));
-            if !gate_end(s, c, a) || !gate_end(s, c, b) || a == b {
-                return e("Join two locations: each an ↂ location or one holding the Sci-Fi faction.");
+            if !gate_end(s, c, t.mode, a) || !gate_end(s, c, t.mode, b) || a == b {
+                return e(if t.mode == Some(Mode::Faction) { "Join two locations holding the Sci-Fi faction." } else { "Join two ↂ locations." });
             }
             let (a, b) = (a.unwrap(), b.unwrap());
             let across = factions_across(s, a, b);
@@ -681,8 +689,8 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
                 return e("The Gate can't join locations holding three or more factions between them.");
             }
             let payer = as_fac(t.payer);
-            if !matches!(payer, Some(p) if Some(p) == sf || across.contains(&p)) {
-                return e("Choose the faction whose sway pays: the Sci-Fi faction or one at either end.");
+            if !matches!(payer, Some(p) if gate_payers(s, c, a, b).contains(&p)) {
+                return e("The Sci-Fi faction pays if it is at either end; otherwise a faction at the ends, your choice.");
             }
             if req && standing(s, pid, payer.unwrap()) < 1 {
                 return e("You need the sway to pay (all or nothing).");

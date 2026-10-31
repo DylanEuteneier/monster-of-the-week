@@ -548,6 +548,13 @@ fn the_gate_joins_two_locations_one_location_for_movement_one_fight() {
     assert!(check(&three, "ann", "gate", t.clone()).is_some());
     let poor = edit(&s, |x| x["players"]["ann"]["standing"][&f] = json!(0));
     assert!(check(&poor, "ann", "gate", t.clone()).is_some());
+    // D36: the faction reading joins two locations holding the Sci-Fi faction; Sci-Fi pays when it is at either end.
+    let fac = json!({ "mode": "faction", "location": a, "to": b, "payer": f, "losses": a });
+    assert!(check(&s, "ann", "gate", fac).is_some());
+    let with_sci = edit(&s, |x| x["board"][&b]["tokens"] = obj(&[(&sci, 2)]));
+    assert!(check(&with_sci, "ann", "gate", t.clone()).is_some());
+    let sci_pays = json!({ "mode": "location", "location": a, "to": b, "payer": sci, "losses": a });
+    assert_eq!(check(&with_sci, "ann", "gate", sci_pays), None);
     let p = preview(&s, "ann", "gate", t.clone());
     let joined = edit(&s, |x| { x["board"] = p["board"].clone(); x["players"] = p["players"].clone(); });
     let jv = v(&joined);

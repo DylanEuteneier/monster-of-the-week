@@ -324,17 +324,8 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             if truthy(t.to) { Choice::done() } else { Choice::locs(LocKey::To, threats_of(s, l, fac.unwrap()), None, None) }
         }
         Action::Gate => {
-            let sf = sf.unwrap();
-            let ends: Vec<Loc> = all_locs(s).filter(|&l| gate_end(s, c, Some(l))).collect();
-            let payers = |x: Loc, y: Loc| -> Vec<Fac> {
-                let mut v = vec![sf];
-                for f in factions_across(s, x, y) {
-                    if !v.contains(&f) {
-                        v.push(f);
-                    }
-                }
-                v.into_iter().filter(|&f| can(s, pid, f, 1)).collect()
-            };
+            let ends: Vec<Loc> = all_locs(s).filter(|&l| gate_end(s, c, t.mode, Some(l))).collect();
+            let payers = |x: Loc, y: Loc| -> Vec<Fac> { gate_payers(s, c, x, y).into_iter().filter(|&f| can(s, pid, f, 1)).collect() };
             let pairs = |x: Loc| -> Vec<Loc> { ends.iter().copied().filter(|&y| y != x && factions_across(s, x, y).len() <= 2 && !payers(x, y).is_empty()).collect() };
             let Some(a) = loc else { return Choice::locs(LocKey::Location, ends.iter().copied().filter(|&x| !pairs(x).is_empty()).collect(), None, None) };
             let Some(b) = as_loc(t.to) else { return Choice::locs(LocKey::To, pairs(a), None, None) };

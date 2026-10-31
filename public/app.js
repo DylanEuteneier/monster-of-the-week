@@ -887,7 +887,7 @@ function cardSteps(card, choice) {
       if (key === 'faction:payer') return `Pick whose standing pays the sway at ${L} (one of the two invited factions)`;
       return '';
     case 'gate':
-      if (key === 'faction:payer') return `Pick whose standing pays the Gate's 1 sway: ${SF}, or a faction at either end`;
+      if (key === 'faction:payer') return `Pick whose standing pays the Gate's 1 sway: a faction at either end (${SF} isn't there)`;
       return '';
     case 'threat':
       if (choice.kind === 'group') return `Pick the group to fool (${where})`;
