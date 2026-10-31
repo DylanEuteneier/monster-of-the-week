@@ -93,7 +93,7 @@ const place = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {n
   ? `<path d="M${x - 6} ${y + 5.5}h12"${extra}/>`
   : `<g stroke-width="1.75"${extra}>${hex(x, y, 7)}</g>`;
 /** What a thing was before the verb (designer, 2026-10-30: before and after, no arrows): dotted and faint. */
-const ghost = (/** @type {string} */ body) => `<g stroke-dasharray="1 2" opacity="0.3">${body}</g>`;
+const ghost = (/** @type {string} */ body) => `<g stroke-dasharray="1.4 1.6" opacity="0.5">${body}</g>`;
 /** A diagram in an 80×44 box, drawn at 1.25×. */
 const dia = (/** @type {string} */ body) => `<svg class="ik-svg ik-dia" viewBox="0 0 80 44" width="100" height="55" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 /** Three places, top, middle and bottom: the middle one staggered sideways so none touch. */
