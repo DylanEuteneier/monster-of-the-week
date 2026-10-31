@@ -142,3 +142,33 @@ export function iconHtml(verb, noun, amount = '') {
 
 /** A noun on its own (a target, or where an action happens). @param {keyof typeof NOUNS} noun @param {string} [amount] */
 export const nounHtml = (noun, amount = '') => `<span class="ik ik-solo" title="${NOUNS[noun].label}"><span class="ik-n">${NOUNS[noun].svg}</span>${amount ? `<span class="ik-amt">${amount}</span>` : ''}</span>`;
+
+// ---------------------------------------------------------------------------
+// Suited marks (designer, 2026-10-30): a suit's colour fills a mark that belongs to that suit (its locations, its
+// faction's tokens); grey marks the unsuited; stripes of every suit's colour mean any suit ("anywhere", any faction).
+// ---------------------------------------------------------------------------
+
+const SUIT_ORDER = ['nocturnals', 'scifi', 'sentients', 'undead', 'demonic'];
+/** The suit colours, as app.css's --suit-* (an SVG pattern's own fills don't take CSS variables reliably). */
+const SUIT_HEX = /** @type {Record<string, string>} */ ({ nocturnals: '#8f488d', scifi: '#3dc3d8', sentients: '#a0948f', undead: '#71ab43', demonic: '#e7482d' });
+let stripeId = 0;
+/** The stripes of every suit, as an SVG pattern with its own id: all five across each shape it fills. */
+const stripes = (/** @type {string} */ id) => `<defs><pattern id="${id}" patternUnits="objectBoundingBox" patternContentUnits="objectBoundingBox" width="1" height="1">${SUIT_ORDER.map((s, i) => `<rect x="${i / 5}" y="0" width="0.2" height="1" fill="${SUIT_HEX[s]}" stroke="none"/>`).join('')}</pattern></defs>`;
+/** A fill: a suit's id, 'none' (unsuited, grey) or 'any' (every suit's stripes, by pattern id). */
+const fillOf = (/** @type {string} */ kind, /** @type {string} */ id) => (kind === 'any' ? `url(#${id})` : `var(--suit-${kind})`);
+const filled = (/** @type {string} */ shape, /** @type {string} */ kind, /** @type {string} */ id) => shape.replace(/\/>/g, ` fill="${fillOf(kind, id)}"/>`);
+
+/**
+ * A suited mark. @param {'location' | 'group' | 'groupNext' | 'swayNext'} what @param {string} kind a suit's id, 'none' or 'any'
+ * @param {string} [inner] the kind of what sits inside (for the two-location marks: the group's or the hexes')
+ */
+export function suitedMark(what, kind, inner = kind) {
+  const id = `ik-any-${stripeId++}`;
+  const defs = kind === 'any' || inner === 'any' ? stripes(id) : '';
+  const group = '<circle cx="8" cy="15.5" r="4.5"/><circle cx="16" cy="15.5" r="4.5"/><circle cx="12" cy="8" r="4.5"/>';
+  if (what === 'location') return svg(`${defs}${filled(hex(12, 12, 10.5), kind, id)}`);
+  if (what === 'group') return svg(`${defs}${filled(group, kind, id)}`);
+  const hexes = filled(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}`, kind, id);
+  if (what === 'groupNext') return wide(`${defs}${hexes}${filled('<circle cx="9" cy="12" r="3.2"/>', inner, id)}`);
+  return wide(`${defs}${hexes}<g stroke-width="1.25" fill="var(--card-face)">${cube(9, 12, 3.6)}</g>`);
+}
