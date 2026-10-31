@@ -822,8 +822,8 @@
       "text": "At a lone group, never a fight, burn your sway there, 1 for each token, to take that many of its tokens as your trophies. Burned sway goes back to your supply. Target: the group.",
       "marked": "D",
       "layout": {
-        "verb": "slay",
-        "noun": "token",
+        "verb": "gain",
+        "noun": "trophy",
         "word": "Slay",
         "gist": "a lone group’s tokens, 1 of your sway burned for each",
         "target": "the group",
@@ -887,7 +887,7 @@
       "round": 22,
       "text": "Take any card played earlier this round, by anyone, however it was played, from the played cards into your hand, to play later. It can't be your last card played: as the last card in your hand it is discarded, for no effect.",
       "layout": {
-        "verb": "take",
+        "verb": "gain",
         "noun": "card",
         "word": "Take",
         "gist": "a card played this round, into your hand",
