@@ -680,6 +680,8 @@ button.card-opt:hover { background: #f6cca1; }
 }
 .dock.is-turn { border-top-color: var(--color-accent); background: color-mix(in oklab, var(--color-panel-2), var(--color-accent) 12%); }
 .bar-mine { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+/* The options repeated under the hand: phones only. */
+.bar-below { display: none; }
 .bar-step { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; min-width: 0; overflow: hidden; }
 .bar-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 /* The bar's status: who, as a static label, then what as a live chip (deciding: dots; then the move itself). */
@@ -1139,6 +1141,7 @@ button.card-opt:hover { background: #f6cca1; }
 
   /* The hand: every card in full, in a grid. */
   .hand { position: static; height: auto; padding: var(--space-3); background: var(--color-panel); pointer-events: auto; }
+  .bar-below:not([hidden]) { display: flex; padding: var(--space-2) var(--space-3) var(--space-3); background: var(--color-panel); }
   .hand .fan { position: static; width: auto; height: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); gap: var(--space-3); }
   .hand .card { position: relative; left: auto; bottom: auto; width: auto; z-index: auto; transform: none; transition: none; }
   .hand .card.is-active, .hand .card.card-selected { z-index: auto; }
