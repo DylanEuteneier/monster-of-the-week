@@ -436,13 +436,13 @@ const fname = (f) => factionById(f).name;
 
 function renderHeader() {
   const view = ui.view;
-  const status = view ? `Round ${view.round} of ${view.rounds} — ${ui.note ?? PHASE_LABELS[view.phase]}` : ui.connectionNote;
+  const status = view ? `Round ${view.round} of ${view.rounds}` : ui.connectionNote;
   // The game type heads the Table menu (designer, 2026-10-31), not the header or the seat bar.
   const type = document.getElementById('game-type');
   if (type) type.textContent = `Game: ${ui.tutorial ? 'Tutorial' : ui.hotseat.enabled ? 'Hotseat' : 'Online'}`;
   setHtml('header-main', `
     <h1>MONSTER OF THE WEEK</h1>
-    <span class="phase-label">${esc(status)}</span>
+    <span class="topbar-round"><span class="phase-label">${esc(status)}</span>${view ? '<span class="topbar-status" id="topbar-status"></span>' : ''}</span>
     ${ui.connectionNote && view ? `<span class="muted small">${esc(ui.connectionNote)}</span>` : ''}
     ${ui.stale ? '<span class="tag stale-tag" title="The worker hasn\'t reloaded since the game files changed; the table and the rules may not match.">Server running old code: restart npm run dev</span>' : ''}`);
 }
@@ -794,6 +794,14 @@ function renderPhase() {
   for (const s of ['turn', 'wait', 'end']) dock.classList.toggle(`is-${s}`, handNext.state === s);
   // Your turn tints the top bar too (designer, 2026-10-31: in place of the hotseat seat bar).
   $('header').classList.toggle('is-turn', handNext.state === 'turn');
+  // The round's status pill (designer, 2026-10-31): the phase, or a gold "Your turn"; on phones, the bottom bar's
+  // status itself, since the bar sits below the island there.
+  const pill = document.getElementById('topbar-status');
+  if (pill) {
+    const turn = handNext.state === 'turn';
+    pill.classList.toggle('is-turn', turn);
+    pill.innerHTML = `<span class="status-desk">${turn ? 'Your turn' : esc(ui.note ?? PHASE_LABELS[view.phase])}</span><span class="status-phone">${handNext.text}</span>`;
+  }
   renderHand();
   renderMine();
   renderScore();

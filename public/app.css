@@ -238,6 +238,11 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .topbar-menu-list .aim-pole { white-space: nowrap; }
 .topbar h1 { font-size: 20px; letter-spacing: 0.06em; color: var(--color-accent); text-shadow: 2px 2px 0 var(--ink); }
 .topbar .phase-label { font-family: var(--font-display); font-size: 16px; text-transform: uppercase; line-height: 1; }
+/* The round, then its status pill: the phase, or gold "Your turn" (app.js renderPhase). */
+.topbar-round { display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.topbar-status { display: inline-flex; align-items: center; min-width: 0; padding: 3px 8px; border: 2px solid var(--color-border); background: var(--color-panel); font-family: var(--font-display); font-size: 13px; text-transform: uppercase; line-height: 1; white-space: nowrap; }
+.topbar-status.is-turn { background: var(--color-accent); border-color: var(--ink); color: var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.topbar-status .status-phone { display: none; }
 
 
 /* ---------------------------------------------------------------------------
@@ -1077,6 +1082,12 @@ button.card-opt:hover { background: #f6cca1; }
   .topbar-main > h1 { margin: 0; }
   .topbar h1 { font-size: 15px; }
   .topbar .phase-label { font-size: 12px; }
+  /* On a phone the pill carries the bottom bar's status, smaller. */
+  .topbar-round { flex-wrap: wrap; gap: var(--space-1) var(--space-2); }
+  .topbar-status { padding: 2px 6px; font-family: var(--font-body); font-size: 11px; text-transform: none; overflow: hidden; }
+  .topbar-status .status-desk { display: none; }
+  .topbar-status .status-phone { display: inline; overflow: hidden; text-overflow: ellipsis; }
+  .topbar-status .bar-chip { padding: 0 4px; border-width: 1px; }
 
   .guide, .round-frame { top: auto; bottom: var(--space-2); left: var(--space-4); right: var(--space-4); width: auto; }
   .hint { top: auto; bottom: var(--space-2); left: var(--space-4); right: var(--space-4); width: auto; }
