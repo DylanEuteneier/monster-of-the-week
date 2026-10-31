@@ -30,6 +30,7 @@ export const NOUNS = {
   lone: { label: 'Lone group', svg: svg(`${hex(12, 12, 10)}<circle cx="12" cy="12" r="4"/>`) },
   fight: { label: 'Fight (two factions at a location)', svg: svg(`${hex(12, 12, 10.5)}<circle cx="8.8" cy="12" r="3" fill="currentColor" stroke="none"/><circle cx="15.2" cy="12" r="3"/>`) },
   sway: { label: 'Sway (your cube)', svg: svg(cube(12, 10, 7)) },
+  groupAny: { label: 'A group anywhere (not at a given location)', svg: svg('<circle cx="8" cy="15.5" r="4.5"/><circle cx="16" cy="15.5" r="4.5"/><circle cx="12" cy="8" r="4.5"/>') },
   swayAt: { label: 'Sway on a location', svg: svg(`${hex(12, 12, 10.5)}${cube(12, 11.5, 5)}`, ' stroke-width="1.75"') },
   standing: { label: 'Standing (with a faction)', svg: svg(`${cube(12, 8, 6)}<path d="M3 21h18"/>`) },
   location: { label: 'Location', svg: svg(hex(12, 12, 10)) },
