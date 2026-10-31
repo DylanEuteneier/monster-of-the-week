@@ -1132,16 +1132,19 @@ button.card-opt:hover { background: #f6cca1; }
 .lay-top .ik-b svg { width: 72px; height: auto; }
 .lay-verb { display: block; font-family: var(--font-display); font-size: 12px; text-transform: uppercase; }
 .lay-gist { display: block; font-size: 11px; line-height: 1.2; }
-.lay-target { padding: 3px 4px; background: color-mix(in srgb, var(--suit) 18%, var(--card-face)); border-left: 4px solid var(--suit); font-size: 11px; }
-.lay-label { font-family: var(--font-display); font-size: 9px; text-transform: uppercase; margin-bottom: 2px; }
-.lay-readings { margin: 0; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 1px 4px; }
-.lay-readings dt { font-family: var(--font-display); font-size: 9px; padding-top: 1px; }
-.lay-readings dd { margin: 0; }
-.lay-grid { display: grid; grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr); gap: 2px 4px; line-height: 1.2; }
-.lay-grid b, .lay-col { font-family: var(--font-display); font-size: 9px; text-transform: uppercase; }
-.lay-uses { margin: 0; display: flex; flex-direction: column; gap: 4px; font-size: 11px; line-height: 1.2; }
-.lay-uses dt { display: flex; align-items: center; gap: 4px; font-family: var(--font-display); font-size: 9px; text-transform: uppercase; }
-.lay-uses dt .ik-b svg { width: 40px; height: auto; }
-.lay-uses dd { margin: 0 0 0 4px; }
+.lay-target { display: flex; flex-direction: column; gap: 3px; padding: 3px 4px 4px; background: color-mix(in srgb, var(--suit) 18%, var(--card-face)); border-left: 4px solid var(--suit); font-size: 11px; line-height: 1.2; }
+.lay-label { font-family: var(--font-display); font-size: 9px; text-transform: uppercase; }
+/* A reading or use: a button-like row, its tag cell divided from its text. */
+.lay-row { display: grid; grid-template-columns: 30px minmax(0, 1fr); background: var(--card-face); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); cursor: pointer; }
+.lay-row:hover { background: #f6cca1; }
+.lay-row > b { display: grid; place-items: center; font-family: var(--font-display); font-size: 9px; font-weight: 400; text-transform: uppercase; background: #e0f2f4; border-right: 2px solid var(--ink); }
+.lay-row > span { padding: 2px 4px; }
+.lay-row > span + span { border-left: 1px solid var(--ink); }
+.lay-target-grid .lay-row, .lay-head { grid-template-columns: 30px minmax(0, 1fr) minmax(0, 1fr); }
+.lay-target-uses .lay-row { grid-template-columns: 54px minmax(0, 1fr); }
+.lay-head { display: grid; font-family: var(--font-display); font-size: 9px; text-transform: uppercase; }
+.lay-head > span { padding: 0 4px; }
 .lay-specifics { margin: 0; padding-left: 12px; font-size: 11px; line-height: 1.2; display: flex; flex-direction: column; gap: 2px; }
-.lay-flavour { margin: 0; padding-top: 3px; border-top: 1px solid #c9c0bb; font-size: 10px; font-style: italic; color: #6f6767; }
+.lay-flavour { margin: auto 0 0; padding-top: 3px; border-top: 1px solid #c9c0bb; font-size: 10px; font-style: italic; color: #6f6767; }
+.lay-flavour.is-missing { color: #a79f9f; }
+.lay-card { min-height: 100%; }

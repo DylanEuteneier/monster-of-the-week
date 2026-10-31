@@ -124,13 +124,15 @@ function layoutCard(l) {
   const top = `<div class="lay-top">${iconHtml(/** @type {any} */ (l.verb), /** @type {any} */ (l.noun ?? 'token'))}<div><b class="lay-verb">${esc(l.word)}</b><span class="lay-gist">${esc(l.gist)}</span></div></div>`;
   const t = /** @type {any} */ (l.target);
   const r = c.readings;
+  // Each reading is a button-like row (designer, 2026-10-30: the target looks clickable, the LOC/FAC choice moving into it).
+  const row = (/** @type {string} */ tag, /** @type {string[]} */ cells) => `<div class="lay-row" role="button"><b>${tag}</b>${cells.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
   const target = !t ? '' : t.grid
-    ? `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div><div class="lay-grid"><span></span><span class="lay-col">${esc(t.grid[0])}</span><span class="lay-col">${esc(t.grid[1])}</span>
-        <b>LOC</b><span>${esc(t.loc[0])}</span><span>${esc(t.loc[1])}</span><b>FAC</b><span>${esc(t.fac[0])}</span><span>${esc(t.fac[1])}</span></div></div>`
-    : `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div><dl class="lay-readings"><dt>LOC</dt><dd>${esc(r.location)}</dd><dt>FAC</dt><dd>${esc(r.faction)}</dd></dl></div>`;
-  const uses = l.uses ? `<dl class="lay-uses">${l.uses.map(([tag, noun, text]) => `<dt>${iconHtml(/** @type {any} */ (l.verb), /** @type {any} */ (noun), 'X')}<span>${esc(tag)}</span></dt><dd>${esc(text)}</dd>`).join('')}</dl>` : '';
+    ? `<div class="lay-target lay-target-grid"><div class="lay-label">Target: ${esc(t.head)}</div><div class="lay-head"><span></span><span>${esc(t.grid[0])}</span><span>${esc(t.grid[1])}</span></div>${row('LOC', t.loc)}${row('FAC', t.fac)}</div>`
+    : `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div>${row('LOC', [r.location])}${row('FAC', [r.faction])}</div>`;
+  const uses = l.uses ? `<div class="lay-target lay-target-uses"><div class="lay-label">Choose one</div>${l.uses.map(([tag, , text]) => `<div class="lay-row" role="button"><b>${esc(tag)}</b><span>${esc(text)}</span></div>`).join('')}</div>` : '';
   const specifics = l.specifics.length ? `<ul class="lay-specifics">${l.specifics.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
-  const flavour = l.flavour ? `<p class="lay-flavour">${esc(l.flavour)}</p>` : '';
+  // Every card carries its thematic text at the bottom (designer, 2026-10-30); a card without it shows the empty slot.
+  const flavour = `<p class="lay-flavour${l.flavour ? '' : ' is-missing'}">${esc(l.flavour || 'Thematic text to come.')}</p>`;
   const corner = c.suit ? `<span class="lay-sway" title="Or spend for sway">+${c.sway}</span>` : '';
   return `<div class="card lay-card card-suit-${c.suit ?? 'none'}"><div class="card-band">${band}</div>
     <div class="lay-name"><span class="card-name">${esc(c.name)}</span>${corner}</div>${top}${target}${uses}${specifics}${flavour}</div>`;
@@ -141,7 +143,7 @@ function renderLayouts() {
   const pairs = LAYOUTS.map((l) => `<div class="lay-pair"><figure class="asset-scale">${cardHtml(l.id)}<figcaption class="mono small muted">now</figcaption></figure>
     <figure class="asset-scale">${layoutCard(l)}<figcaption class="mono small muted">suggested</figcaption></figure>${l.note ? `<p class="small muted lay-note">${esc(l.note)}</p>` : ''}</div>`).join('');
   $('layouts').innerHTML = `<div class="row-between"><h2>Card layout (draft)</h2><span class="small muted">Suggestions from the layout research, not decisions</span></div>
-    <p class="small muted">Suit cards (suggestion 1): a topline (the action’s icon block, its verb, a few words), one target field holding both readings, one specific rule per line, then flavour in small italics. Choose-one cards (suggestion 2): the same topline over one row per use. Every word is the card’s own, moved or split; the toplines’ verbs and gists are drafts. Same card width as now.</p>
+    <p class="small muted">Suit cards (suggestion 1): a topline (the action’s icon block, its verb, a few words: the card’s only icon), a target field whose readings are the buttons, one specific rule per line, then thematic text at the bottom of every card. Choose-one cards (suggestion 2): the same topline over one button-like row per use. Every word is the card’s own, moved or split; the toplines’ verbs and gists are drafts. Same card width as now.</p>
     <div class="lay-pairs">${pairs}</div>`;
 }
 
