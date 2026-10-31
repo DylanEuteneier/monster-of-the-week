@@ -92,44 +92,46 @@ const piece = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {n
 const place = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {number} */ y, /** @type {string} */ extra = '') => noun === 'standing'
   ? `<path d="M${x - 6} ${y + 5.5}h12"${extra}/>`
   : `<g stroke-width="1.75"${extra}>${hex(x, y, 7)}</g>`;
-/** An arrow from (x1, y1) to (x2, y2), stopping short of both ends. */
-const arrow = (/** @type {number} */ x1, /** @type {number} */ y1, /** @type {number} */ x2, /** @type {number} */ y2, /** @type {string} */ dash = '') => {
-  const dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy), ux = dx / d, uy = dy / d, a = (Math.atan2(dy, dx) * 180) / Math.PI;
-  const sx = x1 + ux * 8.5, sy = y1 + uy * 8.5, ex = x2 - ux * 9, ey = y2 - uy * 9;
-  return `<path d="M${sx.toFixed(1)} ${sy.toFixed(1)}L${ex.toFixed(1)} ${ey.toFixed(1)}" stroke-width="1.75"${dash ? ` stroke-dasharray="${dash}"` : ''}/>${head(ex, ey, a).replace('<path', '<path stroke-width="1.75"')}`;
+/** Which way a thing goes from (x1, y1) to (x2, y2): a chevron midway, no shaft (designer, 2026-10-30: tighter compositions). */
+const arrow = (/** @type {number} */ x1, /** @type {number} */ y1, /** @type {number} */ x2, /** @type {number} */ y2, /** @type {string} */ _dash = '') => {
+  const a = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI, mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  return `<path d="M-2.5 -4L2 0L-2.5 4" stroke-width="1.75" transform="translate(${mx.toFixed(1)} ${my.toFixed(1)}) rotate(${a.toFixed(1)})"/>`;
 };
 /** A diagram in an 80×44 box, drawn at 1.25×. */
 const dia = (/** @type {string} */ body) => `<svg class="ik-svg ik-dia" viewBox="0 0 80 44" width="100" height="55" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
-/** The supply: a tray at (x, y). */
-const tray = (/** @type {number} */ x, /** @type {number} */ y) => `<path d="M${x - 7} ${y - 3}v5h14v-5" stroke-width="1.75"/>`;
 /** Three places, top, middle and bottom: the middle one staggered sideways so none touch. */
 const COLUMN = [8, 22, 36];
 const stagger = (/** @type {number} */ y, /** @type {number} */ dx) => (y === 22 ? dx : 0);
 
 /** A group of k tokens, packed round (x, y). */
 const GROUP = /** @type {Record<number, [number, number][]>} */ ({ 1: [[0, 0]], 2: [[-3, 0], [3, 0]], 3: [[-3, 2.6], [3, 2.6], [0, -2.6]], 5: [[-6, 2.6], [0, 2.6], [6, 2.6], [-3, -2.6], [3, -2.6]] });
-const group = (/** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ k) => GROUP[k].map(([dx, dy]) => PIECES.token(x + dx, y + dy)).join('');
+const group = (/** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ k, noun = 'token') => GROUP[k].map(([dx, dy]) => piece(noun, x + dx, y + dy)).join('');
+
+/** A piece drawn large at (x, y), its lines kept at the diagram's weight. */
+const big = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {number} */ y, k = 3) =>
+  `<g transform="translate(${x} ${y}) scale(${k})" stroke-width="${(1.75 / k).toFixed(3)}">${piece(noun, 0, 0).replace(/stroke-width="([\d.]+)"/g, () => `stroke-width="${(1.75 / k).toFixed(3)}"`)}</g>`;
 
 /** Each verb's diagram, given the noun that moves. @type {Record<string, (noun: string) => string>} */
 const DIAGRAMS = {
   // Gather, spread and split are about groups, not places (designer, 2026-10-30): tokens only, no hexes.
-  gather: () => `${group(66, 22, 3)}${COLUMN.map((y) => { const x = 10 + stagger(y, 12); return `${group(x, y, 1)}${arrow(x, y, 66, 22)}`; }).join('')}`,
-  spread: () => `${group(14, 22, 3)}${COLUMN.map((y) => { const x = 70 - stagger(y, 12); return `${group(x, y, 1)}${arrow(14, 22, x, y)}`; }).join('')}`,
-  move: (n) => `${place(n, 12, 22)}${place(n, 68, 22)}${piece(n, 68, 22)}${arrow(12, 22, 68, 22)}`,
-  split: () => `${group(13, 22, 5)}${group(67, 8, 3)}${group(68, 36, 2)}${arrow(13, 22, 67, 8)}${arrow(13, 22, 68, 36)}`,
-  trail: (n) => `${[9, 29, 49, 69].map((x, i) => `${place(n, x, 22)}${i ? piece(n, x, 22) : ''}`).join('')}${arrow(9, 22, 29, 22)}${arrow(29, 22, 49, 22)}${arrow(49, 22, 69, 22)}`,
-  march: (n) => `${place(n, 10, 26)}${piece(n, 10, 26)}${place(n, 40, 26, ' stroke-dasharray="2 2"')}${place(n, 70, 26)}<circle cx="70" cy="26" r="3.5" stroke-width="1.75"/><path d="M16 17Q40 2 64 17" stroke-width="1.75"/>${head(64, 17, 32).replace('<path', '<path stroke-width="1.75"')}`,
-  drive: (n) => `${place(n, 40, 22)}<circle cx="37.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="43" cy="22" r="2.5" stroke-width="1.75"/>${place(n, 9, 22)}${piece(n, 9, 22)}${place(n, 71, 22)}<circle cx="71" cy="22" r="3" stroke-width="1.75"/>${arrow(40, 22, 9, 22)}${arrow(40, 22, 71, 22)}`,
-  flee: (n) => `${place(n, 14, 24)}${place(n, 66, 24)}${piece(n, 66, 24)}${arrow(14, 24, 66, 24, '2 2.5')}<path d="M38 6a5 5 0 1 0 4 7.5 3.75 3.75 0 0 1-4-7.5z" stroke-width="1.75"/>`,
-  slay: (n) => `${place(n, 14, 22)}${piece(n, 11, 22)}${piece(n, 17, 22)}${arrow(14, 22, 64, 22)}<path d="M59 13h12v5a6 6 0 0 1-12 0zM65 24v5M60 32h10" stroke-width="1.75"/>`,
-  raise: (n) => `${tray(14, 36)}${piece(n, 14, 32)}${place(n, 64, 14)}${piece(n, 64, 14)}${arrow(14, 33, 64, 14)}`,
-  join: (n) => `${place(n, 14, 22)}${place(n, 66, 22)}<path d="M23 20h34M23 24h34" stroke-width="1.75"/>`,
+  gather: (n) => `${[10, 22, 34].map((y) => group(y === 22 ? 30 : 24, y, 1, n)).join('')}${arrow(36, 22, 44, 22)}${group(54, 22, 3, n)}`,
+  spread: (n) => `${group(26, 22, 3, n)}${arrow(36, 22, 44, 22)}${[10, 22, 34].map((y) => group(y === 22 ? 50 : 56, y, 1, n)).join('')}`,
+  move: (n) => `${place(n, 26, 22)}${arrow(36, 22, 44, 22)}${place(n, 54, 22)}${piece(n, 54, 22)}`,
+  split: (n) => `${group(23, 22, 5, n)}${arrow(36, 22, 44, 22)}${group(54, 13, 3, n)}${group(54, 33, 2, n)}`,
+  trail: (n) => `${[19, 33, 47, 61].map((x, i) => `${place(n, x, 26)}${i ? piece(n, x, 26) : ''}`).join('')}${arrow(36, 11, 44, 11)}`,
+  march: (n) => `${place(n, 18, 28)}${piece(n, 18, 28)}${place(n, 40, 28, ' stroke-dasharray="2 2"')}${place(n, 62, 28)}<circle cx="62" cy="28" r="3.5" stroke-width="1.75"/><path d="M22 19Q40 4 58 19" stroke-width="1.75"/>${head(58, 19, 40).replace('<path', '<path stroke-width="1.75"')}`,
+  drive: (n) => `${place(n, 24, 22)}<circle cx="21.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="27" cy="22" r="2.5" stroke-width="1.75"/>${arrow(36, 22, 44, 22)}${place(n, 55, 13)}${piece(n, 55, 13)}${place(n, 55, 31)}<circle cx="55" cy="31" r="3" stroke-width="1.75"/>`,
+  flee: (n) => `${place(n, 24, 26)}${arrow(36, 26, 44, 26)}${place(n, 56, 26)}${piece(n, 56, 26)}<path d="M38 6a5 5 0 1 0 4 7.5 3.75 3.75 0 0 1-4-7.5z" stroke-width="1.75"/>`,
+  slay: (n) => `${place(n, 24, 22)}${piece(n, 21, 22)}${piece(n, 27, 22)}${arrow(36, 22, 44, 22)}<path d="M50 13h12v5a6 6 0 0 1-12 0zM56 24v5M51 32h10" stroke-width="1.75"/>`,
+  // From and back to the supply, gain and pay (spend): the piece and a plus or a minus; the supply is implied (designer, 2026-10-30).
+  raise: (n) => `${place(n, 32, 22)}${piece(n, 32, 22)}<path d="M46 22h10M51 17v10" stroke-width="2.5"/>`,
+  join: (n) => `${place(n, 22, 22)}${place(n, 58, 22)}<path d="M31 20h18M31 24h18" stroke-width="1.75"/>`,
   mark: (n) => `${place(n, 40, 26)}<path d="M40 26V5h11l-3 4 3 4H40" stroke-width="1.75"/>${PIECES.sway(34, 30)}`,
-  pay: (n) => `<path d="M6 38h16" stroke-width="1.75"/>${PIECES.standing(14, 32)}${place(n, 66, 20)}${piece(n, 66, 20)}${arrow(14, 32, 66, 20)}`,
-  gain: (n) => `${tray(14, 36)}${piece(n, 14, 32)}${n === 'standing' || n === 'sway' ? `<path d="M58 38h16" stroke-width="1.75"/>${piece(n, 66, 32)}` : `${place(n, 66, 20)}${piece(n, 66, 20)}`}${arrow(14, 32, 66, n === 'standing' || n === 'sway' ? 32 : 20)}`,
-  burn: (n) => `${place(n, 14, 20)}${piece(n, 14, 20)}${tray(66, 36)}${piece(n, 66, 32)}${arrow(14, 20, 66, 32)}`,
-  take: () => `<rect x="5" y="10" width="16" height="24" rx="2" stroke-width="1.75" stroke-dasharray="2 2"/><rect x="59" y="10" width="16" height="24" rx="2" stroke-width="1.75"/>${arrow(13, 22, 67, 22)}`,
-  bend: (n) => `${place(n, 24, 22)}<circle cx="21.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="27" cy="22" r="2.5" stroke-width="1.75"/><path d="M60 7l10 15-10 15-10-15z" stroke-width="1.75"/><path d="M60 15v8M60 28v.5"/>`,
+  pay: (n) => `${big(n, 32, 22)}<path d="M46 22h10" stroke-width="2.5"/>`,
+  gain: (n) => `${big(n, 32, 22)}<path d="M46 22h10M51 17v10" stroke-width="2.5"/>`,
+  burn: (n) => `${big(n, 32, 22)}<path d="M46 22h10" stroke-width="2.5"/>`,
+  take: () => `<rect x="14" y="10" width="16" height="24" rx="2" stroke-width="1.75" stroke-dasharray="2 2"/>${arrow(36, 22, 44, 22)}<rect x="50" y="10" width="16" height="24" rx="2" stroke-width="1.75"/>`,
+  bend: (n) => `${place(n, 26, 22)}<circle cx="23.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="29" cy="22" r="2.5" stroke-width="1.75"/><path d="M54 7l10 15-10 15-10-15z" stroke-width="1.75"/><path d="M54 15v8M54 28v.5"/>`,
 };
 
 /** A verb's diagram on its own (the legend), with tokens as the piece. @param {keyof typeof VERBS} verb */
