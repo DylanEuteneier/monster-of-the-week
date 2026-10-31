@@ -173,6 +173,8 @@ pub enum SwayTokens {
     Shifts,
     Strikes,
     Signatures,
+    /// Not from cards: at the round's close, each location without a fight gains 1 of its own faction per sway there.
+    Nightfall,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -226,7 +228,7 @@ impl Options {
         Options {
             rounds: num("rounds"),
             threshold: num("threshold"),
-            growth: num("growth"),
+            growth: if get("growth") == "off" { i32::MAX } else { num("growth") },
             faction_tokens: num("factionTokens"),
             player_cubes: num("playerCubes"),
             start_sway: num("startSway"),
@@ -236,7 +238,7 @@ impl Options {
             sway_per_move: num("swayPerMove"),
             sway_required: true,
             aligned_growth: get("alignedGrowth") == "on",
-            sway_tokens: match get("swayTokens") { "on" => SwayTokens::All, "shifts" => SwayTokens::Shifts, "strikes" => SwayTokens::Strikes, "signatures" => SwayTokens::Signatures, _ => SwayTokens::Off },
+            sway_tokens: match get("swayTokens") { "on" => SwayTokens::All, "shifts" => SwayTokens::Shifts, "strikes" => SwayTokens::Strikes, "signatures" => SwayTokens::Signatures, "nightfall" => SwayTokens::Nightfall, _ => SwayTokens::Off },
             way_back: get("wayBack") != "off",
             passing: get("passing") != "off",
             card_sway: num("cardSway"),

@@ -328,11 +328,22 @@ fn close_round(s: &mut GameState) {
     s.night = None;
     log_line(s, |_| "Fights:".to_string());
     let before = total_presence(s);
+    let mut fought: Vec<bool> = (0..s.board.len() as Loc).map(|l| !s.board[l as usize].scorched && count_at(s, l) >= 2).collect();
+    for l in 0..s.board.len() as Loc {
+        if let Some(g) = gate_of(s, l) {
+            let both = fought[l as usize] || fought[g as usize] || (count_at(s, l) + count_at(s, g) >= 2 && factions_at(s, l).iter().chain(factions_at(s, g).iter()).collect::<std::collections::BTreeSet<_>>().len() >= 2);
+            fought[l as usize] = both;
+            fought[g as usize] = both;
+        }
+    }
     for l in 0..s.board.len() as Loc {
         fight_at(s, l);
     }
     if !s.quiet {
         note_flow(before - total_presence(s), 0);
+    }
+    if s.options.sway_tokens == SwayTokens::Nightfall {
+        nightfall_tokens(s, &fought);
     }
     for p in s.board.iter_mut() {
         p.gate = None;
@@ -342,6 +353,32 @@ fn close_round(s: &mut GameState) {
         p.terror = None;
     }
     begin_growth(s, 0);
+}
+
+/// Nightfall tokens (variant swayTokens nightfall; designer, 2026-10-30): each location where there was no fight
+/// gains 1 of its own faction's tokens per sway there, if it can. *Prototype:* before growth; a short supply fills
+/// locations in board order.
+fn nightfall_tokens(s: &mut GameState, fought: &[bool]) {
+    let mut brought = 0;
+    for l in 0..s.board.len() as Loc {
+        if fought[l as usize] {
+            continue;
+        }
+        let f = alignment_of(l) as Fac;
+        let n = s.board[l as usize].sway.iter().map(|e| e.1).sum::<i32>().min(s.supply[f as usize]);
+        if n <= 0 || !can_enter(s, l, f) {
+            continue;
+        }
+        s.board[l as usize].tokens.add(f, n);
+        s.supply[f as usize] -= n;
+        brought += n;
+    }
+    if !s.quiet {
+        note_flow(0, brought);
+    }
+    if brought > 0 {
+        log_line(s, |_| format!("Nightfall brings {brought} token{}.", if brought == 1 { "" } else { "s" }));
+    }
 }
 
 /// Several locations' fights in turn (resolveFights).

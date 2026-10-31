@@ -920,7 +920,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
 pub fn act(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
     // GR5: whether this card's sway brings tokens.
     let brings = match s.options.sway_tokens {
-        SwayTokens::Off => false,
+        SwayTokens::Off | SwayTokens::Nightfall => false,
         SwayTokens::All => true,
         SwayTokens::Shifts => card(ci).slot == crate::spec::Slot::Shift,
         SwayTokens::Strikes => card(ci).slot == crate::spec::Slot::Strike,

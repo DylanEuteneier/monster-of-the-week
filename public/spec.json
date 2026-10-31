@@ -620,6 +620,11 @@
           "id": "3",
           "label": "3",
           "description": ""
+        },
+        {
+          "id": "off",
+          "label": "Off",
+          "description": "No growth (GR1 and AL3 off); a test of nightfall tokens replacing it (designer, 2026-10-30)."
         }
       ]
     },
@@ -867,6 +872,11 @@
           "id": "signatures",
           "label": "Signatures only",
           "description": "Only the signatures' sway brings tokens (designer, 2026-10-29)."
+        },
+        {
+          "id": "nightfall",
+          "label": "At nightfall",
+          "description": "An alternative (designer, 2026-10-30): no card brings tokens; instead, at the round's close, after the fights, every location where there was no fight gains 1 of its own faction's tokens per sway there (all players'), if it can (the supply has one, and the faction may enter there). Prototype: these arrive before growth, and a short supply fills locations in board order."
         }
       ]
     },
