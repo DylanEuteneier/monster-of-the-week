@@ -690,7 +690,7 @@
       "marked": "A",
       "layout": {
         "verb": "gain",
-        "noun": "sway",
+        "noun": "cube",
         "word": "Gain",
         "gist": "up to X from your supply",
         "uses": [
@@ -841,7 +841,7 @@
       "text": "Choose one. Standing: burn up to X standing with one faction to gain the same with another. Sway: move up to X of your sway from one location to any other. X is the cards in your hand, this one included.",
       "layout": {
         "verb": "move",
-        "noun": "sway",
+        "noun": "cube",
         "word": "Move",
         "gist": "up to X from one to another",
         "uses": [

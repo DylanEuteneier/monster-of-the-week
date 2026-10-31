@@ -38,7 +38,7 @@ export const NOUNS = {
   neighbour: { label: 'Neighbours (next door)', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}`) },
   elsewhere: { label: 'Any other location', svg: wide(`${hex(7.5, 12, 7)}${hex(28.5, 12, 7)}<path d="M15.5 12h.01M18 12h.01M20.5 12h.01" stroke-width="2"/>`, 36) },
   swayNext: { label: 'Sway between neighbours', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}<g stroke-width="1.25">${cube(9, 12, 3.6)}</g>`) },
-  groupNext: { label: 'Groups next door', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}<circle cx="9" cy="12" r="3.2"/>`) },
+  groupNext: { label: 'Groups next door', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}<circle cx="9" cy="12" r="3.2"/><circle cx="22.86" cy="12" r="3.2" fill="currentColor" stroke="none"/>`) },
   empty: { label: 'Empty location', svg: svg(hex(12, 12, 10), ' stroke-dasharray="3 3"') },
   scorched: { label: 'Scorched location', svg: svg(`${hex(12, 12, 10)}<path d="M8 8l8 8M16 8l-8 8"/>`) },
   supply: { label: 'Supply', svg: svg('<path d="M3 10v9h18v-9"/><path d="M3 10h18"/><circle cx="9" cy="6" r="2.5"/><circle cx="15" cy="6" r="2.5"/>') },
@@ -80,6 +80,8 @@ export const VERBS = {
 // The same parts as the noun marks (D35): a token a circle, sway and standing a cube, a location a hex.
 const PIECES = {
   token: (x, y) => `<circle cx="${x}" cy="${y}" r="2.6"/>`,
+  // A cube anywhere: a card whose uses differ in where (standing or sway) shows no place in its topline (designer, 2026-10-31).
+  cube: (x, y) => `<g stroke-width="1.25">${cube(x, y, 3.4)}</g>`,
   sway: (x, y) => `<g stroke-width="1.25">${cube(x, y + 0.5, 3.4)}</g>`,
   standing: (x, y) => `<g stroke-width="1.25">${cube(x, y - 0.5, 3.4)}</g>`,
   location: (x, y) => `<g stroke-width="1.25">${hex(x, y, 3)}</g>`,
@@ -88,7 +90,7 @@ const PIECES = {
 };
 const piece = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {number} */ y) => (PIECES[noun] ?? PIECES.token)(x, y);
 /** A place: a hex on the board, or a faction circle for standing. */
-const place = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {number} */ y, /** @type {string} */ extra = '') => noun === 'standing'
+const place = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {number} */ y, /** @type {string} */ extra = '') => noun === 'cube' ? '' : noun === 'standing'
   ? `<path d="M${x - 6} ${y + 5.5}h12"${extra}/>`
   : `<g stroke-width="1.75"${extra}>${hex(x, y, 7)}</g>`;
 /** What a thing was before the verb (designer, 2026-10-30: before and after, no arrows): dotted and faint. */
@@ -105,7 +107,7 @@ const group = (/** @type {number} */ x, /** @type {number} */ y, /** @type {numb
 
 /** The noun's own mark (where the thing is) with a plus or a minus beside it. */
 const signed = (/** @type {string} */ noun, /** @type {boolean} */ plus) => {
-  const mark = (noun === 'token' ? NOUNS.group : NOUNS[/** @type {keyof typeof NOUNS} */ (noun)] ?? NOUNS.group).svg.replace('<svg class="ik-svg"', '<svg x="18" y="10"');
+  const mark = (noun === 'token' ? NOUNS.group : noun === 'cube' ? NOUNS.sway : NOUNS[/** @type {keyof typeof NOUNS} */ (noun)] ?? NOUNS.group).svg.replace('<svg class="ik-svg"', '<svg x="18" y="10"');
   return `${mark}<path d="M48 22h10${plus ? 'M53 17v10' : ''}" stroke-width="2.5"/>`;
 };
 
@@ -142,7 +144,7 @@ export const verbDiagram = (verb) => dia((DIAGRAMS[verb] ?? (() => ''))('token')
 export function iconHtml(verb, noun, amount = '') {
   const v = VERBS[verb], n = NOUNS[noun];
   const body = DIAGRAMS[verb] ? dia(DIAGRAMS[verb](noun)) : `${v.svg}${n.svg}`;
-  return `<span class="ik ik-b" title="${v.label}: ${n.label}"><span class="ik-n">${body}</span>${amount ? `<span class="ik-amt">${amount}</span>` : ''}</span>`;
+  return `<span class="ik ik-b" title="${v.label}${n ? `: ${n.label}` : ''}"><span class="ik-n">${body}</span>${amount ? `<span class="ik-amt">${amount}</span>` : ''}</span>`;
 }
 
 /** A noun on its own (a target, or where an action happens). @param {keyof typeof NOUNS} noun @param {string} [amount] */
