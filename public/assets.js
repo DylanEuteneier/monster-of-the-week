@@ -9,7 +9,7 @@ import { spec } from './rules.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { LAYOUT_SUGGESTIONS } from './layout-suggestions.js';
-import { cardHtml } from './cards.js';
+import { cardHtml, suitIcon } from './cards.js';
 import { NOUNS, VERBS, iconHtml, nounHtml, verbDiagram } from './icons.js';
 
 
@@ -81,8 +81,73 @@ function renderIcons() {
     <h3 class="small">Cards in blocks</h3><div class="ik-examples">${examples}</div>`;
 }
 
+
+/**
+ * Card layout mock-ups (designer, 2026-10-30): Claude's two suggestions from the layout research, shown beside each
+ * card as it is now. Suggestion 1 (suit cards): topline (icon block, verb, gist), a target field holding both
+ * readings, one specific rule per line, flavour last. Suggestion 2 (choose-one extras): the topline over one row
+ * per use. Drafts only: the words are the card's own (spec.json), moved or split, never a rule change.
+ */
+const LAYOUTS = [
+  { id: 'light-cross', verb: 'split', noun: 'token', word: 'Split', gist: 'a group, evenly between two neighbours',
+    target: { head: 'the group' }, specifics: ['A group of 1 can’t be split.'],
+    flavour: 'The cross is raised and the target group falls back from its light.' },
+  { id: 'draw-away', verb: 'spread', noun: 'token', word: 'Spread', gist: '1 token to each of at least two neighbours',
+    target: { head: 'the group' }, specifics: ['The rest stay.'],
+    flavour: 'The Watch sets out distractions all round the location, and one of the dead shambles off to check each.' },
+  { id: 'invite-in', verb: 'gather', noun: 'token', word: 'Gather', gist: 'groups next door into one location',
+    target: { head: 'where they’re invited', grid: ['Where', 'Who comes'], loc: ['an empty ◐ location', 'any two groups next to it, of different factions'], fac: ['a location held by a lone group of another faction, next to a Nocturnal group', 'only the Nocturnals'] },
+    specifics: [], flavour: '', note: 'The card says “into an empty location”, but the FAC reading’s location is held by a lone group: the grid shows each reading’s own.' },
+  { id: 'spill-blood', verb: 'mark', noun: 'location', word: 'Mark', gist: 'up to the card’s sway of locations, 1 sway on each',
+    target: { head: 'the locations marked' }, specifics: ['This round, at a marked location’s fight, the winner loses as many as the loser.'],
+    flavour: 'Father and the Flock spill blood on the altar.' },
+  { id: 'gate', verb: 'join', noun: 'location', word: 'Join', gist: 'two locations, for the rest of the round',
+    target: { head: 'the two ends' },
+    specifics: ['They count as a single location for movement.', 'They fight as one: strength and sway added across both; a true tie scorches both.', 'Never three factions across them.', 'Only 1 sway, at one end.'], flavour: '' },
+  { id: 'stakes', verb: 'gather', word: 'Gather', gist: 'up to X into one', uses: [
+    ['Standing', 'standing', 'take 1 standing from each of up to X factions, all into one.'],
+    ['Sway', 'sway', 'gather up to X of your sway from next door into one location.'],
+    ['Tokens', 'token', 'up to X tokens of one faction come in from its groups next door, to a location where you have sway.']],
+    specifics: ['X is the cards in your hand, this one included.'] },
+  { id: 'exit', verb: 'spread', word: 'Spread', gist: '1 to each of up to X', uses: [
+    ['Standing', 'standing', 'move 1 standing from one faction to each of up to X others.'],
+    ['Sway', 'sway', 'send 1 of your sway from one location to each of up to X neighbours.'],
+    ['Tokens', 'token', 'a group sends 1 token to each of up to X neighbours.']],
+    specifics: ['X is the cards in your hand, this one included.'] },
+];
+
+/** One mock-up card in the suggested layout. @param {typeof LAYOUTS[number]} l */
+function layoutCard(l) {
+  const c = /** @type {any} */ (spec.cards.find((x) => x.id === l.id));
+  const suit = spec.archetypes.find((a) => a.id === c.suit);
+  const band = c.suit ? `<span class="suit-line">${suitIcon(c.suit)} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)}</span>` : `<span>Marked ${esc(c.marked ?? '')}</span><span>choose one</span>`;
+  const top = `<div class="lay-top">${iconHtml(/** @type {any} */ (l.verb), /** @type {any} */ (l.noun ?? 'token'))}<div><b class="lay-verb">${esc(l.word)}</b><span class="lay-gist">${esc(l.gist)}</span></div></div>`;
+  const t = /** @type {any} */ (l.target);
+  const r = c.readings;
+  const target = !t ? '' : t.grid
+    ? `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div><div class="lay-grid"><span></span><span class="lay-col">${esc(t.grid[0])}</span><span class="lay-col">${esc(t.grid[1])}</span>
+        <b>LOC</b><span>${esc(t.loc[0])}</span><span>${esc(t.loc[1])}</span><b>FAC</b><span>${esc(t.fac[0])}</span><span>${esc(t.fac[1])}</span></div></div>`
+    : `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div><dl class="lay-readings"><dt>LOC</dt><dd>${esc(r.location)}</dd><dt>FAC</dt><dd>${esc(r.faction)}</dd></dl></div>`;
+  const uses = l.uses ? `<dl class="lay-uses">${l.uses.map(([tag, noun, text]) => `<dt>${iconHtml(/** @type {any} */ (l.verb), /** @type {any} */ (noun), 'X')}<span>${esc(tag)}</span></dt><dd>${esc(text)}</dd>`).join('')}</dl>` : '';
+  const specifics = l.specifics.length ? `<ul class="lay-specifics">${l.specifics.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
+  const flavour = l.flavour ? `<p class="lay-flavour">${esc(l.flavour)}</p>` : '';
+  const corner = c.suit ? `<span class="lay-sway" title="Or spend for sway">+${c.sway}</span>` : '';
+  return `<div class="card lay-card card-suit-${c.suit ?? 'none'}"><div class="card-band">${band}</div>
+    <div class="lay-name"><span class="card-name">${esc(c.name)}</span>${corner}</div>${top}${target}${uses}${specifics}${flavour}</div>`;
+}
+
+/** The layout mock-ups, each beside the card as it is now. */
+function renderLayouts() {
+  const pairs = LAYOUTS.map((l) => `<div class="lay-pair"><figure class="asset-scale">${cardHtml(l.id)}<figcaption class="mono small muted">now</figcaption></figure>
+    <figure class="asset-scale">${layoutCard(l)}<figcaption class="mono small muted">suggested</figcaption></figure>${l.note ? `<p class="small muted lay-note">${esc(l.note)}</p>` : ''}</div>`).join('');
+  $('layouts').innerHTML = `<div class="row-between"><h2>Card layout (draft)</h2><span class="small muted">Suggestions from the layout research, not decisions</span></div>
+    <p class="small muted">Suit cards (suggestion 1): a topline (the action’s icon block, its verb, a few words), one target field holding both readings, one specific rule per line, then flavour in small italics. Choose-one cards (suggestion 2): the same topline over one row per use. Every word is the card’s own, moved or split; the toplines’ verbs and gists are drafts. Same card width as now.</p>
+    <div class="lay-pairs">${pairs}</div>`;
+}
+
 function render() {
   renderIcons();
+  renderLayouts();
   const headers = /** @type {SpriteMap} */ (art.headers ?? {});
   const hexes = /** @type {SpriteMap} */ (art.hexes ?? {});
   const schemes = /** @type {SpriteMap} */ (art.hexSchemes ?? {});

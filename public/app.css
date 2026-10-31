@@ -1120,3 +1120,28 @@ button.card-opt:hover { background: #f6cca1; }
   .tut-card { display: none; }
   .tut-cols, .tut-phases { grid-template-columns: 1fr; }
 }
+
+/* Card layout mock-ups on the assets page (designer, 2026-10-30): topline, target field, specifics, flavour. */
+.lay-pairs { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.lay-pair { display: flex; gap: var(--space-2); align-items: flex-start; flex-wrap: wrap; max-width: 100%; }
+.lay-note { flex-basis: 100%; max-width: 440px; margin: 0; }
+.lay-name { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.lay-sway { font-family: var(--font-display); font-size: 12px; padding: 0 4px; border: 2px solid var(--ink); background: #e0f2f4; }
+.lay-top { display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 2px solid var(--ink); }
+.lay-top .ik { flex: none; }
+.lay-top .ik-b svg { width: 72px; height: auto; }
+.lay-verb { display: block; font-family: var(--font-display); font-size: 12px; text-transform: uppercase; }
+.lay-gist { display: block; font-size: 11px; line-height: 1.2; }
+.lay-target { padding: 3px 4px; background: color-mix(in srgb, var(--suit) 18%, var(--card-face)); border-left: 4px solid var(--suit); font-size: 11px; }
+.lay-label { font-family: var(--font-display); font-size: 9px; text-transform: uppercase; margin-bottom: 2px; }
+.lay-readings { margin: 0; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 1px 4px; }
+.lay-readings dt { font-family: var(--font-display); font-size: 9px; padding-top: 1px; }
+.lay-readings dd { margin: 0; }
+.lay-grid { display: grid; grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr); gap: 2px 4px; line-height: 1.2; }
+.lay-grid b, .lay-col { font-family: var(--font-display); font-size: 9px; text-transform: uppercase; }
+.lay-uses { margin: 0; display: flex; flex-direction: column; gap: 4px; font-size: 11px; line-height: 1.2; }
+.lay-uses dt { display: flex; align-items: center; gap: 4px; font-family: var(--font-display); font-size: 9px; text-transform: uppercase; }
+.lay-uses dt .ik-b svg { width: 40px; height: auto; }
+.lay-uses dd { margin: 0 0 0 4px; }
+.lay-specifics { margin: 0; padding-left: 12px; font-size: 11px; line-height: 1.2; display: flex; flex-direction: column; gap: 2px; }
+.lay-flavour { margin: 0; padding-top: 3px; border-top: 1px solid #c9c0bb; font-size: 10px; font-style: italic; color: #6f6767; }
