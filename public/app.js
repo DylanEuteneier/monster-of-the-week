@@ -440,12 +440,9 @@ function renderHeader() {
   // The game type heads the Table menu (designer, 2026-10-31), not the header or the seat bar.
   const type = document.getElementById('game-type');
   if (type) type.textContent = `Game: ${ui.tutorial ? 'Tutorial' : ui.hotseat.enabled ? 'Hotseat' : 'Online'}`;
-  // Your seat: not in hotseat, where the seat bar shows whose turn it is.
-  const you = view && !ui.hotseat.enabled ? `<span class="topbar-seat"><span class="swatch" style="background:${colourOf(view.you)}"></span>${esc(view.you)}</span>` : '';
   setHtml('header-main', `
     <h1>MONSTER OF THE WEEK</h1>
     <span class="phase-label">${esc(status)}</span>
-    ${you}
     ${ui.connectionNote && view ? `<span class="muted small">${esc(ui.connectionNote)}</span>` : ''}
     ${ui.stale ? '<span class="tag stale-tag" title="The worker hasn\'t reloaded since the game files changed; the table and the rules may not match.">Server running old code: restart npm run dev</span>' : ''}`);
 }
@@ -457,6 +454,13 @@ function playerStatus(playerId) {
   if (view.phase === 'draft') return view.players[playerId].picked ? 'picked' : 'picking…';
   if (view.phase === 'ended') return view.result?.players.includes(playerId) ? 'wins' : '';
   return waitingOn(view).includes(playerId) ? 'to act' : '';
+}
+
+/** Hotseat with several humans: a button on another human seat's panel to play as it (in place of the seat bar). @param {string} id */
+function seatSwitch(id) {
+  const view = ui.view;
+  if (!ui.hotseat.enabled || !view || id === view.you || ui.bots.includes(id) || !ui.hotseat.seats.some((s) => s.player === id)) return '';
+  return ` <button class="btn btn-small seat-switch" data-action="switch-seat" data-player="${esc(id)}" title="Play as ${esc(id)}">Play</button>`;
 }
 
 /** Cards in hand as little card backs, one each. @param {number} n */
@@ -485,7 +489,7 @@ function renderPlayers() {
     ].join('');
     return `
       <div class="player ${id === view.you ? 'player-you' : ''} ${isOpen ? 'is-open' : ''}" data-action="expand-player" data-player="${esc(id)}" aria-expanded="${isOpen}" style="--seat:${colourOf(id)}">
-        <span class="player-row player-head"><span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${id === view.you ? ' <span class="muted small">(you)</span>' : ''}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}</span><span class="player-status">${esc(playerStatus(id))}${miniCards(p.handSize)}</span></span>
+        <span class="player-row player-head"><span class="player-name"><span class="presence ${ui.online.includes(id) ? 'presence-on' : ''}"></span>${esc(id)}${id === view.you ? ' <span class="muted small">(you)</span>' : ''}${ui.bots.includes(id) ? ' <span class="tag">bot</span>' : ''}${seatSwitch(id)}</span><span class="player-status">${esc(playerStatus(id))}${miniCards(p.handSize)}</span></span>
         <span class="player-supply-mini" title="${p.supply} in supply">${pile(p.supply, () => cubeHtml(colourOf(id), 7))}</span>
         <span class="player-detail" aria-hidden="${!isOpen}">${rows}</span>
       </div>`;
@@ -788,6 +792,8 @@ function renderPhase() {
   setHtml('phase', `<span class="bar-text">${handNext.text}</span>${handNext.extra}<span class="bar-actions">${handNext.actions.join('')}</span>`);
   const dock = $('dock');
   for (const s of ['turn', 'wait', 'end']) dock.classList.toggle(`is-${s}`, handNext.state === s);
+  // Your turn tints the top bar too (designer, 2026-10-31: in place of the hotseat seat bar).
+  $('header').classList.toggle('is-turn', handNext.state === 'turn');
   renderHand();
   renderMine();
   renderScore();
@@ -1757,8 +1763,7 @@ async function loadHotseat() {
     const bots = /** @type {{ bots?: string[] }} */ (status.ok ? await status.json() : {}).bots ?? [];
     ui.hotseat.seats = body.links.filter((link) => !bots.includes(link.player)).map((link) => ({ player: link.player, token: link.url.split('/p/')[1] ?? '' }));
     ui.bots = bots;
-    renderSeatbar();
-    if (ui.hotseat.seats.length) switchSeat(ui.hotseat.seats[0].player);
+      if (ui.hotseat.seats.length) switchSeat(ui.hotseat.seats[0].player);
   } catch (error) {
     ui.connectionNote = error instanceof Error ? error.message : String(error);
     renderHotseatEmpty({ needKey: false });
@@ -1777,7 +1782,6 @@ function switchSeat(player) {
   ui.view = null;
   ui.phaseKey = '';
   ui.connectionNote = `Connecting as ${player}…`;
-  renderSeatbar();
   connect();
 }
 
@@ -1789,7 +1793,6 @@ function whoShouldAct(view) {
 /** @param {PlayerView} view */
 function followTheAction(view) {
   if (!ui.hotseat.enabled) return;
-  renderSeatbar();
   // A seat you clicked to look at stays until the turn moves on to someone new; then following resumes.
   const next = whoShouldAct(view);
   if (ui.hotseat.peek !== undefined && next === ui.hotseat.peek) return;
@@ -1797,18 +1800,6 @@ function followTheAction(view) {
   if (next && next !== view.you && ui.hotseat.seats.some((seat) => seat.player === next)) switchSeat(next);
 }
 
-function renderSeatbar() {
-  const bar = $('seatbar');
-  bar.hidden = !ui.hotseat.enabled;
-  if (!ui.hotseat.enabled) return;
-  const acting = ui.view ? whoShouldAct(ui.view) : null;
-  const seats = ui.hotseat.seats.map((seat) => {
-    const isYou = seat.token === ui.token;
-    return `<button class="btn seat ${isYou ? 'btn-active' : ''}" data-action="switch-seat" data-player="${esc(seat.player)}" style="border-left: 4px solid ${colourOf(seat.player)}">${esc(seat.player)}${acting === seat.player ? ' <span class="tag">to act</span>' : ''}</button>`;
-  });
-  bar.innerHTML = `${seats.join('')}
-    ${ui.bots.length ? `<span class="small muted">bots: ${ui.bots.map(esc).join(', ')}</span>` : ''}`;
-}
 
 // ---------------------------------------------------------------------------
 // Interaction
@@ -1948,7 +1939,7 @@ function onClick(event) {
   if (action === 'switch-seat') {
     ui.hotseat.peek = ui.view ? whoShouldAct(ui.view) : null;
     switchSeat(target.dataset.player ?? '');
-    return renderSeatbar();
+    return render();
   }
 }
 
