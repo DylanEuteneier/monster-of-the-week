@@ -21,10 +21,13 @@ const head = (/** @type {number} */ x, /** @type {number} */ y, /** @type {numbe
 /** The nouns: the things actions act on. @type {Record<string, { label: string, svg: string }>} */
 export const NOUNS = {
   token: { label: 'Faction token', svg: svg('<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/>') },
-  group: { label: 'Group', svg: svg('<circle cx="8" cy="15" r="4"/><circle cx="16" cy="15" r="4"/><circle cx="12" cy="8" r="4"/>') },
+  // The marks combine (designer, 2026-10-30; D35): a token is a circle, sway a cube, a location a hex; a thing
+  // drawn inside a hex is that thing at a location (sway on the board, a group).
+  group: { label: 'Group', svg: svg(`${hex(12, 12, 10.5)}<circle cx="9" cy="14.5" r="2.6"/><circle cx="15" cy="14.5" r="2.6"/><circle cx="12" cy="9" r="2.6"/>`, ' stroke-width="1.75"') },
   lone: { label: 'Lone group', svg: svg(`${hex(12, 12, 10)}<circle cx="12" cy="12" r="4"/>`) },
   fight: { label: 'Fight', svg: svg('<path d="M5 5l14 14M19 5L5 19M4 9l5-5M15 4l5 5"/>') },
   sway: { label: 'Sway (your cube)', svg: svg(cube(12, 10, 7)) },
+  swayAt: { label: 'Sway on a location', svg: svg(`${hex(12, 12, 10.5)}${cube(12, 11.5, 5)}`, ' stroke-width="1.75"') },
   standing: { label: 'Standing (with a faction)', svg: svg(`${cube(12, 8, 6)}<path d="M3 21h18"/>`) },
   location: { label: 'Location', svg: svg(hex(12, 12, 10)) },
   neighbour: { label: 'Neighbour (next door)', svg: svg(`${hex(7.5, 12, 6)}${hex(17.5, 12, 6)}`, ' stroke-width="1.75"') },

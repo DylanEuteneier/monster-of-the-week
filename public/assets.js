@@ -125,12 +125,15 @@ function layoutCard(l) {
   const t = /** @type {any} */ (l.target);
   const r = c.readings;
   // Each reading is a button-like row (designer, 2026-10-30: the target looks clickable, the LOC/FAC choice moving into it).
-  const row = (/** @type {string} */ tag, /** @type {string[]} */ cells) => `<div class="lay-row" role="button"><b>${tag}</b>${cells.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
+  // Each row's tag is its mark alone (designer, 2026-10-30, D35); the word is the row's label.
+  const tagMark = (/** @type {string} */ tag) => tag === 'FAC' ? suitIcon(c.suit, 2) : NOUNS[TAG_NOUN[tag]].svg;
+  const cell = (/** @type {string} */ tag) => `<b title="${esc(tag)}">${tagMark(tag)}</b>`;
+  const row = (/** @type {string} */ tag, /** @type {string[]} */ cells) => `<div class="lay-row lay-row-ic" role="button" aria-label="${esc(tag)}">${cell(tag)}${cells.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
   const target = !t ? '' : t.grid
     // Where the readings change the effect: each row stacks its parts, each with its own small label (no table: the parts' lengths differ).
-    ? `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div>${['loc', 'fac'].map((m) => `<div class="lay-row" role="button"><b>${m.toUpperCase()}</b><span class="lay-parts">${t.grid.map((/** @type {string} */ g, /** @type {number} */ i) => `<span><i>${esc(g)}</i> ${esc(t[m][i])}</span>`).join('')}</span></div>`).join('')}</div>`
+    ? `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div>${['loc', 'fac'].map((m) => `<div class="lay-row lay-row-ic" role="button" aria-label="${m.toUpperCase()}">${cell(m.toUpperCase())}<span class="lay-parts">${t.grid.map((/** @type {string} */ g, /** @type {number} */ i) => `<span><i>${esc(g)}</i> ${esc(t[m][i])}</span>`).join('')}</span></div>`).join('')}</div>`
     : `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div>${row('LOC', [r.location])}${row('FAC', [r.faction])}</div>`;
-  const uses = l.uses ? `<div class="lay-target lay-target-uses"><div class="lay-label">Choose one</div>${l.uses.map(([tag, , text]) => `<div class="lay-row" role="button"><b>${esc(tag)}</b><span>${esc(text)}</span></div>`).join('')}</div>` : '';
+  const uses = l.uses ? `<div class="lay-target lay-target-uses"><div class="lay-label">Choose one</div>${l.uses.map(([tag, , text]) => row(tag, [text])).join('')}</div>` : '';
   const specifics = l.specifics.length ? `<ul class="lay-specifics">${l.specifics.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
   // Every card carries its thematic text at the bottom (designer, 2026-10-30); a card without it shows the empty slot.
   const flavour = `<p class="lay-flavour${l.flavour ? '' : ' is-missing'}">${esc(l.flavour || 'Thematic text to come.')}</p>`;
@@ -140,45 +143,16 @@ function layoutCard(l) {
 }
 
 
-/** Options for small icons beside the row tags (designer, 2026-10-30: options for each). Drawn like the noun marks. */
-const tagSvg = (/** @type {string} */ body) => `<svg class="ik-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
-const HEX = '<polygon points="12,2 20.7,7 20.7,17 12,22 3.3,17 3.3,7"/>';
-const CUBE = (/** @type {number} */ y, /** @type {number} */ s, x = 12) => `<path d="M${x} ${y - s}l${s} ${s / 2}v${s}l-${s} ${s / 2}l-${s} -${s / 2}v-${s}z M${x - s} ${y - s / 2}l${s} ${s / 2}l${s} -${s / 2} M${x} ${y}v${s}"/>`;
-const TAG_OPTIONS = [
-  ['LOC', 'a group at a ☾ location.', [
-    ['A', 'A hex (the location mark)', tagSvg(HEX)],
-    ['B', 'A hex with a dot: this place', tagSvg(`${HEX}<circle cx="12" cy="12" r="3" fill="currentColor"/>`)],
-    ['C', 'The suit glyph', 'glyph'],
-  ]],
-  ['FAC', 'an Undead group anywhere.', [
-    ['A', 'A faction token', tagSvg('<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/>')],
-    ['B', 'A group (three tokens)', tagSvg('<circle cx="8" cy="15" r="4"/><circle cx="16" cy="15" r="4"/><circle cx="12" cy="8" r="4"/>')],
-    ['C', 'The suit glyph', 'glyph'],
-  ]],
-  ['Standing', 'take 1 standing from each of up to X factions, all into one.', [
-    ['A', 'A cube on a line (off the board)', tagSvg(`${CUBE(8, 6)}<path d="M3 21h18"/>`)],
-    ['B', 'A cube in a faction circle', tagSvg(`<circle cx="12" cy="12" r="10"/>${CUBE(12, 5)}`)],
-    ['C', 'A cube beside a token', tagSvg(`<circle cx="17.5" cy="14" r="4.5"/>${CUBE(10, 5.5, 7)}`)],
-  ]],
-  ['Sway', 'gather up to X of your sway from next door into one location.', [
-    ['A', 'A cube (your sway)', tagSvg(CUBE(10, 7))],
-    ['B', 'A cube on a hex (sway on the board)', tagSvg(`<polygon points="12,9 20.7,14 20.7,20 12,23 3.3,20 3.3,14" stroke-width="1.5"/>${CUBE(9, 6)}`)],
-    ['C', 'A filled cube', tagSvg(CUBE(10, 7).replace('<path', '<path fill="currentColor" fill-opacity="0.35"'))],
-  ]],
-  ['Tokens', 'a group sends 1 token to each of up to X neighbours.', [
-    ['A', 'A faction token', tagSvg('<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/>')],
-    ['B', 'A group (three tokens)', tagSvg('<circle cx="8" cy="15" r="4"/><circle cx="16" cy="15" r="4"/><circle cx="12" cy="8" r="4"/>')],
-    ['C', 'Two tokens, stacked', tagSvg('<ellipse cx="12" cy="9" rx="8" ry="4"/><path d="M4 9v6c0 2.2 3.6 4 8 4s8-1.8 8-4V9"/><path d="M4 12c0 2.2 3.6 4 8 4s8-1.8 8-4"/>')],
-  ]],
-];
+/** The row tags' marks (designer, 2026-10-30, D35): LOC, FAC, and the uses' nouns. */
+const TAG_NOUN = /** @type {Record<string, keyof typeof NOUNS>} */ ({ LOC: 'location', Standing: 'standing', Sway: 'swayAt', Tokens: 'group' });
 
-/** The tag-icon options, each shown in a row as it would sit on a card. */
-function renderTagOptions() {
-  const rows = TAG_OPTIONS.map(([tag, text, opts]) => `<div class="lay-opt-set"><h3 class="small">${esc(String(tag))}</h3><div class="lay-opt-grid">${/** @type {string[][]} */ (opts).map(([k, label, icon]) => {
-    const mark = icon === 'glyph' ? suitIcon('undead', 2) : icon;
-    return `<figure class="lay-opt"><div class="card card-suit-undead lay-opt-card"><div class="lay-target"><div class="lay-row lay-row-ic" role="button" aria-label="${esc(String(tag))}" title="${esc(String(tag))}"><b>${mark}</b><span>${esc(String(text))}</span></div></div></div><figcaption class="small"><b>${k}:</b> ${esc(label)}</figcaption></figure>`;
-  }).join('')}</div></div>`).join('');
-  return `<div class="lay-opts"><h3>Tag icons (options)</h3><p class="small muted">Icon only, no tag word (designer, 2026-10-30: the word is redundant; it stays as the row’s label for screen readers and on hover). The verb’s diagram stays in the topline only.</p>${rows}</div>`;
+/** The marks the rows use, and the parts they are built from. */
+function renderTagMarks() {
+  const mark = (/** @type {string} */ html, /** @type {string} */ label) => `<figure class="ik-mark"><span class="ik ik-solo"><span class="ik-n">${html}</span></span><figcaption class="small">${esc(label)}</figcaption></figure>`;
+  const parts = [['token', 'Token: a circle'], ['sway', 'Sway: a cube'], ['location', 'Location: a hex']].map(([n, l]) => mark(NOUNS[n].svg, l)).join('');
+  const tags = [mark(NOUNS.location.svg, 'LOC: the location'), mark(suitIcon('undead', 2), 'FAC: the faction’s own symbol'), mark(NOUNS.standing.svg, 'Standing: a cube over the line (off the board)'), mark(NOUNS.swayAt.svg, 'Sway: a cube in a hex (sway on the board)'), mark(NOUNS.group.svg, 'Tokens: three circles in a hex (a group)')].join('');
+  return `<div class="lay-opts"><h3>Row marks (D35)</h3><p class="small muted">A token is a circle, sway a cube, a location a hex; they combine, so a thing inside a hex is that thing at a location. Each row shows its mark alone; the word is its label for screen readers and on hover.</p>
+    <h3 class="small">Parts</h3><div class="ik-marks">${parts}</div><h3 class="small">On the rows</h3><div class="ik-marks">${tags}</div></div>`;
 }
 
 /** The layout mock-ups, each beside the card as it is now. */
@@ -187,7 +161,7 @@ function renderLayouts() {
     <figure class="asset-scale">${layoutCard(l)}<figcaption class="mono small muted">suggested</figcaption></figure>${l.note ? `<p class="small muted lay-note">${esc(l.note)}</p>` : ''}</div>`).join('');
   $('layouts').innerHTML = `<div class="row-between"><h2>Card layout (draft)</h2><span class="small muted">Suggestions from the layout research, not decisions</span></div>
     <p class="small muted">Suit cards (suggestion 1): a topline (the action’s icon block, its verb, a few words: the card’s only icon), a target field whose readings are the buttons, one specific rule per line, then thematic text at the bottom of every card. Choose-one cards (suggestion 2): the same topline over one button-like row per use. Every word is the card’s own, moved or split; the toplines’ verbs and gists are drafts. Same card width as now.</p>
-    <div class="lay-pairs">${pairs}</div>${renderTagOptions()}`;
+    <div class="lay-pairs">${pairs}</div>${renderTagMarks()}`;
 }
 
 function render() {

@@ -780,7 +780,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 **Ideas**
 
-- `IK1` **An icon set (designer's seed, 2026-10-29):** icons for the kinds of action and for the things with meaning (a location, standing with a faction, a faction token, a fight, and so on), so a card communicates its action without whole sentences, glanceable like a flow chart. Prompted by Raise the Stakes reading as a paragraph; with it, the cards that apply one action to different sets should state the action at a high level before each use's details. *Decided (designer, 2026-10-29; D34):* an icon is composed of a verb mark plus a noun mark (one gather mark, with a token, sway or standing). *Open:* the look of each mark, and the high-level line for each card that applies one action to different sets. *Designer (2026-10-29):* not pixel art: pixel icons this small would be an unreadable mess; they are clean vector shapes, an exception to the printed art's pixel rule (F.17).
+- `IK1` **An icon set (designer's seed, 2026-10-29):** icons for the kinds of action and for the things with meaning (a location, standing with a faction, a faction token, a fight, and so on), so a card communicates its action without whole sentences, glanceable like a flow chart. Prompted by Raise the Stakes reading as a paragraph; with it, the cards that apply one action to different sets should state the action at a high level before each use's details. *Decided (designer, 2026-10-29; D34):* an icon is composed of a verb mark plus a noun mark (one gather mark, with a token, sway or standing). *Decided (designer, 2026-10-30; D35):* the noun marks combine (circle, cube, hex). *Open:* the look of each verb mark, and the high-level line for each card that applies one action to different sets. *Designer (2026-10-29):* not pixel art: pixel icons this small would be an unreadable mess; they are clean vector shapes, an exception to the printed art's pixel rule (F.17).
   - *The nouns (compiled by Claude from the rules and cards in play; designer, 2026-10-29: "you can likely do the noun list on your own").* Each is something the current cards or rules refer to; *has a look* marks one the table already draws.
     - **The board.** Location (a hex; *has a look*). A suit's location, ◐ ↂ ⏏ ☾ ⎈ (*has a look*: the suit glyphs). Neighbour (next door). Empty location. Scorched location. Region.
     - **The monsters.** Faction token (*has a look*). Group: a faction's tokens at one location. Lone group: a group with no rival there. Fight: two factions at one location (three-way only through Wake the Dead). A faction's supply.
@@ -1400,6 +1400,13 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Open:** the look of each mark; which cards and prompts use them first.
 - **Date:** 2026-10-29
 
+#### D35. Noun marks combine: circle, cube, hex
+
+- **Decided (designer, 2026-10-30):** the noun marks are built from a few parts that combine: a token is a circle, sway is a cube, a location is a hex, and a thing drawn inside a hex is that thing at a location (sway on a location is a cube in a hex). On a card's target and use rows (the layout mock-ups on the assets page), the tag is its mark alone, with no word (designer: "the word is redundant"): LOC is the hex; FAC is the faction's own symbol (the icon asset); Standing is a cube over a line (off the board); Sway (on the board) is a cube in a hex; a group (Tokens) is three circles in a hex.
+- **Why (designer):** one small vocabulary, combined, describes everything (D34's composable blocks, for the nouns).
+- **Open:** a lone group (one circle in a hex) and a single token at a location would now draw alike; the card layout itself (topline, target field, specifics, thematic text) is a mock-up, not a decision.
+- **Date:** 2026-10-30
+
 #### D14. Tokens and cubes
 
 - **Decided:** faction presence on the board is made of **tokens**; **cubes** are always players' sway. A faction never has cubes, and a player never has tokens (apart from hidden and bluff tokens, which are separate pieces).
@@ -1511,6 +1518,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
 | 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
 | 2026-10-29 | Steal Their Playbook (D30, designer): theirs takes a card another player played this round (however played) from the played cards into your hand, played at once as your own; it can't be your last card played (discarded for no effect) | |
+| 2026-10-30 | Noun marks combine: a token a circle, sway a cube, a location a hex, a thing in a hex is at a location; row tags are marks alone (D35, designer) | The assets page's row marks |
 | 2026-10-29 | One bot, its lean set per seat (D31, designer): trophy and backer become the two ends of one bot's lean; tables deal balanced or random leans, always fewer backing a faction | Prototype only; the old profiles' games replay unchanged |
 | 2026-10-29 | A fuller start (D32, designer): 3 tokens on each location (seeding even) and 2 standing with every other faction by default | The token-flow measurements in 1.7 |
 | 2026-10-29 | Shifts bring tokens (D33, designer): GR5 shifts only, 30 tokens a faction, threshold 30, the start back to 2 on each and 1 standing | The GR5 measurements in 1.7 |
