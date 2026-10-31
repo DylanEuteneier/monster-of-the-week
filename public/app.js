@@ -792,8 +792,8 @@ function renderPhase() {
   setHtml('phase', `<span class="bar-text">${handNext.text}</span>${handNext.extra}<span class="bar-actions">${handNext.actions.join('')}</span>`);
   // The same options under the hand (shown on phones only, by CSS): above and below the cards (designer, 2026-10-31).
   const below = $('phase-below');
-  below.hidden = !handNext.actions.length && !handNext.extra;
-  setHtml('phase-below', `${handNext.extra}<span class="bar-actions">${handNext.actions.join('')}</span>`);
+  below.hidden = !handNext.text && !handNext.actions.length && !handNext.extra;
+  setHtml('phase-below', `<span class="bar-text">${handNext.text}</span>${handNext.extra}<span class="bar-actions">${handNext.actions.join('')}</span>`);
   const dock = $('dock');
   for (const s of ['turn', 'wait', 'end']) dock.classList.toggle(`is-${s}`, handNext.state === s);
   // Your turn tints the top bar too (designer, 2026-10-31: in place of the hotseat seat bar).
