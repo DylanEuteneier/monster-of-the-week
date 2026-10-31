@@ -164,8 +164,8 @@ function renderTagMarks() {
 function renderSuitedMarks() {
   const fig = (/** @type {string} */ html, /** @type {string} */ label) => `<figure class="ik-mark"><span class="ik ik-solo"><span class="ik-n">${html}</span></span><figcaption class="small">${esc(label)}</figcaption></figure>`;
   const suits = spec.archetypes.map((a) => fig(`${suitedMark('location', a.id)}${suitedMark('group', a.id)}`, `${a.name}: its locations, its group`)).join('');
-  const other = [fig(suitedMark('location', 'none'), 'Unsuited: any location (grey)'), fig(suitedMark('group', 'any'), 'Any faction’s group (every suit’s stripes)'), fig(suitedMark('groupNext', 'none', 'any'), 'Any faction’s group next door'), fig(suitedMark('swayNext', 'none'), 'Your sway next door'), fig(suitedMark('either', 'scifi'), 'A suit’s location OR a location holding its faction')].join('');
-  return `<div class="lay-opts"><h3>Suited marks</h3><p class="small muted">A suit’s colour fills what belongs to it (its locations, its faction’s tokens); grey is unsuited; stripes of every suit’s colour mean any suit. Where the suit doesn’t matter at all (the unsuited cards), no colour.</p><div class="ik-marks">${suits}</div><div class="ik-marks">${other}</div></div>`;
+  const other = [fig(suitedMark('group', 'any'), 'Any faction’s group (every suit’s stripes)'), fig(NOUNS.groupNext.svg, 'A group next door (suit irrelevant: no colour)'), fig(NOUNS.swayNext.svg, 'Your sway next door (no colour)'), fig(suitedMark('either', 'scifi'), 'A suit’s location OR a location holding its faction')].join('');
+  return `<div class="lay-opts"><h3>Suited marks</h3><p class="small muted">A suit’s colour fills what belongs to it (its locations, its faction’s tokens); stripes of every suit’s colour mean any suit; where the suit doesn’t matter, no colour at all.</p><div class="ik-marks">${suits}</div><div class="ik-marks">${other}</div></div>`;
 }
 
 /** The layout mock-ups, each beside the card as it is now. */
