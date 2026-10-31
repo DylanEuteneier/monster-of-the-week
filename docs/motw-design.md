@@ -1404,6 +1404,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 - **Decided (designer, 2026-10-31):** the last round's monsters don't grow: the game ends straight after the last round's fights, before nightfall, with no nightfall tokens (D38) or growth; then the end is counted. Variant `lastGrowth` (default off; on restores the last nightfall).
 - **Why:** the last nightfall added about 14–18 tokens at 5 players after the last card was played, which no one could answer, and about a third of the presence counted at the end.
+- **Measured (2026-10-31; 30 games each, seed 2401, bots playing to 10 per player):** presence after round 4 about 28, 33, 32 at 3, 4, 5 players; after the last round's fights 17, 20, 17 (the bots fight hardest in the last round, with nothing to follow). The invaders over 10 per player: 0, 1, 0 of 30; re-scored at a bar of 20: 8, 13, 6; at 25: 2, 8, 4. 10 per player is now far too high. **Open:** the bar (about 20 flat, or rounds as votes at 30).
 - **Date:** 2026-10-31
 
 #### D40. The presence threshold is 10 per player
