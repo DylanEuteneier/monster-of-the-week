@@ -1127,12 +1127,12 @@ button.card-opt:hover { background: #f6cca1; }
 .lay-note { flex-basis: 100%; max-width: 440px; margin: 0; }
 .lay-name { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .lay-sway { font-family: var(--font-display); font-size: 12px; padding: 0 4px; border: 2px solid var(--ink); background: #e0f2f4; }
-.lay-top { display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 2px solid var(--ink); }
+.lay-top { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
 .lay-top .ik { flex: none; }
 .lay-top .ik-b svg { width: 72px; height: auto; }
 .lay-verb { display: block; font-family: var(--font-display); font-size: 12px; text-transform: uppercase; }
 .lay-gist { display: block; font-size: 11px; line-height: 1.2; }
-.lay-target { display: flex; flex-direction: column; gap: 3px; font-size: 11px; line-height: 1.2; }
+.lay-target { display: flex; flex-direction: column; gap: 3px; margin: 0 calc(var(--space-2) * -1); padding: 4px var(--space-2) 6px; background: color-mix(in srgb, var(--suit) 22%, var(--card-face)); border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); font-size: 11px; line-height: 1.2; }
 .lay-label { font-family: var(--font-display); font-size: 9px; text-transform: uppercase; }
 /* A reading or use: a button-like row, its tag cell divided from its text. */
 .lay-row { display: grid; grid-template-columns: 30px minmax(0, 1fr); background: var(--card-face); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); cursor: pointer; }
