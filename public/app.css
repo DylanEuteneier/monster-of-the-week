@@ -1086,11 +1086,14 @@ button.card-opt:hover { background: #f6cca1; }
   .topbar .phase-label { font-size: 12px; }
   /* On a phone the pill carries the bottom bar's status, smaller. */
   .topbar-round { flex-wrap: wrap; gap: var(--space-1) var(--space-2); }
-  .topbar-status { padding: 2px 6px; font-family: var(--font-body); font-size: 11px; text-transform: none; overflow: hidden; }
+  /* A long status wraps to its own row under the round, and scrolls sideways there rather than overflowing. */
+  .topbar-main, .topbar-round { min-width: 0; max-width: 100%; }
+  .topbar-status { max-width: 100%; padding: 2px 6px; font-family: var(--font-body); font-size: 11px; text-transform: none; overflow-x: auto; scrollbar-width: none; }
+  .topbar-status::-webkit-scrollbar { display: none; }
   .topbar-status .status-desk { display: none; }
   .topbar .phase-word, .topbar .round-short { display: inline; }
   .topbar .round-long { display: none; }
-  .topbar-status .status-phone { display: inline; overflow: hidden; text-overflow: ellipsis; }
+  .topbar-status .status-phone { display: inline; white-space: nowrap; }
   .topbar-status .bar-chip { padding: 0 4px; border-width: 1px; }
 
   .guide, .round-frame { top: auto; bottom: var(--space-2); left: var(--space-4); right: var(--space-4); width: auto; }
@@ -1127,7 +1130,11 @@ button.card-opt:hover { background: #f6cca1; }
   /* The bar: a section with the step on its own line. */
   .dock { position: static; height: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px;
     border: var(--border); border-left: 0; border-right: 0; }
-  .bar-step { flex: 1 1 100%; justify-content: flex-start; overflow: visible; }
+  .bar-step { flex: 1 1 100%; justify-content: flex-start; overflow: visible; min-width: 0; max-width: 100%; }
+  /* Many options: the buttons wrap to their own row and scroll sideways there, one line, never off the screen. */
+  .bar-step .bar-actions { min-width: 0; max-width: 100%; overflow-x: auto; flex-wrap: nowrap; padding: 0 2px 4px 0; scrollbar-width: thin; }
+  .bar-step .bar-actions:empty { display: none; }
+  .bar-step .bar-btn { flex: none; white-space: nowrap; }
   .bar-text { white-space: normal; }
 
   /* The hand: every card in full, in a grid. */
