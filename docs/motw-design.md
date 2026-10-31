@@ -891,6 +891,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - The first player must open the round with their marked card.
   - The marked cards are powerful, and A is the stronger. A is the one clear standout; otherwise cards are close in power (CB1, 3.7).
   - What the marked cards do, and how one is played when it didn't make its holder first player, are left to card design.
+  - *Idea (designer, 2026-10-31): Steal Their Playbook sets the next round's first player.* Playing it makes you first player next round. Powerful because it gives you the current round's last move (you take a card back, so you hold one more than the others and respond to everyone), but it forces you to go first next round. *Open:* how it meets FP2 (who opens if you hold no marked card, or someone else holds A; whether you must open with a particular card); round 5 has no next round, so the cost vanishes there.
 
 #### 3.9 Persistent progression · *Decisions*
 
