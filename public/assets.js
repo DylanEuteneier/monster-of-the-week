@@ -139,13 +139,55 @@ function layoutCard(l) {
     <div class="lay-name"><span class="card-name">${esc(c.name)}</span>${corner}</div>${top}${target}${uses}${specifics}${flavour}</div>`;
 }
 
+
+/** Options for small icons beside the row tags (designer, 2026-10-30: options for each). Drawn like the noun marks. */
+const tagSvg = (/** @type {string} */ body) => `<svg class="ik-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+const HEX = '<polygon points="12,2 20.7,7 20.7,17 12,22 3.3,17 3.3,7"/>';
+const CUBE = (/** @type {number} */ y, /** @type {number} */ s, x = 12) => `<path d="M${x} ${y - s}l${s} ${s / 2}v${s}l-${s} ${s / 2}l-${s} -${s / 2}v-${s}z M${x - s} ${y - s / 2}l${s} ${s / 2}l${s} -${s / 2} M${x} ${y}v${s}"/>`;
+const TAG_OPTIONS = [
+  ['LOC', 'a group at a ☾ location.', [
+    ['A', 'A hex (the location mark)', tagSvg(HEX)],
+    ['B', 'A hex with a dot: this place', tagSvg(`${HEX}<circle cx="12" cy="12" r="3" fill="currentColor"/>`)],
+    ['C', 'The suit glyph', 'glyph'],
+  ]],
+  ['FAC', 'an Undead group anywhere.', [
+    ['A', 'A faction token', tagSvg('<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/>')],
+    ['B', 'A group (three tokens)', tagSvg('<circle cx="8" cy="15" r="4"/><circle cx="16" cy="15" r="4"/><circle cx="12" cy="8" r="4"/>')],
+    ['C', 'The suit glyph', 'glyph'],
+  ]],
+  ['Standing', 'take 1 standing from each of up to X factions, all into one.', [
+    ['A', 'A cube on a line (off the board)', tagSvg(`${CUBE(8, 6)}<path d="M3 21h18"/>`)],
+    ['B', 'A cube in a faction circle', tagSvg(`<circle cx="12" cy="12" r="10"/>${CUBE(12, 5)}`)],
+    ['C', 'A cube beside a token', tagSvg(`<circle cx="17.5" cy="14" r="4.5"/>${CUBE(10, 5.5, 7)}`)],
+  ]],
+  ['Sway', 'gather up to X of your sway from next door into one location.', [
+    ['A', 'A cube (your sway)', tagSvg(CUBE(10, 7))],
+    ['B', 'A cube on a hex (sway on the board)', tagSvg(`<polygon points="12,9 20.7,14 20.7,20 12,23 3.3,20 3.3,14" stroke-width="1.5"/>${CUBE(9, 6)}`)],
+    ['C', 'A filled cube', tagSvg(CUBE(10, 7).replace('<path', '<path fill="currentColor" fill-opacity="0.35"'))],
+  ]],
+  ['Tokens', 'a group sends 1 token to each of up to X neighbours.', [
+    ['A', 'A faction token', tagSvg('<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/>')],
+    ['B', 'A group (three tokens)', tagSvg('<circle cx="8" cy="15" r="4"/><circle cx="16" cy="15" r="4"/><circle cx="12" cy="8" r="4"/>')],
+    ['C', 'Two tokens, stacked', tagSvg('<ellipse cx="12" cy="9" rx="8" ry="4"/><path d="M4 9v6c0 2.2 3.6 4 8 4s8-1.8 8-4V9"/><path d="M4 12c0 2.2 3.6 4 8 4s8-1.8 8-4"/>')],
+  ]],
+];
+
+/** The tag-icon options, each shown in a row as it would sit on a card. */
+function renderTagOptions() {
+  const rows = TAG_OPTIONS.map(([tag, text, opts]) => `<div class="lay-opt-set"><h3 class="small">${esc(String(tag))}</h3><div class="lay-opt-grid">${/** @type {string[][]} */ (opts).map(([k, label, icon]) => {
+    const mark = icon === 'glyph' ? suitIcon('undead', 2) : icon;
+    return `<figure class="lay-opt"><div class="card card-suit-undead lay-opt-card"><div class="lay-target"><div class="lay-row lay-row-ic${tag.length > 3 ? ' lay-row-wide' : ''}" role="button"><b>${mark}<span>${esc(String(tag))}</span></b><span>${esc(String(text))}</span></div></div></div><figcaption class="small"><b>${k}:</b> ${esc(label)}</figcaption></figure>`;
+  }).join('')}</div></div>`).join('');
+  return `<div class="lay-opts"><h3>Tag icons (options)</h3><p class="small muted">A small mark beside each tag word, never instead of it. The verb’s diagram stays in the topline only.</p>${rows}</div>`;
+}
+
 /** The layout mock-ups, each beside the card as it is now. */
 function renderLayouts() {
   const pairs = LAYOUTS.map((l) => `<div class="lay-pair"><figure class="asset-scale">${cardHtml(l.id)}<figcaption class="mono small muted">now</figcaption></figure>
     <figure class="asset-scale">${layoutCard(l)}<figcaption class="mono small muted">suggested</figcaption></figure>${l.note ? `<p class="small muted lay-note">${esc(l.note)}</p>` : ''}</div>`).join('');
   $('layouts').innerHTML = `<div class="row-between"><h2>Card layout (draft)</h2><span class="small muted">Suggestions from the layout research, not decisions</span></div>
     <p class="small muted">Suit cards (suggestion 1): a topline (the action’s icon block, its verb, a few words: the card’s only icon), a target field whose readings are the buttons, one specific rule per line, then thematic text at the bottom of every card. Choose-one cards (suggestion 2): the same topline over one button-like row per use. Every word is the card’s own, moved or split; the toplines’ verbs and gists are drafts. Same card width as now.</p>
-    <div class="lay-pairs">${pairs}</div>`;
+    <div class="lay-pairs">${pairs}</div>${renderTagOptions()}`;
 }
 
 function render() {
