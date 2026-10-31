@@ -697,6 +697,8 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - Archetypes should be easily learnable and thematic.
   - Faction twists should be small and quickly internalized.
   - The archetype differences below are loose candidates. Combat is worked out first, and the differences are shaped to fit it.
+  - `FD3` **A signature card each (designer, 2026-10-31; the best candidate of Claude's three suggestions):** the three factions of an archetype play the same, but each brings its own signature card; the faction drawn decides which signature goes into the deck. The difference lives on a card, not on the tokens. (Not chosen: a different setup pattern per faction; one trait on the tokens per faction.) Why: as built the three factions differ only in name and art, which is no real variety; rules on the tokens would cost 15 things to balance and teach.
+    - *Open:* whether each archetype's current signature becomes one faction's; the other two signatures per archetype (ten cards).
   - `FD2` **Differences through combat losses:** archetype or faction differences could be expressed as variations on how tokens are lost in a fight. These would be tricky to balance.
   - *Open:* what the archetype-level differences are.
   - `AP1` **Nocturnals ◐, converts:** when they win a battle, some of the losing tokens become theirs instead of being removed.
