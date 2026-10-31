@@ -1150,11 +1150,11 @@ button.card-opt:hover { background: #f6cca1; }
 /* The card layout in play (designer, 2026-10-30): the readings are the buttons; the +N and BACK sit by the name. */
 .lay-plays { display: flex; gap: 4px; flex: none; }
 /* The +N's number in the body font (designer); a signature's X is the cards-in-hand mark. */
-.lay-plays .card-opt b { font-family: var(--font-body); font-weight: 400; font-size: 15px; }
+.lay-plays .card-opt b { font-family: var(--font-body); font-weight: 400; font-size: 14px; }
 .lay-plays .card-opt .lay-hand .ik-svg { background: none; border: 0; padding: 0; }
 .lay-plays .card-opt { min-width: 0; padding: 0 5px 0 0; gap: 4px; background: var(--card-face); }
 /* The +N button reads like a row: its mark in a tinted cell, divided from the number. */
-.lay-plays .card-opt .ik-svg { width: 22px; height: 22px; padding: 1px; box-sizing: content-box; background: #e0f2f4; border-right: 2px solid var(--ink); }
+.lay-plays .card-opt .ik-svg { width: 20px; height: 20px; padding: 1px; box-sizing: content-box; background: #e0f2f4; border-right: 2px solid var(--ink); }
 /* One hover for every button on a card (the rows and the +N, BACK): only where it can be clicked. */
 button.lay-row:hover, .lay-card button.card-opt:hover { background: #f6cca1; }
 /* And one set of states: the +N and BACK take the rows' next and empty looks. */
