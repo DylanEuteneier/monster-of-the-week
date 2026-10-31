@@ -1404,6 +1404,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 - **Decided (designer, 2026-10-30):** the invaders win if total presence at the end is more than 10 per player (30 at 3 players, 40 at 4, 50 at 5), in place of the fixed 30 (D33), leaning slightly toward the invaders. Variant `thresholdPerPlayer` (default 10; off uses the fixed `threshold`).
 - **Why:** under nightfall (D38) final presence grows with the players (averages 33, 42, 46 at 3, 4, 5 players; 40 bot games each, seed 2101) while total trophies stay near 60 (61, 60, 62), so a fixed threshold or trophies against presence (Claude's measure of the designer's idea) favour one side by table size. Re-scoring those games, 10 per player gives the invaders 25, 20 and 17 of 40 (11 per player 20, 15, 12; the fixed 30: 25, 34, 33). The bots played to the old threshold: to confirm with bots playing to it.
+- **Measured with bots playing to it (2026-10-31; 40 games each, seed 2201):** invaders 23 of 40 at 3 players (58%), 18 at 4 (45%), 5 at 5 (12%). Final presence 33.2, 40.1, 39.4 (bar 30, 40, 50); trophies 60, 62, 67. Presence by round: 3 players 30 → 27 → 30 → 30 → 32 → 33; 4 players 30 → 32 → 34 → 36 → 40 → 40; 5 players 30 → 34 → 34 → 35 → 37 → 39. At 5 players the bots held presence well under 50 (46 when playing to 30), so the bar is too high there; at 3 it is a little low. **Open:** the threshold's scaling by table size (10 per player is not flat).
 - **Date:** 2026-10-30
 
 #### D39. Steal Their Playbook takes any played card into your hand
