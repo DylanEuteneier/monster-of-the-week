@@ -21,6 +21,9 @@ const cube = (/** @type {number} */ cx, /** @type {number} */ cy, /** @type {num
 /** An arrowhead at (x, y) pointing along angle a (degrees). */
 const head = (/** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ a) => `<path d="M-4 -3.5L0 0L-4 3.5" transform="translate(${x} ${y}) rotate(${a})"/>`;
 
+/** Three cards fanned from a point below, the back two behind and turned; the front card faces up, filled to hide them. */
+const FAN = ['-22', '22', '0'].map((a) => `<rect x="7" y="5" width="10" height="15" rx="1.5" transform="rotate(${a} 12 24)"${a === '0' ? ' fill="var(--card-face, #fdf6e3)"' : ''}/>`).join('');
+
 /** The nouns: the things actions act on. @type {Record<string, { label: string, svg: string }>} */
 export const NOUNS = {
   token: { label: 'Faction token', svg: svg('<circle cx="12" cy="12" r="7"/>') },
@@ -44,7 +47,9 @@ export const NOUNS = {
   supply: { label: 'Supply', svg: svg('<path d="M3 10v9h18v-9"/><path d="M3 10h18"/><circle cx="9" cy="6" r="2.5"/><circle cx="15" cy="6" r="2.5"/>') },
   trophy: { label: 'Trophy', svg: svg('<path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v4M8 21h8"/>') },
   pile: { label: 'Pile', svg: svg('<circle cx="7" cy="17" r="3.5"/><circle cx="17" cy="17" r="3.5"/><circle cx="12" cy="9" r="3.5"/>', ' stroke-width="1.75"') },
-  card: { label: 'Card (X: cards in hand)', svg: svg('<rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M9.5 9.5l5 5M14.5 9.5l-5 5"/>') },
+  // A hand: three cards fanned from the bottom (designer, 2026-10-31); X on the front card counts the cards in it.
+  hand: { label: 'Your hand', svg: svg(FAN) },
+  card: { label: 'Cards in hand (X)', svg: svg(`${FAN}<path d="M10.2 11.5l3.6 3.6M13.8 11.5l-3.6 3.6"/>`) },
   played: { label: 'A played card', svg: svg('<rect x="4" y="6" width="11" height="15" rx="1.5"/><rect x="9" y="3" width="11" height="15" rx="1.5"/>') },
   mark: { label: 'Mark', svg: svg('<path d="M6 21V4"/><path d="M6 4h11l-3 4 3 4H6"/>') },
   gate: { label: 'The Gate (joined)', svg: svg(`${hex(7.5, 12, 6)}${hex(16.5, 12, 6)}<path d="M10 12h4" stroke-width="3"/>`, ' stroke-width="1.75"') },
