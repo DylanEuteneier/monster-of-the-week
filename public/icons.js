@@ -36,8 +36,8 @@ export const NOUNS = {
   // Two locations (designer, 2026-10-30): neighbours touch, sharing an edge; any other location stands apart.
   neighbour: { label: 'Neighbours (next door)', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}`) },
   elsewhere: { label: 'Any other location', svg: wide(`${hex(7.5, 12, 7)}${hex(28.5, 12, 7)}<path d="M15.5 12h.01M18 12h.01M20.5 12h.01" stroke-width="2"/>`, 36) },
-  swayNext: { label: 'Sway between neighbours', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}<g stroke-width="1.25">${cube(9, 12, 3.6)}${cube(22.86, 12, 3.6)}</g>`) },
-  groupNext: { label: 'Groups next door', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}<circle cx="9" cy="12" r="3.2"/><circle cx="22.86" cy="12" r="3.2"/>`) },
+  swayNext: { label: 'Sway between neighbours', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}<g stroke-width="1.25">${cube(9, 12, 3.6)}</g>`) },
+  groupNext: { label: 'Groups next door', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}<circle cx="9" cy="12" r="3.2"/>`) },
   empty: { label: 'Empty location', svg: svg(hex(12, 12, 10), ' stroke-dasharray="3 3"') },
   scorched: { label: 'Scorched location', svg: svg(`${hex(12, 12, 10)}<path d="M8 8l8 8M16 8l-8 8"/>`) },
   supply: { label: 'Supply', svg: svg('<path d="M3 10v9h18v-9"/><path d="M3 10h18"/><circle cx="9" cy="6" r="2.5"/><circle cx="15" cy="6" r="2.5"/>') },
