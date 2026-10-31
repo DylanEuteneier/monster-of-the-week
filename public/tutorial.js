@@ -504,7 +504,7 @@ function endingSteps() {
 const totalPresence = (v) => Object.values(v.board).reduce((n, p) => n + Object.values(p.tokens).reduce((a, b) => a + b, 0), 0);
 
 /**
- * The scenes' cast, from this game: your faction lured from a neighbouring
+ * The scenes' cast, from this game: your faction drawn from a neighbouring
  * location into a fight with a rival faction at one of your locations, a rival
  * player bidding there too, and a tie elsewhere.
  */
@@ -578,72 +578,75 @@ function chapterStory() {
   const { arch } = yours();
   const map = /** @type {{ directions: { dq: number, dr: number }[], locations: Record<string, { q: number, r: number }> }} */ (/** @type {unknown} */ (spec.map));
   const adj = (/** @type {string} */ a, /** @type {string} */ b) => map.directions.some((d) => map.locations[a].q + d.dq === map.locations[b].q && map.locations[a].r + d.dr === map.locations[b].r);
-  const own = (/** @type {string} */ l) => locationById(l).archetype === arch.id;
   const { F0, G, H, ash } = c;
   const homeOf = (/** @type {string} */ l, /** @type {string} */ f) => locationById(l).archetype === factionById(f).archetype;
-  // Your archetype's ground (S, the Werewolves), a neighbour off it (T, the Cryptids the lure will draw), and a
-  // third place (W) where the Cryptids and another faction stand tied, on ground neither calls home.
-  const S = c.L1;
-  const T = Object.keys(map.locations).find((l) => adj(S, l) && !own(l)) ?? c.L2;
-  const W = Object.keys(map.locations).find((l) => l !== S && l !== T && (adj(S, l) || adj(T, l)) && !homeOf(l, G) && !homeOf(l, H)) ?? c.L3;
+  // The story's card is Invite Them In (designer, 2026-10-31: the tutorial rebuilt around a current card). E: your
+  // archetype's ground, empty, your sway on it; S and T: two neighbours of E that touch each other, the Vampires at S,
+  // a lone group of the Cryptids at T; W: a third place where the Cryptids and another faction stand tied.
+  const E = c.L1;
+  const near = Object.keys(map.locations).filter((l) => l !== E && adj(E, l));
+  const pair = near.flatMap((a) => near.filter((b) => b !== a && adj(a, b)).map((b) => [a, b])).find(([a, b]) => !homeOf(a, G) && !homeOf(b, G)) ?? [near[0] ?? c.L2, near[1] ?? c.L3];
+  const [S, T] = pair;
+  const W = Object.keys(map.locations).find((l) => ![E, S, T].includes(l) && (adj(S, l) || adj(T, l)) && !homeOf(l, G) && !homeOf(l, H)) ?? Object.keys(map.locations).find((l) => ![E, S, T].includes(l)) ?? c.L3;
   const gArch = /** @type {typeof spec.archetypes[number]} */ (spec.archetypes.find((x) => x.id === factionById(G).archetype));
   const deck = deckOf();
-  // A mixed hand: a card of the Cryptids' suit (the offering that pays for the lure), your suit's lure, and an unsuited card.
-  const lure = deck.find((id) => cardById(id).suit === arch.id && cardById(id).action === 'lure') ?? deck.find((id) => cardById(id).suit === arch.id) ?? deck[0];
-  const offer = deck.find((id) => cardById(id).suit === gArch.id) ?? deck.find((id) => cardById(id).suit && id !== lure) ?? deck[1];
+  // A mixed hand: a card of the Cryptids' suit (the offering), Invite Them In, and an unsuited card.
+  const invite = deck.find((id) => cardById(id).action === 'invite') ?? deck.find((id) => cardById(id).suit === arch.id) ?? deck[0];
+  const offer = deck.find((id) => cardById(id).suit === gArch.id) ?? deck.find((id) => cardById(id).suit && id !== invite) ?? deck[1];
   const wild = deck.find((id) => !cardById(id).suit) ?? deck[2];
   const po = printedOf(offer);
   const sF = c.supF, sG = c.st.supply[G], y = c.you0, yG = c.mine.standing[G], a = c.ash0, S0 = c.mine.supply, A0 = c.st.players[ash].supply;
   const icon = suitIcon(arch.id), gIcon = suitIcon(gArch.id);
-  /** @param {{ fS?: number, fRow?: number, ashF?: number, gSup?: number, gRow?: number, ashG?: number, S?: any, T?: any, W?: any, you?: any, ash?: any, gRowOn?: boolean, players?: boolean, hexes?: string[] }} o @returns {Scene} */
+  /** @param {{ fS?: number, fRow?: number, ashF?: number, gSup?: number, gRow?: number, ashG?: number, S?: any, E?: any, T?: any, W?: any, you?: any, ash?: any, gRowOn?: boolean, players?: boolean, hexes?: string[] }} o @returns {Scene} */
   const at = (o) => ({
     rows: [
       { f: F0, supply: o.fS ?? sF, sway: { [YOU]: o.fRow ?? y, [ash]: o.ashF ?? a - 1 } },
       ...(o.gRowOn === false ? [] : [{ f: G, supply: o.gSup ?? sG, sway: { [YOU]: o.gRow ?? yG, [ash]: o.ashG ?? 0 } }]),
     ],
-    hexes: (o.hexes ?? [T, S, W]).map((loc) => ({ loc, tokens: {}, ...(loc === S ? o.S : loc === T ? o.T : o.W) })),
+    hexes: (o.hexes ?? [S, E, T, W]).map((loc) => ({ loc, tokens: {}, ...(loc === S ? o.S : loc === E ? o.E : loc === T ? o.T : o.W) })),
     players: o.players === false ? [] : [{ pid: YOU, supply: S0, trophies: {}, ...o.you }, { pid: ash, supply: A0, trophies: {}, ...o.ash }],
   });
-  const hand = [offer, lure, wild];
+  const hand = [offer, invite, wild];
   const tied = { tokens: { [G]: 2, [H]: 2 } };
+  const lost = Math.ceil(3 / 2); // the winners lose half the loser's group, rounded up
   // The table, beat by beat. Sway starts in the rows and flies onto the locations once the slayers are there.
   const q1 = at({ fS: sF + 4, fRow: y + 1, ashF: a, gRowOn: false, players: false, hexes: [] });
-  const q2 = at({ fRow: y + 1, ashF: a, gRowOn: false, players: false, hexes: [S], S: { tokens: { [F0]: 4 } } });
+  const q2 = at({ fRow: y + 1, ashF: a, gRowOn: false, players: false, hexes: [S, E], S: { tokens: { [F0]: 4 } } });
   const q3a = at({ fRow: y + 1, ashF: a, gSup: sG + 5, ashG: 3, players: false, S: { tokens: { [F0]: 4 } } });
   const q3 = at({ fRow: y + 1, ashF: a, ashG: 3, players: false, S: { tokens: { [F0]: 4 } }, T: { tokens: { [G]: 3 } }, W: tied });
   const qP = at({ fRow: y + 1, ashF: a, ashG: 3, S: { tokens: { [F0]: 4 } }, T: { tokens: { [G]: 3 } }, W: tied, you: { hand } });
-  const placed = { S: { tokens: { [F0]: 4 }, sway: { [YOU]: 1, [ash]: 1 } }, T: { tokens: { [G]: 3 }, sway: { [ash]: 2 } }, W: { ...tied, sway: { [ash]: 1 } } };
+  const placed = { S: { tokens: { [F0]: 4 }, sway: { [ash]: 1 } }, E: { tokens: {}, sway: { [YOU]: 2, [ash]: 1 } }, T: { tokens: { [G]: 3 }, sway: { [ash]: 2 } }, W: { ...tied, sway: { [ash]: 1 } } };
   const q5 = at({ ...placed, you: { hand } });
-  const q7 = at({ ...placed, gRow: yG + po, you: { supply: S0 - po, hand: [lure, wild] } });
-  // The road not taken: on the Werewolves (FAC), into the Cryptids' location, where Ash leads.
-  const q8 = at({ ...placed, fRow: y - 1, gRow: yG + po, S: { tokens: {}, sway: { [YOU]: 1, [ash]: 1 } }, T: { tokens: { [G]: 3, [F0]: 4 }, sway: { [ash]: 2, [YOU]: 1 } }, you: { supply: S0 - po, hand: [wild] } });
-  // The play: at your archetype's location (LOC); the Cryptids come, paid with the sway the offering bought.
-  const after = (/** @type {any} */ sHex, /** @type {any} */ you, /** @type {any} */ ash_, fRow = y, w = /** @type {any} */ ({ ...tied, sway: { [ash]: 1 } })) => at({ fRow, gRow: yG + po - 1, S: sHex, T: { tokens: {}, sway: { [ash]: 2 } }, W: w, you: { supply: S0 - po, hand: [wild], ...you }, ash: ash_ });
+  const q7 = at({ ...placed, gRow: yG + po, you: { supply: S0 - po, hand: [invite, wild] } });
+  // The road not taken: on the Vampires (faction), into the Cryptids' location, where Ash leads.
+  const q8 = at({ ...placed, gRow: yG + po, S: { tokens: {}, sway: { [ash]: 1 } }, T: { tokens: { [G]: 3, [F0]: 4 }, sway: { [ash]: 2 } }, you: { supply: S0 - po, hand: [wild] } });
+  // The play: at your archetype's empty location (location); both groups next door come, where you lead.
+  const after = (/** @type {any} */ eHex, /** @type {any} */ you, /** @type {any} */ ash_, fRow = y, w = /** @type {any} */ ({ ...tied, sway: { [ash]: 1 } })) => at({ fRow, gRow: yG + po, S: { tokens: {}, sway: { [ash]: 1 } }, E: eHex, T: { tokens: {}, sway: { [ash]: 2 } }, W: w, you: { supply: S0 - po, hand: [wild], ...you }, ash: ash_ });
   const q9 = after({ tokens: { [F0]: 4, [G]: 3 }, sway: { [YOU]: 2, [ash]: 1 } }, {}, {});
-  const q12 = after({ tokens: { [F0]: 4, [G]: 3 }, sway: { [YOU]: 2, [ash]: 1 }, doomed: { [G]: 3, [F0]: 1 } }, {}, {});
+  const q12 = after({ tokens: { [F0]: 4, [G]: 3 }, sway: { [YOU]: 2, [ash]: 1 }, doomed: { [G]: 3, [F0]: lost } }, {}, {});
   const q13 = after({ tokens: { [F0]: 4, [G]: 0 }, sway: { [YOU]: 2, [ash]: 1 } }, { trophies: { [G]: 3 } }, {});
-  const q14 = after({ tokens: { [F0]: 3 }, sway: { [YOU]: 2, [ash]: 1 } }, { trophies: { [G]: 3 } }, { trophies: { [F0]: 1 } });
-  const q15 = after({ tokens: { [F0]: 3 }, sway: { [YOU]: 0, [ash]: 1 } }, { trophies: { [G]: 3 }, supply: S0 - po + 1 }, { trophies: { [F0]: 1 } }, y + 1);
+  const q14 = after({ tokens: { [F0]: 4 - lost }, sway: { [YOU]: 2, [ash]: 1 } }, { trophies: { [G]: 3 } }, { trophies: { [F0]: lost } });
+  const q15 = after({ tokens: { [F0]: 4 - lost }, sway: { [YOU]: 0, [ash]: 1 } }, { trophies: { [G]: 3 }, supply: S0 - po + 1 }, { trophies: { [F0]: lost } }, y + 1);
   // Meanwhile, the tie: both groups wiped out, Ash's sway home, the location scorched.
-  const q16 = after({ tokens: { [F0]: 3 }, sway: { [YOU]: 0, [ash]: 1 } }, { trophies: { [G]: 3 }, supply: S0 - po + 1 }, { trophies: { [F0]: 1 }, supply: A0 + 1 }, y + 1, { tokens: {}, sway: {}, scorched: true });
+  const q16 = after({ tokens: { [F0]: 4 - lost }, sway: { [YOU]: 0, [ash]: 1 } }, { trophies: { [G]: 3 }, supply: S0 - po + 1 }, { trophies: { [F0]: lost }, supply: A0 + 1 }, y + 1, { tokens: {}, sway: {}, scorched: true });
   const t = 'How it works';
   return [
     chapter('2 · How it works'),
     // The archetype is the thread: a faction, its ground and the cards of its suit all share it (designer, 2026-10-11).
     sceneStep(t, q1, q1, `<p>This is the ${F(F0)}' row: their monsters waiting in supply. The ${F(F0)} are ${icon} ${esc(arch.name)}, one of five archetypes.</p>`, [`row:${F0}`]),
-    sceneStep(t, q1, q2, `${eq(tokenHtml(F0, 2), op('/'), tokenHtml(G, 2), op('='), 'a monster')}<p>Below it, ${L(S)}: a ${icon} location, ${esc(arch.name)} home ground. The ${F(F0)} come onto it from their supply.</p>`, [`hex:${S}`, `row:${F0}`]),
+    sceneStep(t, q1, q2, `${eq(tokenHtml(F0, 2), op('/'), tokenHtml(G, 2), op('='), 'a monster')}<p>The ${F(F0)} come onto ${L(S)} from their supply. Next door, ${L(E)}: a ${icon} location, ${esc(arch.name)} home ground, empty for now.</p>`, [`hex:${S}`, `hex:${E}`, `row:${F0}`]),
     sceneStep(t, q3a, q3, `<p>Nearby, the ${F(G)} (${gIcon} ${esc(gArch.name)}) arrive at ${L(T)}, and square off with the ${F(H)} at ${L(W)}. Two factions in one place will fight.</p>`, [`hex:${T}`, `hex:${W}`, `row:${G}`]),
     sceneStep(t, q3, qP, `<p>The slayers arrive: you, and ${who(ash)}.</p>`, [`player:${YOU}`, `player:${ash}`]),
-    sceneStep(t, qP, q5, `<p>Your cubes are your <b>sway</b>. In a faction's row: how much it has noticed you. On a location: a <b>bid</b> for the trophies when it fights.</p>`, [`hexsway:${S}`, `hexsway:${T}`, `hexsway:${W}`, `row:${F0}`, `row:${G}`]),
-    sceneStep(t, q5, q5, `${eq(icon, op('card'), op('→'), `${icon} locations`, op('or'), `the ${F(F0)}`)}<p>Every card has a <b>suit</b>: an archetype, or none. A ${icon} card's action works at ${icon} locations (any faction there) or on the ${F(F0)} (anywhere). Each card is played once, in one of the ways printed on it. A suit card has three: spend it for sway, or play its action at a location or on a faction. Unsuited cards list their own.</p>`, [`card:${offer}`, `card:${lure}`, `card:${wild}`]),
+    sceneStep(t, qP, q5, `<p>Your cubes are your <b>sway</b>. In a faction's row: how much it has noticed you. On a location: a <b>bid</b> for the trophies when it fights.</p>`, [`hexsway:${S}`, `hexsway:${E}`, `hexsway:${T}`, `hexsway:${W}`, `row:${F0}`, `row:${G}`]),
+    sceneStep(t, q5, q5, `${eq(icon, op('card'), op('→'), `${icon} locations`, op('or'), `the ${F(F0)}`)}<p>Every card has a <b>suit</b>: an archetype, or none. A ${icon} card's action works at ${icon} locations (any faction there) or on the ${F(F0)} (anywhere). Each card is played once, in one of the ways printed on it. A suit card has three: spend it for sway, or play its action at a location or on a faction. Unsuited cards list their own.</p>`, [`card:${offer}`, `card:${invite}`, `card:${wild}`]),
     sceneStep('1 · An offering', q5, q7, `${eq(miniCard(offer), op('→'), `+${po} sway`, op('→'), tokenHtml(G, 1))}<p>Spend a card for the sway printed on it, with the faction of its suit: this ${gIcon} card gives sway with the ${F(G)}. Its action is lost.</p>`, [`card:${offer}`, `player:${YOU}`, `row:${G}`]),
-    sceneStep(`2 · A gambit on the ${factionById(F0).name} (faction)`, q7, q8, `<p>Play ${miniCard(lure)} on the ${F(F0)}, anywhere: bait ${L(T)} and only the ${F(F0)} come, paid with 1 of your sway with them. But ${who(ash)} has 2 there: you'd be second. Not this one.</p>`, [`card:${lure}`, `hex:${S}`, `hex:${T}`, `row:${F0}`]),
-    sceneStep(`3 · A gambit at a ${arch.name} location`, q7, q9, `<p>Or play it at a ${icon} location: bait ${L(S)}, and the biggest group next door comes, whatever its faction: the ${F(G)} from ${L(T)}. You pay 1 sway with them, the sway your offering just bought, and it lands there with them. Now you lead, 2 to 1.</p>${frame('Luring a faction to a new place costs 1 sway with it, and that sway lands there with them: your bid.', 'Build sway with a faction before you need to move it.')}`, [`card:${lure}`, `hex:${S}`, `hex:${T}`, `row:${G}`]),
-    sceneStep('End of round: the fights', q9, q9, `<p>When the round ends, every location holding two factions fights: here ${L(S)} and ${L(W)}. ${L(S)} first.</p>${frame('When a location fights, the most sway there takes the bigger pile of the dead; second most, the smaller.', 'Bid where the big fights will be.')}${more('Ties between players', 'Tied for the most sway: a group whose archetype matches the location wins the tie. Otherwise nobody tied collects their pile.')}`, [`hextok:${S}:${F0}`, `hextok:${S}:${G}`, `hexsway:${S}`], S),
-    sceneStep('Counting the dead', q12, q12, fightMath(F0, 4, G, 3), [`hextok:${S}:${F0}`, `hextok:${S}:${G}`]),
-    sceneStep('The bigger pile', q12, q13, `<p>All 3 ${F(G)}: the bigger pile, to you, the most sway here.</p>`, [`hextok:${S}:${G}`, `hexsway:${S}`, `player:${YOU}`]),
-    sceneStep('The smaller pile', q13, q14, `<p>The 1 ${esc(one(factionById(F0).name))} the winners lost: the smaller pile, to ${who(ash)}, second.</p>`, [`hextok:${S}:${F0}`, `hexsway:${S}`, `player:${ash}`]),
-    sceneStep('After the fight', q14, q15, `<p>Only the leader's sway leaves: half of yours joins your sway with the winners, the ${F(F0)}; the rest comes home. ${who(ash)}'s stays for the next fight.</p>`, [`hexsway:${S}`, `row:${F0}`, `player:${YOU}`]),
+    sceneStep(`2 · A gambit on the ${factionById(F0).name} (faction)`, q7, q8, `<p>Play ${miniCard(invite)} on the ${F(F0)}: invite them into ${L(T)}, held by a lone group of ${F(G)} next to them, and only the ${F(F0)} come. A fight, but ${who(ash)} has 2 sway there and you have none: the trophies would go to ${who(ash)}. Not this one.</p>`, [`card:${invite}`, `hex:${S}`, `hex:${T}`]),
+    sceneStep(`3 · A gambit at a ${arch.name} location`, q7, q9, `<p>Or play it at a ${icon} location: invite into ${L(E)}, empty, and two groups of different factions next door come: the ${F(F0)} from ${L(S)} and the ${F(G)} from ${L(T)}. You have the most sway there, 2 to 1.</p>${frame('A gambit moves monsters; your sway where they meet is your bid.', 'Bring the fight to where you lead.')}`, [`card:${invite}`, `hex:${S}`, `hex:${E}`, `hex:${T}`]),
+    sceneStep('End of round: the fights', q9, q9, `<p>When the round ends, every location holding two factions fights: here ${L(E)} and ${L(W)}. ${L(E)} first.</p>${frame('When a location fights, the most sway there takes the bigger pile of the dead; second most, the smaller.', 'Bid where the big fights will be.')}${more('Ties between players', 'Tied for the most sway: a group whose archetype matches the location wins the tie. Otherwise nobody tied collects their pile.')}`, [`hextok:${E}:${F0}`, `hextok:${E}:${G}`, `hexsway:${E}`], E),
+    sceneStep('Counting the dead', q12, q12, fightMath(F0, 4, G, 3), [`hextok:${E}:${F0}`, `hextok:${E}:${G}`]),
+    sceneStep('The bigger pile', q12, q13, `<p>All 3 ${F(G)}: the bigger pile, to you, the most sway here.</p>`, [`hextok:${E}:${G}`, `hexsway:${E}`, `player:${YOU}`]),
+    sceneStep('The smaller pile', q13, q14, `<p>The ${lost} ${F(F0)} the winners lost: the smaller pile, to ${who(ash)}, second.</p>`, [`hextok:${E}:${F0}`, `hexsway:${E}`, `player:${ash}`]),
+    sceneStep('After the fight', q14, q15, `<p>Only the leader's sway leaves: half of yours joins your sway with the winners, the ${F(F0)}; the rest comes home. ${who(ash)}'s stays for the next fight.</p>`, [`hexsway:${E}`, `row:${F0}`, `player:${YOU}`]),
     sceneStep('Meanwhile, a tie', q15, q16, `${eq('2 vs 2', op('→'), 'both wiped out')}<p>At ${L(W)} the ${F(G)} and the ${F(H)} are level, on ground neither calls home. Both groups are wiped out, nobody collects, sway goes home, and ${L(W)} is gone for good. (On one side's own ground, that side would win.)</p>`, [`hex:${W}`, `player:${ash}`], W),
     sceneStep('The loop', q16, q16, `${eq(chip('an offering'), op('→'), chip('a gambit'), op('→'), chip('a fight'), op('→'), chip('trophies'))}<p>Cards become sway, sway becomes bids, bids become trophies.</p>`),
   ];
@@ -879,7 +882,7 @@ function narrate(pid, move, a, b) {
     // Paid from standing onto the board (a move), not from the supply.
     const placed = b.seating.some((x) => b.factions.some((f) => b.players[x].standing[f] < a.players[x].standing[f]) && Object.keys(b.board).some((l) => (b.board[l].sway[x] ?? 0) > (a.board[l].sway[x] ?? 0)));
     const teach = [
-      placed && once('move') ? recall('The sway paid for the lure lands with the monsters as a bid.') : '',
+      placed && once('move') ? recall('Sway paid from your standing lands on the board: a bid where it lands.') : '',
       !c.suit && once('special') ? '<p class="small muted">Unsuited cards can\'t be spent for sway; they bend the rules instead.</p>' : '',
     ].join('');
     // The learner's own play was just previewed: say what changed rather than repeat the target.
