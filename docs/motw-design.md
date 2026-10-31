@@ -1400,6 +1400,13 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Open:** the look of each mark; which cards and prompts use them first.
 - **Date:** 2026-10-29
 
+#### D42. The presence threshold is 20
+
+- **Decided (designer, 2026-10-31):** the invaders win if total presence at the end (after the last round's fights, D41) is more than 20, at every player count; in place of 10 per player (D40, now a variant, off). To see how it plays.
+- **Why:** with the last round ending after its fights, final presence averaged 17, 20 and 17 at 3, 4 and 5 players (D41's measurement); re-scored at 20 the invaders took 8, 13 and 6 of 30. A small number, nearer the size the designer wants for a town's monsters.
+- **Open:** to measure with bots playing to it (running: a flat 20 against rounds as votes at 30).
+- **Date:** 2026-10-31
+
 #### D41. The last round ends after its fights
 
 - **Decided (designer, 2026-10-31):** the last round's monsters don't grow: the game ends straight after the last round's fights, before nightfall, with no nightfall tokens (D38) or growth; then the end is counted. Variant `lastGrowth` (default off; on restores the last nightfall).
@@ -1562,6 +1569,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
 | 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
 | 2026-10-29 | Steal Their Playbook (D30, designer): theirs takes a card another player played this round (however played) from the played cards into your hand, played at once as your own; it can't be your last card played (discarded for no effect) | |
+| 2026-10-31 | Threshold 20, flat (D42, designer); 10 per player now a variant | To measure; fingerprints re-recorded |
 | 2026-10-31 | The last round ends after its fights: no last nightfall or growth (D41, designer) | Thresholds to re-measure; fingerprints re-recorded |
 | 2026-10-30 | Threshold 10 per player (D40, designer) | To confirm with bots playing to it; fingerprints re-recorded |
 | 2026-10-30 | Steal Their Playbook: one use, any card played earlier this round into your hand to play later (D39, designer) | Fingerprints re-recorded |

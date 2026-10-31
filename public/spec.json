@@ -1011,7 +1011,7 @@
       "id": "thresholdPerPlayer",
       "label": "Presence threshold per player",
       "description": "D40 (designer, 2026-10-30): the threshold is this many per player (10 a player: 30 at 3, 40 at 4, 50 at 5), in place of the fixed threshold. Off uses the fixed threshold.",
-      "default": "10",
+      "default": "off",
       "choices": [
         {
           "id": "off",
@@ -1048,8 +1048,8 @@
     {
       "id": "threshold",
       "label": "Presence threshold",
-      "description": "The invaders win if total presence is more than this (TH1). First-draft guess 20 (G.7). 30 by default (designer, 2026-10-29, D33).",
-      "default": "30",
+      "description": "The invaders win if total presence is more than this (TH1). First-draft guess 20 (G.7). 30 by default from D33 (2026-10-29); 20 since D42 (designer, 2026-10-31).",
+      "default": "20",
       "choices": [
         {
           "id": "10",
@@ -1109,7 +1109,7 @@
     {
       "id": "factionTokens",
       "label": "Tokens per faction",
-      "description": "Each faction's tokens, board and supply together (G.7). 30 by default (designer, 2026-10-29, D33).",
+      "description": "Each faction's tokens, board and supply together (G.7). 30 by default from D33 (2026-10-29); 20 since D42 (designer, 2026-10-31).",
       "default": "30",
       "choices": [
         {
