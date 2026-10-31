@@ -41,7 +41,7 @@ const host = {
   /** @type {string[]} */
   seats: DEFAULT_SEATS.slice(),
   /** Each seat: '' for a human, else 'bot'. @type {string[]} */
-  botSeats: DEFAULT_SEATS.map(() => ''),
+  botSeats: DEFAULT_SEATS.map((_, idx) => (idx === 0 ? '' : 'bot')), // a new game: 1 human, 4 bots (designer, 2026-10-31)
   /** Each seat's lean if it is a bot; null until set (then the balanced spread fills it). @type {(number | null)[]} */
   leans: DEFAULT_SEATS.map(() => /** @type {number | null} */ (null)),
 };

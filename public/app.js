@@ -2231,7 +2231,8 @@ function main() {
   render();
   let saved = null;
   try { saved = localStorage.getItem('motw-hints'); } catch { /* a convenience only */ }
-  if (!ui.tutorial && (saved === 'marks' || saved === 'full' || saved === 'ask')) { ui.hints.mode = saved; ui.hints.on = true; }
+  // Hints start on, as marks (designer, 2026-10-31); a seat that turned them off keeps them off.
+  if (!ui.tutorial && saved !== 'off') { ui.hints.mode = saved === 'full' || saved === 'ask' ? saved : 'marks'; ui.hints.on = true; }
   try { const l = Number(localStorage.getItem('motw-hint-lean')); if (HINT_LEANS.some(([v]) => v === l) && localStorage.getItem('motw-hint-lean') !== null) ui.hints.lean = l; } catch { /* a convenience only */ }
   if (ui.tutorial) return void import('./tutorial.js').then((m) => m.start(tableHooks));
   if (ui.hotseat.enabled) return void loadHotseat();
