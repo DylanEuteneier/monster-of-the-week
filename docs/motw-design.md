@@ -1400,6 +1400,13 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Open:** the look of each mark; which cards and prompts use them first.
 - **Date:** 2026-10-29
 
+#### D37. The card layout, and the archetype glyphs retired
+
+- **Decided (designer, 2026-10-30):** every card is laid out in four parts: a topline (the action's icon block, its verb, a few words of gist), the target with each reading (or each use) as a button-like row led by its mark (D35), the card's own rules one per line, and thematic text at the bottom of every card, small and set apart. Colour blocking runs full bleed; tables only where text is balanced, otherwise stacked parts with small labels. The +N sway button shows standing with the suit's faction (its cube in the suit's colour over the line) and the number. Built from the layout research (`reports/Card text layouts at a glance.md`): each card's layout lives in spec.json (`layout`), its words the card's own, moved or split.
+- **The archetype glyphs (◐ ↂ ⏏ ☾ ⎈) are retired (designer):** they no longer serve their purpose and get confused with the other asset and archetype iconography. Card text, prompts and messages name the suit instead ("a Nocturnal location", "a Sci-Fi location", "a Sentient location", "an Undead location", "a Demon location"); spec.json's archetype `symbol` is now `adjective`. The pixel symbols on the board's hexes and the suit band stay.
+- **Open:** the toplines' gists are Claude's drafts; thematic text marked `flavourDraft` in spec.json (Invite Them In, The Gate, and the six unsuited cards) is Claude's draft, written at the designer's request, for review.
+- **Date:** 2026-10-30
+
 #### D36. The Gate's readings split its ends; Sci-Fi pays when it is there
 
 - **Decided (designer, 2026-10-30; from Claude's suggestion A, "A i think"):** The Gate's location reading joins two ↂ locations; its faction reading joins two locations holding the Sci-Fi faction. Its 1 sway is paid from standing with the Sci-Fi faction if it is at either end; only when it isn't do you choose a faction at the ends (the Sci-Fi faction if both ends are empty). This replaces "each end is an ↂ location or a location holding the Sci-Fi faction" on both readings, and the old payer (the Sci-Fi faction or a faction at either end, your choice).
@@ -1528,6 +1535,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
 | 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
 | 2026-10-29 | Steal Their Playbook (D30, designer): theirs takes a card another player played this round (however played) from the played cards into your hand, played at once as your own; it can't be your last card played (discarded for no effect) | |
+| 2026-10-30 | The card layout for every card, thematic text on each; the archetype glyphs retired for suit names (D37, designer) | Draft gists and flavour to review |
 | 2026-10-30 | The Gate (D36, designer): the location reading joins two ↂ locations, the faction reading two locations holding Sci-Fi; Sci-Fi pays when it is at either end | Fingerprints re-recorded |
 | 2026-10-30 | Noun marks combine: a token a circle, sway a cube, a location a hex, a thing in a hex is at a location; row tags are marks alone (D35, designer) | The assets page's row marks |
 | 2026-10-29 | One bot, its lean set per seat (D31, designer): trophy and backer become the two ends of one bot's lean; tables deal balanced or random leans, always fewer backing a faction | Prototype only; the old profiles' games replay unchanged |

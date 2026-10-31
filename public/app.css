@@ -1122,10 +1122,7 @@ button.card-opt:hover { background: #f6cca1; }
   .tut-cols, .tut-phases { grid-template-columns: 1fr; }
 }
 
-/* Card layout mock-ups on the assets page (designer, 2026-10-30): topline, target field, specifics, flavour. */
-.lay-pairs { display: flex; flex-wrap: wrap; gap: var(--space-4); }
-.lay-pair { display: flex; gap: var(--space-2); align-items: flex-start; flex-wrap: wrap; max-width: 100%; }
-.lay-note { flex-basis: 100%; max-width: 440px; margin: 0; }
+/* The card layout (designer, 2026-10-30; D37): topline, target with its readings as rows, specifics, thematic text. */
 .lay-name { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .lay-sway { font-family: var(--font-display); font-size: 12px; padding: 0 4px; border: 2px solid var(--ink); background: #e0f2f4; }
 .lay-top { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
@@ -1148,17 +1145,16 @@ button.card-opt:hover { background: #f6cca1; }
 .lay-flavour { margin: auto 0 0; padding-top: 3px; border-top: 1px solid #c9c0bb; font-size: 10px; font-style: italic; color: #6f6767; }
 .lay-flavour.is-missing { color: #a79f9f; }
 .lay-card { min-height: 100%; }
-/* Tag-icon options: a mark above the tag word. */
 .lay-row-ic { grid-template-columns: 46px minmax(0, 1fr); }
 .lay-row-ic > b { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 2px 0; }
-.lay-opt-set { margin-top: var(--space-2); }
-.lay-opt-grid { display: flex; flex-wrap: wrap; gap: var(--space-3); }
-.lay-opt { margin: 0; display: flex; flex-direction: column; gap: 4px; }
-.lay-opt-card { padding-bottom: 0; }
-.lay-opt-card .lay-target { border: 0; }
-/* Suited-mark options: a suit's location and its faction's group, side by side, per suit. */
-.lay-suited { margin-top: var(--space-2); }
-.lay-suited-row { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: 4px; }
-.lay-suited-fig { margin: 0; display: grid; grid-template-columns: auto auto; gap: 4px; justify-items: center; }
-.lay-suited-fig figcaption { grid-column: 1 / -1; }
 
+/* The card layout in play (designer, 2026-10-30): the readings are the buttons; the +N and BACK sit by the name. */
+.lay-plays { display: flex; gap: 4px; flex: none; }
+.lay-plays .card-opt { min-width: 0; padding: 1px 4px; }
+.lay-plays .card-opt .ik-svg { width: 16px; height: 16px; }
+button.lay-row { width: 100%; padding: 0; text-align: left; font: inherit; color: inherit; }
+.lay-row.is-on { background: var(--color-accent); outline: 2px solid var(--ink); outline-offset: 1px; }
+.lay-row.is-off { opacity: 0.45; }
+.lay-row.is-next { background: #fff2c2; }
+.lay-row.is-empty { opacity: 0.5; text-decoration: line-through; }
+.lay-card .card-why { margin: 0 0 2px; }

@@ -9,8 +9,8 @@ import { spec } from './rules.js';
 import art from './assets/sprites.json' with { type: 'json' };
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { LAYOUT_SUGGESTIONS } from './layout-suggestions.js';
-import { cardHtml, suitIcon } from './cards.js';
-import { NOUNS, VERBS, iconHtml, nounHtml, verbDiagram, suitedMark } from './icons.js';
+import { cardHtml } from './cards.js';
+import { NOUNS, VERBS, iconHtml, nounHtml, verbDiagram } from './icons.js';
 
 
 /** @param {unknown} value */
@@ -25,7 +25,6 @@ function $(id) {
 
 /** @typedef {Record<string, { width: number, height: number, src: string }>} SpriteMap */
 const sprites = /** @type {SpriteMap} */ (art.sprites);
-const symbols = new Map(spec.archetypes.map((archetype) => [archetype.id, archetype.symbol]));
 
 const symbols9 = /** @type {SpriteMap} */ (art.symbols ?? {});
 
@@ -82,104 +81,10 @@ function renderIcons() {
 }
 
 
-/**
- * Card layout mock-ups (designer, 2026-10-30): Claude's two suggestions from the layout research, shown beside each
- * card as it is now. Suggestion 1 (suit cards): topline (icon block, verb, gist), a target field holding both
- * readings, one specific rule per line, flavour last. Suggestion 2 (choose-one extras): the topline over one row
- * per use. Drafts only: the words are the card's own (spec.json), moved or split, never a rule change.
- */
-const LAYOUTS = [
-  { id: 'light-cross', verb: 'split', noun: 'token', word: 'Split', gist: 'a group, evenly between two neighbours',
-    target: { head: 'the group' }, specifics: ['A group of 1 can’t be split.'],
-    flavour: 'The cross is raised and the target group falls back from its light.' },
-  { id: 'draw-away', verb: 'spread', noun: 'token', word: 'Spread', gist: '1 token to each of at least two neighbours',
-    target: { head: 'the group' }, specifics: ['The rest stay.'],
-    flavour: 'The Watch sets out distractions all round the location, and one of the dead shambles off to check each.' },
-  { id: 'invite-in', verb: 'gather', noun: 'token', word: 'Gather', gist: 'groups next door into one location',
-    target: { head: 'where they’re invited', grid: ['Where', 'Who comes'], loc: ['an empty ◐ location', 'any two groups next to it, of different factions'], fac: ['a location held by a lone group of another faction, next to a Nocturnal group', 'only the Nocturnals'] },
-    specifics: [], flavour: '', note: 'The card says “into an empty location”, but the FAC reading’s location is held by a lone group: each reading shows its own.' },
-  { id: 'spill-blood', verb: 'mark', noun: 'location', word: 'Mark', gist: 'up to the card’s sway of locations, 1 sway on each',
-    target: { head: 'the locations marked' }, specifics: ['This round, at a marked location’s fight, the winner loses as many as the loser.'],
-    flavour: 'Father and the Flock spill blood on the altar.' },
-  { id: 'gate', verb: 'join', noun: 'location', word: 'Join', gist: 'two locations, for the rest of the round',
-    target: { head: 'the two ends' },
-    specifics: ['They count as a single location for movement.', 'They fight as one: strength and sway added across both; a true tie scorches both.', 'Never three factions across them.', 'Only 1 sway, at one end: from the Sci-Fi faction if it is at either end, otherwise a faction there.'], flavour: '' },
-  { id: 'stakes', verb: 'gather', word: 'Gather', gist: 'up to X into one', uses: [
-    ['Standing', 'standing', 'take 1 standing from each of up to X factions, all into one.'],
-    ['Sway', 'swayNext', 'gather up to X of your sway from next door into one location.'],
-    ['Tokens', 'groupNext', 'up to X tokens of one faction come in from its groups next door, to a location where you have sway.']],
-    specifics: ['X is the cards in your hand, this one included.'] },
-  { id: 'exit', verb: 'spread', word: 'Spread', gist: '1 to each of up to X', uses: [
-    ['Standing', 'standing', 'move 1 standing from one faction to each of up to X others.'],
-    ['Sway', 'swayNext', 'send 1 of your sway from one location to each of up to X neighbours.'],
-    ['Tokens', 'groupNext', 'a group sends 1 token to each of up to X neighbours.']],
-    specifics: ['X is the cards in your hand, this one included.'] },
-];
-
-/** One mock-up card in the suggested layout. @param {typeof LAYOUTS[number]} l */
-function layoutCard(l) {
-  const c = /** @type {any} */ (spec.cards.find((x) => x.id === l.id));
-  const suit = spec.archetypes.find((a) => a.id === c.suit);
-  const band = c.suit ? `<span class="suit-line">${suitIcon(c.suit)} ${esc(suit?.name ?? '')}</span><span>${esc(c.slot)}</span>` : `<span>Marked ${esc(c.marked ?? '')}</span><span>choose one</span>`;
-  const top = `<div class="lay-top">${iconHtml(/** @type {any} */ (l.verb), /** @type {any} */ (l.noun ?? 'token'))}<div><b class="lay-verb">${esc(l.word)}</b><span class="lay-gist">${esc(l.gist)}</span></div></div>`;
-  const t = /** @type {any} */ (l.target);
-  const r = c.readings;
-  // Each reading is a button-like row (designer, 2026-10-30: the target looks clickable, the LOC/FAC choice moving into it).
-  // Each row's tag is its mark alone (designer, 2026-10-30, D35); the word is the row's label.
-  // Suited marks (designer, 2026-10-30): the suit's colour for its locations and its faction's tokens; grey for the
-  // unsuited (any location); every suit's stripes for any faction.
-  const tagMark = (/** @type {string} */ tag) => t?.mark ? suitedMark(tag === 'FAC' ? `${t.mark}Fac` : t.mark, c.suit) : tag === 'LOC' ? suitedMark('location', c.suit ?? 'none') : tag === 'FAC' ? suitedMark('group', c.suit ?? 'any') : NOUNS[TAG_NOUN[tag]].svg;
-  // Where a suit doesn't matter (the unsuited cards' uses), no colour at all (designer, 2026-10-30).
-  const NEXT = /** @type {Record<string, string>} */ ({});
-  const cell = (/** @type {string} */ tag, noun = '') => `<b title="${esc(tag)}">${NEXT[noun] ?? (noun && NOUNS[noun] ? NOUNS[noun].svg : tagMark(tag))}</b>`;
-  const row = (/** @type {string} */ tag, /** @type {string[]} */ cells, noun = '') => `<div class="lay-row lay-row-ic" role="button" aria-label="${esc(tag)}">${cell(tag, noun)}${cells.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
-  const target = !t ? '' : t.grid
-    // Where the readings change the effect: each row stacks its parts, each with its own small label (no table: the parts' lengths differ).
-    ? `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div>${['loc', 'fac'].map((m) => `<div class="lay-row lay-row-ic" role="button" aria-label="${m.toUpperCase()}">${cell(m.toUpperCase())}<span class="lay-parts">${t.grid.map((/** @type {string} */ g, /** @type {number} */ i) => `<span><i>${esc(g)}</i> ${esc(t[m][i])}</span>`).join('')}</span></div>`).join('')}</div>`
-    : `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div>${row('LOC', [r.location])}${row('FAC', [r.faction])}</div>`;
-  const uses = l.uses ? `<div class="lay-target lay-target-uses"><div class="lay-label">Choose one</div>${l.uses.map(([tag, noun, text]) => row(tag, [text], noun)).join('')}</div>` : '';
-  const specifics = l.specifics.length ? `<ul class="lay-specifics">${l.specifics.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
-  // Every card carries its thematic text at the bottom (designer, 2026-10-30); a card without it shows the empty slot.
-  const flavour = `<p class="lay-flavour${l.flavour ? '' : ' is-missing'}">${esc(l.flavour || 'Thematic text to come.')}</p>`;
-  const corner = c.suit ? `<span class="lay-sway" title="Or spend for sway">+${c.sway}</span>` : '';
-  return `<div class="card lay-card card-suit-${c.suit ?? 'none'}"><div class="card-band">${band}</div>
-    <div class="lay-name"><span class="card-name">${esc(c.name)}</span>${corner}</div>${top}${target}${uses}${specifics}${flavour}</div>`;
-}
-
-
 /** The row tags' marks (designer, 2026-10-30, D35): LOC, FAC, and the uses' nouns. */
-const TAG_NOUN = /** @type {Record<string, keyof typeof NOUNS>} */ ({ LOC: 'location', FAC: 'groupAny', Standing: 'standing', Sway: 'swayAt', Tokens: 'group' });
-
-/** The marks the rows use, and the parts they are built from. */
-function renderTagMarks() {
-  const mark = (/** @type {string} */ html, /** @type {string} */ label) => `<figure class="ik-mark"><span class="ik ik-solo"><span class="ik-n">${html}</span></span><figcaption class="small">${esc(label)}</figcaption></figure>`;
-  const parts = [['token', 'Token: a circle'], ['sway', 'Sway: a cube'], ['location', 'Location: a hex']].map(([n, l]) => mark(NOUNS[n].svg, l)).join('');
-  const tags = [mark(NOUNS.location.svg, 'LOC: the location'), mark(NOUNS.groupAny.svg, 'FAC: the faction’s group anywhere (no hex)'), mark(NOUNS.standing.svg, 'Standing: a cube over the line (off the board)'), mark(NOUNS.swayAt.svg, 'Sway: a cube in a hex (sway on the board)'), mark(NOUNS.group.svg, 'Tokens: three circles in a hex (a group)'), mark(NOUNS.neighbour.svg, 'Neighbours: two hexes touching'), mark(NOUNS.elsewhere.svg, 'Any other location: two hexes apart'), mark(NOUNS.swayNext.svg, 'Sway between neighbours'), mark(NOUNS.groupNext.svg, 'Groups next door')].join('');
-  return `<div class="lay-opts"><h3>Row marks (D35)</h3><p class="small muted">A token is a circle, sway a cube, a location a hex; they combine, so a thing inside a hex is that thing at a location. Each row shows its mark alone; the word is its label for screen readers and on hover.</p>
-    <h3 class="small">Parts</h3><div class="ik-marks">${parts}</div><h3 class="small">On the rows</h3><div class="ik-marks">${tags}</div></div>`;
-}
-
-
-/** The suited marks (designer, 2026-10-30): colour for a suit, grey for the unsuited, stripes for any suit. */
-function renderSuitedMarks() {
-  const fig = (/** @type {string} */ html, /** @type {string} */ label) => `<figure class="ik-mark"><span class="ik ik-solo"><span class="ik-n">${html}</span></span><figcaption class="small">${esc(label)}</figcaption></figure>`;
-  const suits = spec.archetypes.map((a) => fig(`${suitedMark('location', a.id)}${suitedMark('group', a.id)}`, `${a.name}: its locations, its group`)).join('');
-  const other = [fig(suitedMark('group', 'any'), 'Any faction’s group (every suit’s stripes)'), fig(NOUNS.groupNext.svg, 'A group next door (suit irrelevant: no colour)'), fig(NOUNS.swayNext.svg, 'Your sway next door (no colour)'), fig(suitedMark('either', 'scifi'), 'A suit’s location OR a location holding its faction')].join('');
-  return `<div class="lay-opts"><h3>Suited marks</h3><p class="small muted">A suit’s colour fills what belongs to it (its locations, its faction’s tokens); stripes of every suit’s colour mean any suit; where the suit doesn’t matter, no colour at all.</p><div class="ik-marks">${suits}</div><div class="ik-marks">${other}</div></div>`;
-}
-
-/** The layout mock-ups, each beside the card as it is now. */
-function renderLayouts() {
-  const pairs = LAYOUTS.map((l) => `<div class="lay-pair"><figure class="asset-scale">${cardHtml(l.id)}<figcaption class="mono small muted">now</figcaption></figure>
-    <figure class="asset-scale">${layoutCard(l)}<figcaption class="mono small muted">suggested</figcaption></figure>${l.note ? `<p class="small muted lay-note">${esc(l.note)}</p>` : ''}</div>`).join('');
-  $('layouts').innerHTML = `<div class="row-between"><h2>Card layout (draft)</h2><span class="small muted">Suggestions from the layout research, not decisions</span></div>
-    <p class="small muted">Suit cards (suggestion 1): a topline (the action’s icon block, its verb, a few words: the card’s only icon), a target field whose readings are the buttons, one specific rule per line, then thematic text at the bottom of every card. Choose-one cards (suggestion 2): the same topline over one button-like row per use. Every word is the card’s own, moved or split; the toplines’ verbs and gists are drafts. Same card width as now.</p>
-    <div class="lay-pairs">${pairs}</div>${renderSuitedMarks()}${renderTagMarks()}`;
-}
 
 function render() {
   renderIcons();
-  renderLayouts();
   const headers = /** @type {SpriteMap} */ (art.headers ?? {});
   const hexes = /** @type {SpriteMap} */ (art.hexes ?? {});
   const schemes = /** @type {SpriteMap} */ (art.hexSchemes ?? {});
@@ -192,15 +97,15 @@ function render() {
   const playerCards = spec.slayerGroups.map((group) => `<div class="player-card">
       ${img(headers[group.id], 2)}
       <div class="player-card-body">${img(sprites[group.id], 2)}
-        <div><b>${esc(group.name)}</b><div class="small muted">${esc(symbols.get(group.archetype) ?? '')} ${esc(group.trope)}</div></div>
+        <div><b>${esc(group.name)}</b><div class="small muted">${esc(group.trope)}</div></div>
       </div>
     </div>`);
 
   const smallStack = (/** @type {string} */ id, /** @type {number} */ n) => `<span class="token-stack">${Array.from({ length: n }, () => tokenHtml(id, 1)).join('')}</span>`;
   const samplePieces = `<div class="stack-row">${smallStack('possessed', 4)}${smallStack('aliens', 2)}</div><div class="cube-row">${Array.from({ length: 3 }, () => cubeHtml(SEAT_COLOURS[0], 9)).join('')}${cubeHtml(SEAT_COLOURS[2], 9)}</div>`;
-  const locationCards = spec.locations.map((loc) => card(`${esc(symbols.get(loc.archetype) ?? '')} ${esc(loc.name)}`,
+  const locationCards = spec.locations.map((loc) => card(`${esc(loc.name)}`,
     fig(hexHtml(loc.id, 1), '1×') + fig(hexHtml(loc.id, 2), '2×') + fig(hexHtml(loc.id, 2, '', 'candidate'), '2× candidate')));
-  const factionCards = spec.factions.map((f) => card(`${esc(symbols.get(f.archetype) ?? '')} ${esc(f.name)}`,
+  const factionCards = spec.factions.map((f) => card(`${esc(f.name)}`,
     fig(img(sprites[f.id], 3), 'icon 3×') + [1, 2, 4].map((scale) => fig(tokenHtml(f.id, scale), `${scale}×`)).join('')
     + fig(tokenHtml(f.id, 2, 'candidate'), '2× candidate')));
   const cubeCards = SEAT_COLOURS.map((colour, i) => card(`Seat ${i + 1} <span class="mono muted">${esc(colour)}</span>`,
@@ -221,12 +126,12 @@ function render() {
       <div class="asset-grid">${locationCards.join('')}</div>
       <h3>Archetype schemes</h3>
       <p class="small muted">Each hex's border takes its archetype's colours, and the archetype's symbol sits bottom middle, over the border.</p>
-      <div class="inline">${spec.archetypes.map((arch) => fig(img(schemes[arch.id], 2), `${esc(arch.symbol)} ${esc(arch.name)}`)).join('')}</div>`),
+      <div class="inline">${spec.archetypes.map((arch) => fig(img(schemes[arch.id], 2), `${esc(arch.name)}`)).join('')}</div>`),
     panel('Factions', 'icon 16×16; CSS token', `
       <p class="small muted">Each faction's icon, and its presence token: a cardboard token cut to the icon's outline (outline from <span class="mono">assets/sprites.py</span>; card, edge and shadow in CSS). A candidate token's edge turns gold and its face glows gold, pulsing gently; hovered, it brightens and lifts.</p>
       <div class="asset-grid">${factionCards.join('')}</div>`),
     panel('Sway cubes', 'seat colours: red, gold, cyan, lime, pink', `<p class="small muted">A cube seen from above, shaded from one seat colour.</p><div class="asset-grid">${cubeCards.join('')}</div>`),
-    panel('Archetype symbols', '9×9', `<div class="asset-grid">${spec.archetypes.map((a) => card(`${esc(a.symbol)} ${esc(a.name)}`, [1, 3, 6].map((s) => fig(img(symbols9[a.id], s), `${s}×`)).join(''))).join('')}</div>`),
+    panel('Archetype symbols', '9×9', `<div class="asset-grid">${spec.archetypes.map((a) => card(`${esc(a.name)}`, [1, 3, 6].map((s) => fig(img(symbols9[a.id], s), `${s}×`)).join(''))).join('')}</div>`),
   ].join('');
   $('palette').innerHTML = Object.entries(art.palette)
     .filter(([, colour]) => colour)
@@ -346,7 +251,7 @@ function targeting() {
     document.getElementById('target-reset')?.addEventListener('click', () => { chosen = null; draw(); });
   };
   const controls = () => {
-    $('target-controls').innerHTML = spec.archetypes.map((arch) => `<button class="btn${marked.has(arch.id) ? ' btn-primary' : ''}" data-suit="${esc(arch.id)}" aria-pressed="${marked.has(arch.id)}">${esc(arch.symbol)} ${esc(arch.name)}</button>`).join('')
+    $('target-controls').innerHTML = spec.archetypes.map((arch) => `<button class="btn${marked.has(arch.id) ? ' btn-primary' : ''}" data-suit="${esc(arch.id)}" aria-pressed="${marked.has(arch.id)}">${esc(arch.name)}</button>`).join('')
       + '<button class="btn" data-suit="">Clear</button>';
   };
   $('target-controls').addEventListener('click', (event) => {

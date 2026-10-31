@@ -27,27 +27,27 @@
     {
       "id": "nocturnals",
       "name": "Nocturnals",
-      "symbol": "◐"
+      "adjective": "Nocturnal"
     },
     {
       "id": "scifi",
       "name": "80's Sci-Fi",
-      "symbol": "ↂ"
+      "adjective": "Sci-Fi"
     },
     {
       "id": "sentients",
       "name": "Sentients",
-      "symbol": "⏏"
+      "adjective": "Sentient"
     },
     {
       "id": "undead",
       "name": "Undead",
-      "symbol": "☾"
+      "adjective": "Undead"
     },
     {
       "id": "demonic",
       "name": "Demons",
-      "symbol": "⎈"
+      "adjective": "Demon"
     }
   ],
   "factions": [
@@ -246,10 +246,32 @@
       "action": "invite",
       "text": "Two groups of different factions next door are invited into an empty location. Target: where they’re invited.",
       "readings": {
-        "location": "an empty ◐ location; any two groups next to it.",
+        "location": "an empty Nocturnal location; any two groups next to it.",
         "faction": "a location held by a lone group of another faction, next to a Nocturnal group: only the Nocturnals come."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "gather",
+        "noun": "token",
+        "word": "Gather",
+        "gist": "groups next door into one location",
+        "target": "where they’re invited",
+        "parts": [
+          "Where",
+          "Who comes"
+        ],
+        "loc": [
+          "an empty Nocturnal location",
+          "any two groups next to it, of different factions"
+        ],
+        "fac": [
+          "a location held by a lone group of another faction, next to a Nocturnal group",
+          "only the Nocturnals"
+        ],
+        "specifics": [],
+        "flavour": "The Slayerettes leave the door open and the porch light on. Something always comes in.",
+        "flavourDraft": true
+      }
     },
     {
       "id": "gate",
@@ -260,10 +282,26 @@
       "action": "gate",
       "text": "Join two locations for the rest of the round: they count as a single location for movement, and fight as one (strength and sway added across both; a true tie scorches both). Never three factions across them. Only 1 sway, at one end: from the Sci-Fi faction if it is at either end, otherwise a faction there. Target: the two ends.",
       "readings": {
-        "location": "two ↂ locations.",
+        "location": "two Sci-Fi locations.",
         "faction": "two locations holding the Sci-Fi faction."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "join",
+        "noun": "location",
+        "word": "Join",
+        "gist": "two locations, for the rest of the round",
+        "target": "the two ends",
+        "facMark": "holding",
+        "specifics": [
+          "They count as a single location for movement.",
+          "They fight as one: strength and sway added across both; a true tie scorches both.",
+          "Never three factions across them.",
+          "Only 1 sway, at one end: from the Sci-Fi faction if it is at either end, otherwise a faction there."
+        ],
+        "flavour": "The Kids on Bikes find the rift behind the arcade. Whatever goes in comes out somewhere else.",
+        "flavourDraft": true
+      }
     },
     {
       "id": "hack-targeting",
@@ -274,10 +312,21 @@
       "action": "threat",
       "text": "The AV Club spoofs a command signal to a group: ordered to engage the strongest hostile force in range, it marches on the largest lone group of another faction within two locations of it (ties: your choice). Target: the group fooled.",
       "readings": {
-        "location": "a group at a ⏏ location.",
+        "location": "a group at a Sentient location.",
         "faction": "a Sentient group anywhere."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "march",
+        "noun": "token",
+        "word": "March on",
+        "gist": "the largest lone group of another faction within two locations",
+        "target": "the group fooled",
+        "specifics": [
+          "Ties: your choice."
+        ],
+        "flavour": "The AV Club spoofs a command signal to a group: ordered to engage the strongest hostile force in range."
+      }
     },
     {
       "id": "bait-trail",
@@ -288,10 +337,22 @@
       "action": "herd",
       "text": "Lay a trail of bait: a group follows it from neighbour to neighbour, picking up its own kind at every stop and leaving nothing behind. It stops where you choose, or crashes into a lone group of another faction. Target: the herd.",
       "readings": {
-        "location": "a group at a ☾ location.",
+        "location": "a group at an Undead location.",
         "faction": "an Undead group anywhere."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "trail",
+        "noun": "token",
+        "word": "Trail",
+        "gist": "a group, from neighbour to neighbour",
+        "target": "the herd",
+        "specifics": [
+          "It picks up its own kind at every stop and leaves nothing behind.",
+          "It stops where you choose, or crashes into a lone group of another faction."
+        ],
+        "flavour": "Lay a trail of bait, and the herd follows it."
+      }
     },
     {
       "id": "ritual",
@@ -302,10 +363,34 @@
       "action": "well",
       "text": "Father and the Flock begin the rite, and one faction next door is drawn to it: every group of it comes, whole if it’s alone, as many as you choose if it’s in a fight. The centre is empty or holds one faction. Target: the centre, then the faction called.",
       "readings": {
-        "location": "a ⎈ location; any faction is called.",
+        "location": "a Demon location; any faction is called.",
         "faction": "any location next to the Demon faction; the Demons are called."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "gather",
+        "noun": "token",
+        "word": "Gather",
+        "gist": "one faction next door, every group of it, into the centre",
+        "target": "the centre, then the faction called",
+        "parts": [
+          "Centre",
+          "Called"
+        ],
+        "loc": [
+          "a Demon location",
+          "any faction"
+        ],
+        "fac": [
+          "any location next to the Demon faction",
+          "the Demons"
+        ],
+        "specifics": [
+          "Whole if it’s alone; as many as you choose if it’s in a fight.",
+          "The centre is empty or holds one faction."
+        ],
+        "flavour": "Father and the Flock begin the rite, and one faction next door is drawn to it."
+      }
     },
     {
       "id": "draw-away",
@@ -316,10 +401,21 @@
       "action": "burst",
       "text": "The Watch sets out distractions all round the location, and one of the dead shambles off to check each. A group sends 1 token to each of at least two neighbours; the rest stay. Target: the group.",
       "readings": {
-        "location": "a group at a ☾ location.",
+        "location": "a group at an Undead location.",
         "faction": "an Undead group anywhere."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "spread",
+        "noun": "token",
+        "word": "Spread",
+        "gist": "1 token to each of at least two neighbours",
+        "target": "the group",
+        "specifics": [
+          "The rest stay."
+        ],
+        "flavour": "The Watch sets out distractions all round the location, and one of the dead shambles off to check each."
+      }
     },
     {
       "id": "big-chase",
@@ -330,10 +426,22 @@
       "action": "chase",
       "text": "The Kids on Bikes lead a group on a chase from neighbour to neighbour, across any region, through empty ground, lone rivals, its own kind and fights it’s part of. Every location it passes keeps 1 token; the rest, at least 1, arrive wherever you end it. Target: the group chased.",
       "readings": {
-        "location": "a group at an ↂ location.",
+        "location": "a group at a Sci-Fi location.",
         "faction": "a Sci-Fi group anywhere."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "trail",
+        "noun": "token",
+        "word": "Trail",
+        "gist": "a group from neighbour to neighbour; every location it passes keeps 1",
+        "target": "the group chased",
+        "specifics": [
+          "Across any region, through empty ground, lone rivals, its own kind and fights it’s part of.",
+          "The rest, at least 1, arrive wherever you end it."
+        ],
+        "flavour": "The Kids on Bikes lead a group on a chase."
+      }
     },
     {
       "id": "cut-powerlines",
@@ -344,10 +452,22 @@
       "action": "rejoin",
       "text": "The AV Club cuts the powerlines. A group scatters to its faction’s other groups anywhere on the island, 1 token at a time: no group gets a second until every group has one. A lone group leaves entirely; from a fight, exactly half. Target: the group.",
       "readings": {
-        "location": "any group at a ⏏ location.",
+        "location": "any group at a Sentient location.",
         "faction": "a Sentients group anywhere."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "spread",
+        "noun": "token",
+        "word": "Spread",
+        "gist": "a group to its faction’s other groups anywhere, 1 token at a time",
+        "target": "the group",
+        "specifics": [
+          "No group gets a second until every group has one.",
+          "A lone group leaves entirely; from a fight, exactly half."
+        ],
+        "flavour": "The AV Club cuts the powerlines."
+      }
     },
     {
       "id": "plough",
@@ -358,10 +478,22 @@
       "action": "plough",
       "text": "The Slayerettes plough a truck straight through the middle of the brawl. Every side leaves by half, rounded up, split as you choose among its neighbours, never two sides to the same location. Its sway is paid by the factions in the fight or the Nocturnals, split as you choose. Target: the fight.",
       "readings": {
-        "location": "a fight at a ◐ location.",
+        "location": "a fight at a Nocturnal location.",
         "faction": "a fight the Nocturnals are in."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "drive",
+        "noun": "token",
+        "word": "Drive out",
+        "gist": "every side of a fight, by half, rounded up",
+        "target": "the fight",
+        "specifics": [
+          "Split as you choose among its neighbours, never two sides to the same location.",
+          "Its sway is paid by the factions in the fight or the Nocturnals, split as you choose."
+        ],
+        "flavour": "The Slayerettes plough a truck straight through the middle of the brawl."
+      }
     },
     {
       "id": "light-cross",
@@ -372,8 +504,19 @@
       "action": "split",
       "text": "The cross is raised and the target group falls back from its light, split evenly between two neighbours. A group of 1 can’t be split. Target: the group.",
       "readings": {
-        "location": "any group at a ⎈ location.",
+        "location": "any group at a Demon location.",
         "faction": "a Demon group anywhere."
+      },
+      "layout": {
+        "verb": "split",
+        "noun": "token",
+        "word": "Split",
+        "gist": "a group, evenly between two neighbours",
+        "target": "the group",
+        "specifics": [
+          "A group of 1 can’t be split."
+        ],
+        "flavour": "The cross is raised and the target group falls back from its light."
       }
     },
     {
@@ -383,12 +526,36 @@
       "slot": "signature",
       "sway": 4,
       "action": "raise",
-      "text": "The Watch chases the fight into the old cemetery, and the dead rise: as many from the Undead supply as you choose, up to the card’s sway. At a ☾ location they rise as a group of their own, and if two factions are already fighting there, as a third side. Each one risen places 1 of your sway there. Target: where they rise.",
+      "text": "The Watch chases the fight into the old cemetery, and the dead rise: as many from the Undead supply as you choose, up to the card’s sway. At an Undead location they rise as a group of their own, and if two factions are already fighting there, as a third side. Each one risen places 1 of your sway there. Target: where they rise.",
       "readings": {
-        "location": "any ☾ location; at a fight there, the dead rise as a third side.",
+        "location": "any Undead location; at a fight there, the dead rise as a third side.",
         "faction": "any location holding the Undead; the risen join them."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "raise",
+        "noun": "token",
+        "word": "Raise",
+        "gist": "as many as you choose from the Undead supply, up to the card’s sway",
+        "target": "where they rise",
+        "parts": [
+          "Where",
+          "They rise"
+        ],
+        "loc": [
+          "any Undead location",
+          "as a group of their own; at a fight there, as a third side"
+        ],
+        "fac": [
+          "any location holding the Undead",
+          "joining them"
+        ],
+        "facMark": "holding",
+        "specifics": [
+          "Each one risen places 1 of your sway there."
+        ],
+        "flavour": "The Watch chases the fight into the old cemetery, and the dead rise."
+      }
     },
     {
       "id": "take-control",
@@ -399,10 +566,34 @@
       "action": "control",
       "text": "The AV Club takes control of the machines and turns them on the enemy. At the target fight, spend your sway there, 1 for each, to cut down up to the card’s sway of a faction’s tokens there: you take them as trophies, and the sway spent goes back to your supply. Target: the fight, then the faction hit.",
       "readings": {
-        "location": "any fight at a ⏏ location; you choose the faction hit.",
+        "location": "any fight at a Sentient location; you choose the faction hit.",
         "faction": "any fight the Sentients are in; their rival is hit."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "slay",
+        "noun": "token",
+        "word": "Slay",
+        "gist": "up to the card’s sway of a faction’s tokens at a fight, as trophies",
+        "target": "the fight, then the faction hit",
+        "parts": [
+          "Fight",
+          "Hit"
+        ],
+        "loc": [
+          "any fight at a Sentient location",
+          "the faction you choose"
+        ],
+        "fac": [
+          "any fight the Sentients are in",
+          "their rival"
+        ],
+        "specifics": [
+          "Spend your sway there, 1 for each.",
+          "The sway spent goes back to your supply."
+        ],
+        "flavour": "The AV Club takes control of the machines and turns them on the enemy."
+      }
     },
     {
       "id": "night-terrors",
@@ -413,10 +604,23 @@
       "action": "terror",
       "text": "The Slayerettes stir up terrors in the dark. Mark up to the card’s sway of locations, 1 sway on each. When night falls, before the fights, at each mark you may make 1 token of a faction there flee to a neighbouring location it can enter; your sway from the mark may follow it. Target: the locations marked.",
       "readings": {
-        "location": "◐ locations.",
+        "location": "Nocturnal locations.",
         "faction": "locations holding the Nocturnals."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "mark",
+        "noun": "location",
+        "word": "Mark",
+        "gist": "up to the card’s sway of locations, 1 sway on each",
+        "target": "the locations marked",
+        "facMark": "holding",
+        "specifics": [
+          "When night falls, before the fights, at each mark you may make 1 token of a faction there flee to a neighbouring location it can enter.",
+          "Your sway from the mark may follow it."
+        ],
+        "flavour": "The Slayerettes stir up terrors in the dark."
+      }
     },
     {
       "id": "study-bodies",
@@ -427,10 +631,22 @@
       "action": "study",
       "text": "The Kids on Bikes sneak in after the fight to study the bodies. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, if you lead there, you also take 1 trophy from the runner-up’s pile. Target: the locations marked.",
       "readings": {
-        "location": "ↂ locations.",
+        "location": "Sci-Fi locations.",
         "faction": "locations holding the Sci-Fi faction."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "mark",
+        "noun": "location",
+        "word": "Mark",
+        "gist": "up to the card’s sway of locations, 1 sway on each",
+        "target": "the locations marked",
+        "facMark": "holding",
+        "specifics": [
+          "This round, at a marked location’s fight, if you lead there, you also take 1 trophy from the runner-up’s pile."
+        ],
+        "flavour": "The Kids on Bikes sneak in after the fight to study the bodies."
+      }
     },
     {
       "id": "spill-blood",
@@ -441,10 +657,22 @@
       "action": "altar",
       "text": "Father and the Flock spill blood on the altar. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, the winner loses as many as the loser. Target: the locations marked.",
       "readings": {
-        "location": "⎈ locations.",
+        "location": "Demon locations.",
         "faction": "locations holding the Demons."
       },
-      "round": 21
+      "round": 21,
+      "layout": {
+        "verb": "mark",
+        "noun": "location",
+        "word": "Mark",
+        "gist": "up to the card’s sway of locations, 1 sway on each",
+        "target": "the locations marked",
+        "facMark": "holding",
+        "specifics": [
+          "This round, at a marked location’s fight, the winner loses as many as the loser."
+        ],
+        "flavour": "Father and the Flock spill blood on the altar."
+      }
     },
     {
       "id": "favours",
@@ -459,7 +687,30 @@
       ],
       "round": 22,
       "text": "Choose one. Sway: 1 sway from your supply at each of up to X fights. Standing: up to X standing with one faction, from your supply. X is the cards in your hand, this one included.",
-      "marked": "A"
+      "marked": "A",
+      "layout": {
+        "verb": "gain",
+        "noun": "sway",
+        "word": "Gain",
+        "gist": "up to X from your supply",
+        "uses": [
+          {
+            "id": "sway",
+            "mark": "fightSway",
+            "text": "1 sway from your supply at each of up to X fights."
+          },
+          {
+            "id": "standing",
+            "mark": "standing",
+            "text": "up to X standing with one faction, from your supply."
+          }
+        ],
+        "specifics": [
+          "X is the cards in your hand, this one included."
+        ],
+        "flavour": "Everyone in this town owes somebody something. Tonight you collect.",
+        "flavourDraft": true
+      }
     },
     {
       "id": "stakes",
@@ -475,7 +726,35 @@
       ],
       "round": 22,
       "text": "Choose one. Standing: take 1 standing from each of up to X factions, all into one. Sway: gather up to X of your sway from next door into one location. Tokens: up to X tokens of one faction come in from its groups next door, to a location where you have sway. X is the cards in your hand, this one included.",
-      "marked": "B"
+      "marked": "B",
+      "layout": {
+        "verb": "gather",
+        "noun": "token",
+        "word": "Gather",
+        "gist": "up to X into one",
+        "uses": [
+          {
+            "id": "standing",
+            "mark": "standing",
+            "text": "take 1 standing from each of up to X factions, all into one."
+          },
+          {
+            "id": "sway",
+            "mark": "swayNext",
+            "text": "gather up to X of your sway from next door into one location."
+          },
+          {
+            "id": "tokens",
+            "mark": "groupNext",
+            "text": "up to X tokens of one faction come in from its groups next door, to a location where you have sway."
+          }
+        ],
+        "specifics": [
+          "X is the cards in your hand, this one included."
+        ],
+        "flavour": "Double or nothing, and nobody walks away.",
+        "flavourDraft": true
+      }
     },
     {
       "id": "exit",
@@ -491,7 +770,35 @@
       ],
       "round": 22,
       "text": "Choose one. Standing: move 1 standing from one faction to each of up to X others. Sway: send 1 of your sway from one location to each of up to X neighbours. Tokens: a group sends 1 token to each of up to X neighbours. X is the cards in your hand, this one included.",
-      "marked": "C"
+      "marked": "C",
+      "layout": {
+        "verb": "spread",
+        "noun": "token",
+        "word": "Spread",
+        "gist": "1 to each of up to X",
+        "uses": [
+          {
+            "id": "standing",
+            "mark": "standing",
+            "text": "move 1 standing from one faction to each of up to X others."
+          },
+          {
+            "id": "sway",
+            "mark": "swayNext",
+            "text": "send 1 of your sway from one location to each of up to X neighbours."
+          },
+          {
+            "id": "tokens",
+            "mark": "groupNext",
+            "text": "a group sends 1 token to each of up to X neighbours."
+          }
+        ],
+        "specifics": [
+          "X is the cards in your hand, this one included."
+        ],
+        "flavour": "Every door, every window, every storm drain. Nothing slips out unseen.",
+        "flavourDraft": true
+      }
     },
     {
       "id": "showdown",
@@ -502,7 +809,22 @@
       "action": "showdown",
       "round": 22,
       "text": "At a lone group, never a fight, burn your sway there, 1 for each token, to take that many of its tokens as your trophies. Burned sway goes back to your supply. Target: the group.",
-      "marked": "D"
+      "marked": "D",
+      "layout": {
+        "verb": "slay",
+        "noun": "token",
+        "word": "Slay",
+        "gist": "a lone group’s tokens, 1 of your sway burned for each",
+        "target": "the group",
+        "single": "lone",
+        "specifics": [
+          "Never a fight.",
+          "You take them as your trophies.",
+          "Burned sway goes back to your supply."
+        ],
+        "flavour": "High noon on Main Street. Only one side walks away.",
+        "flavourDraft": true
+      }
     },
     {
       "id": "switch",
@@ -516,7 +838,30 @@
         "sway"
       ],
       "round": 22,
-      "text": "Choose one. Standing: burn up to X standing with one faction to gain the same with another. Sway: move up to X of your sway from one location to any other. X is the cards in your hand, this one included."
+      "text": "Choose one. Standing: burn up to X standing with one faction to gain the same with another. Sway: move up to X of your sway from one location to any other. X is the cards in your hand, this one included.",
+      "layout": {
+        "verb": "move",
+        "noun": "sway",
+        "word": "Move",
+        "gist": "up to X from one to another",
+        "uses": [
+          {
+            "id": "standing",
+            "mark": "standing",
+            "text": "burn up to X standing with one faction to gain the same with another."
+          },
+          {
+            "id": "sway",
+            "mark": "elsewhere",
+            "text": "move up to X of your sway from one location to any other."
+          }
+        ],
+        "specifics": [
+          "X is the cards in your hand, this one included."
+        ],
+        "flavour": "Loyalty in this town lasts about as long as the daylight.",
+        "flavourDraft": true
+      }
     },
     {
       "id": "playbook",
@@ -530,7 +875,30 @@
         "yours"
       ],
       "round": 22,
-      "text": "Choose one. Theirs: take a card another player played this round, however they played it, from the played cards into your hand, and play it now as your own. Yours: take back into your hand a card you played earlier this round. It can't be your last card played: as the last card in your hand it is discarded, for no effect."
+      "text": "Choose one. Theirs: take a card another player played this round, however they played it, from the played cards into your hand, and play it now as your own. Yours: take back into your hand a card you played earlier this round. It can't be your last card played: as the last card in your hand it is discarded, for no effect.",
+      "layout": {
+        "verb": "take",
+        "noun": "card",
+        "word": "Take",
+        "gist": "a card played this round, into your hand",
+        "uses": [
+          {
+            "id": "theirs",
+            "mark": "played",
+            "text": "a card another player played this round, however they played it, from the played cards; play it now as your own."
+          },
+          {
+            "id": "yours",
+            "mark": "played",
+            "text": "back a card you played earlier this round."
+          }
+        ],
+        "specifics": [
+          "It can’t be your last card played: as the last card in your hand it is discarded, for no effect."
+        ],
+        "flavour": "Whatever worked for them will work twice as well for us.",
+        "flavourDraft": true
+      }
     }
   ],
   "variants": [

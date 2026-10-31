@@ -5,6 +5,7 @@
  */
 import { spec, factionById, cardById } from './rules.js';
 import art from './assets/sprites.json' with { type: 'json' };
+import { NOUNS, iconHtml, suitedMark } from './icons.js';
 
 /** @typedef {import('./rules.js').PlayerView} PlayerView */
 
@@ -79,7 +80,8 @@ export function cardHtml(id, o = {}) {
   const uses = usesOf(c.text);
   const opt = (/** @type {string} */ action, /** @type {string} */ inner, /** @type {string} */ tip, /** @type {boolean} */ on, /** @type {Record<string, string>} */ data = {}) => live
     ? `<button class="card-opt${on ? ' is-on' : ''}${o.next ? ' is-next' : ''}${o.empty?.includes(data.mode ?? '') ? ' is-empty' : ''}" data-action="${action}" data-card="${esc(id)}"${Object.entries(data).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('')} title="${esc(tip)}">${inner}</button>`
-    : `<span class="card-opt is-off" title="${esc(tip)}">${inner}</span>`;
+    // Not live (out of turn, or the assets page): shown at full strength, not as disabled; a dimmed card dims it.
+    : `<span class="card-opt" title="${esc(tip)}">${inner}</span>`;
   const options = c.suit ? `<div class="card-options">
       ${c.action ? opt('set-mode', 'LOC', `Location target: ${r?.location ?? ''}${o.empty?.includes('location') ? ' Nothing to target right now.' : ''}`, o.reading === 'location', { mode: 'location' }) : ''}
       ${c.action ? opt('set-mode', 'FAC', `Faction target: ${r?.faction ?? ''}${sf ? ` (${fname(sf)})` : ''}${o.empty?.includes('faction') ? ' Nothing to target right now.' : ''}`, o.reading === 'faction', { mode: 'faction' }) : ''}
@@ -88,6 +90,7 @@ export function cardHtml(id, o = {}) {
     </div>` : '';
   const classes = ['card', `card-suit-${c.suit ?? 'none'}`, o.ticked ? 'card-ticked' : '', o.mode ? `card-${o.mode}` : '', o.dim ? 'card-dim' : '', o.selected ? 'card-selected' : '', o.selected && o.next ? 'card-needs-reading' : ''].filter(Boolean).join(' ');
   const full = `${c.name}. ${c.text}`;
+  if ('layout' in c && c.layout) return laidOut(c, o, { id, classes, full, band, printed, sf, live, opt, why, r, suitName: suit?.name ?? '' });
   // No title tooltip: the card itself shows the text, and a tooltip only covered it (designer, 2026-10-29).
   return `<div class="${classes}" data-card="${esc(id)}" aria-label="${esc(full)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
     <div class="card-band">${band}</div>
@@ -102,3 +105,48 @@ export function cardHtml(id, o = {}) {
     ${o.extra ?? ''}
   </div>`;
 }
+
+/**
+ * A card in the layout the designer chose (2026-10-30): the topline (its action's icon block, verb and gist), its
+ * target with each reading as a button-like row led by its mark, one specific rule per line, and its thematic text
+ * at the bottom. Suited marks: the suit's colour for its locations and faction, none where the suit doesn't matter.
+ * @param {any} c @param {CardOptions} o @param {any} k
+ */
+function laidOut(c, o, k) {
+  const l = c.layout;
+  const suit = c.suit ?? '';
+  const top = `<div class="lay-top">${iconHtml(l.verb, l.noun)}<div><b class="lay-verb">${esc(l.word)}</b><span class="lay-gist">${esc(l.gist)}</span></div></div>`;
+  const text = (/** @type {string[] | string} */ x) => Array.isArray(x)
+    ? `<span class="lay-parts">${x.map((p, i) => `<span><i>${esc(l.parts[i])}</i> ${esc(p)}</span>`).join('')}</span>`
+    : `<span>${esc(x)}</span>`;
+  /** A reading's row: a button while the card is live, its mark in the tag cell. */
+  const reading = (/** @type {'location' | 'faction'} */ m) => {
+    const mark = m === 'location' ? suitedMark('location', suit) : suitedMark(l.facMark ?? 'group', suit);
+    const words = m === 'location' ? (l.loc ?? k.r.location) : (l.fac ?? `${k.r.faction}${k.sf ? ` (${fname(k.sf)})` : ''}`);
+    const state = o.reading ? (o.reading === m ? ' is-on' : ' is-off') : '';
+    const label = m === 'location' ? 'Location reading' : 'Faction reading';
+    const inner = `<b title="${label}">${mark}</b>${text(words)}`;
+    const empty = o.empty?.includes(m) ? ' is-empty' : '';
+    return k.live
+      ? `<button class="lay-row lay-row-ic${state}${o.next ? ' is-next' : ''}${empty}" data-action="set-mode" data-card="${esc(k.id)}" data-mode="${m}" aria-label="${label}">${inner}</button>${k.why(m)}`
+      : `<div class="lay-row lay-row-ic${state}" aria-label="${label}">${inner}</div>`;
+  };
+  const markOf = (/** @type {string} */ m) => NOUNS[m]?.svg ?? '';
+  const target = c.suit
+    ? `<div class="lay-target"><div class="lay-label">Target: ${esc(l.target)}</div>${reading('location')}${reading('faction')}</div>`
+    : l.uses
+      ? `<div class="lay-target"><div class="lay-label">Choose one</div>${l.uses.map((/** @type {any} */ u) => `<div class="lay-row lay-row-ic${o.use ? (o.use === u.id ? ' is-on' : ' is-off') : ''}" aria-label="${esc(u.id)}"><b title="${esc(u.id)}">${markOf(u.mark)}</b><span>${esc(u.text.charAt(0).toUpperCase() + u.text.slice(1))}</span></div>`).join('')}</div>`
+      : `<div class="lay-target"><div class="lay-label">Target: ${esc(l.target)}</div><div class="lay-row lay-row-ic"><b>${markOf(l.single ?? 'group')}</b><span>${esc(l.target.charAt(0).toUpperCase() + l.target.slice(1))}</span></div></div>`;
+  const specifics = l.specifics.length ? `<ul class="lay-specifics">${l.specifics.map((/** @type {string} */ s) => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
+  const flavour = `<p class="lay-flavour">${esc(l.flavour)}</p>`;
+  // Spent for sway: standing with the suit's faction, its cube in the suit's colour, and the amount.
+  const sway = c.suit ? k.opt('sway', `${suitedMark('standing', suit)}<b>${k.printed}</b>`, `Spend for ${k.printed} sway with ${k.sf ? fname(k.sf) : `the ${k.suitName} faction`}`, false) : '';
+  const back = o.back ? k.opt('return', 'BACK', `Bring ${k.sf ? fname(k.sf) : 'its faction'} back: up to its sway of tokens at its own locations or where it is, 1 standing with it each`, false) : '';
+  return `<div class="${k.classes} lay-card" data-card="${esc(k.id)}" aria-label="${esc(k.full)}"${o.mode ? ` data-card-mode="${o.mode}"` : ''}>
+    <div class="card-band">${k.band}</div>
+    <div class="lay-name"><span class="card-name">${esc(c.name)}</span><span class="lay-plays">${sway}${back}</span></div>
+    ${top}${target}${specifics}${flavour}
+    ${o.extra ?? ''}
+  </div>`;
+}
+

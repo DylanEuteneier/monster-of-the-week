@@ -141,7 +141,7 @@ pub fn flee_options(s: &GameState, loc: Loc) -> Vec<(Fac, Vec<Loc>)> {
     factions_at(s, loc).into_iter().filter(|&f| free_of(s, loc, f) > 0).map(|f| (f, burst_spots(s, loc, f))).filter(|o| !o.1.is_empty()).collect()
 }
 
-/// The Gate: can this location be one of its ends? The location reading joins two ↂ locations, the faction reading
+/// The Gate: can this location be one of its ends? The location reading joins two Sci-Fi locations, the faction reading
 /// two locations holding the Sci-Fi faction (designer, 2026-10-30; D36).
 pub fn gate_end(s: &GameState, c: &Card, mode: Option<Mode>, loc: Option<Loc>) -> bool {
     let Some(loc) = loc else { return false };
@@ -474,7 +474,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
                 _ => false,
             };
             if !ok {
-                return e(if loc_mode { "Choose a group at a ☾ location." } else { "Choose an Undead group." });
+                return e(if loc_mode { "Choose a group at an Undead location." } else { "Choose an Undead group." });
             }
             let (loc, f) = (as_loc(t.location).unwrap(), as_fac(t.faction).unwrap());
             let to = picked(&t.from);
@@ -493,7 +493,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             }
             let max = control_room(s, pid, c, ci, t);
             if max <= 0 {
-                return e(if loc_mode { "Choose a fight at a ⏏ location where you have sway, then the faction hit." } else { "Choose a fight the Sentients are in where you have sway, then their rival." });
+                return e(if loc_mode { "Choose a fight at a Sentient location where you have sway, then the faction hit." } else { "Choose a fight the Sentients are in where you have sway, then their rival." });
             }
             let n = count_eq(&t.from, t.location) as i32;
             if n >= 1 && n <= max { None } else { Some(format!("Turn 1 to {max} tokens into trophies: 1 of your sway there for each, up to the card's sway.")) }
@@ -505,10 +505,10 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             let undead = faction_of_archetype("undead");
             let payer: Option<Id> = if t.mode == Some(Mode::Faction) { Some(Id::Fac(undead)) } else { t.payer };
             let Some(loc) = as_loc(t.location) else {
-                return e(if loc_mode { "Choose a ☾ location, with the standing to pay for the dead." } else { "Choose a location holding the Undead, with standing with them to raise more." });
+                return e(if loc_mode { "Choose an Undead location, with the standing to pay for the dead." } else { "Choose a location holding the Undead, with standing with them to raise more." });
             };
             if raise_room(s, pid, loc, t.mode, None).0 <= 0 {
-                return e(if loc_mode { "Choose a ☾ location, with the standing to pay for the dead." } else { "Choose a location holding the Undead, with standing with them to raise more." });
+                return e(if loc_mode { "Choose an Undead location, with the standing to pay for the dead." } else { "Choose a location holding the Undead, with standing with them to raise more." });
             }
             // A payer that isn't a faction in play pays for nothing (raiseRoom with an unknown payer: 0).
             let max = match payer {
@@ -531,7 +531,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
                 None => false,
             };
             if !ok {
-                return e(if loc_mode { "Choose a fight at a ◐ location." } else { "Choose a fight the Nocturnals are in." });
+                return e(if loc_mode { "Choose a fight at a Nocturnal location." } else { "Choose a fight the Nocturnals are in." });
             }
             let loc = as_loc(t.location).unwrap();
             let from = picked(&t.from);
@@ -558,7 +558,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
                 _ => false,
             };
             if !ok {
-                return e(if loc_mode { "Choose a group at a ⏏ location." } else { "Choose a Sentients group." });
+                return e(if loc_mode { "Choose a group at a Sentient location." } else { "Choose a Sentients group." });
             }
             let (loc, f) = (as_loc(t.location).unwrap(), as_fac(t.faction).unwrap());
             let (kin, n, _each, extra, reached) = power_share(s, loc, f);
@@ -580,7 +580,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
                 _ => false,
             };
             if !ok {
-                return e(if loc_mode { "Choose a group at an ↂ location (from a fight, half of it)." } else { "Choose a Sci-Fi group (from a fight, half of it)." });
+                return e(if loc_mode { "Choose a group at a Sci-Fi location (from a fight, half of it)." } else { "Choose a Sci-Fi group (from a fight, half of it)." });
             }
             let (start, f) = (as_loc(t.location).unwrap(), as_fac(t.faction).unwrap());
             let path = picked(&t.path);
@@ -609,7 +609,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
                 return e("Choose a centre that is empty or holds one faction.");
             }
             if if loc_mode { !is_suit_loc(c, centre) } else { t.faction != sf.map(Id::Fac) } {
-                return e(if loc_mode { "The centre is a ⎈ location." } else { "The ritual calls the Demon faction." });
+                return e(if loc_mode { "The centre is a Demon location." } else { "The ritual calls the Demon faction." });
             }
             let Some(f) = as_fac(t.faction) else { return e("Choose the faction the ritual calls.") };
             if count_at(s, centre) == 1 && !can_enter(s, centre, f) {
@@ -638,7 +638,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
                 _ => false,
             };
             if !ok {
-                return e(if loc_mode { "Choose a group at a ☾ location (from a fight, half of it)." } else { "Choose an Undead group (from a fight, half of it)." });
+                return e(if loc_mode { "Choose a group at an Undead location (from a fight, half of it)." } else { "Choose an Undead group (from a fight, half of it)." });
             }
             let (start, f) = (as_loc(t.location).unwrap(), as_fac(t.faction).unwrap());
             let path = picked(&t.path);
@@ -667,7 +667,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
                 _ => false,
             };
             if !ok {
-                return e(if loc_mode { "Choose a group at a ⏏ location." } else { "Choose a Sentient group." });
+                return e(if loc_mode { "Choose a group at a Sentient location." } else { "Choose a Sentient group." });
             }
             let (loc, f) = (as_loc(t.location).unwrap(), as_fac(t.faction).unwrap());
             if !matches!(as_loc(t.to), Some(x) if threats_of(s, loc, f).contains(&x)) {
@@ -681,7 +681,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             }
             let (a, b) = (as_loc(t.location), as_loc(t.to));
             if !gate_end(s, c, t.mode, a) || !gate_end(s, c, t.mode, b) || a == b {
-                return e(if t.mode == Some(Mode::Faction) { "Join two locations holding the Sci-Fi faction." } else { "Join two ↂ locations." });
+                return e(if t.mode == Some(Mode::Faction) { "Join two locations holding the Sci-Fi faction." } else { "Join two Sci-Fi locations." });
             }
             let (a, b) = (a.unwrap(), b.unwrap());
             let across = factions_across(s, a, b);
@@ -708,7 +708,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             let host = lone_at(s, to);
             let bad = if loc_mode { !is_suit_loc(c, to) || count_at(s, to) > 0 } else { host.is_none() || host == sf };
             if bad {
-                return e(if loc_mode { "Choose an empty ◐ location." } else { "Choose a location held by a lone group of another faction." });
+                return e(if loc_mode { "Choose an empty Nocturnal location." } else { "Choose a location held by a lone group of another faction." });
             }
             let guests = t.moves.clone().unwrap_or_default();
             let ok = guests_of(s, c, t.mode.unwrap(), to);
@@ -905,7 +905,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             let from = t.from.as_deref().unwrap_or(&[]);
             if marks.iter().any(|m| !held.iter().any(|&(l, f)| m.0 == Id::Loc(l) && m.1 == Id::Fac(f)) && !(matches!(m.0, Id::Loc(x) if empty.contains(&x)) && from.contains(&m.0))) {
                 return if loc_mode {
-                    let sym = match c.action { Action::Altar => "⎈", Action::Study => "ↂ", _ => "◐" };
+                    let sym = match c.action { Action::Altar => "Demon", Action::Study => "Sci-Fi", _ => "Nocturnal" };
                     Some(format!("Mark {sym} locations, each paid by a faction there (an empty one by the suit's faction)."))
                 } else {
                     e("Mark locations holding the suit's faction.")

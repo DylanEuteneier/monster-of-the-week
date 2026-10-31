@@ -57,7 +57,7 @@ const ui = {
   },
   /** @type {string[]} */
   bots: [],
-  /** Night Terrors' nightfall (◐ signature): the flight being chosen at the current mark */
+  /** Night Terrors' nightfall (Nocturnal signature): the flight being chosen at the current mark */
   /** @type {{ faction?: string, to?: string }} */
   flee: {},
   /** A way back (2026-10-26): the suit card being played to bring its faction back, and where each token goes */
@@ -847,8 +847,8 @@ function copyable() {
   return [...new Set((view?.roundPlays ?? []).filter((p) => p.pid !== view?.you && p.card !== 'playbook').map((p) => p.card))];
 }
 
-/** The suits' glyphs, for the prompts. */
-const SUIT_GLYPH = /** @type {Record<string, string>} */ ({ nocturnals: '◐', scifi: 'ↂ', sentients: '⏏', undead: '☾', demonic: '⎈' });
+// A suit's locations by name (designer, 2026-10-30: the archetype glyphs are retired), with its article.
+const SUIT_PLACE = /** @type {Record<string, string>} */ ({ nocturnals: 'a Nocturnal', scifi: 'a Sci-Fi', sentients: 'a Sentient', undead: 'an Undead', demonic: 'a Demon' });
 
 /** The Done button says what stopping does (designer, 2026-10-29: so no one presses it too early). @param {string | undefined} action */
 function doneLabel(action) {
@@ -869,7 +869,7 @@ function cardSteps(card, choice) {
   const view = view0();
   const t = ui.target;
   const locMode = t.mode === 'location';
-  const glyph = SUIT_GLYPH[card.suit ?? ''] ?? '';
+  const aSuit = SUIT_PLACE[card.suit ?? ''] ?? 'a';
   const suitFac = view.factions.find((f) => factionById(f).archetype === card.suit);
   const SF = suitFac ? `the ${fname(suitFac)}` : '';
   const F = t.faction ? `the ${fname(String(t.faction))}` : '';
@@ -878,11 +878,11 @@ function cardSteps(card, choice) {
   const from = Array.isArray(t.from) ? t.from.filter((x) => x !== 'stop') : [];
   const path = Array.isArray(t.path) ? t.path.filter((x) => x !== 'stop') : [];
   const key = choice.kind === 'mode' ? 'mode' : choice.kind === 'split' ? 'split' : `${choice.kind}:${'key' in choice ? choice.key ?? '' : ''}`;
-  const where = locMode ? `at a ${glyph} location` : `of ${SF}`;
-  if (key === 'mode' && card.suit) return `Choose how to play it: LOC (a group or place at a ${glyph} location) or FAC (${SF}), or its +${view.printed?.[card.id] ?? card.sway} to spend it for sway with ${SF}`;
+  const where = locMode ? `at ${aSuit} location` : `of ${SF}`;
+  if (key === 'mode' && card.suit) return `Choose how to play it: LOC (a group or place at ${aSuit} location) or FAC (${SF}), or its +${view.printed?.[card.id] ?? card.sway} to spend it for sway with ${SF}`;
   switch (card.action) {
     case 'invite':
-      if (key === 'location:location') return locMode ? `Pick an empty ${glyph} location to invite them into` : `Pick where ${SF} are invited: a location held by a lone group of another faction, next to ${SF}`;
+      if (key === 'location:location') return locMode ? `Pick an empty ${SUIT_PLACE[card.suit ?? ''].replace(/^an? /, '')} location to invite them into` : `Pick where ${SF} are invited: a location held by a lone group of another faction, next to ${SF}`;
       if (choice.kind === 'group') return locMode ? ((t.moves?.length ?? 0) ? `Pick the second group next door, of another faction` : `Pick the first group next door to invite into ${L}`) : `Pick the group of ${SF} that comes into ${L}`;
       if (key === 'faction:payer') return `Pick whose standing pays the sway at ${L} (one of the two invited factions)`;
       return '';
@@ -898,7 +898,7 @@ function cardSteps(card, choice) {
       if (key === 'location:path') return path.length ? `${path.length} step${path.length === 1 ? '' : 's'} laid: pick the next one (it picks up its own kind there, or crashes into a lone rival), or stop the herd here (up to ${left} more)` : `Lay the bait: pick the first neighbour (it picks up its own kind there, or crashes into a lone rival)`;
       return '';
     case 'well':
-      if (key === 'location:location') return locMode ? `Pick the centre: a ${glyph} location that is empty or holds one faction` : `Pick the centre: a location next to ${SF} that is empty or holds one faction`;
+      if (key === 'location:location') return locMode ? `Pick the centre: ${aSuit} location that is empty or holds one faction` : `Pick the centre: a location next to ${SF} that is empty or holds one faction`;
       if (choice.kind === 'faction') return `Pick the faction called to ${L}: every lone group of it next door comes whole`;
       if (key === 'location:from') return `${from.length ? `${from.length} pulled from fights: ` : ''}pick a fight next door to pull 1 more of ${F} from (lone groups come anyway), or Done calling`;
       return '';
@@ -915,7 +915,7 @@ function cardSteps(card, choice) {
       if (key === 'location:from') return `Pick which of its groups gets the next token (each gets one before any gets a second) · ${left} left`;
       return '';
     case 'plough':
-      if (key === 'location:location') return locMode ? `Pick a fight at a ${glyph} location to plough through` : `Pick a fight ${SF} are in to plough through`;
+      if (key === 'location:location') return locMode ? `Pick a fight at ${aSuit} location to plough through` : `Pick a fight ${SF} are in to plough through`;
       if (key === 'location:from') return `Pick a neighbour for the next token leaving (each side leaves by half, never two sides to one place) · ${left} left`;
       return '';
     case 'split':
@@ -923,11 +923,11 @@ function cardSteps(card, choice) {
       if (key === 'split') return `Pick a neighbour for the next token: they split evenly between two · ${left} left`;
       return '';
     case 'raise':
-      if (key === 'location:location') return locMode ? `Pick a ${glyph} location for the dead to rise at` : `Pick where ${SF} are: the risen join them`;
+      if (key === 'location:location') return locMode ? `Pick ${aSuit} location for the dead to rise at` : `Pick where ${SF} are: the risen join them`;
       if (key === 'location:from') return from.length ? `${from.length} risen: click ${L} again to raise 1 more (1 sway each, up to ${left} more), or Done` : `Click ${L} to raise 1 of the dead (1 sway each); again for each more (up to ${left})`;
       return '';
     case 'control':
-      if (key === 'location:location') return locMode ? `Pick a fight at a ${glyph} location` : `Pick a fight ${SF} are in`;
+      if (key === 'location:location') return locMode ? `Pick a fight at ${aSuit} location` : `Pick a fight ${SF} are in`;
       if (key === 'location:from') return from.length ? `${from.length} cut down: click ${L} again to spend 1 more of your sway there and cut down 1 more (up to ${left} more), or Done` : `Click ${L} to spend 1 of your sway there and cut down 1 of ${F} (your trophy); again for each more (up to ${left})`;
       return '';
     case 'showdown':
@@ -937,7 +937,7 @@ function cardSteps(card, choice) {
     case 'altar': case 'study': case 'terror': {
       const marks = (t.moves ?? []).filter((m) => m.location !== 'stop').length + from.length;
       if (choice.kind === 'group' && ui.payerAt) return '';
-      const what = locMode ? `a ${glyph} location` : `a location holding ${SF}`;
+      const what = locMode ? `${aSuit} location` : `a location holding ${SF}`;
       return marks ? `${marks} marked: pick another ${what} to mark (1 sway each), or Done marking` : `Pick ${what} to mark: 1 of your sway goes on it`;
     }
     default:
@@ -1033,7 +1033,7 @@ function renderTargeting(cardId) {
     : card.action === 'rejoin' && choice.kind === 'location' && choice.key === 'from' ? 'Pick a group to get one more token'
     : (card.action === 'altar' || card.action === 'study') && choice.kind === 'group' && ui.payerAt && choice.options.some((o) => o.location === ui.payerAt) ? `Pick who pays at ${lname(ui.payerAt)}: a faction there`
     : (card.action === 'altar' || card.action === 'study') && choice.kind === 'group' ? 'Pick a location to mark · Skip to finish'
-    : (card.action === 'altar' || card.action === 'study') && choice.kind === 'location' ? `Pick an empty ${card.action === 'altar' ? '⎈' : 'ↂ'} location to mark (the suit's faction pays) · Skip to finish`
+    : (card.action === 'altar' || card.action === 'study') && choice.kind === 'location' ? `Pick an empty ${card.action === 'altar' ? 'Demon' : 'Sci-Fi'} location to mark (the suit's faction pays) · Skip to finish`
     : card.action === 'control' && choice.kind === 'location' && choice.key === 'from' ? `Spend 1 of your sway there to cut down one more · up to ${choice.left} more`
     : card.action === 'control' && choice.kind === 'faction' ? 'Pick the faction the machines turn on'
     : card.action === 'raise' && choice.kind === 'location' && choice.key === 'from' ? `Raise one more of the dead · up to ${choice.left} more`

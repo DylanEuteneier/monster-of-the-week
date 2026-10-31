@@ -159,7 +159,7 @@ const fillOf = (/** @type {string} */ kind, /** @type {string} */ id) => (kind =
 const filled = (/** @type {string} */ shape, /** @type {string} */ kind, /** @type {string} */ id) => shape.replace(/\/>/g, ` fill="${fillOf(kind, id)}"/>`);
 
 /**
- * A suited mark. @param {'location' | 'group' | 'groupNext' | 'swayNext' | 'either' | 'eitherFac'} what @param {string} kind a suit's id, 'none' or 'any'
+ * A suited mark. @param {'location' | 'holding' | 'standing' | 'group' | 'groupNext' | 'swayNext' | 'either' | 'eitherFac'} what @param {string} kind a suit's id, 'none' or 'any'
  * @param {string} [inner] the kind of what sits inside (for the two-location marks: the group's or the hexes')
  */
 export function suitedMark(what, kind, inner = kind) {
@@ -173,6 +173,10 @@ export function suitedMark(what, kind, inner = kind) {
     return wide(`${defs}${filled(hex(a, 12, 7.5), kind, id)}<path d="M18.2 5v14M21.8 5v14" stroke-width="1.5"/>${hex(b, 12, 7.5)}${filled(`<circle cx="${b}" cy="12" r="3.3"/>`, kind, id)}`, 40);
   }
   if (what === 'location') return svg(`${defs}${filled(hex(12, 12, 10.5), kind, id)}`);
+  // A location holding the suit's faction: a plain hex round the faction's coloured token.
+  if (what === 'holding') return svg(`${defs}${hex(12, 12, 10.5)}${filled('<circle cx="12" cy="12" r="4.5"/>', kind, id)}`);
+  // Standing with the suit's faction (the +N sway button): its cube, in the suit's colour, over the line.
+  if (what === 'standing') return svg(`${defs}${filled(cube(12, 8.5, 6), kind, id)}<path d="M3 21h18"/>`);
   if (what === 'group') return svg(`${defs}${filled(group, kind, id)}`);
   const hexes = filled(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}`, kind, id);
   if (what === 'groupNext') return wide(`${defs}${hexes}${filled('<circle cx="9" cy="12" r="3.2"/>', inner, id)}`);

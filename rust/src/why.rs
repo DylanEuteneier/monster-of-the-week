@@ -18,14 +18,15 @@ fn cond(label: impl Into<String>, met: bool) -> Cond {
     Cond { label: label.into(), met }
 }
 
-fn suit_icon(ci: CardIx) -> &'static str {
+/// A suit's locations by name, with the article (designer, 2026-10-30: the archetype glyphs are retired).
+fn suit_place(ci: CardIx) -> &'static str {
     match card(ci).suit.map(|a| spec().archetypes[a].id.as_str()) {
-        Some("nocturnals") => "◐",
-        Some("scifi") => "ↂ",
-        Some("sentients") => "⏏",
-        Some("undead") => "☾",
-        Some("demonic") => "⎈",
-        _ => "",
+        Some("nocturnals") => "a Nocturnal",
+        Some("scifi") => "a Sci-Fi",
+        Some("sentients") => "a Sentient",
+        Some("undead") => "an Undead",
+        Some("demonic") => "a Demon",
+        _ => "a",
     }
 }
 
@@ -72,7 +73,7 @@ fn reading_cond(s: &GameState, ci: CardIx, mode: Mode, loc: Loc, f: Option<Fac>)
     let c = card(ci);
     let sf = c.suit.map(|a| s.factions.iter().position(|&x| spec().factions[x as usize].archetype == a).unwrap_or(0) as Fac)?;
     Some(match mode {
-        Mode::Location => cond(format!("At a {} location", suit_icon(ci)), spec().locations[loc as usize].archetype == c.suit.unwrap_or(usize::MAX)),
+        Mode::Location => cond(format!("At {} location", suit_place(ci)), spec().locations[loc as usize].archetype == c.suit.unwrap_or(usize::MAX)),
         Mode::Faction => match f {
             Some(f) => cond(format!("A group of the {}", fname(s, sf)), f == sf),
             None => cond(format!("Where the {} are", fname(s, sf)), factions_at(s, loc).contains(&sf)),
@@ -91,7 +92,7 @@ pub fn pick_conditions(s: &GameState, pid: Pid, ci: CardIx, mode: Mode, loc: Loc
             let standing = s.players[pid as usize].standing[f as usize];
             Some(vec![
                 match mode {
-                    Mode::Location => cond(format!("A group at a {} location", suit_icon(ci)), spec().locations[loc as usize].archetype == c.suit.unwrap_or(usize::MAX)),
+                    Mode::Location => cond(format!("A group at {} location", suit_place(ci)), spec().locations[loc as usize].archetype == c.suit.unwrap_or(usize::MAX)),
                     Mode::Faction => cond(format!("A group of the {}", fname(s, suit_fac.unwrap_or(0))), Some(f) == suit_fac),
                 },
                 cond("Some of it can leave (half, from a fight)", can_leave(s, loc, f)),
