@@ -1303,9 +1303,10 @@ globalThis.addEventListener?.('wheel', tookScroll, { passive: true });
 globalThis.addEventListener?.('touchmove', tookScroll, { passive: true });
 globalThis.addEventListener?.('keydown', (/** @type {KeyboardEvent} */ e) => { if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) tookScroll(); });
 
-/** Bring an element into view if it's off screen (desktop sections never scroll on their own). @param {Element | null | undefined} el */
+/** Bring an element into view if it's off screen (desktop only; phones never scroll on their own). @param {Element | null | undefined} el */
 function reveal(el) {
-  if (!el || ownScroll) return Promise.resolve();
+  // Phones: a game never scrolls the page on its own (designer, 2026-10-31); you scroll to what you want to see.
+  if (!el || ownScroll || window.matchMedia('(max-width: 600px), (hover: none) and (pointer: coarse)').matches) return Promise.resolve();
   const r = el.getBoundingClientRect();
   if (r.top >= 60 && r.bottom <= window.innerHeight - 120) return Promise.resolve();
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });

@@ -112,6 +112,9 @@ pub struct Persona {
     pub roll_list: f64,
     /// Testing (the pass study): never pass while a card can be played.
     pub no_pass: f64,
+    /// Rounds as votes: judge each vote as it comes (optimism grows with how far off a vote is, not one sum for the
+    /// game; the lean fades with how decided the tally is, not the round clock). No effect with votes off.
+    pub pace: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -124,7 +127,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0,
     }
 }
 
@@ -191,6 +194,7 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "mix" => p.mix = x,
                 "rollList" => p.roll_list = x,
                 "noPass" => p.no_pass = x,
+                "pace" => p.pace = x,
                 _ => {}
             }
         }
@@ -401,7 +405,8 @@ fn project_fights(s: &GameState) -> GameState {
 
 /// The chance the invaders win, from the projected presence against the bar, shifted by `push` (a goal's optimism).
 /// Rounds as votes: each round left is a vote, this round's close sharp, later ones less so; the chance of a majority.
-fn invaders_reach(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64) -> f64 {
+/// `paced`: `push` is per round, so a vote k rounds off gets k + 1 of it (this round's vote, one).
+fn invaders_reach(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64, paced: bool) -> f64 {
     if !s.options.round_votes {
         return sigmoid((projected - threshold - 0.5 + push) / spread_p);
     }
@@ -410,7 +415,8 @@ fn invaders_reach(s: &GameState, projected: f64, threshold: f64, spread_p: f64, 
     let mut dp = vec![0.0f64; left + 1];
     dp[0] = 1.0;
     for k in 0..left {
-        let q = sigmoid((projected - threshold - 0.5 + push) / (2.0 + 3.0 * k as f64));
+        let shift = if paced { push * (k as f64 + 1.0) } else { push };
+        let q = sigmoid((projected - threshold - 0.5 + shift) / (2.0 + 3.0 * k as f64));
         for j in (0..=k + 1).rev() {
             dp[j] = dp[j] * (1.0 - q) + if j > 0 { dp[j - 1] * q } else { 0.0 };
         }
@@ -539,7 +545,7 @@ fn chances_after(s: &GameState, pid: Pid) -> Chances {
     // How far the game has gone: a seat's lean (its starting preference) fades with it (choose_goal).
     let settled = if rounds > 1.0 { ((s.round as f64 - 1.0) / (rounds - 1.0)).min(1.0) } else { 1.0 };
     let known = if s.options.round_votes { 1.0 } else { settled };
-    let p_invaders = (1.0 - known) * prior + known * invaders_reach(s, projected, threshold, spread_p, 0.0);
+    let p_invaders = (1.0 - known) * prior + known * invaders_reach(s, projected, threshold, spread_p, 0.0, false);
     Chances { p_invaders, prior, known, settled, backers, linear_island, rival_invaders, as_invaders, as_island, margin_invaders, margin_island, projected, threshold, spread_p, rounds_left }
 }
 
@@ -599,9 +605,13 @@ fn set_access(s: &GameState, pid: Pid) -> f64 {
 /// Which goal to pursue now (chooseGoal). Draws from `rng` once per game, for the memory's jitter.
 pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut BotMemory>, rng: Rng) -> Goal {
     let c = win_chances_shared(s, pid);
-    let push = p.push * (c.rounds_left + 1.0);
-    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach(s, c.projected, c.threshold, c.spread_p, push);
-    let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach(s, c.projected, c.threshold, c.spread_p, -push));
+    let paced = on(p.pace) && s.options.round_votes;
+    let push = if paced { p.push } else { p.push * (c.rounds_left + 1.0) };
+    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach(s, c.projected, c.threshold, c.spread_p, push, paced);
+    let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach(s, c.projected, c.threshold, c.spread_p, -push, paced));
+    // Paced: the lean fades as the tally nears a majority (0 at 0-0, 1 once a side has it), not with the round.
+    let majority = (s.options.rounds / 2 + 1).max(1) as f64;
+    let settled = if paced { (s.votes[0].max(s.votes[1]) as f64 / majority).min(1.0) } else { c.settled };
     let evidence = reach_inv * c.as_invaders - reach_isl * c.as_island;
     let mut memory = memory;
     if let Some(m) = memory.as_deref_mut() {
@@ -610,7 +620,7 @@ pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bot
         }
     }
     let jitter = memory.as_deref().and_then(|m| m.jitter).unwrap_or(0.0);
-    let score = evidence + (p.lean + jitter) * (1.0 - c.settled);
+    let score = evidence + (p.lean + jitter) * (1.0 - settled);
     let held = memory.as_deref().and_then(|m| m.goal);
     let bar = match held {
         Some(Goal::Invaders) => -p.hold,
