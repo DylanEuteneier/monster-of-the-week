@@ -449,6 +449,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .ik-to { color: var(--color-muted); padding: 0 4px; }
 .ik-marks { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: var(--space-2); margin-bottom: var(--space-3); }
 .ik-mark { margin: 0; display: flex; align-items: center; gap: var(--space-2); }
+.ik-mark > .ik { flex: none; }
 .ik-examples { display: grid; grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr)); gap: var(--space-3); }
 .ik-example { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); border: var(--border); border-radius: var(--radius); }
 .ik-line { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }

@@ -1404,6 +1404,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 
 - **Decided (designer, 2026-10-30):** the noun marks are built from a few parts that combine: a token is a circle, sway is a cube, a location is a hex, and a thing drawn inside a hex is that thing at a location (sway on a location is a cube in a hex). On a card's target and use rows (the layout mock-ups on the assets page), the tag is its mark alone, with no word (designer: "the word is redundant"): LOC is the hex; FAC is the faction's own symbol (the icon asset); Standing is a cube over a line (off the board); Sway (on the board) is a cube in a hex; a group (Tokens) is three circles in a hex.
 - **Why (designer):** one small vocabulary, combined, describes everything (D34's composable blocks, for the nouns).
+- **One design language (designer, 2026-10-30):** every icon shares the same parts and stroke: the diagrams' pieces are the noun marks themselves (a circle, a cube, a hex; standing a cube over a line, off the board), and the faction's symbol is redrawn as a clean vector mark for the icons (moon and star, alien head, power, skull, horns), while the printed art keeps its pixel symbols.
 - **Open:** a lone group (one circle in a hex) and a single token at a location would now draw alike; the card layout itself (topline, target field, specifics, thematic text) is a mock-up, not a decision.
 - **Date:** 2026-10-30
 

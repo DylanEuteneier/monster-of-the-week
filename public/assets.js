@@ -10,7 +10,7 @@ import art from './assets/sprites.json' with { type: 'json' };
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { LAYOUT_SUGGESTIONS } from './layout-suggestions.js';
 import { cardHtml, suitIcon } from './cards.js';
-import { NOUNS, VERBS, iconHtml, nounHtml, verbDiagram } from './icons.js';
+import { NOUNS, VERBS, SUITS, iconHtml, nounHtml, verbDiagram } from './icons.js';
 
 
 /** @param {unknown} value */
@@ -74,7 +74,7 @@ function renderIcons() {
     ['Wake the Dead', 'The dead rise from the supply.', [line(`${iconHtml('raise', 'token', 'N')}${to}${nounHtml('location')}`, '1 sway each; a third side at a fight')]],
   ].map(([name, gist, lines]) => `<div class="ik-example"><b>${esc(String(name))}</b><div class="small">${esc(String(gist))}</div>${/** @type {string[]} */ (lines).join('')}</div>`).join('');
   $('icons').innerHTML = `<div class="row-between"><h2>Action icons (draft)</h2><span class="small muted">IK1, D34: a verb block plus a noun block</span></div>
-    <p class="small muted">Second draft, direction B (designer): each verb is a mini board diagram (hexes, arrows), and the noun is the piece moving through it (a token dot, a sway cube; standing uses faction circles, being off the board). An amount (1, X, ½, all) sits beside it where it matters. Clean vector, not pixel art. No card uses them yet.</p>
+    <p class="small muted">Direction B (designer): each verb is a mini board diagram (hexes, arrows), and the noun is the piece moving through it. One set of parts throughout (D35): a token is a circle, sway a cube, a location a hex; standing is a cube over a line, being off the board; every mark has the same stroke. An amount (1, X, ½, all) sits beside it where it matters. Clean vector, not pixel art. No card uses them yet.</p>
     <h3 class="small">Verbs as diagrams (direction B)</h3><div class="ik-marks ik-marks-b">${diagrams}</div>
     <h3 class="small">One verb, three nouns</h3><div class="ik-marks ik-marks-b">${nounsIn}</div>
     <h3 class="small">Nouns</h3><div class="ik-marks">${marks(NOUNS, 'ik-n')}</div>
@@ -126,7 +126,7 @@ function layoutCard(l) {
   const r = c.readings;
   // Each reading is a button-like row (designer, 2026-10-30: the target looks clickable, the LOC/FAC choice moving into it).
   // Each row's tag is its mark alone (designer, 2026-10-30, D35); the word is the row's label.
-  const tagMark = (/** @type {string} */ tag) => tag === 'FAC' ? suitIcon(c.suit, 2) : NOUNS[TAG_NOUN[tag]].svg;
+  const tagMark = (/** @type {string} */ tag) => tag === 'FAC' ? SUITS[c.suit].svg : NOUNS[TAG_NOUN[tag]].svg;
   const cell = (/** @type {string} */ tag) => `<b title="${esc(tag)}">${tagMark(tag)}</b>`;
   const row = (/** @type {string} */ tag, /** @type {string[]} */ cells) => `<div class="lay-row lay-row-ic" role="button" aria-label="${esc(tag)}">${cell(tag)}${cells.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
   const target = !t ? '' : t.grid
@@ -150,9 +150,9 @@ const TAG_NOUN = /** @type {Record<string, keyof typeof NOUNS>} */ ({ LOC: 'loca
 function renderTagMarks() {
   const mark = (/** @type {string} */ html, /** @type {string} */ label) => `<figure class="ik-mark"><span class="ik ik-solo"><span class="ik-n">${html}</span></span><figcaption class="small">${esc(label)}</figcaption></figure>`;
   const parts = [['token', 'Token: a circle'], ['sway', 'Sway: a cube'], ['location', 'Location: a hex']].map(([n, l]) => mark(NOUNS[n].svg, l)).join('');
-  const tags = [mark(NOUNS.location.svg, 'LOC: the location'), mark(suitIcon('undead', 2), 'FAC: the faction’s own symbol'), mark(NOUNS.standing.svg, 'Standing: a cube over the line (off the board)'), mark(NOUNS.swayAt.svg, 'Sway: a cube in a hex (sway on the board)'), mark(NOUNS.group.svg, 'Tokens: three circles in a hex (a group)')].join('');
+  const tags = [mark(NOUNS.location.svg, 'LOC: the location'), mark(SUITS.undead.svg, 'FAC: the faction’s own symbol'), mark(NOUNS.standing.svg, 'Standing: a cube over the line (off the board)'), mark(NOUNS.swayAt.svg, 'Sway: a cube in a hex (sway on the board)'), mark(NOUNS.group.svg, 'Tokens: three circles in a hex (a group)')].join('');
   return `<div class="lay-opts"><h3>Row marks (D35)</h3><p class="small muted">A token is a circle, sway a cube, a location a hex; they combine, so a thing inside a hex is that thing at a location. Each row shows its mark alone; the word is its label for screen readers and on hover.</p>
-    <h3 class="small">Parts</h3><div class="ik-marks">${parts}</div><h3 class="small">On the rows</h3><div class="ik-marks">${tags}</div></div>`;
+    <h3 class="small">Parts</h3><div class="ik-marks">${parts}</div><h3 class="small">Suit symbols (vector, for the icons)</h3><div class="ik-marks">${Object.values(SUITS).map((s) => mark(s.svg, s.label)).join('')}</div><h3 class="small">On the rows</h3><div class="ik-marks">${tags}</div></div>`;
 }
 
 /** The layout mock-ups, each beside the card as it is now. */
