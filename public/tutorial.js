@@ -752,6 +752,12 @@ function drive() {
     next(spot(SEL.players, 'Who goes first', `<p>${first === YOU ? 'You open' : `${esc(first)} opens`} round 1 (drawn at random), with any card, then play goes round the table. The first player stays the same each round, until someone plays ${miniCard('playbook')}: they go first in the next. We'll stop at each new kind of play and skip the rest.</p>`), drive);
     return null;
   }
+  // D44: a round opened by whoever played Steal Their Playbook in the last one says so, once.
+  if (s.phase === 'play' && s.round > 1 && s.first && R.taught[`stole:${s.first}:${s.round - 1}`] && !R.taught[`firstSaid:${s.round}`]) {
+    R.taught[`firstSaid:${s.round}`] = true;
+    next(spot(SEL.seat(s.first), 'Who goes first', `<p>${who(s.first)} ${verb(s.first, 'goes', 'go')} first this round: ${s.first === YOU ? 'you' : 'they'} played ${miniCard('playbook')} last round. Until someone plays it again, the first player stays.</p>`), drive);
+    return null;
+  }
   if (actor === YOU) {
     // The learner moves on the table, with a hint (designer, 2026-10-11); the controls explained the first time.
     // No cards left: the pass is the only move, made for them (designer, 2026-10-11).
@@ -879,7 +885,11 @@ function narrate(pid, move, a, b) {
     const what = said || c.text;
     // Paid from standing onto the board (a move), not from the supply.
     const placed = b.seating.some((x) => b.factions.some((f) => b.players[x].standing[f] < a.players[x].standing[f]) && Object.keys(b.board).some((l) => (b.board[l].sway[x] ?? 0) > (a.board[l].sway[x] ?? 0)));
+    // D44: Steal Their Playbook's player goes first next round (remembered for that round's start).
+    const stole = c.id === 'playbook' && !!move.target;
+    if (stole) R.taught[`stole:${pid}:${a.round}`] = true;
     const teach = [
+      stole && once('playbook') ? `<p>${who(pid)} now ${verb(pid, 'holds', 'hold')} one card more than the others, so ${pid === YOU ? 'you get' : 'they get'} the round's last move. The price: ${pid === YOU ? 'you go' : 'they go'} first next round${a.round >= Number(a.options.rounds) ? ', and this is the last round, so it costs nothing' : ''}.</p>` : '',
       placed && once('move') ? recall('Sway paid from your standing lands on the board: a bid where it lands.') : '',
       !c.suit && once('special') ? '<p class="small muted">Unsuited cards can\'t be spent for sway; they bend the rules instead.</p>' : '',
     ].join('');
