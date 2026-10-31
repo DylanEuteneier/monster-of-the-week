@@ -93,7 +93,7 @@
   --card-face: #fbf6ea;      /* token cardboard */
   --card-ink: #302b2d;
   /* Suit colours: the hex borders' middle colours */
-  --suit-nocturnals: #8f488d; --suit-scifi: #3dc3d8; --suit-sentients: #a0948f; --suit-undead: #71ab43; --suit-demonic: #e7482d; --suit-none: #7d7071;
+  --suit-nocturnals: #8f488d; --suit-scifi: #71ab43; --suit-sentients: #3dc3d8; --suit-undead: #a05b54; --suit-demonic: #e7482d; --suit-none: #7d7071;
   /* Target states, from the palette: y gold, w white, k ink */
   --state-candidate: #f4b41a;
   --state-hover: #e0f2f4;

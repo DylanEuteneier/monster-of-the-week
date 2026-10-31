@@ -158,7 +158,7 @@ export const nounHtml = (noun, amount = '') => `<span class="ik ik-solo" title="
 
 const SUIT_ORDER = ['nocturnals', 'scifi', 'sentients', 'undead', 'demonic'];
 /** The suit colours, as app.css's --suit-* (an SVG pattern's own fills don't take CSS variables reliably). */
-const SUIT_HEX = /** @type {Record<string, string>} */ ({ nocturnals: '#8f488d', scifi: '#3dc3d8', sentients: '#a0948f', undead: '#71ab43', demonic: '#e7482d' });
+const SUIT_HEX = /** @type {Record<string, string>} */ ({ nocturnals: '#8f488d', scifi: '#71ab43', sentients: '#3dc3d8', undead: '#a05b54', demonic: '#e7482d' });
 let stripeId = 0;
 /** The stripes of every suit, as an SVG pattern with its own id: all five across each shape it fills. */
 const stripes = (/** @type {string} */ id) => `<defs><pattern id="${id}" patternUnits="objectBoundingBox" patternContentUnits="objectBoundingBox" width="1" height="1">${SUIT_ORDER.map((s, i) => `<rect x="${i / 5}" y="0" width="0.2" height="1" fill="${SUIT_HEX[s]}" stroke="none"/>`).join('')}</pattern></defs>`;

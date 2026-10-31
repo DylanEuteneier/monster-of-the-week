@@ -399,9 +399,10 @@ def _in_hex(x, y, cx, cy):
 # they sit together as one board.
 ARCHETYPE_BORDERS = {
     "nocturnals": {"lit": "L", "mid": "m", "dark": "v"},
-    "scifi": {"lit": "a", "mid": "c", "dark": "b"},
-    "sentients": {"lit": "z", "mid": "g", "dark": "X"},
-    "undead": {"lit": "l", "mid": "G", "dark": "h"},
+    # Sci-Fi green, Sentients blue, Undead brown (designer, 2026-10-31: the Sentients' grey read as unsuited).
+    "scifi": {"lit": "l", "mid": "G", "dark": "e"},
+    "sentients": {"lit": "a", "mid": "c", "dark": "b"},
+    "undead": {"lit": "f", "mid": "U", "dark": "u"},
     "demonic": {"lit": "o", "mid": "r", "dark": "R"},
 }
 
