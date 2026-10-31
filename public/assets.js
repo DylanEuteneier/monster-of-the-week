@@ -58,17 +58,17 @@ function renderIcons() {
       line(`${iconHtml('spread', 'token', 'X')}${to}${nounHtml('neighbour')}`, 'a group sends 1 to each of up to X neighbours'),
     ]],
     ['Switch Allegiance', 'Move up to X from one to another.', [
-      line(`${iconHtml('burn', 'standing', 'X')}${to}${iconHtml('gain', 'standing', 'X')}`, 'with one faction, gain the same with another'),
+      line(`${iconHtml('pay', 'standing', 'X')}${to}${iconHtml('gain', 'standing', 'X')}`, 'with one faction, gain the same with another'),
       line(`${iconHtml('move', 'sway', 'X')}${to}${nounHtml('elsewhere')}`, 'from one location to any other'),
     ]],
     ['Call in Favours', 'Gain up to X from your supply.', [
-      line(`${iconHtml('gain', 'sway', 'X')}${to}${nounHtml('fight')}`, '1 at each of up to X fights'),
+      line(`${iconHtml('gain', 'swayAt', 'X')}${to}${nounHtml('fight')}`, '1 at each of up to X fights'),
       line(`${iconHtml('gain', 'standing', 'X')}`, 'with one faction'),
     ]],
     ['Draw Them Away', 'A group spreads to at least two neighbours.', [line(`${nounHtml('group')}${to}${iconHtml('spread', 'token', '2+')}`, '1 to each chosen neighbour; the rest stay')]],
     ['Light of the Cross', 'A group splits evenly in two.', [line(`${nounHtml('group')}${to}${iconHtml('split', 'neighbour')}`, 'between two neighbours')]],
     ['The Big Chase', 'A group is chased step by step.', [line(`${nounHtml('group')}${to}${iconHtml('trail', 'token', '1')}`, '1 stays at each step; the rest arrive at the end')]],
-    ['Showdown', 'Burn sway at a lone group to slay as many.', [line(`${nounHtml('lone')}${to}${iconHtml('burn', 'sway', 'X')}${to}${iconHtml('slay', 'token', 'X')}`, 'never a fight; they are your trophies')]],
+    ['Showdown', 'Burn sway at a lone group to slay as many.', [line(`${nounHtml('lone')}${to}${iconHtml('pay', 'swayAt', 'X')}${to}${iconHtml('slay', 'token', 'X')}`, 'never a fight; they are your trophies')]],
     ['Spill Blood on the Altar', 'Mark locations; their fights are bent.', [line(`${iconHtml('mark', 'location', 'N')}${to}${iconHtml('bend', 'fight')}`, 'the winner loses as many as the loser')]],
     ['Wake the Dead', 'The dead rise from the supply.', [line(`${iconHtml('raise', 'token', 'N')}${to}${nounHtml('location')}`, '1 sway each; a third side at a fight')]],
   ].map(([name, gist, lines]) => `<div class="ik-example"><b>${esc(String(name))}</b><div class="small">${esc(String(gist))}</div>${/** @type {string[]} */ (lines).join('')}</div>`).join('');

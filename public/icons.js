@@ -65,9 +65,8 @@ export const VERBS = {
   raise: { label: 'Raise / bring (from supply)', svg: svg(`<path d="M3 21h18"/><path d="M12 18V5"/>${head(12, 5, -90)}`) },
   mark: { label: 'Mark (1 sway on it)', svg: svg('<path d="M6 21V4"/><path d="M6 4h11l-3 4 3 4H6"/>') },
   join: { label: 'Join (two as one)', svg: svg('<rect x="2.5" y="8" width="9" height="8" rx="4"/><rect x="12.5" y="8" width="9" height="8" rx="4"/>') },
-  pay: { label: 'Pay (spend)', svg: svg('<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>') },
-  gain: { label: 'Gain', svg: svg('<circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/>') },
-  burn: { label: 'Burn (back to supply)', svg: svg('<path d="M12 3c1 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-4 3-6 1 2 2 3 3 3-1-3-1-5 0-8z"/>') },
+  pay: { label: 'Pay, spend or burn (−)', svg: svg('<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>') },
+  gain: { label: 'Gain (+)', svg: svg('<circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/>') },
   take: { label: 'Take a card', svg: svg(`<rect x="11" y="3" width="10" height="14" rx="1.5"/><path d="M3 15h9"/>${head(3, 15, 180)}`) },
   bend: { label: 'Bend a fight (a rule this round)', svg: svg('<path d="M12 3l9 9-9 9-9-9z"/><path d="M12 8v5M12 16v.5"/>') },
 };
@@ -104,9 +103,11 @@ const stagger = (/** @type {number} */ y, /** @type {number} */ dx) => (y === 22
 const GROUP = /** @type {Record<number, [number, number][]>} */ ({ 1: [[0, 0]], 2: [[-3, 0], [3, 0]], 3: [[-3, 2.6], [3, 2.6], [0, -2.6]], 5: [[-6, 2.6], [0, 2.6], [6, 2.6], [-3, -2.6], [3, -2.6]] });
 const group = (/** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ k, noun = 'token') => GROUP[k].map(([dx, dy]) => piece(noun, x + dx, y + dy)).join('');
 
-/** A piece drawn large at (x, y), its lines kept at the diagram's weight. */
-const big = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {number} */ y, k = 3) =>
-  `<g transform="translate(${x} ${y}) scale(${k})" stroke-width="${(1.75 / k).toFixed(3)}">${piece(noun, 0, 0).replace(/stroke-width="([\d.]+)"/g, () => `stroke-width="${(1.75 / k).toFixed(3)}"`)}</g>`;
+/** The noun's own mark (where the thing is) with a plus or a minus beside it. */
+const signed = (/** @type {string} */ noun, /** @type {boolean} */ plus) => {
+  const mark = (noun === 'token' ? NOUNS.group : NOUNS[/** @type {keyof typeof NOUNS} */ (noun)] ?? NOUNS.group).svg.replace('<svg class="ik-svg"', '<svg x="18" y="10"');
+  return `${mark}<path d="M48 22h10${plus ? 'M53 17v10' : ''}" stroke-width="2.5"/>`;
+};
 
 /** Each verb's diagram, given the noun that moves. @type {Record<string, (noun: string) => string>} */
 const DIAGRAMS = {
@@ -120,13 +121,13 @@ const DIAGRAMS = {
   drive: (n) => `${place(n, 24, 22)}${ghost('<circle cx="21.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="27" cy="22" r="2.5"/>')}${place(n, 52, 13)}${piece(n, 52, 13)}${place(n, 52, 31)}<circle cx="52" cy="31" r="3" stroke-width="1.75"/>`,
   flee: (n) => `${place(n, 26, 26)}${ghost(piece(n, 26, 26))}${place(n, 54, 26)}${piece(n, 54, 26)}<path d="M38 6a5 5 0 1 0 4 7.5 3.75 3.75 0 0 1-4-7.5z" stroke-width="1.75"/>`,
   slay: (n) => `${place(n, 26, 22)}${ghost(`${piece(n, 23, 22)}${piece(n, 29, 22)}`)}<path d="M46 13h12v5a6 6 0 0 1-12 0zM52 24v5M47 32h10" stroke-width="1.75"/>`,
-  // From and back to the supply, gain and pay (spend): the piece and a plus or a minus; the supply is implied (designer, 2026-10-30).
-  raise: (n) => `${place(n, 32, 22)}${piece(n, 32, 22)}<path d="M46 22h10M51 17v10" stroke-width="2.5"/>`,
+  // Gain and pay are one idea, a plus or a minus by the noun's own mark, which says where (sway on a location, standing
+  // with a faction); the supply is implied (designer, 2026-10-30). Burn is pay; raise is gain of tokens at a location.
+  raise: (n) => signed(n, true),
   join: (n) => `${place(n, 22, 22)}${place(n, 58, 22)}<path d="M31 20h18M31 24h18" stroke-width="1.75"/>`,
   mark: (n) => `${place(n, 40, 26)}<path d="M40 26V5h11l-3 4 3 4H40" stroke-width="1.75"/>${PIECES.sway(34, 30)}`,
-  pay: (n) => `${big(n, 32, 22)}<path d="M46 22h10" stroke-width="2.5"/>`,
-  gain: (n) => `${big(n, 32, 22)}<path d="M46 22h10M51 17v10" stroke-width="2.5"/>`,
-  burn: (n) => `${big(n, 32, 22)}<path d="M46 22h10" stroke-width="2.5"/>`,
+  pay: (n) => signed(n, false),
+  gain: (n) => signed(n, true),
   take: () => `${ghost('<rect x="16" y="10" width="16" height="24" rx="2"/>')}<rect x="46" y="10" width="16" height="24" rx="2" stroke-width="1.75"/>`,
   bend: (n) => `${place(n, 26, 22)}<circle cx="23.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="29" cy="22" r="2.5" stroke-width="1.75"/><path d="M54 7l10 15-10 15-10-15z" stroke-width="1.75"/><path d="M54 15v8M54 28v.5"/>`,
 };
