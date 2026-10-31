@@ -51,7 +51,8 @@ const ui = {
     enabled: location.pathname === '/hotseat',
     /** @type {{ player: string, token: string }[]} */
     seats: [],
-    follow: true,
+    /** A seat clicked to look at: the seat that was to act then (undefined when following the action). @type {string | null | undefined} */
+    peek: undefined,
     /** set while we deliberately close a socket to switch seats, so the close handler does not reconnect */
     switching: false,
   },
@@ -435,7 +436,10 @@ const fname = (f) => factionById(f).name;
 
 function renderHeader() {
   const view = ui.view;
-  const status = view ? `${ui.tutorial ? 'Tutorial · ' : ''}Round ${view.round} of ${view.rounds} — ${ui.note ?? PHASE_LABELS[view.phase]}` : ui.connectionNote;
+  const status = view ? `Round ${view.round} of ${view.rounds} — ${ui.note ?? PHASE_LABELS[view.phase]}` : ui.connectionNote;
+  // The game type heads the Table menu (designer, 2026-10-31), not the header or the seat bar.
+  const type = document.getElementById('game-type');
+  if (type) type.textContent = `Game: ${ui.tutorial ? 'Tutorial' : ui.hotseat.enabled ? 'Hotseat' : 'Online'}`;
   // Your seat: not in hotseat, where the seat bar shows whose turn it is.
   const you = view && !ui.hotseat.enabled ? `<span class="topbar-seat"><span class="swatch" style="background:${colourOf(view.you)}"></span>${esc(view.you)}</span>` : '';
   setHtml('header-main', `
@@ -1786,8 +1790,10 @@ function whoShouldAct(view) {
 function followTheAction(view) {
   if (!ui.hotseat.enabled) return;
   renderSeatbar();
-  if (!ui.hotseat.follow) return;
+  // A seat you clicked to look at stays until the turn moves on to someone new; then following resumes.
   const next = whoShouldAct(view);
+  if (ui.hotseat.peek !== undefined && next === ui.hotseat.peek) return;
+  ui.hotseat.peek = undefined;
   if (next && next !== view.you && ui.hotseat.seats.some((seat) => seat.player === next)) switchSeat(next);
 }
 
@@ -1800,8 +1806,7 @@ function renderSeatbar() {
     const isYou = seat.token === ui.token;
     return `<button class="btn seat ${isYou ? 'btn-active' : ''}" data-action="switch-seat" data-player="${esc(seat.player)}" style="border-left: 4px solid ${colourOf(seat.player)}">${esc(seat.player)}${acting === seat.player ? ' <span class="tag">to act</span>' : ''}</button>`;
   });
-  bar.innerHTML = `<span class="small muted">Hotseat</span>${seats.join('')}
-    <label class="inline small"><input type="checkbox" data-action="toggle-follow" ${ui.hotseat.follow ? 'checked' : ''}> follow the action</label>
+  bar.innerHTML = `${seats.join('')}
     ${ui.bots.length ? `<span class="small muted">bots: ${ui.bots.map(esc).join(', ')}</span>` : ''}`;
 }
 
@@ -1941,13 +1946,9 @@ function onClick(event) {
     return;
   }
   if (action === 'switch-seat') {
-    ui.hotseat.follow = false;
+    ui.hotseat.peek = ui.view ? whoShouldAct(ui.view) : null;
     switchSeat(target.dataset.player ?? '');
     return renderSeatbar();
-  }
-  if (action === 'toggle-follow') {
-    ui.hotseat.follow = target instanceof HTMLInputElement ? target.checked : !ui.hotseat.follow;
-    if (ui.view) followTheAction(ui.view);
   }
 }
 

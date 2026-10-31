@@ -230,6 +230,7 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .topbar-menu[open] > summary { border-color: var(--color-accent); color: var(--color-accent); }
 .topbar-menu-list { position: absolute; right: 0; top: calc(100% + var(--space-2)); z-index: var(--z-overlay); display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); width: 240px; padding: var(--space-2); background: var(--color-panel); border: 2px solid var(--color-border); box-shadow: 3px 3px 0 var(--ink); }
 .topbar-menu-list > .btn { text-align: left; }
+.topbar-menu-type { margin: 0; padding: 0 var(--space-1); }
 .topbar-menu-list .hint-aim { display: flex; justify-content: space-between; gap: var(--space-2); padding: 0 var(--space-1); }
 .topbar-menu-list .hint-aim input { flex: 1; min-width: 0; width: auto; }
 .topbar-menu-list .aim-pole { white-space: nowrap; }
