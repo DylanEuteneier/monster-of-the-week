@@ -159,13 +159,19 @@ const fillOf = (/** @type {string} */ kind, /** @type {string} */ id) => (kind =
 const filled = (/** @type {string} */ shape, /** @type {string} */ kind, /** @type {string} */ id) => shape.replace(/\/>/g, ` fill="${fillOf(kind, id)}"/>`);
 
 /**
- * A suited mark. @param {'location' | 'group' | 'groupNext' | 'swayNext'} what @param {string} kind a suit's id, 'none' or 'any'
+ * A suited mark. @param {'location' | 'group' | 'groupNext' | 'swayNext' | 'either' | 'eitherFac'} what @param {string} kind a suit's id, 'none' or 'any'
  * @param {string} [inner] the kind of what sits inside (for the two-location marks: the group's or the hexes')
  */
 export function suitedMark(what, kind, inner = kind) {
   const id = `ik-any-${stripeId++}`;
   const defs = kind === 'any' || inner === 'any' ? stripes(id) : '';
   const group = '<circle cx="8" cy="15.5" r="4.5"/><circle cx="16" cy="15.5" r="4.5"/><circle cx="12" cy="8" r="4.5"/>';
+  // Either a location of the suit OR a location holding the suit's faction (designer, 2026-10-30): an OR divider.
+  // The faction's side first for a FAC reading (eitherFac), as its text reads.
+  if (what === 'either' || what === 'eitherFac') {
+    const [a, b] = what === 'either' ? [8.5, 31.5] : [31.5, 8.5];
+    return wide(`${defs}${filled(hex(a, 12, 7.5), kind, id)}<path d="M18.2 5v14M21.8 5v14" stroke-width="1.5"/>${hex(b, 12, 7.5)}${filled(`<circle cx="${b}" cy="12" r="3.3"/>`, kind, id)}`, 40);
+  }
   if (what === 'location') return svg(`${defs}${filled(hex(12, 12, 10.5), kind, id)}`);
   if (what === 'group') return svg(`${defs}${filled(group, kind, id)}`);
   const hexes = filled(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}`, kind, id);

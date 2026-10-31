@@ -1406,6 +1406,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Why (designer):** one small vocabulary, combined, describes everything (D34's composable blocks, for the nouns).
 - **One design language (designer, 2026-10-30):** every icon shares the same parts and stroke: the diagrams' pieces are the noun marks themselves (a circle, a cube, a hex; standing a cube over a line, off the board). A faction on the board is always its tokens in a location, never a symbol (designer, 2026-10-30).
 - **Suited marks (designer, 2026-10-30):** a suit's colour fills what belongs to that suit (its locations, its faction's tokens); grey marks the unsuited (any location); stripes of all five suit colours mean any suit (any faction's tokens).
+- **No colour where the suit doesn't matter (designer, 2026-10-30):** on the unsuited cards, and anywhere a faction's or location's suit is irrelevant, marks carry no colour at all. Where a target is either a suit's location OR a location holding its faction, the mark shows both with an OR divider (two upright lines), in the order the reading's text gives them.
 - **Open:** a lone group (one circle in a hex) and a single token at a location would now draw alike; the card layout itself (topline, target field, specifics, thematic text) is a mock-up, not a decision.
 - **Date:** 2026-10-30
 

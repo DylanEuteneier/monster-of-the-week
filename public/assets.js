@@ -102,7 +102,7 @@ const LAYOUTS = [
     target: { head: 'the locations marked' }, specifics: ['This round, at a marked location’s fight, the winner loses as many as the loser.'],
     flavour: 'Father and the Flock spill blood on the altar.' },
   { id: 'gate', verb: 'join', noun: 'location', word: 'Join', gist: 'two locations, for the rest of the round',
-    target: { head: 'the two ends' },
+    target: { head: 'the two ends', mark: 'either' },
     specifics: ['They count as a single location for movement.', 'They fight as one: strength and sway added across both; a true tie scorches both.', 'Never three factions across them.', 'Only 1 sway, at one end.'], flavour: '' },
   { id: 'stakes', verb: 'gather', word: 'Gather', gist: 'up to X into one', uses: [
     ['Standing', 'standing', 'take 1 standing from each of up to X factions, all into one.'],
@@ -128,8 +128,9 @@ function layoutCard(l) {
   // Each row's tag is its mark alone (designer, 2026-10-30, D35); the word is the row's label.
   // Suited marks (designer, 2026-10-30): the suit's colour for its locations and its faction's tokens; grey for the
   // unsuited (any location); every suit's stripes for any faction.
-  const tagMark = (/** @type {string} */ tag) => tag === 'LOC' ? suitedMark('location', c.suit ?? 'none') : tag === 'FAC' ? suitedMark('group', c.suit ?? 'any') : NOUNS[TAG_NOUN[tag]].svg;
-  const NEXT = /** @type {Record<string, string>} */ ({ groupNext: suitedMark('groupNext', 'none', 'any'), swayNext: suitedMark('swayNext', 'none') });
+  const tagMark = (/** @type {string} */ tag) => t?.mark ? suitedMark(tag === 'FAC' ? `${t.mark}Fac` : t.mark, c.suit) : tag === 'LOC' ? suitedMark('location', c.suit ?? 'none') : tag === 'FAC' ? suitedMark('group', c.suit ?? 'any') : NOUNS[TAG_NOUN[tag]].svg;
+  // Where a suit doesn't matter (the unsuited cards' uses), no colour at all (designer, 2026-10-30).
+  const NEXT = /** @type {Record<string, string>} */ ({});
   const cell = (/** @type {string} */ tag, noun = '') => `<b title="${esc(tag)}">${NEXT[noun] ?? (noun && NOUNS[noun] ? NOUNS[noun].svg : tagMark(tag))}</b>`;
   const row = (/** @type {string} */ tag, /** @type {string[]} */ cells, noun = '') => `<div class="lay-row lay-row-ic" role="button" aria-label="${esc(tag)}">${cell(tag, noun)}${cells.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
   const target = !t ? '' : t.grid
@@ -163,8 +164,8 @@ function renderTagMarks() {
 function renderSuitedMarks() {
   const fig = (/** @type {string} */ html, /** @type {string} */ label) => `<figure class="ik-mark"><span class="ik ik-solo"><span class="ik-n">${html}</span></span><figcaption class="small">${esc(label)}</figcaption></figure>`;
   const suits = spec.archetypes.map((a) => fig(`${suitedMark('location', a.id)}${suitedMark('group', a.id)}`, `${a.name}: its locations, its group`)).join('');
-  const other = [fig(suitedMark('location', 'none'), 'Unsuited: any location (grey)'), fig(suitedMark('group', 'any'), 'Any faction’s group (every suit’s stripes)'), fig(suitedMark('groupNext', 'none', 'any'), 'Any faction’s group next door'), fig(suitedMark('swayNext', 'none'), 'Your sway next door')].join('');
-  return `<div class="lay-opts"><h3>Suited marks</h3><p class="small muted">A suit’s colour fills what belongs to it (its locations, its faction’s tokens); grey is unsuited; stripes of every suit’s colour mean any suit.</p><div class="ik-marks">${suits}</div><div class="ik-marks">${other}</div></div>`;
+  const other = [fig(suitedMark('location', 'none'), 'Unsuited: any location (grey)'), fig(suitedMark('group', 'any'), 'Any faction’s group (every suit’s stripes)'), fig(suitedMark('groupNext', 'none', 'any'), 'Any faction’s group next door'), fig(suitedMark('swayNext', 'none'), 'Your sway next door'), fig(suitedMark('either', 'scifi'), 'A suit’s location OR a location holding its faction')].join('');
+  return `<div class="lay-opts"><h3>Suited marks</h3><p class="small muted">A suit’s colour fills what belongs to it (its locations, its faction’s tokens); grey is unsuited; stripes of every suit’s colour mean any suit. Where the suit doesn’t matter at all (the unsuited cards), no colour.</p><div class="ik-marks">${suits}</div><div class="ik-marks">${other}</div></div>`;
 }
 
 /** The layout mock-ups, each beside the card as it is now. */
