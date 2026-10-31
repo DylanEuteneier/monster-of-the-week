@@ -1101,6 +1101,9 @@ button.card-opt:hover { background: #f6cca1; }
   .topbar-status .bar-chip { padding: 0 4px; border-width: 1px; }
 
   .guide, .round-frame { top: auto; bottom: var(--space-2); left: var(--space-4); right: var(--space-4); width: auto; }
+  /* The fights on a phone: only the fight being told, fixed at the top of the screen, above the island. */
+  .round-frame { top: var(--space-2); bottom: auto; }
+  .round-frame .round-fight:not(.is-active), .round-frame .round-growth { display: none; }
   .hint { top: auto; bottom: var(--space-2); left: var(--space-4); right: var(--space-4); width: auto; }
   body { min-width: 0; }
   .toast { bottom: var(--space-6); }
