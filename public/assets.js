@@ -97,7 +97,7 @@ const LAYOUTS = [
     flavour: 'The Watch sets out distractions all round the location, and one of the dead shambles off to check each.' },
   { id: 'invite-in', verb: 'gather', noun: 'token', word: 'Gather', gist: 'groups next door into one location',
     target: { head: 'where they’re invited', grid: ['Where', 'Who comes'], loc: ['an empty ◐ location', 'any two groups next to it, of different factions'], fac: ['a location held by a lone group of another faction, next to a Nocturnal group', 'only the Nocturnals'] },
-    specifics: [], flavour: '', note: 'The card says “into an empty location”, but the FAC reading’s location is held by a lone group: the grid shows each reading’s own.' },
+    specifics: [], flavour: '', note: 'The card says “into an empty location”, but the FAC reading’s location is held by a lone group: each reading shows its own.' },
   { id: 'spill-blood', verb: 'mark', noun: 'location', word: 'Mark', gist: 'up to the card’s sway of locations, 1 sway on each',
     target: { head: 'the locations marked' }, specifics: ['This round, at a marked location’s fight, the winner loses as many as the loser.'],
     flavour: 'Father and the Flock spill blood on the altar.' },
@@ -127,7 +127,8 @@ function layoutCard(l) {
   // Each reading is a button-like row (designer, 2026-10-30: the target looks clickable, the LOC/FAC choice moving into it).
   const row = (/** @type {string} */ tag, /** @type {string[]} */ cells) => `<div class="lay-row" role="button"><b>${tag}</b>${cells.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
   const target = !t ? '' : t.grid
-    ? `<div class="lay-target lay-target-grid"><div class="lay-label">Target: ${esc(t.head)}</div><div class="lay-head"><span></span><span>${esc(t.grid[0])}</span><span>${esc(t.grid[1])}</span></div>${row('LOC', t.loc)}${row('FAC', t.fac)}</div>`
+    // Where the readings change the effect: each row stacks its parts, each with its own small label (no table: the parts' lengths differ).
+    ? `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div>${['loc', 'fac'].map((m) => `<div class="lay-row" role="button"><b>${m.toUpperCase()}</b><span class="lay-parts">${t.grid.map((/** @type {string} */ g, /** @type {number} */ i) => `<span><i>${esc(g)}</i> ${esc(t[m][i])}</span>`).join('')}</span></div>`).join('')}</div>`
     : `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div>${row('LOC', [r.location])}${row('FAC', [r.faction])}</div>`;
   const uses = l.uses ? `<div class="lay-target lay-target-uses"><div class="lay-label">Choose one</div>${l.uses.map(([tag, , text]) => `<div class="lay-row" role="button"><b>${esc(tag)}</b><span>${esc(text)}</span></div>`).join('')}</div>` : '';
   const specifics = l.specifics.length ? `<ul class="lay-specifics">${l.specifics.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
