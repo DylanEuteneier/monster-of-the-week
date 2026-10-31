@@ -1133,10 +1133,19 @@ function endStory(view) {
   } else {
     const facs = r.factions;
     const presence = (/** @type {string} */ f) => Object.values(view.board).reduce((n, place) => n + (place.tokens[f] ?? 0), 0);
-    lines.push(`${total} monsters were left on the island, more than ${threshold}: <b>the invaders took it</b>. ${facs.map((f) => `The ${esc(fname(f))} had the most presence (${presence(f)})`).join('; ')}, so their backers decided it.`);
-    const net = (/** @type {string} */ id) => facs.map((f) => `${view.players[id].standing[f] ?? 0} standing less ${trophiesOf(id)[f] ?? 0} trophies`).join(', ');
+    // The factions with the most presence: one, a few tied, or every faction tied.
+    const names = (/** @type {string[]} */ fs) => { const n = fs.map((f) => `the ${esc(fname(f))}`); return n.length < 2 ? n.join('') : `${n.slice(0, -1).join(', ')} and ${n[n.length - 1]}`; };
+    const who = facs.length === 1 ? `${names(facs).replace(/^the/, 'The')} had the most presence (${presence(facs[0])}), so their backers decided it.`
+      : facs.length === view.factions.length ? `Every faction tied for the most presence (${presence(facs[0])} each), so backing any of them counted.`
+      : `${names(facs).replace(/^the/, 'The')} tied for the most presence (${presence(facs[0])} each), so backing any of them counted.`;
+    lines.push(`${total} monsters were left on the island, more than ${threshold}: <b>the invaders took it</b>. ${who}`);
+    const net = (/** @type {string} */ id) => facs.map((f) => `${esc(fname(f))} ${view.players[id].standing[f] ?? 0}${trophiesOf(id)[f] ? ` − ${trophiesOf(id)[f]}` : ''}`).join(', ');
     lines.push(`A backer scores standing with ${facs.length === 1 ? 'that faction' : 'those factions'}, less the trophies they took of ${facs.length === 1 ? 'it' : 'them'}.`);
-    lines.push(`<b>${esc(w)}</b> won with ${r.scores[w]} (${net(w)})${second ? `; ${esc(second)} came next with ${r.scores[second]} (${net(second)})` : ''}.`);
+    const shared = r.players.length > 1;
+    const tops = (/** @type {string} */ id) => facs.reduce((n, f) => n + (trophiesOf(id)[f] ?? 0), 0);
+    if (shared) lines.push(`<b>${r.players.map(esc).join(' and ')}</b> share the win with ${r.scores[w]} each (${r.players.map((p) => `${esc(p)}: ${net(p)}`).join('; ')}), and nothing broke the tie.`);
+    else if (second && r.scores[second] === r.scores[w]) lines.push(`<b>${esc(w)}</b> and ${esc(second)} both scored ${r.scores[w]}; ${tops(w) !== tops(second) ? `the tie went to fewer trophies of those factions (${tops(w)} to ${tops(second)})` : 'the tie went to the backer of their own faction, then to standing with the other factions'}, so <b>${esc(w)}</b> won.`);
+    else lines.push(`<b>${esc(w)}</b> won with ${r.scores[w]} (${net(w)})${second ? `; ${esc(second)} came next with ${r.scores[second]} (${net(second)})` : ''}.`);
   }
   return lines.map((l) => `<p>${l}</p>`).join('');
 }
