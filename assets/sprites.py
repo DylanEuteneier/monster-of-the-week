@@ -402,7 +402,7 @@ ARCHETYPE_BORDERS = {
     # Sci-Fi green, Sentients blue, Undead brown (designer, 2026-10-31: the Sentients' grey read as unsuited).
     "scifi": {"lit": "l", "mid": "G", "dark": "e"},
     "sentients": {"lit": "a", "mid": "c", "dark": "b"},
-    "undead": {"lit": "f", "mid": "U", "dark": "u"},
+    "undead": {"lit": "s", "mid": "f", "dark": "u"},
     "demonic": {"lit": "o", "mid": "r", "dark": "R"},
 }
 
