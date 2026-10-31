@@ -189,3 +189,24 @@ export function suitedMark(what, kind, inner = kind) {
   if (what === 'groupNext') return wide(`${defs}${hexes}${filled('<circle cx="9" cy="12" r="3.2"/>', inner, id)}`);
   return wide(`${defs}${hexes}<g stroke-width="1.25" fill="var(--card-face)">${cube(9, 12, 3.6)}</g>`);
 }
+
+/**
+ * Direction marks to compare (designer, 2026-10-30; a sample, not settled): the chevron, A motion lines, B before and
+ * after (the start drawn dotted, no mark), C a divider. Five verbs, each as what it starts from and what it ends as.
+ * @param {'chevron' | 'A' | 'B' | 'C'} style @param {string} verb
+ */
+export function directionSample(style, verb) {
+  const n = 'token';
+  const parts = /** @type {Record<string, [string, string, number?]>} */ ({
+    gather: [[10, 22, 34].map((y) => group(y === 22 ? 30 : 24, y, 1, n)).join(''), group(54, 22, 3, n)],
+    split: [group(23, 22, 5, n), `${group(54, 13, 3, n)}${group(54, 33, 2, n)}`],
+    move: [`${place(n, 26, 22)}${piece(n, 26, 22)}`, `${place(n, 54, 22)}${piece(n, 54, 22)}`],
+    flee: [`${place(n, 24, 26)}${piece(n, 24, 26)}`, `${place(n, 56, 26)}${piece(n, 56, 26)}<path d="M38 6a5 5 0 1 0 4 7.5 3.75 3.75 0 0 1-4-7.5z" stroke-width="1.75"/>`, 26],
+    drive: [`${place(n, 24, 22)}<circle cx="21.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="27" cy="22" r="2.5" stroke-width="1.75"/>`, `${place(n, 55, 13)}${piece(n, 55, 13)}${place(n, 55, 31)}<circle cx="55" cy="31" r="3" stroke-width="1.75"/>`],
+  });
+  const [from, to, y = 22] = parts[verb];
+  const lines = `<path d="M35 ${y - 3}h7M37 ${y}h8M35 ${y + 3}h7" stroke-width="1.75"/>`;
+  const mark = style === 'chevron' ? arrow(36, y, 44, y) : style === 'A' ? lines : style === 'C' ? `<path d="M40 ${y - 9}v18" stroke-width="1.75"/>` : '';
+  const start = style === 'B' ? `<g stroke-dasharray="1.6 1.6" opacity="0.7">${from}</g>` : from;
+  return dia(`${start}${mark}${to}`);
+}
