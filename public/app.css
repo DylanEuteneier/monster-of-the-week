@@ -1149,7 +1149,7 @@ button.card-opt:hover { background: #f6cca1; }
 .lay-flavour.is-missing { color: #a79f9f; }
 .lay-card { min-height: 100%; }
 /* Tag-icon options: a mark above the tag word. */
-.lay-row-ic { grid-template-columns: 28px minmax(0, 1fr); }
+.lay-row-ic { grid-template-columns: 38px minmax(0, 1fr); }
 .lay-row-ic > b { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 2px 0; }
 .lay-opt-set { margin-top: var(--space-2); }
 .lay-opt-grid { display: flex; flex-wrap: wrap; gap: var(--space-3); }

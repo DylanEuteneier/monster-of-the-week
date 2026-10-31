@@ -8,6 +8,9 @@
 /** @param {string} body @param {string} [extra] */
 const svg = (body, extra = '') => `<svg class="ik-svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${extra}>${body}</svg>`;
 
+/** A mark two locations wide (neighbours, or apart). @param {string} body */
+const wide = (body, w = 32) => `<svg class="ik-svg" viewBox="0 0 ${w} 24" width="${w}" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+
 /** A hexagon path centred on (cx, cy) with radius r (pointy top, as the board's hexes). */
 const hex = (/** @type {number} */ cx, /** @type {number} */ cy, /** @type {number} */ r) => {
   const p = [0, 1, 2, 3, 4, 5].map((i) => { const a = (Math.PI / 3) * i - Math.PI / 2; return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`; });
@@ -30,7 +33,11 @@ export const NOUNS = {
   swayAt: { label: 'Sway on a location', svg: svg(`${hex(12, 12, 10.5)}${cube(12, 11.5, 5)}`, ' stroke-width="1.75"') },
   standing: { label: 'Standing (with a faction)', svg: svg(`${cube(12, 8, 6)}<path d="M3 21h18"/>`) },
   location: { label: 'Location', svg: svg(hex(12, 12, 10)) },
-  neighbour: { label: 'Neighbour (next door)', svg: svg(`${hex(7.5, 12, 6)}${hex(17.5, 12, 6)}`, ' stroke-width="1.75"') },
+  // Two locations (designer, 2026-10-30): neighbours touch, sharing an edge; any other location stands apart.
+  neighbour: { label: 'Neighbours (next door)', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}`) },
+  elsewhere: { label: 'Any other location', svg: wide(`${hex(7.5, 12, 7)}${hex(28.5, 12, 7)}<path d="M15.5 12h.01M18 12h.01M20.5 12h.01" stroke-width="2"/>`, 36) },
+  swayNext: { label: 'Sway between neighbours', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}<g stroke-width="1.25">${cube(9, 12, 3.6)}${cube(22.86, 12, 3.6)}</g>`) },
+  groupNext: { label: 'Groups next door', svg: wide(`${hex(9, 12, 8)}${hex(22.86, 12, 8)}<circle cx="9" cy="12" r="3.2"/><circle cx="22.86" cy="12" r="3.2"/>`) },
   empty: { label: 'Empty location', svg: svg(hex(12, 12, 10), ' stroke-dasharray="3 3"') },
   scorched: { label: 'Scorched location', svg: svg(`${hex(12, 12, 10)}<path d="M8 8l8 8M16 8l-8 8"/>`) },
   supply: { label: 'Supply', svg: svg('<path d="M3 10v9h18v-9"/><path d="M3 10h18"/><circle cx="9" cy="6" r="2.5"/><circle cx="15" cy="6" r="2.5"/>') },

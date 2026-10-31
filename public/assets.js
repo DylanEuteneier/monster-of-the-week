@@ -60,7 +60,7 @@ function renderIcons() {
     ]],
     ['Switch Allegiance', 'Move up to X from one to another.', [
       line(`${iconHtml('burn', 'standing', 'X')}${to}${iconHtml('gain', 'standing', 'X')}`, 'with one faction, gain the same with another'),
-      line(`${iconHtml('move', 'sway', 'X')}`, 'from one location to any other'),
+      line(`${iconHtml('move', 'sway', 'X')}${to}${nounHtml('elsewhere')}`, 'from one location to any other'),
     ]],
     ['Call in Favours', 'Gain up to X from your supply.', [
       line(`${iconHtml('gain', 'sway', 'X')}${to}${nounHtml('fight')}`, '1 at each of up to X fights'),
@@ -106,13 +106,13 @@ const LAYOUTS = [
     specifics: ['They count as a single location for movement.', 'They fight as one: strength and sway added across both; a true tie scorches both.', 'Never three factions across them.', 'Only 1 sway, at one end.'], flavour: '' },
   { id: 'stakes', verb: 'gather', word: 'Gather', gist: 'up to X into one', uses: [
     ['Standing', 'standing', 'take 1 standing from each of up to X factions, all into one.'],
-    ['Sway', 'sway', 'gather up to X of your sway from next door into one location.'],
-    ['Tokens', 'token', 'up to X tokens of one faction come in from its groups next door, to a location where you have sway.']],
+    ['Sway', 'swayNext', 'gather up to X of your sway from next door into one location.'],
+    ['Tokens', 'groupNext', 'up to X tokens of one faction come in from its groups next door, to a location where you have sway.']],
     specifics: ['X is the cards in your hand, this one included.'] },
   { id: 'exit', verb: 'spread', word: 'Spread', gist: '1 to each of up to X', uses: [
     ['Standing', 'standing', 'move 1 standing from one faction to each of up to X others.'],
-    ['Sway', 'sway', 'send 1 of your sway from one location to each of up to X neighbours.'],
-    ['Tokens', 'token', 'a group sends 1 token to each of up to X neighbours.']],
+    ['Sway', 'swayNext', 'send 1 of your sway from one location to each of up to X neighbours.'],
+    ['Tokens', 'groupNext', 'a group sends 1 token to each of up to X neighbours.']],
     specifics: ['X is the cards in your hand, this one included.'] },
 ];
 
@@ -127,13 +127,13 @@ function layoutCard(l) {
   // Each reading is a button-like row (designer, 2026-10-30: the target looks clickable, the LOC/FAC choice moving into it).
   // Each row's tag is its mark alone (designer, 2026-10-30, D35); the word is the row's label.
   const tagMark = (/** @type {string} */ tag) => NOUNS[TAG_NOUN[tag]].svg;
-  const cell = (/** @type {string} */ tag) => `<b title="${esc(tag)}">${tagMark(tag)}</b>`;
-  const row = (/** @type {string} */ tag, /** @type {string[]} */ cells) => `<div class="lay-row lay-row-ic" role="button" aria-label="${esc(tag)}">${cell(tag)}${cells.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
+  const cell = (/** @type {string} */ tag, noun = '') => `<b title="${esc(tag)}">${noun && NOUNS[noun] ? NOUNS[noun].svg : tagMark(tag)}</b>`;
+  const row = (/** @type {string} */ tag, /** @type {string[]} */ cells, noun = '') => `<div class="lay-row lay-row-ic" role="button" aria-label="${esc(tag)}">${cell(tag, noun)}${cells.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
   const target = !t ? '' : t.grid
     // Where the readings change the effect: each row stacks its parts, each with its own small label (no table: the parts' lengths differ).
     ? `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div>${['loc', 'fac'].map((m) => `<div class="lay-row lay-row-ic" role="button" aria-label="${m.toUpperCase()}">${cell(m.toUpperCase())}<span class="lay-parts">${t.grid.map((/** @type {string} */ g, /** @type {number} */ i) => `<span><i>${esc(g)}</i> ${esc(t[m][i])}</span>`).join('')}</span></div>`).join('')}</div>`
     : `<div class="lay-target"><div class="lay-label">Target: ${esc(t.head)}</div>${row('LOC', [r.location])}${row('FAC', [r.faction])}</div>`;
-  const uses = l.uses ? `<div class="lay-target lay-target-uses"><div class="lay-label">Choose one</div>${l.uses.map(([tag, , text]) => row(tag, [text])).join('')}</div>` : '';
+  const uses = l.uses ? `<div class="lay-target lay-target-uses"><div class="lay-label">Choose one</div>${l.uses.map(([tag, noun, text]) => row(tag, [text], noun)).join('')}</div>` : '';
   const specifics = l.specifics.length ? `<ul class="lay-specifics">${l.specifics.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
   // Every card carries its thematic text at the bottom (designer, 2026-10-30); a card without it shows the empty slot.
   const flavour = `<p class="lay-flavour${l.flavour ? '' : ' is-missing'}">${esc(l.flavour || 'Thematic text to come.')}</p>`;
@@ -150,7 +150,7 @@ const TAG_NOUN = /** @type {Record<string, keyof typeof NOUNS>} */ ({ LOC: 'loca
 function renderTagMarks() {
   const mark = (/** @type {string} */ html, /** @type {string} */ label) => `<figure class="ik-mark"><span class="ik ik-solo"><span class="ik-n">${html}</span></span><figcaption class="small">${esc(label)}</figcaption></figure>`;
   const parts = [['token', 'Token: a circle'], ['sway', 'Sway: a cube'], ['location', 'Location: a hex']].map(([n, l]) => mark(NOUNS[n].svg, l)).join('');
-  const tags = [mark(NOUNS.location.svg, 'LOC: the location'), mark(NOUNS.group.svg, 'FAC: the faction’s tokens in a location'), mark(NOUNS.standing.svg, 'Standing: a cube over the line (off the board)'), mark(NOUNS.swayAt.svg, 'Sway: a cube in a hex (sway on the board)'), mark(NOUNS.group.svg, 'Tokens: three circles in a hex (a group)')].join('');
+  const tags = [mark(NOUNS.location.svg, 'LOC: the location'), mark(NOUNS.group.svg, 'FAC: the faction’s tokens in a location'), mark(NOUNS.standing.svg, 'Standing: a cube over the line (off the board)'), mark(NOUNS.swayAt.svg, 'Sway: a cube in a hex (sway on the board)'), mark(NOUNS.group.svg, 'Tokens: three circles in a hex (a group)'), mark(NOUNS.neighbour.svg, 'Neighbours: two hexes touching'), mark(NOUNS.elsewhere.svg, 'Any other location: two hexes apart'), mark(NOUNS.swayNext.svg, 'Sway between neighbours'), mark(NOUNS.groupNext.svg, 'Groups next door')].join('');
   return `<div class="lay-opts"><h3>Row marks (D35)</h3><p class="small muted">A token is a circle, sway a cube, a location a hex; they combine, so a thing inside a hex is that thing at a location. Each row shows its mark alone; the word is its label for screen readers and on hover.</p>
     <h3 class="small">Parts</h3><div class="ik-marks">${parts}</div><h3 class="small">On the rows</h3><div class="ik-marks">${tags}</div></div>`;
 }
