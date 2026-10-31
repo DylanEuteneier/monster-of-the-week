@@ -269,7 +269,7 @@
           "only the Nocturnals"
         ],
         "specifics": [],
-        "flavour": "The Slayerettes leave the door open and the porch light on. Something always comes in.",
+        "flavour": "Leave the door open and the porch light on. Something always comes in.",
         "flavourDraft": true
       }
     },
@@ -299,7 +299,7 @@
           "Never three factions across them.",
           "Only 1 sway, at one end: from the Sci-Fi faction if it is at either end, otherwise a faction there."
         ],
-        "flavour": "The Kids on Bikes find the rift behind the arcade. Whatever goes in comes out somewhere else.",
+        "flavour": "There's a rift behind the arcade. Whatever goes in comes out somewhere else.",
         "flavourDraft": true
       }
     },
@@ -310,7 +310,7 @@
       "slot": "strike",
       "sway": 2,
       "action": "threat",
-      "text": "The AV Club spoofs a command signal to a group: ordered to engage the strongest hostile force in range, it marches on the largest lone group of another faction within two locations of it (ties: your choice). Target: the group fooled.",
+      "text": "A spoofed command signal: engage the strongest hostile force in range, it marches on the largest lone group of another faction within two locations of it (ties: your choice). Target: the group fooled.",
       "readings": {
         "location": "a group at a Sentient location.",
         "faction": "a Sentient group anywhere."
@@ -325,7 +325,8 @@
         "specifics": [
           "Ties: your choice."
         ],
-        "flavour": "The AV Club spoofs a command signal to a group: ordered to engage the strongest hostile force in range."
+        "flavour": "A spoofed command signal: engage the strongest hostile force in range.",
+        "flavourDraft": true
       }
     },
     {
@@ -361,7 +362,7 @@
       "slot": "strike",
       "sway": 2,
       "action": "well",
-      "text": "Father and the Flock begin the rite, and one faction next door is drawn to it: every group of it comes, whole if it’s alone, as many as you choose if it’s in a fight. The centre is empty or holds one faction. Target: the centre, then the faction called.",
+      "text": "The rite begins, and one faction next door is drawn to it: every group of it comes, whole if it’s alone, as many as you choose if it’s in a fight. The centre is empty or holds one faction. Target: the centre, then the faction called.",
       "readings": {
         "location": "a Demon location; any faction is called.",
         "faction": "any location next to the Demon faction; the Demons are called."
@@ -389,7 +390,8 @@
           "Whole if it’s alone; as many as you choose if it’s in a fight.",
           "The centre is empty or holds one faction."
         ],
-        "flavour": "Father and the Flock begin the rite, and one faction next door is drawn to it."
+        "flavour": "The rite begins, and one faction next door is drawn to it.",
+        "flavourDraft": true
       }
     },
     {
@@ -399,7 +401,7 @@
       "slot": "shift",
       "sway": 3,
       "action": "burst",
-      "text": "The Watch sets out distractions all round the location, and one of the dead shambles off to check each. A group sends 1 token to each of at least two neighbours; the rest stay. Target: the group.",
+      "text": "Distractions are set all round, and one of the dead shambles off to check each. A group sends 1 token to each of at least two neighbours; the rest stay. Target: the group.",
       "readings": {
         "location": "a group at an Undead location.",
         "faction": "an Undead group anywhere."
@@ -414,7 +416,8 @@
         "specifics": [
           "The rest stay."
         ],
-        "flavour": "The Watch sets out distractions all round the location, and one of the dead shambles off to check each."
+        "flavour": "Distractions are set all round, and one of the dead shambles off to check each.",
+        "flavourDraft": true
       }
     },
     {
@@ -424,7 +427,7 @@
       "slot": "shift",
       "sway": 3,
       "action": "chase",
-      "text": "The Kids on Bikes lead a group on a chase from neighbour to neighbour, across any region, through empty ground, lone rivals, its own kind and fights it’s part of. Every location it passes keeps 1 token; the rest, at least 1, arrive wherever you end it. Target: the group chased.",
+      "text": "Lead them on a chase across town from neighbour to neighbour, across any region, through empty ground, lone rivals, its own kind and fights it’s part of. Every location it passes keeps 1 token; the rest, at least 1, arrive wherever you end it. Target: the group chased.",
       "readings": {
         "location": "a group at a Sci-Fi location.",
         "faction": "a Sci-Fi group anywhere."
@@ -440,7 +443,8 @@
           "Across any region, through empty ground, lone rivals, its own kind and fights it’s part of.",
           "The rest, at least 1, arrive wherever you end it."
         ],
-        "flavour": "The Kids on Bikes lead a group on a chase."
+        "flavour": "Lead them on a chase across town.",
+        "flavourDraft": true
       }
     },
     {
@@ -450,7 +454,7 @@
       "slot": "shift",
       "sway": 3,
       "action": "rejoin",
-      "text": "The AV Club cuts the powerlines. A group scatters to its faction’s other groups anywhere on the island, 1 token at a time: no group gets a second until every group has one. A lone group leaves entirely; from a fight, exactly half. Target: the group.",
+      "text": "Cut the powerlines, and the town goes dark. A group scatters to its faction’s other groups anywhere on the island, 1 token at a time: no group gets a second until every group has one. A lone group leaves entirely; from a fight, exactly half. Target: the group.",
       "readings": {
         "location": "any group at a Sentient location.",
         "faction": "a Sentients group anywhere."
@@ -466,7 +470,8 @@
           "No group gets a second until every group has one.",
           "A lone group leaves entirely; from a fight, exactly half."
         ],
-        "flavour": "The AV Club cuts the powerlines."
+        "flavour": "Cut the powerlines, and the town goes dark.",
+        "flavourDraft": true
       }
     },
     {
@@ -476,7 +481,7 @@
       "slot": "shift",
       "sway": 3,
       "action": "plough",
-      "text": "The Slayerettes plough a truck straight through the middle of the brawl. Every side leaves by half, rounded up, split as you choose among its neighbours, never two sides to the same location. Its sway is paid by the factions in the fight or the Nocturnals, split as you choose. Target: the fight.",
+      "text": "A truck straight through the middle of the brawl. Every side leaves by half, rounded up, split as you choose among its neighbours, never two sides to the same location. Its sway is paid by the factions in the fight or the Nocturnals, split as you choose. Target: the fight.",
       "readings": {
         "location": "a fight at a Nocturnal location.",
         "faction": "a fight the Nocturnals are in."
@@ -492,7 +497,8 @@
           "Split as you choose among its neighbours, never two sides to the same location.",
           "Its sway is paid by the factions in the fight or the Nocturnals, split as you choose."
         ],
-        "flavour": "The Slayerettes plough a truck straight through the middle of the brawl."
+        "flavour": "A truck straight through the middle of the brawl.",
+        "flavourDraft": true
       }
     },
     {
@@ -526,7 +532,7 @@
       "slot": "signature",
       "sway": 4,
       "action": "raise",
-      "text": "The Watch chases the fight into the old cemetery, and the dead rise: as many from the Undead supply as you choose, up to the card’s sway. At an Undead location they rise as a group of their own, and if two factions are already fighting there, as a third side. Each one risen places 1 of your sway there. Target: where they rise.",
+      "text": "The fight spills into the old cemetery, and the dead rise: as many from the Undead supply as you choose, up to the card’s sway. At an Undead location they rise as a group of their own, and if two factions are already fighting there, as a third side. Each one risen places 1 of your sway there. Target: where they rise.",
       "readings": {
         "location": "any Undead location; at a fight there, the dead rise as a third side.",
         "faction": "any location holding the Undead; the risen join them."
@@ -554,7 +560,8 @@
         "specifics": [
           "Each one risen places 1 of your sway there."
         ],
-        "flavour": "The Watch chases the fight into the old cemetery, and the dead rise."
+        "flavour": "The fight spills into the old cemetery, and the dead rise.",
+        "flavourDraft": true
       }
     },
     {
@@ -564,7 +571,7 @@
       "slot": "signature",
       "sway": 4,
       "action": "control",
-      "text": "The AV Club takes control of the machines and turns them on the enemy. At the target fight, spend your sway there, 1 for each, to cut down up to the card’s sway of a faction’s tokens there: you take them as trophies, and the sway spent goes back to your supply. Target: the fight, then the faction hit.",
+      "text": "Take control of the machines and turn them on the enemy. At the target fight, spend your sway there, 1 for each, to cut down up to the card’s sway of a faction’s tokens there: you take them as trophies, and the sway spent goes back to your supply. Target: the fight, then the faction hit.",
       "readings": {
         "location": "any fight at a Sentient location; you choose the faction hit.",
         "faction": "any fight the Sentients are in; their rival is hit."
@@ -592,7 +599,8 @@
           "Spend your sway there, 1 for each.",
           "The sway spent goes back to your supply."
         ],
-        "flavour": "The AV Club takes control of the machines and turns them on the enemy."
+        "flavour": "Take control of the machines and turn them on the enemy.",
+        "flavourDraft": true
       }
     },
     {
@@ -602,7 +610,7 @@
       "slot": "signature",
       "sway": 4,
       "action": "terror",
-      "text": "The Slayerettes stir up terrors in the dark. Mark up to the card’s sway of locations, 1 sway on each. When night falls, before the fights, at each mark you may make 1 token of a faction there flee to a neighbouring location it can enter; your sway from the mark may follow it. Target: the locations marked.",
+      "text": "Terrors stir in the dark. Mark up to the card’s sway of locations, 1 sway on each. When night falls, before the fights, at each mark you may make 1 token of a faction there flee to a neighbouring location it can enter; your sway from the mark may follow it. Target: the locations marked.",
       "readings": {
         "location": "Nocturnal locations.",
         "faction": "locations holding the Nocturnals."
@@ -619,7 +627,8 @@
           "When night falls, before the fights, at each mark you may make 1 token of a faction there flee to a neighbouring location it can enter.",
           "Your sway from the mark may follow it."
         ],
-        "flavour": "The Slayerettes stir up terrors in the dark."
+        "flavour": "Terrors stir in the dark.",
+        "flavourDraft": true
       }
     },
     {
@@ -629,7 +638,7 @@
       "slot": "signature",
       "sway": 4,
       "action": "study",
-      "text": "The Kids on Bikes sneak in after the fight to study the bodies. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, if you lead there, you also take 1 trophy from the runner-up’s pile. Target: the locations marked.",
+      "text": "Sneak in after the fight to study the bodies. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, if you lead there, you also take 1 trophy from the runner-up’s pile. Target: the locations marked.",
       "readings": {
         "location": "Sci-Fi locations.",
         "faction": "locations holding the Sci-Fi faction."
@@ -645,7 +654,8 @@
         "specifics": [
           "This round, at a marked location’s fight, if you lead there, you also take 1 trophy from the runner-up’s pile."
         ],
-        "flavour": "The Kids on Bikes sneak in after the fight to study the bodies."
+        "flavour": "Sneak in after the fight to study the bodies.",
+        "flavourDraft": true
       }
     },
     {
@@ -655,7 +665,7 @@
       "slot": "signature",
       "sway": 4,
       "action": "altar",
-      "text": "Father and the Flock spill blood on the altar. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, the winner loses as many as the loser. Target: the locations marked.",
+      "text": "Blood is spilled on the altar. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, the winner loses as many as the loser. Target: the locations marked.",
       "readings": {
         "location": "Demon locations.",
         "faction": "locations holding the Demons."
@@ -671,7 +681,8 @@
         "specifics": [
           "This round, at a marked location’s fight, the winner loses as many as the loser."
         ],
-        "flavour": "Father and the Flock spill blood on the altar."
+        "flavour": "Blood is spilled on the altar.",
+        "flavourDraft": true
       }
     },
     {
