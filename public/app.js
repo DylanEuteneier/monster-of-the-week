@@ -363,7 +363,14 @@ function receiveChat(lines, reset) {
   renderUnread();
 }
 
-/** The unread count on the table talk button. */
+/** The Table menu closes on a click outside it, or after one of its items opens a panel. */
+document.addEventListener('click', (event) => {
+  const menu = document.getElementById('table-menu');
+  if (!(menu instanceof HTMLDetailsElement) || !menu.open || !(event.target instanceof Element)) return;
+  if (!event.target.closest('#table-menu') || event.target.closest('[data-closes-menu]')) menu.open = false;
+});
+
+/** The unread count on the Table menu's button (table talk). */
 function renderUnread() {
   const badge = document.getElementById('chat-unread');
   if (!badge) return;

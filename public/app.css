@@ -221,6 +221,15 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .topbar-main { flex: 1; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4); min-width: 0; }
 .stale-tag { background: var(--color-danger); color: var(--color-text); }
 .topbar-buttons { display: flex; flex-wrap: wrap; gap: var(--space-2); align-self: center; }
+/* The table's tools in one menu (turn speed, hints and their aim, log, table talk): a Table button, its list dropping
+   below it at the right; the unread table talk count rides on the button. */
+.topbar-menu { position: relative; }
+.topbar-menu > summary { list-style: none; cursor: pointer; }
+.topbar-menu > summary::-webkit-details-marker { display: none; }
+.topbar-menu[open] > summary { border-color: var(--color-accent); color: var(--color-accent); }
+.topbar-menu-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: var(--z-overlay); display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); min-width: 220px; padding: var(--space-2); background: var(--color-panel); border: 2px solid var(--color-border); box-shadow: 3px 3px 0 var(--ink); }
+.topbar-menu-list > .btn { text-align: left; }
+.topbar-menu-list .hint-aim { justify-content: space-between; }
 .topbar h1 { font-size: 20px; letter-spacing: 0.06em; color: var(--color-accent); text-shadow: 2px 2px 0 var(--ink); }
 .topbar .phase-label { font-family: var(--font-display); font-size: 16px; text-transform: uppercase; }
 
