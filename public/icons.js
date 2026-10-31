@@ -61,13 +61,71 @@ export const VERBS = {
   bend: { label: 'Bend a fight (a rule this round)', svg: svg('<path d="M12 3l9 9-9 9-9-9z"/><path d="M12 8v5M12 16v.5"/>') },
 };
 
+// ---------------------------------------------------------------------------
+// Direction B (designer, 2026-10-30): each verb is a mini board diagram, its places and arrows, and the noun is the
+// piece that moves through it. Standing is off the board, so its places are faction circles, not hexes.
+// ---------------------------------------------------------------------------
+
+/** The piece a noun draws inside a diagram, centred on (x, y). @type {Record<string, (x: number, y: number) => string>} */
+const PIECES = {
+  token: (x, y) => `<circle cx="${x}" cy="${y}" r="3" fill="currentColor" stroke="none"/>`,
+  sway: (x, y) => `<rect x="${x - 2.75}" y="${y - 2.75}" width="5.5" height="5.5" fill="currentColor" stroke="none" transform="rotate(45 ${x} ${y})"/>`,
+  standing: (x, y) => `<rect x="${x - 2.75}" y="${y - 2.75}" width="5.5" height="5.5" fill="currentColor" stroke="none" transform="rotate(45 ${x} ${y})"/>`,
+  location: (x, y) => `<circle cx="${x}" cy="${y}" r="2" fill="currentColor" stroke="none"/>`,
+  neighbour: (x, y) => `<circle cx="${x}" cy="${y}" r="3" fill="currentColor" stroke="none"/>`,
+  fight: (x, y) => `<circle cx="${x - 2}" cy="${y}" r="2.5" fill="currentColor" stroke="none"/><circle cx="${x + 2.5}" cy="${y}" r="2.5" fill="none" stroke-width="1.5"/>`,
+};
+const piece = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {number} */ y) => (PIECES[noun] ?? PIECES.token)(x, y);
+/** A place: a hex on the board, or a faction circle for standing. */
+const place = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {number} */ y, /** @type {string} */ extra = '') => noun === 'standing'
+  ? `<circle cx="${x}" cy="${y}" r="6" stroke-width="1.5"${extra}/>`
+  : `<g stroke-width="1.5"${extra}>${hex(x, y, 7)}</g>`;
+/** An arrow from (x1, y1) to (x2, y2), stopping short of both ends. */
+const arrow = (/** @type {number} */ x1, /** @type {number} */ y1, /** @type {number} */ x2, /** @type {number} */ y2, /** @type {string} */ dash = '') => {
+  const dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy), ux = dx / d, uy = dy / d, a = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const sx = x1 + ux * 8.5, sy = y1 + uy * 8.5, ex = x2 - ux * 9, ey = y2 - uy * 9;
+  return `<path d="M${sx.toFixed(1)} ${sy.toFixed(1)}L${ex.toFixed(1)} ${ey.toFixed(1)}" stroke-width="1.5"${dash ? ` stroke-dasharray="${dash}"` : ''}/>${head(ex, ey, a).replace('<path', '<path stroke-width="1.5"')}`;
+};
+/** A diagram in an 80×44 box, drawn at 1.25×. */
+const dia = (/** @type {string} */ body) => `<svg class="ik-svg ik-dia" viewBox="0 0 80 44" width="100" height="55" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+/** The supply: a tray at (x, y). */
+const tray = (/** @type {number} */ x, /** @type {number} */ y) => `<path d="M${x - 7} ${y - 3}v5h14v-5" stroke-width="1.5"/>`;
+/** Three places, top, middle and bottom: the middle one staggered sideways so none touch. */
+const COLUMN = [8, 22, 36];
+const stagger = (/** @type {number} */ y, /** @type {number} */ dx) => (y === 22 ? dx : 0);
+
+/** Each verb's diagram, given the noun that moves. @type {Record<string, (noun: string) => string>} */
+const DIAGRAMS = {
+  gather: (n) => `${place(n, 66, 22)}${piece(n, 66, 22)}${COLUMN.map((y) => { const x = 10 + stagger(y, 12); return `${place(n, x, y)}${piece(n, x, y)}${arrow(x, y, 66, 22)}`; }).join('')}`,
+  spread: (n) => `${place(n, 14, 22)}${piece(n, 14, 22)}${COLUMN.map((y) => { const x = 70 - stagger(y, 12); return `${place(n, x, y)}${piece(n, x, y)}${arrow(14, 22, x, y)}`; }).join('')}`,
+  move: (n) => `${place(n, 12, 22)}${place(n, 68, 22)}${piece(n, 68, 22)}${arrow(12, 22, 68, 22)}`,
+  split: (n) => `${place(n, 12, 22)}${[8, 36].map((y) => `${place(n, 68, y)}${piece(n, 65.5, y)}${piece(n, 71, y)}${arrow(12, 22, 68, y)}`).join('')}`,
+  trail: (n) => `${[9, 29, 49, 69].map((x, i) => `${place(n, x, 22)}${i ? piece(n, x, 22) : ''}`).join('')}${arrow(9, 22, 29, 22)}${arrow(29, 22, 49, 22)}${arrow(49, 22, 69, 22)}`,
+  march: (n) => `${place(n, 10, 26)}${piece(n, 10, 26)}${place(n, 40, 26, ' stroke-dasharray="2 2"')}${place(n, 70, 26)}<circle cx="70" cy="26" r="3.5" stroke-width="1.5"/><path d="M16 17Q40 2 64 17" stroke-width="1.5"/>${head(64, 17, 32).replace('<path', '<path stroke-width="1.5"')}`,
+  drive: (n) => `${place(n, 40, 22)}<circle cx="37.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="43" cy="22" r="2.5" stroke-width="1.5"/>${place(n, 9, 22)}${piece(n, 9, 22)}${place(n, 71, 22)}<circle cx="71" cy="22" r="3" stroke-width="1.5"/>${arrow(40, 22, 9, 22)}${arrow(40, 22, 71, 22)}`,
+  flee: (n) => `${place(n, 14, 24)}${place(n, 66, 24)}${piece(n, 66, 24)}${arrow(14, 24, 66, 24, '2 2.5')}<path d="M38 6a5 5 0 1 0 4 7.5 3.75 3.75 0 0 1-4-7.5z" stroke-width="1.25"/>`,
+  slay: (n) => `${place(n, 14, 22)}${piece(n, 11, 22)}${piece(n, 17, 22)}${arrow(14, 22, 64, 22)}<path d="M59 13h12v5a6 6 0 0 1-12 0zM65 24v5M60 32h10" stroke-width="1.5"/>`,
+  raise: (n) => `${tray(14, 36)}${piece(n, 14, 32)}${place(n, 64, 14)}${piece(n, 64, 14)}${arrow(14, 33, 64, 14)}`,
+  join: (n) => `${place(n, 14, 22)}${place(n, 66, 22)}<path d="M23 20h34M23 24h34" stroke-width="1.5"/>`,
+  mark: (n) => `${place(n, 40, 26)}<path d="M40 26V5h11l-3 4 3 4H40" stroke-width="1.5"/>${PIECES.sway(34, 30)}`,
+  pay: (n) => `<path d="M6 38h16" stroke-width="1.5"/>${PIECES.standing(14, 32)}${place(n, 66, 20)}${piece(n, 66, 20)}${arrow(14, 32, 66, 20)}`,
+  gain: (n) => `${tray(14, 36)}${piece(n, 14, 32)}${n === 'standing' || n === 'sway' ? `<path d="M58 38h16" stroke-width="1.5"/>${piece(n, 66, 32)}` : `${place(n, 66, 20)}${piece(n, 66, 20)}`}${arrow(14, 32, 66, n === 'standing' || n === 'sway' ? 32 : 20)}`,
+  burn: (n) => `${place(n, 14, 20)}${piece(n, 14, 20)}${tray(66, 36)}${piece(n, 66, 32)}${arrow(14, 20, 66, 32)}`,
+  take: () => `<rect x="5" y="10" width="16" height="24" rx="2" stroke-width="1.5" stroke-dasharray="2 2"/><rect x="59" y="10" width="16" height="24" rx="2" stroke-width="1.5"/>${arrow(13, 22, 67, 22)}`,
+  bend: (n) => `${place(n, 24, 22)}<circle cx="21.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="27" cy="22" r="2.5" stroke-width="1.5"/><path d="M60 7l10 15-10 15-10-15z" stroke-width="1.5"/><path d="M60 15v8M60 28v.5"/>`,
+};
+
+/** A verb's diagram on its own (the legend), with tokens as the piece. @param {keyof typeof VERBS} verb */
+export const verbDiagram = (verb) => dia((DIAGRAMS[verb] ?? (() => ''))('token'));
+
 /**
- * A composed icon: a verb block and a noun block, with an optional amount (1, X, ½, all).
+ * A composed icon (D34): the verb's diagram with the noun as its piece, and an optional amount (1, X, ½, all).
  * @param {keyof typeof VERBS} verb @param {keyof typeof NOUNS} noun @param {string} [amount]
  */
 export function iconHtml(verb, noun, amount = '') {
   const v = VERBS[verb], n = NOUNS[noun];
-  return `<span class="ik" title="${v.label}: ${n.label}"><span class="ik-v">${v.svg}</span><span class="ik-n">${n.svg}</span>${amount ? `<span class="ik-amt">${amount}</span>` : ''}</span>`;
+  const body = DIAGRAMS[verb] ? dia(DIAGRAMS[verb](noun)) : `${v.svg}${n.svg}`;
+  return `<span class="ik ik-b" title="${v.label}: ${n.label}"><span class="ik-n">${body}</span>${amount ? `<span class="ik-amt">${amount}</span>` : ''}</span>`;
 }
 
 /** A noun on its own (a target, or where an action happens). @param {keyof typeof NOUNS} noun @param {string} [amount] */

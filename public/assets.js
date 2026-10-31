@@ -10,7 +10,7 @@ import art from './assets/sprites.json' with { type: 'json' };
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { LAYOUT_SUGGESTIONS } from './layout-suggestions.js';
 import { cardHtml } from './cards.js';
-import { NOUNS, VERBS, iconHtml, nounHtml } from './icons.js';
+import { NOUNS, VERBS, iconHtml, nounHtml, verbDiagram } from './icons.js';
 
 
 /** @param {unknown} value */
@@ -41,6 +41,9 @@ const img = (sprite, scale) => (sprite ? `<img class="sprite" src="${esc(sprite.
 /** The action icons, a first draft (IK1, D34): every mark, then cards written in blocks. */
 function renderIcons() {
   const marks = (/** @type {Record<string, { label: string, svg: string }>} */ set, /** @type {string} */ cls) => Object.values(set).map((m) => `<figure class="ik-mark"><span class="ik ik-solo"><span class="${cls}">${m.svg}</span></span><figcaption class="small">${esc(m.label)}</figcaption></figure>`).join('');
+  // Direction B: each verb as its mini board diagram (tokens as the piece), and one verb with each noun.
+  const diagrams = Object.entries(VERBS).map(([id, m]) => `<figure class="ik-mark ik-mark-b"><span class="ik ik-b"><span class="ik-n">${verbDiagram(/** @type {any} */ (id))}</span></span><figcaption class="small">${esc(m.label)}</figcaption></figure>`).join('');
+  const nounsIn = ['token', 'sway', 'standing'].map((n) => `<figure class="ik-mark ik-mark-b">${iconHtml('gather', /** @type {any} */ (n))}<figcaption class="small">Gather + ${esc(NOUNS[n].label.toLowerCase())}</figcaption></figure>`).join('');
   /** One line of a card in blocks: the blocks, then a few words. @param {string} blocks @param {string} words */
   const line = (blocks, words) => `<div class="ik-line"><span class="ik-blocks">${blocks}</span><span class="small muted">${esc(words)}</span></div>`;
   const to = '<span class="ik-to">→</span>';
@@ -71,8 +74,9 @@ function renderIcons() {
     ['Wake the Dead', 'The dead rise from the supply.', [line(`${iconHtml('raise', 'token', 'N')}${to}${nounHtml('location')}`, '1 sway each; a third side at a fight')]],
   ].map(([name, gist, lines]) => `<div class="ik-example"><b>${esc(String(name))}</b><div class="small">${esc(String(gist))}</div>${/** @type {string[]} */ (lines).join('')}</div>`).join('');
   $('icons').innerHTML = `<div class="row-between"><h2>Action icons (draft)</h2><span class="small muted">IK1, D34: a verb block plus a noun block</span></div>
-    <p class="small muted">A first draft for review: clean vector marks, not pixel art. A verb (filled) and a noun (outlined) combine into one icon, with an amount (1, X, ½, all) where it matters. No card uses them yet.</p>
-    <h3 class="small">Verbs</h3><div class="ik-marks">${marks(VERBS, 'ik-v')}</div>
+    <p class="small muted">Second draft, direction B (designer): each verb is a mini board diagram (hexes, arrows), and the noun is the piece moving through it (a token dot, a sway cube; standing uses faction circles, being off the board). An amount (1, X, ½, all) sits beside it where it matters. Clean vector, not pixel art. No card uses them yet.</p>
+    <h3 class="small">Verbs as diagrams (direction B)</h3><div class="ik-marks ik-marks-b">${diagrams}</div>
+    <h3 class="small">One verb, three nouns</h3><div class="ik-marks ik-marks-b">${nounsIn}</div>
     <h3 class="small">Nouns</h3><div class="ik-marks">${marks(NOUNS, 'ik-n')}</div>
     <h3 class="small">Cards in blocks</h3><div class="ik-examples">${examples}</div>`;
 }

@@ -443,6 +443,9 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .ik-solo .ik-v { border-radius: 2px; }
 .ik-amt { display: grid; place-items: center; padding: 0 5px; font-weight: 700; font-size: 13px; color: var(--ink); border-left: 2px solid var(--ink); }
 .ik-svg { display: block; }
+.ik-b .ik-n { padding: 2px 4px; }
+.ik-marks-b { grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); }
+.ik-mark-b { flex-direction: column; align-items: flex-start; }
 .ik-to { color: var(--color-muted); padding: 0 4px; }
 .ik-marks { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: var(--space-2); margin-bottom: var(--space-3); }
 .ik-mark { margin: 0; display: flex; align-items: center; gap: var(--space-2); }
