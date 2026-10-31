@@ -106,12 +106,17 @@ const tray = (/** @type {number} */ x, /** @type {number} */ y) => `<path d="M${
 const COLUMN = [8, 22, 36];
 const stagger = (/** @type {number} */ y, /** @type {number} */ dx) => (y === 22 ? dx : 0);
 
+/** A group of k tokens, packed round (x, y). */
+const GROUP = /** @type {Record<number, [number, number][]>} */ ({ 1: [[0, 0]], 2: [[-3, 0], [3, 0]], 3: [[-3, 2.6], [3, 2.6], [0, -2.6]], 5: [[-6, 2.6], [0, 2.6], [6, 2.6], [-3, -2.6], [3, -2.6]] });
+const group = (/** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ k) => GROUP[k].map(([dx, dy]) => PIECES.token(x + dx, y + dy)).join('');
+
 /** Each verb's diagram, given the noun that moves. @type {Record<string, (noun: string) => string>} */
 const DIAGRAMS = {
-  gather: (n) => `${place(n, 66, 22)}${piece(n, 66, 22)}${COLUMN.map((y) => { const x = 10 + stagger(y, 12); return `${place(n, x, y)}${piece(n, x, y)}${arrow(x, y, 66, 22)}`; }).join('')}`,
-  spread: (n) => `${place(n, 14, 22)}${piece(n, 14, 22)}${COLUMN.map((y) => { const x = 70 - stagger(y, 12); return `${place(n, x, y)}${piece(n, x, y)}${arrow(14, 22, x, y)}`; }).join('')}`,
+  // Gather, spread and split are about groups, not places (designer, 2026-10-30): tokens only, no hexes.
+  gather: () => `${group(66, 22, 3)}${COLUMN.map((y) => { const x = 10 + stagger(y, 12); return `${group(x, y, 1)}${arrow(x, y, 66, 22)}`; }).join('')}`,
+  spread: () => `${group(14, 22, 3)}${COLUMN.map((y) => { const x = 70 - stagger(y, 12); return `${group(x, y, 1)}${arrow(14, 22, x, y)}`; }).join('')}`,
   move: (n) => `${place(n, 12, 22)}${place(n, 68, 22)}${piece(n, 68, 22)}${arrow(12, 22, 68, 22)}`,
-  split: (n) => `${place(n, 12, 22)}${[8, 36].map((y) => `${place(n, 68, y)}${piece(n, 65.5, y)}${piece(n, 71, y)}${arrow(12, 22, 68, y)}`).join('')}`,
+  split: () => `${group(13, 22, 5)}${group(67, 8, 3)}${group(68, 36, 2)}${arrow(13, 22, 67, 8)}${arrow(13, 22, 68, 36)}`,
   trail: (n) => `${[9, 29, 49, 69].map((x, i) => `${place(n, x, 22)}${i ? piece(n, x, 22) : ''}`).join('')}${arrow(9, 22, 29, 22)}${arrow(29, 22, 49, 22)}${arrow(49, 22, 69, 22)}`,
   march: (n) => `${place(n, 10, 26)}${piece(n, 10, 26)}${place(n, 40, 26, ' stroke-dasharray="2 2"')}${place(n, 70, 26)}<circle cx="70" cy="26" r="3.5" stroke-width="1.75"/><path d="M16 17Q40 2 64 17" stroke-width="1.75"/>${head(64, 17, 32).replace('<path', '<path stroke-width="1.75"')}`,
   drive: (n) => `${place(n, 40, 22)}<circle cx="37.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="43" cy="22" r="2.5" stroke-width="1.75"/>${place(n, 9, 22)}${piece(n, 9, 22)}${place(n, 71, 22)}<circle cx="71" cy="22" r="3" stroke-width="1.75"/>${arrow(40, 22, 9, 22)}${arrow(40, 22, 71, 22)}`,
