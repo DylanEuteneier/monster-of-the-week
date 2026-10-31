@@ -342,6 +342,17 @@ fn close_round(s: &mut GameState) {
     if !s.quiet {
         note_flow(before - total_presence(s), 0);
     }
+    if s.options.round_votes {
+        let (total, bar) = (total_presence(s), s.options.threshold);
+        let over = total > bar;
+        s.votes[if over { 0 } else { 1 }] += 1;
+        let (a, b) = (s.votes[0], s.votes[1]);
+        log_line(s, |_| format!("Round's vote: presence {total} is {} {bar}: {}. Invaders {a}, island {b}.", if over { "more than" } else { "not more than" }, if over { "the invaders" } else { "the island" }));
+        if s.options.votes_early && a.max(b) > s.options.rounds / 2 {
+            end_game(s);
+            return;
+        }
+    }
     // The last round's monsters don't grow (designer, 2026-10-31): the game ends after its fights.
     let last = s.round >= s.options.rounds && s.options.last_growth == false;
     if s.options.sway_tokens == SwayTokens::Nightfall && !last {
@@ -751,7 +762,9 @@ fn end_game(s: &mut GameState) {
     let total = total_presence(s);
     let threshold = s.options.threshold;
     let n = s.n();
-    if total > threshold {
+    // Rounds as votes: the side with more rounds wins (five rounds: no tie; a tie would go to the island).
+    let invaders = if s.options.round_votes { s.votes[0] > s.votes[1] } else { total > threshold };
+    if invaders {
         // TH1: the invaders win; most presence, then most locations controlled (FX1), else they win together (FX2).
         let mut ranked: Vec<(Fac, i32, usize)> = (0..5u8).map(|f| (f, presence_of(s, f), (0..s.board.len() as Loc).filter(|&l| controller_of(s, l) == Some(f)).count())).collect();
         ranked.sort_by(|x, y| y.1.cmp(&x.1).then(y.2.cmp(&x.2)));
@@ -784,7 +797,8 @@ fn end_game(s: &mut GameState) {
         let names = top.iter().map(|&f| fname(s, f)).collect::<Vec<_>>().join(" and ");
         let wn = winners.iter().map(|&p| s.seating[p as usize].clone()).collect::<Vec<_>>().join(", ");
         s.result = Some(GameResult { island: false, factions: top, players: winners, scores, placings });
-        log_line(s, |_| format!("Total presence {total} is more than {threshold}: the invaders win. {names} take the island. Winner: {wn}."));
+        let why = if s.options.round_votes { format!("The invaders took {} of the rounds to the island's {}", s.votes[0], s.votes[1]) } else { format!("Total presence {total} is more than {threshold}") };
+        log_line(s, |_| format!("{why}: the invaders win. {names} take the island. Winner: {wn}."));
     } else {
         // TS2: the count of the colour held fewest of; WT1 compares the next weakest.
         let sorted = |p: Pid| { let mut v = s.players[p as usize].trophies.to_vec(); v.sort(); v };
@@ -802,7 +816,8 @@ fn end_game(s: &mut GameState) {
         let placings = placings(n, &scores, &winners, &tiebreak);
         let wn = winners.iter().map(|&p| s.seating[p as usize].clone()).collect::<Vec<_>>().join(", ");
         s.result = Some(GameResult { island: true, factions: vec![], players: winners, scores, placings });
-        log_line(s, |_| format!("Total presence {total} is not more than {threshold}: the island wins. Winner: {wn}."));
+        let why = if s.options.round_votes { format!("The island took {} of the rounds to the invaders' {}", s.votes[1], s.votes[0]) } else { format!("Total presence {total} is not more than {threshold}") };
+        log_line(s, |_| format!("{why}: the island wins. Winner: {wn}."));
     }
 }
 

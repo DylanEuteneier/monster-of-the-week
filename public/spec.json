@@ -941,6 +941,17 @@
       ]
     },
     {
+      "id": "roundVotes",
+      "label": "Rounds as votes",
+      "description": "Claude's suggestion, the designer trying it (2026-10-31; after The King Is Dead's build-up): each round's close, after the fights, is a vote, for the invaders if total presence is more than the threshold, else for the island; the side with more rounds wins. Early: the game ends once a side holds a majority. Off by default.",
+      "default": "off",
+      "choices": [
+        { "id": "off", "label": "Off", "description": "" },
+        { "id": "on", "label": "On", "description": "" },
+        { "id": "early", "label": "On, ending early", "description": "" }
+      ]
+    },
+    {
       "id": "lastGrowth",
       "label": "Monsters grow after the last round",
       "description": "D41 (designer, 2026-10-31): the last round's monsters don't grow: the game ends after its fights, with no nightfall tokens or growth. On restores them.",

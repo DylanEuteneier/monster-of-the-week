@@ -184,6 +184,10 @@ pub struct Options {
     pub threshold: i32,
     /// Whether the last round's close brings nightfall tokens and growth (off by default since 2026-10-31).
     pub last_growth: bool,
+    /// Rounds as votes (designer trying it, 2026-10-31): each round's close, after the fights, is a vote; the majority wins.
+    pub round_votes: bool,
+    /// ...and the game ends as soon as one side holds a majority of the rounds (designer, 2026-10-31: a variant).
+    pub votes_early: bool,
     pub growth: i32,
     pub faction_tokens: i32,
     pub player_cubes: i32,
@@ -231,6 +235,8 @@ impl Options {
             rounds: num("rounds"),
             threshold: num("threshold"),
             last_growth: get("lastGrowth") == "on",
+            round_votes: matches!(get("roundVotes"), "on" | "early"),
+            votes_early: get("roundVotes") == "early",
             growth: if get("growth") == "off" { i32::MAX } else { num("growth") },
             faction_tokens: num("factionTokens"),
             player_cubes: num("playerCubes"),
@@ -372,6 +378,8 @@ pub struct GameState {
     pub opened: bool,
     /// Steal Their Playbook, theirs (D30): the card taken from another player, to be played now as one's own.
     pub copying: Option<CardIx>,
+    /// Rounds as votes (variant roundVotes): rounds closed over the bar (the invaders') and at or under it (the island's).
+    pub votes: [i32; 2],
     pub round_plays: Vec<RoundPlay>,
     pub growing: Option<Growing>,
     pub night: Option<Night>,

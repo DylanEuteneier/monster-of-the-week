@@ -397,6 +397,25 @@ fn project_fights(s: &GameState) -> GameState {
     out
 }
 
+/// The chance the invaders win, from the projected presence against the bar, shifted by `push` (a goal's optimism).
+/// Rounds as votes: each round left is a vote, this round's close sharp, later ones less so; the chance of a majority.
+fn invaders_reach(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64) -> f64 {
+    if !s.options.round_votes {
+        return sigmoid((projected - threshold - 0.5 + push) / spread_p);
+    }
+    let left = (s.options.rounds - s.votes[0] - s.votes[1]).max(0) as usize;
+    let need = (s.options.rounds / 2 + 1 - s.votes[0]).max(0) as usize;
+    let mut dp = vec![0.0f64; left + 1];
+    dp[0] = 1.0;
+    for k in 0..left {
+        let q = sigmoid((projected - threshold - 0.5 + push) / (2.0 + 3.0 * k as f64));
+        for j in (0..=k + 1).rev() {
+            dp[j] = dp[j] * (1.0 - q) + if j > 0 { dp[j - 1] * q } else { 0.0 };
+        }
+    }
+    dp.iter().enumerate().filter(|(j, _)| *j >= need).map(|(_, p)| p).sum()
+}
+
 fn chances_after(s: &GameState, pid: Pid) -> Chances {
     let colours = &ISLAND;
     let rounds = s.options.rounds as f64;
@@ -514,7 +533,7 @@ fn chances_after(s: &GameState, pid: Pid) -> Chances {
     let as_island = sigmoid(margin_island / spread_t);
     let prior = (TABLE_BASE + TABLE_STEP * backers as f64).max(0.1).min(0.9);
     let known = if rounds > 1.0 { ((s.round as f64 - 1.0) / (rounds - 1.0)).min(1.0) } else { 1.0 };
-    let p_invaders = (1.0 - known) * prior + known * sigmoid((projected - threshold - 0.5) / spread_p);
+    let p_invaders = (1.0 - known) * prior + known * invaders_reach(s, projected, threshold, spread_p, 0.0);
     Chances { p_invaders, prior, known, backers, linear_island, rival_invaders, as_invaders, as_island, margin_invaders, margin_island, projected, threshold, spread_p, rounds_left }
 }
 
@@ -575,8 +594,8 @@ fn set_access(s: &GameState, pid: Pid) -> f64 {
 pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut BotMemory>, rng: Rng) -> Goal {
     let c = win_chances_shared(s, pid);
     let push = p.push * (c.rounds_left + 1.0);
-    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * sigmoid((c.projected - c.threshold - 0.5 + push) / c.spread_p);
-    let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - sigmoid((c.projected - c.threshold - 0.5 - push) / c.spread_p));
+    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach(s, c.projected, c.threshold, c.spread_p, push);
+    let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach(s, c.projected, c.threshold, c.spread_p, -push));
     let evidence = reach_inv * c.as_invaders - reach_isl * c.as_island;
     let mut memory = memory;
     if let Some(m) = memory.as_deref_mut() {

@@ -295,6 +295,9 @@ pub fn state_to_value(s: &GameState) -> Value {
     o.insert("passesInRow".into(), Value::from(s.passes_in_row));
     o.insert("opened".into(), Value::from(s.opened));
     o.insert("copying".into(), s.copying.map(|c| Value::from(spec().cards[c as usize].id.as_str())).unwrap_or(Value::Null));
+    if s.options.round_votes {
+        o.insert("votes".into(), serde_json::json!({ "invaders": s.votes[0], "island": s.votes[1] }));
+    }
     o.insert("growing".into(), growing_value(s));
     o.insert("night".into(), night_value(s));
     o.insert("log".into(), log_value(s));
@@ -409,6 +412,7 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
         passes_in_row: v["passesInRow"].as_i64().unwrap_or(0) as i32,
         opened: v["opened"].as_bool().unwrap_or(false),
         copying: card(&v["copying"]),
+        votes: [v["votes"]["invaders"].as_i64().unwrap_or(0) as i32, v["votes"]["island"].as_i64().unwrap_or(0) as i32],
         round_plays,
         growing,
         night,
@@ -490,11 +494,16 @@ pub fn game_of(s: &GameState) -> Value {
         let p = &v["players"][id];
         (id.clone(), json!({ "group": p["group"], "supply": p["supply"], "standing": p["standing"], "trophies": p["trophies"], "hand": p["hand"], "kept": p["kept"], "batch": p["batch"], "picked": p["picked"] }))
     }).collect());
-    json!({
+    let mut lean = json!({
         "phase": v["phase"], "round": v["round"], "rngState": v["rngState"], "seating": v["seating"], "factions": v["factions"], "supply": v["supply"],
         "pass": v["pass"], "first": v["first"], "turn": v["turn"], "passesInRow": v["passesInRow"], "opened": v["opened"], "copying": v["copying"],
         "board": board, "players": players, "growing": v["growing"], "night": v["night"], "roundPlays": v["roundPlays"], "result": v["result"], "log": v["log"],
-    })
+    });
+    // Only with rounds as votes, so the hash of every other game is unchanged.
+    if !v["votes"].is_null() {
+        lean["votes"] = v["votes"].clone();
+    }
+    lean
 }
 
 /// The fingerprint hash of a state: sha1 of the canonical gameOf, first 16 hex digits.

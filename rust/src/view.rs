@@ -153,6 +153,9 @@ pub fn player_view(s: &GameState, pid: Pid) -> Value {
     o.insert("first".into(), v["first"].clone());
     o.insert("opened".into(), v["opened"].clone());
     o.insert("copying".into(), v["copying"].clone());
+    if !v["votes"].is_null() {
+        o.insert("votes".into(), v["votes"].clone());
+    }
     o.insert("toAct".into(), waiting_on(s).first().map(|&p| Value::from(s.seating[p as usize].as_str())).unwrap_or(Value::Null));
     o.insert("log".into(), v["log"].clone());
     o.insert("result".into(), v["result"].clone());

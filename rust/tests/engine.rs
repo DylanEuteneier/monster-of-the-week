@@ -1432,3 +1432,21 @@ fn d38_at_nightfall_each_location_without_a_fight_gains_its_own_faction_per_sway
     assert_eq!(gv["board"][&quiet]["tokens"][&own], 2);
     assert_eq!(presence(&g, &own), before + 2);
 }
+
+#[test]
+fn rounds_as_votes_each_close_is_a_vote_and_early_ends_on_a_majority() {
+    for (mode, early) in [("on", false), ("early", true)] {
+        let s0 = game_opts(3, &[("roundVotes", mode), ("thresholdPerPlayer", "off"), ("threshold", "30")]);
+        let g = play_out(&s0, 7);
+        let gv = v(&g);
+        let (inv, isl) = (gv["votes"]["invaders"].as_i64().unwrap(), gv["votes"]["island"].as_i64().unwrap());
+        assert_eq!(g.phase, Phase::Ended);
+        if early {
+            assert_eq!(inv.max(isl), 3, "ends as soon as a side has three");
+        } else {
+            assert_eq!(inv + isl, 5, "one vote a round");
+        }
+        let r = gv["result"].clone();
+        assert_eq!(r["side"] == "island", isl > inv);
+    }
+}
