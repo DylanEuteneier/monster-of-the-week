@@ -90,6 +90,7 @@ export { spec };
  * @property {{ pid: string, card: string, use: string }[]} roundPlays  this round's plays, in order (Steal Their Playbook, unsuited, 2026-10-24)
  * @property {{ faction: string, left: number, leaders: string[], next: number, due: Record<string, number> } | null} growing  growth phase when a supply runs short
  * @property {{ player: string, left: string[] } | null} [night]  Night Terrors (◐ signature): nightfall, before the fights; the player's marks still to decide
+ * @property {{ invaders: number, island: number }} [votes]  rounds as votes (RV1, variant): the votes cast so far
  * @property {RoundLog[]} log
  * @property {{ side: 'island' | 'invaders', factions: string[], players: string[], scores: Record<string, number>, placings?: string[] } | null} result
  */
@@ -147,6 +148,7 @@ export { spec };
  * @property {boolean} opened  the first player has opened with their marked card
  * @property {string | null} [copying]  a card taken with Steal Their Playbook, to be played now (D30)
  * @property {string | null} toAct
+ * @property {{ invaders: number, island: number }} [votes]  rounds as votes (RV1, variant): the votes cast so far
  * @property {RoundLog[]} log
  * @property {GameState['result']} result
  * @property {{ hand: string[], kept: string[], batch: string[], picked: boolean, trophies: Record<string, number> }} me

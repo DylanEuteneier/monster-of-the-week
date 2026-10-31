@@ -434,6 +434,8 @@ else {
     /** @type {Map<string, { maker: string, card: string, big: boolean }>} this round's fights, by location: who made each (none: there when play began), and whether a play made it big */
     const makers = new Map();
     const presence = [totalPresence(s)];
+    /** @type {string[]} */ const votes = []; // rounds as votes: each round's vote, in order
+    let invVotes = 0;
     /** @type {Record<string, string>[]} each round's end: the plan each seat holds (goal bots: island or invaders) */ const goals = [];
     /** @type {Record<string, string[]> | null} */
     let hands = null; // this round's hands when play began, less what was played
@@ -519,14 +521,14 @@ else {
         break;
       }
       if (!moved) break;
-      if (s.round !== round || s.phase === 'ended') { presence.push(totalPresence(s)); goals.push(Object.fromEntries(players.map((/** @type {string} */ p) => [p, memory[p].goal ?? '-']))); round = s.round; }
+      if (s.round !== round || s.phase === 'ended') { presence.push(totalPresence(s)); if (s.votes) { votes.push(s.votes.invaders > invVotes ? 'invaders' : 'island'); invVotes = s.votes.invaders; } goals.push(Object.fromEntries(players.map((/** @type {string} */ p) => [p, memory[p].goal ?? '-']))); round = s.round; }
     }
     const result = /** @type {NonNullable<GameState['result']>} */ (s.result);
     parentPort?.postMessage(/** @type {GameRecord} */ ({
       g, side: result.side, seats, groups: Object.fromEntries(s.seating.map((p) => [p, s.players[p].group])), winners: result.players, placings: result.placings ?? [], deck: spec.cards.map((c) => c.id),
       presence, scorched: Object.values(s.board).filter((p) => p.scorched).length, trophies: Object.fromEntries(s.seating.map((p) => [p, Object.values(s.players[p].trophies).reduce((a, b) => a + b, 0)])),
       trophiesByColour: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].trophies }])), scores: s.result?.scores ?? {}, goals, wonBy: s.result?.factions ?? [], standing: Object.fromEntries(s.seating.map((p) => [p, { ...s.players[p].standing }])), presenceBy: Object.fromEntries(s.factions.map((f) => [f, presenceOf(s, f)])),
-      economy, plays, held, unplayed, playable, probes, fightRounds, reach, forecasts,
+      economy, plays, held, unplayed, playable, probes, fightRounds, reach, forecasts, ...(votes.length ? { votes } : {}),
     }));
   }
 }

@@ -277,6 +277,8 @@ pub struct Chances {
     pub p_invaders: f64,
     pub prior: f64,
     pub known: f64,
+    /// How far the game has gone (0 at round 1, 1 at the last); the lean fades with it.
+    pub settled: f64,
     pub backers: i32,
     pub linear_island: f64,
     pub rival_invaders: f64,
@@ -532,9 +534,13 @@ fn chances_after(s: &GameState, pid: Pid) -> Chances {
     let spread_t = 0.6 + 0.8 * rounds_left;
     let as_island = sigmoid(margin_island / spread_t);
     let prior = (TABLE_BASE + TABLE_STEP * backers as f64).max(0.1).min(0.9);
-    let known = if rounds > 1.0 { ((s.round as f64 - 1.0) / (rounds - 1.0)).min(1.0) } else { 1.0 };
+    // Rounds as votes: this round's vote is cast at its close, so the board counts from round 1; the later votes'
+    // wider spreads (invaders_reach) carry the uncertainty the blend with the table's prior stood for.
+    // How far the game has gone: a seat's lean (its starting preference) fades with it (choose_goal).
+    let settled = if rounds > 1.0 { ((s.round as f64 - 1.0) / (rounds - 1.0)).min(1.0) } else { 1.0 };
+    let known = if s.options.round_votes { 1.0 } else { settled };
     let p_invaders = (1.0 - known) * prior + known * invaders_reach(s, projected, threshold, spread_p, 0.0);
-    Chances { p_invaders, prior, known, backers, linear_island, rival_invaders, as_invaders, as_island, margin_invaders, margin_island, projected, threshold, spread_p, rounds_left }
+    Chances { p_invaders, prior, known, settled, backers, linear_island, rival_invaders, as_invaders, as_island, margin_invaders, margin_island, projected, threshold, spread_p, rounds_left }
 }
 
 /// How good a position is for `pid` (evaluate).
@@ -604,7 +610,7 @@ pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bot
         }
     }
     let jitter = memory.as_deref().and_then(|m| m.jitter).unwrap_or(0.0);
-    let score = evidence + (p.lean + jitter) * (1.0 - c.known);
+    let score = evidence + (p.lean + jitter) * (1.0 - c.settled);
     let held = memory.as_deref().and_then(|m| m.goal);
     let bar = match held {
         Some(Goal::Invaders) => -p.hold,
