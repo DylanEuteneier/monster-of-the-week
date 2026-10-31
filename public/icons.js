@@ -18,20 +18,6 @@ const cube = (/** @type {number} */ cx, /** @type {number} */ cy, /** @type {num
 /** An arrowhead at (x, y) pointing along angle a (degrees). */
 const head = (/** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ a) => `<path d="M-4 -3.5L0 0L-4 3.5" transform="translate(${x} ${y}) rotate(${a})"/>`;
 
-/**
- * The five suit symbols as clean vector marks, for the icons only (designer, 2026-10-30: the iconography shares one
- * design language); the printed art keeps its pixel symbols. Shapes follow the pixel glyphs: moon and star, alien
- * head, power, skull, horns.
- * @type {Record<string, { label: string, svg: string }>}
- */
-export const SUITS = {
-  nocturnals: { label: 'Nocturnals', svg: svg('<path d="M14 3.5a8.5 8.5 0 1 0 0 17 9.5 9.5 0 0 1 0-17z"/><path d="M17.5 9.5v5M15 12h5"/>') },
-  scifi: { label: "80's Sci-Fi", svg: svg('<path d="M12 21c-4-2.5-8-6.5-8-11a8 8 0 0 1 16 0c0 4.5-4 8.5-8 11z"/><path d="M6.5 9.5l3.5 1.5M17.5 9.5L14 11"/>') },
-  sentients: { label: 'Sentients', svg: svg('<path d="M12 3v6"/><path d="M7 5.8a8 8 0 1 0 10 0"/><circle cx="12" cy="14" r="2.2" fill="currentColor" stroke="none"/>') },
-  undead: { label: 'Undead', svg: svg('<path d="M5 13a7 7 0 1 1 14 0v2.5h-2V20H7v-4.5H5z"/><circle cx="9" cy="11.5" r="1.8" fill="currentColor" stroke="none"/><circle cx="15" cy="11.5" r="1.8" fill="currentColor" stroke="none"/><path d="M10.5 20v-2.5M13.5 20v-2.5"/>') },
-  demonic: { label: 'Demons', svg: svg('<path d="M4 3c0 5 2 7.5 4.5 8.5M20 3c0 5-2 7.5-4.5 8.5"/><path d="M7 12.5a5 5 0 0 0 10 0c0-1-1-1.5-2-1.5H9c-1 0-2 .5-2 1.5z"/><path d="M10 14h.01M14 14h.01" stroke-width="2.5"/>') },
-};
-
 /** The nouns: the things actions act on. @type {Record<string, { label: string, svg: string }>} */
 export const NOUNS = {
   token: { label: 'Faction token', svg: svg('<circle cx="12" cy="12" r="7"/>') },

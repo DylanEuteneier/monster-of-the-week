@@ -10,7 +10,7 @@ import art from './assets/sprites.json' with { type: 'json' };
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { LAYOUT_SUGGESTIONS } from './layout-suggestions.js';
 import { cardHtml, suitIcon } from './cards.js';
-import { NOUNS, VERBS, SUITS, iconHtml, nounHtml, verbDiagram } from './icons.js';
+import { NOUNS, VERBS, iconHtml, nounHtml, verbDiagram } from './icons.js';
 
 
 /** @param {unknown} value */
@@ -126,7 +126,7 @@ function layoutCard(l) {
   const r = c.readings;
   // Each reading is a button-like row (designer, 2026-10-30: the target looks clickable, the LOC/FAC choice moving into it).
   // Each row's tag is its mark alone (designer, 2026-10-30, D35); the word is the row's label.
-  const tagMark = (/** @type {string} */ tag) => tag === 'FAC' ? SUITS[c.suit].svg : NOUNS[TAG_NOUN[tag]].svg;
+  const tagMark = (/** @type {string} */ tag) => NOUNS[TAG_NOUN[tag]].svg;
   const cell = (/** @type {string} */ tag) => `<b title="${esc(tag)}">${tagMark(tag)}</b>`;
   const row = (/** @type {string} */ tag, /** @type {string[]} */ cells) => `<div class="lay-row lay-row-ic" role="button" aria-label="${esc(tag)}">${cell(tag)}${cells.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
   const target = !t ? '' : t.grid
@@ -144,15 +144,15 @@ function layoutCard(l) {
 
 
 /** The row tags' marks (designer, 2026-10-30, D35): LOC, FAC, and the uses' nouns. */
-const TAG_NOUN = /** @type {Record<string, keyof typeof NOUNS>} */ ({ LOC: 'location', Standing: 'standing', Sway: 'swayAt', Tokens: 'group' });
+const TAG_NOUN = /** @type {Record<string, keyof typeof NOUNS>} */ ({ LOC: 'location', FAC: 'group', Standing: 'standing', Sway: 'swayAt', Tokens: 'group' });
 
 /** The marks the rows use, and the parts they are built from. */
 function renderTagMarks() {
   const mark = (/** @type {string} */ html, /** @type {string} */ label) => `<figure class="ik-mark"><span class="ik ik-solo"><span class="ik-n">${html}</span></span><figcaption class="small">${esc(label)}</figcaption></figure>`;
   const parts = [['token', 'Token: a circle'], ['sway', 'Sway: a cube'], ['location', 'Location: a hex']].map(([n, l]) => mark(NOUNS[n].svg, l)).join('');
-  const tags = [mark(NOUNS.location.svg, 'LOC: the location'), mark(SUITS.undead.svg, 'FAC: the faction’s own symbol'), mark(NOUNS.standing.svg, 'Standing: a cube over the line (off the board)'), mark(NOUNS.swayAt.svg, 'Sway: a cube in a hex (sway on the board)'), mark(NOUNS.group.svg, 'Tokens: three circles in a hex (a group)')].join('');
+  const tags = [mark(NOUNS.location.svg, 'LOC: the location'), mark(NOUNS.group.svg, 'FAC: the faction’s tokens in a location'), mark(NOUNS.standing.svg, 'Standing: a cube over the line (off the board)'), mark(NOUNS.swayAt.svg, 'Sway: a cube in a hex (sway on the board)'), mark(NOUNS.group.svg, 'Tokens: three circles in a hex (a group)')].join('');
   return `<div class="lay-opts"><h3>Row marks (D35)</h3><p class="small muted">A token is a circle, sway a cube, a location a hex; they combine, so a thing inside a hex is that thing at a location. Each row shows its mark alone; the word is its label for screen readers and on hover.</p>
-    <h3 class="small">Parts</h3><div class="ik-marks">${parts}</div><h3 class="small">Suit symbols (vector, for the icons)</h3><div class="ik-marks">${Object.values(SUITS).map((s) => mark(s.svg, s.label)).join('')}</div><h3 class="small">On the rows</h3><div class="ik-marks">${tags}</div></div>`;
+    <h3 class="small">Parts</h3><div class="ik-marks">${parts}</div><h3 class="small">On the rows</h3><div class="ik-marks">${tags}</div></div>`;
 }
 
 /** The layout mock-ups, each beside the card as it is now. */
