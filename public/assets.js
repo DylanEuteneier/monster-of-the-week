@@ -155,13 +155,32 @@ function renderTagMarks() {
     <h3 class="small">Parts</h3><div class="ik-marks">${parts}</div><h3 class="small">On the rows</h3><div class="ik-marks">${tags}</div></div>`;
 }
 
+
+/**
+ * Options for suited marks (designer, 2026-10-30): a symbol for "a location of this suit" (the LOC readings: at a
+ * ⎈ location) and for "this suit's faction's tokens" (the FAC readings: a Demon group anywhere, not in a hex).
+ */
+function renderSuitedOptions() {
+  const box = (/** @type {string} */ body) => `<svg class="ik-svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+  const HEXP = '<polygon points="12,1.5 21.1,6.75 21.1,17.25 12,22.5 2.9,17.25 2.9,6.75"/>';
+  const GROUP = (/** @type {string} */ fill) => ['9,15', '15,15', '12,9.2'].map((xy) => { const [x, y] = xy.split(','); return `<circle cx="${x}" cy="${y}" r="3.6"${fill}/>`; }).join('');
+  const glyph = (/** @type {string} */ g, size = 11, y = 16) => `<text x="12" y="${y}" text-anchor="middle" font-size="${size}" fill="currentColor" stroke="none">${esc(g)}</text>`;
+  const opts = [
+    ['A', 'The suit’s colour', (/** @type {any} */ a) => box(`${HEXP.replace('/>', ` fill="var(--suit-${a.id})"/>`)}`), (/** @type {any} */ a) => box(GROUP(` fill="var(--suit-${a.id})"`))],
+    ['B', 'The suit’s glyph (as the card text prints it)', (/** @type {any} */ a) => box(`${HEXP}${glyph(a.symbol)}`), (/** @type {any} */ a) => box(`${GROUP('')}${glyph(a.symbol, 7, 21.5)}`.replace('cy="15"', 'cy="13"').replace('cy="15"', 'cy="13"').replace('cy="9.2"', 'cy="7.2"'))],
+    ['C', 'Colour and glyph', (/** @type {any} */ a) => box(`${HEXP.replace('/>', ` fill="var(--suit-${a.id})"/>`)}${glyph(a.symbol)}`), (/** @type {any} */ a) => box(`${GROUP(` fill="var(--suit-${a.id})"`)}${glyph(a.symbol, 7, 21.5)}`.replace('cy="15"', 'cy="13"').replace('cy="15"', 'cy="13"').replace('cy="9.2"', 'cy="7.2"'))],
+  ];
+  const rows = opts.map(([k, label, loc, fac]) => `<div class="lay-suited"><b class="small">${k}: ${esc(String(label))}</b><div class="lay-suited-row">${spec.archetypes.map((a) => `<figure class="lay-suited-fig"><span class="ik ik-solo"><span class="ik-n">${/** @type {Function} */ (loc)(a)}</span></span><span class="ik ik-solo"><span class="ik-n">${/** @type {Function} */ (fac)(a)}</span></span><figcaption class="small muted">${esc(a.name)}</figcaption></figure>`).join('')}</div></div>`).join('');
+  return `<div class="lay-opts"><h3>Suited marks (options)</h3><p class="small muted">Each pair: a location of that suit (the LOC readings, “at a ⎈ location”), then that suit’s faction’s group anywhere (the FAC readings: tokens, not in a hex).</p>${rows}</div>`;
+}
+
 /** The layout mock-ups, each beside the card as it is now. */
 function renderLayouts() {
   const pairs = LAYOUTS.map((l) => `<div class="lay-pair"><figure class="asset-scale">${cardHtml(l.id)}<figcaption class="mono small muted">now</figcaption></figure>
     <figure class="asset-scale">${layoutCard(l)}<figcaption class="mono small muted">suggested</figcaption></figure>${l.note ? `<p class="small muted lay-note">${esc(l.note)}</p>` : ''}</div>`).join('');
   $('layouts').innerHTML = `<div class="row-between"><h2>Card layout (draft)</h2><span class="small muted">Suggestions from the layout research, not decisions</span></div>
     <p class="small muted">Suit cards (suggestion 1): a topline (the action’s icon block, its verb, a few words: the card’s only icon), a target field whose readings are the buttons, one specific rule per line, then thematic text at the bottom of every card. Choose-one cards (suggestion 2): the same topline over one button-like row per use. Every word is the card’s own, moved or split; the toplines’ verbs and gists are drafts. Same card width as now.</p>
-    <div class="lay-pairs">${pairs}</div>${renderTagMarks()}`;
+    <div class="lay-pairs">${pairs}</div>${renderSuitedOptions()}${renderTagMarks()}`;
 }
 
 function render() {

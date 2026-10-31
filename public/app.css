@@ -1156,4 +1156,9 @@ button.card-opt:hover { background: #f6cca1; }
 .lay-opt { margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .lay-opt-card { padding-bottom: 0; }
 .lay-opt-card .lay-target { border: 0; }
+/* Suited-mark options: a suit's location and its faction's group, side by side, per suit. */
+.lay-suited { margin-top: var(--space-2); }
+.lay-suited-row { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: 4px; }
+.lay-suited-fig { margin: 0; display: grid; grid-template-columns: auto auto; gap: 4px; justify-items: center; }
+.lay-suited-fig figcaption { grid-column: 1 / -1; }
 
