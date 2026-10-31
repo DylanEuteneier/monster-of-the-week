@@ -1134,7 +1134,6 @@ button.card-opt:hover { background: #f6cca1; }
 .lay-label { font-family: var(--font-display); font-size: 9px; text-transform: uppercase; }
 /* A reading or use: a button-like row, its tag cell divided from its text. */
 .lay-row { display: grid; grid-template-columns: 30px minmax(0, 1fr); background: var(--card-face); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); cursor: pointer; }
-.lay-row:hover { background: #f6cca1; }
 .lay-row > b { display: grid; place-items: center; font-family: var(--font-display); font-size: 9px; font-weight: 400; text-transform: uppercase; background: #e0f2f4; border-right: 2px solid var(--ink); }
 .lay-row > span { padding: 2px 4px; }
 .lay-parts { display: flex; flex-direction: column; }
@@ -1150,8 +1149,14 @@ button.card-opt:hover { background: #f6cca1; }
 
 /* The card layout in play (designer, 2026-10-30): the readings are the buttons; the +N and BACK sit by the name. */
 .lay-plays { display: flex; gap: 4px; flex: none; }
-.lay-plays .card-opt { min-width: 0; padding: 1px 4px; }
-.lay-plays .card-opt .ik-svg { width: 16px; height: 16px; }
+.lay-plays .card-opt { min-width: 0; padding: 0 5px 0 0; gap: 4px; background: var(--card-face); }
+/* The +N button reads like a row: its mark in a tinted cell, divided from the number. */
+.lay-plays .card-opt .ik-svg { width: 16px; height: 16px; padding: 2px; box-sizing: content-box; background: #e0f2f4; border-right: 2px solid var(--ink); }
+/* One hover for every button on a card (the rows and the +N, BACK): only where it can be clicked. */
+button.lay-row:hover, .lay-card button.card-opt:hover { background: #f6cca1; }
+/* And one set of states: the +N and BACK take the rows' next and empty looks. */
+.lay-card .card-opt.is-next { background: #fff2c2; }
+.lay-card .card-opt.is-empty, .lay-card .card-opt.is-next.is-empty { background: var(--card-face); }
 button.lay-row { width: 100%; padding: 0; text-align: left; font: inherit; color: inherit; }
 .lay-row.is-on { background: var(--color-accent); outline: 2px solid var(--ink); outline-offset: 1px; }
 .lay-row.is-off { opacity: 0.45; }
