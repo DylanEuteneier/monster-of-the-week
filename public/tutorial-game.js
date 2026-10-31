@@ -23,7 +23,8 @@ export const BOTS = /** @type {const} */ ([['Ash', 'bot:lean=0.3'], ['Bea', 'bot
  */
 export const SEED = 7;
 /** Seats in order, so the learner is Slayerettes; otherwise the game's defaults (passing off, D29). */
-export const OPTIONS = { groups: 'seat' };
+// Pinned to growth by groups (GR1, with D33's shifts) until the tutorial is rewritten for nightfall tokens (D38).
+export const OPTIONS = { groups: 'seat', growth: '2', alignedGrowth: 'on', swayTokens: 'shifts' };
 
 /**
  * Everything the tutorial's table holds. Plain data, so a snapshot is a copy.

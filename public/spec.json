@@ -976,8 +976,8 @@
     {
       "id": "growth",
       "label": "Growth threshold",
-      "description": "A lone faction with at least this many tokens at a location grows (GR1).",
-      "default": "2",
+      "description": "A lone faction with at least this many tokens at a location grows (GR1). Off by default since D38 (designer, 2026-10-30): nightfall tokens replace growth.",
+      "default": "off",
       "choices": [
         {
           "id": "2",
@@ -1196,7 +1196,7 @@
       "id": "alignedGrowth",
       "label": "Growth on own ground",
       "description": "AL3: a faction controlling one of its aligned locations grows 1 more there (designer: off 2026-10-21, back on by default 2026-10-24).",
-      "default": "on",
+      "default": "off",
       "choices": [
         {
           "id": "off",
@@ -1213,8 +1213,8 @@
     {
       "id": "swayTokens",
       "label": "Sway brings tokens",
-      "description": "GR5 (designer's seed, 2026-10-29; a switch, not a core rule): each sway placed on the board, from standing with a faction, brings 1 of that faction's tokens from its supply to the same location, if it can (the supply has one, and the faction may enter there). Or one slot's cards only (designer, 2026-10-29): the shifts (scatters), the strikes (gathers) or the signatures. Shifts only by default (designer, 2026-10-29, D33).",
-      "default": "shifts",
+      "description": "GR5 (designer's seed, 2026-10-29; a switch, not a core rule): each sway placed on the board, from standing with a faction, brings 1 of that faction's tokens from its supply to the same location, if it can (the supply has one, and the faction may enter there). Or one slot's cards only (designer, 2026-10-29): the shifts (scatters), the strikes (gathers) or the signatures. Shifts only from D33 (2026-10-29); nightfall by default since D38 (designer, 2026-10-30), with growth off.",
+      "default": "nightfall",
       "choices": [
         {
           "id": "off",

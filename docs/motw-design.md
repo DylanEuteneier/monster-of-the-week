@@ -1400,6 +1400,13 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Open:** the look of each mark; which cards and prompts use them first.
 - **Date:** 2026-10-29
 
+#### D38. Nightfall tokens replace growth
+
+- **Decided (designer, 2026-10-30):** GR6 is the way to proceed for now, instead of growth: at nightfall, during the round's close, after the fights, every location where there was no fight gains 1 of its own faction's tokens per sway there (all players' sway), if it can. Growth by groups (GR1) and growth on own ground (AL3) are off, and so is D33's shifts bringing tokens (GR6 replaces sway bringing tokens from cards). Defaults: `swayTokens` nightfall, `growth` off, `alignedGrowth` off; the old rules stay as variants.
+- **Why:** in the measurements (3.5, GR6), nightfall's inflow held level to round 5 (14–18 tokens a round) and kept the most fights late (about 3.9 in rounds 4 and 5), where growth by groups dried up as fights broke groups apart.
+- **Open:** the invaders end far too many games (75% at threshold 30 in the first measurement, against about 40% aimed for): the threshold and other end conditions need tuning (designer). The prototype choices in GR6 (arrivals before growth, board order on a short supply) stand; the tutorial still teaches growth and is pinned to the old rules until it is rewritten.
+- **Date:** 2026-10-30
+
 #### D37. The card layout, and the archetype glyphs retired
 
 - **Decided (designer, 2026-10-30):** every card is laid out in four parts: a topline (the action's icon block, its verb, a few words of gist), the target with each reading (or each use) as a button-like row led by its mark (D35), the card's own rules one per line, and thematic text at the bottom of every card, small and set apart. Colour blocking runs full bleed; tables only where text is balanced, otherwise stacked parts with small labels. The +N sway button shows standing with the suit's faction (its cube in the suit's colour over the line) and the number. Built from the layout research (`reports/Card text layouts at a glance.md`): each card's layout lives in spec.json (`layout`), its words the card's own, moved or split.
@@ -1535,6 +1542,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
 | 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
 | 2026-10-29 | Steal Their Playbook (D30, designer): theirs takes a card another player played this round (however played) from the played cards into your hand, played at once as your own; it can't be your last card played (discarded for no effect) | |
+| 2026-10-30 | Nightfall tokens replace growth (D38, designer): swayTokens nightfall, growth and aligned growth off | Invaders' share to tune; the tutorial pinned to growth until rewritten; fingerprints re-recorded |
 | 2026-10-30 | The card layout for every card, thematic text on each; the archetype glyphs retired for suit names (D37, designer) | Draft gists and flavour to review |
 | 2026-10-30 | The Gate (D36, designer): the location reading joins two ↂ locations, the faction reading two locations holding Sci-Fi; Sci-Fi pays when it is at either end | Fingerprints re-recorded |
 | 2026-10-30 | Noun marks combine: a token a circle, sway a cube, a location a hex, a thing in a hex is at a location; row tags are marks alone (D35, designer) | The assets page's row marks |

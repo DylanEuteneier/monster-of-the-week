@@ -395,6 +395,9 @@ fn a_lone_faction_with_2_or_more_grows_by_1_aligned_one_extra() {
     let Fx { a, neutral, .. } = fx();
     let home = first_loc(&arch_of_faction(&a));
     let s = edit(&clear(&game(1)), |x| {
+        // Growth by groups (GR1, AL3), a variant since D38.
+        x["options"]["growth"] = json!("2");
+        x["options"]["alignedGrowth"] = json!("on");
         x["board"][&home]["tokens"] = obj(&[(&a, 2)]);
         x["board"][&neutral]["tokens"] = obj(&[(&a, 3)]);
     });
@@ -1401,4 +1404,37 @@ fn steal_their_playbook_copies_any_card_another_player_played_this_round_and_can
     assert!(check(&last, &who, "playbook", json!({ "use": "yours", "back": "gate" })).is_some());
     let gone = apply(&last, &who, json!({ "type": "play", "card": "playbook", "use": "action", "target": null }));
     assert!(v(&gone)["players"][&who]["hand"].as_array().unwrap().is_empty());
+}
+
+#[test]
+fn d38_at_nightfall_each_location_without_a_fight_gains_its_own_faction_per_sway_there() {
+    let d = draft_all(&game(1));
+    let s0 = clear(&d);
+    // A quiet location with 2 sway (two players) and a fight with sway: only the quiet one gains, 1 per sway.
+    let (quiet, arch) = locs().into_iter().next().unwrap();
+    let own = of_arch(&s0, &arch);
+    let busy = locs().into_iter().find(|l| l.0 != quiet && !adjacent(&quiet).contains(&l.0)).unwrap().0;
+    let fs: Vec<String> = factions(&s0).into_iter().filter(|x| *x != own).collect();
+    let (ann, bob) = (s0.seating[0].clone(), s0.seating[1].clone());
+    let s = edit(&s0, |x| {
+        x["options"]["swayTokens"] = json!("nightfall");
+        x["options"]["growth"] = json!("off");
+        x["options"]["passing"] = json!("on"); // the round ends by passing here
+        x["opened"] = json!(true);
+        x["board"][&quiet]["sway"] = obj(&[(&ann, 1), (&bob, 1)]);
+        x["board"][&busy]["tokens"] = obj(&[(&fs[0], 3), (&fs[1], 2)]);
+        x["board"][&busy]["sway"] = obj(&[(&ann, 2)]);
+    });
+    let before = presence(&s, &own);
+    let mut g = s.clone();
+    for _ in 0..20 {
+        if g.phase != Phase::Play || g.round != s.round {
+            break;
+        }
+        let p = g.seating[g.turn].clone();
+        g = apply(&g, &p, json!({ "type": "pass" }));
+    }
+    let gv = v(&g);
+    assert_eq!(gv["board"][&quiet]["tokens"][&own], 2);
+    assert_eq!(presence(&g, &own), before + 2);
 }
