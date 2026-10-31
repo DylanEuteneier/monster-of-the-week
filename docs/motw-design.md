@@ -1400,6 +1400,12 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Open:** the look of each mark; which cards and prompts use them first.
 - **Date:** 2026-10-29
 
+#### D41. The last round ends after its fights
+
+- **Decided (designer, 2026-10-31):** the last round's monsters don't grow: the game ends straight after the last round's fights, before nightfall, with no nightfall tokens (D38) or growth; then the end is counted. Variant `lastGrowth` (default off; on restores the last nightfall).
+- **Why:** the last nightfall added about 14–18 tokens at 5 players after the last card was played, which no one could answer, and about a third of the presence counted at the end.
+- **Date:** 2026-10-31
+
 #### D40. The presence threshold is 10 per player
 
 - **Decided (designer, 2026-10-30):** the invaders win if total presence at the end is more than 10 per player (30 at 3 players, 40 at 4, 50 at 5), in place of the fixed 30 (D33), leaning slightly toward the invaders. Variant `thresholdPerPlayer` (default 10; off uses the fixed `threshold`).
@@ -1555,6 +1561,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
 | 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
 | 2026-10-29 | Steal Their Playbook (D30, designer): theirs takes a card another player played this round (however played) from the played cards into your hand, played at once as your own; it can't be your last card played (discarded for no effect) | |
+| 2026-10-31 | The last round ends after its fights: no last nightfall or growth (D41, designer) | Thresholds to re-measure; fingerprints re-recorded |
 | 2026-10-30 | Threshold 10 per player (D40, designer) | To confirm with bots playing to it; fingerprints re-recorded |
 | 2026-10-30 | Steal Their Playbook: one use, any card played earlier this round into your hand to play later (D39, designer) | Fingerprints re-recorded |
 | 2026-10-30 | Nightfall tokens replace growth (D38, designer): swayTokens nightfall, growth and aligned growth off | Invaders' share to tune; the tutorial pinned to growth until rewritten; fingerprints re-recorded |

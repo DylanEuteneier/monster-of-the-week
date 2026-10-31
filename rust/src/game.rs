@@ -342,7 +342,9 @@ fn close_round(s: &mut GameState) {
     if !s.quiet {
         note_flow(before - total_presence(s), 0);
     }
-    if s.options.sway_tokens == SwayTokens::Nightfall {
+    // The last round's monsters don't grow (designer, 2026-10-31): the game ends after its fights.
+    let last = s.round >= s.options.rounds && s.options.last_growth == false;
+    if s.options.sway_tokens == SwayTokens::Nightfall && !last {
         nightfall_tokens(s, &fought);
     }
     for p in s.board.iter_mut() {
@@ -351,6 +353,10 @@ fn close_round(s: &mut GameState) {
         p.altar = false;
         p.study = None;
         p.terror = None;
+    }
+    if last {
+        end_round(s);
+        return;
     }
     begin_growth(s, 0);
 }

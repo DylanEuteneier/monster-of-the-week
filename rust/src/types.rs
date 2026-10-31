@@ -182,6 +182,8 @@ pub struct Options {
     pub raw: Vec<(String, String)>,
     pub rounds: i32,
     pub threshold: i32,
+    /// Whether the last round's close brings nightfall tokens and growth (off by default since 2026-10-31).
+    pub last_growth: bool,
     pub growth: i32,
     pub faction_tokens: i32,
     pub player_cubes: i32,
@@ -228,6 +230,7 @@ impl Options {
         Options {
             rounds: num("rounds"),
             threshold: num("threshold"),
+            last_growth: get("lastGrowth") == "on",
             growth: if get("growth") == "off" { i32::MAX } else { num("growth") },
             faction_tokens: num("factionTokens"),
             player_cubes: num("playerCubes"),
