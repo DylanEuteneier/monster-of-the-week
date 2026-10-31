@@ -78,6 +78,7 @@ export const VERBS = {
 
 /** The piece a noun draws inside a diagram, centred on (x, y). @type {Record<string, (x: number, y: number) => string>} */
 // The same parts as the noun marks (D35): a token a circle, sway and standing a cube, a location a hex.
+// Two different groups in one mark: the second is filled (designer, 2026-10-31), as in a fight.
 const PIECES = {
   token: (x, y) => `<circle cx="${x}" cy="${y}" r="2.6"/>`,
   // A cube anywhere: a card whose uses differ in where (standing or sway) shows no place in its topline (designer, 2026-10-31).
@@ -119,8 +120,8 @@ const DIAGRAMS = {
   move: (n) => `${place(n, 26, 22)}${ghost(piece(n, 26, 22))}${place(n, 54, 22)}${piece(n, 54, 22)}`,
   split: (n) => `${ghost(group(25, 22, 5, n))}${group(54, 13, 3, n)}${group(54, 33, 2, n)}`,
   trail: (n) => `${[19, 33, 47, 61].map((x, i) => `${place(n, x, 22)}${i ? piece(n, x, 22) : ghost(piece(n, x, 22))}`).join('')}`,
-  march: (n) => `${place(n, 18, 28)}${ghost(piece(n, 18, 28))}${place(n, 40, 28, ' stroke-dasharray="2 2"')}${place(n, 62, 28)}${piece(n, 62, 28)}<circle cx="62" cy="28" r="5" stroke-width="1.75"/><path d="M22 19Q40 4 58 19" stroke-width="1.75"/>${head(58, 19, 40).replace('<path', '<path stroke-width="1.75"')}`,
-  drive: (n) => `${place(n, 24, 22)}${ghost('<circle cx="21.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="27" cy="22" r="2.5"/>')}${place(n, 52, 13)}${piece(n, 52, 13)}${place(n, 52, 31)}<circle cx="52" cy="31" r="3" stroke-width="1.75"/>`,
+  march: (n) => `${place(n, 18, 28)}${ghost(piece(n, 18, 28))}${place(n, 40, 28, ' stroke-dasharray="2 2"')}${place(n, 62, 28)}${piece(n, 59.2, 28)}<circle cx="64.8" cy="28" r="2.6" fill="currentColor" stroke="none"/><path d="M22 19Q40 4 58 19" stroke-width="1.75"/>${head(58, 19, 40).replace('<path', '<path stroke-width="1.75"')}`,
+  drive: (n) => `${place(n, 24, 22)}${ghost('<circle cx="21.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="27" cy="22" r="2.5"/>')}${place(n, 52, 13)}<circle cx="52" cy="13" r="2.6" fill="currentColor" stroke="none"/>${place(n, 52, 31)}${piece(n, 52, 31)}`,
   flee: (n) => `${place(n, 26, 26)}${ghost(piece(n, 26, 26))}${place(n, 54, 26)}${piece(n, 54, 26)}<path d="M38 6a5 5 0 1 0 4 7.5 3.75 3.75 0 0 1-4-7.5z" stroke-width="1.75"/>`,
   slay: (n) => `${place(n, 26, 22)}${ghost(`${piece(n, 23, 22)}${piece(n, 29, 22)}`)}<path d="M46 13h12v5a6 6 0 0 1-12 0zM52 24v5M47 32h10" stroke-width="1.75"/>`,
   // Gain and pay are one idea, a plus or a minus by the noun's own mark, which says where (sway on a location, standing
