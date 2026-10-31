@@ -100,6 +100,9 @@ const ui = {
   /** the target before each pick, so Back undoes one step at a time */
   /** @type {import('./rules.js').Target[]} */
   undo: [],
+  /** A count being chosen (a pick the rules take again at once): the target before it, what was picked, how many, the most.
+   * @type {{ before: import('./rules.js').Target, action: string, location: string, faction: string, n: number, max: number } | null} */
+  stepper: null,
   /** table talk lines arrived while the overlay was closed */
   unread: 0,
   /** draft: how many cards were kept when ui.keep was last reset */
@@ -773,6 +776,7 @@ function renderScore() {
 }
 
 function renderPhase() {
+  if (!ui.choosing) ui.stepper = null;
   handNext = { cards: [], open: false, actions: [], state: 'wait', text: '', extra: '' };
   const view = ui.view;
   if (!view) {
@@ -1094,10 +1098,20 @@ function renderTargeting(cardId) {
   // or the buttons beside it.
   const where = choice.kind === 'faction' ? 'in the faction rows' : choice.kind === 'location' || choice.kind === 'group' || choice.kind === 'split' ? 'on the island' : '';
   const said = choice.kind === 'mode' ? (empty.length === 2 ? 'Nothing to target: play it for no effect with ⊘' : 'Pick a reading on the card: its location or faction row') : none ? 'Nothing to target: play it for no effect with ⊘' : words;
-  step('turn', `${esc(said)}${where && !none && !/island|faction rows/.test(said) ? ` <span class="bar-where">${where}</span>` : ''}`, arrows);
-  if ((choice.kind === 'location' || choice.kind === 'group' || choice.kind === 'faction') && 'optional' in choice && choice.optional) handAction('skip', { label: doneLabel(card.action) });
-  handAction('target-none', { tip: 'Play it for no effect' });
-  handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
+  const st = ui.stepper;
+  if (st) {
+    // A count: how many, then Confirm.
+    const at = st.action === 'pick-faction' ? `with the ${esc(fname(st.faction))}` : `at ${esc(lname(st.location))}`;
+    const counts = `<span class="bar-actions bar-count">${Array.from({ length: st.max }, (_, i) => i + 1).map((k) => `<button class="bar-btn${k === st.n ? ' is-primary' : ''}" data-action="step-count" data-n="${k}" aria-pressed="${k === st.n}">${k}</button>`).join('')}</span>`;
+    step('turn', `How many ${at}? Pick a number, then Confirm`, counts);
+    handAction('step-confirm', { label: 'Confirm', primary: true });
+    handAction('step-cancel', { label: 'Cancel', tip: 'Undo this pick' });
+  } else {
+    step('turn', `${esc(said)}${where && !none && !/island|faction rows/.test(said) ? ` <span class="bar-where">${where}</span>` : ''}`, arrows);
+    if ((choice.kind === 'location' || choice.kind === 'group' || choice.kind === 'faction') && 'optional' in choice && choice.optional) handAction('skip', { label: doneLabel(card.action) });
+    handAction('target-none', { tip: 'Play it for no effect' });
+    handAction('back', { tip: ui.undo.length ? 'Undo the last pick' : 'Put the card down' });
+  }
   // A reading with nothing to target says what it needs, on the card.
   const why = Object.fromEntries(empty.map((m) => [m, readingConditions(/** @type {any} */ (view), view.you, cardId, m)]).filter(([, c]) => c));
   toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, raise: choice.kind === 'mode' || choice.kind === 'use', reading: t.mode, use: t.use ? String(t.use) : undefined, uses: choice.kind === 'use' && choice.key === 'use' ? choice.options.map(String) : undefined, empty, why } : { dim: true })), false);
@@ -1861,6 +1875,7 @@ function onClick(event) {
     }
   }
   if (action === 'back') {
+    ui.stepper = null;
     if (ui.payerAt) { ui.payerAt = null; return render(); }
     // Undo the last pick (a reading counts); with nothing left to undo, put the card down.
     const last = ui.choosing ? ui.undo.pop() : undefined;
@@ -1892,17 +1907,27 @@ function onClick(event) {
       return sendMove({ type: 'flee', location: mark, faction: f.faction, to: f.to, follow: action === 'flee-follow' });
     }
   }
+  // A count: pick how many, then Confirm (designer, 2026-10-31: no clicking the same thing again and again).
+  if (ui.choosing && ui.stepper && action === 'step-count') return setCount(Number(target.dataset.n));
+  if (ui.choosing && ui.stepper && action === 'step-cancel') { ui.target = ui.stepper.before; ui.undo.pop(); ui.stepper = null; return render(); }
+  if (ui.choosing && ui.stepper && action === 'step-confirm') { ui.stepper = null; return currentChoice()?.kind === 'done' ? playTarget() : render(); }
   if (ui.choosing && ['pick-location', 'pick-group', 'pick-faction', 'pick-use', 'skip'].includes(action ?? '')) {
+    // With a count open, the same target again is one more; anything else confirms the count first.
+    const st = ui.stepper;
+    if (st && action === st.action && (target.dataset.location ?? '') === st.location && (target.dataset.faction ?? '') === st.faction) return setCount(Math.min(st.n + 1, st.max));
+    ui.stepper = null;
     const t = ui.target;
     const before = structuredClone(t);
     if (!applyPick(t, action ?? '', target)) return;
     ui.undo.push(before);
     // A finished target plays the card at once.
-    if (currentChoice()?.kind === 'done') {
-      const id = /** @type {string} */ (ui.choosing);
-      ui.choosing = null;
-      ui.target = {}; ui.payerAt = null;
-      return sendMove({ type: 'play', card: id, use: 'action', target: finish(t) });
+    if (currentChoice()?.kind === 'done') return playTarget();
+    // The rules take the same pick again: open a count (1 picked), up to as many as they allow.
+    if (pickAgain(t, action ?? '', target)) {
+      const probe = structuredClone(t);
+      let max = 1;
+      while (max < 40 && pickAgain(probe, action ?? '', target) && applyPick(probe, action ?? '', target)) max += 1;
+      ui.stepper = { before, action: action ?? '', location: target.dataset.location ?? '', faction: target.dataset.faction ?? '', n: 1, max };
     }
     return render();
   }
@@ -1916,6 +1941,7 @@ function onClick(event) {
     // Picking or switching the reading (on the card) restarts the target in that reading.
     ui.choosing = target.dataset.card ?? ui.choosing;
     ui.undo.push(structuredClone(ui.target));
+    ui.stepper = null;
     const mode = /** @type {'location' | 'faction'} */ (target.dataset.mode);
     ui.target = { mode };
     return render();
@@ -2056,6 +2082,39 @@ function applyPick(t, action, el) {
   } else if (action === 'skip' && choice?.kind === 'faction' && choice.key === 'payers') t.payers = [...(t.payers ?? []), '__stop'];
   else if (action === 'skip' && choice?.kind === 'group') t.moves = [...(t.moves ?? []), { location: '__stop', faction: '', to: '__stop' }];
   return true;
+}
+
+/** Play the finished target. */
+function playTarget() {
+  const id = /** @type {string} */ (ui.choosing);
+  const t = ui.target;
+  ui.choosing = null; ui.stepper = null;
+  ui.target = {}; ui.payerAt = null;
+  sendMove({ type: 'play', card: id, use: 'action', target: finish(t) });
+}
+
+/**
+ * Whether the rules would take the same pick again right now: a count (a faction paying again, the same location as
+ * another `from`, another token to the same place in a split).
+ * @param {import('./rules.js').Target} t @param {string} action @param {HTMLElement} el
+ */
+function pickAgain(t, action, el) {
+  const c = currentChoice(t);
+  if (!c || !('options' in c)) return false;
+  if (action === 'pick-faction') return c.kind === 'faction' && c.key === 'payers' && c.options.includes(el.dataset.faction ?? '');
+  if (action === 'pick-location') return ((c.kind === 'location' && c.key === 'from') || c.kind === 'split') && c.options.includes(el.dataset.location ?? '');
+  return false;
+}
+
+/** Set the open count to n: the target rebuilt from before the count with the pick made n times. @param {number} n */
+function setCount(n) {
+  const st = /** @type {NonNullable<typeof ui.stepper>} */ (ui.stepper);
+  const el = /** @type {HTMLElement} */ (/** @type {unknown} */ ({ dataset: { location: st.location, faction: st.faction } }));
+  const t = structuredClone(st.before);
+  for (let i = 0; i < Math.max(1, Math.min(n, st.max)); i++) if (!applyPick(t, st.action, el)) break;
+  ui.target = t;
+  st.n = Math.max(1, Math.min(n, st.max));
+  render();
 }
 
 /** Strip the "stop" markers the step-by-step builder uses. @param {import('./rules.js').Target} t */
