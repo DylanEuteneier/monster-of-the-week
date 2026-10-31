@@ -36,7 +36,7 @@ export const LAYOUT_SUGGESTIONS = {
    {
     "q": 1,
     "r": 4,
-    "loc": "occult-camp",
+    "loc": "state-park",
     "region": "Old Town"
    },
    {
@@ -60,7 +60,7 @@ export const LAYOUT_SUGGESTIONS = {
    {
     "q": 1,
     "r": 1,
-    "loc": "state-park",
+    "loc": "occult-camp",
     "region": "Woods"
    },
    {
