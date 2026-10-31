@@ -1484,7 +1484,7 @@
         "adjacent": [
           "beach-city",
           "lake-house",
-          "occult-camp"
+          "state-park"
         ],
         "mirror": "junkyard"
       },
@@ -1496,19 +1496,21 @@
           "lighthouse",
           "fallout-bunker",
           "graveyard",
-          "occult-camp"
+          "state-park"
         ],
         "mirror": "mine"
       },
       "occult-camp": {
         "q": 1,
-        "r": 4,
-        "region": "Old Town",
+        "r": 1,
+        "region": "Woods",
         "adjacent": [
-          "beach-city",
-          "graveyard"
+          "mine",
+          "weather-station",
+          "sawmill",
+          "lake-house"
         ],
-        "mirror": "ski-resort"
+        "mirror": "lighthouse"
       },
       "fallout-bunker": {
         "q": 3,
@@ -1543,19 +1545,17 @@
           "fallout-bunker",
           "beach-city"
         ],
-        "mirror": "state-park"
+        "mirror": "occult-camp"
       },
       "state-park": {
         "q": 1,
-        "r": 1,
-        "region": "Woods",
+        "r": 4,
+        "region": "Old Town",
         "adjacent": [
-          "mine",
-          "weather-station",
-          "sawmill",
-          "lake-house"
+          "beach-city",
+          "graveyard"
         ],
-        "mirror": "lighthouse"
+        "mirror": "ski-resort"
       },
       "sawmill": {
         "q": 0,
@@ -1563,7 +1563,7 @@
         "region": "Woods",
         "adjacent": [
           "lake-house",
-          "state-park"
+          "occult-camp"
         ],
         "mirror": "shipping-docks"
       },
@@ -1573,7 +1573,7 @@
         "region": "Woods",
         "adjacent": [
           "mine",
-          "state-park",
+          "occult-camp",
           "sawmill",
           "graveyard"
         ],
@@ -1585,7 +1585,7 @@
         "region": "Mountains",
         "adjacent": [
           "ski-resort",
-          "state-park",
+          "occult-camp",
           "mine"
         ],
         "mirror": null
@@ -1600,7 +1600,7 @@
           "mine",
           "junkyard"
         ],
-        "mirror": "occult-camp"
+        "mirror": "state-park"
       },
       "mine": {
         "q": 2,
@@ -1610,7 +1610,7 @@
           "junkyard",
           "ski-resort",
           "weather-station",
-          "state-park",
+          "occult-camp",
           "lake-house"
         ],
         "mirror": "beach-city"
