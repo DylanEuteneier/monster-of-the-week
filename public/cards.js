@@ -137,7 +137,7 @@ function laidOut(c, o, k) {
   const target = c.suit
     ? `<div class="lay-target"><div class="lay-label">Target: ${esc(l.target)}</div>${reading('location')}${reading('faction')}</div>`
     : l.uses
-      ? `<div class="lay-target"><div class="lay-label">Choose one</div>${l.uses.map((/** @type {any} */ u) => `<div class="lay-row lay-row-ic${o.use ? (o.use === u.id ? ' is-on' : ' is-off') : ''}" aria-label="${esc(u.id)}"><b title="${esc(u.id)}">${markOf(u.mark)}</b><span>${esc(u.text.charAt(0).toUpperCase() + u.text.slice(1))}</span></div>`).join('')}</div>`
+      ? `<div class="lay-target"><div class="lay-label">${l.uses.length > 1 ? 'Choose one' : 'Target'}</div>${l.uses.map((/** @type {any} */ u) => `<div class="lay-row lay-row-ic${o.use ? (o.use === u.id ? ' is-on' : ' is-off') : ''}" aria-label="${esc(u.id)}"><b title="${esc(u.id)}">${markOf(u.mark)}</b><span>${esc(u.text.charAt(0).toUpperCase() + u.text.slice(1))}</span></div>`).join('')}</div>`
       : `<div class="lay-target"><div class="lay-label">Target: ${esc(l.target)}</div><div class="lay-row lay-row-ic"><b>${markOf(l.single ?? 'group')}</b><span>${esc(l.target.charAt(0).toUpperCase() + l.target.slice(1))}</span></div></div>`;
   const specifics = l.specifics.length ? `<ul class="lay-specifics">${l.specifics.map((/** @type {string} */ s) => `<li>${esc(s)}</li>`).join('')}</ul>` : '';
   const flavour = `<p class="lay-flavour">${esc(l.flavour)}</p>`;

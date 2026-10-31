@@ -696,7 +696,7 @@
         "uses": [
           {
             "id": "sway",
-            "mark": "fightSway",
+            "mark": "swayAt",
             "text": "1 sway from your supply at each of up to X fights."
           },
           {
