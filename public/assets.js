@@ -10,7 +10,7 @@ import art from './assets/sprites.json' with { type: 'json' };
 import { tokenHtml, cubeHtml, hexHtml, SEAT_COLOURS } from './pieces.js';
 import { LAYOUT_SUGGESTIONS } from './layout-suggestions.js';
 import { cardHtml } from './cards.js';
-import { NOUNS, VERBS, iconHtml, nounHtml, verbDiagram, directionSample } from './icons.js';
+import { NOUNS, VERBS, iconHtml, nounHtml, verbDiagram } from './icons.js';
 
 
 /** @param {unknown} value */
@@ -74,7 +74,6 @@ function renderIcons() {
   ].map(([name, gist, lines]) => `<div class="ik-example"><b>${esc(String(name))}</b><div class="small">${esc(String(gist))}</div>${/** @type {string[]} */ (lines).join('')}</div>`).join('');
   $('icons').innerHTML = `<div class="row-between"><h2>Action icons (draft)</h2><span class="small muted">IK1, D34: a verb block plus a noun block</span></div>
     <p class="small muted">Direction B (designer): each verb is a mini board diagram (hexes, arrows), and the noun is the piece moving through it. One set of parts throughout (D35): a token is a circle, sway a cube, a location a hex; standing is a cube over a line, being off the board; every mark has the same stroke. An amount (1, X, ½, all) sits beside it where it matters. Clean vector, not pixel art. No card uses them yet.</p>
-    <h3 class="small">Direction marks, a sample to compare (designer, 2026-10-30)</h3>${['chevron', 'A', 'B', 'C'].map((s) => `<div class="ik-marks ik-marks-b">${['gather', 'split', 'move', 'flee', 'drive'].map((v) => `<figure class="ik-mark ik-mark-b"><span class="ik ik-b"><span class="ik-n">${directionSample(/** @type {any} */ (s), v)}</span></span><figcaption class="small">${s === 'chevron' ? 'Chevron (now)' : s === 'A' ? 'A: motion lines' : s === 'B' ? 'B: before dotted, after solid' : 'C: a divider'} · ${v}</figcaption></figure>`).join('')}</div>`).join('')}
     <h3 class="small">Verbs as diagrams (direction B)</h3><div class="ik-marks ik-marks-b">${diagrams}</div>
     <h3 class="small">One verb, three nouns</h3><div class="ik-marks ik-marks-b">${nounsIn}</div>
     <h3 class="small">Nouns</h3><div class="ik-marks">${marks(NOUNS, 'ik-n')}</div>

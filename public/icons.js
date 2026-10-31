@@ -92,11 +92,8 @@ const piece = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {n
 const place = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {number} */ y, /** @type {string} */ extra = '') => noun === 'standing'
   ? `<path d="M${x - 6} ${y + 5.5}h12"${extra}/>`
   : `<g stroke-width="1.75"${extra}>${hex(x, y, 7)}</g>`;
-/** Which way a thing goes from (x1, y1) to (x2, y2): a chevron midway, no shaft (designer, 2026-10-30: tighter compositions). */
-const arrow = (/** @type {number} */ x1, /** @type {number} */ y1, /** @type {number} */ x2, /** @type {number} */ y2, /** @type {string} */ _dash = '') => {
-  const a = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI, mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-  return `<path d="M-2.5 -4L2 0L-2.5 4" stroke-width="1.75" transform="translate(${mx.toFixed(1)} ${my.toFixed(1)}) rotate(${a.toFixed(1)})"/>`;
-};
+/** What a thing was before the verb (designer, 2026-10-30: before and after, no arrows): dotted and faint. */
+const ghost = (/** @type {string} */ body) => `<g stroke-dasharray="1 2" opacity="0.3">${body}</g>`;
 /** A diagram in an 80×44 box, drawn at 1.25×. */
 const dia = (/** @type {string} */ body) => `<svg class="ik-svg ik-dia" viewBox="0 0 80 44" width="100" height="55" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 /** Three places, top, middle and bottom: the middle one staggered sideways so none touch. */
@@ -114,15 +111,15 @@ const big = (/** @type {string} */ noun, /** @type {number} */ x, /** @type {num
 /** Each verb's diagram, given the noun that moves. @type {Record<string, (noun: string) => string>} */
 const DIAGRAMS = {
   // Gather, spread and split are about groups, not places (designer, 2026-10-30): tokens only, no hexes.
-  gather: (n) => `${[10, 22, 34].map((y) => group(y === 22 ? 30 : 24, y, 1, n)).join('')}${arrow(36, 22, 44, 22)}${group(54, 22, 3, n)}`,
-  spread: (n) => `${group(26, 22, 3, n)}${arrow(36, 22, 44, 22)}${[10, 22, 34].map((y) => group(y === 22 ? 50 : 56, y, 1, n)).join('')}`,
-  move: (n) => `${place(n, 26, 22)}${arrow(36, 22, 44, 22)}${place(n, 54, 22)}${piece(n, 54, 22)}`,
-  split: (n) => `${group(23, 22, 5, n)}${arrow(36, 22, 44, 22)}${group(54, 13, 3, n)}${group(54, 33, 2, n)}`,
-  trail: (n) => `${[19, 33, 47, 61].map((x, i) => `${place(n, x, 26)}${i ? piece(n, x, 26) : ''}`).join('')}${arrow(36, 11, 44, 11)}`,
-  march: (n) => `${place(n, 18, 28)}${piece(n, 18, 28)}${place(n, 40, 28, ' stroke-dasharray="2 2"')}${place(n, 62, 28)}<circle cx="62" cy="28" r="3.5" stroke-width="1.75"/><path d="M22 19Q40 4 58 19" stroke-width="1.75"/>${head(58, 19, 40).replace('<path', '<path stroke-width="1.75"')}`,
-  drive: (n) => `${place(n, 24, 22)}<circle cx="21.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="27" cy="22" r="2.5" stroke-width="1.75"/>${arrow(36, 22, 44, 22)}${place(n, 55, 13)}${piece(n, 55, 13)}${place(n, 55, 31)}<circle cx="55" cy="31" r="3" stroke-width="1.75"/>`,
-  flee: (n) => `${place(n, 24, 26)}${arrow(36, 26, 44, 26)}${place(n, 56, 26)}${piece(n, 56, 26)}<path d="M38 6a5 5 0 1 0 4 7.5 3.75 3.75 0 0 1-4-7.5z" stroke-width="1.75"/>`,
-  slay: (n) => `${place(n, 24, 22)}${piece(n, 21, 22)}${piece(n, 27, 22)}${arrow(36, 22, 44, 22)}<path d="M50 13h12v5a6 6 0 0 1-12 0zM56 24v5M51 32h10" stroke-width="1.75"/>`,
+  gather: (n) => `${ghost([10, 22, 34].map((y) => group(y === 22 ? 30 : 24, y, 1, n)).join(''))}${group(54, 22, 3, n)}`,
+  spread: (n) => `${ghost(group(26, 22, 3, n))}${[10, 22, 34].map((y) => group(y === 22 ? 50 : 56, y, 1, n)).join('')}`,
+  move: (n) => `${place(n, 26, 22)}${ghost(piece(n, 26, 22))}${place(n, 54, 22)}${piece(n, 54, 22)}`,
+  split: (n) => `${ghost(group(25, 22, 5, n))}${group(54, 13, 3, n)}${group(54, 33, 2, n)}`,
+  trail: (n) => `${[19, 33, 47, 61].map((x, i) => `${place(n, x, 22)}${i ? piece(n, x, 22) : ghost(piece(n, x, 22))}`).join('')}`,
+  march: (n) => `${place(n, 18, 28)}${ghost(piece(n, 18, 28))}${place(n, 40, 28, ' stroke-dasharray="2 2"')}${place(n, 62, 28)}${piece(n, 62, 28)}<circle cx="62" cy="28" r="5" stroke-width="1.75"/><path d="M22 19Q40 4 58 19" stroke-width="1.75"/>${head(58, 19, 40).replace('<path', '<path stroke-width="1.75"')}`,
+  drive: (n) => `${place(n, 24, 22)}${ghost('<circle cx="21.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="27" cy="22" r="2.5"/>')}${place(n, 52, 13)}${piece(n, 52, 13)}${place(n, 52, 31)}<circle cx="52" cy="31" r="3" stroke-width="1.75"/>`,
+  flee: (n) => `${place(n, 26, 26)}${ghost(piece(n, 26, 26))}${place(n, 54, 26)}${piece(n, 54, 26)}<path d="M38 6a5 5 0 1 0 4 7.5 3.75 3.75 0 0 1-4-7.5z" stroke-width="1.75"/>`,
+  slay: (n) => `${place(n, 26, 22)}${ghost(`${piece(n, 23, 22)}${piece(n, 29, 22)}`)}<path d="M46 13h12v5a6 6 0 0 1-12 0zM52 24v5M47 32h10" stroke-width="1.75"/>`,
   // From and back to the supply, gain and pay (spend): the piece and a plus or a minus; the supply is implied (designer, 2026-10-30).
   raise: (n) => `${place(n, 32, 22)}${piece(n, 32, 22)}<path d="M46 22h10M51 17v10" stroke-width="2.5"/>`,
   join: (n) => `${place(n, 22, 22)}${place(n, 58, 22)}<path d="M31 20h18M31 24h18" stroke-width="1.75"/>`,
@@ -130,7 +127,7 @@ const DIAGRAMS = {
   pay: (n) => `${big(n, 32, 22)}<path d="M46 22h10" stroke-width="2.5"/>`,
   gain: (n) => `${big(n, 32, 22)}<path d="M46 22h10M51 17v10" stroke-width="2.5"/>`,
   burn: (n) => `${big(n, 32, 22)}<path d="M46 22h10" stroke-width="2.5"/>`,
-  take: () => `<rect x="14" y="10" width="16" height="24" rx="2" stroke-width="1.75" stroke-dasharray="2 2"/>${arrow(36, 22, 44, 22)}<rect x="50" y="10" width="16" height="24" rx="2" stroke-width="1.75"/>`,
+  take: () => `${ghost('<rect x="16" y="10" width="16" height="24" rx="2"/>')}<rect x="46" y="10" width="16" height="24" rx="2" stroke-width="1.75"/>`,
   bend: (n) => `${place(n, 26, 22)}<circle cx="23.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="29" cy="22" r="2.5" stroke-width="1.75"/><path d="M54 7l10 15-10 15-10-15z" stroke-width="1.75"/><path d="M54 15v8M54 28v.5"/>`,
 };
 
@@ -190,23 +187,3 @@ export function suitedMark(what, kind, inner = kind) {
   return wide(`${defs}${hexes}<g stroke-width="1.25" fill="var(--card-face)">${cube(9, 12, 3.6)}</g>`);
 }
 
-/**
- * Direction marks to compare (designer, 2026-10-30; a sample, not settled): the chevron, A motion lines, B before and
- * after (the start drawn dotted, no mark), C a divider. Five verbs, each as what it starts from and what it ends as.
- * @param {'chevron' | 'A' | 'B' | 'C'} style @param {string} verb
- */
-export function directionSample(style, verb) {
-  const n = 'token';
-  const parts = /** @type {Record<string, [string, string, number?]>} */ ({
-    gather: [[10, 22, 34].map((y) => group(y === 22 ? 30 : 24, y, 1, n)).join(''), group(54, 22, 3, n)],
-    split: [group(23, 22, 5, n), `${group(54, 13, 3, n)}${group(54, 33, 2, n)}`],
-    move: [`${place(n, 26, 22)}${piece(n, 26, 22)}`, `${place(n, 54, 22)}${piece(n, 54, 22)}`],
-    flee: [`${place(n, 24, 26)}${piece(n, 24, 26)}`, `${place(n, 56, 26)}${piece(n, 56, 26)}<path d="M38 6a5 5 0 1 0 4 7.5 3.75 3.75 0 0 1-4-7.5z" stroke-width="1.75"/>`, 26],
-    drive: [`${place(n, 24, 22)}<circle cx="21.5" cy="22" r="2.5" fill="currentColor" stroke="none"/><circle cx="27" cy="22" r="2.5" stroke-width="1.75"/>`, `${place(n, 55, 13)}${piece(n, 55, 13)}${place(n, 55, 31)}<circle cx="55" cy="31" r="3" stroke-width="1.75"/>`],
-  });
-  const [from, to, y = 22] = parts[verb];
-  const lines = `<path d="M35 ${y - 3}h7M37 ${y}h8M35 ${y + 3}h7" stroke-width="1.75"/>`;
-  const mark = style === 'chevron' ? arrow(36, y, 44, y) : style === 'A' ? lines : style === 'C' ? `<path d="M40 ${y - 9}v18" stroke-width="1.75"/>` : '';
-  const start = style === 'B' ? `<g stroke-dasharray="1.6 1.6" opacity="0.7">${from}</g>` : from;
-  return dia(`${start}${mark}${to}`);
-}
