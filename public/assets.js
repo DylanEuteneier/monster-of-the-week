@@ -176,9 +176,9 @@ const TAG_OPTIONS = [
 function renderTagOptions() {
   const rows = TAG_OPTIONS.map(([tag, text, opts]) => `<div class="lay-opt-set"><h3 class="small">${esc(String(tag))}</h3><div class="lay-opt-grid">${/** @type {string[][]} */ (opts).map(([k, label, icon]) => {
     const mark = icon === 'glyph' ? suitIcon('undead', 2) : icon;
-    return `<figure class="lay-opt"><div class="card card-suit-undead lay-opt-card"><div class="lay-target"><div class="lay-row lay-row-ic${tag.length > 3 ? ' lay-row-wide' : ''}" role="button"><b>${mark}<span>${esc(String(tag))}</span></b><span>${esc(String(text))}</span></div></div></div><figcaption class="small"><b>${k}:</b> ${esc(label)}</figcaption></figure>`;
+    return `<figure class="lay-opt"><div class="card card-suit-undead lay-opt-card"><div class="lay-target"><div class="lay-row lay-row-ic" role="button" aria-label="${esc(String(tag))}" title="${esc(String(tag))}"><b>${mark}</b><span>${esc(String(text))}</span></div></div></div><figcaption class="small"><b>${k}:</b> ${esc(label)}</figcaption></figure>`;
   }).join('')}</div></div>`).join('');
-  return `<div class="lay-opts"><h3>Tag icons (options)</h3><p class="small muted">A small mark beside each tag word, never instead of it. The verb’s diagram stays in the topline only.</p>${rows}</div>`;
+  return `<div class="lay-opts"><h3>Tag icons (options)</h3><p class="small muted">Icon only, no tag word (designer, 2026-10-30: the word is redundant; it stays as the row’s label for screen readers and on hover). The verb’s diagram stays in the topline only.</p>${rows}</div>`;
 }
 
 /** The layout mock-ups, each beside the card as it is now. */
