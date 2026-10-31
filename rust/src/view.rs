@@ -96,7 +96,7 @@ pub fn describe_target(factions: &[u8; 5], ci: CardIx, t: Option<&Target>) -> St
         Action::Showdown => format!("{} {} slain at {}", real(&t.from).len(), f(t.faction), l(t.location)),
         Action::Switch => if t.use_ == Some(Use::Standing) { format!("standing from {} to {}", f(t.faction), f(t.to)) } else { format!("sway from {} to {}", l(t.location), l(t.to)) },
         Action::Playbook => if t.use_ == Some(Use::Yours) {
-            format!("takes {} back", match t.back { Some(Id::Card(c)) => sp.cards[c as usize].name.clone(), _ => "?".into() })
+            format!("takes {} into their hand", match t.back { Some(Id::Card(c)) => sp.cards[c as usize].name.clone(), _ => "?".into() })
         } else {
             format!("takes {} to play as their own", match t.back { Some(Id::Card(c)) => sp.cards[c as usize].name.clone(), _ => "?".into() })
         },

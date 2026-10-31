@@ -1030,11 +1030,11 @@ fn the_unsuited_cards_x_is_the_hand_and_each_use_does_what_it_says() {
 }
 
 #[test]
-fn steal_their_playbook_theirs_copies_the_last_action_yours_takes_a_play_back() {
+fn steal_their_playbook_takes_a_play_back_into_your_hand() {
     let d = draft_all(&game(1));
     let who = d.seating[d.turn].clone();
     let s = edit(&clear(&d), |x| { x["opened"] = json!(true); set_hand(x, &who, &["playbook", "plough"]); });
-    assert!(check(&s, &who, "playbook", json!({ "use": "theirs" })).is_some());
+    assert!(check(&s, &who, "playbook", json!({ "use": "yours" })).is_some(), "nothing played yet");
     let other = d.seating[(d.turn + 1) % d.n()].clone();
     let s = edit(&s, |x| x["roundPlays"] = json!([{ "pid": who, "card": "gate", "use": "sway" }, { "pid": other, "card": "showdown", "use": "action" }]));
     let c = choice(&s, &who, "playbook", json!({}));
@@ -1368,7 +1368,7 @@ fn with_passing_off_every_card_is_played_and_the_last_ends_the_round() {
 }
 
 #[test]
-fn steal_their_playbook_copies_any_card_another_player_played_this_round_and_cant_be_the_last_card() {
+fn steal_their_playbook_takes_any_card_played_this_round_and_cant_be_the_last_card() {
     let d = draft_all(&game(1));
     let who = d.seating[d.turn].clone();
     let other = d.seating[(d.turn + 1) % d.n()].clone();
@@ -1381,24 +1381,18 @@ fn steal_their_playbook_copies_any_card_another_player_played_this_round_and_can
             { "pid": other, "card": "invite-in", "use": "sway" }
         ]);
     });
-    // Theirs: first the card to copy, from other players' plays this round however they were played; never your own.
-    let c = choice(&s, &who, "playbook", json!({ "use": "theirs" }));
+    // D39: any card played earlier this round, yours or another player's, however played, into your hand to play later.
+    let c = choice(&s, &who, "playbook", json!({ "use": "yours" }));
     assert_eq!(c["kind"], "use");
     let opts: Vec<String> = c["options"].as_array().unwrap().iter().map(|x| x.as_str().unwrap().to_string()).collect();
-    assert_eq!(opts, vec!["showdown".to_string(), "invite-in".to_string()]);
-    assert!(check(&s, &who, "playbook", json!({ "use": "theirs", "back": "gate" })).is_some(), "your own play can't be copied");
-    // The card comes from this round's played cards into your hand, and you play it now, as your own, any way it plays.
-    assert_eq!(choice(&s, &who, "playbook", json!({ "use": "theirs", "back": "invite-in" }))["kind"], "done");
-    let took = apply(&s, &who, json!({ "type": "play", "card": "playbook", "use": "action", "target": { "use": "theirs", "back": "invite-in" } }));
+    assert_eq!(opts, vec!["gate".to_string(), "showdown".to_string(), "invite-in".to_string()]);
+    assert!(check(&s, &who, "playbook", json!({ "use": "theirs", "back": "invite-in" })).is_some(), "theirs is no longer a use");
+    let took = apply(&s, &who, json!({ "type": "play", "card": "playbook", "use": "action", "target": { "use": "yours", "back": "invite-in" } }));
     let tv = v(&took);
     assert!(tv["players"][&who]["hand"].as_array().unwrap().contains(&json!("invite-in")));
-    assert_eq!(tv["copying"], "invite-in");
-    assert_eq!(took.seating[took.turn], who, "the same turn");
+    assert_eq!(tv["copying"], Value::Null, "not played now");
+    assert_ne!(took.seating[took.turn], who, "the turn moves on");
     assert!(!tv["roundPlays"].as_array().unwrap().iter().any(|x| x["card"] == "invite-in"), "taken from the played cards");
-    assert!(!valid(&took, &who, json!({ "type": "play", "card": "plough", "use": "sway" })), "only the taken card now");
-    let played = apply(&took, &who, json!({ "type": "play", "card": "invite-in", "use": "sway" }));
-    assert_eq!(v(&played)["copying"], Value::Null);
-    assert_ne!(played.seating[played.turn], who, "then the turn moves on");
     // As the last card in hand it can't be played, only discarded for no effect.
     let last = edit(&s, |x| set_hand(x, &who, &["playbook"]));
     assert!(check(&last, &who, "playbook", json!({ "use": "yours", "back": "gate" })).is_some());

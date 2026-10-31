@@ -882,8 +882,10 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
                 _ => e("Pick a use: standing, or sway on the board."),
             }
         }
+        // Only the card's own uses (D39: one, back into your hand; theirs is kept in the engine, unused).
+        Action::Playbook if t.use_.is_some_and(|u| !c.uses.contains(&u)) => e("Pick a card played earlier this round."),
         Action::Playbook => match t.use_ {
-            Some(Use::Yours) => if matches!(t.back, Some(Id::Card(b)) if own_plays(s, pid).contains(&b)) { None } else { e("Pick a card you played earlier this round.") },
+            Some(Use::Yours) => if matches!(t.back, Some(Id::Card(b)) if own_plays(s, pid).contains(&b)) { None } else { e("Pick a card played earlier this round.") },
             Some(Use::Theirs) => match t.back {
                 Some(Id::Card(copied)) if copy_options(s, pid).contains(&copied) => None,
                 _ => e("Pick a card another player played this round, to take."),
@@ -1282,11 +1284,11 @@ fn act_card(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
         Action::Playbook => {
             if t.use_ == Some(Use::Yours) {
                 let Some(Id::Card(back)) = t.back else { return };
-                if let Some(i) = s.round_plays.iter().rposition(|x| x.pid == pid && x.card == back) {
+                if let Some(i) = s.round_plays.iter().rposition(|x| x.card == back) {
                     s.round_plays.remove(i);
                 }
                 s.players[me].hand.push(back);
-                log_line(s, |_| format!("{who}: {}: takes {} back.", c.name, card(back).name));
+                log_line(s, |_| format!("{who}: {}: takes {} into their hand.", c.name, card(back).name));
             } else if let Some(Id::Card(copied)) = t.back {
                 // Theirs (D30): the card comes from another player's plays into your hand, to be played now as your own.
                 if let Some(i) = s.round_plays.iter().rposition(|x| x.pid != pid && x.card == copied) {

@@ -192,12 +192,13 @@ pub fn copy_options(s: &GameState, pid: Pid) -> Vec<CardIx> {
     out
 }
 
-/// The cards a player played earlier this round, each once, that the Playbook may take back.
-pub fn own_plays(s: &GameState, pid: Pid) -> Vec<CardIx> {
+/// The cards Steal Their Playbook may take back into your hand (D39): any card played earlier this round, by anyone,
+/// however it was played, each once.
+pub fn own_plays(s: &GameState, _pid: Pid) -> Vec<CardIx> {
     let pb = playbook();
     let mut out = Vec::new();
     for x in &s.round_plays {
-        if x.pid == pid && x.card != pb && !out.contains(&x.card) {
+        if x.card != pb && !out.contains(&x.card) {
             out.push(x.card);
         }
     }

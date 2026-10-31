@@ -1024,7 +1024,7 @@ function renderTargeting(cardId) {
   const favoursFac = ui.target.payers?.[0] ? fname(String(ui.target.payers[0])) : '';
   const gateWords = /** @type {Record<string, string>} */ ({ location: 'Pick one end of the Gate', to: 'Pick the other end', losses: 'Pick which end the winner\'s losses come off first (they leave the board)' });
   const words = cardSteps(card, choice) || unsuitedWords(card.action, choice) || (card.action === 'gate' && choice.kind === 'location' && gateWords[choice.key] ? gateWords[choice.key]
-    : choice.kind === 'use' && choice.key === 'back' ? (ui.target.use === 'theirs' ? 'Pick a card another player played this round: it comes into your hand, to play now' : 'Pick a card you played to take back')
+    : choice.kind === 'use' && choice.key === 'back' ? (ui.target.use === 'theirs' ? 'Pick a card another player played this round: it comes into your hand, to play now' : 'Pick a card played earlier this round: it comes into your hand, to play later')
     : card.action === 'favours' && choice.kind === 'location' ? (favoursN ? `${favoursN} placed: pick another fight for 1 more sway, up to ${choice.left} more, or Done` : `Pick a fight: 1 of your sway goes there, from your supply (up to ${favoursX} fights, each once)`)
     : card.action === 'favours' && choice.kind === 'faction' ? (favoursN ? `${favoursN} standing with the ${esc(favoursFac)} so far: click them again for 1 more (up to ${favoursX}), or Done` : `Pick one faction: each click gives you 1 standing with it, from your supply (up to ${favoursX})`)
     : card.action === 'favours' && choice.kind === 'use' ? `Choose one: sway at fights, or standing with one faction (X = ${favoursX})`
@@ -1042,7 +1042,7 @@ function renderTargeting(cardId) {
     : card.action === 'plough' && choice.kind === 'location' && choice.key === 'from' ? `Pick an exit for the next token · ${choice.left} left`
     : choice.kind === 'split' ? `Send tokens: ${choice.left} left`
     : choice.kind === 'location' && choice.key === 'path' ? `Pick the next step · ${choice.left} left` : WORDS[key] ?? '');
-  const USE_LABELS = /** @type {Record<string, string>} */ ({ standing: 'Standing', sway: 'Sway on the board', tokens: 'Tokens', theirs: "Theirs: take another player's played card", yours: 'Yours: take one back' });
+  const USE_LABELS = /** @type {Record<string, string>} */ ({ standing: 'Standing', sway: 'Sway on the board', tokens: 'Tokens', theirs: "Theirs: take another player's played card", yours: 'Take a played card into your hand' });
   // The unsuited cards' uses say what each gives, with X.
   const useLabel = (/** @type {string} */ u) => (choice.kind === 'use' && choice.key === 'back' ? cardById(u).name : unsuitedUses(card.action, favoursX)[u] ?? USE_LABELS[u] ?? u);
   const arrows = choice.kind === 'use' ? `<span class="bar-actions">${choice.options.map((u) => `<button class="bar-btn" data-action="pick-use" data-use="${esc(u)}">${esc(useLabel(u))}</button>`).join('')}</span>` : '';

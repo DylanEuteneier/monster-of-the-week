@@ -871,11 +871,10 @@
       "sway": 0,
       "action": "playbook",
       "uses": [
-        "theirs",
         "yours"
       ],
       "round": 22,
-      "text": "Choose one. Theirs: take a card another player played this round, however they played it, from the played cards into your hand, and play it now as your own. Yours: take back into your hand a card you played earlier this round. It can't be your last card played: as the last card in your hand it is discarded, for no effect.",
+      "text": "Take any card played earlier this round, by anyone, however it was played, from the played cards into your hand, to play later. It can't be your last card played: as the last card in your hand it is discarded, for no effect.",
       "layout": {
         "verb": "take",
         "noun": "card",
@@ -883,14 +882,9 @@
         "gist": "a card played this round, into your hand",
         "uses": [
           {
-            "id": "theirs",
-            "mark": "played",
-            "text": "a card another player played this round, however they played it, from the played cards; play it now as your own."
-          },
-          {
             "id": "yours",
             "mark": "played",
-            "text": "back a card you played earlier this round."
+            "text": "any card played earlier this round, by anyone, however it was played; it's yours to play later."
           }
         ],
         "specifics": [
