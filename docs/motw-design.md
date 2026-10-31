@@ -1407,6 +1407,14 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Open:** the look of each mark; which cards and prompts use them first.
 - **Date:** 2026-10-29
 
+#### D43. Players start with 2 standing with every other faction
+
+- **Decided (designer, 2026-10-31):** each player starts with 5 standing with their own faction (unchanged) and 2 with every other faction (variant `startOthers`, from 1), so more cards can be played in the opening round.
+- **Why:** measured over round 1 only (4 players, bots judging each vote, 40 games each, seed 2701): with 1 standing, 68% of the cards held had a legal action, and two thirds of the blocked readings lacked standing to pay. Most strikes and shifts pay 2–3 from standing with the faction moved, so in round 1 The Big Chase was playable on 37% of turns, Invite Them In and Cut the Powerlines 44%, Bait the Herd 49%. With 2: 82% overall; The Big Chase 96%, Invite Them In 91%, Bait the Herd 92%, Spoof the Signal 100%. Starting sway with your own faction (3 or 7), sway on home locations (0 or 2) and the token start barely moved it (63–70%).
+- **Open:** Plough Through and Take Control stay low in round 1 at any standing (20–43%): they need a fight, and the board starts with none. Light of the Cross and Draw Them Away stay near a third. D33 went back to 1 because the fuller start (D32's 3 tokens on each and 2 standing) front-loaded the board with sway tokens; 2 standing with the 2-token start is to be measured on the board and the endings.
+- **Supersedes:** D33 part 4's standing (its token start stays).
+- **Date:** 2026-10-31
+
 #### D42. The presence threshold is 20
 
 - **Decided (designer, 2026-10-31):** the invaders win if total presence at the end (after the last round's fights, D41) is more than 20, at every player count; in place of 10 per player (D40, now a variant, off). To see how it plays.
@@ -1576,6 +1584,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
 | 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
 | 2026-10-29 | Steal Their Playbook (D30, designer): theirs takes a card another player played this round (however played) from the played cards into your hand, played at once as your own; it can't be your last card played (discarded for no effect) | |
+| 2026-10-31 | 2 standing with every other faction at the start (D43, designer; from 1) | More cards playable in round 1; board and endings to measure; fingerprints re-recorded |
 | 2026-10-31 | Threshold 20, flat (D42, designer); 10 per player now a variant | To measure; fingerprints re-recorded |
 | 2026-10-31 | The last round ends after its fights: no last nightfall or growth (D41, designer) | Thresholds to re-measure; fingerprints re-recorded |
 | 2026-10-30 | Threshold 10 per player (D40, designer) | To confirm with bots playing to it; fingerprints re-recorded |

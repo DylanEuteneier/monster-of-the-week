@@ -40,6 +40,8 @@ pub struct Game {
     pub turns: Vec<Turn>,
     /// Per round: tokens the cards added and removed (play by play), lost in fights, grown.
     pub flow: Vec<Flow>,
+    /// Rounds as votes: each round's vote in order (true: the invaders').
+    pub votes: Vec<bool>,
 }
 
 /// Where a round's tokens came from and went.
@@ -134,6 +136,10 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
 }
 
 /// play, and with `board` the board and hand at every turn of play.
+/// Testing (the opening study): stop every game once this round is over (0: play to the end). The bots play as if
+/// the whole game lies ahead.
+pub static STOP_AFTER: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0);
+
 pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, String)], duplicate: bool, board: bool) -> Game {
     let t0 = std::time::Instant::now();
     let n = list.len();
@@ -147,6 +153,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let mut memory: Vec<BotMemory> = vec![BotMemory::default(); n];
     let profiles: HashMap<Pid, String> = seats.iter().enumerate().map(|(i, p)| (i as Pid, p.clone())).collect();
     let mut presence = vec![crate::board::total_presence(&s)];
+    let (mut votes, mut last_votes) = (Vec::new(), s.votes);
     let mut passes: Vec<Pass> = Vec::new();
     let mut plays: Vec<(Pid, i32, bool)> = Vec::new();
     let mut turns: Vec<Turn> = Vec::new();
@@ -155,7 +162,8 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let mut played_round = 0usize;
     let mut round = s.round;
     let mut moves = 0;
-    while moves < MAX_MOVES && s.phase != Phase::Ended {
+    let stop = STOP_AFTER.load(std::sync::atomic::Ordering::Relaxed);
+    while moves < MAX_MOVES && s.phase != Phase::Ended && (stop == 0 || s.round <= stop) {
         let mut moved = false;
         if board && s.phase == Phase::Play {
             let pid = s.turn as Pid;
@@ -215,19 +223,27 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         }
         assert!(moved, "game {g}: nobody can move in {:?}", s.phase);
         moves += 1;
+        if s.votes != last_votes {
+            votes.push(s.votes[0] > last_votes[0]);
+            last_votes = s.votes;
+        }
         if s.round != round || s.phase == Phase::Ended {
             presence.push(crate::board::total_presence(&s));
             round = s.round;
             played_round = 0;
         }
     }
-    let r = s.result.as_ref().expect("a finished game");
+    // Stopped early (STOP_AFTER): no result; the record keeps the turns.
+    let (island, winners, placings) = match s.result.as_ref() {
+        Some(r) => (r.island, r.players.clone(), r.placings.clone()),
+        None => { assert!(stop > 0, "a finished game"); (false, Vec::new(), Vec::new()) }
+    };
     Game {
         g,
         seats,
-        island: r.island,
-        winners: r.players.clone(),
-        placings: r.placings.clone(),
+        island,
+        winners,
+        placings,
         groups: s.players.iter().map(|p| spec().slayer_groups[p.group as usize].id.clone()).collect(),
         presence,
         moves,
@@ -236,6 +252,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         plays,
         turns,
         flow,
+        votes,
     }
 }
 

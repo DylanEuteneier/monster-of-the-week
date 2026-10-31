@@ -141,12 +141,14 @@ fn tournament(args: &[String]) {
                 "seats": names.iter().cloned().zip(x.seats.iter().map(|p| serde_json::Value::from(p.as_str()))).collect::<serde_json::Map<String, serde_json::Value>>(),
                 "groups": names.iter().cloned().zip(x.groups.iter().map(|p| serde_json::Value::from(p.as_str()))).collect::<serde_json::Map<String, serde_json::Value>>(),
                 "winners": x.winners.iter().map(id).collect::<Vec<_>>(), "placings": x.placings.iter().map(id).collect::<Vec<_>>(),
-                "presence": x.presence, "moves": x.moves, "seconds": (x.seconds * 10.0).round() / 10.0,
+                "presence": x.presence, "votes": x.votes.iter().map(|&v| if v { "invaders" } else { "island" }).collect::<Vec<_>>(), "moves": x.moves, "seconds": (x.seconds * 10.0).round() / 10.0,
             });
             writeln!(f.lock().unwrap(), "{line}").unwrap();
         }
     };
     let board = kv.get("board").is_some_and(|x| x == "1");
+    // stopAfter=1: the opening study; each game stops after that round (board=1 and boardRound follow it).
+    if let Some(n) = kv.get("stopAfter").and_then(|x| x.parse::<i32>().ok()) { motw::tournament::STOP_AFTER.store(n, std::sync::atomic::Ordering::Relaxed); }
     let played = motw::tournament::run_with(seed, games, &list, &options, duplicate, workers, board, &done);
     eprintln!();
     let island = played.iter().filter(|x| x.island).count();
@@ -202,6 +204,22 @@ fn tournament(args: &[String]) {
             let acting: f64 = t.iter().map(|x| x.cards.iter().filter(|c| c.1 > 0).count() as f64).sum::<f64>() / n;
             let all: Vec<f64> = t.iter().flat_map(|x| x.cards.iter().filter(|c| c.1 > 0).map(|c| c.1 as f64)).collect();
             println!("{:<7} {:>9.1} {:>9.1} {:>9.1} {:>10.1} {:>12.1} {:>13.1}", r, t.iter().map(|x| x.occupied as f64).sum::<f64>() / n, t.iter().map(|x| x.contested as f64).sum::<f64>() / n, t.iter().map(|x| x.presence as f64).sum::<f64>() / n, hand, acting, all.iter().sum::<f64>() / all.len().max(1) as f64);
+        }
+        // boardRound=N: the per-card tables for that round only (e.g. 1, the opening).
+        let only: Option<i32> = kv.get("boardRound").and_then(|x| x.parse().ok());
+        let turns: Vec<&motw::tournament::Turn> = turns.into_iter().filter(|t| only.is_none_or(|r| t.round == r)).collect();
+        if let Some(r) = only {
+            let (mut held, mut ok, mut cost, mut board) = (0usize, 0usize, 0usize, 0usize);
+            for t in &turns {
+                held += t.cards.len();
+                ok += t.cards.iter().filter(|c| c.1 > 0).count();
+                for (_, why) in &t.blocked {
+                    if why.contains("cost:") { cost += 1 } else if why.contains("board:") { board += 1 }
+                }
+            }
+            let readings = (cost + board).max(1) as f64;
+            println!("round {r}: {} turns; cards held with an action {:.0}%; blocked readings: no standing to pay {:.0}%, nothing on the board fits {:.0}%",
+                turns.len(), 100.0 * ok as f64 / held.max(1) as f64, 100.0 * cost as f64 / readings, 100.0 * board as f64 / readings);
         }
         // Per card: how often it had a legal action when held on a turn, and how many targets then.
         let mut per: std::collections::BTreeMap<String, (usize, usize, usize)> = Default::default();

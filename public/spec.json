@@ -1223,8 +1223,8 @@
     {
       "id": "startOthers",
       "label": "Starting standing with other factions",
-      "description": "Designer (2026-10-07): each player starts with 1 sway with every faction other than their affinity faction. 0 was the first draft before. Designer (2026-10-29, D32): 2 by default, a bit more standing with the factions that aren't your suit's. Back to 1 by default (designer, 2026-10-29, D33).",
-      "default": "1",
+      "description": "Designer (2026-10-07): each player starts with 1 sway with every faction other than their affinity faction. 0 was the first draft before. Designer (2026-10-29, D32): 2 by default, a bit more standing with the factions that aren't your suit's. Back to 1 by default (designer, 2026-10-29, D33). 2 by default again (designer, 2026-10-31, D43): with 1, most strikes and shifts couldn't be paid for in round 1.",
+      "default": "2",
       "choices": [
         {
           "id": "0",

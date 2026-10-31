@@ -115,6 +115,8 @@ pub struct Persona {
     /// Rounds as votes: judge each vote as it comes (optimism grows with how far off a vote is, not one sum for the
     /// game; the lean fades with how decided the tally is, not the round clock). No effect with votes off.
     pub pace: f64,
+    /// Paced: the lean fades with the vote tally (on) or the round clock (0).
+    pub tally: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -127,7 +129,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0,
     }
 }
 
@@ -195,6 +197,7 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "rollList" => p.roll_list = x,
                 "noPass" => p.no_pass = x,
                 "pace" => p.pace = x,
+                "tally" => p.tally = x,
                 _ => {}
             }
         }
@@ -606,12 +609,12 @@ fn set_access(s: &GameState, pid: Pid) -> f64 {
 pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut BotMemory>, rng: Rng) -> Goal {
     let c = win_chances_shared(s, pid);
     let paced = on(p.pace) && s.options.round_votes;
-    let push = if paced { p.push } else { p.push * (c.rounds_left + 1.0) };
+    let push = if paced { p.push * p.pace } else { p.push * (c.rounds_left + 1.0) };
     let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach(s, c.projected, c.threshold, c.spread_p, push, paced);
     let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach(s, c.projected, c.threshold, c.spread_p, -push, paced));
     // Paced: the lean fades as the tally nears a majority (0 at 0-0, 1 once a side has it), not with the round.
     let majority = (s.options.rounds / 2 + 1).max(1) as f64;
-    let settled = if paced { (s.votes[0].max(s.votes[1]) as f64 / majority).min(1.0) } else { c.settled };
+    let settled = if paced && on(p.tally) { (s.votes[0].max(s.votes[1]) as f64 / majority).min(1.0) } else { c.settled };
     let evidence = reach_inv * c.as_invaders - reach_isl * c.as_island;
     let mut memory = memory;
     if let Some(m) = memory.as_deref_mut() {
