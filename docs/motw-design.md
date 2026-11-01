@@ -207,7 +207,7 @@ Earlier favourites ("preferred" in section 3) were the starting point: `DR3`, `D
 | 3.4 Invader forces | The decisions only (one random faction per archetype, as tokens). No archetype or faction powers: every faction plays the same; powers (`AP1`–`AP6`) stay ideas for later | None |
 | 3.5 Invader population | `SD1` seeding (3 on each of the archetype's three locations; designer, 2026-10-17); growth by `GR1` at resolution, which is the game's own growth system (`GR3`); growth always comes after fights, so each growing location holds one faction | None |
 | 3.6 Action acquisition | All of `DR1`–`DR6`: a draft at the start of each round; unplayed cards lost back to the pool; pick and pass with the put-back rule; the same pool every round; the undealt cards left out unseen; the pool is the whole action set. Hand size 6/5/4 at 3/4/5 players (`PS1`) | None |
-| 3.7 Player actions | Cards are played once. Every suit card can be spent for sway with its affinity faction instead of its own action or response, for an amount printed on the card, more than 1 (`CU1`); the six unsuited extras have no sway use and offer wild, powerful or flexible actions; some cards also offer a choice of actions, all held to `AC1` (distinct and precious) and to theme above all. `SU1` five archetype suits of three cards (15), plus 6 others (A to D and two unmarked); `LK1` location cards set aside. `CU2` out. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out. The rest is being designed with the cards | None |
+| 3.7 Player actions | Cards are played once. Every suit card can be spent for sway with its affinity faction instead of its own action or response, for an amount printed on the card, more than 1 (`CU1`); the six unsuited extras can be spent for 2 sway with any one faction, chosen as played (wild sway, `D45`), and offer wild, powerful or flexible actions; some cards also offer a choice of actions, all held to `AC1` (distinct and precious) and to theme above all. `SU1` five archetype suits of three cards (15), plus 6 others (A to D and two unmarked); `LK1` location cards set aside. `CU2` out. Card-driven growth (`GR2`, and `CU4`'s *Grow* use) is out. The rest is being designed with the cards | None |
 | 3.8 Timing and passing | `TU1` play or pass, passing is not final; `FP1` first player by marked cards, with four marked cards A to D under the fixed pool (`FP2`); the round ends when everyone passes in a row (`RE3`, 3.12) | None |
 | 3.9 Persistent progression | The decision: no persistent upgrade mechanism | None |
 | 3.10 Player characters | The decisions (five slayer groups, one per archetype); affinity as `AB1` tiebreaker | None (`AB2` is not yet a close second) |
@@ -1426,6 +1426,13 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
 - **Open:** the look of each mark; which cards and prompts use them first.
 - **Date:** 2026-10-29
 
+#### D45. Unsuited cards give wild sway
+
+- **Decided (designer, 2026-11-01):** an unsuited card may be spent for 2 sway with any one faction, chosen as it's played (wild sway; variant `unsuitedSway`, default 2; off, 1, 3 or hand size to test). Suited cards' sway stays as printed (variant `cardSway` back to 0).
+- **Why:** the sway economy was measured (votes, bar 20, 60 games each): more sway on suited cards (+2, signatures included, the sway use only) concentrated the game: round 5 decided the ending in 7% of games (18% today), comebacks 5% (13%), the strongest faction after round 3 went on to win 69% (38%), and winners held 88% of their standing in the winning faction (78%), the one-faction sway race the designer doesn't want. Unsuited wild sway alone kept round 5 (15%) and comebacks (13%) near today's, and the invader ending's faction race closer (top two within 2 in 91% of invader games, a small sample). Neither opened many more big plays (5–7% of plays swing 4+): the cards' own numbers and the bots' choices limit those.
+- **Open:** the invaders' endings fell to 18% in that run (27% today); the threshold is the last lever (designer). Big plays still to address through the cards.
+- **Date:** 2026-11-01
+
 #### D44. No marked cards: Steal Their Playbook sets the next first player
 
 - **Decided (designer, 2026-10-31):** the marked cards (FP1, FP2: A to D, the earliest dealt opening the round with it) are dropped. Round 1's first player is drawn at random. Whoever plays Steal Their Playbook (for its action) goes first next round; otherwise the first player stays the same. The first player opens with any card.
@@ -1611,6 +1618,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-28 | The prototype carries only what is current (D28, designer): the settled rule variants (swayRequired, payInFull, fightHalf, winnerLoss), the old-save upgrades, unused bot settings and the old decks' card figures removed | Prototype only; the rules unchanged |
 | 2026-10-28 | Passing as a switch, off by default (D29, designer): play a card every turn; the round ends when every card is played | The bots' passes are being measured: stall or crunchy choice |
 | 2026-10-29 | Steal Their Playbook (D30, designer): theirs takes a card another player played this round (however played) from the played cards into your hand, played at once as your own; it can't be your last card played (discarded for no effect) | |
+| 2026-11-01 | Unsuited cards give 2 wild sway with any one faction (D45, designer); suited cards' sway unchanged | Fingerprints re-recorded |
 | 2026-10-31 | No marked cards (D44, designer): round 1's first player at random; Steal Their Playbook's player goes first next round, else the first player stays; any card opens | Fingerprints re-recorded |
 | 2026-10-31 | 2 standing with every other faction at the start (D43, designer; from 1) | More cards playable in round 1; board and endings to measure; fingerprints re-recorded |
 | 2026-10-31 | Threshold 20, flat (D42, designer); 10 per player now a variant | To measure; fingerprints re-recorded |
@@ -1700,6 +1708,7 @@ Actual changes to mechanisms and game structure.
 | **Two-faction limit** | *(Idea.)* The rule that a location can hold at most two factions. |
 | **Unpinned** | *(Test lever, prototype only.)* A card whose action isn't movement, so pinning doesn't hold it (designer, 2026-10-13): Trade Souls, Beam Them Up, Back Up to the Cloud, Hack the Network, Open the Pit, Read from the Book, Turn On the Tractor Beam. |
 | **Volatility** | *(Idea.)* The number of tokens present at a location. When it reaches a threshold, the location boils over. |
+| **Wild sway** | *(Term, designer, 2026-11-01; D45.)* The sway an unsuited card gives when spent for sway: 2, with any one faction chosen as it's played. |
 
 ---
 

@@ -64,6 +64,8 @@ const ui = {
   /** A way back (2026-10-26): the suit card being played to bring its faction back, and where each token goes */
   /** @type {{ card: string, places: string[] } | null} */
   returning: null,
+  /** an unsuited card being spent for sway: the faction is picked next (D45) */
+  wild: /** @type {string | null} */ (null),
   /** a move sent, its view not back yet */
   sending: false,
   /** the server runs older rules than these files (wrangler dev stopped reloading) */
@@ -848,6 +850,15 @@ function renderPlay() {
     return step('turn', `Bring ${esc(fname(room.faction))} back: pick where each token goes, on the island · ${room.max - ui.returning.places.length} more at most`);
   }
   if (ui.returning && !(myTurn && me.hand.includes(ui.returning.card))) ui.returning = null;
+  if (myTurn && ui.wild && me.hand.includes(ui.wild)) {
+    // D45: an unsuited card spent for sway: pick the faction it goes to.
+    const n = view.printed?.[ui.wild] ?? 0;
+    const pick = `<span class="bar-actions">${view.factions.map((f) => `<button class="bar-btn" data-action="wild-faction" data-faction="${esc(f)}">${esc(fname(f))}</button>`).join('')}</span>`;
+    handAction('back', { tip: 'Put the card down' });
+    toHand(me.hand.map((c) => cardHtml(c, c === ui.wild ? { selected: true } : { dim: true })), false);
+    return step('turn', `Spend ${esc(cardById(ui.wild).name)} for ${n} sway: pick the faction`, pick);
+  }
+  ui.wild = null;
   toHand(me.hand.map((c) => {
     const card = cardById(c);
     // A card taken with Steal Their Playbook is played now: only it (D30).
@@ -859,7 +870,8 @@ function renderPlay() {
       : me.hand.length === 1 ? '<div class="card-copy small">Your last card: it can only be discarded, for no effect</div>'
       : copyable().length ? `<div class="card-copy small">Can take: <b>${copyable().map((x) => esc(cardById(x).name)).join(', ')}</b></div>` : undefined;
     const free = myTurn && (!taken || c === taken);
-    return cardHtml(c, { mode, sway: free && !!card.suit, back: free && returnRoom(/** @type {any} */ (view), view.you, c).max > 0, dim: !mode && !(free && !!card.suit), extra: copies });
+    const spend = free && (!!card.suit || (view.printed?.[c] ?? 0) > 0);
+    return cardHtml(c, { mode, sway: spend, back: free && returnRoom(/** @type {any} */ (view), view.you, c).max > 0, dim: !mode && !spend, extra: copies });
   }), false);
   if (myTurn) {
     if (!view.copying && view.options.passing !== 'off') handAction('pass');
@@ -1858,8 +1870,14 @@ function onClick(event) {
   if (action === 'sway') {
     ui.choosing = null;
     ui.target = {}; ui.payerAt = null;
+    if (!cardById(card).suit) { ui.wild = card; return render(); }
     return sendMove({ type: 'play', card, use: 'sway' });
   }
+  if (action === 'wild-faction' && ui.wild) {
+    const c = ui.wild; ui.wild = null;
+    return sendMove({ type: 'play', card: c, use: 'sway', target: { faction: target.dataset.faction ?? '' } });
+  }
+  if (action === 'back' && ui.wild) { ui.wild = null; return render(); }
   if (action === 'return') { ui.choosing = null; ui.target = {}; ui.payerAt = null; ui.returning = { card, places: [] }; return render(); }
   if (ui.returning && view) {
     const r = ui.returning;

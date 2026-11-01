@@ -1467,8 +1467,8 @@
     {
       "id": "unsuitedSway",
       "label": "Unsuited cards' sway",
-      "description": "Designer's seed (2026-11-01; testing): an unsuited card may be played for sway with any one faction, chosen as it's played: this much, or the cards in hand (as the signatures). Off by default (unsuited cards have no sway use).",
-      "default": "off",
+      "description": "D45 (designer, 2026-11-01): an unsuited card may be played for sway with any one faction, chosen as it's played (wild sway): 2 by default; or 1, 3, the cards in hand (as the signatures), or off (no sway use, as before).",
+      "default": "2",
       "choices": [
         {
           "id": "off",

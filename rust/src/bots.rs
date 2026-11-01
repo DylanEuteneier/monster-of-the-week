@@ -652,7 +652,9 @@ fn spend(card: CardIx) -> Move {
 }
 /// An unsuited card spent for sway with a chosen faction (unsuitedSway).
 fn spend_on(card: CardIx, f: Fac) -> Move {
-    Move::Play { card, use_: PlayUse::Sway, target: Some(Some(Target { faction: Some(Id::Fac(f)), ..Default::default() })), places: None }
+    let mut t = Target::default();
+    t.set_faction(Id::Fac(f));
+    Move::Play { card, use_: PlayUse::Sway, target: Some(Some(t)), places: None }
 }
 fn action(card: CardIx, t: Option<Target>) -> Move {
     Move::Play { card, use_: PlayUse::Action, target: Some(t), places: None }
