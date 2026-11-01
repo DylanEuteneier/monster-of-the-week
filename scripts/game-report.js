@@ -129,12 +129,12 @@ const MEASURES = [
   ['Invader ending', 'Winners\' standing with the winning faction (share)', '3.15 concern', (gs) => median(inv(gs).flatMap((g) => g.winners.map((w) => { const st = g.rounds.at(-1).seats[Number(w.slice(1)) - 1].standing; return sum(winIdx(g).map((i) => st[i])) / Math.max(1, sum(st)); }))), pct],
 
   ['Island ending', 'Winning score (median)', 'weakest colour (TS2)', (gs) => median(isl(gs).map((g) => Math.max(...g.scores))), num(1)],
-  ['Island ending', 'Player ahead on weakest-colour trophies (TS2) after round 3 wins (island games)', 'every round matters; close race', (gs) => mean(isl(gs).map((g) => leaderAtWins(g, 3))), pct, 'leaderR3Island'],
+  ['Island ending', 'Player in front on trophies (TS2) after round 3 wins (island games)', 'every round matters; close race', (gs) => mean(isl(gs).map((g) => leaderAtWins(g, 3))), pct, 'leaderR3Island'],
   ['Island ending', 'Winner\'s trophies spread over factions (median count)', 'read the table (many fights matter)', (gs) => median(isl(gs).flatMap((g) => g.winners.map((w) => g.rounds.at(-1).seats[seatIdx(w)].trophies.filter((x) => x > 0).length))), num(1)],
   ['Island ending', 'Island winning margin (median)', '1.4 knife\'s edge', (gs) => median(isl(gs).map((g) => { const s = [...g.scores].sort((a, b) => b - a); return s[0] - (s[1] ?? 0); })), num(1)],
   ['Close games', 'Winning margin over second (median, both endings)', '1.4 knife\'s edge', (gs) => median(gs.map((g) => { const s = [...g.scores].sort((a, b) => b - a); return s[0] - (s[1] ?? 0); })), num(1)],
   ['Close games', 'Won by 1 or less (or tied)', '1.4 knife\'s edge', (gs) => share(gs, (g) => { const s = [...g.scores].sort((a, b) => b - a); return s[0] - (s[1] ?? 0) <= 1; }), pct, 'closeFinish'],
-  ['Close games', 'Player ahead on the final ending\'s score (TS2 / EG3) after round 4 wins', 'the last round can still change who wins', (gs) => mean(gs.map((g) => leaderAtWins(g, 4))), pct, 'leaderR4'],
+  ['Close games', 'Player in front (under the final ending, TS2 / EG3) after round 4 wins', 'the last round can still change who wins', (gs) => mean(gs.map((g) => leaderAtWins(g, 4))), pct, 'leaderR4'],
   ['Close games', 'Last place within 3 of first (score)', 'everyone in it to the end', (gs) => share(gs, (g) => Math.max(...g.scores) - Math.min(...g.scores) <= 3), pct],
 
   ['Dynamic board', 'Presence at each round\'s end, R1–R5', '1.7 (presence feels low)', (gs) => list([0, 1, 2, 3, 4].map((r) => mean(gs.map((g) => total(g.rounds[r]?.end ?? [NaN]))))), String],

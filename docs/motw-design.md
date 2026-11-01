@@ -1650,6 +1650,7 @@ Actual changes to mechanisms and game structure.
 | **Home location** | *(Idea.)* The location a faction starts on with its largest group. One of its archetype's three locations, drawn at random in the first draft. |
 | **Host page** | The prototype page where a game is started: seats are named, options and bots chosen, and the magic links copied. |
 | **Humanoid faction** | *(Idea.)* A faction whose battles can give rise to Undead. Which factions are humanoid is not yet defined. |
+| **In front** | *(Term, designer, 2026-11-01.)* The player with the best score now under an ending, as if the game ended at that moment: in front on trophies (the island's ending, TS2), or in front with a faction (the invaders' ending, EG3). Not the **leader** (most sway at a location) or the **sway leader** (most sway with a faction). |
 | **Invaders** | *(For now.)* All the factions on the board, taken together. |
 | **Leader** | *(Idea.)* The player with the most sway at a location. |
 | **Location** | One of the 15 places on the island board, each aligned with an archetype through its symbol. |
