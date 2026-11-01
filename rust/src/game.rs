@@ -309,6 +309,24 @@ pub fn take_flow() -> (i32, i32) {
     FLOW.with(|f| f.replace((0, 0)))
 }
 
+thread_local! {
+    static FIGHTS: std::cell::RefCell<Vec<([i32; 5], [i32; 5])>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// The real game's round closes since last taken: each faction's presence just before and just after the fights (the
+/// vote's moment). A measuring aid (`motw tournament`).
+pub fn take_fights() -> Vec<([i32; 5], [i32; 5])> {
+    FIGHTS.with(|f| std::mem::take(&mut *f.borrow_mut()))
+}
+
+fn by_faction(s: &GameState) -> [i32; 5] {
+    let mut out = [0; 5];
+    for (f, x) in out.iter_mut().enumerate() {
+        *x = presence_of(s, f as Fac);
+    }
+    out
+}
+
 fn note_flow(lost: i32, grown: i32) {
     FLOW.with(|f| { let (a, b) = f.get(); f.set((a + lost, b + grown)); });
 }
@@ -319,6 +337,7 @@ fn close_round(s: &mut GameState) {
     s.night = None;
     log_line(s, |_| "Fights:".to_string());
     let before = total_presence(s);
+    let before_by = by_faction(s);
     let mut fought: Vec<bool> = (0..s.board.len() as Loc).map(|l| !s.board[l as usize].scorched && count_at(s, l) >= 2).collect();
     for l in 0..s.board.len() as Loc {
         if let Some(g) = gate_of(s, l) {
@@ -332,6 +351,8 @@ fn close_round(s: &mut GameState) {
     }
     if !s.quiet {
         note_flow(before - total_presence(s), 0);
+        let after_by = by_faction(s);
+        FIGHTS.with(|f| f.borrow_mut().push((before_by, after_by)));
     }
     if s.options.round_votes {
         let (total, bar) = (total_presence(s), s.options.threshold);

@@ -117,6 +117,8 @@ pub struct Persona {
     pub pace: f64,
     /// Paced: the lean fades with the vote tally (on) or the round clock (0).
     pub tally: f64,
+    /// Testing: how much the lean fades as the game settles (1: fully, as always; 0: never, a seat keeps its side).
+    pub fade: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -129,7 +131,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0,
     }
 }
 
@@ -198,6 +200,7 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "noPass" => p.no_pass = x,
                 "pace" => p.pace = x,
                 "tally" => p.tally = x,
+                "fade" => p.fade = x,
                 _ => {}
             }
         }
@@ -623,7 +626,7 @@ pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bot
         }
     }
     let jitter = memory.as_deref().and_then(|m| m.jitter).unwrap_or(0.0);
-    let score = evidence + (p.lean + jitter) * (1.0 - settled);
+    let score = evidence + (p.lean + jitter) * (1.0 - p.fade * settled);
     let held = memory.as_deref().and_then(|m| m.goal);
     let bar = match held {
         Some(Goal::Invaders) => -p.hold,

@@ -42,6 +42,70 @@ pub struct Game {
     pub flow: Vec<Flow>,
     /// Rounds as votes: each round's vote in order (true: the invaders').
     pub votes: Vec<bool>,
+    /// The ending study: the factions in play (by slot), the winning ones, each round's state and every play.
+    pub factions: Vec<String>,
+    pub won_by: Vec<String>,
+    pub rounds: Vec<RoundLog>,
+    pub playlog: Vec<PlayLog>,
+}
+
+/// A round's close: each faction's presence (by slot) before and after its fights and at its end (after nightfall and
+/// growth), and every seat's state then.
+#[derive(Clone, Debug)]
+pub struct RoundLog {
+    pub round: i32,
+    pub before_fights: [i32; 5],
+    pub after_fights: [i32; 5],
+    pub end: [i32; 5],
+    pub seats: Vec<SeatLog>,
+}
+
+#[derive(Clone, Debug)]
+pub struct SeatLog {
+    pub standing: [i32; 5],
+    pub trophies: [i32; 5],
+    pub supply: i32,
+    pub on_board: i32,
+    pub goal: Option<&'static str>,
+    pub p_invaders: f64,
+}
+
+/// One card play: what it did, by faction slot, and the seat's goal and forecast as it played. A play that closed the
+/// round (`closed`) has its presence change measured before the fights, but its standing and trophies include them.
+#[derive(Clone, Debug)]
+pub struct PlayLog {
+    pub round: i32,
+    pub seat: Pid,
+    pub card: String,
+    pub use_: &'static str,
+    pub d_presence: [i32; 5],
+    pub d_standing: [i32; 5],
+    pub d_trophies: [i32; 5],
+    pub placed: i32,
+    pub closed: bool,
+    pub goal: Option<&'static str>,
+    pub p_invaders: f64,
+}
+
+fn by_faction(s: &crate::types::GameState) -> [i32; 5] {
+    let mut out = [0; 5];
+    for (f, x) in out.iter_mut().enumerate() {
+        *x = crate::board::presence_of(s, f as u8);
+    }
+    out
+}
+
+fn on_board(s: &crate::types::GameState, pid: Pid) -> i32 {
+    s.board.iter().map(|b| b.sway.get(pid)).sum()
+}
+
+fn goal_name(m: &BotMemory) -> Option<&'static str> {
+    m.goal.map(|g| match g { crate::bots::Goal::Invaders => "invaders", crate::bots::Goal::Island => "island" })
+}
+
+fn seat_log(s: &crate::types::GameState, pid: Pid, m: &BotMemory) -> SeatLog {
+    let p = &s.players[pid as usize];
+    SeatLog { standing: p.standing, trophies: p.trophies, supply: p.supply, on_board: on_board(s, pid), goal: goal_name(m), p_invaders: crate::bots::win_chances(s, pid).p_invaders }
 }
 
 /// Where a round's tokens came from and went.
@@ -159,6 +223,10 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let mut turns: Vec<Turn> = Vec::new();
     let mut flow: Vec<Flow> = Vec::new();
     crate::game::take_flow();
+    crate::game::take_fights();
+    let mut fights_seen: Vec<([i32; 5], [i32; 5])> = Vec::new();
+    let mut rounds: Vec<RoundLog> = Vec::new();
+    let mut playlog: Vec<PlayLog> = Vec::new();
     let mut played_round = 0usize;
     let mut round = s.round;
     let mut moves = 0;
@@ -203,7 +271,22 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                             }
                             let before = crate::board::total_presence(&s);
                             let round_now = s.round;
+                            let (pres0, me0) = (by_faction(&s), s.players[pid as usize].clone());
+                            let (board0, p_inv) = (on_board(&s, pid), crate::bots::win_chances(&s, pid).p_invaders);
                             let next = apply_legal(&s, pid, &m);
+                            let closes = crate::game::take_fights();
+                            let pres1 = closes.first().map(|x| x.0).unwrap_or_else(|| by_faction(&next));
+                            let me1 = &next.players[pid as usize];
+                            if let crate::types::Move::Play { card, use_, .. } = &m {
+                                let d = |a: [i32; 5], b: [i32; 5]| { let mut o = [0; 5]; for i in 0..5 { o[i] = b[i] - a[i]; } o };
+                                playlog.push(PlayLog {
+                                    round: round_now, seat: pid, card: crate::spec::spec().cards[*card as usize].id.clone(),
+                                    use_: match use_ { crate::types::PlayUse::Action => "action", crate::types::PlayUse::Sway => "sway", crate::types::PlayUse::Return => "return" },
+                                    d_presence: d(pres0, pres1), d_standing: d(me0.standing, me1.standing), d_trophies: d(me0.trophies, me1.trophies),
+                                    placed: on_board(&next, pid) - board0, closed: !closes.is_empty(), goal: goal_name(&memory[pid as usize]), p_invaders: p_inv,
+                                });
+                            }
+                            fights_seen.extend(closes);
                             let (lost, grown) = note(&mut flow, round_now, before, crate::board::total_presence(&next), true);
                             plays.push((pid, crate::board::total_presence(&next) - before + lost - grown, waited));
                             s = next;
@@ -216,6 +299,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                 let round_now = s.round;
                 let before = crate::board::total_presence(&s);
                 s = apply_legal(&s, pid, &m);
+                fights_seen.extend(crate::game::take_fights());
                 note(&mut flow, round_now, before, crate::board::total_presence(&s), matches!(m, crate::types::Move::Play { .. }));
                 moved = true;
                 break;
@@ -228,6 +312,9 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             last_votes = s.votes;
         }
         if s.round != round || s.phase == Phase::Ended {
+            let (bf, af) = fights_seen.last().copied().unwrap_or(([0; 5], [0; 5]));
+            fights_seen.clear();
+            rounds.push(RoundLog { round, before_fights: bf, after_fights: af, end: by_faction(&s), seats: (0..n).map(|p| seat_log(&s, p as Pid, &memory[p])).collect() });
             presence.push(crate::board::total_presence(&s));
             round = s.round;
             played_round = 0;
@@ -253,6 +340,10 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         turns,
         flow,
         votes,
+        factions: s.factions.iter().map(|&f| crate::spec::spec().factions[f as usize].id.clone()).collect(),
+        won_by: s.result.as_ref().map(|r| r.factions.iter().map(|&f| crate::spec::spec().factions[s.factions[f as usize] as usize].id.clone()).collect()).unwrap_or_default(),
+        rounds,
+        playlog,
     }
 }
 
