@@ -1642,6 +1642,7 @@ Actual changes to mechanisms and game structure.
 | **Elimination points** | *(Idea; working name.)* Points players earn from actions that cause invaders to eliminate one another. Decide the winner if the island wins, under one candidate end game. |
 | **Engine** | The module of pure functions that holds all the rules of the prototype. The server uses it to decide and the browser uses it to preview. |
 | **Faction** | One specific type within an archetype, such as Vampires or Aliens. Five factions are in play each game, one per archetype. |
+| **First claim** | *(Term, designer, 2026-11-01; replaces "leader".)* The player with the most sway at a location has first claim there: on the bigger pile of the dead when it fights. |
 | **Gather** | A card that draws tokens into its target from other locations. For the test lever `gatherSway` (designer, 2026-10-13), the gathers are Leave Out Fresh Meat, Set the Bait, Lay a Trail, Follow the Lights and Ring the Church Bell. |
 | **Group** | A set of candidates that reinforce each other, with a name and a code such as G1. Listed in Appendix E. |
 | **Growth threshold** | *(Idea.)* The number of tokens a faction needs at a location to grow there at round end. Provisionally 2. |
@@ -1653,7 +1654,6 @@ Actual changes to mechanisms and game structure.
 | **Humanoid faction** | *(Idea.)* A faction whose battles can give rise to Undead. Which factions are humanoid is not yet defined. |
 | **In front** | *(Term, designer, 2026-11-01.)* The player with the best score now under an ending, as if the game ended at that moment: in front on trophies (the island's ending, TS2), or in front with a faction (the invaders' ending, EG3). Not the **leader** (most sway at a location) or the **sway leader** (most sway with a faction). |
 | **Invaders** | *(For now.)* All the factions on the board, taken together. |
-| **Leader** | *(Idea.)* The player with the most sway at a location. |
 | **Location** | One of the 15 places on the island board, each aligned with an archetype through its symbol. |
 | **Magic link** | A link that belongs to one seat in the prototype. Opening it is how a player takes that seat. |
 | **Marked card** | *(Idea.)* One of two cards in the draft, marked A and B. The player holding A goes first. If A was left out of the deal that round, the player holding B goes first. |
@@ -1670,9 +1670,9 @@ Actual changes to mechanisms and game structure.
 | **Region** | *(Idea.)* A group of locations on the island: geography that cards refer to, such as "a region" or "neighbouring regions". Factions never move on their own; every move comes from a card. |
 | **Round** | One full cycle of the phases. |
 | **Ruleset** | A sample selection of candidates that could be played together, built to show one character of game, such as the lightest rules. Listed in Appendix E. |
-| **Runner-up** | *(Idea.)* The player with the second most sway at a location. |
 | **Scorched earth** | *(Idea.)* A location removed from play for the rest of the game after a true tie there. Everything on it returns to its supply. |
 | **Seat** | One player's place in a prototype game, reached through its magic link. |
+| **Second claim** | *(Term, designer, 2026-11-01; replaces "runner-up".)* The player with the second most sway at a location: the smaller pile. |
 | **Slayer group** | What a player plays: one of five groups of characters modelled on a monster-of-the-week trope, each linked to one archetype. |
 | **Slot** | A question the game has to answer, such as how a fight resolves. Candidates in the same slot share a two-letter prefix. |
 | **Strongest faction** | *(Term, designer, 2026-11-01; for now.)* The faction with the most presence on the board: the one that would win if the invaders won now. Not **control** (most tokens at one location). |
