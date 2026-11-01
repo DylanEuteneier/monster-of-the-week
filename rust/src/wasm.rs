@@ -177,7 +177,7 @@ pub fn call(name: &str, a: &[Value]) -> Out {
         "totalPresence" => Ok(Value::from(total_presence(&state(arg(0))?))),
         "swayFor" => {
             let s = state(arg(0))?;
-            Ok(Value::from(sway_for(&s, seat(&s, arg(1))?, card_of(arg(2))?)))
+            Ok(Value::from(sway_gain(&s, seat(&s, arg(1))?, card_of(arg(2))?)))
         }
         "nextRandom" => {
             let (value, next) = next_random(arg(0).as_f64().unwrap_or(0.0) as i64 as i32);

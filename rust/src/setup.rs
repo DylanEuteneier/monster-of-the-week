@@ -230,12 +230,20 @@ pub fn own_plays(s: &GameState, _pid: Pid) -> Vec<CardIx> {
 /// A card's sway for a player now (D24): a signature's is the cards in hand, itself included.
 pub fn sway_for(s: &GameState, pid: Pid, card: CardIx) -> i32 {
     if spec().cards[card as usize].slot != Slot::Signature {
-        let suited = spec().cards[card as usize].suit.is_some();
-        return printed_of(card) + if suited { s.options.card_sway } else { 0 };
+        return printed_of(card);
     }
     let hand = &s.players[pid as usize].hand;
     let held = hand.contains(&card);
     hand.len() as i32 + if held { 0 } else { 1 }
+}
+
+/// The sway a card gives when spent for sway: its sway plus cardSway on a suited card (designer, 2026-11-01: the
+/// bonus is for the sway use only, never an action's numbers); an unsuited card's wild sway under unsuitedSway.
+pub fn sway_gain(s: &GameState, pid: Pid, card: CardIx) -> i32 {
+    if spec().cards[card as usize].suit.is_none() {
+        return match s.options.unsuited_sway { 0 => 0, x if x < 0 => hand_x(s, pid, card), x => x };
+    }
+    sway_for(s, pid, card) + s.options.card_sway
 }
 
 /// The unsuited cards' X: the cards in hand, the one played included.

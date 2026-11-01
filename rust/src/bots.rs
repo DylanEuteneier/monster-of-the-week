@@ -650,6 +650,10 @@ pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bot
 fn spend(card: CardIx) -> Move {
     Move::Play { card, use_: PlayUse::Sway, target: None, places: None }
 }
+/// An unsuited card spent for sway with a chosen faction (unsuitedSway).
+fn spend_on(card: CardIx, f: Fac) -> Move {
+    Move::Play { card, use_: PlayUse::Sway, target: Some(Some(Target { faction: Some(Id::Fac(f)), ..Default::default() })), places: None }
+}
 fn action(card: CardIx, t: Option<Target>) -> Move {
     Move::Play { card, use_: PlayUse::Action, target: Some(t), places: None }
 }
@@ -683,6 +687,11 @@ pub fn candidates(s: &GameState, pid: Pid, rng: Rng, targets: usize, list: bool,
             continue;
         }
         let c = card(ci);
+        if c.suit.is_none() && s.options.unsuited_sway != 0 {
+            for f in 0..s.factions.len() as Fac {
+                moves.push(spend_on(ci, f));
+            }
+        }
         if c.suit.is_some() {
             moves.push(spend(ci));
             let (spots, max, _) = return_room(s, pid, ci);
@@ -1218,6 +1227,14 @@ fn card_worth(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, ev: &dyn Fn(&GameSt
     let infl = spend(ci);
     if c.suit.is_some() && legal(&x, pid, &infl) {
         best = best.max(ev(&after(&x, pid, &infl)) - base_v);
+    }
+    if c.suit.is_none() && s.options.unsuited_sway != 0 {
+        for f in 0..x.factions.len() as Fac {
+            let m = spend_on(ci, f);
+            if legal(&x, pid, &m) {
+                best = best.max(ev(&after(&x, pid, &m)) - base_v);
+            }
+        }
     }
     for _ in 0..draws {
         let Some(t) = sample_target(&x, pid, ci, rng) else { continue };

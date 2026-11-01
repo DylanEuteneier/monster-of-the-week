@@ -87,7 +87,13 @@ pub fn validate(s: &GameState, pid: Pid, m: &Move) -> Verdict {
                     match use_ {
                         PlayUse::Sway => {
                             if c.suit.is_none() {
-                                return no("Unsuited cards have no sway use.");
+                                if s.options.unsuited_sway == 0 {
+                                    return no("Unsuited cards have no sway use.");
+                                }
+                                let f = target.as_ref().and_then(|t| t.as_ref()).and_then(|t| crate::cards::as_fac(t.faction));
+                                if f.is_none_or(|f| f as usize >= s.factions.len()) {
+                                    return no("Pick the faction to gain sway with.");
+                                }
                             }
                             if p.supply <= 0 { no("Your supply is empty.") } else { None }
                         }
@@ -184,8 +190,8 @@ pub fn apply_legal(s: &GameState, pid: Pid, m: &Move) -> GameState {
             let c = &spec().cards[ci as usize];
             match use_ {
                 PlayUse::Sway => {
-                    let f = c.suit.unwrap() as Fac;
-                    let gain = sway_for(s, pid, ci).min(next.players[me].supply);
+                    let f = match c.suit { Some(x) => x as Fac, None => target.as_ref().and_then(|t| t.as_ref()).and_then(|t| crate::cards::as_fac(t.faction)).expect("a faction") };
+                    let gain = sway_gain(s, pid, ci).min(next.players[me].supply);
                     next.players[me].supply -= gain;
                     next.players[me].standing[f as usize] += gain;
                     let fnm = fname(&next, f);

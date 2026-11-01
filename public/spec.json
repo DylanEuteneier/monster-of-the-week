@@ -1444,7 +1444,7 @@
     {
       "id": "cardSway",
       "label": "Extra card sway",
-      "description": "Designer (2026-10-29): bump up sway values, to make more card actions payable (the game feel tuning, 1.7). Added to every strike's and shift's printed sway (a signature's sway stays your hand size, D24; unsuited cards have none). The amount is being measured. Designer (2026-10-29): stays as a switch at +0.",
+      "description": "Designer (2026-10-29): bump up sway values, to make more card actions payable (the game feel tuning, 1.7). Added to every suited card's sway: a strike's and shift's printed sway, and a signature's hand size (designer, 2026-11-01: signatures get it too); unsuited cards have none. The amount is being measured. Designer (2026-10-29): stays as a switch at +0.",
       "default": "0",
       "choices": [
         {
@@ -1461,6 +1461,39 @@
           "id": "2",
           "label": "+2",
           "description": "Strikes 4, shifts 5."
+        }
+      ]
+    },
+    {
+      "id": "unsuitedSway",
+      "label": "Unsuited cards' sway",
+      "description": "Designer's seed (2026-11-01; testing): an unsuited card may be played for sway with any one faction, chosen as it's played: this much, or the cards in hand (as the signatures). Off by default (unsuited cards have no sway use).",
+      "default": "off",
+      "choices": [
+        {
+          "id": "off",
+          "label": "off",
+          "description": ""
+        },
+        {
+          "id": "1",
+          "label": "1",
+          "description": ""
+        },
+        {
+          "id": "2",
+          "label": "2",
+          "description": ""
+        },
+        {
+          "id": "3",
+          "label": "3",
+          "description": ""
+        },
+        {
+          "id": "hand",
+          "label": "hand",
+          "description": ""
         }
       ]
     },

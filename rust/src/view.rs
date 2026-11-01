@@ -3,7 +3,7 @@
 use crate::cards::{act, card, scratch};
 use crate::game::waiting_on;
 use crate::json::{state_to_value, target_to_value};
-use crate::setup::{deck, sway_for};
+use crate::setup::{deck, sway_gain};
 use crate::spec::{spec, Action, Use};
 use crate::types::*;
 use serde_json::{json, Map, Value};
@@ -133,7 +133,7 @@ pub fn player_view(s: &GameState, pid: Pid) -> Value {
         }
         (id.clone(), seat)
     }).collect());
-    let printed = Value::Object(deck().into_iter().map(|c| (spec().cards[c as usize].id.clone(), Value::from(sway_for(s, pid, c)))).collect());
+    let printed = Value::Object(deck().into_iter().map(|c| (spec().cards[c as usize].id.clone(), Value::from(sway_gain(s, pid, c)))).collect());
     let mut o = Map::new();
     o.insert("you".into(), Value::from(s.seating[pid as usize].as_str()));
     o.insert("options".into(), v["options"].clone());

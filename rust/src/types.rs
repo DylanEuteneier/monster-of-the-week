@@ -198,6 +198,8 @@ pub struct Options {
     pub sway_per_move: i32,
     /// Card movement range (moveRange, designer testing 2026-11-01): how many steps a card's monster move may cover.
     pub move_range: i32,
+    /// Unsuited cards' sway with any one faction (unsuitedSway, designer testing 2026-11-01): 0 none, -1 the hand size.
+    pub unsuited_sway: i32,
     /// IC1 (D15): a move's sway must be paid. Always so in a game; off only in checkTarget's comparison copy (unpaid).
     pub sway_required: bool,
     pub aligned_growth: bool,
@@ -248,6 +250,7 @@ impl Options {
             groups_random: get("groups") == "random",
             sway_per_move: num("swayPerMove"),
             move_range: num("moveRange").max(1),
+            unsuited_sway: match get("unsuitedSway") { "off" | "" => 0, "hand" => -1, x => x.parse().unwrap_or(0) },
             sway_required: true,
             aligned_growth: get("alignedGrowth") == "on",
             sway_tokens: match get("swayTokens") { "on" => SwayTokens::All, "shifts" => SwayTokens::Shifts, "strikes" => SwayTokens::Strikes, "signatures" => SwayTokens::Signatures, "nightfall" => SwayTokens::Nightfall, _ => SwayTokens::Off },
