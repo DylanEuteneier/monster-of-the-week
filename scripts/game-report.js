@@ -32,11 +32,12 @@ const TARGETS = {
   invaderShare: [0.3, 0.5],        // D33: about 40% invaders' endings
   settledByR3: [0, 0.6],           // RV1 (designer): some games settled by round 3 is fine (10 of 20 accepted)
   comeback: [0.15, 1],             // * the side ahead after round 2 loses at least sometimes
-  lastRoundFlip: [0, 0.25],        // designer: the last round mustn't decide everything unanswerably
   patternVariety: [0.25, 1],       // * distinct vote patterns per game (not rote)
   raceGapClose: [0.35, 1],         // * invader endings with the top two factions within 2 at the end
   leaderR3Wins: [0, 0.85],         // * the faction race not settled by round 3
-  lateSwayOnly: [0, 0.4],          // concern 3.15: late invader play not just sway
+  sameTopFaction: [0, 0.3],        // designer (2026-10-31): the worry is every player bidding for the exact same faction
+  lateOneFaction: [0, 0.6],        // the same: late standing gains not all in one faction
+  brierR4: [0, 0.2],               // designer (2026-10-31): a last-round flip is welcome, but not the only place the ending is decided
   occupiedR5: [8, 15],             // 1.7: the board empties (about 7 of 15 by round 5)
   fightsR5: [2.5, 99],             // 1.7: about 2 fights left by round 5
   presenceLow: [25, 99],           // 1.7 (designer): presence feels too low (about 22–25 late today); lowest round-end average
@@ -100,13 +101,17 @@ const MEASURES = [
   ['Every round matters', 'Rounds 1–3 all one side', 'RV1 not rote', (gs) => share(gs, (g) => new Set(roundSides(g).slice(0, 3)).size === 1), pct],
   ['Every round matters', 'Distinct round patterns per game', 'RV1 not rote', (gs) => new Set(gs.map((g) => roundSides(g).map((v) => v[1]).join(''))).size / gs.length, num(2), 'patternVariety'],
   ['Every round matters', 'Comebacks (side ahead after round 2 loses)', 'RV1; 1.1', (gs) => share(gs, (g) => { const s = roundSides(g).slice(0, 2); const a = s.filter((x) => x === 'invaders').length, b = s.length - a; return a !== b && (a > b ? 'invaders' : 'island') !== g.side; }), pct, 'comeback'],
-  ['Every round matters', 'Round 5 flipped the side (after round 4 → end)', 'designer: the last round mustn\'t decide unanswerably', (gs) => share(gs.filter((g) => !isVotes(g)), (g) => (total(g.rounds[3]?.afterFights ?? [0]) > defaultBar) !== (g.side === 'invaders')), pct, 'lastRoundFlip'],
+  ['Every round matters', 'Round 5 flipped the side (after round 4 → end)', 'designer: a last-round flip is welcome (information)', (gs) => share(gs.filter((g) => !isVotes(g)), (g) => (total(g.rounds[3]?.afterFights ?? [0]) > defaultBar) !== (g.side === 'invaders')), pct],
+  ['Every round matters', 'Forecast error after round 4 (Brier; low = rounds 1–4 shaped the ending)', 'designer: round 5 may flip it, but not the only place it\'s decided', (gs) => mean(gs.flatMap((g) => forecasts(g, 4).map((p) => (p - (g.side === 'invaders' ? 1 : 0)) ** 2))), num(2), 'brierR4'],
   ['Every round matters', 'Invader share of each round\'s side, R1–R5', 'RV1 (where the arc sits)', (gs) => list([0, 1, 2, 3, 4].map((r) => share(gs.filter((g) => roundSides(g)[r]), (g) => roundSides(g)[r] === 'invaders') * 100)), String],
 
   ['Invader ending', 'Top two factions within 2 at the end', '3.15 concern: not a plain sway race', (gs) => share(inv(gs), (g) => { const p = [...g.rounds.at(-1).afterFights].sort((a, b) => b - a); return p[0] - p[1] <= 2; }), pct, 'raceGapClose'],
   ['Invader ending', 'Winning faction led after round 3', '3.15 concern', (gs) => share(inv(gs), (g) => leaders(g.rounds[2]?.afterFights ?? [0]).some((i) => winIdx(g).includes(i))), pct, 'leaderR3Wins'],
   ['Invader ending', 'Lead changes per game (median)', '3.15 concern', (gs) => median(inv(gs).map((g) => { const l = g.rounds.map((r) => leaders(r.afterFights).join()); return l.filter((x, i) => i && x !== l[i - 1]).length; })), num(1)],
-  ['Invader ending', 'Late plays (R4–5, invaders likely) only sway or standing', '3.15 concern', (gs) => { const ps = inv(gs).flatMap((g) => g.plays.filter((p) => p.r >= 4 && p.pInvaders >= 0.7)); return share(ps, (p) => p.use === 'sway' || (!p.closed && !p.moved && !p.dPresence.some(Boolean) && (p.dStanding.some(Boolean) || p.placed > 0))); }, pct, 'lateSwayOnly'],
+  ['Invader ending', 'Late plays (R4–5, invaders likely) only sway or standing', '3.15 concern', (gs) => { const ps = inv(gs).flatMap((g) => g.plays.filter((p) => p.r >= 4 && p.pInvaders >= 0.7)); return share(ps, (p) => p.use === 'sway' || (!p.closed && !p.moved && !p.dPresence.some(Boolean) && (p.dStanding.some(Boolean) || p.placed > 0))); }, pct],
+  ['Invader ending', 'Every seat\'s top faction the same after round 4', 'designer: not one sway bid for a single faction', (gs) => share(inv(gs), (g) => new Set(g.rounds[3].seats.map((s) => s.standing.indexOf(Math.max(...s.standing)))).size === 1), pct, 'sameTopFaction'],
+  ['Invader ending', 'Seats\' top factions after round 4 (median distinct)', 'designer: players backing different factions', (gs) => median(inv(gs).map((g) => new Set(g.rounds[3].seats.map((s) => s.standing.indexOf(Math.max(...s.standing)))).size)), num(1)],
+  ['Invader ending', 'Late standing gains in a single faction (largest share, median)', 'designer: not one sway bid for a single faction', (gs) => median(inv(gs).map((g) => { const by = [0, 0, 0, 0, 0]; for (const p of g.plays) if (p.r >= 4 && !p.closed) p.dStanding.forEach((d, i) => { if (d > 0) by[i] += d; }); return Math.max(...by) / Math.max(1, sum(by)); })), pct, 'lateOneFaction'],
   ['Invader ending', 'Winners\' plays removing runner-up monsters (per game)', 'designer: cut one faction to lift another', (gs) => mean(inv(gs).map((g) => { const end = g.rounds.at(-1).afterFights; const w = winIdx(g); const second = [0, 1, 2, 3, 4].filter((i) => !w.includes(i)).sort((a, b) => end[b] - end[a])[0]; return sum(g.plays.filter((p) => !p.closed && g.winners.includes(p.seat)).map((p) => Math.max(0, -p.dPresence[second]))); })), num(1)],
   ['Invader ending', 'Winners\' standing with the winning faction (share)', '3.15 concern', (gs) => median(inv(gs).flatMap((g) => g.winners.map((w) => { const st = g.rounds.at(-1).seats[Number(w.slice(1)) - 1].standing; return sum(winIdx(g).map((i) => st[i])) / Math.max(1, sum(st)); }))), pct],
 
