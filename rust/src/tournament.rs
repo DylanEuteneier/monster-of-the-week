@@ -49,6 +49,8 @@ pub struct Game {
     pub playlog: Vec<PlayLog>,
     /// Final scores by seat (the ending's own measure).
     pub scores: Vec<i32>,
+    /// Each turn of play's swing diagnosis (SWING=1 or `swing=1`).
+    pub swings: Vec<SwingLog>,
 }
 
 /// A round's close: each faction's presence (by slot) before and after its fights and at its end (after nightfall and
@@ -74,6 +76,50 @@ pub struct SeatLog {
     pub on_board: i32,
     pub goal: Option<&'static str>,
     pub p_invaders: f64,
+}
+
+/// What the board and the hand allowed on one turn of play (the ending study's swing diagnosis): the groups on the
+/// board, and the biggest swing (monsters moved, brought on or removed) any legal action in hand could make, as it is
+/// and with the sway requirement off; per card in hand, the same.
+#[derive(Clone, Debug)]
+pub struct SwingLog {
+    pub round: i32,
+    pub seat: Pid,
+    pub presence: i32,
+    pub groups: i32,
+    pub max_group: i32,
+    pub groups4: i32,
+    pub best: i32,
+    pub best_free: i32,
+    pub cards: Vec<(String, i32, i32)>,
+}
+
+/// Monsters a step moved, brought on or removed (each arrival at a location, plus the board's net loss).
+fn swing_between(a: &crate::types::GameState, b: &crate::types::GameState) -> i32 {
+    let arrivals: i32 = (0..a.board.len()).map(|l| (0..5u8).map(|f| (b.board[l].tokens.get(f) - a.board[l].tokens.get(f)).max(0)).sum::<i32>()).sum();
+    arrivals + (crate::board::total_presence(a) - crate::board::total_presence(b)).max(0)
+}
+
+/// The biggest swing a card's legal actions could make here (up to 80 targets; a play that would close the round left out).
+fn best_swing(s: &crate::types::GameState, pid: Pid, c: crate::types::CardIx) -> i32 {
+    let (ts, _) = crate::choice::list_targets(s, pid, c, 80, true);
+    ts.into_iter().filter_map(|t| {
+        let m = crate::types::Move::Play { card: c, use_: crate::types::PlayUse::Action, target: Some(Some(t)), places: None };
+        let b = crate::game::apply_move(s, pid, &m).ok()?;
+        (b.round == s.round && b.phase == Phase::Play).then(|| swing_between(s, &b))
+    }).max().unwrap_or(0)
+}
+
+fn swing_log(s: &crate::types::GameState, pid: Pid) -> SwingLog {
+    let quiet = crate::cards::imagined(s);
+    let mut free = quiet.clone();
+    free.options = s.options.unpaid();
+    let sizes: Vec<i32> = (0..s.board.len()).flat_map(|l| (0..5u8).map(move |f| (l, f))).map(|(l, f)| s.board[l].tokens.get(f)).filter(|&x| x > 0).collect();
+    let cards: Vec<(String, i32, i32)> = s.players[pid as usize].hand.iter().map(|&c| (crate::spec::spec().cards[c as usize].id.clone(), best_swing(&quiet, pid, c), best_swing(&free, pid, c))).collect();
+    SwingLog {
+        round: s.round, seat: pid, presence: crate::board::total_presence(s), groups: sizes.len() as i32, max_group: sizes.iter().copied().max().unwrap_or(0),
+        groups4: sizes.iter().filter(|&&x| x >= 4).count() as i32, best: cards.iter().map(|c| c.1).max().unwrap_or(0), best_free: cards.iter().map(|c| c.2).max().unwrap_or(0), cards,
+    }
 }
 
 /// One card play: what it did, by faction slot, and the seat's goal and forecast as it played. A play that closed the
@@ -210,6 +256,7 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
 /// play, and with `board` the board and hand at every turn of play.
 /// Testing (the opening study): stop every game once this round is over (0: play to the end). The bots play as if
 /// the whole game lies ahead.
+pub static SWING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 pub static STOP_AFTER: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0);
 
 pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, String)], duplicate: bool, board: bool) -> Game {
@@ -236,6 +283,8 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let mut rounds: Vec<RoundLog> = Vec::new();
     let mut playlog: Vec<PlayLog> = Vec::new();
     let mut round_first = None;
+    let mut swings: Vec<SwingLog> = Vec::new();
+    let swing_on = SWING.load(std::sync::atomic::Ordering::Relaxed);
     let mut played_round = 0usize;
     let mut round = s.round;
     let mut moves = 0;
@@ -244,6 +293,9 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         let mut moved = false;
         if s.phase == Phase::Play && round_first.is_none_or(|_| false) {
             round_first = s.first;
+        }
+        if swing_on && s.phase == Phase::Play && !s.players[s.turn].hand.is_empty() {
+            swings.push(swing_log(&s, s.turn as Pid));
         }
         if board && s.phase == Phase::Play {
             let pid = s.turn as Pid;
@@ -361,6 +413,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         rounds,
         playlog,
         scores: s.result.as_ref().map(|r| r.scores.clone()).unwrap_or_default(),
+        swings,
     }
 }
 

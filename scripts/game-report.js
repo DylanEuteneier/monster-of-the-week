@@ -38,6 +38,7 @@ const TARGETS = {
   lastRoundFlip: [0.05, 0.5],      // designer (2026-10-31): 38% not a big worry; never (round 5 can't matter) or most games (it decides everything) would be
   lateSwayOnly: [0.1, 0.65],       // designer (2026-10-31): 48% only mildly worrying; near all sway would be a worry
   round5Decides: [0.15, 0.5],      // designer (2026-11-01): round 5 never deciding the ending is the top worry under votes
+  canBig: [0.3, 1],                // * a big play is often on offer
   sameTopFaction: [0, 0.3],        // designer (2026-10-31): the worry is every player bidding for the exact same faction
   lateOneFaction: [0, 0.6],        // the same: late standing gains not all in one faction
   calibration: [0, 0.1],           // * bots' forecasts mean what they say
@@ -98,6 +99,8 @@ const nonClosing = (gs) => gs.flatMap((g) => g.plays.filter((p) => !p.closed));
 const calibration = (gs) => { const bins = Array.from({ length: 10 }, () => [0, 0]); for (const g of gs) for (const r of g.rounds) for (const s of r.seats) { const b = Math.min(9, Math.floor(s.pInvaders * 10)); bins[b][0] += s.pInvaders - (g.side === 'invaders' ? 1 : 0); bins[b][1]++; } const n = sum(bins.map((b) => b[1])); return sum(bins.map((b) => Math.abs(b[0]))) / n; };
 /** Brier skill after round r: 1 − Brier / the base rate's Brier. */
 const skill = (gs, r) => { const rate = share(gs, (g) => g.side === 'invaders'); const base = rate * (1 - rate); const b = mean(gs.flatMap((g) => forecasts(g, r).map((p) => (p - (g.side === 'invaders' ? 1 : 0)) ** 2))); return base ? 1 - b / base : NaN; };
+/** The swing diagnosis (logged with swing=1): one entry per turn of play. */
+const turnsOf = (gs) => gs.flatMap((g) => g.swings ?? []);
 const swing = (p) => (p.moved ?? 0) + sum(p.dPresence.map((d) => Math.max(0, -d)));
 const isl = (gs) => gs.filter((g) => g.side !== 'invaders');
 
@@ -153,6 +156,15 @@ const MEASURES = [
   ['Few choices, huge consequences', 'Monsters moved or removed per board-changing play (mean)', '1.2 pillar 5', (gs) => mean(nonClosing(gs).map(swing).filter(Boolean)), num(1), 'swingSize'],
   ['Few choices, huge consequences', 'Plays moving or removing 4+ monsters', '1.2 pillar 5', (gs) => share(nonClosing(gs).filter((p) => p.use === 'action'), (p) => swing(p) >= 4), pct, 'bigPlays'],
   ['Few choices, huge consequences', 'Forecast flips across ½ per seat (round to round)', '1.2 pillar 5; 1.1 push and pull', (gs) => mean(gs.map((g) => { let n = 0; for (let r = 1; r < g.rounds.length; r++) { const a = forecasts(g, r), b = forecasts(g, r + 1); n += a.filter((p, i) => (p > 0.5) !== (b[i] > 0.5)).length; } return n / Math.max(1, g.rounds[0].seats.length); })), num(1)],
+  ['Big plays: why so few', 'A · presence on the board per turn (mean)', 'too few tokens?', (gs) => mean(turnsOf(gs).map((w) => w.presence)), num(1)],
+  ['Big plays: why so few', 'B · groups on the board per turn (mean)', 'too few groups?', (gs) => mean(turnsOf(gs).map((w) => w.groups)), num(1)],
+  ['Big plays: why so few', 'B · largest group per turn (mean)', 'groups too small?', (gs) => mean(turnsOf(gs).map((w) => w.maxGroup)), num(1)],
+  ['Big plays: why so few', 'B · turns with a group of 4+ on the board', 'groups too small?', (gs) => share(turnsOf(gs), (w) => w.groups4 > 0), pct],
+  ['Big plays: why so few', 'C · turns where a legal play in hand could swing 4+', 'can the hand do it?', (gs) => share(turnsOf(gs), (w) => w.best >= 4), pct, 'canBig'],
+  ['Big plays: why so few', 'C · the same if sway were free', 'is the sway cost the block?', (gs) => share(turnsOf(gs), (w) => w.bestFree >= 4), pct],
+  ['Big plays: why so few', 'D · held cards that could swing 4+ here (as is / sway free)', 'do the cards allow it?', (gs) => { const cs = turnsOf(gs).flatMap((w) => w.cards); return `${pct(share(cs, (c) => c[1] >= 4))} / ${pct(share(cs, (c) => c[2] >= 4))}`; }, String],
+  ['Big plays: why so few', 'Taken: plays swinging 4+ per turn with one on offer', 'do players choose it?', (gs) => nonClosing(gs).filter((p) => swing(p) >= 4).length / Math.max(1, turnsOf(gs).filter((w) => w.best >= 4).length), pct],
+
   ['Not economy-focused', 'Plays that only built sway or standing', '1.3 anti-goal', (gs) => share(gs.flatMap((g) => g.plays.filter((p) => !p.closed)), (p) => p.use === 'sway' || (!p.moved && !p.dPresence.some(Boolean) && (p.dStanding.some(Boolean) || p.placed > 0))), pct, 'economyShare'],
 
   ['Not economy-focused', 'Plays spent for sway', '1.3 anti-goal', (gs) => share(gs.flatMap((g) => g.plays), (p) => p.use === 'sway'), pct],
@@ -192,7 +204,11 @@ function cardTable(gs) {
     if (m) { c.changed++; c.monsters += m; }
     if (!m && !p.placed && !p.dStanding.some(Boolean) && !p.dTrophies.some(Boolean)) c.nothing++;
   }
-  return Object.entries(by).sort((a, b) => a[1].changed / a[1].n - b[1].changed / b[1].n);
+  for (const g of gs) for (const w of g.swings ?? []) for (const [id, s, f] of w.cards) {
+    const c = (by[id] ??= { n: 0, changed: 0, monsters: 0, nothing: 0 });
+    c.held = (c.held ?? 0) + 1; c.big = (c.big ?? 0) + (s >= 4); c.bigFree = (c.bigFree ?? 0) + (f >= 4); c.max = Math.max(c.max ?? 0, f);
+  }
+  return Object.entries(by).sort((a, b) => a[1].changed / (a[1].n || 1) - b[1].changed / (b[1].n || 1));
 }
 
 const flag = (key, v) => {
@@ -212,7 +228,7 @@ for (const [sec, name, pref, f, fmt, key] of MEASURES) {
   console.log(`  ${(name + t).padEnd(w)} ${cells.map((c) => c.padEnd(24)).join(' ')}  (${pref})`);
 }
 for (const g of groups) {
-  console.log(`\nCARDS (${g.label}): action plays (non-closing) · changed the board · monsters per change · did nothing`);
-  for (const [id, c] of cardTable(g.games)) console.log(`  ${id.padEnd(16)} ${String(c.n).padStart(4)}  ${pct(c.changed / c.n).padStart(4)}  ${(c.monsters / Math.max(1, c.changed)).toFixed(1).padStart(4)}  ${pct(c.nothing / c.n).padStart(4)}`);
+  console.log(`\nCARDS (${g.label}): action plays (non-closing) · changed the board · monsters per change · did nothing · held: could swing 4+ (as is / sway free) · biggest swing seen`);
+  for (const [id, c] of cardTable(g.games)) console.log(`  ${id.padEnd(16)} ${String(c.n).padStart(4)}  ${pct(c.changed / (c.n || 1)).padStart(4)}  ${(c.monsters / Math.max(1, c.changed)).toFixed(1).padStart(4)}  ${pct(c.nothing / (c.n || 1)).padStart(4)}${c.held ? `   ${pct(c.big / c.held).padStart(4)} / ${pct(c.bigFree / c.held).padStart(4)}  ${String(c.max).padStart(3)}` : ''}`);
 }
 console.log('\nNot measured yet: ties as a tool (scorched locations, true ties); tough decisions (the bots\' value spread).');

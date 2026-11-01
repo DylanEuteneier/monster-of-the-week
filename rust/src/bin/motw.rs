@@ -150,6 +150,10 @@ fn tournament(args: &[String]) {
                     "r": p.round, "seat": id(&p.seat), "card": p.card, "use": p.use_, "dPresence": p.d_presence, "dStanding": p.d_standing,
                     "dTrophies": p.d_trophies, "placed": p.placed, "moved": p.moved, "closed": p.closed, "goal": p.goal, "pInvaders": (p.p_invaders * 1000.0).round() / 1000.0,
                 })).collect::<Vec<_>>(),
+                "swings": x.swings.iter().map(|w| serde_json::json!({
+                    "r": w.round, "seat": id(&w.seat), "presence": w.presence, "groups": w.groups, "maxGroup": w.max_group, "groups4": w.groups4,
+                    "best": w.best, "bestFree": w.best_free, "cards": w.cards.iter().map(|c| serde_json::json!([c.0, c.1, c.2])).collect::<Vec<_>>(),
+                })).collect::<Vec<_>>(),
                 "moves": x.moves, "seconds": (x.seconds * 10.0).round() / 10.0,
             });
             writeln!(f.lock().unwrap(), "{line}").unwrap();
@@ -157,6 +161,7 @@ fn tournament(args: &[String]) {
     };
     let board = kv.get("board").is_some_and(|x| x == "1");
     // stopAfter=1: the opening study; each game stops after that round (board=1 and boardRound follow it).
+    if kv.get("swing").is_some_and(|x| x == "1") { motw::tournament::SWING.store(true, std::sync::atomic::Ordering::Relaxed); }
     if let Some(n) = kv.get("stopAfter").and_then(|x| x.parse::<i32>().ok()) { motw::tournament::STOP_AFTER.store(n, std::sync::atomic::Ordering::Relaxed); }
     let played = motw::tournament::run_with(seed, games, &list, &options, duplicate, workers, board, &done);
     eprintln!();
