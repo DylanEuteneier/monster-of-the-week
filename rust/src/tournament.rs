@@ -47,6 +47,8 @@ pub struct Game {
     pub won_by: Vec<String>,
     pub rounds: Vec<RoundLog>,
     pub playlog: Vec<PlayLog>,
+    /// Final scores by seat (the ending's own measure).
+    pub scores: Vec<i32>,
 }
 
 /// A round's close: each faction's presence (by slot) before and after its fights and at its end (after nightfall and
@@ -58,6 +60,10 @@ pub struct RoundLog {
     pub after_fights: [i32; 5],
     pub end: [i32; 5],
     pub seats: Vec<SeatLog>,
+    /// The round's first player; how many fights it had; locations holding monsters and fights due at its end.
+    pub first: Option<Pid>,
+    pub fights: usize,
+    pub occupied: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -82,6 +88,8 @@ pub struct PlayLog {
     pub d_standing: [i32; 5],
     pub d_trophies: [i32; 5],
     pub placed: i32,
+    /// Monsters that changed location (each one counted once where it arrived); 0 on a closing play (fights mix in).
+    pub moved: i32,
     pub closed: bool,
     pub goal: Option<&'static str>,
     pub p_invaders: f64,
@@ -224,15 +232,19 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let mut flow: Vec<Flow> = Vec::new();
     crate::game::take_flow();
     crate::game::take_fights();
-    let mut fights_seen: Vec<([i32; 5], [i32; 5])> = Vec::new();
+    let mut fights_seen: Vec<([i32; 5], [i32; 5], usize)> = Vec::new();
     let mut rounds: Vec<RoundLog> = Vec::new();
     let mut playlog: Vec<PlayLog> = Vec::new();
+    let mut round_first = None;
     let mut played_round = 0usize;
     let mut round = s.round;
     let mut moves = 0;
     let stop = STOP_AFTER.load(std::sync::atomic::Ordering::Relaxed);
     while moves < MAX_MOVES && s.phase != Phase::Ended && (stop == 0 || s.round <= stop) {
         let mut moved = false;
+        if s.phase == Phase::Play && round_first.is_none_or(|_| false) {
+            round_first = s.first;
+        }
         if board && s.phase == Phase::Play {
             let pid = s.turn as Pid;
             let mut cards = Vec::new();
@@ -275,6 +287,9 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                             let (board0, p_inv) = (on_board(&s, pid), crate::bots::win_chances(&s, pid).p_invaders);
                             let next = apply_legal(&s, pid, &m);
                             let closes = crate::game::take_fights();
+                            let shifted: i32 = if closes.is_empty() {
+                                (0..s.board.len()).map(|l| (0..5u8).map(|f| (next.board[l].tokens.get(f) - s.board[l].tokens.get(f)).max(0)).sum::<i32>()).sum()
+                            } else { 0 };
                             let pres1 = closes.first().map(|x| x.0).unwrap_or_else(|| by_faction(&next));
                             let me1 = &next.players[pid as usize];
                             if let crate::types::Move::Play { card, use_, .. } = &m {
@@ -283,7 +298,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                                     round: round_now, seat: pid, card: crate::spec::spec().cards[*card as usize].id.clone(),
                                     use_: match use_ { crate::types::PlayUse::Action => "action", crate::types::PlayUse::Sway => "sway", crate::types::PlayUse::Return => "return" },
                                     d_presence: d(pres0, pres1), d_standing: d(me0.standing, me1.standing), d_trophies: d(me0.trophies, me1.trophies),
-                                    placed: on_board(&next, pid) - board0, closed: !closes.is_empty(), goal: goal_name(&memory[pid as usize]), p_invaders: p_inv,
+                                    placed: on_board(&next, pid) - board0, moved: shifted, closed: !closes.is_empty(), goal: goal_name(&memory[pid as usize]), p_invaders: p_inv,
                                 });
                             }
                             fights_seen.extend(closes);
@@ -312,9 +327,10 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             last_votes = s.votes;
         }
         if s.round != round || s.phase == Phase::Ended {
-            let (bf, af) = fights_seen.last().copied().unwrap_or(([0; 5], [0; 5]));
+            let (bf, af, nf) = fights_seen.last().copied().unwrap_or(([0; 5], [0; 5], 0));
             fights_seen.clear();
-            rounds.push(RoundLog { round, before_fights: bf, after_fights: af, end: by_faction(&s), seats: (0..n).map(|p| seat_log(&s, p as Pid, &memory[p])).collect() });
+            rounds.push(RoundLog { round, before_fights: bf, after_fights: af, end: by_faction(&s), seats: (0..n).map(|p| seat_log(&s, p as Pid, &memory[p])).collect(), first: round_first, fights: nf, occupied: (0..s.board.len() as u8).filter(|&l| crate::board::count_at(&s, l) >= 1).count() });
+            round_first = None;
             presence.push(crate::board::total_presence(&s));
             round = s.round;
             played_round = 0;
@@ -344,6 +360,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         won_by: s.result.as_ref().map(|r| r.factions.iter().map(|&f| crate::spec::spec().factions[s.factions[f as usize] as usize].id.clone()).collect()).unwrap_or_default(),
         rounds,
         playlog,
+        scores: s.result.as_ref().map(|r| r.scores.clone()).unwrap_or_default(),
     }
 }
 

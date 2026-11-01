@@ -141,14 +141,14 @@ fn tournament(args: &[String]) {
                 "seats": names.iter().cloned().zip(x.seats.iter().map(|p| serde_json::Value::from(p.as_str()))).collect::<serde_json::Map<String, serde_json::Value>>(),
                 "groups": names.iter().cloned().zip(x.groups.iter().map(|p| serde_json::Value::from(p.as_str()))).collect::<serde_json::Map<String, serde_json::Value>>(),
                 "winners": x.winners.iter().map(id).collect::<Vec<_>>(), "placings": x.placings.iter().map(id).collect::<Vec<_>>(),
-                "presence": x.presence, "votes": x.votes.iter().map(|&v| if v { "invaders" } else { "island" }).collect::<Vec<_>>(), "factions": x.factions, "wonBy": x.won_by,
+                "presence": x.presence, "votes": x.votes.iter().map(|&v| if v { "invaders" } else { "island" }).collect::<Vec<_>>(), "factions": x.factions, "wonBy": x.won_by, "scores": x.scores,
                 "rounds": x.rounds.iter().map(|r| serde_json::json!({
-                    "r": r.round, "beforeFights": r.before_fights, "afterFights": r.after_fights, "end": r.end,
+                    "r": r.round, "beforeFights": r.before_fights, "afterFights": r.after_fights, "end": r.end, "first": r.first.map(|p| id(&p)), "fights": r.fights, "occupied": r.occupied,
                     "seats": r.seats.iter().map(|q| serde_json::json!({ "standing": q.standing, "trophies": q.trophies, "supply": q.supply, "onBoard": q.on_board, "goal": q.goal, "pInvaders": (q.p_invaders * 1000.0).round() / 1000.0 })).collect::<Vec<_>>(),
                 })).collect::<Vec<_>>(),
                 "plays": x.playlog.iter().map(|p| serde_json::json!({
                     "r": p.round, "seat": id(&p.seat), "card": p.card, "use": p.use_, "dPresence": p.d_presence, "dStanding": p.d_standing,
-                    "dTrophies": p.d_trophies, "placed": p.placed, "closed": p.closed, "goal": p.goal, "pInvaders": (p.p_invaders * 1000.0).round() / 1000.0,
+                    "dTrophies": p.d_trophies, "placed": p.placed, "moved": p.moved, "closed": p.closed, "goal": p.goal, "pInvaders": (p.p_invaders * 1000.0).round() / 1000.0,
                 })).collect::<Vec<_>>(),
                 "moves": x.moves, "seconds": (x.seconds * 10.0).round() / 10.0,
             });

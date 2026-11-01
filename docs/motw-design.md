@@ -472,7 +472,7 @@ Detailed notes on how each game's mechanisms work are in Appendix C.
 
 ### 1.7 Game feel tuning (working notes)
 
-Working notes, not decisions: measurements and leads for how the game feels in play. **Direction (designer, 2026-10-29):** the board has gone stale; lean toward effective ways to make the game feel more dynamic and active again. Bot tuning is paused until this is worked through.
+Working notes, not decisions: measurements and leads for how the game feels in play. **The game report** (`node scripts/game-report.js [label=]log.jsonl ...`, 2026-10-31) measures a set of bot games (native runner logs) against each of the designer's preferences (1.2–1.4, this section, RV1, 3.15), flags misses against provisional targets, and sets runs side by side so a change shows which flags it moves. **Direction (designer, 2026-10-29):** the board has gone stale; lean toward effective ways to make the game feel more dynamic and active again. Bot tuning is paused until this is worked through.
 
 **Passing (2026-10-29; D29).** With passing on, the bots passed 8.6 times a round while holding cards: 62% deferrals (played later that round; waiting beat their best play by a median 0.46 value points, about 5% of a game) and 38% held to the round's end (about indifferent: cards not worth playing then). A seat that never passes lost about 6–9 win points a seat. Read: a strong tactic, but a stall (free waiting for the last word before the fights), not a crunchy choice. Off is now the default.
 
