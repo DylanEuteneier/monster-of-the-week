@@ -1642,6 +1642,7 @@ Actual changes to mechanisms and game structure.
 | **Elimination points** | *(Idea; working name.)* Points players earn from actions that cause invaders to eliminate one another. Decide the winner if the island wins, under one candidate end game. |
 | **Engine** | The module of pure functions that holds all the rules of the prototype. The server uses it to decide and the browser uses it to preview. |
 | **Faction** | One specific type within an archetype, such as Vampires or Aliens. Five factions are in play each game, one per archetype. |
+| **Faction favourite** | *(Term, designer, 2026-11-01; replaces "sway leader".)* The player with the most sway with a faction is its favourite. Affinity breaks a tie for the most (AB1); otherwise players tied for the most are all its favourites. |
 | **First claim** | *(Term, designer, 2026-11-01; replaces "leader".)* The player with the most sway at a location has first claim there: on the bigger pile of the dead when it fights. |
 | **Gather** | A card that draws tokens into its target from other locations. For the test lever `gatherSway` (designer, 2026-10-13), the gathers are Leave Out Fresh Meat, Set the Bait, Lay a Trail, Follow the Lights and Ring the Church Bell. |
 | **Group** | A set of candidates that reinforce each other, with a name and a code such as G1. Listed in Appendix E. |
@@ -1681,7 +1682,6 @@ Actual changes to mechanisms and game structure.
 | **Signature sway** | *(First draft; D24.)* A signature's sway: 1 for each card in your hand, itself included, with no cap. |
 | **Sway** | *(Idea.)* A player's standing with a faction: how much the faction has noticed their group, the pull the group's gambits (bait, traps, plans) have on it, and, for a group that backs the faction, its claim if that faction wins. Public. Held with several factions at once. It can be spent from a faction and placed on a location, where it counts as a bid for the trophies of a fight there. Never control: players don't command factions. |
 | **Sway cube** | *(Idea.)* A cube representing a player's sway with a faction. Cubes are only ever players'; factions have tokens; may be spent to take board actions. |
-| **Sway leader** | *(Idea.)* The player with the most sway with a faction. Affinity breaks a tie for the most (AB1); otherwise players tied for the most are all sway leaders. A player is never called a faction's leader. |
 | **Three-way fight** | *(First draft, through one card.)* A fight between three factions at one location, which only Wake the Dead (the ☾ signature) can cause: the largest wins, both losers lose everything, and the leader takes the two larger piles. |
 | **Tied fight** | *(Idea.)* A fight between two groups of the same size. Both are wiped out, unless one of the factions has affinity for the location, in which case it wins. |
 | **Token** | The physical piece representing invaders on the board: faction presence. Always represents a specific faction. Cubes are the players' pieces (sway); tokens are the factions'. Hidden tokens and bluff tokens are separate pieces. |
