@@ -35,8 +35,13 @@ const TARGETS = {
   patternVariety: [0.25, 1],       // * distinct vote patterns per game (not rote)
   raceGapClose: [0.35, 1],         // * invader endings with the top two factions within 2 at the end
   leaderR3Wins: [0, 0.85],         // * the faction race not settled by round 3
+  lastRoundFlip: [0.05, 0.5],      // designer (2026-10-31): 38% not a big worry; never (round 5 can't matter) or most games (it decides everything) would be
+  lateSwayOnly: [0.1, 0.65],       // designer (2026-10-31): 48% only mildly worrying; near all sway would be a worry
   sameTopFaction: [0, 0.3],        // designer (2026-10-31): the worry is every player bidding for the exact same faction
   lateOneFaction: [0, 0.6],        // the same: late standing gains not all in one faction
+  calibration: [0, 0.1],           // * bots' forecasts mean what they say
+  skillR3: [0.2, 1],               // * the bots read the game better than the base rate by round 3
+  goalGap: [0.1, 99],              // * invader-goal seats' plays add presence relative to island-goal seats'
   brierR4: [0, 0.2],               // designer (2026-10-31): a last-round flip is welcome, but not the only place the ending is decided
   occupiedR5: [8, 15],             // 1.7: the board empties (about 7 of 15 by round 5)
   fightsR5: [2.5, 99],             // 1.7: about 2 fights left by round 5
@@ -86,6 +91,10 @@ const measureAt = (g, r) => g.rounds[r - 1]?.seats.map((s) => (g.side === 'invad
 const leaderAtWins = (g, r) => { const m = measureAt(g, r); if (!m) return NaN; const top = Math.max(...m); return g.winners.some((w) => m[seatIdx(w)] === top) ? 1 : 0; };
 const forecasts = (g, r) => g.rounds[r - 1]?.seats.map((s) => s.pInvaders) ?? [];
 const nonClosing = (gs) => gs.flatMap((g) => g.plays.filter((p) => !p.closed));
+/** Forecast calibration: forecasts binned by tenths, the weighted gap between said and seen. */
+const calibration = (gs) => { const bins = Array.from({ length: 10 }, () => [0, 0]); for (const g of gs) for (const r of g.rounds) for (const s of r.seats) { const b = Math.min(9, Math.floor(s.pInvaders * 10)); bins[b][0] += s.pInvaders - (g.side === 'invaders' ? 1 : 0); bins[b][1]++; } const n = sum(bins.map((b) => b[1])); return sum(bins.map((b) => Math.abs(b[0]))) / n; };
+/** Brier skill after round r: 1 − Brier / the base rate's Brier. */
+const skill = (gs, r) => { const rate = share(gs, (g) => g.side === 'invaders'); const base = rate * (1 - rate); const b = mean(gs.flatMap((g) => forecasts(g, r).map((p) => (p - (g.side === 'invaders' ? 1 : 0)) ** 2))); return base ? 1 - b / base : NaN; };
 const swing = (p) => (p.moved ?? 0) + sum(p.dPresence.map((d) => Math.max(0, -d)));
 const isl = (gs) => gs.filter((g) => g.side !== 'invaders');
 
@@ -101,14 +110,14 @@ const MEASURES = [
   ['Every round matters', 'Rounds 1–3 all one side', 'RV1 not rote', (gs) => share(gs, (g) => new Set(roundSides(g).slice(0, 3)).size === 1), pct],
   ['Every round matters', 'Distinct round patterns per game', 'RV1 not rote', (gs) => new Set(gs.map((g) => roundSides(g).map((v) => v[1]).join(''))).size / gs.length, num(2), 'patternVariety'],
   ['Every round matters', 'Comebacks (side ahead after round 2 loses)', 'RV1; 1.1', (gs) => share(gs, (g) => { const s = roundSides(g).slice(0, 2); const a = s.filter((x) => x === 'invaders').length, b = s.length - a; return a !== b && (a > b ? 'invaders' : 'island') !== g.side; }), pct, 'comeback'],
-  ['Every round matters', 'Round 5 flipped the side (after round 4 → end)', 'designer: a last-round flip is welcome (information)', (gs) => share(gs.filter((g) => !isVotes(g)), (g) => (total(g.rounds[3]?.afterFights ?? [0]) > defaultBar) !== (g.side === 'invaders')), pct],
+  ['Every round matters', 'Round 5 flipped the side (after round 4 → end)', 'designer: a last-round flip is welcome; never or almost always is a worry', (gs) => share(gs.filter((g) => !isVotes(g)), (g) => (total(g.rounds[3]?.afterFights ?? [0]) > defaultBar) !== (g.side === 'invaders')), pct, 'lastRoundFlip'],
   ['Every round matters', 'Forecast error after round 4 (Brier; low = rounds 1–4 shaped the ending)', 'designer: round 5 may flip it, but not the only place it\'s decided', (gs) => mean(gs.flatMap((g) => forecasts(g, 4).map((p) => (p - (g.side === 'invaders' ? 1 : 0)) ** 2))), num(2), 'brierR4'],
   ['Every round matters', 'Invader share of each round\'s side, R1–R5', 'RV1 (where the arc sits)', (gs) => list([0, 1, 2, 3, 4].map((r) => share(gs.filter((g) => roundSides(g)[r]), (g) => roundSides(g)[r] === 'invaders') * 100)), String],
 
   ['Invader ending', 'Top two factions within 2 at the end', '3.15 concern: not a plain sway race', (gs) => share(inv(gs), (g) => { const p = [...g.rounds.at(-1).afterFights].sort((a, b) => b - a); return p[0] - p[1] <= 2; }), pct, 'raceGapClose'],
   ['Invader ending', 'Winning faction led after round 3', '3.15 concern', (gs) => share(inv(gs), (g) => leaders(g.rounds[2]?.afterFights ?? [0]).some((i) => winIdx(g).includes(i))), pct, 'leaderR3Wins'],
   ['Invader ending', 'Lead changes per game (median)', '3.15 concern', (gs) => median(inv(gs).map((g) => { const l = g.rounds.map((r) => leaders(r.afterFights).join()); return l.filter((x, i) => i && x !== l[i - 1]).length; })), num(1)],
-  ['Invader ending', 'Late plays (R4–5, invaders likely) only sway or standing', '3.15 concern', (gs) => { const ps = inv(gs).flatMap((g) => g.plays.filter((p) => p.r >= 4 && p.pInvaders >= 0.7)); return share(ps, (p) => p.use === 'sway' || (!p.closed && !p.moved && !p.dPresence.some(Boolean) && (p.dStanding.some(Boolean) || p.placed > 0))); }, pct],
+  ['Invader ending', 'Late plays (R4–5, invaders likely) only sway or standing', '3.15 concern', (gs) => { const ps = inv(gs).flatMap((g) => g.plays.filter((p) => p.r >= 4 && p.pInvaders >= 0.7)); return share(ps, (p) => p.use === 'sway' || (!p.closed && !p.moved && !p.dPresence.some(Boolean) && (p.dStanding.some(Boolean) || p.placed > 0))); }, pct, 'lateSwayOnly'],
   ['Invader ending', 'Every seat\'s top faction the same after round 4', 'designer: not one sway bid for a single faction', (gs) => share(inv(gs), (g) => new Set(g.rounds[3].seats.map((s) => s.standing.indexOf(Math.max(...s.standing)))).size === 1), pct, 'sameTopFaction'],
   ['Invader ending', 'Seats\' top factions after round 4 (median distinct)', 'designer: players backing different factions', (gs) => median(inv(gs).map((g) => new Set(g.rounds[3].seats.map((s) => s.standing.indexOf(Math.max(...s.standing)))).size)), num(1)],
   ['Invader ending', 'Late standing gains in a single faction (largest share, median)', 'designer: not one sway bid for a single faction', (gs) => median(inv(gs).map((g) => { const by = [0, 0, 0, 0, 0]; for (const p of g.plays) if (p.r >= 4 && !p.closed) p.dStanding.forEach((d, i) => { if (d > 0) by[i] += d; }); return Math.max(...by) / Math.max(1, sum(by)); })), pct, 'lateOneFaction'],
@@ -151,6 +160,16 @@ const MEASURES = [
 
   ['Read the table', 'Goal switches per seat (mean)', '1.2 read the table', (gs) => mean(gs.flatMap((g) => g.rounds[0].seats.map((_, i) => { const s = g.rounds.map((r) => r.seats[i].goal).filter(Boolean); return s.filter((x, j) => j && x !== s[j - 1]).length; }))), num(2)],
   ['Read the table', 'Seats split between endings after round 3', '1.1 players pull both ways', (gs) => share(gs, (g) => new Set(g.rounds[2]?.seats.map((s) => s.goal).filter(Boolean)).size > 1), pct, 'splitR3'],
+
+  ['Bot quality', 'Forecast calibration error (all rounds; 0 = says 70%, happens 70%)', 'do the bots read the game right?', (gs) => calibration(gs), num(2), 'calibration'],
+  ['Bot quality', 'Forecast skill over the base rate, R1–R5 (1 = perfect, 0 = no better than always guessing the usual split)', 'predictions improve as the game unfolds', (gs) => [1, 2, 3, 4, 5].map((r) => num(2)(skill(gs, r))).join(' / '), String],
+  ['Bot quality', 'Forecast skill after round 3', 'the bots see where the game is going', (gs) => skill(gs, 3), num(2), 'skillR3'],
+  ['Bot quality', 'Seats whose final goal was the ending that happened', 'they back the right side', (gs) => share(gs.flatMap((g) => g.rounds.at(-1).seats.filter((s) => s.goal).map((s) => s.goal === g.side)), Boolean), pct],
+  ['Bot quality', 'Win rate: final goal right vs wrong', 'the goal drives winning (not luck)', (gs) => { const r = [[0, 0], [0, 0]]; for (const g of gs) g.rounds.at(-1).seats.forEach((s, i) => { if (!s.goal) return; const k = s.goal === g.side ? 0 : 1; r[k][0]++; if (g.winners.includes(`P${i + 1}`)) r[k][1]++; }); return `${pct(r[0][1] / r[0][0])} vs ${pct(r[1][1] / r[1][0])}`; }, String],
+  ['Bot quality', 'Net presence per play: invader-goal vs island-goal seats', 'plays push toward the seat\'s goal', (gs) => { const by = { invaders: [], island: [] }; for (const p of nonClosing(gs)) if (p.goal) by[p.goal].push(sum(p.dPresence)); return `${num(2)(mean(by.invaders))} vs ${num(2)(mean(by.island))}`; }, String],
+  ['Bot quality', 'Goal-consistent presence gap (invader-goal minus island-goal, per play)', 'plays push toward the seat\'s goal', (gs) => { const by = { invaders: [], island: [] }; for (const p of nonClosing(gs)) if (p.goal) by[p.goal].push(sum(p.dPresence)); return mean(by.invaders) - mean(by.island); }, num(2), 'goalGap'],
+  ['Bot quality', 'Invader backers\' late standing in the faction that won (share, vs chance)', 'they back the right faction', (gs) => { const xs = [], ch = []; for (const g of inv(gs)) { const w = winIdx(g); const alive = g.rounds[3].afterFights.filter((x) => x > 0).length || 5; for (const p of g.plays) { if (p.r < 4 || p.closed || p.goal !== 'invaders') continue; const up = p.dStanding.map((d) => Math.max(0, d)); const s = sum(up); if (!s) continue; xs.push(sum(w.map((i) => up[i])) / s); ch.push(w.length / alive); } } return `${pct(mean(xs))} vs ${pct(mean(ch))}`; }, String],
+  ['Bot quality', 'Bots\' win share against random seats (per seat, vs fair share)', 'strategy beats chance', (gs) => { const t = gs.filter((g) => Object.values(g.seats).includes('random')); if (!t.length) return 'no random seats (add profile random)'; let n = 0, w = 0, fair = 0; for (const g of t) for (const [seat, prof] of Object.entries(g.seats)) if (prof !== 'random') { n++; fair += 1 / Object.keys(g.seats).length; if (g.winners.includes(seat)) w++; } return `${pct(w / n)} vs ${pct(fair / n)}`; }, String],
 
   ['Fair', 'Win share spread between seats (max − min)', '* fairness', (gs) => { const n = gs[0].rounds[0].seats.length; const w = Array.from({ length: n }, (_, i) => share(gs, (g) => g.winners.includes(`P${i + 1}`))); return Math.max(...w) - Math.min(...w); }, pct, 'seatSpread'],
   ['Fair', 'Round 1\'s first player wins', 'D44 (random opener)', (gs) => share(gs.filter((g) => g.rounds[0].first), (g) => g.winners.includes(g.rounds[0].first)), pct],

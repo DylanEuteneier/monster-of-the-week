@@ -808,6 +808,58 @@ pub fn bot_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option
     play_move(s, pid, rng, profile, memory, seats, None)
 }
 
+/// The `random` profile, a baseline for measuring the bots (does their play beat chance?): every choice uniformly at
+/// random among the legal ones the bots consider. Never a default.
+fn random_move(s: &GameState, pid: Pid, rng: Rng) -> Option<Move> {
+    let me = pid as usize;
+    let pick = |n: usize, rng: &mut dyn FnMut() -> f64| ((rng() * n as f64) as usize).min(n.saturating_sub(1));
+    match s.phase {
+        Phase::Draft => {
+            let p = &s.players[me];
+            if p.picked {
+                return None;
+            }
+            let mut pool: Vec<CardIx> = p.kept.iter().chain(p.batch.iter()).copied().collect();
+            let mut keep = Vec::new();
+            while keep.len() < p.kept.len() + 1 && !pool.is_empty() {
+                let i = pick(pool.len(), &mut *rng);
+                keep.push(pool.swap_remove(i));
+            }
+            let m = Move::Pick { keep };
+            if legal(s, pid, &m) { Some(m) } else { None }
+        }
+        Phase::Growth => {
+            let g = s.growing.as_ref()?;
+            if g.leaders[g.next as usize % g.leaders.len()] != pid {
+                return None;
+            }
+            let ls: Vec<Loc> = g.due.keys().collect();
+            Some(Move::Grow { location: ls[pick(ls.len(), &mut *rng)] })
+        }
+        Phase::Night => {
+            let n = s.night.as_ref()?;
+            if n.player != pid {
+                return None;
+            }
+            let mut ms = night_moves(s, n.left[0]);
+            let i = pick(ms.len(), &mut *rng);
+            Some(ms.swap_remove(i))
+        }
+        Phase::Play => {
+            if s.turn != me {
+                return None;
+            }
+            let mut ms = candidates(s, pid, rng, SEARCH_TARGETS, false, false, None, None);
+            if ms.is_empty() {
+                return None;
+            }
+            let i = pick(ms.len(), &mut *rng);
+            Some(ms.swap_remove(i))
+        }
+        Phase::Ended => None,
+    }
+}
+
 /// The bot's best move with a chosen card, extending the target chosen so far (for hints that follow the player's
 /// choice, designer 2026-10-28): a card alone, its best use (action, sway or bringing tokens back); a reading or
 /// part of a target, the best action that goes on from there. None if no such move is legal.
@@ -850,6 +902,9 @@ fn fits(m: &Move, card: CardIx, so_far: &Target) -> bool {
 
 fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&mut BotMemory>, seats: &Seats, focus: Option<(CardIx, &Target)>) -> Option<Move> {
     let me = pid as usize;
+    if profile == "random" {
+        return random_move(s, pid, rng);
+    }
     let persona = persona_of(profile);
     let mut memory = memory;
     let goal = persona.as_ref().map(|p| choose_goal(s, pid, p, memory.as_deref_mut(), &mut *rng));
