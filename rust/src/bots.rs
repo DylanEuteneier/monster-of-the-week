@@ -416,15 +416,19 @@ fn invaders_reach(s: &GameState, projected: f64, threshold: f64, spread_p: f64, 
     if !s.options.round_votes {
         return sigmoid((projected - threshold - 0.5 + push) / spread_p);
     }
-    let left = (s.options.rounds - s.votes[0] - s.votes[1]).max(0) as usize;
-    let need = (s.options.rounds / 2 + 1 - s.votes[0]).max(0) as usize;
-    let mut dp = vec![0.0f64; left + 1];
+    // Rounds closed so far (each vote 1 until the last round, which ends the game); the last round left may count more.
+    let closed = (s.votes[0] + s.votes[1]).min(s.options.rounds);
+    let left = (s.options.rounds - closed).max(0) as usize;
+    let need = (s.options.votes_total() / 2 + 1 - s.votes[0]).max(0) as usize;
+    let most = (s.options.votes_total() - closed).max(0) as usize;
+    let mut dp = vec![0.0f64; most + 1];
     dp[0] = 1.0;
     for k in 0..left {
+        let w = s.options.vote_weight(closed + 1 + k as i32) as usize;
         let shift = if paced { push * (k as f64 + 1.0) } else { push };
         let q = sigmoid((projected - threshold - 0.5 + shift) / (2.0 + 3.0 * k as f64));
-        for j in (0..=k + 1).rev() {
-            dp[j] = dp[j] * (1.0 - q) + if j > 0 { dp[j - 1] * q } else { 0.0 };
+        for j in (0..=most).rev() {
+            dp[j] = dp[j] * (1.0 - q) + if j >= w { dp[j - w] * q } else { 0.0 };
         }
     }
     dp.iter().enumerate().filter(|(j, _)| *j >= need).map(|(_, p)| p).sum()
@@ -616,7 +620,7 @@ pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bot
     let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach(s, c.projected, c.threshold, c.spread_p, push, paced);
     let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach(s, c.projected, c.threshold, c.spread_p, -push, paced));
     // Paced: the lean fades as the tally nears a majority (0 at 0-0, 1 once a side has it), not with the round.
-    let majority = (s.options.rounds / 2 + 1).max(1) as f64;
+    let majority = (s.options.votes_total() / 2 + 1).max(1) as f64;
     let settled = if paced && on(p.tally) { (s.votes[0].max(s.votes[1]) as f64 / majority).min(1.0) } else { c.settled };
     let evidence = reach_inv * c.as_invaders - reach_isl * c.as_island;
     let mut memory = memory;

@@ -188,6 +188,8 @@ pub struct Options {
     pub round_votes: bool,
     /// ...and the game ends as soon as one side holds a majority of the rounds (designer, 2026-10-31: a variant).
     pub votes_early: bool,
+    /// The last round's vote counts this many (designer's seed, 2026-11-01; variant lastVote, 1 or 3).
+    pub last_vote: i32,
     pub growth: i32,
     pub faction_tokens: i32,
     pub player_cubes: i32,
@@ -217,6 +219,14 @@ pub struct Options {
 }
 
 impl Options {
+    /// Rounds as votes: every round's vote counts 1 but the last's, which counts `last_vote`.
+    pub fn vote_weight(&self, round: i32) -> i32 {
+        if round >= self.rounds { self.last_vote } else { 1 }
+    }
+    /// All the votes in a game (five rounds, the last worth 3: 7).
+    pub fn votes_total(&self) -> i32 {
+        (self.rounds - 1).max(0) + self.last_vote
+    }
     /// Resolves raw choices (unknown variants or choices are an error, as resolveOptions); absent ones take the default.
     pub fn resolve(raw: &[(String, String)]) -> Result<Options, String> {
         let sp = spec();
@@ -241,6 +251,7 @@ impl Options {
             last_growth: get("lastGrowth") == "on",
             round_votes: matches!(get("roundVotes"), "on" | "early"),
             votes_early: get("roundVotes") == "early",
+            last_vote: num("lastVote").max(1),
             growth: if get("growth") == "off" { i32::MAX } else { num("growth") },
             faction_tokens: num("factionTokens"),
             player_cubes: num("playerCubes"),

@@ -364,10 +364,10 @@ fn close_round(s: &mut GameState) {
     if s.options.round_votes {
         let (total, bar) = (total_presence(s), s.options.threshold);
         let over = total > bar;
-        s.votes[if over { 0 } else { 1 }] += 1;
+        s.votes[if over { 0 } else { 1 }] += s.options.vote_weight(s.round);
         let (a, b) = (s.votes[0], s.votes[1]);
         log_line(s, |_| format!("Round's vote: presence {total} is {} {bar}: {}. Invaders {a}, island {b}.", if over { "more than" } else { "not more than" }, if over { "the invaders" } else { "the island" }));
-        if s.options.votes_early && a.max(b) > s.options.rounds / 2 {
+        if s.options.votes_early && a.max(b) > s.options.votes_total() / 2 {
             end_game(s);
             return;
         }

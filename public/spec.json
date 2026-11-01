@@ -961,6 +961,24 @@
       ]
     },
     {
+      "id": "lastVote",
+      "label": "Last round's vote",
+      "description": "Designer's seed (2026-11-01; testing): with rounds as votes, the last round's vote counts this many. 3: seven votes, no ties; round 5 decides unless a side took all of rounds 1–4. (2 needs a tie rule, not yet set.)",
+      "default": "1",
+      "choices": [
+        {
+          "id": "1",
+          "label": "1",
+          "description": ""
+        },
+        {
+          "id": "3",
+          "label": "3",
+          "description": ""
+        }
+      ]
+    },
+    {
       "id": "lastGrowth",
       "label": "Monsters grow after the last round",
       "description": "D41 (designer, 2026-10-31): the last round's monsters don't grow: the game ends after its fights, with no nightfall tokens or growth. On restores them.",
