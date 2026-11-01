@@ -177,6 +177,9 @@ pub enum SwayTokens {
     Nightfall,
 }
 
+/// A faction's pool when unlimited (D46): more than any game can take.
+pub const UNLIMITED: i32 = 999;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Options {
     pub raw: Vec<(String, String)>,
@@ -253,7 +256,8 @@ impl Options {
             votes_early: get("roundVotes") == "early",
             last_vote: num("lastVote").max(1),
             growth: if get("growth") == "off" { i32::MAX } else { num("growth") },
-            faction_tokens: num("factionTokens"),
+            // Unlimited (D46): a pool too big to run dry.
+            faction_tokens: if get("factionTokens") == "unlimited" { UNLIMITED } else { num("factionTokens") },
             player_cubes: num("playerCubes"),
             start_sway: num("startSway"),
             start_others: num("startOthers"),

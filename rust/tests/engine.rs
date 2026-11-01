@@ -217,7 +217,7 @@ fn seeding_home_puts_5_1_1_of_each_faction_on_its_own_locations() {
     let x = v(&s);
     for f in factions(&s) {
         assert_eq!(presence(&s, &f), 7);
-        assert_eq!(x["supply"][&f], 23); // 30 a faction (D33)
+        assert_eq!(x["supply"][&f], 999 - 7); // unlimited pools (D46)
         for (loc, arch) in locs() {
             if x["board"][&loc]["tokens"][&f].as_i64().unwrap_or(0) > 0 {
                 assert_eq!(arch, arch_of_faction(&f));

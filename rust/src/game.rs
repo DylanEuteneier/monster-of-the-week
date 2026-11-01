@@ -367,7 +367,9 @@ fn close_round(s: &mut GameState) {
         s.votes[if over { 0 } else { 1 }] += s.options.vote_weight(s.round);
         let (a, b) = (s.votes[0], s.votes[1]);
         log_line(s, |_| format!("Round's vote: presence {total} is {} {bar}: {}. Invaders {a}, island {b}.", if over { "more than" } else { "not more than" }, if over { "the invaders" } else { "the island" }));
-        if s.options.votes_early && a.max(b) > s.options.votes_total() / 2 {
+        // The invaders need strictly more votes (designer, 2026-11-01): a tie goes to the island.
+        let total = s.options.votes_total();
+        if s.options.votes_early && (a > total / 2 || b >= (total + 1) / 2) {
             end_game(s);
             return;
         }
@@ -794,7 +796,7 @@ fn end_game(s: &mut GameState) {
     let total = total_presence(s);
     let threshold = s.options.threshold;
     let n = s.n();
-    // Rounds as votes: the side with more rounds wins (five rounds: no tie; a tie would go to the island).
+    // Rounds as votes: the invaders need strictly more votes; a tie goes to the island (designer, 2026-11-01).
     let invaders = if s.options.round_votes { s.votes[0] > s.votes[1] } else { total > threshold };
     if invaders {
         // TH1: the invaders win; most presence, then most locations controlled (FX1), else they win together (FX2).

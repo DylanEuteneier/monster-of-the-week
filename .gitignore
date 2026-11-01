@@ -9,3 +9,4 @@ __pycache__/
 .tuning/
 rust/target/
 rust/target-dev/
+rust/target-pool/

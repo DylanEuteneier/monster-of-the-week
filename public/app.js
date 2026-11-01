@@ -603,7 +603,7 @@ function factionTable(lit) {
     const on = lit.factions.includes(f);
     return `<div class="faction-row${on ? ' is-candidate' : ''}" data-faction="${esc(f)}"${on ? ' data-action="pick-faction"' : ''}>
       <span class="faction-id cell-id">${tokenHtml(f, 2, on ? 'candidate' : '')}<span><b>${esc(faction.name)}</b><span class="small muted suit-line">${suitIcon(arch?.id)} ${esc(arch?.name ?? '')}</span></span></span>
-      <span class="faction-cell cell-supply" data-label="Supply"><span class="supply-row" title="${view.supply[f]} in supply">${pile(view.supply[f], () => tokenHtml(f, 1))}</span></span>
+      <span class="faction-cell cell-supply" data-label="Supply">${view.supply[f] >= 500 ? `<span class="supply-row" title="Unlimited supply">${tokenHtml(f, 1)}<b class="pile-count">×∞</b></span>` : `<span class="supply-row" title="${view.supply[f]} in supply">${pile(view.supply[f], () => tokenHtml(f, 1))}</span>`}</span>
       <span class="faction-cell cell-sway" data-label="Sway"><span class="standing-row">${sway || '<span class="small muted">—</span>'}</span></span>
     </div>`;
   });

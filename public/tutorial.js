@@ -166,7 +166,7 @@ function once(key) {
  */
 
 /** A run of pieces, with a count once it's long. @param {number} n @param {() => string} piece @param {number} [cap] */
-const run = (n, piece, cap = 8) => (n > cap ? `${Array.from({ length: cap }, piece).join('')}<b class="tut-count">×${n}</b>` : Array.from({ length: n }, piece).join(''));
+const run = (n, piece, cap = 8) => (n > cap ? `${Array.from({ length: cap }, piece).join('')}<b class="tut-count">×${n >= 500 ? '∞' : n}</b>` : Array.from({ length: n }, piece).join(''));
 
 /** A card in a scene's hand: its suit, name and printed sway, small. @param {string} id @param {boolean} [on] */
 function miniCard(id, on = false) {

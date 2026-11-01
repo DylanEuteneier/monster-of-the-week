@@ -963,12 +963,17 @@
     {
       "id": "lastVote",
       "label": "Last round's vote",
-      "description": "Designer's seed (2026-11-01; testing): with rounds as votes, the last round's vote counts this many. 3: seven votes, no ties; round 5 decides unless a side took all of rounds 1–4. (2 needs a tie rule, not yet set.)",
+      "description": "Designer's seed (2026-11-01; testing): with rounds as votes, the last round's vote counts this many. 2: six votes; the invaders need strictly more, so 3–3 goes to the island (designer). 3: seven votes, no ties.",
       "default": "1",
       "choices": [
         {
           "id": "1",
           "label": "1",
+          "description": ""
+        },
+        {
+          "id": "2",
+          "label": "2",
           "description": ""
         },
         {
@@ -1151,8 +1156,8 @@
     {
       "id": "factionTokens",
       "label": "Tokens per faction",
-      "description": "Each faction's tokens, board and supply together (G.7). 30 by default from D33 (2026-10-29); 20 since D42 (designer, 2026-10-31).",
-      "default": "30",
+      "description": "Each faction's tokens, board and supply together (G.7). Unlimited by default since D46 (designer, 2026-11-01: a faction's supply never runs out); 30 from D33, 20 under D42, the numbers kept to test.",
+      "default": "unlimited",
       "choices": [
         {
           "id": "15",
@@ -1182,6 +1187,11 @@
         {
           "id": "50",
           "label": "50",
+          "description": ""
+        },
+        {
+          "id": "unlimited",
+          "label": "Unlimited",
           "description": ""
         }
       ]
