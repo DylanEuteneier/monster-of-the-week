@@ -39,6 +39,9 @@ const TARGETS = {
   lateSwayOnly: [0.1, 0.65],       // designer (2026-10-31): 48% only mildly worrying; near all sway would be a worry
   round5Decides: [0.15, 0.5],      // designer (2026-11-01): round 5 never deciding the ending is the top worry under votes
   canBig: [0.3, 1],                // * a big play is often on offer
+  lastR3Wins: [0.1, 1],            // designer (2026-11-01): comebacks matter more than big plays
+  lastR4Wins: [0.05, 1],           // the same, into round 5
+  frontChanges: [1.5, 99],         // * the player in front changes hands
   sameTopFaction: [0, 0.3],        // designer (2026-10-31): the worry is every player bidding for the exact same faction
   lateOneFaction: [0, 0.6],        // the same: late standing gains not all in one faction
   calibration: [0, 0.1],           // * bots' forecasts mean what they say
@@ -136,6 +139,11 @@ const MEASURES = [
   ['Island ending', 'Winner\'s trophies spread over factions (median count)', 'read the table (many fights matter)', (gs) => median(isl(gs).flatMap((g) => g.winners.map((w) => g.rounds.at(-1).seats[seatIdx(w)].trophies.filter((x) => x > 0).length))), num(1)],
   ['Island ending', 'Island winning margin (median)', '1.4 knife\'s edge', (gs) => median(isl(gs).map((g) => { const s = [...g.scores].sort((a, b) => b - a); return s[0] - (s[1] ?? 0); })), num(1)],
   ['Close games', 'Winning margin over second (median, both endings)', '1.4 knife\'s edge', (gs) => median(gs.map((g) => { const s = [...g.scores].sort((a, b) => b - a); return s[0] - (s[1] ?? 0); })), num(1)],
+  ['Agency and comebacks', 'Player in front after rounds 2 / 3 / 4 goes on to win', 'designer: no runaway frontrunner', (gs) => [2, 3, 4].map((r) => pct(mean(gs.map((g) => inFrontWins(g, r))))).join(' / '), String],
+  ['Agency and comebacks', 'Player in last place after round 3 wins', 'designer: a comeback is possible', (gs) => mean(gs.map((g) => { const m = measureAt(g, 3); if (!m) return NaN; const low = Math.min(...m); return low < Math.max(...m) && g.winners.some((w) => m[seatIdx(w)] === low) ? 1 : 0; })), pct, 'lastR3Wins'],
+  ['Agency and comebacks', 'Player in last place after round 4 wins', 'designer: a comeback in round 5', (gs) => mean(gs.map((g) => { const m = measureAt(g, 4); if (!m) return NaN; const low = Math.min(...m); return low < Math.max(...m) && g.winners.some((w) => m[seatIdx(w)] === low) ? 1 : 0; })), pct, 'lastR4Wins'],
+  ['Agency and comebacks', 'Gap between first and second after rounds 2 / 3 / 4 (mean)', 'designer: no runaway frontrunner (a growing gap is one)', (gs) => [2, 3, 4].map((r) => num(1)(mean(gs.map((g) => { const m = [...(measureAt(g, r) ?? [])].sort((a, b) => b - a); return m.length > 1 ? m[0] - m[1] : NaN; })))).join(' / '), String],
+  ['Agency and comebacks', 'Changes of the player in front per game (mean)', 'designer: fortunes change', (gs) => mean(gs.map((g) => { const l = [1, 2, 3, 4, 5].map((r) => { const m = measureAt(g, r) ?? []; const top = Math.max(...m); return m.map((x, i) => (x === top ? i : -1)).filter((i) => i >= 0).join(); }); return l.filter((x, i) => i && x !== l[i - 1]).length; })), num(1), 'frontChanges'],
   ['Close games', 'Won by 1 or less (or tied)', '1.4 knife\'s edge', (gs) => share(gs, (g) => { const s = [...g.scores].sort((a, b) => b - a); return s[0] - (s[1] ?? 0) <= 1; }), pct, 'closeFinish'],
   ['Close games', 'Player in front (under the final ending, TS2 / EG3) after round 4 wins', 'the last round can still change who wins', (gs) => mean(gs.map((g) => inFrontWins(g, 4))), pct, 'inFrontR4'],
   ['Close games', 'Last place within 3 of first (score)', 'everyone in it to the end', (gs) => share(gs, (g) => Math.max(...g.scores) - Math.min(...g.scores) <= 3), pct],
