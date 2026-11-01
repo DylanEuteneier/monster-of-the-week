@@ -237,7 +237,7 @@ fn board_value(s: &GameState) -> Value {
 fn growing_value(s: &GameState) -> Value {
     match &s.growing {
         None => Value::Null,
-        Some(g) => json!({ "faction": fid(&s.factions, g.faction), "left": g.left, "leaders": g.leaders.iter().map(|&p| s.seating[p as usize].clone()).collect::<Vec<_>>(), "next": g.next, "due": omap_loc(&g.due) }),
+        Some(g) => json!({ "faction": fid(&s.factions, g.faction), "left": g.left, "favourites": g.favourites.iter().map(|&p| s.seating[p as usize].clone()).collect::<Vec<_>>(), "next": g.next, "due": omap_loc(&g.due) }),
     }
 }
 fn night_value(s: &GameState) -> Value {
@@ -362,7 +362,7 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
         Value::Object(g) => Some(Growing {
             faction: slot(g["faction"].as_str().unwrap_or("")).ok_or("unknown faction")?,
             left: g["left"].as_i64().unwrap_or(0) as i32,
-            leaders: g["leaders"].as_array().map(|a| a.iter().filter_map(|x| x.as_str().and_then(pid)).collect()).unwrap_or_default(),
+            favourites: g.get("favourites").or_else(|| g.get("leaders")).and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_str().and_then(pid)).collect()).unwrap_or_default(),
             next: g["next"].as_i64().unwrap_or(0) as i32,
             due: omap_from(&g["due"], |k| sp.loc_ix(k))?,
         }),

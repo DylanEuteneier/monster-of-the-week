@@ -34,7 +34,7 @@ const TARGETS = {
   comeback: [0.15, 1],             // * the side ahead after round 2 loses at least sometimes
   patternVariety: [0.25, 1],       // * distinct vote patterns per game (not rote)
   raceGapClose: [0.35, 1],         // * invader endings with the top two factions within 2 at the end
-  leaderR3Wins: [0, 0.85],         // * the faction race not settled by round 3
+  strongestR3Wins: [0, 0.85],         // * the faction race not settled by round 3
   lastRoundFlip: [0.05, 0.5],      // designer (2026-10-31): 38% not a big worry; never (round 5 can't matter) or most games (it decides everything) would be
   lateSwayOnly: [0.1, 0.65],       // designer (2026-10-31): 48% only mildly worrying; near all sway would be a worry
   round5Decides: [0.15, 0.5],      // designer (2026-11-01): round 5 never deciding the ending is the top worry under votes
@@ -53,9 +53,9 @@ const TARGETS = {
   seatSpread: [0, 0.15],           // * win share spread between seats (fairness)
   certaintyR3: [0, 0.3],           // * the forecast after round 3 not near-certain
   brierR3: [0.1, 0.25],            // * the outcome readable but not obvious after round 3
-  leaderR3Island: [0, 0.8],        // * the trophy race open after round 3
+  inFrontR3Island: [0, 0.8],        // * the trophy race open after round 3
   closeFinish: [0.3, 1],           // * close finishes common
-  leaderR4: [0, 0.85],             // designer: the last round matters but can't decide everything; leader can still lose
+  inFrontR4: [0, 0.85],             // designer: the last round matters but can't decide everything; the player in front can still lose
   weakCards: [0, 3],               // * few cards that rarely change the board
   swingSize: [2, 99],              // * a board play moves enough to matter
   bigPlays: [0.1, 1],              // * some plays swing big
@@ -67,7 +67,7 @@ const median = (xs) => { if (!xs.length) return NaN; const s = [...xs].sort((a, 
 const share = (xs, f) => (xs.length ? xs.filter(f).length / xs.length : NaN);
 const sum = (xs) => xs.reduce((a, b) => a + b, 0);
 const total = (p) => sum(p);
-const leaders = (p) => { const m = Math.max(...p); return p.map((x, i) => (x === m ? i : -1)).filter((i) => i >= 0); };
+const strongest = (p) => { const m = Math.max(...p); return p.map((x, i) => (x === m ? i : -1)).filter((i) => i >= 0); };
 const isVotes = (g) => (g.votes ?? []).length > 0;
 const winIdx = (g) => g.wonBy.map((f) => g.factions.indexOf(f));
 
@@ -90,8 +90,8 @@ const seatIdx = (s) => Number(s.slice(1)) - 1;
 /** Each seat's score by the ending's own rule, as it stood after round r (1-based): on the island's ending its weakest
  *  colour of trophies (TS2); on the invaders', standing with the winning faction(s) less that faction's trophies (EG3). */
 const measureAt = (g, r) => g.rounds[r - 1]?.seats.map((s) => (g.side === 'invaders' ? sum(winIdx(g).map((i) => s.standing[i] - s.trophies[i])) : Math.min(...s.trophies)));
-/** Did the leader after round r win? Shared leads count by share (3 tied, one of them won: ⅓). */
-const leaderAtWins = (g, r) => { const m = measureAt(g, r); if (!m) return NaN; const top = Math.max(...m); const lead = m.filter((x) => x === top).length; return g.winners.filter((w) => m[seatIdx(w)] === top).length / lead; };
+/** Did the player in front after round r win? Players tied in front count by share (3 tied, one of them won: ⅓). */
+const inFrontWins = (g, r) => { const m = measureAt(g, r); if (!m) return NaN; const top = Math.max(...m); const tied = m.filter((x) => x === top).length; return g.winners.filter((w) => m[seatIdx(w)] === top).length / tied; };
 const forecasts = (g, r) => g.rounds[r - 1]?.seats.map((s) => s.pInvaders) ?? [];
 const nonClosing = (gs) => gs.flatMap((g) => g.plays.filter((p) => !p.closed));
 /** Forecast calibration: forecasts binned by tenths, the weighted gap between said and seen. */
@@ -119,22 +119,22 @@ const MEASURES = [
   ['Every round matters', 'Invader share of each round\'s side, R1–R5', 'RV1 (where the arc sits)', (gs) => list([0, 1, 2, 3, 4].map((r) => share(gs.filter((g) => roundSides(g)[r]), (g) => roundSides(g)[r] === 'invaders') * 100)), String],
 
   ['Invader ending', 'Top two factions within 2 at the end', '3.15 concern: not a plain sway race', (gs) => share(inv(gs), (g) => { const p = [...g.rounds.at(-1).afterFights].sort((a, b) => b - a); return p[0] - p[1] <= 2; }), pct, 'raceGapClose'],
-  ['Invader ending', 'Strongest faction after round 3 is the one that won', '3.15 concern', (gs) => share(inv(gs), (g) => leaders(g.rounds[2]?.afterFights ?? [0]).some((i) => winIdx(g).includes(i))), pct, 'leaderR3Wins'],
-  ['Invader ending', 'Changes of strongest faction per game (median)', '3.15 concern', (gs) => median(inv(gs).map((g) => { const l = g.rounds.map((r) => leaders(r.afterFights).join()); return l.filter((x, i) => i && x !== l[i - 1]).length; })), num(1)],
+  ['Invader ending', 'Strongest faction after round 3 is the one that won', '3.15 concern', (gs) => share(inv(gs), (g) => strongest(g.rounds[2]?.afterFights ?? [0]).some((i) => winIdx(g).includes(i))), pct, 'strongestR3Wins'],
+  ['Invader ending', 'Changes of strongest faction per game (median)', '3.15 concern', (gs) => median(inv(gs).map((g) => { const l = g.rounds.map((r) => strongest(r.afterFights).join()); return l.filter((x, i) => i && x !== l[i - 1]).length; })), num(1)],
   ['Invader ending', 'Late plays (R4–5, invaders likely) only sway or standing', '3.15 concern', (gs) => { const ps = inv(gs).flatMap((g) => g.plays.filter((p) => p.r >= 4 && p.pInvaders >= 0.7)); return share(ps, (p) => p.use === 'sway' || (!p.closed && !p.moved && !p.dPresence.some(Boolean) && (p.dStanding.some(Boolean) || p.placed > 0))); }, pct, 'lateSwayOnly'],
   ['Invader ending', 'Every player\'s highest-standing faction the same after round 4', 'designer: not one sway bid for a single faction', (gs) => share(inv(gs), (g) => new Set(g.rounds[3].seats.map((s) => s.standing.indexOf(Math.max(...s.standing)))).size === 1), pct, 'sameTopFaction'],
   ['Invader ending', 'Distinct highest-standing factions among players after round 4 (median)', 'designer: players backing different factions', (gs) => median(inv(gs).map((g) => new Set(g.rounds[3].seats.map((s) => s.standing.indexOf(Math.max(...s.standing)))).size)), num(1)],
   ['Invader ending', 'Late standing gains in a single faction (largest share, median)', 'designer: not one sway bid for a single faction', (gs) => median(inv(gs).map((g) => { const by = [0, 0, 0, 0, 0]; for (const p of g.plays) if (p.r >= 4 && !p.closed) p.dStanding.forEach((d, i) => { if (d > 0) by[i] += d; }); return Math.max(...by) / Math.max(1, sum(by)); })), pct, 'lateOneFaction'],
-  ['Invader ending', 'Winners\' plays removing runner-up monsters (per game)', 'designer: cut one faction to lift another', (gs) => mean(inv(gs).map((g) => { const end = g.rounds.at(-1).afterFights; const w = winIdx(g); const second = [0, 1, 2, 3, 4].filter((i) => !w.includes(i)).sort((a, b) => end[b] - end[a])[0]; return sum(g.plays.filter((p) => !p.closed && g.winners.includes(p.seat)).map((p) => Math.max(0, -p.dPresence[second]))); })), num(1)],
+  ['Invader ending', 'Winners\' plays removing the second-strongest faction\'s monsters (per game)', 'designer: cut one faction to lift another', (gs) => mean(inv(gs).map((g) => { const end = g.rounds.at(-1).afterFights; const w = winIdx(g); const secondStrongest = [0, 1, 2, 3, 4].filter((i) => !w.includes(i)).sort((a, b) => end[b] - end[a])[0]; return sum(g.plays.filter((p) => !p.closed && g.winners.includes(p.seat)).map((p) => Math.max(0, -p.dPresence[secondStrongest]))); })), num(1)],
   ['Invader ending', 'Winners\' standing with the winning faction (share)', '3.15 concern', (gs) => median(inv(gs).flatMap((g) => g.winners.map((w) => { const st = g.rounds.at(-1).seats[Number(w.slice(1)) - 1].standing; return sum(winIdx(g).map((i) => st[i])) / Math.max(1, sum(st)); }))), pct],
 
   ['Island ending', 'Winning score (median)', 'weakest colour (TS2)', (gs) => median(isl(gs).map((g) => Math.max(...g.scores))), num(1)],
-  ['Island ending', 'Player in front on trophies (TS2) after round 3 wins (island games)', 'every round matters; close race', (gs) => mean(isl(gs).map((g) => leaderAtWins(g, 3))), pct, 'leaderR3Island'],
+  ['Island ending', 'Player in front on trophies (TS2) after round 3 wins (island games)', 'every round matters; close race', (gs) => mean(isl(gs).map((g) => inFrontWins(g, 3))), pct, 'inFrontR3Island'],
   ['Island ending', 'Winner\'s trophies spread over factions (median count)', 'read the table (many fights matter)', (gs) => median(isl(gs).flatMap((g) => g.winners.map((w) => g.rounds.at(-1).seats[seatIdx(w)].trophies.filter((x) => x > 0).length))), num(1)],
   ['Island ending', 'Island winning margin (median)', '1.4 knife\'s edge', (gs) => median(isl(gs).map((g) => { const s = [...g.scores].sort((a, b) => b - a); return s[0] - (s[1] ?? 0); })), num(1)],
   ['Close games', 'Winning margin over second (median, both endings)', '1.4 knife\'s edge', (gs) => median(gs.map((g) => { const s = [...g.scores].sort((a, b) => b - a); return s[0] - (s[1] ?? 0); })), num(1)],
   ['Close games', 'Won by 1 or less (or tied)', '1.4 knife\'s edge', (gs) => share(gs, (g) => { const s = [...g.scores].sort((a, b) => b - a); return s[0] - (s[1] ?? 0) <= 1; }), pct, 'closeFinish'],
-  ['Close games', 'Player in front (under the final ending, TS2 / EG3) after round 4 wins', 'the last round can still change who wins', (gs) => mean(gs.map((g) => leaderAtWins(g, 4))), pct, 'leaderR4'],
+  ['Close games', 'Player in front (under the final ending, TS2 / EG3) after round 4 wins', 'the last round can still change who wins', (gs) => mean(gs.map((g) => inFrontWins(g, 4))), pct, 'inFrontR4'],
   ['Close games', 'Last place within 3 of first (score)', 'everyone in it to the end', (gs) => share(gs, (g) => Math.max(...g.scores) - Math.min(...g.scores) <= 3), pct],
 
   ['Dynamic board', 'Presence at each round\'s end, R1–R5', '1.7 (presence feels low)', (gs) => list([0, 1, 2, 3, 4].map((r) => mean(gs.map((g) => total(g.rounds[r]?.end ?? [NaN]))))), String],

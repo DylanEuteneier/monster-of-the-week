@@ -638,7 +638,7 @@
       "slot": "signature",
       "sway": 4,
       "action": "study",
-      "text": "Sneak in after the fight to study the bodies. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, if you lead there, you also take 1 trophy from the runner-up’s pile. Target: the locations marked.",
+      "text": "Sneak in after the fight to study the bodies. Mark up to the card’s sway of locations, 1 sway on each. This round, at a marked location’s fight, if you have first claim there, you also take 1 trophy from the second claim’s pile. Target: the locations marked.",
       "readings": {
         "location": "Sci-Fi locations.",
         "faction": "locations holding the Sci-Fi faction."
@@ -652,7 +652,7 @@
         "target": "the locations marked",
         "facMark": "holding",
         "specifics": [
-          "This round, at a marked location’s fight, if you lead there, you also take 1 trophy from the runner-up’s pile."
+          "This round, at a marked location’s fight, if you have first claim there, you also take 1 trophy from the second claim’s pile."
         ],
         "flavour": "Sneak in after the fight to study the bodies.",
         "flavourDraft": true

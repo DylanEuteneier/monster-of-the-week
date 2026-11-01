@@ -56,8 +56,8 @@ pub fn validate(s: &GameState, pid: Pid, m: &Move) -> Verdict {
         }
         Phase::Growth => {
             let (Move::Grow { location }, Some(g)) = (m, s.growing.as_ref()) else { return no("Choose where the faction grows.") };
-            if g.leaders[g.next as usize % g.leaders.len()] != pid {
-                return no("Another sway leader places this token.");
+            if g.favourites[g.next as usize % g.favourites.len()] != pid {
+                return no("Another of its favourites places this token.");
             }
             if g.due.get(*location) > 0 { None } else { no("That location doesn't grow.") }
         }
@@ -553,14 +553,14 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         let name = fight_name(loc, other);
         log_line(s, |_| format!("  {name}: {wn} beat {ln}; casualties {ls} and {winner_loss}."));
     }
-    // Trophies (TD1): bigger pile to the leader, smaller to the runner-up; with three piles, the leader takes the two larger.
+    // Trophies (TD1): bigger pile to first claim, smaller to second claim; with three piles, first claim takes the two larger.
     let mut piles: Vec<(Fac, i32)> = lost.iter().copied().chain(std::iter::once((winner, winner_loss))).filter(|x| x.1 > 0).collect();
     piles.sort_by(|x, y| y.1.cmp(&x.1));
     let place_for = |i: usize, n: usize| if n > 1 && i == n - 1 { 1 } else { 0 };
-    let (places, involved, tied_leaders) = rank_at(s, loc);
+    let (places, involved, tied_first) = rank_at(s, loc);
     if let Some(st) = s.board[li].study {
         if places.first().copied().flatten() == Some(st) && places.get(1).copied().flatten().is_some() && piles.len() > 1 {
-            // Study the Bodies: the leader also takes 1 from the runner-up's pile, the smallest.
+            // Study the Bodies: first claim also takes 1 from second claim's pile, the smallest.
             let last = piles.len() - 1;
             piles[last].1 -= 1;
             let rf = piles[last].0;
@@ -591,14 +591,14 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         }
     }
     // Sway after the fight (AF3 adjusted, AS1).
-    if let Some(leader) = places.first().copied().flatten() {
-        let n = s.board[li].sway.get(leader);
+    if let Some(first) = places.first().copied().flatten() {
+        let n = s.board[li].sway.get(first);
         let half = n.div_euclid(2);
-        s.players[leader as usize].standing[winner as usize] += half;
-        s.players[leader as usize].supply += n - half;
-        s.board[li].sway.remove(leader);
+        s.players[first as usize].standing[winner as usize] += half;
+        s.players[first as usize].supply += n - half;
+        s.board[li].sway.remove(first);
     }
-    for p in tied_leaders {
+    for p in tied_first {
         let n = s.board[li].sway.get(p);
         s.players[p as usize].supply += n;
         s.board[li].sway.remove(p);
@@ -606,7 +606,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
 }
 
 /// Rank players by sway at a location (AB1, PT2, ST1): (places: who collects first and second, None where a tie used
-/// the place up; how many are involved; tied leaders).
+/// the place up; how many are involved; players tied for first claim).
 pub fn rank_at(s: &GameState, loc: Loc) -> (List<Option<Pid>, 2>, usize, Small<5>) {
     let sway = &s.board[loc as usize].sway;
     let mut involved = 0;
@@ -630,7 +630,7 @@ pub fn rank_at(s: &GameState, loc: Loc) -> (List<Option<Pid>, 2>, usize, Small<5
     }
     amounts.sort_by(|&x, &y| vals[y as usize].cmp(&vals[x as usize]));
     let mut places: List<Option<Pid>, 2> = List::new();
-    let mut tied_leaders: Small<5> = Small::new();
+    let mut tied_first: Small<5> = Small::new();
     for k in amounts {
         if places.len() >= 2 {
             break;
@@ -650,7 +650,7 @@ pub fn rank_at(s: &GameState, loc: Loc) -> (List<Option<Pid>, 2>, usize, Small<5
                 }
             }
             if places.is_empty() {
-                tied_leaders = tied;
+                tied_first = tied;
             }
             let mut i = 0;
             while i < tied.len() && places.len() < 2 {
@@ -661,7 +661,7 @@ pub fn rank_at(s: &GameState, loc: Loc) -> (List<Option<Pid>, 2>, usize, Small<5
             places.push(Some(tied[0]));
         }
     }
-    (places, involved, tied_leaders)
+    (places, involved, tied_first)
 }
 
 /// What each growth location is due: 1, plus 1 if the faction is aligned with it (AL3; variant alignedGrowth).
@@ -738,7 +738,7 @@ fn begin_growth(s: &mut GameState, from: usize) {
             let fnm = fname(s, f);
             log_line(s, |_| format!("{fnm} grows at {k} location{}.", if k == 1 { "" } else { "s" }));
         } else if s.supply[f as usize] > 0 {
-            s.growing = Some(Growing { faction: f, left: s.supply[f as usize], leaders: sway_leaders(s, f), next: 0, due });
+            s.growing = Some(Growing { faction: f, left: s.supply[f as usize], favourites: favourites_of(s, f), next: 0, due });
             s.phase = Phase::Growth;
             return;
         }
@@ -746,7 +746,7 @@ fn begin_growth(s: &mut GameState, from: usize) {
     end_round(s);
 }
 
-/// One token placed by a sway leader during a short-supply growth.
+/// One token placed by a favourite during a short-supply growth.
 fn grow_one(s: &mut GameState, loc: Loc) {
     let f = s.growing.as_ref().unwrap().faction;
     s.board[loc as usize].tokens.add(f, 1);
@@ -872,7 +872,7 @@ pub fn waiting_on(s: &GameState) -> Vec<Pid> {
     match s.phase {
         Phase::Ended => vec![],
         Phase::Draft => (0..s.n() as Pid).filter(|&p| !s.players[p as usize].picked).collect(),
-        Phase::Growth => s.growing.as_ref().map(|g| vec![g.leaders[g.next as usize % g.leaders.len()]]).unwrap_or_else(|| vec![s.turn as Pid]),
+        Phase::Growth => s.growing.as_ref().map(|g| vec![g.favourites[g.next as usize % g.favourites.len()]]).unwrap_or_else(|| vec![s.turn as Pid]),
         Phase::Night => s.night.as_ref().map(|n| vec![n.player]).unwrap_or_else(|| vec![s.turn as Pid]),
         Phase::Play => vec![s.turn as Pid],
     }

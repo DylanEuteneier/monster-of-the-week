@@ -174,8 +174,8 @@ pub fn affinity_of(s: &GameState, pid: Pid) -> usize {
     spec().slayer_groups[s.players[pid as usize].group as usize].archetype
 }
 
-/// Sway leaders of a faction: the most standing; affinity breaks a tie (AB1); otherwise all tied are leaders.
-pub fn sway_leaders(s: &GameState, f: Fac) -> Vec<Pid> {
+/// A faction's favourites: the most standing; affinity breaks a tie (AB1); otherwise all tied are favourites.
+pub fn favourites_of(s: &GameState, f: Fac) -> Vec<Pid> {
     let n = s.n();
     let best = (0..n).map(|p| s.players[p].standing[f as usize]).max().unwrap_or(0);
     let tied: Vec<Pid> = (0..n as Pid).filter(|&p| s.players[p as usize].standing[f as usize] == best).collect();

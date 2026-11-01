@@ -304,7 +304,7 @@ pub struct Player {
 pub struct Growing {
     pub faction: Fac,
     pub left: i32,
-    pub leaders: Vec<Pid>,
+    pub favourites: Vec<Pid>,
     pub next: i32,
     /// location → tokens due
     pub due: OMap<NLOC>,

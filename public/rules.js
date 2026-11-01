@@ -47,7 +47,7 @@ export { spec };
  * @property {string} [gateLoss]   The Gate: the end the winner's losses come from first (the Gate's player's choice)
  * @property {boolean} [altar]     Spill Blood on the Altar (⎈ signature, designer 2026-10-18): at this round's fight here, the winner loses as many as the loser
  * @property {string} [terror]     Night Terrors (◐ signature, designer 2026-10-20): this player's mark; at nightfall 1 token here may flee
- * @property {string} [study]      Study the Bodies (ↂ signature, designer 2026-10-19): at this round's fight here, this player, if they lead, takes 1 from the runner-up's pile too
+ * @property {string} [study]      Study the Bodies (ↂ signature, designer 2026-10-19): at this round's fight here, this player, if they have first claim, takes 1 from the second claim's pile too
  */
 
 /**
@@ -89,7 +89,7 @@ export { spec };
  * @property {boolean} opened      the first player has opened with their marked card
  * @property {string | null} [copying]  Steal Their Playbook, theirs: the card taken, to be played now (D30)
  * @property {{ pid: string, card: string, use: string }[]} roundPlays  this round's plays, in order (Steal Their Playbook, unsuited, 2026-10-24)
- * @property {{ faction: string, left: number, leaders: string[], next: number, due: Record<string, number> } | null} growing  growth phase when a supply runs short
+ * @property {{ faction: string, left: number, favourites: string[], next: number, due: Record<string, number> } | null} growing  growth phase when a supply runs short
  * @property {{ player: string, left: string[] } | null} [night]  Night Terrors (◐ signature): nightfall, before the fights; the player's marks still to decide
  * @property {{ invaders: number, island: number }} [votes]  rounds as votes (RV1, variant): the votes cast so far
  * @property {RoundLog[]} log
@@ -137,7 +137,7 @@ export { spec };
  * @property {number} rounds
  * @property {string[]} seating
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, handSize: number, picked: boolean, trophies?: Record<string, number> }>} players  (trophies: every seat's, once the game has ended)
- * @property {{ faction: string, left: number, leaders: string[], next: number, due: Record<string, number> } | null} growing
+ * @property {{ faction: string, left: number, favourites: string[], next: number, due: Record<string, number> } | null} growing
  * @property {{ player: string, left: string[] } | null} [night]
  * @property {string[]} factions
  * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, scorched: boolean, gate?: string, gateLoss?: string, altar?: boolean, study?: string, terror?: string }>} board

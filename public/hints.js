@@ -86,7 +86,7 @@ function planLine(s, pid, goal) {
   const t = Number(s.options.threshold);
   if (goal === 'invaders') {
     const f = backed(s, pid);
-    return `Back the ${F(f)}. Over ${t} monsters at the end, the biggest faction wins and its sway leader with it: build your sway with them and keep the count up.`;
+    return `Back the ${F(f)}. Over ${t} monsters at the end, the biggest faction wins and its favourite with it: build your sway with them and keep the count up.`;
   }
   const w = weakest(s, pid);
   return `Trophy sets. At ${t} monsters or fewer, complete sets decide: your weakest colour is the ${F(w)} (${s.players[pid].trophies[w]}).`;
@@ -110,7 +110,7 @@ function reasons(a, b, pid, goal) {
     const lost = Object.keys(ga).filter((f) => (ga[f] ?? 0) > (gb[f] ?? 0));
     if (more.length) {
       const what = more.map((f) => count(gb[f], f)).join(' and ');
-      const lead = fb[loc]?.lead === pid && fa[loc]?.lead !== pid ? ' You take the lead there.' : '';
+      const lead = fb[loc]?.lead === pid && fa[loc]?.lead !== pid ? ' You take first claim there.' : '';
       const set = more.includes(w) ? ` The ${F(w)} are your weakest colour.` : '';
       lines.push({ text: `In line for ${what} when ${L(loc)} fights.${lead}${set}`, weight: goal === 'island' ? 3 : 2 });
     } else if (lost.length) lines.push({ text: `Gives up ${lost.map((f) => count(ga[f], f)).join(' and ')} at ${L(loc)}.`, weight: -1 });
@@ -148,7 +148,7 @@ function reasons(a, b, pid, goal) {
 /** The rule a move uses, as a refresher. @param {GameState} s @param {Move} move */
 function ruleFor(s, move) {
   if (move.type === 'pass') return 'Passing isn\'t final: you can play when the turn comes back. When everyone passes in a row, the round ends and every location with two factions fights.';
-  if (move.type === 'grow') return 'Growth: when a faction is short of monsters in supply, its sway leaders choose where it grows.';
+  if (move.type === 'grow') return 'Growth: when a faction is short of monsters in supply, its favourites choose where it grows.';
   if (move.type !== 'play') return '';
   const c = cardById(move.card);
   const f = s.factions.find((x) => factionById(x).archetype === c.suit);

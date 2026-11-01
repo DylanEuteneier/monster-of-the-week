@@ -53,7 +53,7 @@ export const NOUNS = {
   played: { label: 'A played card', svg: svg('<rect x="4" y="6" width="11" height="15" rx="1.5"/><rect x="9" y="3" width="11" height="15" rx="1.5"/>') },
   mark: { label: 'Mark', svg: svg('<path d="M6 21V4"/><path d="M6 4h11l-3 4 3 4H6"/>') },
   gate: { label: 'The Gate (joined)', svg: svg(`${hex(7.5, 12, 6)}${hex(16.5, 12, 6)}<path d="M10 12h4" stroke-width="3"/>`, ' stroke-width="1.75"') },
-  leader: { label: 'Sway leader', svg: svg('<path d="M4 18l2-10 6 5 6-5 2 10z"/>') },
+  favourite: { label: 'Faction favourite', svg: svg('<path d="M4 18l2-10 6 5 6-5 2 10z"/>') },
 };
 
 /** The verbs: what an action does. @type {Record<string, { label: string, svg: string }>} */

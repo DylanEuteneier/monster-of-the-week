@@ -100,7 +100,7 @@ async function main() {
   const policy = (v) => {
     if (v.phase === 'draft') return v.me.picked ? null : { type: 'pick', keep: [...v.me.kept, ...v.me.batch].slice(0, v.me.kept.length + 1) };
     if (v.phase === 'night') return v.night && v.night.player === v.you ? { type: 'flee', location: v.night.left[0] } : null;
-    if (v.phase === 'growth') return v.growing && v.growing.leaders[v.growing.next % v.growing.leaders.length] === v.you ? { type: 'grow', location: Object.keys(v.growing.due)[0] } : null;
+    if (v.phase === 'growth') return v.growing && v.growing.favourites[v.growing.next % v.growing.favourites.length] === v.you ? { type: 'grow', location: Object.keys(v.growing.due)[0] } : null;
     if (v.phase !== 'play') return null;
     if (v.toAct !== v.you) return null;
     // Passing is off by default: spend a suit card for its sway, else play an unsuited card with no target.

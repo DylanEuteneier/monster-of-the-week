@@ -368,7 +368,7 @@ fn on_aligned_ground_the_aligned_faction_wins_a_tie() {
 }
 
 #[test]
-fn trophies_leader_takes_bigger_pile_runner_up_smaller_half_leaders_sway_to_winner() {
+fn trophies_first_claim_takes_bigger_pile_second_claim_smaller_half_its_sway_to_winner() {
     let Fx { a, b, neutral, .. } = fx();
     let s = edit(&clear(&game(1)), |x| {
         x["board"][&neutral]["tokens"] = obj(&[(&a, 6), (&b, 4)]);
@@ -383,7 +383,7 @@ fn trophies_leader_takes_bigger_pile_runner_up_smaller_half_leaders_sway_to_winn
 }
 
 #[test]
-fn tied_leaders_collect_nothing_and_both_piles_go_back_a_lone_player_takes_both() {
+fn tied_first_claims_collect_nothing_and_both_piles_go_back_a_lone_player_takes_both() {
     let Fx { a, b, neutral, .. } = fx();
     let s = edit(&clear(&game(1)), |x| {
         for p in PLAYERS {
@@ -1122,7 +1122,7 @@ fn night_terrors_marks_then_at_nightfall_1_token_may_flee_each_mark() {
 }
 
 #[test]
-fn study_the_bodies_if_you_lead_you_also_take_1_from_the_runner_ups_pile() {
+fn study_the_bodies_first_claim_also_takes_1_from_the_second_claims_pile() {
     let s0 = clear(&game(1));
     let sci = of_arch(&s0, "scifi");
     let f = factions(&s0).into_iter().find(|x| *x != sci).unwrap();

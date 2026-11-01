@@ -526,7 +526,7 @@ function picks() {
   /** @type {{ spots: string[], groups: { location: string, faction: string }[], factions: string[] }} */
   const out = { spots: [], groups: [], factions: [] };
   if (!view) return out;
-  if (view.phase === 'growth' && view.growing && view.growing.leaders[view.growing.next % view.growing.leaders.length] === view.you) {
+  if (view.phase === 'growth' && view.growing && view.growing.favourites[view.growing.next % view.growing.favourites.length] === view.you) {
     out.spots = Object.keys(view.growing.due);
     return out;
   }
@@ -1119,7 +1119,7 @@ function renderGrowth() {
   const view = /** @type {PlayerView} */ (ui.view);
   const g = view.growing;
   if (!g) return step('wait', 'Growth');
-  const mine = g.leaders[g.next % g.leaders.length] === view.you;
+  const mine = g.favourites[g.next % g.favourites.length] === view.you;
   return mine ? step('turn', `Grow ${esc(fname(g.faction))}: pick a location on the island`) : step('wait', `${esc(fname(g.faction))} grows · ${waitingText()}`);
 }
 

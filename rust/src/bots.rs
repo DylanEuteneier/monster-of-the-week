@@ -830,7 +830,7 @@ fn random_move(s: &GameState, pid: Pid, rng: Rng) -> Option<Move> {
         }
         Phase::Growth => {
             let g = s.growing.as_ref()?;
-            if g.leaders[g.next as usize % g.leaders.len()] != pid {
+            if g.favourites[g.next as usize % g.favourites.len()] != pid {
                 return None;
             }
             let ls: Vec<Loc> = g.due.keys().collect();
@@ -933,7 +933,7 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
         }
         Phase::Growth => {
             let g = s.growing.as_ref()?;
-            if g.leaders[g.next as usize % g.leaders.len()] != pid {
+            if g.favourites[g.next as usize % g.favourites.len()] != pid {
                 return None;
             }
             let mut options: Vec<(Loc, f64)> = Vec::new();
@@ -1333,7 +1333,7 @@ pub fn rank_for_hint(s: &GameState, pid: Pid, memory: &mut BotMemory, profile: &
         }
         Phase::Growth => {
             if let Some(g) = &s.growing {
-                if g.leaders[g.next as usize % g.leaders.len()] == pid {
+                if g.favourites[g.next as usize % g.favourites.len()] == pid {
                     moves = g.due.iter().map(|(l, _)| played(Move::Grow { location: l })).collect();
                 }
             }
