@@ -95,7 +95,7 @@ fn standing(s: &GameState, pid: Pid, f: Fac) -> i32 {
 
 /// Raise the Stakes, tokens: where a faction's kin next door can come from, and how many each may send.
 pub fn stake_sources(s: &GameState, centre: Loc, f: Fac) -> Vec<(Loc, i32)> {
-    adj(s, centre).into_iter().filter(|&l| !s.board[l as usize].scorched && free_of(s, l, f) > 0).map(|l| (l, free_of(s, l, f))).collect()
+    reach(s, centre).into_iter().filter(|&l| !s.board[l as usize].scorched && free_of(s, l, f) > 0).map(|l| (l, free_of(s, l, f))).collect()
 }
 
 /// Is (location, faction) a legal group target under the two-target rule?
@@ -168,7 +168,7 @@ pub fn factions_across(s: &GameState, a: Loc, b: Loc) -> Facs {
 
 /// The neighbours a group of `f` at `loc` can send a token to (Draw Them Away, Cover Every Exit, nightfall).
 pub fn burst_spots(s: &GameState, loc: Loc, f: Fac) -> Vec<Loc> {
-    adj(s, loc).into_iter().filter(|&l| !s.board[l as usize].scorched && can_enter(s, l, f)).collect()
+    reach(s, loc).into_iter().filter(|&l| !s.board[l as usize].scorched && can_enter(s, l, f)).collect()
 }
 
 /// Take Control: how many of `f`'s tokens you may turn into trophies at the target.
@@ -307,7 +307,7 @@ pub fn chase_steps(s: &GameState, at: Loc, f: Fac, chase: &[Loc]) -> Vec<Loc> {
 
 /// Perform the Ritual: (lone groups next door, fights next door that can send some).
 pub fn well_sources(s: &GameState, centre: Loc, f: Fac) -> (Vec<Loc>, Vec<Loc>) {
-    let near: Vec<Loc> = adj(s, centre).into_iter().filter(|&l| !s.board[l as usize].scorched && tokens_of(s, l, f) > 0).collect();
+    let near: Vec<Loc> = reach(s, centre).into_iter().filter(|&l| !s.board[l as usize].scorched && tokens_of(s, l, f) > 0).collect();
     let lone = near.iter().copied().filter(|&l| lone_at(s, l) == Some(f)).collect();
     let fights = near.iter().copied().filter(|&l| count_at(s, l) >= 2 && tokens_of(s, l, f).div_euclid(2) > 0).collect();
     (lone, fights)
@@ -354,7 +354,7 @@ pub fn guests_of(s: &GameState, c: &Card, mode: Mode, to: Loc) -> Vec<(Loc, Fac)
     let sf = suit_faction(c);
     let host = lone_at(s, to);
     let mut out = Vec::new();
-    for l in adj(s, to) {
+    for l in reach(s, to) {
         for f in factions_at(s, l) {
             if can_leave(s, l, f) && (mode == Mode::Location || Some(f) == sf) && Some(f) != host {
                 out.push((l, f));
@@ -741,7 +741,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             if n < 2 {
                 return e("A group of 1 can't be split.");
             }
-            let near = adj(s, loc);
+            let near = reach(s, loc);
             if dests.len() != 2 || dests.iter().any(|&(d, _)| !matches!(d, Id::Loc(x) if near.contains(&x) && can_enter(s, x, f))) {
                 return e("Split between two adjacent locations that can take the group.");
             }

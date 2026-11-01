@@ -44,6 +44,30 @@ pub fn count_at(s: &GameState, loc: Loc) -> usize {
     factions_at(s, loc).len()
 }
 
+/// Where a card's monster move may reach from `loc`: its neighbours, or with moveRange above 1 (during play) any location
+/// within that many steps (not `loc` itself). Sway moves, fights, nightfall and growth use `adj`.
+pub fn reach(s: &GameState, loc: Loc) -> Locs {
+    let r = s.options.move_range;
+    if r <= 1 || s.phase != crate::types::Phase::Play {
+        return adj(s, loc);
+    }
+    let mut seen = Locs::new();
+    let mut frontier = vec![loc];
+    for _ in 0..r {
+        let mut next = Vec::new();
+        for &l in &frontier {
+            for n in adj(s, l) {
+                if n != loc && !seen.contains(&n) {
+                    seen.add(n);
+                    next.push(n);
+                }
+            }
+        }
+        frontier = next;
+    }
+    seen
+}
+
 /// A location's neighbours. Through an open Gate the two ends are one location.
 pub fn adj(s: &GameState, loc: Loc) -> Locs {
     let sp = spec();

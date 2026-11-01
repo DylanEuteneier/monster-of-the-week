@@ -943,9 +943,21 @@
       "description": "Claude's suggestion, the designer trying it (2026-10-31; after The King Is Dead's build-up): each round's close, after the fights, is a vote, for the invaders if total presence is more than the threshold, else for the island; the side with more rounds wins. Early: the game ends once a side holds a majority. Off by default.",
       "default": "off",
       "choices": [
-        { "id": "off", "label": "Off", "description": "" },
-        { "id": "on", "label": "On", "description": "" },
-        { "id": "early", "label": "On, ending early", "description": "" }
+        {
+          "id": "off",
+          "label": "Off",
+          "description": ""
+        },
+        {
+          "id": "on",
+          "label": "On",
+          "description": ""
+        },
+        {
+          "id": "early",
+          "label": "On, ending early",
+          "description": ""
+        }
       ]
     },
     {
@@ -1056,6 +1068,21 @@
         {
           "id": "15",
           "label": "15",
+          "description": ""
+        },
+        {
+          "id": "16",
+          "label": "16",
+          "description": ""
+        },
+        {
+          "id": "17",
+          "label": "17",
+          "description": ""
+        },
+        {
+          "id": "18",
+          "label": "18",
           "description": ""
         },
         {
@@ -1434,6 +1461,29 @@
           "id": "2",
           "label": "+2",
           "description": "Strikes 4, shifts 5."
+        }
+      ]
+    },
+    {
+      "id": "moveRange",
+      "label": "Card movement range",
+      "description": "Designer's seed (2026-11-01; testing): cards that move monsters to a neighbour reach any location within this many steps instead (through the Gate as usual). The Big Chase and Bait the Herd's trail still move one location at a time (designer). Sway movement, fights, nightfall and growth keep neighbours. 1 by default (neighbours only); the designer keeps neighbours (2026-11-01, measured: distance doesn't make bigger plays).",
+      "default": "1",
+      "choices": [
+        {
+          "id": "1",
+          "label": "1",
+          "description": ""
+        },
+        {
+          "id": "2",
+          "label": "2",
+          "description": ""
+        },
+        {
+          "id": "3",
+          "label": "3",
+          "description": ""
         }
       ]
     }

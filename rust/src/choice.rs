@@ -363,7 +363,7 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             let size = |gl: Loc, gf: Fac| free_of(s, gl, gf);
             let pays = |f: Fac| can(s, pid, f, 2 * s.options.sway_per_move as i64 + 1);
             let Some(l) = loc else {
-                return Choice::groups(GroupKey::Group, groups().into_iter().filter(|&(gl, gf)| group_ok(gl, gf) && size(gl, gf) >= 2 && adj(s, gl).into_iter().filter(|&x| x != gl && can_enter(s, x, gf)).count() >= 2 && pays(gf)).collect(), None);
+                return Choice::groups(GroupKey::Group, groups().into_iter().filter(|&(gl, gf)| group_ok(gl, gf) && size(gl, gf) >= 2 && reach(s, gl).into_iter().filter(|&x| x != gl && can_enter(s, x, gf)).count() >= 2 && pays(gf)).collect(), None);
             };
             let f = fac.unwrap();
             let n = size(l, f);
@@ -374,7 +374,7 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             let big = (n + 1).div_euclid(2);
             let at = |d: Id| split.iter().find(|x| x.0 == d).map(|x| x.1).unwrap_or(0);
             let full = |d: Id| at(d) + 1 > big || (n % 2 == 1 && at(d) + 1 == big && used.iter().any(|&u| u != d && at(u) == big));
-            let dests: Vec<Loc> = adj(s, l).into_iter().filter(|&x| can_enter(s, x, f) && (used.len() < 2 || used.contains(&Id::Loc(x))) && !full(Id::Loc(x))).collect();
+            let dests: Vec<Loc> = reach(s, l).into_iter().filter(|&x| can_enter(s, x, f) && (used.len() < 2 || used.contains(&Id::Loc(x))) && !full(Id::Loc(x))).collect();
             if left > 0 { Choice { kind: Kind::Split, options: dests.into_iter().map(Opt::Loc).collect(), optional: None, left: Some(left) } } else { Choice::done() }
         }
         Action::Favours | Action::Stakes | Action::Exit | Action::Switch | Action::Playbook => {
@@ -767,7 +767,7 @@ pub fn sample_target_memo(s: &GameState, pid: Pid, ci: CardIx, rng: &mut dyn FnM
         if sampled {
             if let Some(&(gl, gf)) = groups.get(pick_i) {
                 let n = free_of(s, gl, gf);
-                let dests: Vec<Loc> = adj(s, gl).into_iter().filter(|&d| can_enter(s, d, gf)).collect();
+                let dests: Vec<Loc> = reach(s, gl).into_iter().filter(|&d| can_enter(s, d, gf)).collect();
                 if n >= 2 && dests.len() >= 2 {
                     let a = dests[(rng() * dests.len() as f64).floor() as usize];
                     let rest: Vec<Loc> = dests.iter().copied().filter(|&d| d != a).collect();

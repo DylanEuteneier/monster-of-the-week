@@ -196,6 +196,8 @@ pub struct Options {
     pub start_board: i32,
     pub groups_random: bool,
     pub sway_per_move: i32,
+    /// Card movement range (moveRange, designer testing 2026-11-01): how many steps a card's monster move may cover.
+    pub move_range: i32,
     /// IC1 (D15): a move's sway must be paid. Always so in a game; off only in checkTarget's comparison copy (unpaid).
     pub sway_required: bool,
     pub aligned_growth: bool,
@@ -245,6 +247,7 @@ impl Options {
             start_board: num("startBoard"),
             groups_random: get("groups") == "random",
             sway_per_move: num("swayPerMove"),
+            move_range: num("moveRange").max(1),
             sway_required: true,
             aligned_growth: get("alignedGrowth") == "on",
             sway_tokens: match get("swayTokens") { "on" => SwayTokens::All, "shifts" => SwayTokens::Shifts, "strikes" => SwayTokens::Strikes, "signatures" => SwayTokens::Signatures, "nightfall" => SwayTokens::Nightfall, _ => SwayTokens::Off },
