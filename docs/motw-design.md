@@ -1627,6 +1627,7 @@ Actual changes to mechanisms and game structure.
 |---|---|
 | **Adjacent** | *(First draft.)* Two locations whose hexes share a border. |
 | **Affinity** | *(Idea.)* The edge that comes from sharing an archetype. A slayer group has affinity for its linked archetype's faction and for that archetype's three locations. A faction has affinity for its archetype's three locations. |
+| **Ahead on votes** | *(Term, designer, 2026-11-01; for now.)* Under rounds as votes (RV1), the side (the island or the invaders) that has won more of the rounds' votes so far. |
 | **Archetype** | One of five groups of three related factions: Nocturnals ◐, 80's Sci-Fi ↂ, Sentients ⏏, Undead ☾, Demons ⎈. Each has a symbol and three aligned locations. |
 | **Bluff token** | *(Idea.)* A token each player has that looks like a real hidden token from its blind side (the same back, showing the card that placed them both; D20). Its marker cube can count as sway, but it does nothing else when it flips. |
 | **Boil over** | *(Idea.)* What a location does when its token count reaches the volatility threshold: its fight resolves mid-round. |
@@ -1674,6 +1675,7 @@ Actual changes to mechanisms and game structure.
 | **Seat** | One player's place in a prototype game, reached through its magic link. |
 | **Slayer group** | What a player plays: one of five groups of characters modelled on a monster-of-the-week trope, each linked to one archetype. |
 | **Slot** | A question the game has to answer, such as how a fight resolves. Candidates in the same slot share a two-letter prefix. |
+| **Strongest faction** | *(Term, designer, 2026-11-01; for now.)* The faction with the most presence on the board: the one that would win if the invaders won now. Not **control** (most tokens at one location). |
 | **Supply** | *(First draft.)* Where a cube or token waits off the board. Each colour has one supply: a player's cubes return to that player, to be placed again with later actions; a faction's tokens return to that faction, to be placed again later. No piece is ever removed from the game entirely. |
 | **Standing tie** | *(Idea.)* A tie between players that is not broken. |
 | **Signature sway** | *(First draft; D24.)* A signature's sway: 1 for each card in your hand, itself included, with no cap. |
