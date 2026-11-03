@@ -51,6 +51,8 @@ pub struct Game {
     pub scores: Vec<i32>,
     /// Each turn of play's swing diagnosis (SWING=1 or `swing=1`).
     pub swings: Vec<SwingLog>,
+    /// Positions for the learned judge (POSITIONS or `positions=1`): each seat's judge row at each turn of play.
+    pub positions: Vec<Vec<f64>>,
 }
 
 /// A round's close: each faction's presence (by slot) before and after its fights and at its end (after nightfall and
@@ -257,6 +259,7 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
 /// Testing (the opening study): stop every game once this round is over (0: play to the end). The bots play as if
 /// the whole game lies ahead.
 pub static SWING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+pub static POSITIONS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 pub static STOP_AFTER: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0);
 
 pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, String)], duplicate: bool, board: bool) -> Game {
@@ -285,6 +288,8 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let mut round_first = None;
     let mut swings: Vec<SwingLog> = Vec::new();
     let swing_on = SWING.load(std::sync::atomic::Ordering::Relaxed);
+    let positions_on = POSITIONS.load(std::sync::atomic::Ordering::Relaxed);
+    let mut positions: Vec<Vec<f64>> = Vec::new();
     let mut played_round = 0usize;
     let mut round = s.round;
     let mut moves = 0;
@@ -313,6 +318,11 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             let occupied = (0..s.board.len() as u8).filter(|&l| crate::board::count_at(&s, l) >= 1).count();
             let contested = crate::game::fights_due(&s).len();
             turns.push(Turn { round: s.round, cards, occupied, contested, presence: crate::board::total_presence(&s), blocked });
+        }
+        if positions_on && s.phase == Phase::Play {
+            for pid in 0..n as Pid {
+                positions.push(crate::judge::position_row(&s, pid));
+            }
         }
         // Every seat is offered the move in seat order, as the JavaScript tournament does; the first with one makes it.
         for pid in 0..n as Pid {
@@ -414,6 +424,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         playlog,
         scores: s.result.as_ref().map(|r| r.scores.clone()).unwrap_or_default(),
         swings,
+        positions,
     }
 }
 

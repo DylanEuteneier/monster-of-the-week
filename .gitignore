@@ -10,3 +10,6 @@ __pycache__/
 rust/target/
 rust/target-dev/
 rust/target-pool/
+rust/target-home/
+rust/target-bots/
+rust/target-judge/

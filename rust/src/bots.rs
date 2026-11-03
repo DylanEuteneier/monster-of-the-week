@@ -34,6 +34,8 @@ pub struct Seats {
     pub memories: Option<HashMap<Pid, BotMemory>>,
     /// Testing (persona rollList): the play-out bots list targets as the full bots do.
     pub roll_list: bool,
+    /// Testing (persona rjudge): every seat in the play-outs judges with the learned judge.
+    pub judge: bool,
 }
 
 const SEARCH_TARGETS: usize = 8;
@@ -119,6 +121,22 @@ pub struct Persona {
     pub tally: f64,
     /// Testing: how much the lean fades as the game settles (1: fully, as always; 0: never, a seat keeps its side).
     pub fade: f64,
+    /// Rounds as votes: the fight losses still to come this round, at a full round left (0: none, as before); the
+    /// vote is after fights the round's plays are yet to make (2026-11-02: the board shows 30 before round 1, 14 at its vote).
+    pub drain: f64,
+    /// ...and how much each later round's vote rises on this one's (0: flat, as before).
+    pub trend: f64,
+    /// The goal's forecast from play-outs (2026-11-02, the designer: derive it, no set numbers): before a real decision,
+    /// play the round out this many times and read the vote from where it ends (0: from the board as it stands).
+    pub look: f64,
+    /// The draft by play-outs (designer, 2026-11-02: a card is worth what it adds to the hand's play this round, and
+    /// what that sets up after): each card this pick could add, the rest of the draft finished by every seat's own
+    /// bot, then the round played out, this many times; its worth is the position at the vote (0: one step, alone).
+    pub dplan: f64,
+    /// The learned judge (judge.rs, `npm run judge`) in place of the hand formula's chances (0: the hand formula).
+    pub judge: f64,
+    /// The play-out bots (every seat) judge with the learned judge too (designer, 2026-11-03: no quick-and-dirty play-outs).
+    pub rjudge: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -131,7 +149,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, judge: 0.0, rjudge: 0.0,
     }
 }
 
@@ -201,6 +219,12 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "pace" => p.pace = x,
                 "tally" => p.tally = x,
                 "fade" => p.fade = x,
+                "drain" => p.drain = x,
+                "trend" => p.trend = x,
+                "look" => p.look = x,
+                "dplan" => p.dplan = x,
+                "judge" => p.judge = x,
+                "rjudge" => p.rjudge = x,
                 _ => {}
             }
         }
@@ -413,6 +437,21 @@ fn project_fights(s: &GameState) -> GameState {
 /// Rounds as votes: each round left is a vote, this round's close sharp, later ones less so; the chance of a majority.
 /// `paced`: `push` is per round, so a vote k rounds off gets k + 1 of it (this round's vote, one).
 fn invaders_reach(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64, paced: bool) -> f64 {
+    invaders_reach_by(s, projected, threshold, spread_p, push, paced, 0.0, 0.0)
+}
+
+/// The fight losses still to come this round (`drain` at a full round) and each later vote's rise (`trend`).
+fn round_left(s: &GameState) -> f64 {
+    if s.phase != Phase::Play {
+        return 1.0;
+    }
+    let full = (spec().hand_size[s.n()] * s.n()) as f64;
+    let held: usize = s.players.iter().map(|p| p.hand.len()).sum();
+    if full > 0.0 { (held as f64 / full).min(1.0) } else { 0.0 }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn invaders_reach_by(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64, paced: bool, drain: f64, trend: f64) -> f64 {
     if !s.options.round_votes {
         return sigmoid((projected - threshold - 0.5 + push) / spread_p);
     }
@@ -426,7 +465,8 @@ fn invaders_reach(s: &GameState, projected: f64, threshold: f64, spread_p: f64, 
     for k in 0..left {
         let w = s.options.vote_weight(closed + 1 + k as i32) as usize;
         let shift = if paced { push * (k as f64 + 1.0) } else { push };
-        let q = sigmoid((projected - threshold - 0.5 + shift) / (2.0 + 3.0 * k as f64));
+        let ahead = -drain + trend * k as f64;
+        let q = sigmoid((projected + ahead - threshold - 0.5 + shift) / (2.0 + 3.0 * k as f64));
         for j in (0..=most).rev() {
             dp[j] = dp[j] * (1.0 - q) + if j >= w { dp[j - w] * q } else { 0.0 };
         }
@@ -566,7 +606,18 @@ pub fn evaluate(s: &GameState, pid: Pid, profile: &str, goal: Option<Goal>) -> f
 }
 
 fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
-    let c = win_chances(s, pid);
+    let mut c = win_chances(s, pid);
+    let _ = &mut c;
+    if s.options.round_votes && (on(p.drain) || on(p.trend)) {
+        c.p_invaders = invaders_reach_by(s, c.projected, c.threshold, c.spread_p, 0.0, false, p.drain * round_left(s), p.trend);
+    }
+    if on(p.judge) {
+        if let Some(w) = crate::judge::weights() {
+            // The chance of winning, whichever ending comes: what a bot playing to win values.
+            let (pi, wi, ws) = crate::judge::judge_with(s, &c, w);
+            return 10.0 * (pi * wi + (1.0 - pi) * ws) + SUPPLY_VALUE * s.players[pid as usize].supply as f64;
+        }
+    }
     let inv = c.p_invaders * 10.0 * c.as_invaders + p.margin * c.margin_invaders;
     let island_margin = p.linear * 10.0 * c.linear_island;
     let isl = (1.0 - c.p_invaders) * 10.0 * c.as_island + island_margin;
@@ -614,15 +665,39 @@ fn set_access(s: &GameState, pid: Pid) -> f64 {
 
 /// Which goal to pursue now (chooseGoal). Draws from `rng` once per game, for the memory's jitter.
 pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut BotMemory>, rng: Rng) -> Goal {
-    let c = win_chances_shared(s, pid);
+    choose_goal_seen(s, pid, p, memory, rng, None)
+}
+
+/// The round played out `n` times from here by every seat's own bot: where this round's vote lands, on average.
+fn vote_ahead(s: &GameState, pid: Pid, rng: Rng, memory: Option<&BotMemory>, seats: &Seats, n: usize) -> f64 {
+    let mut sum = 0.0;
+    for _ in 0..n {
+        let end = play_out_round(s, seed_of(rng), pid, memory, Some(seats), None);
+        sum += win_chances(&end, pid).projected;
+    }
+    sum / n.max(1) as f64
+}
+
+fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut BotMemory>, rng: Rng, seen: Option<f64>) -> Goal {
+    let mut c = win_chances_shared(s, pid);
+    if let Some(v) = seen {
+        c.projected = v;
+    }
     let paced = on(p.pace) && s.options.round_votes;
     let push = if paced { p.push * p.pace } else { p.push * (c.rounds_left + 1.0) };
-    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach(s, c.projected, c.threshold, c.spread_p, push, paced);
-    let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach(s, c.projected, c.threshold, c.spread_p, -push, paced));
+    let (drain, trend) = (p.drain * round_left(s), p.trend);
+    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach_by(s, c.projected, c.threshold, c.spread_p, push, paced, drain, trend);
+    let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach_by(s, c.projected, c.threshold, c.spread_p, -push, paced, drain, trend));
     // Paced: the lean fades as the tally nears a majority (0 at 0-0, 1 once a side has it), not with the round.
     let majority = (s.options.votes_total() / 2 + 1).max(1) as f64;
     let settled = if paced && on(p.tally) { (s.votes[0].max(s.votes[1]) as f64 / majority).min(1.0) } else { c.settled };
-    let evidence = reach_inv * c.as_invaders - reach_isl * c.as_island;
+    let mut evidence = reach_inv * c.as_invaders - reach_isl * c.as_island;
+    if on(p.judge) {
+        if let Some(w) = crate::judge::weights() {
+            let (pi, wi, ws) = crate::judge::judge_with(s, &c, w);
+            evidence = pi * wi - (1.0 - pi) * ws;
+        }
+    }
     let mut memory = memory;
     if let Some(m) = memory.as_deref_mut() {
         if m.jitter.is_none() {
@@ -922,7 +997,12 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
     }
     let persona = persona_of(profile);
     let mut memory = memory;
-    let goal = persona.as_ref().map(|p| choose_goal(s, pid, p, memory.as_deref_mut(), &mut *rng));
+    // A real decision (the table given), with look on: the forecast from play-outs of the round.
+    let seen = match &persona {
+        Some(p) if on(p.look) && seats.profiles.is_some() && s.phase == Phase::Play && s.options.round_votes => Some(vote_ahead(s, pid, &mut *rng, memory.as_deref(), seats, p.look as usize)),
+        _ => None,
+    };
+    let goal = persona.as_ref().map(|p| choose_goal_seen(s, pid, p, memory.as_deref_mut(), &mut *rng, seen));
     let ev = |x: &GameState| evaluate(x, pid, profile, goal);
     let p = &s.players[me];
     let jitter = persona.as_ref().and_then(|x| x.noise).unwrap_or(SEARCH_NOISE);
@@ -932,6 +1012,11 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
         Phase::Draft => {
             if p.picked {
                 return None;
+            }
+            if let Some(n) = persona.as_ref().filter(|x| on(x.dplan) && seats.profiles.is_some()).map(|x| x.dplan as usize) {
+                if let Some(m) = draft_by_playouts(s, pid, rng, &ev, memory.as_deref(), seats, n) {
+                    return Some(m);
+                }
             }
             let pool: Vec<CardIx> = p.kept.iter().chain(p.batch.iter()).copied().collect();
             let base_v = ev(s);
@@ -991,11 +1076,11 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
             let table = pe.as_ref().filter(|x| on(x.table)).map(|x| {
                 let mut profiles = seats.profiles.clone().unwrap_or_default();
                 profiles.insert(pid, profile.to_string());
-                Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: on(x.roll_list) }
+                Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: on(x.roll_list), judge: on(x.rjudge) }
             });
             if let Some(x) = pe.as_ref() {
                 if on(x.sim) && on(x.plan) {
-                    return plan_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.plan_budget.unwrap_or(PLAN_BUDGET), x.plan_depth.unwrap_or(PLAN_DEPTH), table.as_ref());
+                    return plan_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.plan_budget.unwrap_or(PLAN_BUDGET), x.plan_depth.unwrap_or(PLAN_DEPTH), x.playouts.unwrap_or(SIM_PLAYOUTS), table.as_ref());
                 }
                 if on(x.sim) {
                     return sim_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.playouts.unwrap_or(SIM_PLAYOUTS), x.mix, table.as_ref());
@@ -1055,7 +1140,8 @@ fn sim_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&Ga
 /// Hand planning (persona plan): plain play-outs for the shortlisted first moves, then (move, plan) pairs by
 /// successive halving; a plan wins only if, scored again on the plain seeds, it beats the best plain move.
 #[allow(clippy::too_many_arguments)]
-fn plan_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, keep: usize, budget: usize, depth: usize, table: Option<&Seats>) -> Option<Move> {
+#[allow(clippy::too_many_arguments)]
+fn plan_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, keep: usize, budget: usize, depth: usize, playouts: usize, table: Option<&Seats>) -> Option<Move> {
     let mut ranked: Vec<(Move, GameState, f64)> = moves.into_iter().map(|m| { let x = after(s, pid, &m); let v = ev(&x); (m, x, v) }).collect();
     ranked.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
     let pass_i = ranked.iter().position(|r| r.0 == Move::Pass);
@@ -1065,7 +1151,7 @@ fn plan_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&G
             short.push(i);
         }
     }
-    let seeds: Vec<i64> = (0..SIM_PLAYOUTS).map(|_| seed_of(rng)).collect();
+    let seeds: Vec<i64> = (0..playouts).map(|_| seed_of(rng)).collect();
     let mut plain: Vec<(usize, f64)> = short.iter().map(|&i| {
         let mut n = 0.0;
         for &seed in &seeds {
@@ -1177,7 +1263,7 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
         Some(p) if table.is_some_and(|t| t.roll_list) => listing(p),
         Some(p) => fast(p),
         None => ROLLOUT.to_string(),
-    }).collect();
+    }).map(|p| if table.is_some_and(|t| t.judge) && persona_of(&p).is_some() { format!("{p},judge=1") } else { p }).collect();
     let mut moves = 0;
     while moves < SIM_MAX_MOVES && s.phase == Phase::Play && s.round == round {
         moves += 1;
@@ -1219,6 +1305,57 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
         }
     }
     s
+}
+
+/// The draft by play-outs (persona dplan): keep the cards already kept and add the batch card whose hand plays the
+/// round best: the rest of the draft picked by every seat's own (fast) bot, then the round played out to its vote.
+fn draft_by_playouts(s: &GameState, pid: Pid, rng: Rng, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, seats: &Seats, n: usize) -> Option<Move> {
+    let me = pid as usize;
+    let p = &s.players[me];
+    let mut cands: Vec<CardIx> = Vec::new();
+    for &c in &p.batch {
+        if !cands.contains(&c) {
+            cands.push(c);
+        }
+    }
+    if cands.len() < 2 {
+        return None;
+    }
+    let profiles: Vec<String> = (0..s.n()).map(|id| seats.profiles.as_ref().and_then(|t| t.get(&(id as Pid))).map(|x| fast(x)).unwrap_or_else(|| ROLLOUT.to_string())).collect();
+    let mems: Vec<BotMemory> = (0..s.n()).map(|id| if id == me { memory.cloned().unwrap_or_default() } else { seats.memories.as_ref().and_then(|m| m.get(&(id as Pid))).cloned().unwrap_or_default() }).collect();
+    let mut best: Option<(Move, f64)> = None;
+    for &c in &cands {
+        let mut keep: Vec<CardIx> = p.kept.iter().copied().collect();
+        keep.push(c);
+        let m = Move::Pick { keep };
+        if !legal(s, pid, &m) {
+            continue;
+        }
+        let mut total = 0.0;
+        for _ in 0..n {
+            let mut x = after(s, pid, &m);
+            let mut mem = mems.clone();
+            // The rest of the draft, every seat by its own fast bot.
+            let mut guard = 0;
+            while x.phase == Phase::Draft && guard < 200 {
+                guard += 1;
+                let Some(id) = (0..x.n()).find(|&i| !x.players[i].picked) else { break };
+                let Some(mv) = play_move(&x, id as Pid, &mut *rng, &profiles[id], Some(&mut mem[id]), &Seats::default(), None) else { break };
+                x = after(&x, id as Pid, &mv);
+            }
+            if x.phase != Phase::Play {
+                total += ev(&x);
+                continue;
+            }
+            let end = play_out_round(&x, seed_of(rng), pid, Some(&mem[me]), Some(seats), None);
+            total += ev(&end);
+        }
+        let v = total / n as f64;
+        if best.as_ref().is_none_or(|b| v > b.1) {
+            best = Some((m, v));
+        }
+    }
+    best.map(|b| b.0)
 }
 
 /// How much a card adds, played as well as the bot can find right now (the draft's rough worth).

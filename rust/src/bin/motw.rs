@@ -22,6 +22,7 @@ fn main() {
         Some("fingerprint") => fingerprint(&args[1..]),
         Some("time") => time(&args[1..]),
         Some("tournament") => tournament(&args[1..]),
+        Some("fit") => fit(&args[1..]),
         _ => eprintln!("usage: motw fingerprint games=20 seed=1 profiles=a;b;... | motw time profile=bot:lean=0.3"),
     }
 }
@@ -119,6 +120,85 @@ fn time(args: &[String]) {
     println!("{profile}: {timed} decisions, {:.2} s each on average, {:.2} s at most", total / timed.max(1) as f64, worst);
 }
 
+/// Fits the learned judge (judge.rs) from games logged with positions=1: `fit in=a.jsonl,b.jsonl out=data/judge.json`.
+/// Every fifth game is held out first, to compare the learned judge with the hand formula on games it never saw;
+/// then it is fitted on all of them and written, with the comparison.
+fn fit(args: &[String]) {
+    use motw::judge::*;
+    let (kv, _) = opts(args);
+    let files: Vec<String> = kv.get("in").map(|x| x.split(',').map(|s| s.to_string()).collect()).unwrap_or_default();
+    let out = kv.get("out").cloned();
+    // (game index, seats, invaders?, winners, rows)
+    let mut games: Vec<(usize, usize, bool, Vec<usize>, Vec<Vec<f64>>)> = Vec::new();
+    for f in &files {
+        let text = std::fs::read_to_string(f).unwrap_or_default();
+        for line in text.lines() {
+            let Ok(v) = serde_json::from_str::<serde_json::Value>(line) else { continue };
+            let Some(pos) = v["positions"].as_array() else { continue };
+            if pos.is_empty() { continue; }
+            let seats = v["seats"].as_object().map_or(0, |m| m.len());
+            let inv = v["side"] == "invaders";
+            let winners: Vec<usize> = v["winners"].as_array().map(|a| a.iter().filter_map(|w| w.as_str()?.trim_start_matches('P').parse::<usize>().ok().map(|i| i - 1)).collect()).unwrap_or_default();
+            let rows: Vec<Vec<f64>> = pos.iter().map(|r| r.as_array().map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default()).collect();
+            let i = games.len();
+            games.push((i, seats, inv, winners, rows));
+        }
+    }
+    let (v0, i0, s0) = (3, 3 + VOTE_N, 3 + VOTE_N + WIN_N);
+    let old = s0 + WIN_N;
+    type Rows = Vec<(Vec<f64>, f64, f64)>;
+    let sets = |keep: &dyn Fn(usize) -> bool| -> (Rows, Rows, Rows) {
+        let (mut vote, mut inv, mut isl) = (Vec::new(), Vec::new(), Vec::new());
+        for (i, n, side, win, rows) in &games {
+            if !keep(*i) { continue; }
+            for r in rows {
+                let won = if win.contains(&(r[0] as usize)) { 1.0 } else { 0.0 };
+                if r[2] < 0.0 { vote.push((r[v0..i0].to_vec(), if *side { 1.0 } else { 0.0 }, 1.0 / *n as f64)); }
+                if *side { inv.push((r[i0..s0].to_vec(), won, 1.0)); } else { isl.push((r[s0..old].to_vec(), won, 1.0)); }
+            }
+        }
+        (vote, inv, isl)
+    };
+    let ridge = 0.5;
+    let (tv, ti, ts) = sets(&|i| i % 5 != 0);
+    let w = Weights { vote: fit_logistic(&tv, ridge), inv: fit_logistic(&ti, ridge), isl: fit_logistic(&ts, ridge) };
+    // Held out: the ending, then the winner, learned against the hand formula (and a coin: 1/seats to win).
+    let (mut e_new, mut e_old, mut w_new, mut w_old, mut w_base) = (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
+    for (i, n, side, win, rows) in &games {
+        if i % 5 != 0 { continue; }
+        for r in rows {
+            let y = if *side { 1.0 } else { 0.0 };
+            let won = if win.contains(&(r[0] as usize)) { 1.0 } else { 0.0 };
+            let p = if r[2] >= 0.0 { r[2] } else { sigmoid(r[v0..i0].iter().zip(&w.vote).map(|(a, b)| a * b).sum()) };
+            if r[2] < 0.0 {
+                e_new.push((p, y, 1.0 / *n as f64));
+                e_old.push((r[old], y, 1.0 / *n as f64));
+            }
+            let wi = sigmoid(r[i0..s0].iter().zip(&w.inv).map(|(a, b)| a * b).sum());
+            let ws = sigmoid(r[s0..old].iter().zip(&w.isl).map(|(a, b)| a * b).sum());
+            w_new.push((p * wi + (1.0 - p) * ws, won, 1.0));
+            let po = if r[2] >= 0.0 { r[2] } else { r[old] };
+            // The hand formula's win reading, scaled to the seats (its as_* are relative scores, not probabilities).
+            let raw = po * r[old + 1] + (1.0 - po) * r[old + 2];
+            w_old.push(((raw * 2.0 / *n as f64).min(0.99), won, 1.0));
+            w_base.push((1.0 / *n as f64, won, 1.0));
+        }
+    }
+    let report = format!("held out ({} games): the ending's log loss {:.3} learned vs {:.3} hand formula; the winner's {:.3} learned vs {:.3} hand formula vs {:.3} a coin",
+        games.iter().filter(|g| g.0 % 5 == 0).count(), log_loss(&e_new), log_loss(&e_old), log_loss(&w_new), log_loss(&w_old), log_loss(&w_base));
+    println!("{report}");
+    let (av, ai, as_) = sets(&|_| true);
+    let all = Weights { vote: fit_logistic(&av, ridge), inv: fit_logistic(&ai, ridge), isl: fit_logistic(&as_, ridge) };
+    if let Some(out) = out {
+        let json = serde_json::json!({
+            "about": format!("The learned judge's weights (judge.rs), written by `motw fit` from {} games; {report}.", games.len()),
+            "vote": all.vote, "inv": all.inv, "isl": all.isl,
+        });
+        std::fs::write(&out, serde_json::to_string_pretty(&json).unwrap() + "\n").expect("write");
+        println!("wrote {out}");
+    }
+}
+
 fn tournament(args: &[String]) {
     use std::io::Write;
     let (kv, options) = opts(args);
@@ -150,6 +230,7 @@ fn tournament(args: &[String]) {
                     "r": p.round, "seat": id(&p.seat), "card": p.card, "use": p.use_, "dPresence": p.d_presence, "dStanding": p.d_standing,
                     "dTrophies": p.d_trophies, "placed": p.placed, "moved": p.moved, "closed": p.closed, "goal": p.goal, "pInvaders": (p.p_invaders * 1000.0).round() / 1000.0,
                 })).collect::<Vec<_>>(),
+                "positions": x.positions,
                 "swings": x.swings.iter().map(|w| serde_json::json!({
                     "r": w.round, "seat": id(&w.seat), "presence": w.presence, "groups": w.groups, "maxGroup": w.max_group, "groups4": w.groups4,
                     "best": w.best, "bestFree": w.best_free, "cards": w.cards.iter().map(|c| serde_json::json!([c.0, c.1, c.2])).collect::<Vec<_>>(),
@@ -162,6 +243,7 @@ fn tournament(args: &[String]) {
     let board = kv.get("board").is_some_and(|x| x == "1");
     // stopAfter=1: the opening study; each game stops after that round (board=1 and boardRound follow it).
     if kv.get("swing").is_some_and(|x| x == "1") { motw::tournament::SWING.store(true, std::sync::atomic::Ordering::Relaxed); }
+    if kv.get("positions").is_some_and(|x| x == "1") { motw::tournament::POSITIONS.store(true, std::sync::atomic::Ordering::Relaxed); }
     if let Some(n) = kv.get("stopAfter").and_then(|x| x.parse::<i32>().ok()) { motw::tournament::STOP_AFTER.store(n, std::sync::atomic::Ordering::Relaxed); }
     let played = motw::tournament::run_with(seed, games, &list, &options, duplicate, workers, board, &done);
     eprintln!();

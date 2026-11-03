@@ -10,6 +10,7 @@ pub mod fingerprint;
 pub mod choice;
 pub mod game;
 pub mod json;
+pub mod judge;
 pub mod setup;
 pub mod small;
 pub mod spec;

@@ -1124,6 +1124,16 @@
           "description": ""
         },
         {
+          "id": "32",
+          "label": "32",
+          "description": ""
+        },
+        {
+          "id": "34",
+          "label": "34",
+          "description": ""
+        },
+        {
           "id": "35",
           "label": "35",
           "description": ""
@@ -1448,6 +1458,11 @@
           "id": "two",
           "label": "2 on each",
           "description": "SD1 (designer, 2026-10-21): 2 on each of the three (30 in all)."
+        },
+        {
+          "id": "home2",
+          "label": "5, 2, 2",
+          "description": "Designer's seed (2026-11-02; testing): 5 on one of the three, 2 on each of the others (45 in all)."
         }
       ]
     },

@@ -85,6 +85,7 @@ pub fn create_game(seed: i64, players: &[String], raw_options: &[(String, String
                 Seeding::Two => sp.seeding_two,
                 Seeding::Even => sp.seeding_even,
                 Seeding::Home => if l == items[0] { sp.seeding_home } else { sp.seeding_other },
+                Seeding::HomeTwo => if l == items[0] { sp.seeding_home } else { sp.seeding_two },
             };
             board[l as usize].tokens.set(f, n);
             placed += n;

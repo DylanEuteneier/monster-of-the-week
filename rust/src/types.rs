@@ -161,6 +161,8 @@ pub enum Seeding {
     Two,
     Even,
     Home,
+    /// 5 on one, 2 on each of the others (designer's seed, 2026-11-02).
+    HomeTwo,
 }
 
 /// The variants chosen for a game (spec.json `variants`), resolved, with their raw choices in the spec's order.
@@ -275,6 +277,7 @@ impl Options {
             seeding: match get("seeding") {
                 "even" => Seeding::Even,
                 "home" => Seeding::Home,
+                "home2" => Seeding::HomeTwo,
                 _ => Seeding::Two,
             },
             unpaid: std::cell::OnceCell::new(),
