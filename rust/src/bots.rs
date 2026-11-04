@@ -51,7 +51,7 @@ const ROLLOUT: &str = "bot:lean=-0.3,sim=0,enum=0,combo=0";
 const TABLE_BACKING: i32 = 8;
 const TABLE_BASE: f64 = 0.3;
 const TABLE_STEP: f64 = 0.15;
-const ISLAND: [f64; 4] = [1.0, 0.35, 0.12, 0.02];
+pub const ISLAND: [f64; 4] = [1.0, 0.35, 0.12, 0.02];
 /// What a cube in a bot's own supply is worth to it.
 const SUPPLY_VALUE: f64 = 0.02;
 
@@ -308,6 +308,8 @@ fn project_fights_cached(s: &GameState) -> GameState {
 /// The chance of winning, by ending (winChances).
 #[derive(Clone, Copy, Debug)]
 pub struct Chances {
+    /// The seat this reading is for.
+    pub pid: Pid,
     pub p_invaders: f64,
     pub prior: f64,
     pub known: f64,
@@ -360,6 +362,11 @@ struct FightKey {
 /// the seats' groups and the options, and only adds to the players' and supplies' totals, so fights are independent:
 /// each is remembered by its content, and a position that differs from one already projected at a few locations
 /// fights only those again.
+/// The board after this round's fights already set (for the learned judge's features).
+pub fn projected(s: &GameState) -> GameState {
+    project_fights_cached(s)
+}
+
 fn project_fights(s: &GameState) -> GameState {
     thread_local! {
         // The options the results hold for (kept alive, so the cache starts afresh when another game's differ).
@@ -596,7 +603,7 @@ fn chances_after(s: &GameState, pid: Pid) -> Chances {
     let settled = if rounds > 1.0 { ((s.round as f64 - 1.0) / (rounds - 1.0)).min(1.0) } else { 1.0 };
     let known = if s.options.round_votes { 1.0 } else { settled };
     let p_invaders = (1.0 - known) * prior + known * invaders_reach(s, projected, threshold, spread_p, 0.0, false);
-    Chances { p_invaders, prior, known, settled, backers, linear_island, rival_invaders, as_invaders, as_island, margin_invaders, margin_island, projected, threshold, spread_p, rounds_left }
+    Chances { pid, p_invaders, prior, known, settled, backers, linear_island, rival_invaders, as_invaders, as_island, margin_invaders, margin_island, projected, threshold, spread_p, rounds_left }
 }
 
 /// How good a position is for `pid` (evaluate).

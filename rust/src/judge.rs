@@ -31,7 +31,7 @@ pub fn weights() -> Option<&'static Weights> {
 }
 
 pub const VOTE_N: usize = 9;
-pub const WIN_N: usize = 7;
+pub const WIN_N: usize = 11;
 
 /// How much of the round's play is left (1 outside Play: the coming round is all ahead).
 pub fn round_left(s: &GameState) -> f64 {
@@ -82,13 +82,36 @@ pub fn vote_features(s: &GameState, c: &Chances) -> [f64; VOTE_N] {
 /// P(win | an ending) features: the seat count's base rate, the hand formula's own reading, and the leads it is
 /// built from (invaders: standing net of trophies over the best rival, weighted by presence; island: the weakest
 /// colours over the best rival's), with the rounds left to change them.
+///
+/// A bank of the same reading at several settings, for the fit to weigh (2026-11-03): invaders, the chance a faction
+/// ends strongest (presence softmax, sharp or loose) times the chance this seat leads it (a sigmoid of the lead, sharp,
+/// middling or loose); island, the weakest-colour margin over the best rival at three sharpnesses.
 pub fn win_features(s: &GameState, c: &Chances, invaders: bool) -> [f64; WIN_N] {
     let base = -((s.n() as f64 - 1.0).max(1.0)).ln();
+    let pid = c_pid(s, c);
+    let left = c.rounds_left / 4.0;
     if invaders {
-        [1.0, base, logit(c.as_invaders), c.margin_invaders / 3.0, c.rival_invaders, c.rounds_left / 4.0, c.margin_invaders / 3.0 * c.rounds_left / 4.0]
+        let x = crate::bots::projected(s);
+        let pres: Vec<f64> = (0..5).map(|f| crate::board::presence_of(&x, f as Fac) as f64).collect();
+        let top = pres.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+        let net = |i: usize, f: usize| (x.players[i].standing[f] - x.players[i].trophies[f]) as f64;
+        let lead: Vec<f64> = (0..5).map(|f| net(pid, f) - (0..x.n()).filter(|&o| o != pid).map(|o| net(o, f)).fold(f64::NEG_INFINITY, f64::max)).collect();
+        let bank = |temp: f64, spread: f64| {
+            let w: Vec<f64> = pres.iter().map(|&p| ((p - top) / temp).exp()).collect();
+            let sum: f64 = w.iter().sum();
+            (0..5).map(|f| w[f] / sum * sigmoid(lead[f] / spread)).sum::<f64>()
+        };
+        let (a, b) = (1.0 + 1.5 * c.rounds_left, 3.0 + 3.0 * c.rounds_left);
+        [1.0, base, logit(bank(a, 0.5)), logit(bank(a, 1.5)), logit(bank(a, 3.0)), logit(bank(b, 0.5)), logit(bank(b, 1.5)), logit(bank(b, 3.0)), c.rival_invaders, left, c.margin_invaders / 3.0 * left]
     } else {
-        [1.0, base, logit(c.as_island), c.margin_island / 3.0, c.linear_island / 3.0, c.rounds_left / 4.0, c.margin_island / 3.0 * c.rounds_left / 4.0]
+        let m = c.margin_island;
+        [1.0, base, logit(sigmoid(m / 0.3)), logit(sigmoid(m / 1.0)), logit(sigmoid(m / 3.0)), c.linear_island / 3.0, logit(c.as_island), m / 3.0, m.max(0.0) / 3.0, left, m / 3.0 * left]
     }
+}
+
+/// The seat a Chances was read for (the judge rows carry it; Chances doesn't).
+fn c_pid(_s: &GameState, c: &Chances) -> usize {
+    c.pid as usize
 }
 
 fn logit(p: f64) -> f64 {
