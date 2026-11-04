@@ -31,7 +31,8 @@ pub fn weights() -> Option<&'static Weights> {
 }
 
 pub const VOTE_N: usize = 9;
-pub const WIN_N: usize = 11;
+pub const WIN_N: usize = 11 + EXTRA_N;
+const EXTRA_N: usize = 12;
 
 /// How much of the round's play is left (1 outside Play: the coming round is all ahead).
 pub fn round_left(s: &GameState) -> f64 {
@@ -102,11 +103,71 @@ pub fn win_features(s: &GameState, c: &Chances, invaders: bool) -> [f64; WIN_N] 
             (0..5).map(|f| w[f] / sum * sigmoid(lead[f] / spread)).sum::<f64>()
         };
         let (a, b) = (1.0 + 1.5 * c.rounds_left, 3.0 + 3.0 * c.rounds_left);
-        [1.0, base, logit(bank(a, 0.5)), logit(bank(a, 1.5)), logit(bank(a, 3.0)), logit(bank(b, 0.5)), logit(bank(b, 1.5)), logit(bank(b, 3.0)), c.rival_invaders, left, c.margin_invaders / 3.0 * left]
+        let mut order: Vec<usize> = (0..5).collect();
+        order.sort_by(|&a, &b| pres[b].partial_cmp(&pres[a]).unwrap_or(std::cmp::Ordering::Equal));
+        let own = [lead[order[0]] / 3.0, lead[order[1]] / 3.0, (pres[order[0]] - pres[order[1]]) / 5.0];
+        let head = [1.0, base, logit(bank(a, 0.5)), logit(bank(a, 1.5)), logit(bank(a, 3.0)), logit(bank(b, 0.5)), logit(bank(b, 1.5)), logit(bank(b, 3.0)), c.rival_invaders, left, c.margin_invaders / 3.0 * left];
+        join(head, extras(s, pid, own))
     } else {
         let m = c.margin_island;
-        [1.0, base, logit(sigmoid(m / 0.3)), logit(sigmoid(m / 1.0)), logit(sigmoid(m / 3.0)), c.linear_island / 3.0, logit(c.as_island), m / 3.0, m.max(0.0) / 3.0, left, m / 3.0 * left]
+        // The weakest colour: mine against the best rival's.
+        let weakest = |i: usize| (0..5).map(|f| s.players[i].trophies[f]).min().unwrap_or(0) as f64;
+        let rival = (0..s.n()).filter(|&o| o != pid).map(weakest).fold(f64::NEG_INFINITY, f64::max);
+        let own = [(weakest(pid) - rival) / 2.0, weakest(pid) / 3.0, 0.0];
+        let head = [1.0, base, logit(sigmoid(m / 0.3)), logit(sigmoid(m / 1.0)), logit(sigmoid(m / 3.0)), c.linear_island / 3.0, logit(c.as_island), m / 3.0, m.max(0.0) / 3.0, left, m / 3.0 * left];
+        join(head, extras(s, pid, own))
     }
+}
+
+/// What both endings' winner models also see (2026-11-03): the fights already set where this seat holds the most
+/// sway and the second most (trophies and standing come from fights), its cards, supply and sway on the board against
+/// the table's mean, and three ending-specific readings (`own`).
+fn extras(s: &GameState, pid: usize, own: [f64; 3]) -> [f64; EXTRA_N] {
+    let (mut first, mut second) = (0.0, 0.0);
+    for l in crate::game::fights_due(s) {
+        let sway = &s.board[l as usize].sway;
+        let mine = sway.get(pid as u8);
+        if mine <= 0 {
+            continue;
+        }
+        let above = (0..s.n()).filter(|&o| o != pid && sway.get(o as u8) > mine).count();
+        if above == 0 {
+            first += 1.0;
+        } else if above == 1 {
+            second += 1.0;
+        }
+    }
+    let n = s.n() as f64;
+    let mean = |f: &dyn Fn(usize) -> f64| (0..s.n()).map(f).sum::<f64>() / n;
+    let hand = |i: usize| s.players[i].hand.len() as f64;
+    let supply = |i: usize| s.players[i].supply as f64;
+    let board = |i: usize| s.board.iter().map(|p| p.sway.get(i as u8)).sum::<i32>() as f64;
+    // Where the trophies are (designer, 2026-11-03): the fights already set, played out — the trophies each seat is
+    // set to gain, mine in my weakest colour, and what is within reach (each fight's tokens, weighted by how close I am
+    // to the most sway there).
+    let x = crate::bots::projected(s);
+    let gain = |i: usize| (0..5).map(|f| x.players[i].trophies[f] - s.players[i].trophies[f]).sum::<i32>() as f64;
+    let rival_gain = (0..s.n()).filter(|&o| o != pid).map(gain).fold(0.0, f64::max);
+    let low = |g: &GameState| (0..5).map(|f| g.players[pid].trophies[f]).min().unwrap_or(0) as f64;
+    let mut reach = 0.0;
+    for l in crate::game::fights_due(s) {
+        let at = &s.board[l as usize];
+        let size: i32 = at.tokens.iter().map(|e| e.1).sum();
+        let mine = at.sway.get(pid as u8) as f64;
+        let best = (0..s.n()).filter(|&o| o != pid).map(|o| at.sway.get(o as u8)).max().unwrap_or(0) as f64;
+        reach += size as f64 * sigmoid(mine - best + 0.5);
+    }
+    [
+        first / 2.0, second / 2.0, hand(pid) - mean(&hand), (supply(pid) - mean(&supply)) / 3.0, (board(pid) - mean(&board)) / 3.0, own[0], own[1], own[2],
+        gain(pid) / 3.0, rival_gain / 3.0, low(&x) - low(s), reach / 8.0,
+    ]
+}
+
+fn join(a: [f64; 11], b: [f64; EXTRA_N]) -> [f64; WIN_N] {
+    let mut out = [0.0; WIN_N];
+    out[..11].copy_from_slice(&a);
+    out[11..].copy_from_slice(&b);
+    out
 }
 
 /// The seat a Chances was read for (the judge rows carry it; Chances doesn't).

@@ -53,6 +53,8 @@ pub struct Game {
     pub swings: Vec<SwingLog>,
     /// Positions for the learned judge (POSITIONS or `positions=1`): each seat's judge row at each turn of play.
     pub positions: Vec<Vec<f64>>,
+    /// Every real fight: who held what sway there and who took which pile (how bots contest fights).
+    pub fight_log: Vec<crate::game::FightRec>,
 }
 
 /// A round's close: each faction's presence (by slot) before and after its fights and at its end (after nightfall and
@@ -282,6 +284,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let mut flow: Vec<Flow> = Vec::new();
     crate::game::take_flow();
     crate::game::take_fights();
+    crate::game::take_fight_log();
     let mut fights_seen: Vec<([i32; 5], [i32; 5], usize)> = Vec::new();
     let mut rounds: Vec<RoundLog> = Vec::new();
     let mut playlog: Vec<PlayLog> = Vec::new();
@@ -403,7 +406,9 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         Some(r) => (r.island, r.players.clone(), r.placings.clone()),
         None => { assert!(stop > 0, "a finished game"); (false, Vec::new(), Vec::new()) }
     };
+    let fight_log = crate::game::take_fight_log();
     Game {
+        fight_log,
         g,
         seats,
         island,

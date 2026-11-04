@@ -106,6 +106,11 @@ const skill = (gs, r) => { const rate = share(gs, (g) => g.side === 'invaders');
 const turnsOf = (gs) => gs.flatMap((g) => g.swings ?? []);
 const swing = (p) => (p.moved ?? 0) + sum(p.dPresence.map((d) => Math.max(0, -d)));
 const isl = (gs) => gs.filter((g) => g.side !== 'invaders');
+// Fights (fightLog, 2026-11-03): each real fight's sway by seat and its piles ([size, seat or null]).
+const fightsOf = (gs) => gs.flatMap((g) => (g.fightLog ?? []).map((f) => ({ ...f, size: sum(f.piles.map((p) => p[0])) + f.wiped })));
+// Each round's biggest fights: the top third by trophies at stake (at least one), per game and round.
+const bigFights = (gs) => gs.flatMap((g) => { const by = {}; for (const f of fightsOf([g])) (by[f.r] ??= []).push(f); return Object.values(by).flatMap((fs) => { const s = [...fs].sort((a, b) => b.size - a.size); return s.slice(0, Math.max(1, Math.round(s.length / 3))); }); });
+const takenBy = (f, i) => sum(f.piles.filter((p) => p[1] === i).map((p) => p[0]));
 
 const MEASURES = [
   ['Push and pull', 'Invaders\' endings', '1.4 knife\'s edge; D33 about 40%', (gs) => share(gs, (g) => g.side === 'invaders'), pct, 'invaderShare'],
@@ -184,6 +189,13 @@ const MEASURES = [
 
   ['Read the table', 'Goal switches per seat (mean)', '1.2 read the table', (gs) => mean(gs.flatMap((g) => g.rounds[0].seats.map((_, i) => { const s = g.rounds.map((r) => r.seats[i].goal).filter(Boolean); return s.filter((x, j) => j && x !== s[j - 1]).length; }))), num(2)],
   ['Read the table', 'Seats split between endings after round 3', '1.1 players pull both ways', (gs) => share(gs, (g) => new Set(g.rounds[2]?.seats.map((s) => s.goal).filter(Boolean)).size > 1), pct, 'splitR3'],
+
+  ['Contesting fights', 'Trophies at stake per fight (mean); fights per game', 'designer: where the big trophy gains are', (gs) => { const f = fightsOf(gs); return f.length ? `${num(1)(mean(f.map((x) => x.size)))}; ${num(1)(f.length / gs.length)}` : '–'; }, String],
+  ['Contesting fights', 'Trophies left on the table (piles back to supply: no sway, or tied)', 'designer: bots contest the fights', (gs) => { const f = fightsOf(gs); const all = sum(f.map((x) => x.size)); return all ? sum(f.map((x) => sum(x.piles.filter((p) => p[1] === null).map((p) => p[0])) + x.wiped)) / all : NaN; }, pct],
+  ['Contesting fights', 'Fights nobody swayed / contested by 2+ seats', 'designer: bots contest the fights', (gs) => { const f = fightsOf(gs); return `${pct(share(f, (x) => !x.sway.some(Boolean)))} / ${pct(share(f, (x) => x.sway.filter(Boolean).length >= 2))}`; }, String],
+  ['Contesting fights', 'Each round\'s biggest fights (top third): contested by 2+ seats', 'designer: the big trophy gains are fought over', (gs) => share(bigFights(gs), (x) => x.sway.filter(Boolean).length >= 2), pct],
+  ['Contesting fights', 'Sway on the biggest fights vs the trophies there (share of each round\'s total)', 'designer: sway goes where the trophies are (sway share ≥ trophy share)', (gs) => { const all = fightsOf(gs), big = bigFights(gs); const sw = sum(all.map((x) => sum(x.sway))), tr = sum(all.map((x) => x.size)); return sw && tr ? `${pct(sum(big.map((x) => sum(x.sway))) / sw)} of sway / ${pct(sum(big.map((x) => x.size)) / tr)} of trophies` : '–'; }, String],
+  ['Contesting fights', 'Trophies taken from the biggest fights, by seat', 'designer: which bots win the big fights (compare a challenger seat)', (gs) => { const b = bigFights(gs); const n = gs[0]?.rounds[0].seats.length ?? 0; const tr = sum(b.map((x) => x.size)); return tr ? Array.from({ length: n }, (_, i) => pct(sum(b.map((x) => takenBy(x, i))) / tr)).join(' / ') : '–'; }, String],
 
   ['Bot quality', 'Forecast calibration error (all rounds; 0 = says 70%, happens 70%)', 'do the bots read the game right?', (gs) => calibration(gs), num(2), 'calibration'],
   ['Bot quality', 'Forecast skill over the base rate, R1–R5 (1 = perfect, 0 = no better than always guessing the usual split)', 'predictions improve as the game unfolds', (gs) => [1, 2, 3, 4, 5].map((r) => num(2)(skill(gs, r))).join(' / '), String],

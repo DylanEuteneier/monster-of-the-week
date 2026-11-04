@@ -236,6 +236,9 @@ fn tournament(args: &[String]) {
                     "dTrophies": p.d_trophies, "placed": p.placed, "moved": p.moved, "closed": p.closed, "goal": p.goal, "pInvaders": (p.p_invaders * 1000.0).round() / 1000.0,
                 })).collect::<Vec<_>>(),
                 "positions": x.positions,
+                "fightLog": x.fight_log.iter().map(|f| serde_json::json!({
+                    "r": f.round, "loc": f.loc, "sway": &f.sway[..x.seats.len()], "piles": f.piles.iter().map(|p| serde_json::json!([p.0, p.1])).collect::<Vec<_>>(), "wiped": f.scorched,
+                })).collect::<Vec<_>>(),
                 "swings": x.swings.iter().map(|w| serde_json::json!({
                     "r": w.round, "seat": id(&w.seat), "presence": w.presence, "groups": w.groups, "maxGroup": w.max_group, "groups4": w.groups4,
                     "best": w.best, "bestFree": w.best_free, "cards": w.cards.iter().map(|c| serde_json::json!([c.0, c.1, c.2])).collect::<Vec<_>>(),
