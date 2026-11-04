@@ -305,8 +305,9 @@ fn tournament(args: &[String]) {
                 "positions": x.positions,
                 "fightLog": x.fight_log.iter().map(|f| serde_json::json!({
                     "r": f.round, "loc": f.loc, "sway": &f.sway[..x.seats.len()], "piles": f.piles.iter().map(|p| serde_json::json!([p.0, p.1])).collect::<Vec<_>>(), "wiped": f.scorched,
-                    "supply": &f.supply[..x.seats.len()], "hand": &f.hand[..x.seats.len()], "mv": f.mv,
+                    "supply": &f.supply[..x.seats.len()], "hand": &f.hand[..x.seats.len()], "mv": f.mv, "left": &f.left[..x.seats.len()],
                 })).collect::<Vec<_>>(),
+                "nightLog": x.night_log.iter().map(|n| serde_json::json!({ "r": n.round, "loc": n.loc, "n": n.n, "sway": &n.sway[..x.seats.len()] })).collect::<Vec<_>>(),
                 "tieTurns": x.tie_turns.iter().map(|t| serde_json::json!({ "mv": t.mv, "r": t.round, "seat": t.seat, "loc": t.loc, "size": t.size, "could": t.could, "did": t.did, "listed": t.listed, "rank": t.rank, "playedOut": t.played_out, "breakValue": t.break_value, "chosenValue": t.chosen_value, "breakQuick": t.break_quick, "chosenQuick": t.chosen_quick, "goal": t.goal })).collect::<Vec<_>>(),
                 "quickTurns": x.quick_turns.iter().map(|q| serde_json::json!({ "mv": q.mv, "r": q.round, "seat": q.seat, "same": q.same, "sameCard": q.same_card, "realPass": q.real_pass, "quickPass": q.quick_pass,
                     "quickScore": q.quick_score, "realScore": q.real_score, "realTie": q.real_tie, "quickTie": q.quick_tie, "realBreak": q.real_break, "quickBreak": q.quick_break, "second": q.second, "variants": q.variants, "noise": q.noise.iter().map(|r| serde_json::json!([r.0, r.1, r.2, r.3, r.4, r.5])).collect::<Vec<_>>() })).collect::<Vec<_>>(),

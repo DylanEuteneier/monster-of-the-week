@@ -55,6 +55,8 @@ pub struct Game {
     pub positions: Vec<Vec<f64>>,
     /// Every real fight: who held what sway there and who took which pile (how bots contest fights).
     pub fight_log: Vec<crate::game::FightRec>,
+    /// Every nightfall arrival, with the sway that brought it.
+    pub night_log: Vec<crate::game::NightRec>,
     /// Every change of a seat's sway at a location during play: (move, round, location, mover, sway before, after).
     pub sway_log: Vec<SwayChange>,
     /// Turns tied for the most sway at a fight already set (`ties=1`).
@@ -334,10 +336,11 @@ pub struct QuickRound {
 fn tie_actions(s: &crate::types::GameState, pid: Pid, m: &crate::types::Move) -> (bool, bool) {
     let locs = crate::game::fights_due(s);
     if locs.is_empty() { return (false, false); }
-    let (flow, fights, earlier) = (crate::game::take_flow(), crate::game::take_fights(), crate::game::take_fight_log());
+    let (flow, fights, earlier, night) = (crate::game::take_flow(), crate::game::take_fights(), crate::game::take_fight_log(), crate::game::take_night_log());
     let b = crate::game::apply_move(s, pid, m);
     let fought = crate::game::take_fight_log();
     crate::game::put_back(flow, fights, earlier);
+    crate::game::put_back_night(night);
     let Ok(b) = b else { return (false, false) };
     let (mut made, mut broke) = (false, false);
     for l in locs {
@@ -403,10 +406,11 @@ fn first_at(sway: &[i32; 5], pid: Pid, n: usize) -> bool {
 /// Which of `locs` a move leaves `pid` strictly first at (a play that ends the round: the sway just before its fights).
 /// Real (logging) states, so the runner's own logs are set aside first and put back after.
 fn breaks(s: &crate::types::GameState, pid: Pid, m: &crate::types::Move, locs: &[u8]) -> Vec<bool> {
-    let (flow, fights, earlier) = (crate::game::take_flow(), crate::game::take_fights(), crate::game::take_fight_log());
+    let (flow, fights, earlier, night) = (crate::game::take_flow(), crate::game::take_fights(), crate::game::take_fight_log(), crate::game::take_night_log());
     let b = crate::game::apply_move(s, pid, m);
     let fought = crate::game::take_fight_log();
     crate::game::put_back(flow, fights, earlier);
+    crate::game::put_back_night(night);
     let Ok(b) = b else { return vec![false; locs.len()] };
     locs.iter().map(|&l| {
         let sway: [i32; 5] = match fought.iter().find(|f| f.loc == l) {
@@ -453,7 +457,9 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     crate::game::take_flow();
     crate::game::take_fights();
     crate::game::take_fight_log();
+    crate::game::take_night_log();
     let mut fight_log: Vec<crate::game::FightRec> = Vec::new();
+    let mut night_log: Vec<crate::game::NightRec> = Vec::new();
     let mut sway_log: Vec<SwayChange> = Vec::new();
     let mut tie_turns: Vec<TieTurn> = Vec::new();
     let ties_on = TIES.load(std::sync::atomic::Ordering::Relaxed);
@@ -716,6 +722,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                 }
             }
             fight_log.extend(fought);
+            night_log.extend(crate::game::take_night_log());
         }
         moves += 1;
         if s.votes != last_votes {
@@ -739,6 +746,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     };
     Game {
         fight_log,
+        night_log,
         sway_log,
         tie_turns,
         quick_turns,

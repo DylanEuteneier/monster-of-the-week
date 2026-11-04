@@ -341,6 +341,32 @@ pub struct FightRec {
     pub hand: [i32; 5],
     /// The move of the game it came in (set by the runner, to order it against sway changes).
     pub mv: usize,
+    /// Each seat's sway left at the location after the fight (AF3: all but first claim's; none when scorched).
+    pub left: [i32; 5],
+}
+
+/// One nightfall arrival (a measuring aid, `motw tournament`, designer 2026-11-04): the round, the location, the
+/// tokens it brought, and each seat's sway there that brought them.
+#[derive(Clone, Debug)]
+pub struct NightRec {
+    pub round: i32,
+    pub loc: Loc,
+    pub n: i32,
+    pub sway: [i32; 5],
+}
+
+thread_local! {
+    static NIGHT_LOG: std::cell::RefCell<Vec<NightRec>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// The real game's nightfall arrivals since last taken.
+pub fn take_night_log() -> Vec<NightRec> {
+    NIGHT_LOG.with(|f| std::mem::take(&mut *f.borrow_mut()))
+}
+
+/// Put back what take_night_log took (the runner's what-if checks play real states).
+pub fn put_back_night(log: Vec<NightRec>) {
+    NIGHT_LOG.with(|f| *f.borrow_mut() = log);
 }
 
 /// The real game's fights since last taken (a measuring aid, `motw tournament`).
@@ -432,6 +458,10 @@ fn nightfall_tokens(s: &mut GameState, fought: &[bool]) {
         s.board[l as usize].tokens.add(f, n);
         s.supply[f as usize] -= n;
         brought += n;
+        if !s.quiet {
+            let sway: [i32; 5] = std::array::from_fn(|o| s.board[l as usize].sway.get(o as u8));
+            NIGHT_LOG.with(|x| x.borrow_mut().push(NightRec { round: s.round, loc: l, n, sway }));
+        }
     }
     if !s.quiet {
         note_flow(0, brought);
@@ -562,7 +592,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         s.board[li].scorched = true;
         if !s.quiet {
             let lost: i32 = s.board[li].tokens.iter().map(|e| e.1).sum::<i32>();
-            FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: vec![], scorched: lost.max(0), supply: supply0, hand: hand0, mv: 0 }));
+            FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: vec![], scorched: lost.max(0), supply: supply0, hand: hand0, mv: 0, left: [0; 5] }));
         }
         let all = if sides.len() > 2 { "Every side is" } else { "Both sides are" };
         log_line(s, |_| { let name = fight_name(loc, other); format!("  {name}: a true tie. {all} wiped out and {name} is scorched.") });
@@ -639,7 +669,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         }
     }
     if !s.quiet {
-        FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: taken, scorched: 0, supply: supply0, hand: hand0, mv: 0 }));
+        FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: taken, scorched: 0, supply: supply0, hand: hand0, mv: 0, left: [0; 5] }));
     }
     // Sway after the fight (AF3 adjusted, AS1).
     if let Some(first) = places.first().copied().flatten() {
@@ -653,6 +683,10 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         let n = s.board[li].sway.get(p);
         s.players[p as usize].supply += n;
         s.board[li].sway.remove(p);
+    }
+    if !s.quiet {
+        let left: [i32; 5] = std::array::from_fn(|o| s.board[li].sway.get(o as u8));
+        FIGHT_LOG.with(|f| if let Some(r) = f.borrow_mut().last_mut() { if r.loc == loc { r.left = left; } });
     }
 }
 
