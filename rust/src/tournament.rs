@@ -59,6 +59,9 @@ pub struct Game {
     pub sway_log: Vec<SwayChange>,
     /// Turns tied for the most sway at a fight already set (`ties=1`).
     pub tie_turns: Vec<TieTurn>,
+    /// Quick-bot checks (`fidelity=1`).
+    pub quick_turns: Vec<QuickTurn>,
+    pub quick_rounds: Vec<QuickRound>,
 }
 
 /// A change of sway at one location in one move (for who made a tie, 2026-11-03).
@@ -277,6 +280,71 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
 /// the whole game lies ahead.
 pub static SWING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 pub static POSITIONS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// Quick-bot checks (`fidelity=1`, 2026-11-03): at each real play decision, what the quick bot would have played; at
+/// each round's first play, imagined rounds as the full bots' play-outs play them.
+pub static FIDELITY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// A real play decision against the quick bot's choice in the same position.
+#[derive(Clone, Debug)]
+pub struct QuickTurn {
+    pub mv: usize,
+    pub round: i32,
+    pub seat: Pid,
+    pub same: bool,
+    pub same_card: bool,
+    pub real_pass: bool,
+    pub quick_pass: bool,
+    /// The full bot's own scores of the quick bot's move and of its chosen one (one-step; play-out if shortlisted).
+    pub quick_score: Option<(f64, Option<f64>)>,
+    pub real_score: Option<(f64, Option<f64>)>,
+    /// At fights already set: did the real move / the quick move make a tie by matching the leader, or break a tie?
+    pub real_tie: bool,
+    pub quick_tie: bool,
+    pub real_break: bool,
+    pub quick_break: bool,
+    /// Could the mover match the leader somewhere (second, within its reach is not checked: second place with sway)?
+    pub second: bool,
+}
+
+/// A round's imagined outcome (8 play-outs from its first play) against what happened.
+#[derive(Clone, Debug)]
+pub struct QuickRound {
+    pub round: i32,
+    pub seat: Pid,
+    pub p_invaders: f64,
+    pub trophies: Vec<f64>,
+    pub standing: Vec<f64>,
+    pub start_trophies: Vec<i32>,
+    pub start_standing: Vec<i32>,
+    /// Where each imagined round stopped: past its fights, or still in the round (and in which phase).
+    pub stops: Vec<String>,
+}
+
+/// Tie actions of a move at fights already set: (made a tie by matching the leader, broke a tie).
+fn tie_actions(s: &crate::types::GameState, pid: Pid, m: &crate::types::Move) -> (bool, bool) {
+    let locs = crate::game::fights_due(s);
+    if locs.is_empty() { return (false, false); }
+    let (flow, fights, earlier) = (crate::game::take_flow(), crate::game::take_fights(), crate::game::take_fight_log());
+    let b = crate::game::apply_move(s, pid, m);
+    let fought = crate::game::take_fight_log();
+    crate::game::put_back(flow, fights, earlier);
+    let Ok(b) = b else { return (false, false) };
+    let (mut made, mut broke) = (false, false);
+    for l in locs {
+        let before: [i32; 5] = std::array::from_fn(|o| s.board[l as usize].sway.get(o as u8));
+        let after: [i32; 5] = match fought.iter().find(|f| f.loc == l) {
+            Some(f) => f.sway,
+            None if b.round == s.round => std::array::from_fn(|o| b.board[l as usize].sway.get(o as u8)),
+            None => continue,
+        };
+        let me = pid as usize;
+        let best_other = |w: &[i32; 5]| (0..s.n()).filter(|&o| o != me).map(|o| w[o]).max().unwrap_or(0);
+        if before[me] < best_other(&before) && after[me] == best_other(&after) && after[me] > 0 { made = true; }
+        if before[me] > 0 && before[me] == best_other(&before) && after[me] > best_other(&after) { broke = true; }
+    }
+    (made, broke)
+}
+
 /// Tie checks (`ties=1`): at each turn, could the player break a tie for the most sway at a fight already set?
 pub static TIES: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
@@ -379,6 +447,10 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let mut sway_log: Vec<SwayChange> = Vec::new();
     let mut tie_turns: Vec<TieTurn> = Vec::new();
     let ties_on = TIES.load(std::sync::atomic::Ordering::Relaxed);
+    let fidelity_on = FIDELITY.load(std::sync::atomic::Ordering::Relaxed);
+    let mut quick_turns: Vec<QuickTurn> = Vec::new();
+    let mut quick_rounds: Vec<QuickRound> = Vec::new();
+    let mut imagined_round = -1;
     let grid = |s: &crate::types::GameState| -> Vec<[i32; 5]> { s.board.iter().map(|p| std::array::from_fn(|i| p.sway.get(i as u8))).collect() };
     let mut fights_seen: Vec<([i32; 5], [i32; 5], usize)> = Vec::new();
     let mut rounds: Vec<RoundLog> = Vec::new();
@@ -406,8 +478,38 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             }
         } else { Vec::new() };
         let tie_seat = s.turn as Pid;
-        let state_before = if tie_check.is_empty() { None } else { Some(s.clone()) };
-        if !tie_check.is_empty() {
+        let fid = fidelity_on && in_play && !s.players[s.turn].hand.is_empty();
+        if fid && imagined_round != s.round {
+            // Imagined rounds from the round's first play, as this seat's full bot would imagine them.
+            imagined_round = s.round;
+            let pid = s.turn as Pid;
+            let full_round = seats[pid as usize].contains("night=1");
+            let table = Seats { profiles: Some(profiles.clone()), memories: Some(memory.iter().enumerate().map(|(i, m)| (i as Pid, m.clone())).collect()), full_round, ..Default::default() };
+            let k = 8;
+            let (mut inv, mut tr, mut st) = (0.0, vec![0.0; n], vec![0.0; n]);
+            let mut stops: Vec<String> = Vec::new();
+            for i in 0..k {
+                let e = crate::bots::imagine_round(&s, 7_000 + i as i64 + 101 * moves as i64, pid, Some(&memory[pid as usize]), &table);
+                if e.votes[0] > s.votes[0] { inv += 1.0; }
+                stops.push(if e.round > s.round || e.phase == Phase::Ended { "done".into() } else { format!("{:?}", e.phase) });
+                for p in 0..n {
+                    tr[p] += (0..5).map(|f| e.players[p].trophies[f]).sum::<i32>() as f64 / k as f64;
+                    st[p] += (0..5).map(|f| e.players[p].standing[f]).sum::<i32>() as f64 / k as f64;
+                }
+            }
+            quick_rounds.push(QuickRound { round: s.round, seat: pid, p_invaders: inv / k as f64, trophies: tr, standing: st,
+                start_trophies: (0..n).map(|p| s.players[p].trophies.iter().sum()).collect(), start_standing: (0..n).map(|p| s.players[p].standing.iter().sum()).collect(), stops });
+        }
+        let quick: Option<crate::types::Move> = if fid {
+            let pid = s.turn as Pid;
+            let mut x: u64 = 0x9e37 ^ moves as u64;
+            let mut rng = move || { x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407); (x >> 11) as f64 / (1u64 << 53) as f64 };
+            let mut mem = memory[pid as usize].clone();
+            crate::bots::quick_move(&s, pid, &mut rng, &seats[pid as usize], Some(&mut mem))
+        } else { None };
+        let fid_state = if fid { Some(s.clone()) } else { None };
+        let state_before = if tie_check.is_empty() && !fid { None } else { Some(s.clone()) };
+        if !tie_check.is_empty() || fid {
             crate::bots::take_considered();
         }
         let mut chosen: Option<crate::types::Move> = None;
@@ -513,6 +615,25 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                 f.mv = moves;
                 after[f.loc as usize] = f.sway;
             }
+            if let (Some(q), Some(st0)) = (quick.as_ref(), fid_state.as_ref()) {
+                if mover == tie_seat {
+                    if let Some(real) = chosen.as_ref() {
+                        let card_of = |m: &crate::types::Move| if let crate::types::Move::Play { card, .. } = m { Some(*card) } else { None };
+                        let score = |m: &crate::types::Move| considered.iter().find(|c| &c.0 == m).map(|c| (c.1, c.2));
+                        let (rt, rb) = tie_actions(st0, tie_seat, real);
+                        let (qt, qb) = tie_actions(st0, tie_seat, q);
+                        let second = crate::game::fights_due(st0).into_iter().any(|l| {
+                            let sw = &st0.board[l as usize].sway;
+                            let me = sw.get(tie_seat);
+                            let best = (0..st0.n() as u8).filter(|&o| o != tie_seat).map(|o| sw.get(o)).max().unwrap_or(0);
+                            best > 0 && me < best
+                        });
+                        quick_turns.push(QuickTurn { mv: moves, round: round_before, seat: tie_seat, same: real == q, same_card: card_of(real).is_some() && card_of(real) == card_of(q),
+                            real_pass: matches!(real, crate::types::Move::Pass), quick_pass: matches!(q, crate::types::Move::Pass),
+                            quick_score: score(q), real_score: score(real), real_tie: rt, quick_tie: qt, real_break: rb, quick_break: qb, second });
+                    }
+                }
+            }
             for &(l, could, size) in &tie_check {
                 let did = mover == tie_seat && first_at(&after[l as usize], tie_seat, s.n());
                 let (mut listed, mut rank, mut played_out, mut break_value, mut chosen_value) = (0, None, false, None, None);
@@ -567,6 +688,8 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         fight_log,
         sway_log,
         tie_turns,
+        quick_turns,
+        quick_rounds,
         g,
         seats,
         island,

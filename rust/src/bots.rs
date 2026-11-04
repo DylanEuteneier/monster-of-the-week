@@ -36,6 +36,9 @@ pub struct Seats {
     pub roll_list: bool,
     /// Testing (persona rjudge): every seat in the play-outs judges with the learned judge.
     pub judge: bool,
+    /// Play-outs carry the round through nightfall and growth to its end (persona night; 2026-11-04: they had stopped
+    /// at nightfall, before the fights and the vote, whenever a location was marked).
+    pub full_round: bool,
 }
 
 const SEARCH_TARGETS: usize = 8;
@@ -149,10 +152,13 @@ pub struct Persona {
     /// what that sets up after): each card this pick could add, the rest of the draft finished by every seat's own
     /// bot, then the round played out, this many times; its worth is the position at the vote (0: one step, alone).
     pub dplan: f64,
+    /// Always play out the plays that break a tie for the most sway at a fight already set (2026-11-03).
+    pub tiekeep: f64,
     /// The learned judge (judge.rs, `npm run judge`) in place of the hand formula's chances (0: the hand formula).
     pub judge: f64,
     /// The play-out bots (every seat) judge with the learned judge too (designer, 2026-11-03: no quick-and-dirty play-outs).
     pub rjudge: f64,
+    pub night: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -165,7 +171,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, judge: 0.0, rjudge: 0.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 0.0, judge: 0.0, rjudge: 0.0, night: 0.0,
     }
 }
 
@@ -239,7 +245,9 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "trend" => p.trend = x,
                 "look" => p.look = x,
                 "dplan" => p.dplan = x,
+                "tiekeep" => p.tiekeep = x,
                 "judge" => p.judge = x,
+                "night" => p.night = x,
                 "rjudge" => p.rjudge = x,
                 _ => {}
             }
@@ -1099,14 +1107,14 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
             let table = pe.as_ref().filter(|x| on(x.table)).map(|x| {
                 let mut profiles = seats.profiles.clone().unwrap_or_default();
                 profiles.insert(pid, profile.to_string());
-                Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: on(x.roll_list), judge: on(x.rjudge) }
+                Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: on(x.roll_list), judge: on(x.rjudge), full_round: on(x.night) }
             });
             if let Some(x) = pe.as_ref() {
                 if on(x.sim) && on(x.plan) {
-                    return plan_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.plan_budget.unwrap_or(PLAN_BUDGET), x.plan_depth.unwrap_or(PLAN_DEPTH), x.playouts.unwrap_or(SIM_PLAYOUTS), table.as_ref());
+                    return plan_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.plan_budget.unwrap_or(PLAN_BUDGET), x.plan_depth.unwrap_or(PLAN_DEPTH), x.playouts.unwrap_or(SIM_PLAYOUTS), table.as_ref(), on(x.tiekeep));
                 }
                 if on(x.sim) {
-                    return sim_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.playouts.unwrap_or(SIM_PLAYOUTS), x.mix, table.as_ref());
+                    return sim_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.playouts.unwrap_or(SIM_PLAYOUTS), x.mix, table.as_ref(), on(x.tiekeep));
                 }
             }
             let mut best: Option<Move> = moves.first().cloned();
@@ -1128,18 +1136,39 @@ fn seed_of(rng: Rng) -> i64 {
     (rng() * 2147483648.0).floor() as i64
 }
 
-/// The play-out search (persona sim).
-#[allow(clippy::too_many_arguments)]
-fn sim_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, keep: usize, playouts: usize, mix: f64, table: Option<&Seats>) -> Option<Move> {
-    let mut ranked: Vec<(Move, GameState, f64)> = moves.into_iter().map(|m| { let x = after(s, pid, &m); let v = ev(&x); (m, x, v) }).collect();
-    ranked.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
-    let pass_i = ranked.iter().position(|r| r.0 == Move::Pass);
+/// The moves to play out: the best `keep` by one-step score, Pass, and (tiekeep) every play that leaves this seat
+/// strictly first where it was tied for the most sway at a fight already set.
+fn shortlist(s: &GameState, pid: Pid, ranked: &[(Move, GameState, f64)], keep: usize, tiekeep: bool) -> Vec<usize> {
     let mut short: Vec<usize> = (0..keep.min(ranked.len())).collect();
-    if let Some(i) = pass_i {
+    if let Some(i) = ranked.iter().position(|r| r.0 == Move::Pass) {
         if !short.contains(&i) {
             short.push(i);
         }
     }
+    if tiekeep {
+        let first = |g: &GameState, l: Loc| { let sw = &g.board[l as usize].sway; let me = sw.get(pid); me > 0 && (0..g.n() as Pid).filter(|&o| o != pid).all(|o| sw.get(o) < me) };
+        let tied: Vec<Loc> = crate::game::fights_due(s).into_iter().filter(|&l| {
+            let sw = &s.board[l as usize].sway;
+            let me = sw.get(pid);
+            me > 0 && (0..s.n() as Pid).filter(|&o| o != pid).map(|o| sw.get(o)).max().unwrap_or(0) == me
+        }).collect();
+        if !tied.is_empty() {
+            for (i, r) in ranked.iter().enumerate() {
+                if !short.contains(&i) && r.1.round == s.round && tied.iter().any(|&l| first(&r.1, l)) {
+                    short.push(i);
+                }
+            }
+        }
+    }
+    short
+}
+
+/// The play-out search (persona sim).
+#[allow(clippy::too_many_arguments)]
+fn sim_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, keep: usize, playouts: usize, mix: f64, table: Option<&Seats>, tiekeep: bool) -> Option<Move> {
+    let mut ranked: Vec<(Move, GameState, f64)> = moves.into_iter().map(|m| { let x = after(s, pid, &m); let v = ev(&x); (m, x, v) }).collect();
+    ranked.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
+    let short = shortlist(s, pid, &ranked, keep, tiekeep);
     let seeds: Vec<i64> = (0..playouts).map(|_| seed_of(rng)).collect();
     let mut best = short.first().map(|&i| ranked[i].0.clone());
     let mut best_v = f64::NEG_INFINITY;
@@ -1164,16 +1193,10 @@ fn sim_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&Ga
 /// successive halving; a plan wins only if, scored again on the plain seeds, it beats the best plain move.
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::too_many_arguments)]
-fn plan_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, keep: usize, budget: usize, depth: usize, playouts: usize, table: Option<&Seats>) -> Option<Move> {
+fn plan_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, keep: usize, budget: usize, depth: usize, playouts: usize, table: Option<&Seats>, tiekeep: bool) -> Option<Move> {
     let mut ranked: Vec<(Move, GameState, f64)> = moves.into_iter().map(|m| { let x = after(s, pid, &m); let v = ev(&x); (m, x, v) }).collect();
     ranked.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
-    let pass_i = ranked.iter().position(|r| r.0 == Move::Pass);
-    let mut short: Vec<usize> = (0..keep.min(ranked.len())).collect();
-    if let Some(i) = pass_i {
-        if !short.contains(&i) {
-            short.push(i);
-        }
-    }
+    let short = shortlist(s, pid, &ranked, keep, tiekeep);
     let seeds: Vec<i64> = (0..playouts).map(|_| seed_of(rng)).collect();
     let mut plain: Vec<(usize, f64)> = short.iter().map(|&i| {
         let mut n = 0.0;
@@ -1288,7 +1311,8 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
         None => ROLLOUT.to_string(),
     }).map(|p| if table.is_some_and(|t| t.judge) && persona_of(&p).is_some() { format!("{p},judge=1") } else { p }).collect();
     let mut moves = 0;
-    while moves < SIM_MAX_MOVES && s.phase == Phase::Play && s.round == round {
+    let full = table.is_some_and(|t| t.full_round);
+    while moves < SIM_MAX_MOVES && s.round == round && (s.phase == Phase::Play || (full && matches!(s.phase, Phase::Night | Phase::Growth))) {
         moves += 1;
         let mut moved = false;
         for id in 0..n as Pid {
@@ -1328,6 +1352,16 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
         }
     }
     s
+}
+
+/// What the quick (play-out) bot would play here, for measuring how well it stands in for this seat's real bot.
+pub fn quick_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&mut BotMemory>) -> Option<Move> {
+    play_move(s, pid, rng, &fast(profile), memory, &Seats::default(), None)
+}
+
+/// One imagined round from here, as a full bot's play-outs play it (for measuring them).
+pub fn imagine_round(s: &GameState, seed: i64, pid: Pid, memory: Option<&BotMemory>, table: &Seats) -> GameState {
+    play_out_round(s, seed, pid, memory, Some(table), None)
 }
 
 /// The draft by play-outs (persona dplan): keep the cards already kept and add the batch card whose hand plays the
