@@ -45,7 +45,8 @@ pub struct Seats {
     pub judge: bool,
     /// Testing (persona rimit): every seat in the play-outs scores moves with the imitation weights.
     pub imit: bool,
-    /// Testing (persona rplan): every seat in the play-outs follows its own remembered hand plan.
+    /// Persona rplan (default on, designer 2026-11-04): every seat in the play-outs follows its own remembered hand
+    /// plan, not only the deciding seat (100 games, seat 5: 30.0% vs 27.3%).
     pub plans: bool,
 }
 
@@ -160,7 +161,8 @@ pub struct Persona {
     /// what that sets up after): each card this pick could add, the rest of the draft finished by every seat's own
     /// bot, then the round played out, this many times; its worth is the position at the vote (0: one step, alone).
     pub dplan: f64,
-    /// Always play out the plays that break a tie for the most sway at a fight already set (2026-11-03).
+    /// Always play out the plays that break a tie for the most sway at a fight already set (2026-11-03; default on,
+    /// designer 2026-11-04; 100 games, seat 5: 29.0% vs 26.0%).
     pub tiekeep: f64,
     /// Testing (2026-11-04, designer: does breaking ties stubbornly pay?): when tied for the most sway at a fight
     /// already set and some play breaks the tie, choose only among the plays that break it.
@@ -185,7 +187,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 0.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 0.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0,
     }
 }
 

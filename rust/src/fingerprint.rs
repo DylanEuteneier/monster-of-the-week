@@ -23,7 +23,10 @@ pub fn play(seed: i64, profiles: &[String], options: &[(String, String)]) -> Vec
     let mut out = vec![(None, game_hash(&s))];
     while s.phase != Phase::Ended && out.len() < 5000 {
         let pid = waiting_on(&s)[0];
-        let m = bot_move(&s, pid, &mut rng, &profiles[pid as usize], Some(&mut memory[pid as usize]), &Seats::default()).expect("a move");
+        // The table as the runner and the live game give it (every seat's profile and memory; 2026-11-04: without it,
+        // play that depends on the table, such as rivals' remembered plans, went unpinned).
+        let table = Seats { profiles: Some(profiles.iter().enumerate().map(|(i, p)| (i as Pid, p.clone())).collect()), memories: Some(memory.iter().enumerate().map(|(i, m)| (i as Pid, m.clone())).collect()), ..Default::default() };
+        let m = bot_move(&s, pid, &mut rng, &profiles[pid as usize], Some(&mut memory[pid as usize]), &table).expect("a move");
         s = apply_move(&s, pid, &m).expect("legal");
         out.push((Some((pid, m)), game_hash(&s)));
     }
