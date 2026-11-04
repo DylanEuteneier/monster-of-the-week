@@ -13,3 +13,4 @@ rust/target-pool/
 rust/target-home/
 rust/target-bots/
 rust/target-judge/
+rust/target-diag/
