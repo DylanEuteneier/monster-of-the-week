@@ -140,7 +140,9 @@ fn fit(args: &[String]) {
             let inv = v["side"] == "invaders";
             let winners: Vec<usize> = v["winners"].as_array().map(|a| a.iter().filter_map(|w| w.as_str()?.trim_start_matches('P').parse::<usize>().ok().map(|i| i - 1)).collect()).unwrap_or_default();
             let rows: Vec<Vec<f64>> = pos.iter().map(|r| r.as_array().map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default()).collect();
-            let i = games.len();
+            // Held out by the game's own number, not the line's: the log is in finishing order, which varies with
+            // timing (2026-11-03: the held-out set had changed from run to run).
+            let i = v["g"].as_u64().map_or(games.len(), |g| g as usize);
             games.push((i, seats, inv, winners, rows));
         }
     }
@@ -160,12 +162,14 @@ fn fit(args: &[String]) {
         (vote, inv, isl)
     };
     let ridge = 0.5;
-    let (tv, ti, ts) = sets(&|i| i % 5 != 0);
+    // Five folds (2026-11-03): each game is judged once by weights fitted without it, so every game counts.
+    let (mut e_new, mut e_old, mut w_new, mut w_old, mut w_base) = (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
+    for fold in 0..5 {
+    let (tv, ti, ts) = sets(&|i| i % 5 != fold);
     let w = Weights { vote: fit_logistic(&tv, ridge), inv: fit_logistic(&ti, ridge), isl: fit_logistic(&ts, ridge) };
     // Held out: the ending, then the winner, learned against the hand formula (and a coin: 1/seats to win).
-    let (mut e_new, mut e_old, mut w_new, mut w_old, mut w_base) = (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
     for (i, n, side, win, rows) in &games {
-        if i % 5 != 0 { continue; }
+        if i % 5 != fold { continue; }
         for r in rows {
             let y = if *side { 1.0 } else { 0.0 };
             let won = if win.contains(&(r[0] as usize)) { 1.0 } else { 0.0 };
@@ -184,8 +188,9 @@ fn fit(args: &[String]) {
             w_base.push((1.0 / *n as f64, won, 1.0));
         }
     }
-    let report = format!("held out ({} games): the ending's log loss {:.3} learned vs {:.3} hand formula; the winner's {:.3} learned vs {:.3} hand formula vs {:.3} a coin",
-        games.iter().filter(|g| g.0 % 5 == 0).count(), log_loss(&e_new), log_loss(&e_old), log_loss(&w_new), log_loss(&w_old), log_loss(&w_base));
+    }
+    let report = format!("held out, five folds ({} games): the ending's log loss {:.3} learned vs {:.3} hand formula; the winner's {:.3} learned vs {:.3} hand formula vs {:.3} a coin",
+        games.len(), log_loss(&e_new), log_loss(&e_old), log_loss(&w_new), log_loss(&w_old), log_loss(&w_base));
     println!("{report}");
     let (av, ai, as_) = sets(&|_| true);
     let all = Weights { vote: fit_logistic(&av, ridge), inv: fit_logistic(&ai, ridge), isl: fit_logistic(&as_, ridge) };
