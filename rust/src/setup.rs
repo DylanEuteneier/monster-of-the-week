@@ -163,6 +163,7 @@ pub fn create_game(seed: i64, players: &[String], raw_options: &[(String, String
         quiet: false,
     };
     deal(&mut s);
+    crate::game::round_bar(&mut s);
     Ok(s)
 }
 

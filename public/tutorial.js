@@ -691,7 +691,7 @@ function chapterTable() {
     chapter('5 · The table'),
     spot(SEL.factions, 'The faction rows', `<p>The rows from the story, for real: each faction's supply and everyone's sway with it. You start with ${v.players[YOU].standing[faction]} with the ${F(faction)}, ${v.players[YOU].standing[v.factions.find((f) => f !== faction) ?? faction]} with each of the rest.</p>`),
     spot([SEL.supply, SEL.trophyTab], 'Your pieces', '<p>Your supply sits in the bar at the bottom; your trophies, secret, in the tab on the right.</p>'),
-    ...(onBoard.length ? [spot(onBoard.map(SEL.hex), 'Your ground', `<p>You start with 1 sway on each ${suitIcon(arch.id)} location.</p>`)] : []),
+    ...(onBoard.length ? [spot(onBoard.map(SEL.hex), 'Your ground', `<p>You start with ${v.board[onBoard[0]].sway[YOU]} sway on each ${suitIcon(arch.id)} location.</p>`)] : []),
     spot(inRegion.map(SEL.hex), 'Locations and regions', `<p>A <b>location</b> is one hex; a <b>region</b> is three neighbouring locations, like these. Monsters only move by your gambits, and each card says where: next door, anywhere, or a whole region. Hovering a target lights everything a card reaches.</p>`),
   ];
 }

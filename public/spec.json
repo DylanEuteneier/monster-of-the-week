@@ -1002,6 +1002,17 @@
       ]
     },
     {
+      "id": "roundBar",
+      "label": "Bar by round",
+      "description": "Designer's seed (2026-11-04), testing: the bar rises each round, set at the round's start. Rise: 12, 14, 17, 20, 23; rise by players: the same times players / 4. Off by default (the threshold holds all game).",
+      "default": "off",
+      "choices": [
+        { "id": "off", "label": "off", "description": "" },
+        { "id": "rise", "label": "12, 14, 17, 20, 23", "description": "" },
+        { "id": "rise-n", "label": "rising, times players / 4", "description": "" }
+      ]
+    },
+    {
       "id": "thresholdGrowth",
       "label": "The horde must grow by",
       "description": "Claude's suggestion D, the designer trying it (2026-10-31): the invaders win if total presence at the end is more than its start (30) by this much; set at the deal, in place of the other thresholds. Off by default.",
@@ -1308,8 +1319,8 @@
     {
       "id": "startBoard",
       "label": "Starting sway on affinity locations",
-      "description": "Designer (2026-10-07): each slayer group starts with 1 sway on the board at each of its affinity locations (its archetype’s three), from its supply.",
-      "default": "1",
+      "description": "Designer (2026-10-07; 2 since D47, 2026-11-04): each slayer group starts with 2 sway on the board at each of its affinity locations (its archetype’s three), from its supply.",
+      "default": "2",
       "choices": [
         {
           "id": "0",

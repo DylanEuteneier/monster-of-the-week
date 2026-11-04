@@ -830,7 +830,27 @@ fn end_round(s: &mut GameState) {
         return;
     }
     s.round += 1;
+    round_bar(s);
     deal(s);
+}
+
+/// A bar that rises each round (variant `roundBar`, designer's seed 2026-11-04; testing): the round's bar is set at
+/// its start, so the vote, the end count, the bots and the table all read it as the threshold. `rise`: 12, 14, 17, 20,
+/// 23 (where each round's vote was about even in the bot games, 2026-11-04); `rise-n`: the same × players / 4. Rounds
+/// past the fifth keep the last bar.
+pub fn round_bar(s: &mut GameState) {
+    const RISE: [f64; 5] = [12.0, 14.0, 17.0, 20.0, 23.0];
+    let Some(kind) = s.options.raw.iter().find(|(k, _)| k == "roundBar").map(|x| x.1.clone()) else { return };
+    let scale = match kind.as_str() {
+        "rise" => 1.0,
+        "rise-n" => s.n() as f64 / 4.0,
+        _ => return,
+    };
+    let i = ((s.round.max(1) - 1) as usize).min(RISE.len() - 1);
+    let bar = (RISE[i] * scale).round() as i32;
+    if s.options.threshold != bar {
+        std::rc::Rc::make_mut(&mut s.options).threshold = bar;
+    }
 }
 
 /// The end of the game (G.5): the invaders or the island, the scores and the winners.
