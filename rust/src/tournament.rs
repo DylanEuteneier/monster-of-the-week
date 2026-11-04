@@ -62,6 +62,8 @@ pub struct Game {
     /// Quick-bot checks (`fidelity=1`).
     pub quick_turns: Vec<QuickTurn>,
     pub quick_rounds: Vec<QuickRound>,
+    /// Imitation data (`fidelity=1`): at each real decision, the chosen move and up to 15 other candidates, as features.
+    pub imit: Vec<crate::imit::Decision>,
 }
 
 /// A change of sway at one location in one move (for who made a tie, 2026-11-03).
@@ -283,6 +285,9 @@ pub static POSITIONS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicB
 /// Quick-bot checks (`fidelity=1`, 2026-11-03): at each real play decision, what the quick bot would have played; at
 /// each round's first play, imagined rounds as the full bots' play-outs play them.
 pub static FIDELITY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// Quick-bot variants to check beside the plain one (`quickvars=judge=1|...`): persona settings added to the seat's
+/// quick profile.
+pub static QUICK_VARIANTS: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
 
 /// A real play decision against the quick bot's choice in the same position.
 #[derive(Clone, Debug)]
@@ -304,6 +309,11 @@ pub struct QuickTurn {
     pub quick_break: bool,
     /// Could the mover match the leader somewhere (second, within its reach is not checked: second place with sway)?
     pub second: bool,
+    /// Each extra quick-bot variant (QUICK_VARIANTS, in order): (same move, same card, the full bot's scores of its move).
+    pub variants: Vec<(bool, bool, Option<(f64, Option<f64>)>)>,
+    /// Play-out noise (every fourth decision): for each shortlisted move, (one-step score, the bot's own play-out
+    /// value, two fresh 6-seed values, a 48-seed value, chosen?).
+    pub noise: Vec<(f64, f64, f64, f64, f64, bool)>,
 }
 
 /// A round's imagined outcome (8 play-outs from its first play) against what happened.
@@ -450,6 +460,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let fidelity_on = FIDELITY.load(std::sync::atomic::Ordering::Relaxed);
     let mut quick_turns: Vec<QuickTurn> = Vec::new();
     let mut quick_rounds: Vec<QuickRound> = Vec::new();
+    let mut imit: Vec<crate::imit::Decision> = Vec::new();
     let mut imagined_round = -1;
     let grid = |s: &crate::types::GameState| -> Vec<[i32; 5]> { s.board.iter().map(|p| std::array::from_fn(|i| p.sway.get(i as u8))).collect() };
     let mut fights_seen: Vec<([i32; 5], [i32; 5], usize)> = Vec::new();
@@ -499,13 +510,19 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             quick_rounds.push(QuickRound { round: s.round, seat: pid, p_invaders: inv / k as f64, trophies: tr, standing: st,
                 start_trophies: (0..n).map(|p| s.players[p].trophies.iter().sum()).collect(), start_standing: (0..n).map(|p| s.players[p].standing.iter().sum()).collect(), stops });
         }
-        let quick: Option<crate::types::Move> = if fid {
+        let quick_all: Vec<Option<crate::types::Move>> = if fid {
             let pid = s.turn as Pid;
-            let mut x: u64 = 0x9e37 ^ moves as u64;
-            let mut rng = move || { x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407); (x >> 11) as f64 / (1u64 << 53) as f64 };
-            let mut mem = memory[pid as usize].clone();
-            crate::bots::quick_move(&s, pid, &mut rng, &seats[pid as usize], Some(&mut mem))
-        } else { None };
+            let extra = QUICK_VARIANTS.lock().unwrap().clone();
+            std::iter::once(String::new()).chain(extra).map(|v| {
+                let mut x: u64 = 0x9e37 ^ moves as u64;
+                let mut rng = move || { x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407); (x >> 11) as f64 / (1u64 << 53) as f64 };
+                let mut mem = memory[pid as usize].clone();
+                let base = &seats[pid as usize];
+                let profile = if v.is_empty() { base.clone() } else if base.contains(':') { format!("{base},{v}") } else { format!("{base}:{v}") };
+                crate::bots::quick_move(&s, pid, &mut rng, &profile, Some(&mut mem))
+            }).collect()
+        } else { Vec::new() };
+        let quick: Option<crate::types::Move> = quick_all.first().cloned().flatten();
         let fid_state = if fid { Some(s.clone()) } else { None };
         let state_before = if tie_check.is_empty() && !fid { None } else { Some(s.clone()) };
         if !tie_check.is_empty() || fid {
@@ -619,6 +636,41 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                     if let Some(real) = chosen.as_ref() {
                         let card_of = |m: &crate::types::Move| if let crate::types::Move::Play { card, .. } = m { Some(*card) } else { None };
                         let score = |m: &crate::types::Move| considered.iter().find(|c| &c.0 == m).map(|c| (c.1, c.2));
+                        if let Some(ci) = considered.iter().position(|c| &c.0 == real) {
+                            // The chosen move, every played-out one, and others evenly spread over the bot's ranking (to 24).
+                            let n = considered.len();
+                            let mut pick: Vec<usize> = vec![ci];
+                            for i in 0..n {
+                                if considered[i].2.is_some() && !pick.contains(&i) { pick.push(i); }
+                            }
+                            let others = (n - 1).min(24usize.saturating_sub(pick.len()));
+                            for j in 0..others {
+                                let i = j * n / others.max(1);
+                                if !pick.contains(&i) { pick.push(i); }
+                            }
+                            if pick.len() > 1 {
+                                let x = pick.iter().map(|&i| crate::imit::move_features(&crate::bots::after_move(st0, tie_seat, &considered[i].0), tie_seat, considered[i].1)).collect();
+                                let v = pick.iter().map(|&i| considered[i].2).collect();
+                                imit.push(crate::imit::Decision { x, chosen: 0, v });
+                            }
+                        }
+                        let mut noise_rows = Vec::new();
+                        if moves % 4 == 0 {
+                            let short: Vec<&(crate::types::Move, f64, Option<f64>)> = considered.iter().filter(|c| c.2.is_some()).collect();
+                            if short.len() >= 2 {
+                                let ms: Vec<crate::types::Move> = short.iter().map(|c| c.0.clone()).collect();
+                                let table = Seats { profiles: Some(profiles.clone()), memories: Some(memory.iter().enumerate().map(|(i, m)| (i as Pid, m.clone())).collect()), ..Default::default() };
+                                let seeds = |base: i64, k: usize| (0..k as i64).map(|i| base + 7919 * i + 104_729 * moves as i64).collect::<Vec<i64>>();
+                                let mem = Some(&memory[tie_seat as usize]);
+                                let prof = &seats[tie_seat as usize];
+                                let a = crate::bots::playout_values(st0, tie_seat, prof, mem, &table, &ms, &seeds(11, 6));
+                                let b = crate::bots::playout_values(st0, tie_seat, prof, mem, &table, &ms, &seeds(23, 6));
+                                let t = crate::bots::playout_values(st0, tie_seat, prof, mem, &table, &ms, &seeds(37, 48));
+                                for (i, c) in short.iter().enumerate() {
+                                    noise_rows.push((c.1, c.2.unwrap(), a[i], b[i], t[i], &c.0 == real));
+                                }
+                            }
+                        }
                         let (rt, rb) = tie_actions(st0, tie_seat, real);
                         let (qt, qb) = tie_actions(st0, tie_seat, q);
                         let second = crate::game::fights_due(st0).into_iter().any(|l| {
@@ -629,7 +681,9 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                         });
                         quick_turns.push(QuickTurn { mv: moves, round: round_before, seat: tie_seat, same: real == q, same_card: card_of(real).is_some() && card_of(real) == card_of(q),
                             real_pass: matches!(real, crate::types::Move::Pass), quick_pass: matches!(q, crate::types::Move::Pass),
-                            quick_score: score(q), real_score: score(real), real_tie: rt, quick_tie: qt, real_break: rb, quick_break: qb, second });
+                            quick_score: score(q), real_score: score(real), real_tie: rt, quick_tie: qt, real_break: rb, quick_break: qb, second,
+                            noise: noise_rows,
+                            variants: quick_all.iter().skip(1).map(|v| match v { Some(v) => (v == real, card_of(real).is_some() && card_of(real) == card_of(v), score(v)), None => (false, false, None) }).collect() });
                     }
                 }
             }
@@ -689,6 +743,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         tie_turns,
         quick_turns,
         quick_rounds,
+        imit,
         g,
         seats,
         island,

@@ -423,7 +423,7 @@ fn goal_name(g: Goal) -> &'static str {
 }
 
 fn memory_from(v: &Value) -> BotMemory {
-    BotMemory { goal: goal_of(&v["goal"]), jitter: v["jitter"].as_f64() }
+    BotMemory { goal: goal_of(&v["goal"]), jitter: v["jitter"].as_f64(), plan: Vec::new() }
 }
 
 fn memory_value(m: &BotMemory) -> Value {

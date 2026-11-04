@@ -19,6 +19,13 @@ pub type Rng<'a> = &'a mut dyn FnMut() -> f64;
 pub struct BotMemory {
     pub goal: Option<Goal>,
     pub jitter: Option<f64>,
+    /// The cards this seat's full bot last planned to play after its move (hand planning), for play-outs that play
+    /// every seat by its own plan (persona rplan; testing).
+    pub plan: Vec<CardIx>,
+}
+
+thread_local! {
+    static LAST_PLAN: std::cell::RefCell<Vec<CardIx>> = const { std::cell::RefCell::new(Vec::new()) };
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -36,6 +43,10 @@ pub struct Seats {
     pub roll_list: bool,
     /// Testing (persona rjudge): every seat in the play-outs judges with the learned judge.
     pub judge: bool,
+    /// Testing (persona rimit): every seat in the play-outs scores moves with the imitation weights.
+    pub imit: bool,
+    /// Testing (persona rplan): every seat in the play-outs follows its own remembered hand plan.
+    pub plans: bool,
 }
 
 const SEARCH_TARGETS: usize = 8;
@@ -154,10 +165,14 @@ pub struct Persona {
     /// Testing (2026-11-04, designer: does breaking ties stubbornly pay?): when tied for the most sway at a fight
     /// already set and some play breaks the tie, choose only among the plays that break it.
     pub stubborn: f64,
+    /// Testing (2026-11-04): the one-step pick scores candidates with the imitation weights (rust/data/imit.json).
+    pub imit: f64,
     /// The learned judge (judge.rs, `npm run judge`) in place of the hand formula's chances (0: the hand formula).
     pub judge: f64,
     /// The play-out bots (every seat) judge with the learned judge too (designer, 2026-11-03: no quick-and-dirty play-outs).
     pub rjudge: f64,
+    pub rimit: f64,
+    pub rplan: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -170,7 +185,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 0.0, stubborn: 0.0, judge: 0.0, rjudge: 0.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 0.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 0.0,
     }
 }
 
@@ -246,6 +261,9 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "dplan" => p.dplan = x,
                 "tiekeep" => p.tiekeep = x,
                 "stubborn" => p.stubborn = x,
+                "imit" => p.imit = x,
+                "rimit" => p.rimit = x,
+                "rplan" => p.rplan = x,
                 "judge" => p.judge = x,
                 "rjudge" => p.rjudge = x,
                 _ => {}
@@ -1110,11 +1128,16 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
             let table = pe.as_ref().filter(|x| on(x.table)).map(|x| {
                 let mut profiles = seats.profiles.clone().unwrap_or_default();
                 profiles.insert(pid, profile.to_string());
-                Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: on(x.roll_list), judge: on(x.rjudge) }
+                Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: on(x.roll_list), judge: on(x.rjudge), imit: on(x.rimit), plans: on(x.rplan) }
             });
             if let Some(x) = pe.as_ref() {
                 if on(x.sim) && on(x.plan) {
-                    return plan_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.plan_budget.unwrap_or(PLAN_BUDGET), x.plan_depth.unwrap_or(PLAN_DEPTH), x.playouts.unwrap_or(SIM_PLAYOUTS), table.as_ref(), on(x.tiekeep));
+                    LAST_PLAN.with(|p| p.borrow_mut().clear());
+                    let picked = plan_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.plan_budget.unwrap_or(PLAN_BUDGET), x.plan_depth.unwrap_or(PLAN_DEPTH), x.playouts.unwrap_or(SIM_PLAYOUTS), table.as_ref(), on(x.tiekeep));
+                    if let Some(m) = memory.as_deref_mut() {
+                        m.plan = LAST_PLAN.with(|p| p.borrow().clone());
+                    }
+                    return picked;
                 }
                 if on(x.sim) {
                     return sim_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.playouts.unwrap_or(SIM_PLAYOUTS), x.mix, table.as_ref(), on(x.tiekeep));
@@ -1122,8 +1145,11 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
             }
             let mut best: Option<Move> = moves.first().cloned();
             let mut best_v = f64::NEG_INFINITY;
+            let imitate = pe.as_ref().is_some_and(|x| on(x.imit));
             for m in moves {
-                let v = noise(ev(&after(s, pid, &m)), rng);
+                let a = after(s, pid, &m);
+                let quick = ev(&a);
+                let v = noise(if imitate { crate::imit::score(&a, pid, quick).unwrap_or(quick) } else { quick }, rng);
                 if v > best_v {
                     best = Some(m);
                     best_v = v;
@@ -1255,6 +1281,7 @@ fn plan_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&G
     }
     let (arm, _v) = halving_best(&arms, &ranked, pid, rng, ev, memory, budget, table);
     let (i, plan) = &arms[arm];
+    LAST_PLAN.with(|p| *p.borrow_mut() = plan.clone());
     let mut fair = 0.0;
     for &seed in &seeds {
         fair += ev(&play_out_round(&ranked[*i].1, seed, pid, memory, table, Some(plan)));
@@ -1311,7 +1338,16 @@ fn planned_move(s: &GameState, pid: Pid, ci: CardIx, rng: Rng, profile: &str, me
 // PERF: every move asks every seat before the one to act for its move, and each of those runs choose_goal (a full
 // projection) before seeing it isn't their turn; kept for now because it sets their goals and draws their jitter.
 fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMemory>, table: Option<&Seats>, plan: Option<&Vec<CardIx>>) -> GameState {
-    let mut todo: Vec<CardIx> = plan.cloned().unwrap_or_default();
+    let plans = table.is_some_and(|t| t.plans);
+    let mut todos: Vec<Vec<CardIx>> = (0..state.n()).map(|id| {
+        if id == pid as usize {
+            plan.cloned().unwrap_or_default()
+        } else if plans {
+            table.and_then(|t| t.memories.as_ref()).and_then(|m| m.get(&(id as Pid))).map(|m| m.plan.clone()).unwrap_or_default()
+        } else {
+            Vec::new()
+        }
+    }).collect();
     let mut x = seed as i32;
     let mut r = move || {
         x = x.wrapping_mul(1664525).wrapping_add(1013904223);
@@ -1332,7 +1368,8 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
         Some(p) if table.is_some_and(|t| t.roll_list) => listing(p),
         Some(p) => fast(p),
         None => ROLLOUT.to_string(),
-    }).map(|p| if table.is_some_and(|t| t.judge) && persona_of(&p).is_some() { format!("{p},judge=1") } else { p }).collect();
+    }).map(|p| if table.is_some_and(|t| t.judge) && persona_of(&p).is_some() { format!("{p},judge=1") } else { p })
+        .map(|p| if table.is_some_and(|t| t.imit) && persona_of(&p).is_some() { format!("{p},imit=1") } else { p }).collect();
     let mut moves = 0;
     // On through nightfall and growth to the round's end (2026-11-04: play-outs had stopped at nightfall, before the
     // fights and the vote, whenever a location was marked).
@@ -1342,17 +1379,18 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
         for id in 0..n as Pid {
             let profile = &profiles[id as usize];
             let mut m: Option<Move> = None;
-            if id == pid && !todo.is_empty() && s.phase == Phase::Play && s.turn == pid as usize {
+            let todo = &mut todos[id as usize];
+            if !todo.is_empty() && s.phase == Phase::Play && s.turn == id as usize {
                 while !todo.is_empty() && m.is_none() {
                     let c = todo.remove(0);
-                    if s.players[pid as usize].hand.contains(&c) {
-                        m = planned_move(&s, pid, c, &mut r, profile, Some(&mem[id as usize]));
+                    if s.players[id as usize].hand.contains(&c) {
+                        m = planned_move(&s, id, c, &mut r, profile, Some(&mem[id as usize]));
                     }
                 }
                 if let Some(planned) = m.clone() {
                     let own = play_move(&s, id, &mut r, profile, Some(&mut mem[id as usize]), &Seats::default(), None);
                     let goal = mem[id as usize].goal;
-                    let v = |x: &Move| evaluate(&after(&s, pid, x), pid, profile, goal);
+                    let v = |x: &Move| evaluate(&after(&s, id, x), id, profile, goal);
                     if let Some(own) = own {
                         if matches!(own, Move::Play { .. }) && v(&own) > v(&planned) {
                             if let Move::Play { card, .. } = planned {
@@ -1376,6 +1414,20 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
         }
     }
     s
+}
+
+/// Play-out values of moves as this seat's full bot would score them, on given seeds (for measuring play-out noise):
+/// each move's state after it, played out to the round's end once per seed, scored and averaged.
+pub fn playout_values(s: &GameState, pid: Pid, profile: &str, memory: Option<&BotMemory>, seats: &Seats, moves: &[Move], seeds: &[i64]) -> Vec<f64> {
+    let goal = memory.and_then(|m| m.goal);
+    let mut profiles = seats.profiles.clone().unwrap_or_default();
+    profiles.insert(pid, profile.to_string());
+    let pe = persona_of(profile);
+    let table = Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: pe.as_ref().is_some_and(|x| on(x.roll_list)), judge: pe.as_ref().is_some_and(|x| on(x.rjudge)), imit: pe.as_ref().is_some_and(|x| on(x.rimit)), plans: pe.as_ref().is_some_and(|x| on(x.rplan)) };
+    moves.iter().map(|m| {
+        let a = after(s, pid, m);
+        seeds.iter().map(|&seed| evaluate(&play_out_round(&a, seed, pid, memory, Some(&table), None), pid, profile, goal)).sum::<f64>() / seeds.len() as f64
+    }).collect()
 }
 
 /// What the quick (play-out) bot would play here, for measuring how well it stands in for this seat's real bot.

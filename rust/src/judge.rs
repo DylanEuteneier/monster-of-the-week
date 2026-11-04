@@ -252,6 +252,11 @@ pub fn fit_logistic(rows: &[(Vec<f64>, f64, f64)], ridge: f64) -> Vec<f64> {
 }
 
 /// Solves h · x = g by Gaussian elimination with partial pivoting.
+/// Solves h·x = g (for the imitation fit).
+pub fn solve_pub(h: Vec<Vec<f64>>, g: Vec<f64>) -> Vec<f64> {
+    solve(h, g)
+}
+
 fn solve(mut h: Vec<Vec<f64>>, mut g: Vec<f64>) -> Vec<f64> {
     let n = g.len();
     for c in 0..n {
