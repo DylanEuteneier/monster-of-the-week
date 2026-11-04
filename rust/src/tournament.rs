@@ -483,8 +483,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             // Imagined rounds from the round's first play, as this seat's full bot would imagine them.
             imagined_round = s.round;
             let pid = s.turn as Pid;
-            let full_round = seats[pid as usize].contains("night=1");
-            let table = Seats { profiles: Some(profiles.clone()), memories: Some(memory.iter().enumerate().map(|(i, m)| (i as Pid, m.clone())).collect()), full_round, ..Default::default() };
+            let table = Seats { profiles: Some(profiles.clone()), memories: Some(memory.iter().enumerate().map(|(i, m)| (i as Pid, m.clone())).collect()), ..Default::default() };
             let k = 8;
             let (mut inv, mut tr, mut st) = (0.0, vec![0.0; n], vec![0.0; n]);
             let mut stops: Vec<String> = Vec::new();

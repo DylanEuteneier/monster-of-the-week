@@ -1,5 +1,5 @@
 {
- "about": "Play fingerprints: per game, the SHA-1 (16 hex digits) of its state hashes in order, joined by newlines. First recorded by the JavaScript engine (2026-10-27) before it was retired; re-recorded 2026-10-28 when each card in the bots' search got its own count of targets to sample (designer); sets c, d and e re-recorded the same day without the rule variants decisions had settled (swayRequired, payInFull, fightHalf, winnerLoss). Re-recorded again 2026-10-28 when the trophy bot began planning its hand (designer), when its one-step values lost their jitter, when it kept 12 moves for its play-outs, when passing went off by default (designer), and when Steal Their Playbook changed (D30). Regenerate with `motw fingerprint ... digests=1` only when a change is meant to change play; and for the fuller start (D32) and the round-end log line without passing; and for D33's defaults (shifts bring tokens, 30 tokens a faction, threshold 30, the thinner start); and for D36 (The Gate's readings split its ends, and Sci-Fi pays when it is at either end); and for D38 (nightfall tokens replace growth); and for D39 (Steal Their Playbook takes any played card into your hand); and for D40 (threshold 10 per player); and for State Park and Occult Camp swapping places on the board (designer, prototype layout); and for D41 (the last round ends after its fights); and for D42 (threshold 20); and for 2 standing with every other faction (D43); and for no marked cards (D44); and for growth's favourites (JSON key renamed from leaders; play unchanged); and for D45: unsuited cards give 2 wild sway; and for D46: unlimited faction pools; and set votes added (2026-11-03) so rounds as votes is covered.",
+ "about": "Play fingerprints: per game, the SHA-1 (16 hex digits) of its state hashes in order, joined by newlines. First recorded by the JavaScript engine (2026-10-27) before it was retired; re-recorded 2026-10-28 when each card in the bots' search got its own count of targets to sample (designer); sets c, d and e re-recorded the same day without the rule variants decisions had settled (swayRequired, payInFull, fightHalf, winnerLoss). Re-recorded again 2026-10-28 when the trophy bot began planning its hand (designer), when its one-step values lost their jitter, when it kept 12 moves for its play-outs, when passing went off by default (designer), and when Steal Their Playbook changed (D30). Regenerate with `motw fingerprint ... digests=1` only when a change is meant to change play; and for the fuller start (D32) and the round-end log line without passing; and for D33's defaults (shifts bring tokens, 30 tokens a faction, threshold 30, the thinner start); and for D36 (The Gate's readings split its ends, and Sci-Fi pays when it is at either end); and for D38 (nightfall tokens replace growth); and for D39 (Steal Their Playbook takes any played card into your hand); and for D40 (threshold 10 per player); and for State Park and Occult Camp swapping places on the board (designer, prototype layout); and for D41 (the last round ends after its fights); and for D42 (threshold 20); and for 2 standing with every other faction (D43); and for no marked cards (D44); and for growth's favourites (JSON key renamed from leaders; play unchanged); and for D45: unsuited cards give 2 wild sway; and for D46: unlimited faction pools; and set votes added (2026-11-03) so rounds as votes is covered; and for play-outs carried through nightfall and growth to the round's end (they had stopped at nightfall, before the fights and the vote).",
  "sets": [
   {
    "name": "a",
@@ -420,7 +420,7 @@
    "options": {},
    "games": 1,
    "digests": [
-    "3538574f8c3d9bbc"
+    "cbe13f926b4aa5fe"
    ]
   },
   {
@@ -431,7 +431,7 @@
    "options": {},
    "games": 1,
    "digests": [
-    "d0d409fddac0534b"
+    "3336b4f6a49a4cc4"
    ]
   }
  ]

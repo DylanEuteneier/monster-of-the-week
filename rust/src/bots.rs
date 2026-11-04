@@ -36,9 +36,6 @@ pub struct Seats {
     pub roll_list: bool,
     /// Testing (persona rjudge): every seat in the play-outs judges with the learned judge.
     pub judge: bool,
-    /// Play-outs carry the round through nightfall and growth to its end (persona night; 2026-11-04: they had stopped
-    /// at nightfall, before the fights and the vote, whenever a location was marked).
-    pub full_round: bool,
 }
 
 const SEARCH_TARGETS: usize = 8;
@@ -154,11 +151,13 @@ pub struct Persona {
     pub dplan: f64,
     /// Always play out the plays that break a tie for the most sway at a fight already set (2026-11-03).
     pub tiekeep: f64,
+    /// Testing (2026-11-04, designer: does breaking ties stubbornly pay?): when tied for the most sway at a fight
+    /// already set and some play breaks the tie, choose only among the plays that break it.
+    pub stubborn: f64,
     /// The learned judge (judge.rs, `npm run judge`) in place of the hand formula's chances (0: the hand formula).
     pub judge: f64,
     /// The play-out bots (every seat) judge with the learned judge too (designer, 2026-11-03: no quick-and-dirty play-outs).
     pub rjudge: f64,
-    pub night: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -171,7 +170,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 0.0, judge: 0.0, rjudge: 0.0, night: 0.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 0.0, stubborn: 0.0, judge: 0.0, rjudge: 0.0,
     }
 }
 
@@ -246,8 +245,8 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "look" => p.look = x,
                 "dplan" => p.dplan = x,
                 "tiekeep" => p.tiekeep = x,
+                "stubborn" => p.stubborn = x,
                 "judge" => p.judge = x,
-                "night" => p.night = x,
                 "rjudge" => p.rjudge = x,
                 _ => {}
             }
@@ -1101,13 +1100,17 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
                 None => moves,
             };
             let moves: Vec<Move> = if pe.as_ref().is_some_and(|x| on(x.no_pass)) && moves.iter().any(|m| *m != Move::Pass) { moves.into_iter().filter(|m| *m != Move::Pass).collect() } else { moves };
+            let moves: Vec<Move> = if pe.as_ref().is_some_and(|x| on(x.stubborn)) {
+                let breaking = tie_breakers(s, pid, &moves);
+                if breaking.iter().any(|&b| b) { moves.into_iter().zip(breaking).filter(|x| x.1).map(|x| x.0).collect() } else { moves }
+            } else { moves };
             if moves.is_empty() {
                 return None;
             }
             let table = pe.as_ref().filter(|x| on(x.table)).map(|x| {
                 let mut profiles = seats.profiles.clone().unwrap_or_default();
                 profiles.insert(pid, profile.to_string());
-                Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: on(x.roll_list), judge: on(x.rjudge), full_round: on(x.night) }
+                Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: on(x.roll_list), judge: on(x.rjudge) }
             });
             if let Some(x) = pe.as_ref() {
                 if on(x.sim) && on(x.plan) {
@@ -1134,6 +1137,26 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
 
 fn seed_of(rng: Rng) -> i64 {
     (rng() * 2147483648.0).floor() as i64
+}
+
+/// Which moves leave `pid` strictly first where it was tied for the most sway at a fight already set (moves that end
+/// the round are not judged: their fights are already resolved).
+fn tie_breakers(s: &GameState, pid: Pid, moves: &[Move]) -> Vec<bool> {
+    let tied: Vec<Loc> = crate::game::fights_due(s).into_iter().filter(|&l| {
+        let sw = &s.board[l as usize].sway;
+        let me = sw.get(pid);
+        me > 0 && (0..s.n() as Pid).filter(|&o| o != pid).map(|o| sw.get(o)).max().unwrap_or(0) == me
+    }).collect();
+    if tied.is_empty() {
+        return vec![false; moves.len()];
+    }
+    moves.iter().map(|m| {
+        if *m == Move::Pass {
+            return false;
+        }
+        let b = after(s, pid, m);
+        b.round == s.round && b.phase == Phase::Play && tied.iter().any(|&l| { let sw = &b.board[l as usize].sway; let me = sw.get(pid); me > 0 && (0..b.n() as Pid).filter(|&o| o != pid).all(|o| sw.get(o) < me) })
+    }).collect()
 }
 
 /// The moves to play out: the best `keep` by one-step score, Pass, and (tiekeep) every play that leaves this seat
@@ -1311,8 +1334,9 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
         None => ROLLOUT.to_string(),
     }).map(|p| if table.is_some_and(|t| t.judge) && persona_of(&p).is_some() { format!("{p},judge=1") } else { p }).collect();
     let mut moves = 0;
-    let full = table.is_some_and(|t| t.full_round);
-    while moves < SIM_MAX_MOVES && s.round == round && (s.phase == Phase::Play || (full && matches!(s.phase, Phase::Night | Phase::Growth))) {
+    // On through nightfall and growth to the round's end (2026-11-04: play-outs had stopped at nightfall, before the
+    // fights and the vote, whenever a location was marked).
+    while moves < SIM_MAX_MOVES && s.round == round && matches!(s.phase, Phase::Play | Phase::Night | Phase::Growth) {
         moves += 1;
         let mut moved = false;
         for id in 0..n as Pid {
