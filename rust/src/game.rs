@@ -315,6 +315,13 @@ pub fn take_flow() -> (i32, i32) {
     FLOW.with(|f| f.replace((0, 0)))
 }
 
+/// Put back what take_flow and take_fights took (the runner's what-if checks play real states).
+pub fn put_back(flow: (i32, i32), fights: Vec<([i32; 5], [i32; 5], usize)>, log: Vec<FightRec>) {
+    FLOW.with(|f| f.set(flow));
+    FIGHTS.with(|f| *f.borrow_mut() = fights);
+    FIGHT_LOG.with(|f| *f.borrow_mut() = log);
+}
+
 thread_local! {
     static FIGHTS: std::cell::RefCell<Vec<([i32; 5], [i32; 5], usize)>> = const { std::cell::RefCell::new(Vec::new()) };
     static FIGHT_LOG: std::cell::RefCell<Vec<FightRec>> = const { std::cell::RefCell::new(Vec::new()) };
@@ -329,6 +336,11 @@ pub struct FightRec {
     pub sway: [i32; 5],
     pub piles: Vec<(i32, Option<Pid>)>,
     pub scorched: i32,
+    /// Each seat's unspent sway and cards in hand when the fight came (could a tie have been broken?).
+    pub supply: [i32; 5],
+    pub hand: [i32; 5],
+    /// The move of the game it came in (set by the runner, to order it against sway changes).
+    pub mv: usize,
 }
 
 /// The real game's fights since last taken (a measuring aid, `motw tournament`).
@@ -528,6 +540,8 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
     let li = loc as usize;
     let sides = factions_at(s, loc);
     let sway0: [i32; 5] = std::array::from_fn(|p| s.board[li].sway.get(p as u8));
+    let supply0: [i32; 5] = std::array::from_fn(|p| s.players.get(p).map_or(0, |q| q.supply));
+    let hand0: [i32; 5] = std::array::from_fn(|p| s.players.get(p).map_or(0, |q| q.hand.len() as i32));
     let strength = |s: &GameState, f: Fac| s.board[li].tokens.get(f);
     let mut ranked = sides.clone();
     ranked.sort_by(|&x, &y| strength(s, y).cmp(&strength(s, x)));
@@ -548,7 +562,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         s.board[li].scorched = true;
         if !s.quiet {
             let lost: i32 = s.board[li].tokens.iter().map(|e| e.1).sum::<i32>();
-            FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: vec![], scorched: lost.max(0) }));
+            FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: vec![], scorched: lost.max(0), supply: supply0, hand: hand0, mv: 0 }));
         }
         let all = if sides.len() > 2 { "Every side is" } else { "Both sides are" };
         log_line(s, |_| { let name = fight_name(loc, other); format!("  {name}: a true tie. {all} wiped out and {name} is scorched.") });
@@ -625,7 +639,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         }
     }
     if !s.quiet {
-        FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: taken, scorched: 0 }));
+        FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: taken, scorched: 0, supply: supply0, hand: hand0, mv: 0 }));
     }
     // Sway after the fight (AF3 adjusted, AS1).
     if let Some(first) = places.first().copied().flatten() {

@@ -55,6 +55,21 @@ pub struct Game {
     pub positions: Vec<Vec<f64>>,
     /// Every real fight: who held what sway there and who took which pile (how bots contest fights).
     pub fight_log: Vec<crate::game::FightRec>,
+    /// Every change of a seat's sway at a location during play: (move, round, location, mover, sway before, after).
+    pub sway_log: Vec<SwayChange>,
+    /// Turns tied for the most sway at a fight already set (`ties=1`).
+    pub tie_turns: Vec<TieTurn>,
+}
+
+/// A change of sway at one location in one move (for who made a tie, 2026-11-03).
+#[derive(Clone, Debug)]
+pub struct SwayChange {
+    pub mv: usize,
+    pub round: i32,
+    pub loc: u8,
+    pub mover: Pid,
+    pub before: [i32; 5],
+    pub after: [i32; 5],
 }
 
 /// A round's close: each faction's presence (by slot) before and after its fights and at its end (after nightfall and
@@ -262,6 +277,81 @@ pub fn play(seed: i64, g: usize, list: &[String], options: &[(String, String)], 
 /// the whole game lies ahead.
 pub static SWING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 pub static POSITIONS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// Tie checks (`ties=1`): at each turn, could the player break a tie for the most sway at a fight already set?
+pub static TIES: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// A turn where the player was tied for the most sway at a fight already set (2026-11-03): could any legal play in hand
+/// make them strictly first there (`could`; plays that end the round are judged by the sway just before its fights),
+/// and did the play they chose (`did`)? `size`: the monsters at the location.
+#[derive(Clone, Debug)]
+pub struct TieTurn {
+    pub mv: usize,
+    pub round: i32,
+    pub seat: Pid,
+    pub loc: u8,
+    pub size: i32,
+    pub could: bool,
+    pub did: bool,
+    /// The bot's own view (when it could break and didn't): candidates it scored, the best-ranked breaking play's
+    /// place among them (0 = top; None: not among them), whether that one was played out, its play-out value and the
+    /// chosen play's.
+    pub listed: usize,
+    pub rank: Option<usize>,
+    pub played_out: bool,
+    pub break_value: Option<f64>,
+    pub chosen_value: Option<f64>,
+    /// The one-step (quick) scores of the same two plays: the shortlist is cut on these.
+    pub break_quick: Option<f64>,
+    pub chosen_quick: Option<f64>,
+    /// The seat's goal then (which ending it plays for: it values trophies or standing accordingly).
+    pub goal: Option<String>,
+}
+
+/// The fights already set where `pid` is tied for the most sway (with sway there).
+fn tied_at(s: &crate::types::GameState, pid: Pid) -> Vec<u8> {
+    crate::game::fights_due(s).into_iter().filter(|&l| {
+        let sw = &s.board[l as usize].sway;
+        let mine = sw.get(pid);
+        mine > 0 && (0..s.n() as u8).filter(|&o| o != pid).map(|o| sw.get(o)).max().unwrap_or(0) == mine
+    }).collect()
+}
+
+/// Strictly first at `l` in a state (or at the fight's own reading when the play ended the round).
+fn first_at(sway: &[i32; 5], pid: Pid, n: usize) -> bool {
+    let mine = sway[pid as usize];
+    mine > 0 && (0..n).filter(|&o| o != pid as usize).all(|o| sway[o] < mine)
+}
+
+/// Which of `locs` a move leaves `pid` strictly first at (a play that ends the round: the sway just before its fights).
+/// Real (logging) states, so the runner's own logs are set aside first and put back after.
+fn breaks(s: &crate::types::GameState, pid: Pid, m: &crate::types::Move, locs: &[u8]) -> Vec<bool> {
+    let (flow, fights, earlier) = (crate::game::take_flow(), crate::game::take_fights(), crate::game::take_fight_log());
+    let b = crate::game::apply_move(s, pid, m);
+    let fought = crate::game::take_fight_log();
+    crate::game::put_back(flow, fights, earlier);
+    let Ok(b) = b else { return vec![false; locs.len()] };
+    locs.iter().map(|&l| {
+        let sway: [i32; 5] = match fought.iter().find(|f| f.loc == l) {
+            Some(f) => f.sway,
+            None if b.round == s.round => std::array::from_fn(|o| b.board[l as usize].sway.get(o as u8)),
+            None => return false,
+        };
+        first_at(&sway, pid, s.n())
+    }).collect()
+}
+
+/// Which tied locations some legal play breaks in `pid`'s favour.
+fn breakable(s: &crate::types::GameState, pid: Pid, locs: &[u8]) -> Vec<bool> {
+    let mut x: u64 = 0x7155;
+    let mut rng = move || { x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407); (x >> 11) as f64 / (1u64 << 53) as f64 };
+    let mut out = vec![false; locs.len()];
+    for m in crate::bots::candidates(s, pid, &mut rng, 40, true, false, None, None) {
+        for (o, b) in out.iter_mut().zip(breaks(s, pid, &m, locs)) {
+            *o |= b;
+        }
+    }
+    out
+}
 pub static STOP_AFTER: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0);
 
 pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, String)], duplicate: bool, board: bool) -> Game {
@@ -285,6 +375,11 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     crate::game::take_flow();
     crate::game::take_fights();
     crate::game::take_fight_log();
+    let mut fight_log: Vec<crate::game::FightRec> = Vec::new();
+    let mut sway_log: Vec<SwayChange> = Vec::new();
+    let mut tie_turns: Vec<TieTurn> = Vec::new();
+    let ties_on = TIES.load(std::sync::atomic::Ordering::Relaxed);
+    let grid = |s: &crate::types::GameState| -> Vec<[i32; 5]> { s.board.iter().map(|p| std::array::from_fn(|i| p.sway.get(i as u8))).collect() };
     let mut fights_seen: Vec<([i32; 5], [i32; 5], usize)> = Vec::new();
     let mut rounds: Vec<RoundLog> = Vec::new();
     let mut playlog: Vec<PlayLog> = Vec::new();
@@ -299,6 +394,24 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let stop = STOP_AFTER.load(std::sync::atomic::Ordering::Relaxed);
     while moves < MAX_MOVES && s.phase != Phase::Ended && (stop == 0 || s.round <= stop) {
         let mut moved = false;
+        let (sway_before, round_before, in_play) = (grid(&s), s.round, s.phase == Phase::Play);
+        let mut mover: Pid = 0;
+        // Tie checks: the player to move, tied for the most sway at fights already set.
+        let tie_check: Vec<(u8, bool, i32)> = if ties_on && in_play {
+            let pid = s.turn as Pid;
+            let locs = tied_at(&s, pid);
+            if locs.is_empty() { Vec::new() } else {
+                let could = breakable(&s, pid, &locs);
+                locs.iter().zip(could).map(|(&l, c)| (l, c, s.board[l as usize].tokens.iter().map(|e| e.1).sum())).collect()
+            }
+        } else { Vec::new() };
+        let tie_seat = s.turn as Pid;
+        let state_before = if tie_check.is_empty() { None } else { Some(s.clone()) };
+        if !tie_check.is_empty() {
+            crate::bots::take_considered();
+        }
+        let mut chosen: Option<crate::types::Move> = None;
+        let mut considered: Vec<(crate::types::Move, f64, Option<f64>)> = Vec::new();
         if s.phase == Phase::Play && round_first.is_none_or(|_| false) {
             round_first = s.first;
         }
@@ -336,6 +449,10 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             };
             if let Some(m) = m {
                 let decision = crate::bots::take_decision();
+                if pid == tie_seat && state_before.is_some() {
+                    considered = crate::bots::take_considered();
+                    chosen = Some(m.clone());
+                }
                 if s.phase == Phase::Play {
                     let hand = s.players[pid as usize].hand.len();
                     match m {
@@ -371,6 +488,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                             plays.push((pid, crate::board::total_presence(&next) - before + lost - grown, waited));
                             s = next;
                             moved = true;
+                            mover = pid;
                             break;
                         }
                         _ => {}
@@ -382,10 +500,49 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                 fights_seen.extend(crate::game::take_fights());
                 note(&mut flow, round_now, before, crate::board::total_presence(&s), matches!(m, crate::types::Move::Play { .. }));
                 moved = true;
+                mover = pid;
                 break;
             }
         }
         assert!(moved, "game {g}: nobody can move in {:?}", s.phase);
+        {
+            // Sway changes this move: at a fought location, compare with its sway just before the fight.
+            let mut fought = crate::game::take_fight_log();
+            let mut after = grid(&s);
+            for f in fought.iter_mut() {
+                f.mv = moves;
+                after[f.loc as usize] = f.sway;
+            }
+            for &(l, could, size) in &tie_check {
+                let did = mover == tie_seat && first_at(&after[l as usize], tie_seat, s.n());
+                let (mut listed, mut rank, mut played_out, mut break_value, mut chosen_value) = (0, None, false, None, None);
+                let (mut break_quick, mut chosen_quick) = (None, None);
+                if could && !did && !considered.is_empty() {
+                    listed = considered.len();
+                    let pick = chosen.as_ref().and_then(|m| considered.iter().find(|c| &c.0 == m));
+                    chosen_value = pick.and_then(|c| c.2);
+                    chosen_quick = pick.map(|c| c.1);
+                    // The best breaking play in the bot's list: shortlisted ones first (best play-out), else the best-ranked.
+                    let breaking: Vec<usize> = (0..considered.len()).filter(|&i| breaks(state_before.as_ref().unwrap(), tie_seat, &considered[i].0, &[l])[0]).collect();
+                    let best = breaking.iter().copied().filter(|&i| considered[i].2.is_some()).max_by(|&a, &b| considered[a].2.partial_cmp(&considered[b].2).unwrap_or(std::cmp::Ordering::Equal)).or(breaking.first().copied());
+                    if let Some(i) = best {
+                        rank = Some(i);
+                        played_out = considered[i].2.is_some();
+                        break_value = considered[i].2;
+                        break_quick = Some(considered[i].1);
+                    }
+                }
+                tie_turns.push(TieTurn { mv: moves, round: round_before, seat: tie_seat, loc: l, size, could, did, listed, rank, played_out, break_value, chosen_value, break_quick, chosen_quick, goal: goal_name(&memory[tie_seat as usize]).map(String::from) });
+            }
+            if in_play {
+                for (l, (a, b)) in sway_before.iter().zip(&after).enumerate() {
+                    if a != b {
+                        sway_log.push(SwayChange { mv: moves, round: round_before, loc: l as u8, mover, before: *a, after: *b });
+                    }
+                }
+            }
+            fight_log.extend(fought);
+        }
         moves += 1;
         if s.votes != last_votes {
             votes.push(s.votes[0] > last_votes[0]);
@@ -406,9 +563,10 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         Some(r) => (r.island, r.players.clone(), r.placings.clone()),
         None => { assert!(stop > 0, "a finished game"); (false, Vec::new(), Vec::new()) }
     };
-    let fight_log = crate::game::take_fight_log();
     Game {
         fight_log,
+        sway_log,
+        tie_turns,
         g,
         seats,
         island,

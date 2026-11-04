@@ -73,7 +73,23 @@ pub fn take_decision() -> Option<Decision> {
     DECISION.with(|d| d.take())
 }
 
+/// Keep every top-level decision's candidates (a measuring aid, the runner's `ties=1`).
+pub static KEEP_CONSIDERED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+thread_local! {
+    static CONSIDERED: std::cell::RefCell<Vec<(Move, f64, Option<f64>)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// The last top-level decision's candidates, best one-step score first: (move, one-step score, play-out value if
+/// shortlisted).
+pub fn take_considered() -> Vec<(Move, f64, Option<f64>)> {
+    CONSIDERED.with(|c| std::mem::take(&mut *c.borrow_mut()))
+}
+
 fn note_decision(ranked: &[(Move, GameState, f64)], values: &[(usize, f64)], now: f64) {
+    if KEEP_CONSIDERED.load(std::sync::atomic::Ordering::Relaxed) {
+        let list = ranked.iter().enumerate().map(|(i, r)| (r.0.clone(), r.2, values.iter().find(|v| v.0 == i).map(|v| v.1))).collect();
+        CONSIDERED.with(|c| *c.borrow_mut() = list);
+    }
     let pass = values.iter().find(|(i, _)| ranked[*i].0 == Move::Pass).map(|x| x.1);
     let best_play = values.iter().filter(|(i, _)| ranked[*i].0 != Move::Pass).map(|x| x.1).fold(None, |m: Option<f64>, v| Some(m.map_or(v, |m| m.max(v))));
     DECISION.with(|d| d.set(Some(Decision { pass, best_play, now })));

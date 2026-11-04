@@ -111,6 +111,15 @@ const fightsOf = (gs) => gs.flatMap((g) => (g.fightLog ?? []).map((f) => ({ ...f
 // Each round's biggest fights: the top third by trophies at stake (at least one), per game and round.
 const bigFights = (gs) => gs.flatMap((g) => { const by = {}; for (const f of fightsOf([g])) (by[f.r] ??= []).push(f); return Object.values(by).flatMap((fs) => { const s = [...fs].sort((a, b) => b.size - a.size); return s.slice(0, Math.max(1, Math.round(s.length / 3))); }); });
 const takenBy = (f, i) => sum(f.piles.filter((p) => p[1] === i).map((p) => p[0]));
+// Ties for the most sway at a fight (2026-11-03): the fight, and the last sway change there before it (who made it).
+const tiesOf = (gs) => gs.flatMap((g) => (g.fightLog ?? []).filter((f) => { const top = Math.max(...f.sway); return top > 0 && f.sway.filter((x) => x === top).length >= 2; }).map((f) => {
+  const ch = (g.swayLog ?? []).filter((c) => c.r === f.r && c.loc === f.loc && c.mv <= f.mv).at(-1);
+  const top = Math.max(...f.sway);
+  const matched = !!ch && ch.after[ch.seat] === top && ch.before[ch.seat] < top && ch.before.some((x, i) => i !== ch.seat && x === top) && !ch.after.some((x, i) => x < ch.before[i]);
+  const lost = sum(f.piles.filter((p) => p[1] === null).map((p) => p[0])) + f.wiped;
+  const missed = (g.tieTurns ?? []).some((t) => t.r === f.r && t.loc === f.loc && t.could && !t.did);
+  return { ...f, matched, lost, missed, checked: !!g.tieTurns };
+}));
 
 const MEASURES = [
   ['Push and pull', 'Invaders\' endings', '1.4 knife\'s edge; D33 about 40%', (gs) => share(gs, (g) => g.side === 'invaders'), pct, 'invaderShare'],
@@ -195,6 +204,9 @@ const MEASURES = [
   ['Contesting fights', 'Fights nobody swayed / contested by 2+ seats', 'designer: bots contest the fights', (gs) => { const f = fightsOf(gs); return `${pct(share(f, (x) => !x.sway.some(Boolean)))} / ${pct(share(f, (x) => x.sway.filter(Boolean).length >= 2))}`; }, String],
   ['Contesting fights', 'Each round\'s biggest fights (top third): contested by 2+ seats', 'designer: the big trophy gains are fought over', (gs) => share(bigFights(gs), (x) => x.sway.filter(Boolean).length >= 2), pct],
   ['Contesting fights', 'Sway on the biggest fights vs the trophies there (share of each round\'s total)', 'designer: sway goes where the trophies are (sway share ≥ trophy share)', (gs) => { const all = fightsOf(gs), big = bigFights(gs); const sw = sum(all.map((x) => sum(x.sway))), tr = sum(all.map((x) => x.size)); return sw && tr ? `${pct(sum(big.map((x) => sum(x.sway))) / sw)} of sway / ${pct(sum(big.map((x) => x.size)) / tr)} of trophies` : '–'; }, String],
+  ['Contesting fights', 'Ties for the most sway made by matching the leader (denial)', 'designer: are ties deliberate?', (gs) => share(tiesOf(gs), (x) => x.matched), pct],
+  ['Contesting fights', 'Turns tied at a fight: a legal play could break the tie / the player broke it (when they could)', 'designer: bots leaving contests on the table (ties=1 runs)', (gs) => { const ts = gs.flatMap((g) => g.tieTurns ?? []); return ts.length ? `${pct(share(ts, (x) => x.could))} / ${pct(share(ts.filter((x) => x.could), (x) => x.did))}` : '–'; }, String],
+  ['Contesting fights', 'Trophies lost at ties a tied player could have broken (share of trophies lost at ties)', 'designer: bots leaving contests on the table (ties=1 runs)', (gs) => { const ts = tiesOf(gs).filter((x) => x.checked); const all = sum(ts.map((x) => x.lost)); return all ? sum(ts.filter((x) => x.missed).map((x) => x.lost)) / all : NaN; }, pct],
   ['Contesting fights', 'Trophies taken from the biggest fights, by seat', 'designer: which bots win the big fights (compare a challenger seat)', (gs) => { const b = bigFights(gs); const n = gs[0]?.rounds[0].seats.length ?? 0; const tr = sum(b.map((x) => x.size)); return tr ? Array.from({ length: n }, (_, i) => pct(sum(b.map((x) => takenBy(x, i))) / tr)).join(' / ') : '–'; }, String],
 
   ['Bot quality', 'Forecast calibration error (all rounds; 0 = says 70%, happens 70%)', 'do the bots read the game right?', (gs) => calibration(gs), num(2), 'calibration'],

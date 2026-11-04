@@ -238,6 +238,11 @@ fn tournament(args: &[String]) {
                 "positions": x.positions,
                 "fightLog": x.fight_log.iter().map(|f| serde_json::json!({
                     "r": f.round, "loc": f.loc, "sway": &f.sway[..x.seats.len()], "piles": f.piles.iter().map(|p| serde_json::json!([p.0, p.1])).collect::<Vec<_>>(), "wiped": f.scorched,
+                    "supply": &f.supply[..x.seats.len()], "hand": &f.hand[..x.seats.len()], "mv": f.mv,
+                })).collect::<Vec<_>>(),
+                "tieTurns": x.tie_turns.iter().map(|t| serde_json::json!({ "mv": t.mv, "r": t.round, "seat": t.seat, "loc": t.loc, "size": t.size, "could": t.could, "did": t.did, "listed": t.listed, "rank": t.rank, "playedOut": t.played_out, "breakValue": t.break_value, "chosenValue": t.chosen_value, "breakQuick": t.break_quick, "chosenQuick": t.chosen_quick, "goal": t.goal })).collect::<Vec<_>>(),
+                "swayLog": x.sway_log.iter().map(|c| serde_json::json!({
+                    "mv": c.mv, "r": c.round, "loc": c.loc, "seat": c.mover, "before": &c.before[..x.seats.len()], "after": &c.after[..x.seats.len()],
                 })).collect::<Vec<_>>(),
                 "swings": x.swings.iter().map(|w| serde_json::json!({
                     "r": w.round, "seat": id(&w.seat), "presence": w.presence, "groups": w.groups, "maxGroup": w.max_group, "groups4": w.groups4,
@@ -251,6 +256,7 @@ fn tournament(args: &[String]) {
     let board = kv.get("board").is_some_and(|x| x == "1");
     // stopAfter=1: the opening study; each game stops after that round (board=1 and boardRound follow it).
     if kv.get("swing").is_some_and(|x| x == "1") { motw::tournament::SWING.store(true, std::sync::atomic::Ordering::Relaxed); }
+    if kv.get("ties").is_some_and(|x| x == "1") { motw::tournament::TIES.store(true, std::sync::atomic::Ordering::Relaxed); motw::bots::KEEP_CONSIDERED.store(true, std::sync::atomic::Ordering::Relaxed); }
     if kv.get("positions").is_some_and(|x| x == "1") { motw::tournament::POSITIONS.store(true, std::sync::atomic::Ordering::Relaxed); }
     if let Some(n) = kv.get("stopAfter").and_then(|x| x.parse::<i32>().ok()) { motw::tournament::STOP_AFTER.store(n, std::sync::atomic::Ordering::Relaxed); }
     let played = motw::tournament::run_with(seed, games, &list, &options, duplicate, workers, board, &done);
