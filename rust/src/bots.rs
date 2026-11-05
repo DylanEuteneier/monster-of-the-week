@@ -854,7 +854,7 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
             }
             let e = memory.as_deref().and_then(|m| m.early).unwrap_or(1.0);
             if e < p.gut {
-                // A gut player: commits in round 2 or 3 on its leaning, not on the evidence.
+                // A gut player: commits in round 2 or 3 on its leaning (lean and jitter), not on the evidence.
                 gut_now = s.round as f64 >= if e < p.gut / 2.0 { 2.0 } else { 3.0 };
             } else if e < p.gut + p.glass_jitter {
                 let e = e - p.gut;
@@ -917,6 +917,10 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
         None => 0.0,
     };
     let mut goal = if score > bar { Goal::Invaders } else { Goal::Island };
+    if gut_now {
+        // On its leaning alone: the gut player ignores the board's evidence.
+        goal = if p.lean + jitter > 0.0 { Goal::Invaders } else { Goal::Island };
+    }
     if held == Some(Goal::Invaders) && goal == Goal::Island && on(p.commit) && reach_isl * c.as_island < p.commit * reach_inv * c.as_invaders {
         goal = Goal::Invaders;
     }
