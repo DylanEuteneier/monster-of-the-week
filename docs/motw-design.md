@@ -3068,7 +3068,7 @@ Prototype bot tuning, not rules: a bot that plays the endings' asymmetry (RV1 no
 - **The spec (designer):**
   - *Both goals at once, effort scaled to the game:* it works the island and the invaders together. Trophies come first all game, to stay viable for the island; backing a faction early doesn't pay.
   - *A loose faction:* it may loosely back and protect a single faction; early protection is fine but worth little.
-  - *Evidence by round:* the evidence means nothing at the start and isn't trustworthy in rounds 2 and 3; only round 5's evidence is enough for a full commit.
+  - *Evidence by round:* the evidence means nothing at the start and isn't trustworthy in rounds 2 and 3; only round 5's evidence is enough for a full commit. **Withdrawn (designer, 2026-11-05: "i was wrong"):** under rounds as votes, rounds 2–3 are when the invaders' ending is won or lost (the invaders rarely take round 1, so they must take round 2 or 3 to stay in it); a hedger that waits for round 5 only joins an ending already won. *Designer:* "invaders have to win votes to have a shot at winning." What replaces it is open.
   - *Break glass:* once a hedger commits, it no longer hedges at all.
   - *Irrational players:* random jitter, so the break sometimes comes earlier.
   - *Varied tables:* hedgers mustn't all break the same way and land on the same ending every time.
