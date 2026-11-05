@@ -155,6 +155,7 @@ pub fn create_game(seed: i64, players: &[String], raw_options: &[(String, String
         opened: false,
         copying: None,
         votes: [0, 0],
+        last_close: None,
         round_plays: vec![],
         growing: None,
         night: None,

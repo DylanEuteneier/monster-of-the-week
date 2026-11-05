@@ -299,6 +299,9 @@ pub fn state_to_value(s: &GameState) -> Value {
     if s.options.round_votes {
         o.insert("votes".into(), serde_json::json!({ "invaders": s.votes[0], "island": s.votes[1] }));
     }
+    if let Some(c) = s.last_close {
+        o.insert("lastClose".into(), serde_json::json!(c));
+    }
     o.insert("growing".into(), growing_value(s));
     o.insert("night".into(), night_value(s));
     o.insert("log".into(), log_value(s));
@@ -415,6 +418,7 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
         opened: v["opened"].as_bool().unwrap_or(false),
         copying: card(&v["copying"]),
         votes: [v["votes"]["invaders"].as_i64().unwrap_or(0) as i32, v["votes"]["island"].as_i64().unwrap_or(0) as i32],
+        last_close: v["lastClose"].as_array().filter(|a| a.len() == 4).map(|a| std::array::from_fn(|i| a[i].as_i64().unwrap_or(0) as i32)),
         round_plays,
         growing,
         night,

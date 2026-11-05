@@ -416,6 +416,9 @@ pub struct GameState {
     pub copying: Option<CardIx>,
     /// Rounds as votes (variant roundVotes): rounds closed over the bar (the invaders') and at or under it (the island's).
     pub votes: [i32; 2],
+    /// The last round close (not a rule; what the game showed, for the bots' reading of votes to come): its round, the
+    /// presence before its fights, after them (the vote's), and the nightfall tokens it brought.
+    pub last_close: Option<[i32; 4]>,
     pub round_plays: Vec<RoundPlay>,
     pub growing: Option<Growing>,
     pub night: Option<Night>,

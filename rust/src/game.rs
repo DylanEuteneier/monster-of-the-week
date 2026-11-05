@@ -416,6 +416,8 @@ fn close_round(s: &mut GameState) {
         let after_by = by_faction(s);
         FIGHTS.with(|f| f.borrow_mut().push((before_by, after_by, due)));
     }
+    let after_fights = total_presence(s);
+    s.last_close = Some([s.round, before, after_fights, 0]);
     if s.options.round_votes {
         let (total, bar) = (total_presence(s), s.options.threshold);
         let over = total > bar;
@@ -433,6 +435,8 @@ fn close_round(s: &mut GameState) {
     let last = s.round >= s.options.rounds && s.options.last_growth == false;
     if s.options.sway_tokens == SwayTokens::Nightfall && !last {
         nightfall_tokens(s, &fought);
+        let brought = total_presence(s) - after_fights;
+        s.last_close = Some([s.round, before, after_fights, brought]);
     }
     for p in s.board.iter_mut() {
         p.gate = None;

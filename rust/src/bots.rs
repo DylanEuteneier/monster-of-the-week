@@ -160,14 +160,6 @@ pub struct Persona {
     pub tally: f64,
     /// Testing: how much the lean fades as the game settles (1: fully, as always; 0: never, a seat keeps its side).
     pub fade: f64,
-    /// Rounds as votes: the fight losses still to come this round, at a full round left (0: none, as before); the
-    /// vote is after fights the round's plays are yet to make (2026-11-02: the board shows 30 before round 1, 14 at its vote).
-    pub drain: f64,
-    /// ...and how much each later round's vote rises on this one's (0: flat, as before).
-    pub trend: f64,
-    /// The goal's forecast from play-outs (2026-11-02, the designer: derive it, no set numbers): before a real decision,
-    /// play the round out this many times and read the vote from where it ends (0: from the board as it stands).
-    pub look: f64,
     /// The draft by play-outs (designer, 2026-11-02: a card is worth what it adds to the hand's play this round, and
     /// what that sets up after): each card this pick could add, the rest of the draft finished by every seat's own
     /// bot, then the round played out, this many times; its worth is the position at the vote (0: one step, alone).
@@ -205,11 +197,10 @@ pub struct Persona {
     /// Testing (designer, 2026-11-05): the chance a game's hedger tries to keep the invaders alive from round 1,
     /// counting their half in full through round 1 (hfrom below 1: in full from round 1).
     pub hopen: f64,
-    /// Testing (designer, 2026-11-05: bots should never consider opening presence, only potential end-of-round
-    /// presence; no constants from past tests): each vote read at its end-of-round presence, from the game itself.
-    /// This round's: the presence after its fights, from this many play-outs of the round (the goal choice) or the
-    /// position's own fights (a play-out's end). Each later round's: that, plus the coming nightfall's tokens less
-    /// this round's fight losses, per round.
+    /// Rounds as votes (designer, 2026-11-05: bots never consider opening presence, only potential end-of-round
+    /// presence, with no constants from past tests): each vote is read at its end-of-round presence from the game itself
+    /// (end_read, flow_ahead). This many play-outs of the round give the goal choice's reading at a real decision
+    /// (default 4; 0: from the position). Adopted 2026-11-05, replacing drain, trend, look and vknown.
     pub endread: f64,
     /// Testing (designer, 2026-11-04: some players are irrational): the chance a game's hedger may break glass early,
     /// from round 4 (two thirds of those) or round 3 (a third).
@@ -220,11 +211,6 @@ pub struct Persona {
     /// Testing (designer, 2026-11-04: tables of hedgers mustn't all break the same way): each game a hedger's break
     /// threshold is glass ± half this, drawn once (kept between 0.55 and 0.98).
     pub glass_spread: f64,
-    /// Testing (designer, 2026-11-04: a lean-0 bot backing the invaders at round 1 is wrong): under votes the forecast
-    /// read the board as fully known from round 1, before the round's fights, so the starting board (30 against a bar
-    /// of 20) read as a 95% invaders' ending. On: it blends from the table's prior to the board as the game goes on,
-    /// as it does with votes off.
-    pub vknown: f64,
     /// Testing (designer, 2026-11-04: bots with human tendencies, inconsistencies and quirks): each game the seat draws
     /// a temperament: loyalty (hguard 0.1–0.9), sloppiness (search noise up to the standard's, and up to a quarter of
     /// its turns played on instinct, the best move at a glance, without play-outs) and a momentum bias (up to 0.3).
@@ -243,7 +229,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, hfrom: 0.0, hopen: 0.0, endread: 0.0, glass_jitter: 0.0, glass_spread: 0.0, gut: 0.0, vknown: 0.0, quirks: 0.0, momentum: 0.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, hfrom: 0.0, hopen: 0.0, endread: 4.0, glass_jitter: 0.0, glass_spread: 0.0, gut: 0.0, quirks: 0.0, momentum: 0.0,
     }
 }
 
@@ -313,9 +299,6 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "pace" => p.pace = x,
                 "tally" => p.tally = x,
                 "fade" => p.fade = x,
-                "drain" => p.drain = x,
-                "trend" => p.trend = x,
-                "look" => p.look = x,
                 "dplan" => p.dplan = x,
                 "tiekeep" => p.tiekeep = x,
                 "stubborn" => p.stubborn = x,
@@ -332,7 +315,6 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "glassJitter" => p.glass_jitter = x,
                 "gut" => p.gut = x,
                 "glassSpread" => p.glass_spread = x,
-                "vknown" => p.vknown = x,
                 "quirks" => p.quirks = x,
                 "momentum" => p.momentum = x,
                 "judge" => p.judge = x,
@@ -556,10 +538,10 @@ fn project_fights(s: &GameState) -> GameState {
 /// Rounds as votes: each round left is a vote, this round's close sharp, later ones less so; the chance of a majority.
 /// `paced`: `push` is per round, so a vote k rounds off gets k + 1 of it (this round's vote, one).
 fn invaders_reach(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64, paced: bool) -> f64 {
-    invaders_reach_by(s, projected, threshold, spread_p, push, paced, 0.0, 0.0)
+    invaders_reach_by(s, projected, threshold, spread_p, push, paced, 0.0)
 }
 
-/// The fight losses still to come this round (`drain` at a full round) and each later vote's rise (`trend`).
+/// The share of the round's cards still in hand (1 outside the play phase).
 fn round_left(s: &GameState) -> f64 {
     if s.phase != Phase::Play {
         return 1.0;
@@ -570,7 +552,8 @@ fn round_left(s: &GameState) -> f64 {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn invaders_reach_by(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64, paced: bool, drain: f64, trend: f64) -> f64 {
+/// `trend`: each later vote's change on this one's (end_read).
+fn invaders_reach_by(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64, paced: bool, trend: f64) -> f64 {
     if !s.options.round_votes {
         return sigmoid((projected - threshold - 0.5 + push) / spread_p);
     }
@@ -584,7 +567,7 @@ fn invaders_reach_by(s: &GameState, projected: f64, threshold: f64, spread_p: f6
     for k in 0..left {
         let w = s.options.vote_weight(closed + 1 + k as i32) as usize;
         let shift = if paced { push * (k as f64 + 1.0) } else { push };
-        let ahead = -drain + trend * k as f64;
+        let ahead = trend * k as f64;
         let q = sigmoid((projected + ahead - threshold - 0.5 + shift) / (2.0 + 3.0 * k as f64));
         for j in (0..=most).rev() {
             dp[j] = dp[j] * (1.0 - q) + if j >= w { dp[j - w] * q } else { 0.0 };
@@ -726,14 +709,7 @@ pub fn evaluate(s: &GameState, pid: Pid, profile: &str, goal: Option<Goal>) -> f
 
 fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
     let mut c = win_chances(s, pid);
-    vote_known(s, &mut c, p);
-    if s.options.round_votes && on(p.endread) {
-        let (after, t) = round_flow(s);
-        c.projected = after;
-        c.p_invaders = invaders_reach_by(s, after, c.threshold, c.spread_p, 0.0, false, 0.0, t);
-    } else if s.options.round_votes && (on(p.drain) || on(p.trend)) {
-        c.p_invaders = invaders_reach_by(s, c.projected, c.threshold, c.spread_p, 0.0, false, p.drain * round_left(s), p.trend);
-    }
+    end_read_into(s, &mut c);
     if let Some((side, w)) = momentum(s, p) {
         c.p_invaders = (1.0 - w) * c.p_invaders + w * side;
     }
@@ -763,30 +739,24 @@ fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
     main - threat + SUPPLY_VALUE * s.players[pid as usize].supply as f64
 }
 
-/// The chance of the invaders' ending as this seat's own settings read it (vknown, drain, trend), for measuring the
+/// The chance of the invaders' ending as this seat reads it (end_read), for measuring the
 /// forecast's calibration (the round logs' pForecast).
 pub fn forecast(s: &GameState, pid: Pid, profile: &str) -> f64 {
     let p = persona_of(profile).unwrap_or_else(|| at_lean(-0.3));
     let mut c = win_chances(s, pid);
-    vote_known(s, &mut c, &p);
-    if s.options.round_votes && on(p.endread) {
-        let (after, t) = round_flow(s);
-        c.projected = after;
-        c.p_invaders = invaders_reach_by(s, after, c.threshold, c.spread_p, 0.0, false, 0.0, t);
-    } else if s.options.round_votes && (on(p.drain) || on(p.trend)) {
-        c.p_invaders = invaders_reach_by(s, c.projected, c.threshold, c.spread_p, 0.0, false, p.drain * round_left(s), p.trend);
-    }
+    end_read_into(s, &mut c);
     if let Some((side, w)) = momentum(s, &p) {
         c.p_invaders = (1.0 - w) * c.p_invaders + w * side;
     }
     c.p_invaders
 }
 
-/// vknown: under votes, the forecast blended from the table's prior by how far the game has gone.
-fn vote_known(s: &GameState, c: &mut Chances, p: &Persona) {
-    if s.options.round_votes && on(p.vknown) {
-        c.known = c.settled;
-        c.p_invaders = (1.0 - c.settled) * c.prior + c.settled * c.p_invaders;
+/// Under votes, each vote read at its end-of-round presence (end_read): the chance of the invaders' ending from it.
+fn end_read_into(s: &GameState, c: &mut Chances) {
+    if s.options.round_votes {
+        let (after, t) = end_read(s);
+        c.projected = after;
+        c.p_invaders = invaders_reach_by(s, after, c.threshold, c.spread_p, 0.0, false, t);
     }
 }
 
@@ -867,40 +837,55 @@ pub fn round_flow(s: &GameState) -> (f64, f64) {
     (after, grows - losses)
 }
 
+/// The end-of-round reading of a position (persona endread), from the game itself. Mid-round: the fights as they stand
+/// (round_flow). At a round's start, after a close (a play-out's end, where the bots score their moves), the board holds
+/// no fights yet: this round's vote is read as today's presence less the last close's fight losses, and each later
+/// round's change as the last close's nightfall tokens less its fight losses.
+fn end_read(s: &GameState) -> (f64, f64) {
+    match s.last_close {
+        Some([r, before, after, brought]) if r == s.round - 1 && s.round_plays.is_empty() => {
+            let losses = (before - after) as f64;
+            (crate::board::total_presence(s) as f64 - losses, brought as f64 - losses)
+        }
+        Some([r, before, after, brought]) if r == s.round - 1 => {
+            let (now, _) = round_flow(s);
+            (now, (brought - (before - after)) as f64)
+        }
+        _ => round_flow(s),
+    }
+}
+
 /// The round played out `n` times from here by every seat's own bot: its end-of-round reading (round_flow), on average.
 pub fn flow_ahead(s: &GameState, pid: Pid, rng: Rng, memory: Option<&BotMemory>, seats: &Seats, n: usize) -> (f64, f64) {
     let (mut a, mut t) = (0.0, 0.0);
     for _ in 0..n {
+        // The play-out runs on through the round's close (fights, vote, nightfall): read the close itself.
         let end = play_out_round(s, seed_of(rng), pid, memory, Some(seats), None);
-        let (x, y) = round_flow(&end);
-        a += x;
-        t += y;
+        match end.last_close {
+            Some([r, before, after, brought]) if r == s.round => {
+                a += after as f64;
+                t += (brought - (before - after)) as f64;
+            }
+            _ => {
+                let (x, y) = round_flow(&end);
+                a += x;
+                t += y;
+            }
+        }
     }
     let k = n.max(1) as f64;
     (a / k, t / k)
 }
 
-/// The round played out `n` times from here by every seat's own bot: where this round's vote lands, on average.
-fn vote_ahead(s: &GameState, pid: Pid, rng: Rng, memory: Option<&BotMemory>, seats: &Seats, n: usize) -> f64 {
-    let mut sum = 0.0;
-    for _ in 0..n {
-        let end = play_out_round(s, seed_of(rng), pid, memory, Some(seats), None);
-        sum += win_chances(&end, pid).projected;
-    }
-    sum / n.max(1) as f64
-}
-
-fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut BotMemory>, rng: Rng, seen: Option<(f64, Option<f64>)>) -> Goal {
+/// `seen`: this round's vote presence and each later vote's change, read from play-outs of the round (flow_ahead);
+/// without them, from the position (end_read).
+fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut BotMemory>, rng: Rng, seen: Option<(f64, f64)>) -> Goal {
     let mut c = win_chances_shared(s, pid);
-    let mut seen_trend = None;
-    if let Some((v, t)) = seen {
-        c.projected = v;
-        seen_trend = t;
+    let (now, trend) = seen.unwrap_or_else(|| end_read(s));
+    if s.options.round_votes {
+        c.projected = now;
+        c.p_invaders = invaders_reach_by(s, now, c.threshold, c.spread_p, 0.0, false, trend);
     }
-    if let Some(t) = seen_trend {
-        c.p_invaders = invaders_reach_by(s, c.projected, c.threshold, c.spread_p, 0.0, false, 0.0, t);
-    }
-    vote_known(s, &mut c, p);
     let mut memory = memory;
     let mut gut_now = false;
     if on(p.hedge) && on(p.glass) {
@@ -948,9 +933,8 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
     }
     let paced = on(p.pace) && s.options.round_votes;
     let push = if paced { p.push * p.pace } else { p.push * (c.rounds_left + 1.0) };
-    let (drain, trend) = match seen_trend { Some(t) => (0.0, t), None => (p.drain * round_left(s), p.trend) };
-    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach_by(s, c.projected, c.threshold, c.spread_p, push, paced, drain, trend);
-    let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach_by(s, c.projected, c.threshold, c.spread_p, -push, paced, drain, trend));
+    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach_by(s, c.projected, c.threshold, c.spread_p, push, paced, trend);
+    let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach_by(s, c.projected, c.threshold, c.spread_p, -push, paced, trend));
     let (reach_inv, reach_isl) = match momentum(s, p) {
         Some((side, w)) => ((1.0 - w) * reach_inv + w * side, (1.0 - w) * reach_isl + w * (1.0 - side)),
         None => (reach_inv, reach_isl),
@@ -1314,9 +1298,8 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
     let seen = match &persona {
         Some(p) if on(p.endread) && seats.profiles.is_some() && s.phase == Phase::Play && s.options.round_votes => {
             let (a, t) = flow_ahead(s, pid, &mut *rng, memory.as_deref(), seats, p.endread.max(1.0) as usize);
-            Some((a, Some(t)))
+            Some((a, t))
         }
-        Some(p) if on(p.look) && seats.profiles.is_some() && s.phase == Phase::Play && s.options.round_votes => Some((vote_ahead(s, pid, &mut *rng, memory.as_deref(), seats, p.look as usize), None)),
         _ => None,
     };
     let goal = persona.as_ref().map(|p| choose_goal_seen(s, pid, p, memory.as_deref_mut(), &mut *rng, seen));
