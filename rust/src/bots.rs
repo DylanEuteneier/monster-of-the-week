@@ -201,6 +201,11 @@ pub struct Persona {
     /// Testing (designer, 2026-11-04: tables of hedgers mustn't all break the same way): each game a hedger's break
     /// threshold is glass ± half this, drawn once (kept between 0.55 and 0.98).
     pub glass_spread: f64,
+    /// Testing (designer, 2026-11-04: a lean-0 bot backing the invaders at round 1 is wrong): under votes the forecast
+    /// read the board as fully known from round 1, before the round's fights, so the starting board (30 against a bar
+    /// of 20) read as a 95% invaders' ending. On: it blends from the table's prior to the board as the game goes on,
+    /// as it does with votes off.
+    pub vknown: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -213,7 +218,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, glass_jitter: 0.0, glass_spread: 0.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, glass_jitter: 0.0, glass_spread: 0.0, vknown: 0.0,
     }
 }
 
@@ -298,6 +303,7 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "glassFrom" => p.glass_from = x,
                 "glassJitter" => p.glass_jitter = x,
                 "glassSpread" => p.glass_spread = x,
+                "vknown" => p.vknown = x,
                 "judge" => p.judge = x,
                 "rjudge" => p.rjudge = x,
                 _ => {}
@@ -689,7 +695,7 @@ pub fn evaluate(s: &GameState, pid: Pid, profile: &str, goal: Option<Goal>) -> f
 
 fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
     let mut c = win_chances(s, pid);
-    let _ = &mut c;
+    vote_known(s, &mut c, p);
     if s.options.round_votes && (on(p.drain) || on(p.trend)) {
         c.p_invaders = invaders_reach_by(s, c.projected, c.threshold, c.spread_p, 0.0, false, p.drain * round_left(s), p.trend);
     }
@@ -717,6 +723,14 @@ fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
     let guard = if on(p.protect) && goal == Goal::Invaders { p.protect * presence_guard(s, pid, &c, p) } else { 0.0 };
     let main = if goal == Goal::Invaders { inv + guard } else { isl + if on(p.sets) { p.sets * (1.0 - c.p_invaders) * set_access(s, pid) } else { 0.0 } };
     main - threat + SUPPLY_VALUE * s.players[pid as usize].supply as f64
+}
+
+/// vknown: under votes, the forecast blended from the table's prior by how far the game has gone.
+fn vote_known(s: &GameState, c: &mut Chances, p: &Persona) {
+    if s.options.round_votes && on(p.vknown) {
+        c.known = c.settled;
+        c.p_invaders = (1.0 - c.settled) * c.prior + c.settled * c.p_invaders;
+    }
 }
 
 /// The hedging bot's ramp (persona hedge): how much of the invaders' half of the value counts, 0 to 1.
@@ -784,6 +798,7 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
     if let Some(v) = seen {
         c.projected = v;
     }
+    vote_known(s, &mut c, p);
     let mut memory = memory;
     if on(p.hedge) && on(p.glass) {
         if let Some(g) = memory.as_deref().and_then(|m| m.broke) {
@@ -1145,7 +1160,13 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
     let goal = persona.as_ref().map(|p| choose_goal_seen(s, pid, p, memory.as_deref_mut(), &mut *rng, seen));
     // A hedger that has broken glass plays the plain committed value from then on.
     let committed = persona.as_ref().is_some_and(|p| on(p.hedge)) && memory.as_deref().is_some_and(|m| m.broke.is_some());
-    let plain = if committed { format!("{profile},hedge=0") } else { String::new() };
+    // It plays as a full bot of its side: the lean's end for that side (backer habits for the invaders), no hedging.
+    let plain = if committed {
+        let side = if memory.as_deref().and_then(|m| m.broke) == Some(Goal::Invaders) { 0.3 } else { -0.3 };
+        let (name, over) = profile.split_once(':').unwrap_or((profile, ""));
+        let rest: Vec<&str> = over.split(',').filter(|kv| !kv.is_empty() && !kv.starts_with("lean=") && !kv.starts_with("hedge=")).collect();
+        format!("{name}:lean={side},{}hedge=0", rest.iter().map(|kv| format!("{kv},")).collect::<String>())
+    } else { String::new() };
     let value_profile: &str = if committed { &plain } else { profile };
     let ev = |x: &GameState| evaluate(x, pid, value_profile, goal);
     let p = &s.players[me];
