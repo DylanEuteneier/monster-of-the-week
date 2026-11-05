@@ -381,9 +381,18 @@ fn project_fights_cached(s: &GameState) -> std::rc::Rc<GameState> {
     thread_local! {
         // Shared, not copied: a hit hands out the projection itself (2026-11-05: copying whole states out of here, and
         // shifting the list on each new entry, was a fifth of the bots' time once the end-of-round reading asked twice).
-        static CACHE: std::cell::RefCell<std::collections::VecDeque<(u64, std::rc::Rc<GameState>, std::rc::Rc<GameState>)>> = const { std::cell::RefCell::new(std::collections::VecDeque::new()) };
+        // Each entry keeps only what a hit is confirmed by (not a copy of the whole position).
+        static CACHE: std::cell::RefCell<std::collections::VecDeque<(u64, Seen, std::rc::Rc<GameState>)>> = const { std::cell::RefCell::new(std::collections::VecDeque::new()) };
     }
-    let same = |a: &GameState, b: &GameState| a.board == b.board && a.players == b.players && a.supply == b.supply && a.round == b.round && a.phase == b.phase && std::rc::Rc::ptr_eq(&a.options, &b.options);
+    struct Seen {
+        board: [crate::types::Place; crate::types::NLOC],
+        players: Vec<crate::types::Player>,
+        supply: [i32; 5],
+        round: i32,
+        phase: Phase,
+        options: std::rc::Rc<Options>,
+    }
+    let same = |a: &Seen, b: &GameState| a.board == b.board && a.players == b.players && a.supply == b.supply && a.round == b.round && a.phase == b.phase && std::rc::Rc::ptr_eq(&a.options, &b.options);
     let key = {
         use std::hash::{Hash, Hasher};
         let mut h = crate::small::Fx::default();
@@ -403,18 +412,14 @@ fn project_fights_cached(s: &GameState) -> std::rc::Rc<GameState> {
     if let Some(hit) = CACHE.with(|c| c.borrow().iter().find(|e| e.0 == key && same(&e.1, s)).map(|e| e.2.clone())) {
         return hit;
     }
-    let locs = fights_due(s);
-    let mut out = imagined(s);
-    if !locs.is_empty() {
-        resolve_fights(&mut out, &locs);
-    }
-    let out = std::rc::Rc::new(out);
+    // A miss projects with the per-fight memo (project_fights), not from scratch.
+    let out = std::rc::Rc::new(project_fights(s));
     CACHE.with(|c| {
         let mut c = c.borrow_mut();
         if c.len() >= 8 {
             c.pop_front();
         }
-        c.push_back((key, std::rc::Rc::new(imagined(s)), out.clone()));
+        c.push_back((key, Seen { board: s.board, players: s.players.clone(), supply: s.supply, round: s.round, phase: s.phase, options: s.options.clone() }, out.clone()));
     });
     out
 }
@@ -728,8 +733,10 @@ pub fn evaluate(s: &GameState, pid: Pid, profile: &str, goal: Option<Goal>) -> f
 }
 
 fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
-    let mut c = win_chances(s, pid);
-    end_read_into(s, &mut c);
+    // One projection for the chances and the vote reading (looked up once: confirming a hit compares whole states).
+    let proj = project_fights_cached(s);
+    let mut c = chances_after(&proj, pid);
+    end_read_into(s, &mut c, &proj);
     if let Some((side, w)) = momentum(s, p) {
         c.p_invaders = (1.0 - w) * c.p_invaders + w * side;
     }
@@ -763,8 +770,9 @@ fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
 /// forecast's calibration (the round logs' pForecast).
 pub fn forecast(s: &GameState, pid: Pid, profile: &str) -> f64 {
     let p = persona_of(profile).unwrap_or_else(|| at_lean(-0.3));
-    let mut c = win_chances(s, pid);
-    end_read_into(s, &mut c);
+    let proj = project_fights_cached(s);
+    let mut c = chances_after(&proj, pid);
+    end_read_into(s, &mut c, &proj);
     if let Some((side, w)) = momentum(s, &p) {
         c.p_invaders = (1.0 - w) * c.p_invaders + w * side;
     }
@@ -772,9 +780,9 @@ pub fn forecast(s: &GameState, pid: Pid, profile: &str) -> f64 {
 }
 
 /// Under votes, each vote read at its end-of-round presence (end_read): the chance of the invaders' ending from it.
-fn end_read_into(s: &GameState, c: &mut Chances) {
+fn end_read_into(s: &GameState, c: &mut Chances, proj: &GameState) {
     if s.options.round_votes {
-        let (after, t) = end_read(s);
+        let (after, t) = end_read_at(s, || crate::board::total_presence(proj) as f64);
         c.projected = after;
         c.p_invaders = invaders_reach_by(s, after, c.threshold, c.spread_p, 0.0, false, t);
     }
@@ -871,17 +879,22 @@ fn round_change(s: &GameState, p: &GameState, after: f64) -> f64 {
 /// no fights yet: this round's vote is read as today's presence less the last close's fight losses, and each later
 /// round's change as the last close's nightfall tokens less its fight losses.
 fn end_read(s: &GameState) -> (f64, f64) {
+    end_read_at(s, || round_after(s))
+}
+
+/// end_read, given this round's after-fights presence (`after_fights`, asked only when needed).
+fn end_read_at(s: &GameState, after_fights: impl FnOnce() -> f64) -> (f64, f64) {
     match s.last_close {
         Some([r, before, after, brought]) if r == s.round - 1 && s.round_plays.is_empty() => {
             let losses = (before - after) as f64;
             (crate::board::total_presence(s) as f64 - losses, brought as f64 - losses)
         }
         Some([r, before, after, brought]) if r == s.round - 1 => {
-            (round_after(s), (brought - (before - after)) as f64)
+            (after_fights(), (brought - (before - after)) as f64)
         }
         // No close yet (round 1): this round's fights as they stand; no later change can be read from the game yet
         // (mid-round, the nightfall to come counts sway at locations whose fights haven't formed).
-        _ => (round_after(s), 0.0),
+        _ => (after_fights(), 0.0),
     }
 }
 
