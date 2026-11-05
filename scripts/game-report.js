@@ -77,12 +77,18 @@ const winIdx = (g) => g.wonBy.map((f) => g.factions.indexOf(f));
 
 /** The side each round's close favoured: the vote, or (single count) presence after the fights against the bar. */
 const roundSides = (g) => (isVotes(g) ? g.votes : g.rounds.map((r) => (total(r.afterFights) > defaultBar ? 'invaders' : 'island')));
-/** The round after which the side could no longer change (votes: a majority; single count: never before the end). */
+/** The round after which the side could no longer change (votes: the rounds left, the last at its weight, can't turn
+ *  it; the invaders need strictly more, so a tie goes to the island; single count: never before the end). */
 const settledRound = (g) => {
   if (!isVotes(g)) return g.rounds.length;
-  let a = 0, b = 0;
-  for (const [i, v] of g.votes.entries()) { if (v === 'invaders') a++; else b++; if (Math.max(a, b) > g.votes.length / 2) return i + 1; }
-  return g.votes.length;
+  const n = g.votes.length, w = (i) => (i === n - 1 ? Number(g.lastVote) || 1 : 1);
+  let a = 0, b = 0, left = Array.from({ length: n }, (_, i) => w(i)).reduce((x, y) => x + y, 0);
+  for (const [i, v] of g.votes.entries()) {
+    if (v === 'invaders') a += w(i); else b += w(i);
+    left -= w(i);
+    if (a > b + left || b >= a + left) return i + 1;
+  }
+  return n;
 };
 
 // Each measure: section, name, the preference it serves, how to compute it over a set of games, format, target key.
