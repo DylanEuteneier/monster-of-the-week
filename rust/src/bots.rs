@@ -22,6 +22,11 @@ pub struct BotMemory {
     /// The cards this seat's full bot last planned to play after its move (hand planning), for play-outs that play
     /// every seat by its own plan (persona rplan; testing).
     pub plan: Vec<CardIx>,
+    /// A hedging bot's break-glass commitment (persona glass; testing): once set, its goal for the rest of the game,
+    /// played without hedging.
+    pub broke: Option<Goal>,
+    /// A hedger's draw for an early break (persona glassJitter), made once a game: 0 to 1.
+    pub early: Option<f64>,
 }
 
 thread_local! {
@@ -175,6 +180,22 @@ pub struct Persona {
     pub rjudge: f64,
     pub rimit: f64,
     pub rplan: f64,
+    /// Testing (designer, 2026-11-04: a hedging bot keeps its options open, building trophies all game; backing a
+    /// faction early doesn't pay): the island half of the value counts in full from the start and the invaders' half is
+    /// phased in by a ramp (0 through round 3, rising through round 4), so the bot pivots late if the board tips. 0: off.
+    pub hedge: f64,
+    /// Testing, with hedge (designer, 2026-11-04: a hedging bot can still loosely back and protect a single faction):
+    /// the weight on guarding the faction it backs most (its largest standing lead), whatever its goal: a quarter of
+    /// it early, rising with the ramp to all of it (designer: early protection is fine but worth little; trophies first).
+    pub hguard: f64,
+    /// Testing, with hedge (designer, 2026-11-04: break glass; once a hedger commits it no longer hedges at all; only
+    /// round 5's evidence is enough for a full commit): from round glass_from (5), when one ending holds this share of the bot's winning chances (chance of the ending × its
+    /// chance of winning under it), the bot commits to it for good. 0: never.
+    pub glass: f64,
+    pub glass_from: f64,
+    /// Testing (designer, 2026-11-04: some players are irrational): the chance a game's hedger may break glass early,
+    /// from round 4 (two thirds of those) or round 3 (a third).
+    pub glass_jitter: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -187,7 +208,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, glass_jitter: 0.0,
     }
 }
 
@@ -266,6 +287,11 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "imit" => p.imit = x,
                 "rimit" => p.rimit = x,
                 "rplan" => p.rplan = x,
+                "hedge" => p.hedge = x,
+                "hguard" => p.hguard = x,
+                "glass" => p.glass = x,
+                "glassFrom" => p.glass_from = x,
+                "glassJitter" => p.glass_jitter = x,
                 "judge" => p.judge = x,
                 "rjudge" => p.rjudge = x,
                 _ => {}
@@ -668,6 +694,16 @@ fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
             return 10.0 * (pi * wi + (1.0 - pi) * ws) + SUPPLY_VALUE * s.players[pid as usize].supply as f64;
         }
     }
+    if on(p.hedge) {
+        let r = hedge_ramp(s, p.hedge);
+        let pi = r * c.p_invaders;
+        let inv = pi * 10.0 * c.as_invaders + r * p.margin * c.margin_invaders;
+        let isl = (1.0 - pi) * 10.0 * c.as_island + p.linear * 10.0 * c.linear_island + if on(p.sets) { p.sets * (1.0 - pi) * set_access(s, pid) } else { 0.0 };
+        let full = if on(p.protect) && goal == Goal::Invaders { r * p.protect } else { 0.0 };
+        let guard = if on(p.hguard) || full > 0.0 { (p.hguard * (0.25 + 0.75 * r) + full) * presence_guard(s, pid, &c, p) } else { 0.0 };
+        let threat = p.threat * 10.0 * c.p_invaders * c.rival_invaders;
+        return inv + isl + guard - threat + SUPPLY_VALUE * s.players[pid as usize].supply as f64;
+    }
     let inv = c.p_invaders * 10.0 * c.as_invaders + p.margin * c.margin_invaders;
     let island_margin = p.linear * 10.0 * c.linear_island;
     let isl = (1.0 - c.p_invaders) * 10.0 * c.as_island + island_margin;
@@ -675,6 +711,15 @@ fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
     let guard = if on(p.protect) && goal == Goal::Invaders { p.protect * presence_guard(s, pid, &c, p) } else { 0.0 };
     let main = if goal == Goal::Invaders { inv + guard } else { isl + if on(p.sets) { p.sets * (1.0 - c.p_invaders) * set_access(s, pid) } else { 0.0 } };
     main - threat + SUPPLY_VALUE * s.players[pid as usize].supply as f64
+}
+
+/// The hedging bot's ramp (persona hedge): how much of the invaders' half of the value counts, 0 to 1.
+/// Designer (2026-11-04): the evidence means nothing at the start and isn't trustworthy in rounds 2 and 3, so the ramp
+/// is 0 through round 3 and rises from round 4's start to 1 at round 5's (the last round's).
+fn hedge_ramp(s: &GameState, _kind: f64) -> f64 {
+    let from = (s.options.rounds - 2).max(1) as f64; // round 4 of 5
+    let at = (s.round - 1) as f64 + (1.0 - round_left(s));
+    ((at - (from - 1.0)) / 1.0).clamp(0.0, 1.0)
 }
 
 fn presence_guard(s: &GameState, pid: Pid, c: &Chances, p: &Persona) -> f64 {
@@ -733,6 +778,36 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
     if let Some(v) = seen {
         c.projected = v;
     }
+    let mut memory = memory;
+    if on(p.hedge) && on(p.glass) {
+        if let Some(g) = memory.as_deref().and_then(|m| m.broke) {
+            return g;
+        }
+        let mut from = p.glass_from;
+        if on(p.glass_jitter) {
+            if let Some(m) = memory.as_deref_mut() {
+                if m.early.is_none() {
+                    m.early = Some(rng());
+                }
+            }
+            let e = memory.as_deref().and_then(|m| m.early).unwrap_or(1.0);
+            if e < p.glass_jitter {
+                from = from.min(if e < p.glass_jitter / 3.0 { 3.0 } else { 4.0 });
+            }
+        }
+        if s.round as f64 >= from {
+            let (ei, es) = (c.p_invaders * c.as_invaders, (1.0 - c.p_invaders) * c.as_island);
+            let share = if ei + es > 0.0 { ei / (ei + es) } else { 0.5 };
+            let broke = if share >= p.glass { Some(Goal::Invaders) } else if share <= 1.0 - p.glass { Some(Goal::Island) } else { None };
+            if let Some(g) = broke {
+                if let Some(m) = memory.as_deref_mut() {
+                    m.broke = Some(g);
+                    m.goal = Some(g);
+                }
+                return g;
+            }
+        }
+    }
     let paced = on(p.pace) && s.options.round_votes;
     let push = if paced { p.push * p.pace } else { p.push * (c.rounds_left + 1.0) };
     let (drain, trend) = (p.drain * round_left(s), p.trend);
@@ -748,7 +823,6 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
             evidence = pi * wi - (1.0 - pi) * ws;
         }
     }
-    let mut memory = memory;
     if let Some(m) = memory.as_deref_mut() {
         if m.jitter.is_none() {
             m.jitter = Some((rng() * 2.0 - 1.0) * p.jitter);
@@ -1053,7 +1127,11 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
         _ => None,
     };
     let goal = persona.as_ref().map(|p| choose_goal_seen(s, pid, p, memory.as_deref_mut(), &mut *rng, seen));
-    let ev = |x: &GameState| evaluate(x, pid, profile, goal);
+    // A hedger that has broken glass plays the plain committed value from then on.
+    let committed = persona.as_ref().is_some_and(|p| on(p.hedge)) && memory.as_deref().is_some_and(|m| m.broke.is_some());
+    let plain = if committed { format!("{profile},hedge=0") } else { String::new() };
+    let value_profile: &str = if committed { &plain } else { profile };
+    let ev = |x: &GameState| evaluate(x, pid, value_profile, goal);
     let p = &s.players[me];
     let jitter = persona.as_ref().and_then(|x| x.noise).unwrap_or(SEARCH_NOISE);
     let draws = persona.as_ref().and_then(|x| x.draft).unwrap_or(4);

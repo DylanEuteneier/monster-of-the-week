@@ -296,7 +296,7 @@ fn tournament(args: &[String]) {
                 "presence": x.presence, "votes": x.votes.iter().map(|&v| if v { "invaders" } else { "island" }).collect::<Vec<_>>(), "factions": x.factions, "wonBy": x.won_by, "scores": x.scores,
                 "rounds": x.rounds.iter().map(|r| serde_json::json!({
                     "r": r.round, "beforeFights": r.before_fights, "afterFights": r.after_fights, "end": r.end, "first": r.first.map(|p| id(&p)), "fights": r.fights, "occupied": r.occupied,
-                    "seats": r.seats.iter().map(|q| serde_json::json!({ "standing": q.standing, "trophies": q.trophies, "supply": q.supply, "onBoard": q.on_board, "goal": q.goal, "pInvaders": (q.p_invaders * 1000.0).round() / 1000.0 })).collect::<Vec<_>>(),
+                    "seats": r.seats.iter().map(|q| serde_json::json!({ "standing": q.standing, "trophies": q.trophies, "supply": q.supply, "onBoard": q.on_board, "goal": q.goal, "pInvaders": (q.p_invaders * 1000.0).round() / 1000.0, "broke": q.broke, "early": q.early })).collect::<Vec<_>>(),
                 })).collect::<Vec<_>>(),
                 "plays": x.playlog.iter().map(|p| serde_json::json!({
                     "r": p.round, "seat": id(&p.seat), "card": p.card, "use": p.use_, "dPresence": p.d_presence, "dStanding": p.d_standing,

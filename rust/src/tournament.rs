@@ -102,6 +102,9 @@ pub struct SeatLog {
     pub on_board: i32,
     pub goal: Option<&'static str>,
     pub p_invaders: f64,
+    /// A hedger's break-glass commitment so far (persona glass), and its early-break draw (glassJitter).
+    pub broke: Option<&'static str>,
+    pub early: Option<f64>,
 }
 
 /// What the board and the hand allowed on one turn of play (the ending study's swing diagnosis): the groups on the
@@ -185,7 +188,8 @@ fn goal_name(m: &BotMemory) -> Option<&'static str> {
 
 fn seat_log(s: &crate::types::GameState, pid: Pid, m: &BotMemory) -> SeatLog {
     let p = &s.players[pid as usize];
-    SeatLog { standing: p.standing, trophies: p.trophies, supply: p.supply, on_board: on_board(s, pid), goal: goal_name(m), p_invaders: crate::bots::win_chances(s, pid).p_invaders }
+    SeatLog { standing: p.standing, trophies: p.trophies, supply: p.supply, on_board: on_board(s, pid), goal: goal_name(m), p_invaders: crate::bots::win_chances(s, pid).p_invaders,
+        broke: m.broke.map(|g| match g { crate::bots::Goal::Invaders => "invaders", crate::bots::Goal::Island => "island" }), early: m.early }
 }
 
 /// Where a round's tokens came from and went.
