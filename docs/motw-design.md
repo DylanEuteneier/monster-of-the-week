@@ -3093,6 +3093,10 @@ Prototype bot tuning, not rules: a bot that plays the endings' asymmetry (RV1 no
   - *Reading:* the herd came from the hedging, not only the forecast: hedgers put trophies first until round 4, so no one feeds a faction early and the island wins. A table of cautious players almost never reaches the invaders' ending; it takes one player who backs a faction from the start (or several gut players) for the endings to vary. Human-like tables for testing: hedgers with spread leans, `gut`, and quirks, plus one plain backer.
   - *The game report on mixed tables* (against today's standard tables, 4 / 5 players): invaders' endings 33% / 28% (standard 50% / 28%); settled by round 3 68% / 65% (42% / 68%); comebacks 20% / 13% (15% / 10%); round 5 decided the ending 20% / 13% (20% / 10%); invader share of each round's side 2.5 → 72.5% and 0 → 82.5% by round 5 (standard 5 → 85%, 0 → 73%). The human-like table plays the same arc: the rising tide (island early, invaders late) is the game's, not the bots'.
 
+#### Endings on the new default (2026-11-05)
+
+Re-measured after the end-of-round reading became the default (seed 8101). Standard tables (60 games): invaders 15 / 52 / 33% at 3 / 4 / 5 players, settled by round 3 83 / 45 / 67% (old reading: 18 / 50 / 28%, 83 / 42 / 68%). Mixed human-like table (one plain backer, hedgers with gut 0.3, early breaks and quirks; 40 games): invaders 30 / 30 / 20%, settled by round 3 65 / 62 / 75% (old: about 30% and 65%). The endings barely move; the forecast is now calibrated from round 2 (the bots' invader chance against the actual share: 4 players 0.56 / 0.46 / 0.50 in rounds 2–4 against 0.52; 5 players 0.42 / 0.29 / 0.33 against 0.33). Round 1 still reads low (0.28 against 0.52 at 4 players).
+
 #### One bot with dials (designer, 2026-11-05)
 
 Prototype bot design, not rules. *Designer:* get to a place where there is really only one bot type with tunable options; hedging is human behaviour and exists on a spectrum, so the standard bot has tunable hedging attributes by default, within a reasonable range.
