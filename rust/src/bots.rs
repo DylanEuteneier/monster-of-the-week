@@ -200,6 +200,9 @@ pub struct Persona {
     /// Testing (designer, 2026-11-04: some players are irrational): the chance a game's hedger may break glass early,
     /// from round 4 (two thirds of those) or round 3 (a third).
     pub glass_jitter: f64,
+    /// Testing (designer: some players are irrational): the chance a game's hedger is a gut player, who commits in
+    /// round 2 or 3 to the ending it leans to then, whatever the evidence (before glassJitter's draw).
+    pub gut: f64,
     /// Testing (designer, 2026-11-04: tables of hedgers mustn't all break the same way): each game a hedger's break
     /// threshold is glass ± half this, drawn once (kept between 0.55 and 0.98).
     pub glass_spread: f64,
@@ -226,7 +229,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, glass_jitter: 0.0, glass_spread: 0.0, vknown: 0.0, quirks: 0.0, momentum: 0.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, glass_jitter: 0.0, glass_spread: 0.0, gut: 0.0, vknown: 0.0, quirks: 0.0, momentum: 0.0,
     }
 }
 
@@ -310,6 +313,7 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "glass" => p.glass = x,
                 "glassFrom" => p.glass_from = x,
                 "glassJitter" => p.glass_jitter = x,
+                "gut" => p.gut = x,
                 "glassSpread" => p.glass_spread = x,
                 "vknown" => p.vknown = x,
                 "quirks" => p.quirks = x,
@@ -836,19 +840,24 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
     }
     vote_known(s, &mut c, p);
     let mut memory = memory;
+    let mut gut_now = false;
     if on(p.hedge) && on(p.glass) {
         if let Some(g) = memory.as_deref().and_then(|m| m.broke) {
             return g;
         }
         let mut from = p.glass_from;
-        if on(p.glass_jitter) {
+        if on(p.glass_jitter) || on(p.gut) {
             if let Some(m) = memory.as_deref_mut() {
                 if m.early.is_none() {
                     m.early = Some(rng());
                 }
             }
             let e = memory.as_deref().and_then(|m| m.early).unwrap_or(1.0);
-            if e < p.glass_jitter {
+            if e < p.gut {
+                // A gut player: commits in round 2 or 3 on its leaning, not on the evidence.
+                gut_now = s.round as f64 >= if e < p.gut / 2.0 { 2.0 } else { 3.0 };
+            } else if e < p.gut + p.glass_jitter {
+                let e = e - p.gut;
                 from = from.min(if e < p.glass_jitter / 3.0 { 3.0 } else { 4.0 });
             }
         }
@@ -862,7 +871,7 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
             let u = memory.as_deref().and_then(|m| m.nerve).unwrap_or(0.5);
             glass = (p.glass + (u - 0.5) * p.glass_spread).clamp(0.55, 0.98);
         }
-        if s.round as f64 >= from {
+        if !gut_now && s.round as f64 >= from {
             let (ei, es) = (c.p_invaders * c.as_invaders, (1.0 - c.p_invaders) * c.as_island);
             let share = if ei + es > 0.0 { ei / (ei + es) } else { 0.5 };
             let broke = if share >= glass { Some(Goal::Invaders) } else if share <= 1.0 - glass { Some(Goal::Island) } else { None };
@@ -913,6 +922,9 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
     }
     if let Some(m) = memory {
         m.goal = Some(goal);
+        if gut_now {
+            m.broke = Some(goal);
+        }
     }
     goal
 }
