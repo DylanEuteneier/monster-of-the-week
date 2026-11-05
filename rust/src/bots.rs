@@ -375,11 +375,13 @@ fn sigmoid(x: f64) -> f64 {
 
 /// The board after this round's fights, as they stand now.
 /// The board after this round's fights, remembered for the few positions asked about most recently.
-fn project_fights_cached(s: &GameState) -> GameState {
+fn project_fights_cached(s: &GameState) -> std::rc::Rc<GameState> {
     // A few recent projections, by the position's content (the board, players and supply, the round and phase, the
     // options): every seat asks about the same position in a play-out before one of them moves.
     thread_local! {
-        static CACHE: std::cell::RefCell<Vec<(u64, GameState, GameState)>> = const { std::cell::RefCell::new(Vec::new()) };
+        // Shared, not copied: a hit hands out the projection itself (2026-11-05: copying whole states out of here, and
+        // shifting the list on each new entry, was a fifth of the bots' time once the end-of-round reading asked twice).
+        static CACHE: std::cell::RefCell<std::collections::VecDeque<(u64, std::rc::Rc<GameState>, std::rc::Rc<GameState>)>> = const { std::cell::RefCell::new(std::collections::VecDeque::new()) };
     }
     let same = |a: &GameState, b: &GameState| a.board == b.board && a.players == b.players && a.supply == b.supply && a.round == b.round && a.phase == b.phase && std::rc::Rc::ptr_eq(&a.options, &b.options);
     let key = {
@@ -406,12 +408,13 @@ fn project_fights_cached(s: &GameState) -> GameState {
     if !locs.is_empty() {
         resolve_fights(&mut out, &locs);
     }
+    let out = std::rc::Rc::new(out);
     CACHE.with(|c| {
         let mut c = c.borrow_mut();
         if c.len() >= 8 {
-            c.remove(0);
+            c.pop_front();
         }
-        c.push((key, imagined(s), out.clone()));
+        c.push_back((key, std::rc::Rc::new(imagined(s)), out.clone()));
     });
     out
 }
@@ -445,7 +448,7 @@ pub fn win_chances(s: &GameState, pid: Pid) -> Chances {
 
 /// win_chances for a position every seat asks about (the goal checks in a play-out): its projection remembered.
 fn win_chances_shared(s: &GameState, pid: Pid) -> Chances {
-    chances_after(&project_fights_cached(s), pid)
+    chances_after(&*project_fights_cached(s), pid)
 }
 
 /// A location's fight, as what it does: the location (and a Gate partner) afterwards, and what it adds to each supply
@@ -475,7 +478,7 @@ struct FightKey {
 /// fights only those again.
 /// The board after this round's fights already set (for the learned judge's features).
 pub fn projected(s: &GameState) -> GameState {
-    project_fights_cached(s)
+    (*project_fights_cached(s)).clone()
 }
 
 fn project_fights(s: &GameState) -> GameState {
@@ -841,17 +844,26 @@ pub fn choose_goal(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bot
 pub fn round_flow(s: &GameState) -> (f64, f64) {
     let p = project_fights_cached(s);
     let after = crate::board::total_presence(&p) as f64;
+    (after, round_change(s, &p, after))
+}
+
+/// This round's vote presence alone (round_flow without the change per round).
+fn round_after(s: &GameState) -> f64 {
+    crate::board::total_presence(&project_fights_cached(s)) as f64
+}
+
+fn round_change(s: &GameState, p: &GameState, after: f64) -> f64 {
     let losses = crate::board::total_presence(s) as f64 - after;
     let fought: Vec<bool> = {
         let due = fights_due(s);
         (0..s.board.len() as Loc).map(|l| due.contains(&l)).collect()
     };
     let grows = if s.options.sway_tokens == crate::types::SwayTokens::Nightfall {
-        crate::game::nightfall_due(&p, &fought).iter().map(|x| x.1).sum::<i32>() as f64
+        crate::game::nightfall_due(p, &fought).iter().map(|x| x.1).sum::<i32>() as f64
     } else {
-        growth_total(&p) as f64
+        growth_total(p) as f64
     };
-    (after, grows - losses)
+    grows - losses
 }
 
 /// The end-of-round reading of a position (persona endread), from the game itself. Mid-round: the fights as they stand
@@ -865,12 +877,11 @@ fn end_read(s: &GameState) -> (f64, f64) {
             (crate::board::total_presence(s) as f64 - losses, brought as f64 - losses)
         }
         Some([r, before, after, brought]) if r == s.round - 1 => {
-            let (now, _) = round_flow(s);
-            (now, (brought - (before - after)) as f64)
+            (round_after(s), (brought - (before - after)) as f64)
         }
         // No close yet (round 1): this round's fights as they stand; no later change can be read from the game yet
         // (mid-round, the nightfall to come counts sway at locations whose fights haven't formed).
-        _ => (round_flow(s).0, 0.0),
+        _ => (round_after(s), 0.0),
     }
 }
 
