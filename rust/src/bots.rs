@@ -725,6 +725,18 @@ fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
     main - threat + SUPPLY_VALUE * s.players[pid as usize].supply as f64
 }
 
+/// The chance of the invaders' ending as this seat's own settings read it (vknown, drain, trend), for measuring the
+/// forecast's calibration (the round logs' pForecast).
+pub fn forecast(s: &GameState, pid: Pid, profile: &str) -> f64 {
+    let p = persona_of(profile).unwrap_or_else(|| at_lean(-0.3));
+    let mut c = win_chances(s, pid);
+    vote_known(s, &mut c, &p);
+    if s.options.round_votes && (on(p.drain) || on(p.trend)) {
+        c.p_invaders = invaders_reach_by(s, c.projected, c.threshold, c.spread_p, 0.0, false, p.drain * round_left(s), p.trend);
+    }
+    c.p_invaders
+}
+
 /// vknown: under votes, the forecast blended from the table's prior by how far the game has gone.
 fn vote_known(s: &GameState, c: &mut Chances, p: &Persona) {
     if s.options.round_votes && on(p.vknown) {
