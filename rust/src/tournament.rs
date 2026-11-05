@@ -92,6 +92,14 @@ pub struct RoundLog {
     pub first: Option<Pid>,
     pub fights: usize,
     pub occupied: usize,
+    /// At the round's first play: the presence on the board, and the bots' reading of this round's vote presence
+    /// (their projected presence), to compare with the presence after the fights.
+    pub opening: i32,
+    pub read: f64,
+    /// ...and the end-of-round reading (persona endread): the presence after the round's fights from 8 play-outs of
+    /// the round by every seat's own bot, and the change per later round.
+    pub end_read: f64,
+    pub end_trend: f64,
 }
 
 #[derive(Clone, Debug)]
@@ -106,6 +114,7 @@ pub struct SeatLog {
     pub broke: Option<&'static str>,
     pub early: Option<f64>,
     pub nerve: Option<f64>,
+    pub open: Option<f64>,
     /// A quirky seat's temperament (loyalty, sloppiness, momentum).
     pub traits: Vec<f64>,
     /// The seat's own forecast of the invaders' ending, by its settings (vknown, drain, trend).
@@ -194,7 +203,7 @@ fn goal_name(m: &BotMemory) -> Option<&'static str> {
 fn seat_log(s: &crate::types::GameState, pid: Pid, m: &BotMemory, profile: &str) -> SeatLog {
     let p = &s.players[pid as usize];
     SeatLog { standing: p.standing, trophies: p.trophies, supply: p.supply, on_board: on_board(s, pid), goal: goal_name(m), p_invaders: crate::bots::win_chances(s, pid).p_invaders,
-        broke: m.broke.map(|g| match g { crate::bots::Goal::Invaders => "invaders", crate::bots::Goal::Island => "island" }), early: m.early, nerve: m.nerve, traits: m.traits.clone(), p_forecast: crate::bots::forecast(s, pid, profile) }
+        broke: m.broke.map(|g| match g { crate::bots::Goal::Invaders => "invaders", crate::bots::Goal::Island => "island" }), early: m.early, nerve: m.nerve, open: m.open, traits: m.traits.clone(), p_forecast: crate::bots::forecast(s, pid, profile) }
 }
 
 /// Where a round's tokens came from and went.
@@ -482,6 +491,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let mut rounds: Vec<RoundLog> = Vec::new();
     let mut playlog: Vec<PlayLog> = Vec::new();
     let mut round_first = None;
+    let mut round_open = (0, 0.0, 0.0, 0.0);
     let mut swings: Vec<SwingLog> = Vec::new();
     let swing_on = SWING.load(std::sync::atomic::Ordering::Relaxed);
     let positions_on = POSITIONS.load(std::sync::atomic::Ordering::Relaxed);
@@ -547,6 +557,10 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         let mut considered: Vec<(crate::types::Move, f64, Option<f64>)> = Vec::new();
         if s.phase == Phase::Play && round_first.is_none_or(|_| false) {
             round_first = s.first;
+            let table = Seats { profiles: Some(profiles.clone()), memories: Some(memory.iter().enumerate().map(|(i, m)| (i as Pid, m.clone())).collect()), ..Default::default() };
+            let mut r = seeded(seed * 13 + g as i64 * 101 + s.round as i64);
+            let (a, t) = crate::bots::flow_ahead(&s, s.turn as Pid, &mut r, Some(&memory[s.turn]), &table, 8);
+            round_open = (crate::board::total_presence(&s), crate::bots::win_chances(&s, 0).projected, a, t);
         }
         if swing_on && s.phase == Phase::Play && !s.players[s.turn].hand.is_empty() {
             swings.push(swing_log(&s, s.turn as Pid));
@@ -745,7 +759,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             if s.options.round_votes && s.options.vote_weight(round) == 0 && votes.len() < round as usize {
                 votes.push(af.iter().sum::<i32>() > s.options.threshold);
             }
-            rounds.push(RoundLog { round, before_fights: bf, after_fights: af, end: by_faction(&s), seats: (0..n).map(|p| seat_log(&s, p as Pid, &memory[p], &profiles[&(p as Pid)])).collect(), first: round_first, fights: nf, occupied: (0..s.board.len() as u8).filter(|&l| crate::board::count_at(&s, l) >= 1).count() });
+            rounds.push(RoundLog { round, before_fights: bf, after_fights: af, end: by_faction(&s), seats: (0..n).map(|p| seat_log(&s, p as Pid, &memory[p], &profiles[&(p as Pid)])).collect(), first: round_first, fights: nf, occupied: (0..s.board.len() as u8).filter(|&l| crate::board::count_at(&s, l) >= 1).count(), opening: round_open.0, read: round_open.1, end_read: round_open.2, end_trend: round_open.3 });
             round_first = None;
             presence.push(crate::board::total_presence(&s));
             round = s.round;

@@ -423,7 +423,7 @@ fn goal_name(g: Goal) -> &'static str {
 }
 
 fn memory_from(v: &Value) -> BotMemory {
-    BotMemory { goal: goal_of(&v["goal"]), jitter: v["jitter"].as_f64(), plan: v["plan"].as_array().map(|a| a.iter().filter_map(|c| c.as_u64().map(|c| c as _)).collect()).unwrap_or_default(), broke: goal_of(&v["broke"]), early: v["early"].as_f64(), nerve: v["nerve"].as_f64(), traits: v["traits"].as_array().map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default() }
+    BotMemory { goal: goal_of(&v["goal"]), jitter: v["jitter"].as_f64(), plan: v["plan"].as_array().map(|a| a.iter().filter_map(|c| c.as_u64().map(|c| c as _)).collect()).unwrap_or_default(), broke: goal_of(&v["broke"]), early: v["early"].as_f64(), nerve: v["nerve"].as_f64(), open: v["open"].as_f64(), traits: v["traits"].as_array().map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default() }
 }
 
 fn memory_value(m: &BotMemory) -> Value {
@@ -436,6 +436,9 @@ fn memory_value(m: &BotMemory) -> Value {
     }
     if !m.traits.is_empty() {
         o.insert("traits".into(), json!(m.traits));
+    }
+    if let Some(e) = m.open {
+        o.insert("open".into(), json!(e));
     }
     if let Some(e) = m.nerve {
         o.insert("nerve".into(), json!(e));
