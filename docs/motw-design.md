@@ -3058,6 +3058,27 @@ Where a game is started. The host page holds no game rules. Everything it does i
 - **All content and constants are data**, in one file, `spec.json`, read by the engine and the browser. The engine holds the rules; the data file holds everything the rules are applied to.
 - **Tuning without code changes.** A number is changed in the data file and tested with the simulation. Nothing in the engine is rewritten.
 
+
+#### The hedging bot (designer, 2026-11-04)
+
+Prototype bot tuning, not rules: a bot that plays the endings' asymmetry (RV1 notes: the island score is built through the game, the invaders' pivot stays open late) the way people would. The designer asked for it to keep being iterated toward human patterns of play.
+
+- **The spec (designer):**
+  - *Both goals at once, effort scaled to the game:* it works the island and the invaders together. Trophies come first all game, to stay viable for the island; backing a faction early doesn't pay.
+  - *A loose faction:* it may loosely back and protect a single faction; early protection is fine but worth little.
+  - *Evidence by round:* the evidence means nothing at the start and isn't trustworthy in rounds 2 and 3; only round 5's evidence is enough for a full commit.
+  - *Break glass:* once a hedger commits, it no longer hedges at all.
+  - *Irrational players:* random jitter, so the break sometimes comes earlier.
+  - *Varied tables:* hedgers mustn't all break the same way and land on the same ending every time.
+- **Built (`rust/src/bots.rs`, persona switches, off by default):**
+  - `hedge=1`: the value is the island half in full plus the invaders' half phased in by a ramp: 0 through round 3, rising through round 4, full from round 5's start (the island half falls only as the invaders' ending becomes likely and late).
+  - `hguard` (0.5): a guard on the faction it backs most (its largest standing lead), a quarter of the weight early, rising with the ramp; more once it commits to the invaders.
+  - `glass`: from round 5 (`glassFrom`), when one ending holds this share of the bot's winning chances (the ending's chance × its chance of winning under it), it commits to that ending for good and plays the plain committed value.
+  - `glassJitter`: the chance a game's hedger may break early, from round 4 (two thirds of those) or round 3 (a third).
+  - `glassSpread`: each game, each hedger draws its own threshold, `glass` ± half this, so seats commit on different amounts of evidence.
+  - The bot's memory carries the break and its draws (across the WebAssembly bridge too); the round logs record each seat's break and draws.
+- **Measuring:** as a challenger (win rate, 100 games at 5 players, against a fresh control) and in tables of hedgers (whether breaks and endings vary).
+
 #### How the file is laid out
 
 | Section | What it holds |

@@ -423,7 +423,7 @@ fn goal_name(g: Goal) -> &'static str {
 }
 
 fn memory_from(v: &Value) -> BotMemory {
-    BotMemory { goal: goal_of(&v["goal"]), jitter: v["jitter"].as_f64(), plan: v["plan"].as_array().map(|a| a.iter().filter_map(|c| c.as_u64().map(|c| c as _)).collect()).unwrap_or_default(), broke: goal_of(&v["broke"]), early: v["early"].as_f64() }
+    BotMemory { goal: goal_of(&v["goal"]), jitter: v["jitter"].as_f64(), plan: v["plan"].as_array().map(|a| a.iter().filter_map(|c| c.as_u64().map(|c| c as _)).collect()).unwrap_or_default(), broke: goal_of(&v["broke"]), early: v["early"].as_f64(), nerve: v["nerve"].as_f64() }
 }
 
 fn memory_value(m: &BotMemory) -> Value {
@@ -433,6 +433,9 @@ fn memory_value(m: &BotMemory) -> Value {
     }
     if let Some(j) = m.jitter {
         o.insert("jitter".into(), json!(j));
+    }
+    if let Some(e) = m.nerve {
+        o.insert("nerve".into(), json!(e));
     }
     if let Some(e) = m.early {
         o.insert("early".into(), json!(e));

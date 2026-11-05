@@ -27,6 +27,8 @@ pub struct BotMemory {
     pub broke: Option<Goal>,
     /// A hedger's draw for an early break (persona glassJitter), made once a game: 0 to 1.
     pub early: Option<f64>,
+    /// A hedger's draw for its own break threshold (persona glassSpread), made once a game: 0 to 1.
+    pub nerve: Option<f64>,
 }
 
 thread_local! {
@@ -196,6 +198,9 @@ pub struct Persona {
     /// Testing (designer, 2026-11-04: some players are irrational): the chance a game's hedger may break glass early,
     /// from round 4 (two thirds of those) or round 3 (a third).
     pub glass_jitter: f64,
+    /// Testing (designer, 2026-11-04: tables of hedgers mustn't all break the same way): each game a hedger's break
+    /// threshold is glass ± half this, drawn once (kept between 0.55 and 0.98).
+    pub glass_spread: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -208,7 +213,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, glass_jitter: 0.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, glass_jitter: 0.0, glass_spread: 0.0,
     }
 }
 
@@ -292,6 +297,7 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "glass" => p.glass = x,
                 "glassFrom" => p.glass_from = x,
                 "glassJitter" => p.glass_jitter = x,
+                "glassSpread" => p.glass_spread = x,
                 "judge" => p.judge = x,
                 "rjudge" => p.rjudge = x,
                 _ => {}
@@ -795,10 +801,20 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
                 from = from.min(if e < p.glass_jitter / 3.0 { 3.0 } else { 4.0 });
             }
         }
+        let mut glass = p.glass;
+        if on(p.glass_spread) {
+            if let Some(m) = memory.as_deref_mut() {
+                if m.nerve.is_none() {
+                    m.nerve = Some(rng());
+                }
+            }
+            let u = memory.as_deref().and_then(|m| m.nerve).unwrap_or(0.5);
+            glass = (p.glass + (u - 0.5) * p.glass_spread).clamp(0.55, 0.98);
+        }
         if s.round as f64 >= from {
             let (ei, es) = (c.p_invaders * c.as_invaders, (1.0 - c.p_invaders) * c.as_island);
             let share = if ei + es > 0.0 { ei / (ei + es) } else { 0.5 };
-            let broke = if share >= p.glass { Some(Goal::Invaders) } else if share <= 1.0 - p.glass { Some(Goal::Island) } else { None };
+            let broke = if share >= glass { Some(Goal::Invaders) } else if share <= 1.0 - glass { Some(Goal::Island) } else { None };
             if let Some(g) = broke {
                 if let Some(m) = memory.as_deref_mut() {
                     m.broke = Some(g);
