@@ -3093,6 +3093,14 @@ Prototype bot tuning, not rules: a bot that plays the endings' asymmetry (RV1 no
   - *Reading:* the herd came from the hedging, not only the forecast: hedgers put trophies first until round 4, so no one feeds a faction early and the island wins. A table of cautious players almost never reaches the invaders' ending; it takes one player who backs a faction from the start (or several gut players) for the endings to vary. Human-like tables for testing: hedgers with spread leans, `gut`, and quirks, plus one plain backer.
   - *The game report on mixed tables* (against today's standard tables, 4 / 5 players): invaders' endings 33% / 28% (standard 50% / 28%); settled by round 3 68% / 65% (42% / 68%); comebacks 20% / 13% (15% / 10%); round 5 decided the ending 20% / 13% (20% / 10%); invader share of each round's side 2.5 → 72.5% and 0 → 82.5% by round 5 (standard 5 → 85%, 0 → 73%). The human-like table plays the same arc: the rising tide (island early, invaders late) is the game's, not the bots'.
 
+#### One bot with dials (designer, 2026-11-05)
+
+Prototype bot design, not rules. *Designer:* get to a place where there is really only one bot type with tunable options; hedging is human behaviour and exists on a spectrum, so the standard bot has tunable hedging attributes by default, within a reasonable range.
+
+- **Dials (agreed):** *lean* (the ending it starts out preferring); *nerve* (how much evidence it needs before it commits for good: low commits early on gut, high keeps hedging, building trophies while loosely backing a faction); *loyalty* (how hard it guards and pushes the faction it backs); *sharpness* (how carefully it plays: search depth, noise, turns on instinct). Momentum is open (a fifth dial or part of nerve).
+- **Hedging is the default:** every bot hedges until its nerve says commit; a pure trophy hunter and a committed backer are corners of the same dials. A seat draws its dials each game within a range around its set values, for tendencies and inconsistencies.
+- **The plan:** build the dials on today's bot, mapping each onto the settings it replaces; set defaults so the default bot plays at least as well as today's (challengers against the standard table) and mixed tables vary their endings; then delete the old switches and the measured, not adopted experiments.
+
 #### How the file is laid out
 
 | Section | What it holds |
