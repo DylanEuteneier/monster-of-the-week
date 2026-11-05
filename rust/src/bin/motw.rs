@@ -5,7 +5,7 @@
 //!     line per move, check= compares with such a file move by move (say, one written before a change), digests=1
 //!     prints each game's digest as tests/fixtures/fingerprints.json records it.
 //!
-//!   motw tournament [games=20] [seed=1] profiles=a;b;... [workers=cores] [duplicate=1] [log=file.jsonl] [o.variant=choice ...]
+//!   motw tournament [games=20] [seed=1] profiles=a;b;... [workers=cores] [duplicate=1] [log=file.jsonl] [only=g] [o.variant=choice ...]
 //!     Whole bot games natively, the profiles rotated through the seats (src/tournament.rs): wins by profile and seat,
 //!     the endings, and a line per game in log= (the same games scripts/tournament.js plays on the same seed).
 //!
@@ -333,6 +333,12 @@ fn tournament(args: &[String]) {
     if kv.get("ties").is_some_and(|x| x == "1") { motw::tournament::TIES.store(true, std::sync::atomic::Ordering::Relaxed); motw::bots::KEEP_CONSIDERED.store(true, std::sync::atomic::Ordering::Relaxed); }
     if kv.get("positions").is_some_and(|x| x == "1") { motw::tournament::POSITIONS.store(true, std::sync::atomic::Ordering::Relaxed); }
     if let Some(n) = kv.get("stopAfter").and_then(|x| x.parse::<i32>().ok()) { motw::tournament::STOP_AFTER.store(n, std::sync::atomic::Ordering::Relaxed); }
+    // only=g: just that game of the run (to replay one game, as with a crash).
+    if let Some(g) = kv.get("only").and_then(|x| x.parse::<usize>().ok()) {
+        let game = motw::tournament::play_with(seed, g, &list, &options, duplicate, board);
+        done(&game);
+        return;
+    }
     let played = motw::tournament::run_with(seed, games, &list, &options, duplicate, workers, board, &done);
     eprintln!();
     let island = played.iter().filter(|x| x.island).count();

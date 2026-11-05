@@ -531,8 +531,9 @@ pub enum Key {
 }
 
 /// What a card's turn action is aimed at (engine Target).
-/// A target's list of ids (exits, a path, payers), inline.
-pub type Ids = List<Id, 24>;
+/// A target's list of ids (exits, a path, payers), inline. 64: a plough lists one entry per token in the fight, and a
+/// crowded location held more than 24 (a crash, 2026-11-05).
+pub type Ids = List<Id, 64>;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Target {
