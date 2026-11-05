@@ -29,6 +29,8 @@ pub struct BotMemory {
     pub early: Option<f64>,
     /// A hedger's draw for its own break threshold (persona glassSpread), made once a game: 0 to 1.
     pub nerve: Option<f64>,
+    /// A quirky seat's temperament (persona quirks), drawn once a game, each 0 to 1: loyalty, sloppiness, momentum.
+    pub traits: Vec<f64>,
 }
 
 thread_local! {
@@ -206,6 +208,12 @@ pub struct Persona {
     /// of 20) read as a 95% invaders' ending. On: it blends from the table's prior to the board as the game goes on,
     /// as it does with votes off.
     pub vknown: f64,
+    /// Testing (designer, 2026-11-04: bots with human tendencies, inconsistencies and quirks): each game the seat draws
+    /// a temperament: loyalty (hguard 0.1–0.9), sloppiness (search noise up to the standard's, and up to a quarter of
+    /// its turns played on instinct, the best move at a glance, without play-outs) and a momentum bias (up to 0.3).
+    pub quirks: f64,
+    /// Momentum bias: the forecast leans this share toward the side ahead on votes (people read a streak into a lead).
+    pub momentum: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -218,7 +226,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, glass_jitter: 0.0, glass_spread: 0.0, vknown: 0.0,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, drain: 0.0, trend: 0.0, look: 0.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, glass_jitter: 0.0, glass_spread: 0.0, vknown: 0.0, quirks: 0.0, momentum: 0.0,
     }
 }
 
@@ -304,6 +312,8 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "glassJitter" => p.glass_jitter = x,
                 "glassSpread" => p.glass_spread = x,
                 "vknown" => p.vknown = x,
+                "quirks" => p.quirks = x,
+                "momentum" => p.momentum = x,
                 "judge" => p.judge = x,
                 "rjudge" => p.rjudge = x,
                 _ => {}
@@ -699,6 +709,9 @@ fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
     if s.options.round_votes && (on(p.drain) || on(p.trend)) {
         c.p_invaders = invaders_reach_by(s, c.projected, c.threshold, c.spread_p, 0.0, false, p.drain * round_left(s), p.trend);
     }
+    if let Some((side, w)) = momentum(s, p) {
+        c.p_invaders = (1.0 - w) * c.p_invaders + w * side;
+    }
     if on(p.judge) {
         if let Some(w) = crate::judge::weights() {
             // The chance of winning, whichever ending comes: what a bot playing to win values.
@@ -734,6 +747,9 @@ pub fn forecast(s: &GameState, pid: Pid, profile: &str) -> f64 {
     if s.options.round_votes && (on(p.drain) || on(p.trend)) {
         c.p_invaders = invaders_reach_by(s, c.projected, c.threshold, c.spread_p, 0.0, false, p.drain * round_left(s), p.trend);
     }
+    if let Some((side, w)) = momentum(s, &p) {
+        c.p_invaders = (1.0 - w) * c.p_invaders + w * side;
+    }
     c.p_invaders
 }
 
@@ -743,6 +759,14 @@ fn vote_known(s: &GameState, c: &mut Chances, p: &Persona) {
         c.known = c.settled;
         c.p_invaders = (1.0 - c.settled) * c.prior + c.settled * c.p_invaders;
     }
+}
+
+/// Momentum bias (persona momentum): the side ahead on votes, if any (1: invaders, 0: island), and the weight.
+fn momentum(s: &GameState, p: &Persona) -> Option<(f64, f64)> {
+    if !s.options.round_votes || !on(p.momentum) || s.votes[0] == s.votes[1] {
+        return None;
+    }
+    Some((if s.votes[0] > s.votes[1] { 1.0 } else { 0.0 }, p.momentum))
 }
 
 /// The hedging bot's ramp (persona hedge): how much of the invaders' half of the value counts, 0 to 1.
@@ -856,6 +880,10 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
     let (drain, trend) = (p.drain * round_left(s), p.trend);
     let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach_by(s, c.projected, c.threshold, c.spread_p, push, paced, drain, trend);
     let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach_by(s, c.projected, c.threshold, c.spread_p, -push, paced, drain, trend));
+    let (reach_inv, reach_isl) = match momentum(s, p) {
+        Some((side, w)) => ((1.0 - w) * reach_inv + w * side, (1.0 - w) * reach_isl + w * (1.0 - side)),
+        None => (reach_inv, reach_isl),
+    };
     // Paced: the lean fades as the tally nears a majority (0 at 0-0, 1 once a side has it), not with the round.
     let majority = (s.options.votes_total() / 2 + 1).max(1) as f64;
     let settled = if paced && on(p.tally) { (s.votes[0].max(s.votes[1]) as f64 / majority).min(1.0) } else { c.settled };
@@ -1162,8 +1190,27 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
     if profile == "random" {
         return random_move(s, pid, rng);
     }
-    let persona = persona_of(profile);
     let mut memory = memory;
+    // Quirks: the seat's temperament, drawn once a game, set as concrete settings for this whole decision.
+    let quirky;
+    let profile: &str = match persona_of(profile) {
+        Some(q) if on(q.quirks) => {
+            if let Some(m) = memory.as_deref_mut() {
+                if m.traits.len() < 3 {
+                    m.traits = (0..3).map(|_| rng()).collect();
+                }
+            }
+            let tr = memory.as_deref().map(|m| m.traits.clone()).unwrap_or_else(|| vec![0.5; 3]);
+            quirky = format!("{profile},hguard={:.3},noise={:.3},momentum={:.3},quirks=0", 0.1 + 0.8 * tr[0], SEARCH_NOISE * tr[1], 0.3 * tr[2]);
+            // Instinct: some turns, more for a sloppy seat, the move that looks best at a glance (no play-outs).
+            if on(q.sim) && s.phase == Phase::Play && rng() < 0.25 * tr[1] {
+                return play_move(s, pid, rng, &fast(&quirky), memory, seats, focus);
+            }
+            &quirky
+        }
+        _ => profile,
+    };
+    let persona = persona_of(profile);
     // A real decision (the table given), with look on: the forecast from play-outs of the round.
     let seen = match &persona {
         Some(p) if on(p.look) && seats.profiles.is_some() && s.phase == Phase::Play && s.options.round_votes => Some(vote_ahead(s, pid, &mut *rng, memory.as_deref(), seats, p.look as usize)),
