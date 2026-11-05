@@ -77,11 +77,13 @@ const winIdx = (g) => g.wonBy.map((f) => g.factions.indexOf(f));
 
 /** The side each round's close favoured: the vote, or (single count) presence after the fights against the bar. */
 const roundSides = (g) => (isVotes(g) ? g.votes : g.rounds.map((r) => (total(r.afterFights) > defaultBar ? 'invaders' : 'island')));
+/** Each round's vote weight: the last at lastVote, the first at firstVote (0 or 1), the rest 1. */
+const voteWeight = (g, i) => (i === g.votes.length - 1 ? Number(g.lastVote) || 1 : i === 0 ? Number(g.firstVote ?? 1) : 1);
 /** The round after which the side could no longer change (votes: the rounds left, the last at its weight, can't turn
  *  it; the invaders need strictly more, so a tie goes to the island; single count: never before the end). */
 const settledRound = (g) => {
   if (!isVotes(g)) return g.rounds.length;
-  const n = g.votes.length, w = (i) => (i === n - 1 ? Number(g.lastVote) || 1 : 1);
+  const n = g.votes.length, w = (i) => voteWeight(g, i);
   let a = 0, b = 0, left = Array.from({ length: n }, (_, i) => w(i)).reduce((x, y) => x + y, 0);
   for (const [i, v] of g.votes.entries()) {
     if (v === 'invaders') a += w(i); else b += w(i);
@@ -138,9 +140,9 @@ const MEASURES = [
   ['Every round matters', 'Settled by round 3 (votes)', 'RV1', (gs) => share(gs.filter(isVotes), (g) => settledRound(g) <= 3), pct, 'settledByR3'],
   ['Every round matters', 'Rounds 1–3 all one side', 'RV1 not rote', (gs) => share(gs, (g) => new Set(roundSides(g).slice(0, 3)).size === 1), pct],
   ['Every round matters', 'Distinct round patterns per game', 'RV1 not rote', (gs) => new Set(gs.map((g) => roundSides(g).map((v) => v[1]).join(''))).size / gs.length, num(2), 'patternVariety'],
-  ['Every round matters', 'Comebacks (side ahead on votes after round 2 loses)', 'RV1; 1.1', (gs) => share(gs, (g) => { const s = roundSides(g).slice(0, 2); const a = s.filter((x) => x === 'invaders').length, b = s.length - a; return a !== b && (a > b ? 'invaders' : 'island') !== g.side; }), pct, 'comeback'],
+  ['Every round matters', 'Comebacks (side ahead on votes after round 2 loses)', 'RV1; 1.1', (gs) => share(gs, (g) => { const s = roundSides(g).slice(0, 2), w = (i) => (isVotes(g) ? voteWeight(g, i) : 1); let a = 0, b = 0; s.forEach((x, i) => { if (x === 'invaders') a += w(i); else b += w(i); }); return a !== b && (a > b ? 'invaders' : 'island') !== g.side; }), pct, 'comeback'],
   ['Every round matters', 'Round 5 flipped the side (after round 4 → end)', 'designer: a last-round flip is welcome; never or almost always is a worry', (gs) => share(gs.filter((g) => !isVotes(g)), (g) => (total(g.rounds[3]?.afterFights ?? [0]) > defaultBar) !== (g.side === 'invaders')), pct, 'lastRoundFlip'],
-  ['Every round matters', 'Round 5 decided the ending (votes: the ending turned on round 5\'s vote, at its weight)', 'designer: no round-5 decider is bad', (gs) => share(gs.filter(isVotes), (g) => { if (g.votes.length !== 5) return false; const w = g.lastVote ?? 1; const a = g.votes.slice(0, 4).filter((v) => v === 'invaders').length; return (a + w > 4 - a) !== (a > 4 - a + w); }), pct, 'round5Decides'],
+  ['Every round matters', 'Round 5 decided the ending (votes: the ending turned on round 5\'s vote, at its weight)', 'designer: no round-5 decider is bad', (gs) => share(gs.filter(isVotes), (g) => { if (g.votes.length !== 5) return false; const w = voteWeight(g, 4); let a = 0, b = 0; g.votes.slice(0, 4).forEach((v, i) => { if (v === 'invaders') a += voteWeight(g, i); else b += voteWeight(g, i); }); return (a + w > b) !== (a > b + w); }), pct, 'round5Decides'],
   ['Every round matters', 'Forecast error after round 4 (Brier; low = rounds 1–4 shaped the ending)', 'designer: round 5 may flip it, but not the only place it\'s decided', (gs) => mean(gs.flatMap((g) => forecasts(g, 4).map((p) => (p - (g.side === 'invaders' ? 1 : 0)) ** 2))), num(2), 'brierR4'],
   ['Every round matters', 'Invader share of each round\'s side, R1–R5', 'RV1 (where the arc sits)', (gs) => list([0, 1, 2, 3, 4].map((r) => share(gs.filter((g) => roundSides(g)[r]), (g) => roundSides(g)[r] === 'invaders') * 100)), String],
 

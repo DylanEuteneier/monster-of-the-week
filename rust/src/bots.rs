@@ -558,7 +558,7 @@ fn invaders_reach_by(s: &GameState, projected: f64, threshold: f64, spread_p: f6
         return sigmoid((projected - threshold - 0.5 + push) / spread_p);
     }
     // Rounds closed so far (each vote 1 until the last round, which ends the game); the last round left may count more.
-    let closed = (s.votes[0] + s.votes[1]).min(s.options.rounds);
+    let closed = s.options.rounds_closed(s.votes[0] + s.votes[1], s.round);
     let left = (s.options.rounds - closed).max(0) as usize;
     let need = (s.options.votes_total() / 2 + 1 - s.votes[0]).max(0) as usize;
     let most = (s.options.votes_total() - closed).max(0) as usize;

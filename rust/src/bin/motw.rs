@@ -289,7 +289,7 @@ fn tournament(args: &[String]) {
         if let Some(f) = &log {
             let id = |p: &u8| names[*p as usize].clone();
             let line = serde_json::json!({
-                "g": x.g, "seed": seed, "lastVote": options.iter().find(|(k, _)| k == "lastVote").and_then(|(_, v)| v.parse::<i64>().ok()).unwrap_or(1), "side": if x.island { "island" } else { "invaders" },
+                "g": x.g, "seed": seed, "lastVote": options.iter().find(|(k, _)| k == "lastVote").and_then(|(_, v)| v.parse::<i64>().ok()).unwrap_or(1), "firstVote": options.iter().find(|(k, _)| k == "firstVote").and_then(|(_, v)| v.parse::<i64>().ok()).unwrap_or(1), "side": if x.island { "island" } else { "invaders" },
                 "seats": names.iter().cloned().zip(x.seats.iter().map(|p| serde_json::Value::from(p.as_str()))).collect::<serde_json::Map<String, serde_json::Value>>(),
                 "groups": names.iter().cloned().zip(x.groups.iter().map(|p| serde_json::Value::from(p.as_str()))).collect::<serde_json::Map<String, serde_json::Value>>(),
                 "winners": x.winners.iter().map(id).collect::<Vec<_>>(), "placings": x.placings.iter().map(id).collect::<Vec<_>>(),

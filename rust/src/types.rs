@@ -195,6 +195,8 @@ pub struct Options {
     pub votes_early: bool,
     /// The last round's vote counts this many (designer's seed, 2026-11-01; variant lastVote, 1 or 3).
     pub last_vote: i32,
+    /// The first round's vote counts this many (designer's seed, 2026-11-05; variant firstVote, 1 or 0).
+    pub first_vote: i32,
     pub growth: i32,
     pub faction_tokens: i32,
     pub player_cubes: i32,
@@ -224,13 +226,20 @@ pub struct Options {
 }
 
 impl Options {
-    /// Rounds as votes: every round's vote counts 1 but the last's, which counts `last_vote`.
+    /// Rounds as votes: every round's vote counts 1 but the last's, which counts `last_vote`, and the first's,
+    /// which counts `first_vote`.
     pub fn vote_weight(&self, round: i32) -> i32 {
-        if round >= self.rounds { self.last_vote } else { 1 }
+        if round >= self.rounds { self.last_vote } else if round <= 1 { self.first_vote } else { 1 }
     }
     /// All the votes in a game (five rounds, the last worth 3: 7).
     pub fn votes_total(&self) -> i32 {
-        (self.rounds - 1).max(0) + self.last_vote
+        (1..=self.rounds).map(|r| self.vote_weight(r)).sum()
+    }
+    /// Rounds whose vote is cast, from the weighted votes cast so far (`cast`) and the round now being played: a
+    /// first round worth nothing leaves no mark on the count, so it is closed once round 2 has begun.
+    pub fn rounds_closed(&self, cast: i32, round: i32) -> i32 {
+        let skipped = if self.first_vote == 0 && round >= 2 { 1 } else { 0 };
+        (cast + skipped).min(self.rounds)
     }
     /// Resolves raw choices (unknown variants or choices are an error, as resolveOptions); absent ones take the default.
     pub fn resolve(raw: &[(String, String)]) -> Result<Options, String> {
@@ -257,6 +266,7 @@ impl Options {
             round_votes: matches!(get("roundVotes"), "on" | "early"),
             votes_early: get("roundVotes") == "early",
             last_vote: num("lastVote").max(1),
+            first_vote: num("firstVote").clamp(0, 1),
             growth: if get("growth") == "off" { i32::MAX } else { num("growth") },
             // Unlimited (D46): a pool too big to run dry.
             faction_tokens: if get("factionTokens") == "unlimited" { UNLIMITED } else { num("factionTokens") },

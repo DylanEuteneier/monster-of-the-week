@@ -961,6 +961,24 @@
       ]
     },
     {
+      "id": "firstVote",
+      "label": "First round's vote",
+      "description": "Designer's seed (2026-11-05; testing): with rounds as votes, the first round's vote counts this many. 0 with lastVote 2: five votes (rounds 2-4 one each, round 5 two), no ties.",
+      "default": "1",
+      "choices": [
+        {
+          "id": "1",
+          "label": "1",
+          "description": ""
+        },
+        {
+          "id": "0",
+          "label": "0",
+          "description": ""
+        }
+      ]
+    },
+    {
       "id": "lastVote",
       "label": "Last round's vote",
       "description": "Designer's seed (2026-11-01; testing): with rounds as votes, the last round's vote counts this many. 2: six votes; the invaders need strictly more, so 3–3 goes to the island (designer). 3: seven votes, no ties.",

@@ -741,6 +741,10 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         if s.round != round || s.phase == Phase::Ended {
             let (bf, af, nf) = fights_seen.last().copied().unwrap_or(([0; 5], [0; 5], 0));
             fights_seen.clear();
+            // A round whose vote counts nothing (firstVote 0) leaves no mark on the count: log the side it fell to.
+            if s.options.round_votes && s.options.vote_weight(round) == 0 && votes.len() < round as usize {
+                votes.push(af.iter().sum::<i32>() > s.options.threshold);
+            }
             rounds.push(RoundLog { round, before_fights: bf, after_fights: af, end: by_faction(&s), seats: (0..n).map(|p| seat_log(&s, p as Pid, &memory[p], &profiles[&(p as Pid)])).collect(), first: round_first, fights: nf, occupied: (0..s.board.len() as u8).filter(|&l| crate::board::count_at(&s, l) >= 1).count() });
             round_first = None;
             presence.push(crate::board::total_presence(&s));
