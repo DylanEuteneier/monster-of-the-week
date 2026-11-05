@@ -33,6 +33,9 @@ pub struct BotMemory {
     pub traits: Vec<f64>,
     /// A hedger's draw for keeping the invaders alive from round 1 (persona hopen), made once a game: 0 to 1.
     pub open: Option<f64>,
+    /// The seat's last reading of the votes from play-outs of the round (end_read): its round, this round's vote
+    /// presence, and each later round's change. Play-outs and the draft read the votes from it within that round.
+    pub read: Option<[f64; 3]>,
 }
 
 thread_local! {
@@ -851,7 +854,9 @@ fn end_read(s: &GameState) -> (f64, f64) {
             let (now, _) = round_flow(s);
             (now, (brought - (before - after)) as f64)
         }
-        _ => round_flow(s),
+        // No close yet (round 1): this round's fights as they stand; no later change can be read from the game yet
+        // (mid-round, the nightfall to come counts sway at locations whose fights haven't formed).
+        _ => (round_flow(s).0, 0.0),
     }
 }
 
@@ -881,7 +886,8 @@ pub fn flow_ahead(s: &GameState, pid: Pid, rng: Rng, memory: Option<&BotMemory>,
 /// without them, from the position (end_read).
 fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut BotMemory>, rng: Rng, seen: Option<(f64, f64)>) -> Goal {
     let mut c = win_chances_shared(s, pid);
-    let (now, trend) = seen.unwrap_or_else(|| end_read(s));
+    let remembered = memory.as_deref().and_then(|m| m.read).filter(|r| r[0] as i32 == s.round && s.last_close.is_none_or(|lc| lc[0] < s.round)).map(|r| (r[1], r[2]));
+    let (now, trend) = seen.or(remembered).unwrap_or_else(|| end_read(s));
     if s.options.round_votes {
         c.projected = now;
         c.p_invaders = invaders_reach_by(s, now, c.threshold, c.spread_p, 0.0, false, trend);
@@ -1298,6 +1304,9 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
     let seen = match &persona {
         Some(p) if on(p.endread) && seats.profiles.is_some() && s.phase == Phase::Play && s.options.round_votes => {
             let (a, t) = flow_ahead(s, pid, &mut *rng, memory.as_deref(), seats, p.endread.max(1.0) as usize);
+            if let Some(m) = memory.as_deref_mut() {
+                m.read = Some([s.round as f64, a, t]);
+            }
             Some((a, t))
         }
         _ => None,
