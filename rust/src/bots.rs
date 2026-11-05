@@ -222,6 +222,7 @@ pub struct Persona {
     /// each 0 to 1, drawn each game within `vary` of its set value. Lean stays the ending it starts out preferring.
     /// nerve: the evidence it needs to commit for good (low: early, on gut; high: keeps hedging); loyalty: how hard it
     /// guards and pushes the faction it backs; sharp: how carefully it plays (search noise, turns on instinct).
+    /// The lean centres nerve and loyalty (0.5 less and 0.5 plus the lean): a backer commits early and guards hard.
     pub dials: f64,
     pub nerve: f64,
     pub loyalty: f64,
@@ -241,7 +242,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, hfrom: 0.0, hopen: 0.0, endread: 4.0, glass_jitter: 0.0, glass_spread: 0.0, gut: 0.0, quirks: 0.0, momentum: 0.0, dials: 0.0, nerve: 0.5, loyalty: 0.5, sharp: 0.8, vary: 0.25,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, hfrom: 0.0, hopen: 0.0, endread: 4.0, glass_jitter: 0.0, glass_spread: 0.0, gut: 0.0, quirks: 0.0, momentum: 0.0, dials: 0.0, nerve: (0.5 - lean).clamp(0.0, 1.0), loyalty: (0.5 + lean).clamp(0.0, 1.0), sharp: 0.8, vary: 0.25,
     }
 }
 
@@ -1313,10 +1314,14 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
             // from which it may (2 to 4), and the chance it is a gut player, committing in round 2 or 3 on its leaning.
             // Loyalty: the guard on its faction while hedging (0.1 to 0.9) and once committed to the invaders (0 to 4).
             // Sharpness: search noise (none at 1) and the share of turns played on instinct (up to a quarter at 0).
-            dialled = format!(
+            // Low nerve (under 0.35): no hedging at all, the committed player from round 1 (today's backer, with its
+            // push for its faction), guarding by loyalty; above it, hedging, committing later the higher the nerve.
+            dialled = if nerve < 0.35 {
+                format!("{profile},protect={:.3},noise={:.4},dials=0", 4.0 * loyalty, SEARCH_NOISE * (1.0 - sharp))
+            } else { format!(
                 "{profile},hedge=1,hfrom=1,glass={:.3},glassFrom={:.0},gut={:.3},hguard={:.3},protect={:.3},noise={:.4},dials=0",
                 0.6 + 0.35 * nerve, 2.0 + (2.0 * nerve).round(), 0.4 * (1.0 - nerve), 0.1 + 0.8 * loyalty, 4.0 * loyalty, SEARCH_NOISE * (1.0 - sharp)
-            );
+            ) };
             // Instinct: some turns, more for a careless seat, the move that looks best at a glance (no play-outs).
             if on(q.sim) && s.phase == Phase::Play && rng() < 0.25 * (1.0 - sharp) {
                 return play_move(s, pid, rng, &fast(&dialled), memory, seats, focus);
