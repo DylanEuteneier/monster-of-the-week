@@ -1319,7 +1319,12 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
             dialled = if nerve < 0.35 {
                 format!("{profile},protect={:.3},noise={:.4},dials=0", 4.0 * loyalty, SEARCH_NOISE * (1.0 - sharp))
             } else { format!(
-                "{profile},hedge=1,hfrom=1,glass={:.3},glassFrom={:.0},gut={:.3},hguard={:.3},protect={:.3},noise={:.4},dials=0",
+                "{profile},hedge=1,{}glass={:.3},glassFrom={:.0},gut={:.3},hguard={:.3},protect={:.3},noise={:.4},dials=0",
+                // When it starts counting the invaders in full (designer, 2026-11-06: early backer and late joiner are
+                // the spectrum's ends; in between plays a little worse, as people do): round 1 at the hedgers' least
+                // nerve (0.35) to round 3 at the most.
+                // A profile's own hfrom stands (tests).
+                if profile.contains("hfrom=") { String::new() } else { format!("hfrom={:.3},", 1.0 + 2.0 * ((nerve - 0.35) / 0.65).clamp(0.0, 1.0)) },
                 0.6 + 0.35 * nerve, 2.0 + (2.0 * nerve).round(), 0.4 * (1.0 - nerve), 0.1 + 0.8 * loyalty, 4.0 * loyalty, SEARCH_NOISE * (1.0 - sharp)
             ) };
             // Instinct: some turns, more for a careless seat, the move that looks best at a glance (no play-outs).
