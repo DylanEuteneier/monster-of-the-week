@@ -25,14 +25,10 @@ pub struct BotMemory {
     /// A hedging bot's break-glass commitment (persona glass; testing): once set, its goal for the rest of the game,
     /// played without hedging.
     pub broke: Option<Goal>,
-    /// A hedger's draw for an early break (persona glassJitter), made once a game: 0 to 1.
+    /// A hedger's draw for being a gut player (persona gut), made once a game: 0 to 1.
     pub early: Option<f64>,
-    /// A hedger's draw for its own break threshold (persona glassSpread), made once a game: 0 to 1.
-    pub nerve: Option<f64>,
-    /// A quirky seat's temperament (persona quirks), drawn once a game, each 0 to 1: loyalty, sloppiness, momentum.
+    /// The seat's dials for this game (nerve, loyalty, sharpness, then the irrational draw and its timing), drawn once.
     pub traits: Vec<f64>,
-    /// A hedger's draw for keeping the invaders alive from round 1 (persona hopen), made once a game: 0 to 1.
-    pub open: Option<f64>,
     /// The seat's last reading of the votes from play-outs of the round (end_read): its round, this round's vote
     /// presence, and each later round's change. Play-outs and the draft read the votes from it within that round.
     pub read: Option<[f64; 3]>,
@@ -57,8 +53,6 @@ pub struct Seats {
     pub roll_list: bool,
     /// Testing (persona rjudge): every seat in the play-outs judges with the learned judge.
     pub judge: bool,
-    /// Testing (persona rimit): every seat in the play-outs scores moves with the imitation weights.
-    pub imit: bool,
     /// Persona rplan (default on, designer 2026-11-04): every seat in the play-outs follows its own remembered hand
     /// plan, not only the deciding seat (100 games, seat 5: 30.0% vs 27.3%).
     pub plans: bool,
@@ -152,34 +146,16 @@ pub struct Persona {
     /// the play-out search's value mixed with the one-step value (0: play-outs only); play-out bots listing targets.
     pub noise: Option<f64>,
     pub draft: Option<usize>,
-    pub mix: f64,
     pub roll_list: f64,
-    /// Testing (the pass study): never pass while a card can be played.
-    pub no_pass: f64,
-    /// Rounds as votes: judge each vote as it comes (optimism grows with how far off a vote is, not one sum for the
-    /// game; the lean fades with how decided the tally is, not the round clock). No effect with votes off.
-    pub pace: f64,
-    /// Paced: the lean fades with the vote tally (on) or the round clock (0).
-    pub tally: f64,
     /// Testing: how much the lean fades as the game settles (1: fully, as always; 0: never, a seat keeps its side).
     pub fade: f64,
-    /// The draft by play-outs (designer, 2026-11-02: a card is worth what it adds to the hand's play this round, and
-    /// what that sets up after): each card this pick could add, the rest of the draft finished by every seat's own
-    /// bot, then the round played out, this many times; its worth is the position at the vote (0: one step, alone).
-    pub dplan: f64,
     /// Always play out the plays that break a tie for the most sway at a fight already set (2026-11-03; default on,
     /// designer 2026-11-04; 100 games, seat 5: 29.0% vs 26.0%).
     pub tiekeep: f64,
-    /// Testing (2026-11-04, designer: does breaking ties stubbornly pay?): when tied for the most sway at a fight
-    /// already set and some play breaks the tie, choose only among the plays that break it.
-    pub stubborn: f64,
-    /// Testing (2026-11-04): the one-step pick scores candidates with the imitation weights (rust/data/imit.json).
-    pub imit: f64,
     /// The learned judge (judge.rs, `npm run judge`) in place of the hand formula's chances (0: the hand formula).
     pub judge: f64,
     /// The play-out bots (every seat) judge with the learned judge too (designer, 2026-11-03: no quick-and-dirty play-outs).
     pub rjudge: f64,
-    pub rimit: f64,
     pub rplan: f64,
     /// Testing (designer, 2026-11-04: a hedging bot keeps its options open, building trophies all game; backing a
     /// faction early doesn't pay): the island half of the value counts in full from the start and the invaders' half is
@@ -197,27 +173,14 @@ pub struct Persona {
     /// Testing (designer, 2026-11-05: under votes the invaders have to win votes, in rounds 2–3, to have a shot): the
     /// round through which a hedger's invaders' half phases in (unset: the last but one); 1: in full from round 2.
     pub hfrom: f64,
-    /// Testing (designer, 2026-11-05): the chance a game's hedger tries to keep the invaders alive from round 1,
-    /// counting their half in full through round 1 (hfrom below 1: in full from round 1).
-    pub hopen: f64,
     /// Rounds as votes (designer, 2026-11-05: bots never consider opening presence, only potential end-of-round
     /// presence, with no constants from past tests): each vote is read at its end-of-round presence from the game itself
     /// (end_read, flow_ahead). This many play-outs of the round give the goal choice's reading at a real decision
     /// (default 4; 0: from the position). Adopted 2026-11-05, replacing drain, trend, look and vknown.
     pub endread: f64,
-    /// Testing (designer, 2026-11-04: some players are irrational): the chance a game's hedger may break glass early,
-    /// from round 4 (two thirds of those) or round 3 (a third).
-    pub glass_jitter: f64,
     /// Testing (designer: some players are irrational): the chance a game's hedger is a gut player, who commits in
-    /// round 2 or 3 to the ending it leans to then, whatever the evidence (before glassJitter's draw).
+    /// round 2 or 3 to the ending it leans to then, whatever the evidence.
     pub gut: f64,
-    /// Testing (designer, 2026-11-04: tables of hedgers mustn't all break the same way): each game a hedger's break
-    /// threshold is glass ± half this, drawn once (kept between 0.55 and 0.98).
-    pub glass_spread: f64,
-    /// Testing (designer, 2026-11-04: bots with human tendencies, inconsistencies and quirks): each game the seat draws
-    /// a temperament: loyalty (hguard 0.1–0.9), sloppiness (search noise up to the standard's, and up to a quarter of
-    /// its turns played on instinct, the best move at a glance, without play-outs) and a momentum bias (up to 0.3).
-    pub quirks: f64,
     /// One bot with dials (designer, 2026-11-05; testing, off by default): hedging on a spectrum, set by four dials,
     /// each 0 to 1, drawn each game within `vary` of its set value. Lean stays the ending it starts out preferring.
     /// nerve: the evidence it needs to commit for good (low: early, on gut; high: keeps hedging); loyalty: how hard it
@@ -242,7 +205,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, mix: 0.0, roll_list: 0.0, no_pass: 0.0, pace: 0.0, tally: 1.0, fade: 1.0, dplan: 0.0, tiekeep: 1.0, stubborn: 0.0, imit: 0.0, judge: 0.0, rjudge: 0.0, rimit: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, hfrom: 0.0, hopen: 0.0, endread: 4.0, glass_jitter: 0.0, glass_spread: 0.0, gut: 0.0, quirks: 0.0, momentum: 0.0, dials: 0.0, nerve: (0.5 - lean).clamp(0.0, 1.0), loyalty: (0.5 + lean).clamp(0.0, 1.0), sharp: 0.8, vary: 0.25,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, roll_list: 0.0, fade: 1.0, tiekeep: 1.0, judge: 0.0, rjudge: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, hfrom: 0.0, endread: 4.0, gut: 0.0, momentum: 0.0, dials: 0.0, nerve: (0.5 - lean).clamp(0.0, 1.0), loyalty: (0.5 + lean).clamp(0.0, 1.0), sharp: 0.8, vary: 0.25,
     }
 }
 
@@ -306,29 +269,17 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "planDepth" => p.plan_depth = Some(x as usize),
                 "noise" => p.noise = Some(x),
                 "draft" => p.draft = Some(x as usize),
-                "mix" => p.mix = x,
                 "rollList" => p.roll_list = x,
-                "noPass" => p.no_pass = x,
-                "pace" => p.pace = x,
-                "tally" => p.tally = x,
                 "fade" => p.fade = x,
-                "dplan" => p.dplan = x,
                 "tiekeep" => p.tiekeep = x,
-                "stubborn" => p.stubborn = x,
-                "imit" => p.imit = x,
-                "rimit" => p.rimit = x,
                 "rplan" => p.rplan = x,
                 "hedge" => p.hedge = x,
                 "hguard" => p.hguard = x,
                 "glass" => p.glass = x,
                 "glassFrom" => p.glass_from = x,
                 "hfrom" => p.hfrom = x,
-                "hopen" => p.hopen = x,
                 "endread" => p.endread = x,
-                "glassJitter" => p.glass_jitter = x,
                 "gut" => p.gut = x,
-                "glassSpread" => p.glass_spread = x,
-                "quirks" => p.quirks = x,
                 "dials" => p.dials = x,
                 "nerve" => p.nerve = x,
                 "loyalty" => p.loyalty = x,
@@ -562,9 +513,8 @@ fn project_fights(s: &GameState) -> GameState {
 
 /// The chance the invaders win, from the projected presence against the bar, shifted by `push` (a goal's optimism).
 /// Rounds as votes: each round left is a vote, this round's close sharp, later ones less so; the chance of a majority.
-/// `paced`: `push` is per round, so a vote k rounds off gets k + 1 of it (this round's vote, one).
-fn invaders_reach(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64, paced: bool) -> f64 {
-    invaders_reach_by(s, projected, threshold, spread_p, push, paced, 0.0)
+fn invaders_reach(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64) -> f64 {
+    invaders_reach_by(s, projected, threshold, spread_p, push, 0.0)
 }
 
 /// The share of the round's cards still in hand (1 outside the play phase).
@@ -579,7 +529,7 @@ fn round_left(s: &GameState) -> f64 {
 
 #[allow(clippy::too_many_arguments)]
 /// `trend`: each later vote's change on this one's (end_read).
-fn invaders_reach_by(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64, paced: bool, trend: f64) -> f64 {
+fn invaders_reach_by(s: &GameState, projected: f64, threshold: f64, spread_p: f64, push: f64, trend: f64) -> f64 {
     if !s.options.round_votes {
         return sigmoid((projected - threshold - 0.5 + push) / spread_p);
     }
@@ -592,7 +542,7 @@ fn invaders_reach_by(s: &GameState, projected: f64, threshold: f64, spread_p: f6
     dp[0] = 1.0;
     for k in 0..left {
         let w = s.options.vote_weight(closed + 1 + k as i32) as usize;
-        let shift = if paced { push * (k as f64 + 1.0) } else { push };
+        let shift = push;
         let ahead = trend * k as f64;
         let q = sigmoid((projected + ahead - threshold - 0.5 + shift) / (2.0 + 3.0 * k as f64));
         for j in (0..=most).rev() {
@@ -723,7 +673,7 @@ fn chances_after(s: &GameState, pid: Pid) -> Chances {
     // How far the game has gone: a seat's lean (its starting preference) fades with it (choose_goal).
     let settled = if rounds > 1.0 { ((s.round as f64 - 1.0) / (rounds - 1.0)).min(1.0) } else { 1.0 };
     let known = if s.options.round_votes { 1.0 } else { settled };
-    let p_invaders = (1.0 - known) * prior + known * invaders_reach(s, projected, threshold, spread_p, 0.0, false);
+    let p_invaders = (1.0 - known) * prior + known * invaders_reach(s, projected, threshold, spread_p, 0.0);
     Chances { pid, p_invaders, prior, known, settled, backers, linear_island, rival_invaders, as_invaders, as_island, margin_invaders, margin_island, projected, threshold, spread_p, rounds_left }
 }
 
@@ -785,7 +735,7 @@ fn end_read_into(s: &GameState, c: &mut Chances, proj: &GameState) {
     if s.options.round_votes {
         let (after, t) = end_read_at(s, || crate::board::total_presence(proj) as f64);
         c.projected = after;
-        c.p_invaders = invaders_reach_by(s, after, c.threshold, c.spread_p, 0.0, false, t);
+        c.p_invaders = invaders_reach_by(s, after, c.threshold, c.spread_p, 0.0, t);
     }
 }
 
@@ -929,7 +879,7 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
     let (now, trend) = seen.or(remembered).unwrap_or_else(|| end_read(s));
     if s.options.round_votes {
         c.projected = now;
-        c.p_invaders = invaders_reach_by(s, now, c.threshold, c.spread_p, 0.0, false, trend);
+        c.p_invaders = invaders_reach_by(s, now, c.threshold, c.spread_p, 0.0, trend);
     }
     let mut memory = memory;
     let mut gut_now = false;
@@ -937,8 +887,7 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
         if let Some(g) = memory.as_deref().and_then(|m| m.broke) {
             return g;
         }
-        let mut from = p.glass_from;
-        if on(p.glass_jitter) || on(p.gut) {
+        if on(p.gut) {
             if let Some(m) = memory.as_deref_mut() {
                 if m.early.is_none() {
                     m.early = Some(rng());
@@ -948,21 +897,9 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
             if e < p.gut {
                 // A gut player: commits in round 2 or 3 on its leaning (lean and jitter), not on the evidence.
                 gut_now = s.round as f64 >= if e < p.gut / 2.0 { 2.0 } else { 3.0 };
-            } else if e < p.gut + p.glass_jitter {
-                let e = e - p.gut;
-                from = from.min(if e < p.glass_jitter / 3.0 { 3.0 } else { 4.0 });
             }
         }
-        let mut glass = p.glass;
-        if on(p.glass_spread) {
-            if let Some(m) = memory.as_deref_mut() {
-                if m.nerve.is_none() {
-                    m.nerve = Some(rng());
-                }
-            }
-            let u = memory.as_deref().and_then(|m| m.nerve).unwrap_or(0.5);
-            glass = (p.glass + (u - 0.5) * p.glass_spread).clamp(0.55, 0.98);
-        }
+        let (from, glass) = (p.glass_from, p.glass);
         if !gut_now && s.round as f64 >= from {
             let (ei, es) = (c.p_invaders * c.as_invaders, (1.0 - c.p_invaders) * c.as_island);
             let share = if ei + es > 0.0 { ei / (ei + es) } else { 0.5 };
@@ -976,17 +913,14 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
             }
         }
     }
-    let paced = on(p.pace) && s.options.round_votes;
-    let push = if paced { p.push * p.pace } else { p.push * (c.rounds_left + 1.0) };
-    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach_by(s, c.projected, c.threshold, c.spread_p, push, paced, trend);
-    let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach_by(s, c.projected, c.threshold, c.spread_p, -push, paced, trend));
+    let push = p.push * (c.rounds_left + 1.0);
+    let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach_by(s, c.projected, c.threshold, c.spread_p, push, trend);
+    let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach_by(s, c.projected, c.threshold, c.spread_p, -push, trend));
     let (reach_inv, reach_isl) = match momentum(s, p) {
         Some((side, w)) => ((1.0 - w) * reach_inv + w * side, (1.0 - w) * reach_isl + w * (1.0 - side)),
         None => (reach_inv, reach_isl),
     };
-    // Paced: the lean fades as the tally nears a majority (0 at 0-0, 1 once a side has it), not with the round.
-    let majority = (s.options.votes_total() / 2 + 1).max(1) as f64;
-    let settled = if paced && on(p.tally) { (s.votes[0].max(s.votes[1]) as f64 / majority).min(1.0) } else { c.settled };
+    let settled = c.settled;
     let mut evidence = reach_inv * c.as_invaders - reach_isl * c.as_island;
     if on(p.judge) {
         if let Some(w) = crate::judge::weights() {
@@ -1351,46 +1285,6 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
         }
         _ => profile,
     };
-    // Quirks: the seat's temperament, drawn once a game, set as concrete settings for this whole decision.
-    let quirky;
-    let profile: &str = match persona_of(profile) {
-        Some(q) if on(q.quirks) => {
-            if let Some(m) = memory.as_deref_mut() {
-                if m.traits.len() < 3 {
-                    m.traits = (0..3).map(|_| rng()).collect();
-                }
-            }
-            let tr = memory.as_deref().map(|m| m.traits.clone()).unwrap_or_else(|| vec![0.5; 3]);
-            quirky = format!("{profile},hguard={:.3},noise={:.3},momentum={:.3},quirks=0", 0.1 + 0.8 * tr[0], SEARCH_NOISE * tr[1], 0.3 * tr[2]);
-            // Instinct: some turns, more for a sloppy seat, the move that looks best at a glance (no play-outs).
-            if on(q.sim) && s.phase == Phase::Play && rng() < 0.25 * tr[1] {
-                return play_move(s, pid, rng, &fast(&quirky), memory, seats, focus);
-            }
-            &quirky
-        }
-        _ => profile,
-    };
-    // Keeping options open (designer, 2026-11-05: a hedger may sometimes try to keep the invaders' presence high in
-    // round 1, if it deems it possible and it helps keep its options open): in a game it draws so, a hedger counts the
-    // invaders' half in full from round 1 (in round 1 only; after, its ramp as set).
-    let opened;
-    let profile: &str = match persona_of(profile) {
-        Some(q) if on(q.hedge) && on(q.hopen) => {
-            if let Some(m) = memory.as_deref_mut() {
-                if m.open.is_none() {
-                    m.open = Some(rng());
-                }
-            }
-            let draw = memory.as_deref().and_then(|m| m.open).unwrap_or(1.0);
-            if s.round == 1 && draw < q.hopen {
-                opened = format!("{profile},hfrom=0.01,hopen=0");
-                &opened
-            } else {
-                profile
-            }
-        }
-        _ => profile,
-    };
     let persona = persona_of(profile);
     // A real decision (the table given), with look on: the forecast from play-outs of the round.
     let seen = match &persona {
@@ -1423,11 +1317,6 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
         Phase::Draft => {
             if p.picked {
                 return None;
-            }
-            if let Some(n) = persona.as_ref().filter(|x| on(x.dplan) && seats.profiles.is_some()).map(|x| x.dplan as usize) {
-                if let Some(m) = draft_by_playouts(s, pid, rng, &ev, memory.as_deref(), seats, n) {
-                    return Some(m);
-                }
             }
             let pool: Vec<CardIx> = p.kept.iter().chain(p.batch.iter()).copied().collect();
             let base_v = ev(s);
@@ -1480,18 +1369,13 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
                 Some((card, so_far)) => moves.into_iter().filter(|m| fits(m, card, so_far)).collect(),
                 None => moves,
             };
-            let moves: Vec<Move> = if pe.as_ref().is_some_and(|x| on(x.no_pass)) && moves.iter().any(|m| *m != Move::Pass) { moves.into_iter().filter(|m| *m != Move::Pass).collect() } else { moves };
-            let moves: Vec<Move> = if pe.as_ref().is_some_and(|x| on(x.stubborn)) {
-                let breaking = tie_breakers(s, pid, &moves);
-                if breaking.iter().any(|&b| b) { moves.into_iter().zip(breaking).filter(|x| x.1).map(|x| x.0).collect() } else { moves }
-            } else { moves };
             if moves.is_empty() {
                 return None;
             }
             let table = pe.as_ref().filter(|x| on(x.table)).map(|x| {
                 let mut profiles = seats.profiles.clone().unwrap_or_default();
                 profiles.insert(pid, profile.to_string());
-                Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: on(x.roll_list), judge: on(x.rjudge), imit: on(x.rimit), plans: on(x.rplan) }
+                Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: on(x.roll_list), judge: on(x.rjudge), plans: on(x.rplan) }
             });
             if let Some(x) = pe.as_ref() {
                 if on(x.sim) && on(x.plan) {
@@ -1503,16 +1387,15 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
                     return picked;
                 }
                 if on(x.sim) {
-                    return sim_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.playouts.unwrap_or(SIM_PLAYOUTS), x.mix, table.as_ref(), on(x.tiekeep));
+                    return sim_pick(s, pid, rng, moves, &ev, memory.as_deref(), x.keep.unwrap_or(SIM_KEEP), x.playouts.unwrap_or(SIM_PLAYOUTS), table.as_ref(), on(x.tiekeep));
                 }
             }
             let mut best: Option<Move> = moves.first().cloned();
             let mut best_v = f64::NEG_INFINITY;
-            let imitate = pe.as_ref().is_some_and(|x| on(x.imit));
             for m in moves {
                 let a = after(s, pid, &m);
                 let quick = ev(&a);
-                let v = noise(if imitate { crate::imit::score(&a, pid, quick).unwrap_or(quick) } else { quick }, rng);
+                let v = noise(quick, rng);
                 if v > best_v {
                     best = Some(m);
                     best_v = v;
@@ -1526,26 +1409,6 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
 
 fn seed_of(rng: Rng) -> i64 {
     (rng() * 2147483648.0).floor() as i64
-}
-
-/// Which moves leave `pid` strictly first where it was tied for the most sway at a fight already set (moves that end
-/// the round are not judged: their fights are already resolved).
-fn tie_breakers(s: &GameState, pid: Pid, moves: &[Move]) -> Vec<bool> {
-    let tied: Vec<Loc> = crate::game::fights_due(s).into_iter().filter(|&l| {
-        let sw = &s.board[l as usize].sway;
-        let me = sw.get(pid);
-        me > 0 && (0..s.n() as Pid).filter(|&o| o != pid).map(|o| sw.get(o)).max().unwrap_or(0) == me
-    }).collect();
-    if tied.is_empty() {
-        return vec![false; moves.len()];
-    }
-    moves.iter().map(|m| {
-        if *m == Move::Pass {
-            return false;
-        }
-        let b = after(s, pid, m);
-        b.round == s.round && b.phase == Phase::Play && tied.iter().any(|&l| { let sw = &b.board[l as usize].sway; let me = sw.get(pid); me > 0 && (0..b.n() as Pid).filter(|&o| o != pid).all(|o| sw.get(o) < me) })
-    }).collect()
 }
 
 /// The moves to play out: the best `keep` by one-step score, Pass, and (tiekeep) every play that leaves this seat
@@ -1577,7 +1440,7 @@ fn shortlist(s: &GameState, pid: Pid, ranked: &[(Move, GameState, f64)], keep: u
 
 /// The play-out search (persona sim).
 #[allow(clippy::too_many_arguments)]
-fn sim_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, keep: usize, playouts: usize, mix: f64, table: Option<&Seats>, tiekeep: bool) -> Option<Move> {
+fn sim_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, keep: usize, playouts: usize, table: Option<&Seats>, tiekeep: bool) -> Option<Move> {
     let mut ranked: Vec<(Move, GameState, f64)> = moves.into_iter().map(|m| { let x = after(s, pid, &m); let v = ev(&x); (m, x, v) }).collect();
     ranked.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
     let short = shortlist(s, pid, &ranked, keep, tiekeep);
@@ -1590,7 +1453,7 @@ fn sim_pick(s: &GameState, pid: Pid, rng: Rng, moves: Vec<Move>, ev: &dyn Fn(&Ga
         for &seed in &seeds {
             total += ev(&play_out_round(&ranked[i].1, seed, pid, memory, table, None));
         }
-        let v = (1.0 - mix) * (total / seeds.len() as f64) + mix * ranked[i].2;
+        let v = total / seeds.len() as f64;
         values.push((i, v));
         if v > best_v {
             best = Some(ranked[i].0.clone());
@@ -1731,8 +1594,7 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
         Some(p) if table.is_some_and(|t| t.roll_list) => listing(p),
         Some(p) => fast(p),
         None => ROLLOUT.to_string(),
-    }).map(|p| if table.is_some_and(|t| t.judge) && persona_of(&p).is_some() { format!("{p},judge=1") } else { p })
-        .map(|p| if table.is_some_and(|t| t.imit) && persona_of(&p).is_some() { format!("{p},imit=1") } else { p }).collect();
+    }).map(|p| if table.is_some_and(|t| t.judge) && persona_of(&p).is_some() { format!("{p},judge=1") } else { p }).collect();
     let mut moves = 0;
     // On through nightfall and growth to the round's end (2026-11-04: play-outs had stopped at nightfall, before the
     // fights and the vote, whenever a location was marked).
@@ -1786,7 +1648,7 @@ pub fn playout_values(s: &GameState, pid: Pid, profile: &str, memory: Option<&Bo
     let mut profiles = seats.profiles.clone().unwrap_or_default();
     profiles.insert(pid, profile.to_string());
     let pe = persona_of(profile);
-    let table = Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: pe.as_ref().is_some_and(|x| on(x.roll_list)), judge: pe.as_ref().is_some_and(|x| on(x.rjudge)), imit: pe.as_ref().is_some_and(|x| on(x.rimit)), plans: pe.as_ref().is_some_and(|x| on(x.rplan)) };
+    let table = Seats { profiles: Some(profiles), memories: seats.memories.clone(), roll_list: pe.as_ref().is_some_and(|x| on(x.roll_list)), judge: pe.as_ref().is_some_and(|x| on(x.rjudge)), plans: pe.as_ref().is_some_and(|x| on(x.rplan)) };
     moves.iter().map(|m| {
         let a = after(s, pid, m);
         seeds.iter().map(|&seed| evaluate(&play_out_round(&a, seed, pid, memory, Some(&table), None), pid, profile, goal)).sum::<f64>() / seeds.len() as f64
@@ -1801,57 +1663,6 @@ pub fn quick_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Opti
 /// One imagined round from here, as a full bot's play-outs play it (for measuring them).
 pub fn imagine_round(s: &GameState, seed: i64, pid: Pid, memory: Option<&BotMemory>, table: &Seats) -> GameState {
     play_out_round(s, seed, pid, memory, Some(table), None)
-}
-
-/// The draft by play-outs (persona dplan): keep the cards already kept and add the batch card whose hand plays the
-/// round best: the rest of the draft picked by every seat's own (fast) bot, then the round played out to its vote.
-fn draft_by_playouts(s: &GameState, pid: Pid, rng: Rng, ev: &dyn Fn(&GameState) -> f64, memory: Option<&BotMemory>, seats: &Seats, n: usize) -> Option<Move> {
-    let me = pid as usize;
-    let p = &s.players[me];
-    let mut cands: Vec<CardIx> = Vec::new();
-    for &c in &p.batch {
-        if !cands.contains(&c) {
-            cands.push(c);
-        }
-    }
-    if cands.len() < 2 {
-        return None;
-    }
-    let profiles: Vec<String> = (0..s.n()).map(|id| seats.profiles.as_ref().and_then(|t| t.get(&(id as Pid))).map(|x| fast(x)).unwrap_or_else(|| ROLLOUT.to_string())).collect();
-    let mems: Vec<BotMemory> = (0..s.n()).map(|id| if id == me { memory.cloned().unwrap_or_default() } else { seats.memories.as_ref().and_then(|m| m.get(&(id as Pid))).cloned().unwrap_or_default() }).collect();
-    let mut best: Option<(Move, f64)> = None;
-    for &c in &cands {
-        let mut keep: Vec<CardIx> = p.kept.iter().copied().collect();
-        keep.push(c);
-        let m = Move::Pick { keep };
-        if !legal(s, pid, &m) {
-            continue;
-        }
-        let mut total = 0.0;
-        for _ in 0..n {
-            let mut x = after(s, pid, &m);
-            let mut mem = mems.clone();
-            // The rest of the draft, every seat by its own fast bot.
-            let mut guard = 0;
-            while x.phase == Phase::Draft && guard < 200 {
-                guard += 1;
-                let Some(id) = (0..x.n()).find(|&i| !x.players[i].picked) else { break };
-                let Some(mv) = play_move(&x, id as Pid, &mut *rng, &profiles[id], Some(&mut mem[id]), &Seats::default(), None) else { break };
-                x = after(&x, id as Pid, &mv);
-            }
-            if x.phase != Phase::Play {
-                total += ev(&x);
-                continue;
-            }
-            let end = play_out_round(&x, seed_of(rng), pid, Some(&mem[me]), Some(seats), None);
-            total += ev(&end);
-        }
-        let v = total / n as f64;
-        if best.as_ref().is_none_or(|b| v > b.1) {
-            best = Some((m, v));
-        }
-    }
-    best.map(|b| b.0)
 }
 
 /// How much a card adds, played as well as the bot can find right now (the draft's rough worth).

@@ -110,12 +110,10 @@ pub struct SeatLog {
     pub on_board: i32,
     pub goal: Option<&'static str>,
     pub p_invaders: f64,
-    /// A hedger's break-glass commitment so far (persona glass), and its early-break draw (glassJitter).
+    /// A hedger's break-glass commitment so far (persona glass), and its gut draw.
     pub broke: Option<&'static str>,
     pub early: Option<f64>,
-    pub nerve: Option<f64>,
-    pub open: Option<f64>,
-    /// A quirky seat's temperament (loyalty, sloppiness, momentum).
+    /// The seat's dials this game (nerve, loyalty, sharpness, the irrational draw, its timing).
     pub traits: Vec<f64>,
     /// The seat's own forecast of the invaders' ending, by its settings (vknown, drain, trend).
     pub p_forecast: f64,
@@ -205,7 +203,7 @@ fn goal_name(m: &BotMemory) -> Option<&'static str> {
 fn seat_log(s: &crate::types::GameState, pid: Pid, m: &BotMemory, profile: &str) -> SeatLog {
     let p = &s.players[pid as usize];
     SeatLog { standing: p.standing, trophies: p.trophies, supply: p.supply, on_board: on_board(s, pid), goal: goal_name(m), p_invaders: crate::bots::win_chances(s, pid).p_invaders,
-        broke: m.broke.map(|g| match g { crate::bots::Goal::Invaders => "invaders", crate::bots::Goal::Island => "island" }), early: m.early, nerve: m.nerve, open: m.open, traits: m.traits.clone(), p_forecast: crate::bots::forecast(s, pid, profile) }
+        broke: m.broke.map(|g| match g { crate::bots::Goal::Invaders => "invaders", crate::bots::Goal::Island => "island" }), early: m.early, traits: m.traits.clone(), p_forecast: crate::bots::forecast(s, pid, profile) }
 }
 
 /// Where a round's tokens came from and went.

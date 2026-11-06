@@ -1,11 +1,10 @@
 //! Imitation (2026-11-04, designer: make the quick bots reflect a real strategy): a quick move score fitted to the
 //! full bots' own choices. Each candidate move is described by the learned judge's reading of the position it leads to
 //! (for the mover) and its one-step score; a conditional logit over each decision's candidates learns which of them the
-//! full bot picks. The quick bot with persona imit=1 scores its candidates with these weights instead of the one-step
-//! score. Weights: rust/data/imit.json (`motw fitimit`); none fitted means the one-step score is used unchanged.
+//! full bot picks. Measured and dropped (2026-11-04: no better than the one-step score; the bot's imit switch removed
+//! 2026-11-06); the fit (`motw fitimit`, from `fidelity=1` logs) stays for study.
 
 use crate::types::{GameState, Pid};
-use std::sync::OnceLock;
 
 /// The features of a candidate: the judge's position row of the state after it (less pid, round and decided), and
 /// its one-step score scaled.
@@ -14,24 +13,6 @@ pub fn move_features(after: &GameState, pid: Pid, quick: f64) -> Vec<f64> {
     let mut f: Vec<f64> = row[3..].to_vec();
     f.push(quick / 10.0);
     f
-}
-
-fn weights() -> &'static Vec<f64> {
-    static W: OnceLock<Vec<f64>> = OnceLock::new();
-    W.get_or_init(|| {
-        let v: serde_json::Value = serde_json::from_str(include_str!("../data/imit.json")).unwrap_or_default();
-        v["w"].as_array().map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default()
-    })
-}
-
-/// The fitted score of a candidate (None when no weights are fitted, or they don't fit these features).
-pub fn score(after: &GameState, pid: Pid, quick: f64) -> Option<f64> {
-    let w = weights();
-    if w.is_empty() {
-        return None;
-    }
-    let f = move_features(after, pid, quick);
-    (f.len() == w.len()).then(|| f.iter().zip(w).map(|(a, b)| a * b).sum())
 }
 
 /// One decision: its candidates' features and which one was chosen.

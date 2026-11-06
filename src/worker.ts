@@ -450,7 +450,8 @@ export class Game extends DurableObject<Env> {
     if (!this.game || this.game.phase === 'ended') return null;
     // The bot that suggests the move leans as the player chose (island −0.3 by default).
     const lean = this.hintLean[playerId] ?? -0.3;
-    const profile = `bot:lean=${lean}`;
+    // Hints play the steady bot: no dials (no per-game temperament, no turns on instinct).
+    const profile = `bot:lean=${lean},dials=0`;
     const memory = (this.hintMemory[`${playerId}|${lean}`] ??= { jitter: 0 }); // no random lean in a hint; a goal of its own per aim
     const table = Object.fromEntries(this.game.seating.map((id) => [id, id === playerId ? profile : this.botProfiles[id] ?? 'bot:lean=-0.3']));
     let move: Move | null = null;

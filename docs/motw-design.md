@@ -3081,6 +3081,7 @@ Prototype bot tuning, not rules: a bot that plays the endings' asymmetry (RV1 no
   - `glassJitter`: the chance a game's hedger may break early, from round 4 (two thirds of those) or round 3 (a third).
   - `glassSpread`: each game, each hedger draws its own threshold, `glass` ± half this, so seats commit on different amounts of evidence.
   - The bot's memory carries the break and its draws (across the WebAssembly bridge too); the round logs record each seat's break and draws.
+  - *Removed 2026-11-06* (measured, not adopted; superseded by the dials): `glassJitter`, `glassSpread`, `hopen`, `quirks`, with `mix`, `noPass`, `pace` and `tally`, `dplan`, `stubborn`, `imit` and `rimit` (the imitation fit stays for study). Play unchanged.
 - **Measuring:** as a challenger (win rate, 100 games at 5 players, against a fresh control) and in tables of hedgers (whether breaks and endings vary).
 - **Results (2026-11-05):**
   - *As a challenger* (seat 5, lean −0.3, 100 games, 5 players, seed 5101; ± about 4): control 22% a seat; `hedge=1` 21%; with `glass=0.75` 25%; `glass=0.9` 25%; `glass=0.75,glassJitter=0.3` 22%. Hedging costs nothing. `glass` 0.75 and 0.9 played identical games: by round 5 the ending is nearly always settled, so the round-5 break follows the ending (42 to the invaders, 58 to the island, every game). With `glassJitter`, 29% of hedgers broke in round 3 or 4.
