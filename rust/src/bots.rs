@@ -1304,29 +1304,45 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
     let profile: &str = match persona_of(profile) {
         Some(q) if on(q.dials) => {
             if let Some(m) = memory.as_deref_mut() {
-                if m.traits.len() < 3 {
+                if m.traits.len() < 5 {
                     m.traits = [q.nerve, q.loyalty, q.sharp].iter().map(|&v| (v + (rng() * 2.0 - 1.0) * q.vary).clamp(0.0, 1.0)).collect();
+                    // The irrational draw (one game in ten) and where its late timing lands.
+                    m.traits.push(rng());
+                    m.traits.push(rng());
                 }
             }
             let d = memory.as_deref().map(|m| m.traits.clone()).filter(|t| t.len() >= 3).unwrap_or_else(|| vec![q.nerve, q.loyalty, q.sharp]);
             let (nerve, loyalty, sharp) = (d[0], d[1], d[2]);
+            // Irrational (designer, 2026-11-06: real players occasionally play irrationally, so the jitter should
+            // allow it): about one game in ten a hedger starts counting the invaders late (round 3 to 5) and can't
+            // commit for good before round 4 or 5.
+            let wild = d.get(3).is_some_and(|&u| u < 0.1);
+            let late = d.get(4).copied().unwrap_or(0.5);
             // Nerve: the share of its winning chances one ending must hold before it commits (0.6 to 0.95), the round
             // from which it may (2 to 4), and the chance it is a gut player, committing in round 2 or 3 on its leaning.
             // Loyalty: the guard on its faction while hedging (0.1 to 0.9) and once committed to the invaders (0 to 4).
             // Sharpness: search noise (none at 1) and the share of turns played on instinct (up to a quarter at 0).
             // Low nerve (under 0.35): no hedging at all, the committed player from round 1 (today's backer, with its
             // push for its faction), guarding by loyalty; above it, hedging, committing later the higher the nerve.
-            dialled = if nerve < 0.35 {
-                format!("{profile},protect={:.3},noise={:.4},dials=0", 4.0 * loyalty, SEARCH_NOISE * (1.0 - sharp))
-            } else { format!(
-                "{profile},hedge=1,{}glass={:.3},glassFrom={:.0},gut={:.3},hguard={:.3},protect={:.3},noise={:.4},dials=0",
-                // When it starts counting the invaders in full (designer, 2026-11-06: early backer and late joiner are
-                // the spectrum's ends; in between plays a little worse, as people do): round 1 at the hedgers' least
-                // nerve (0.35) to round 3 at the most.
-                // A profile's own hfrom stands (tests).
-                if profile.contains("hfrom=") { String::new() } else { format!("hfrom={:.3},", 1.0 + 2.0 * ((nerve - 0.35) / 0.65).clamp(0.0, 1.0)) },
-                0.6 + 0.35 * nerve, 2.0 + (2.0 * nerve).round(), 0.4 * (1.0 - nerve), 0.1 + 0.8 * loyalty, 4.0 * loyalty, SEARCH_NOISE * (1.0 - sharp)
-            ) };
+            // The dials' settings, each unless the profile sets it itself (tests). When a hedger counts the invaders
+            // in full (designer, 2026-11-06: early backer and late joiner are the spectrum's ends; in between plays a
+            // little worse, as people do): round 1 at the hedgers' least nerve (0.35) to round 3 at the most.
+            let set: Vec<(&str, f64)> = if nerve < 0.35 {
+                vec![("protect", 4.0 * loyalty), ("noise", SEARCH_NOISE * (1.0 - sharp))]
+            } else {
+                vec![
+                    ("hedge", 1.0),
+                    ("hfrom", if wild { 3.0 + 2.0 * late } else { 1.0 + 2.0 * ((nerve - 0.35) / 0.65).clamp(0.0, 1.0) }),
+                    ("glass", 0.6 + 0.35 * nerve),
+                    ("glassFrom", if wild { 4.0 + late.round() } else { 2.0 + (2.0 * nerve).round() }),
+                    ("gut", 0.4 * (1.0 - nerve)),
+                    ("hguard", 0.1 + 0.8 * loyalty),
+                    ("protect", 4.0 * loyalty),
+                    ("noise", SEARCH_NOISE * (1.0 - sharp)),
+                ]
+            };
+            let own = |k: &str| profile.split([':', ',']).any(|kv| kv.split_once('=').is_some_and(|(a, _)| a == k));
+            dialled = set.iter().filter(|(k, _)| !own(k)).fold(profile.to_string(), |acc, (k, v)| format!("{acc},{k}={v:.4}")) + ",dials=0";
             // Instinct: some turns, more for a careless seat, the move that looks best at a glance (no play-outs).
             if on(q.sim) && s.phase == Phase::Play && rng() < 0.25 * (1.0 - sharp) {
                 return play_move(s, pid, rng, &fast(&dialled), memory, seats, focus);
