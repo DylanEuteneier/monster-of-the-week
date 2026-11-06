@@ -181,7 +181,7 @@ pub struct Persona {
     /// Testing (designer: some players are irrational): the chance a game's hedger is a gut player, who commits in
     /// round 2 or 3 to the ending it leans to then, whatever the evidence.
     pub gut: f64,
-    /// One bot with dials (designer, 2026-11-05; testing, off by default): hedging on a spectrum, set by four dials,
+    /// One bot with dials (designer, 2026-11-05; the default since 2026-11-06, `dials=0` for the steady bot): hedging on a spectrum, set by four dials,
     /// each 0 to 1, drawn each game within `vary` of its set value. Lean stays the ending it starts out preferring.
     /// nerve: the evidence it needs to commit for good (low: early, on gut; high: keeps hedging); loyalty: how hard it
     /// guards and pushes the faction it backs; sharp: how carefully it plays (search noise, turns on instinct).
@@ -205,7 +205,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, roll_list: 0.0, fade: 1.0, tiekeep: 1.0, judge: 0.0, rjudge: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, hfrom: 0.0, endread: 4.0, gut: 0.0, momentum: 0.0, dials: 0.0, nerve: (0.5 - lean).clamp(0.0, 1.0), loyalty: (0.5 + lean).clamp(0.0, 1.0), sharp: 0.8, vary: 0.25,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, roll_list: 0.0, fade: 1.0, tiekeep: 1.0, judge: 0.0, rjudge: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, hfrom: 0.0, endread: 4.0, gut: 0.0, momentum: 0.0, dials: 1.0, nerve: (0.5 - lean).clamp(0.0, 1.0), loyalty: (0.5 + lean).clamp(0.0, 1.0), sharp: 0.8, vary: 0.25,
     }
 }
 
