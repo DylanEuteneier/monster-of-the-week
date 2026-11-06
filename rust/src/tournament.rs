@@ -182,6 +182,8 @@ pub struct PlayLog {
     pub closed: bool,
     pub goal: Option<&'static str>,
     pub p_invaders: f64,
+    /// The move of the game it was (matches the sway log's and fight log's mv).
+    pub mv: usize,
 }
 
 fn by_faction(s: &crate::types::GameState) -> [i32; 5] {
@@ -627,7 +629,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                                     round: round_now, seat: pid, card: crate::spec::spec().cards[*card as usize].id.clone(),
                                     use_: match use_ { crate::types::PlayUse::Action => "action", crate::types::PlayUse::Sway => "sway", crate::types::PlayUse::Return => "return" },
                                     d_presence: d(pres0, pres1), d_standing: d(me0.standing, me1.standing), d_trophies: d(me0.trophies, me1.trophies),
-                                    placed: on_board(&next, pid) - board0, moved: shifted, closed: !closes.is_empty(), goal: goal_name(&memory[pid as usize]), p_invaders: p_inv,
+                                    placed: on_board(&next, pid) - board0, moved: shifted, closed: !closes.is_empty(), goal: goal_name(&memory[pid as usize]), p_invaders: p_inv, mv: moves,
                                 });
                             }
                             fights_seen.extend(closes);

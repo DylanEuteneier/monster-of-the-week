@@ -300,11 +300,11 @@ fn tournament(args: &[String]) {
                 })).collect::<Vec<_>>(),
                 "plays": x.playlog.iter().map(|p| serde_json::json!({
                     "r": p.round, "seat": id(&p.seat), "card": p.card, "use": p.use_, "dPresence": p.d_presence, "dStanding": p.d_standing,
-                    "dTrophies": p.d_trophies, "placed": p.placed, "moved": p.moved, "closed": p.closed, "goal": p.goal, "pInvaders": (p.p_invaders * 1000.0).round() / 1000.0,
+                    "dTrophies": p.d_trophies, "placed": p.placed, "moved": p.moved, "closed": p.closed, "goal": p.goal, "pInvaders": (p.p_invaders * 1000.0).round() / 1000.0, "mv": p.mv,
                 })).collect::<Vec<_>>(),
                 "positions": x.positions,
                 "fightLog": x.fight_log.iter().map(|f| serde_json::json!({
-                    "r": f.round, "loc": f.loc, "sway": &f.sway[..x.seats.len()], "piles": f.piles.iter().map(|p| serde_json::json!([p.0, p.1])).collect::<Vec<_>>(), "wiped": f.scorched,
+                    "r": f.round, "loc": f.loc, "sway": &f.sway[..x.seats.len()], "piles": f.piles.iter().map(|p| serde_json::json!([p.0, p.1])).collect::<Vec<_>>(), "wiped": f.scorched, "colours": &f.colours, "winner": f.winner, "took": f.took[..x.seats.len()].iter().map(|t| t.to_vec()).collect::<Vec<_>>(), "gotStanding": &f.standing[..x.seats.len()],
                     "supply": &f.supply[..x.seats.len()], "hand": &f.hand[..x.seats.len()], "mv": f.mv, "left": &f.left[..x.seats.len()],
                 })).collect::<Vec<_>>(),
                 "nightLog": x.night_log.iter().map(|n| serde_json::json!({ "r": n.round, "loc": n.loc, "n": n.n, "sway": &n.sway[..x.seats.len()] })).collect::<Vec<_>>(),

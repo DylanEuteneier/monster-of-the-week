@@ -40,6 +40,55 @@ const pct = (x) => (Number.isFinite(x) ? `${Math.round(100 * x)}%` : '·');
 const islandScore = (t) => [...t].sort((a, b) => a - b)[0];
 const leader = (presence) => presence.indexOf(Math.max(...presence));
 
+// Each of a seat's plays, with what it led to that round (needs logs with the plays' mv and the fights' colours):
+// standing and trophies it took directly; trophies (by faction) and standing from the fights where it had placed
+// sway, shared over the seat's plays that added sway there since that location's last fight; and the nightfall tokens
+// its sway brought, shared the same way. Credit by outcome, not intent.
+function effortOf(g, i) {
+  const name = Object.keys(g.seats)[i];
+  if (!g.plays.length || g.plays[0].mv === undefined || !g.fightLog.every((f) => f.took)) return null;
+  // A play that closes the round counts its fights' trophies and standing too: those are credited by sway below.
+  const fightsAt = (mv) => g.fightLog.filter((f) => f.mv === mv);
+  const direct = (p, key, fk) => p[key].map((x, f) => Math.max(0, x - sum(fightsAt(p.mv).map((F) => (fk === 'took' ? F.took[i][f] : F.winner === f ? F.gotStanding?.[i] ?? 0 : 0)))));
+  const mine = g.plays.filter((p) => p.seat === name).map((p) => ({ r: p.r, mv: p.mv, use: p.use, troph: direct(p, 'dTrophies', 'took'), stand: direct(p, 'dStanding', 'standing'), grew: 0, card: p.card }));
+  const byMv = new Map(mine.map((m) => [m.mv, m]));
+  // Sway placed before play (the opening placement) isn't in the sway log: what it earned goes to its own bucket.
+  const opening = { r: 0, troph: [0, 0, 0, 0, 0], stand: [0, 0, 0, 0, 0], grew: 0 };
+  // Sway this seat added, by location, since the location's last fight; fights and nightfall, in order (a round's
+  // nightfall after its fights).
+  const events = [
+    ...g.swayLog.filter((x) => x.seat === i && x.after[i] > x.before[i]).map((x) => ({ k: 'sway', at: [x.r, x.mv], loc: x.loc, add: x.after[i] - x.before[i], mv: x.mv, r: x.r })),
+    ...g.fightLog.map((f) => ({ k: 'fight', at: [f.r, f.mv], loc: f.loc, f })),
+    ...g.nightLog.filter((x) => x.sway[i] > 0).map((x) => ({ k: 'night', at: [x.r, Infinity], loc: x.loc, nt: x })),
+  ].sort((a, b) => a.at[0] - b.at[0] || a.at[1] - b.at[1] || (a.k === 'sway' ? -1 : b.k === 'sway' ? 1 : 0));
+  const pending = new Map();
+  // Share an outcome over the plays that put the seat's sway there (by the sway each added, out of the sway it had
+  // there); the rest of its sway there came from the opening.
+  const share = (loc, have, fn) => {
+    const P = pending.get(loc) ?? [];
+    const tot = sum(P.map((x) => x.add));
+    const base = Math.max(have, tot);
+    if (base <= 0) return;
+    for (const x of P) { const m = byMv.get(x.mv); if (m) fn(m, x.add / base); }
+    if (tot < base) fn(opening, (base - tot) / base);
+  };
+  for (const e of events) {
+    if (e.k === 'sway') { if (!pending.has(e.loc)) pending.set(e.loc, []); pending.get(e.loc).push(e); continue; }
+    if (e.k === 'night') { share(e.loc, e.nt.sway[i], (m, w) => (m.grew += w * e.nt.n)); continue; }
+    if (e.f.sway[i] > 0) share(e.loc, e.f.sway[i], (m, w) => { e.f.took[i].forEach((t, f) => (m.troph[f] += w * t)); if (e.f.winner >= 0) m.stand[e.f.winner] += w * (e.f.gotStanding?.[i] ?? 0); });
+    if (!(e.f.left?.[i] > 0)) pending.delete(e.loc);
+  }
+  // The seat's fewest-held colours at each round's start (what island scoring counts).
+  for (const m of mine) {
+    const t = m.r > 1 ? g.rounds[m.r - 2].seats[i].trophies : [0, 0, 0, 0, 0];
+    const low = Math.min(...t);
+    m.weak = t.map((x) => x === low);
+    m.names = g.factions;
+  }
+  mine.opening = opening;
+  return mine;
+}
+
 // One record per seat-game.
 const seats = [];
 for (const g of games) {
@@ -56,6 +105,15 @@ for (const g of games) {
     rec.best = Math.max(...g.scores);
     rec.lastGoal = final[i].goal;
     rec.broke = R.findIndex((r) => r.seats[i].broke) + 1 || null;
+    rec.moves = effortOf(g, i);
+    // Backing a losing faction (invaders' endings): the faction it stood best in at the end, its place in the final
+    // presence and its gap to the winner's.
+    if (won.length) {
+      const st = final[i].standing.map((x, f) => x - final[i].trophies[f]);
+      const mine = st.indexOf(Math.max(...st));
+      const end = R[R.length - 1].end;
+      rec.backed = { right: won.includes(mine) ? 1 : 0, place: 1 + end.filter((x) => x > end[mine]).length, gap: Math.max(...end) - end[mine], stake: st[mine] };
+    }
     for (let r = 0; r < R.length; r++) {
       const now = R[r].seats[i];
       const prev = r ? R[r - 1].seats[i] : { standing: [0, 0, 0, 0, 0], trophies: [0, 0, 0, 0, 0] };
@@ -156,4 +214,47 @@ if (showRounds) {
       return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([v, k]) => `${v} ${f1(k / S.length)}`).join(' ');
     });
   }
+}
+
+const withMoves = (S) => S.filter((s) => s.moves);
+if (seats.some((s) => s.moves)) {
+  const cls = (m) => {
+    const T = sum(m.troph) > 0.05, F = sum(m.stand) > 0.05, N = m.grew > 0.05;
+    return T && F ? 'both' : T ? 'trophies' : F ? 'standing' : N ? 'nightfall' : 'nothing';
+  };
+  const effortRows = (label, keep) => {
+    header(`EFFORT${label} (share of its plays, by what they led to that round; credit by outcome)`);
+    for (const c of ['trophies', 'standing', 'both', 'nightfall', 'nothing']) {
+      row(`  ${c}`, (S) => { const M = withMoves(S).flatMap((s) => s.moves.filter(keep)); return pct(M.filter((m) => cls(m) === c).length / M.length); });
+    }
+    row('  trophies per play', (S) => { const M = withMoves(S).flatMap((s) => s.moves.filter(keep)); return f2(mean(M.map((m) => sum(m.troph)))); });
+    row('  standing per play', (S) => { const M = withMoves(S).flatMap((s) => s.moves.filter(keep)); return f2(mean(M.map((m) => sum(m.stand)))); });
+    row('  of trophies: fewest colour', (S) => {
+      const M = withMoves(S).flatMap((s) => s.moves.filter(keep));
+      const all = sum(M.map((m) => sum(m.troph)));
+      return pct(sum(M.map((m) => sum(m.troph.map((t, f) => (m.weak[f] ? t : 0))))) / all);
+    });
+  };
+  effortRows('', () => true);
+  row("  trophies from opening sway", (S) => { const W = withMoves(S); const o = sum(W.map((s) => sum(s.moves.opening.troph))); return pct(o / (o + sum(W.flatMap((s) => s.moves.map((m) => sum(m.troph)))))); });
+  if (showRounds) for (let r = 1; r <= nRounds; r++) effortRows(`, ROUND ${r}`, (m) => m.r === r);
+
+  header('TROPHY HUNTING BY FACTION (share of its trophies taken, by faction)');
+  const facs = [...new Set(games.flatMap((g) => g.factions))].sort();
+  for (const fname of facs) {
+    row(`  ${fname}`, (S) => {
+      const M = withMoves(S).flatMap((s) => s.moves);
+      const all = sum(M.map((m) => sum(m.troph)));
+      return pct(sum(M.map((m) => sum(m.troph.map((t, f) => (m.names[f] === fname ? t : 0))))) / all);
+    });
+  }
+
+  header("BACKING A LOSING FACTION (invaders' endings: the faction it stood best in at the end)");
+  const B = (S) => S.filter((s) => s.backed);
+  row('  backed the winner', (S) => pct(mean(B(S).map((s) => s.backed.right))));
+  row('  when wrong: its place', (S) => f1(mean(B(S).filter((s) => !s.backed.right).map((s) => s.backed.place))));
+  row('  when wrong: presence gap', (S) => f1(mean(B(S).filter((s) => !s.backed.right).map((s) => s.backed.gap))));
+  row('  when wrong: gap ≤ 2 (close)', (S) => pct(mean(B(S).filter((s) => !s.backed.right).map((s) => (s.backed.gap <= 2 ? 1 : 0)))));
+  row('  when wrong: its stake there', (S) => f1(mean(B(S).filter((s) => !s.backed.right).map((s) => s.backed.stake))));
+  row('  when right: its stake there', (S) => f1(mean(B(S).filter((s) => s.backed.right).map((s) => s.backed.stake))));
 }

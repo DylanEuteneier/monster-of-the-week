@@ -343,6 +343,12 @@ pub struct FightRec {
     pub mv: usize,
     /// Each seat's sway left at the location after the fight (AF3: all but first claim's; none when scorched).
     pub left: [i32; 5],
+    /// Each pile's faction (with piles), the winning faction (-1 when scorched), each seat's trophies taken by faction
+    /// (piles and Study the Bodies), and the standing first claim took in the winner (measuring aids, bot-focus).
+    pub colours: Vec<i32>,
+    pub winner: i32,
+    pub took: [[i32; 5]; 5],
+    pub standing: [i32; 5],
 }
 
 /// One nightfall arrival (a measuring aid, `motw tournament`, designer 2026-11-04): the round, the location, the
@@ -596,7 +602,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         s.board[li].scorched = true;
         if !s.quiet {
             let lost: i32 = s.board[li].tokens.iter().map(|e| e.1).sum::<i32>();
-            FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: vec![], scorched: lost.max(0), supply: supply0, hand: hand0, mv: 0, left: [0; 5] }));
+            FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: vec![], scorched: lost.max(0), supply: supply0, hand: hand0, mv: 0, left: [0; 5], colours: vec![], winner: -1, took: [[0; 5]; 5], standing: [0; 5] }));
         }
         let all = if sides.len() > 2 { "Every side is" } else { "Both sides are" };
         log_line(s, |_| { let name = fight_name(loc, other); format!("  {name}: a true tie. {all} wiped out and {name} is scorched.") });
@@ -636,6 +642,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
     piles.sort_by(|x, y| y.1.cmp(&x.1));
     let place_for = |i: usize, n: usize| if n > 1 && i == n - 1 { 1 } else { 0 };
     let (places, involved, tied_first) = rank_at(s, loc);
+    let trophies0: Vec<[i32; 5]> = if s.quiet { vec![] } else { s.players.iter().map(|p| p.trophies).collect() };
     if let Some(st) = s.board[li].study {
         if places.first().copied().flatten() == Some(st) && places.get(1).copied().flatten().is_some() && piles.len() > 1 {
             // Study the Bodies: first claim also takes 1 from second claim's pile, the smallest.
@@ -659,6 +666,7 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         None => s.supply[f as usize] += n,
     };
     let mut taken: Vec<(i32, Option<Pid>)> = Vec::new();
+    let colours: Vec<i32> = piles.iter().map(|p| p.0 as i32).collect();
     if involved == 1 && places.first().copied().flatten().is_some() {
         for &pile in &piles {
             give(s, pile, places[0]); // UP1
@@ -673,13 +681,16 @@ fn fight(s: &mut GameState, loc: Loc, joined: Option<Loc>) {
         }
     }
     if !s.quiet {
-        FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: taken, scorched: 0, supply: supply0, hand: hand0, mv: 0, left: [0; 5] }));
+        FIGHT_LOG.with(|f| f.borrow_mut().push(FightRec { round: s.round, loc, sway: sway0, piles: taken, scorched: 0, supply: supply0, hand: hand0, mv: 0, left: [0; 5], colours, winner: winner as i32, took: std::array::from_fn(|p| s.players.get(p).map_or([0; 5], |x| std::array::from_fn(|f| x.trophies[f] - trophies0[p][f]))), standing: [0; 5] }));
     }
     // Sway after the fight (AF3 adjusted, AS1).
     if let Some(first) = places.first().copied().flatten() {
         let n = s.board[li].sway.get(first);
         let half = n.div_euclid(2);
         s.players[first as usize].standing[winner as usize] += half;
+        if !s.quiet {
+            FIGHT_LOG.with(|f| if let Some(r) = f.borrow_mut().last_mut() { if r.loc == loc { r.standing[first as usize] = half; } });
+        }
         s.players[first as usize].supply += n - half;
         s.board[li].sway.remove(first);
     }
