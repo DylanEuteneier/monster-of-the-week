@@ -21,6 +21,8 @@ import { readFileSync } from 'node:fs';
 
 const spec = JSON.parse(readFileSync(new URL('../public/spec.json', import.meta.url), 'utf8'));
 const verbOf = Object.fromEntries(spec.cards.map((c) => [c.id, c.layout?.verb ?? c.action ?? c.id]));
+// Factions are cosmetic: each game has one per archetype, so trophies are compared by archetype.
+const archetypeOf = Object.fromEntries(spec.factions.map((f) => [f.id, f.archetype]));
 const args = process.argv.slice(2);
 const opt = Object.fromEntries(args.filter((a) => /^(by|rounds)=/.test(a)).map((a) => a.split('=')));
 const files = args.filter((a) => !/^(by|rounds)=/.test(a)).flatMap((a) => a.split(','));
@@ -239,13 +241,12 @@ if (seats.some((s) => s.moves)) {
   row("  trophies from opening sway", (S) => { const W = withMoves(S); const o = sum(W.map((s) => sum(s.moves.opening.troph))); return pct(o / (o + sum(W.flatMap((s) => s.moves.map((m) => sum(m.troph)))))); });
   if (showRounds) for (let r = 1; r <= nRounds; r++) effortRows(`, ROUND ${r}`, (m) => m.r === r);
 
-  header('TROPHY HUNTING BY FACTION (share of its trophies taken, by faction)');
-  const facs = [...new Set(games.flatMap((g) => g.factions))].sort();
-  for (const fname of facs) {
-    row(`  ${fname}`, (S) => {
+  header('TROPHY HUNTING BY ARCHETYPE (share of its trophies taken; one faction per archetype each game)');
+  for (const a of spec.archetypes.map((x) => x.id ?? x)) {
+    row(`  ${a}`, (S) => {
       const M = withMoves(S).flatMap((s) => s.moves);
       const all = sum(M.map((m) => sum(m.troph)));
-      return pct(sum(M.map((m) => sum(m.troph.map((t, f) => (m.names[f] === fname ? t : 0))))) / all);
+      return pct(sum(M.map((m) => sum(m.troph.map((t, f) => (archetypeOf[m.names[f]] === a ? t : 0))))) / all);
     });
   }
 
