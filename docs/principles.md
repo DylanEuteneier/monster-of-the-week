@@ -56,7 +56,6 @@ The game report (`scripts/measure.js`) measures each of these. Its targets are p
 - **One lever at a time, read against the baseline** (1.1, the process). Tests run the target ruleset: what we measure under is what the rulebook says (2026-11-08).
 - **Each preference is checked by more than one measure,** as long as each actually predicts the preference (2026-11-01).
 - **Cards are judged as part of a hand's strategy,** and for what they're worth in later rounds, never one play at a time (2026-11-03).
-- **For now, all tuning comes from the cards** (2026-11-08). The rules, the numbers and the bots stay as they are while the cards are worked on; what the game report shows is answered through the cards first.
 - **The threshold is the last lever.** Keep the bar at 20 while testing. It only shifts the ending split, so moving it early hides what other changes do (2026-11-01).
 - **Presence and the ending split are balanced together.** Raising presence pushes the split toward the invaders (1.7, 2026-10-29).
 - **Bots are the instrument, not the target.** Bots play to win, as strongly and as naturally (human-like) as we can make them. Choose bot settings only by play quality, never toward the endings we hope to see; a strong, natural bot that shows bad dynamics is a finding about the game (2026-11-05). Marginally suboptimal, human choices are fine (2026-11-06). Bots may see hidden information in play-outs (2026-10-26).
