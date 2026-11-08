@@ -482,6 +482,9 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             let cap = sway_for(s, pid, ci);
             let left = |f: Fac| if !s.options.sway_required { i64::MAX / 4 } else { standing(s, pid, f) - marks.iter().filter(|m| m.1 == Id::Fac(f)).count() as i64 };
             let free = |l: Loc| !marks.iter().any(|m| m.0 == Id::Loc(l));
+            if c.action == Action::Altar && s.options.altar_stake {
+                return stake_shape(s, pid, held, empty, &marks, cap, t, sf.unwrap(), &left);
+            }
             if marks.len() as i32 >= cap || has_stop(&t.from) {
                 return Choice::done();
             }
@@ -499,6 +502,64 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             Choice::locs(LocKey::From, empties, Some(!marks.is_empty()), None)
         }
     }
+}
+
+/// Spill Blood with a bigger stake (variant altar=stake; the designer's draft, 2026-11-08): a target entry per sway,
+/// 2 or 3 on each mark from one faction there (designer, 2026-11-08). A mark's entries come together, marks in increasing location
+/// (held ones first, then empty ones), so no split is offered twice.
+#[allow(clippy::too_many_arguments)]
+fn stake_shape(s: &GameState, _pid: Pid, held: Vec<(Loc, Fac)>, empty: Vec<Loc>, marks: &[(Id, Id)], cap: i32, t: &Target, sf: Fac, left: &dyn Fn(Fac) -> i64) -> Choice {
+    let _ = s;
+    let total = marks.len() as i32;
+    let in_from = len_of(&t.from) > 0;
+    let last = marks.last().copied();
+    let count = |l: Id| marks.iter().filter(|m| m.0 == l).count();
+    if let Some((l, f)) = last {
+        if count(l) == 1 {
+            // A mark needs its second sway.
+            let (l, f) = (l.loc().unwrap(), f.fac().unwrap());
+            return if in_from { Choice::locs(LocKey::From, vec![l], None, None) } else { Choice::groups(GroupKey::Move, vec![(l, f)], None) };
+        }
+    }
+    if total >= cap || has_stop(&t.from) {
+        return Choice::done();
+    }
+    let free = |l: Loc| !marks.iter().any(|m| m.0 == Id::Loc(l));
+    let after = |l: Loc| last.is_none_or(|(x, _)| x.loc().is_none_or(|x| l > x));
+    let room2 = total + 2 <= cap;
+    let groups_done = t.moves.as_deref().unwrap_or(&[]).iter().any(|m| m.location == Id::Stop) || in_from;
+    let topup = |f: Fac| total < cap && left(f) >= 1 && last.is_some_and(|(l, _)| count(l) < 3);
+    if !groups_done {
+        let mut options: Vec<(Loc, Fac)> = Vec::new();
+        if let Some((l, f)) = last {
+            if topup(f.fac().unwrap()) {
+                options.push((l.loc().unwrap(), f.fac().unwrap()));
+            }
+        }
+        if room2 {
+            options.extend(held.into_iter().filter(|&(l, f)| free(l) && after(l) && left(f) >= 2));
+        }
+        let empties_open = room2 && empty.iter().any(|&l| free(l)) && left(sf) >= 2;
+        if !options.is_empty() {
+            return Choice::groups(GroupKey::Move, options, Some(!marks.is_empty() || empties_open));
+        }
+    }
+    let mut spots: Vec<Loc> = Vec::new();
+    if in_from {
+        if let Some((l, _)) = last {
+            if topup(sf) {
+                spots.push(l.loc().unwrap());
+            }
+        }
+    }
+    if room2 && left(sf) >= 2 {
+        let last_from = if in_from { last.and_then(|m| m.0.loc()) } else { None };
+        spots.extend(empty.into_iter().filter(|&l| free(l) && last_from.is_none_or(|x| l > x)));
+    }
+    if spots.is_empty() {
+        return if !marks.is_empty() { Choice::done() } else { Choice::groups(GroupKey::Move, vec![], None) };
+    }
+    Choice::locs(LocKey::From, spots, Some(!marks.is_empty()), None)
 }
 
 /// The unsuited cards' choices once a use is picked.

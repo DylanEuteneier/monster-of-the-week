@@ -1127,6 +1127,40 @@ fn spill_blood_on_the_altar_marks_and_the_winner_loses_as_many_as_the_loser() {
     );
 }
 
+/// Spill Blood with a bigger stake (variant altar=stake; the designer's draft, design document H.0, 2026-11-08).
+#[test]
+fn spill_blood_with_a_stake_spends_up_to_the_cards_sway_2_or_3_on_each_mark() {
+    let s0 = clear(&game_opts(1, &[("altar", "stake")]));
+    let demon = of_arch(&s0, "demonic");
+    let open: Vec<String> = locs().into_iter().filter(|l| l.1 != "demonic").map(|l| l.0).collect();
+    let (x, y, z) = (open[0].clone(), open[1].clone(), open[2].clone());
+    let s = edit(&s0, |v| {
+        for l in [&x, &y, &z] {
+            v["board"][l]["tokens"] = obj(&[(&demon, 2)]);
+        }
+        v["players"]["ann"]["standing"][&demon] = json!(9);
+        set_hand(v, "ann", &["spill-blood", "gate", "ritual", "invite-in", "plough"]);
+    });
+    let m = |l: &str| json!({ "location": l, "faction": demon, "to": "" });
+    let t = |ls: &[&str]| json!({ "mode": "faction", "moves": ls.iter().map(|l| m(l)).collect::<Vec<_>>() });
+    assert_eq!(check(&s, "ann", "spill-blood", t(&[&x, &x, &x, &y, &y])), None, "5 cards: a 3 and a 2");
+    assert!(check(&s, "ann", "spill-blood", t(&[&x, &x, &x, &x])).is_some(), "at most 3 on a mark");
+    assert!(check(&s, "ann", "spill-blood", t(&[&x, &x, &y])).is_some(), "at least 2 on each mark");
+    assert!(check(&s, "ann", "spill-blood", t(&[&x, &x, &y, &y, &z, &z])).is_some(), "no more than the card's sway");
+    let p = preview(&s, "ann", "spill-blood", t(&[&x, &x, &x, &y, &y]));
+    assert_eq!(
+        vec![&p["board"][&x]["sway"]["ann"], &p["board"][&y]["sway"]["ann"], &p["board"][&x]["altar"], &p["players"]["ann"]["standing"][&demon]],
+        vec![&json!(3), &json!(2), &json!(true), &json!(4)]
+    );
+}
+
+#[test]
+fn whole_games_with_spill_blood_staked_play_to_the_end() {
+    for seed in 1..3 {
+        assert_eq!(play_out(&game_opts(seed, &[("altar", "stake")]), seed as u64).phase, Phase::Ended);
+    }
+}
+
 #[test]
 fn the_unsuited_cards_x_is_the_hand_and_each_use_does_what_it_says() {
     // Enforces D24 (design document, Appendix A).

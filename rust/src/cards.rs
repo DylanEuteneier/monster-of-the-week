@@ -1184,7 +1184,16 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             if marks.is_empty() {
                 return e("Mark at least one location.");
             }
-            if distinct(&marks.iter().map(|m| m.0).collect::<Vec<_>>()).len() != marks.len() {
+            let stake = c.action == Action::Altar && s.options.altar_stake;
+            if stake {
+                // At least 2 sway on each mark, a target entry per sway, one payer per mark (variant altar=stake).
+                for &(l, f) in &marks {
+                    let at: Vec<&(Id, Id)> = marks.iter().filter(|m| m.0 == l).collect();
+                    if at.len() < 2 || at.len() > 3 || at.iter().any(|m| m.1 != f) {
+                        return e("Spend 2 or 3 sway on each mark, from one faction there.");
+                    }
+                }
+            } else if distinct(&marks.iter().map(|m| m.0).collect::<Vec<_>>()).len() != marks.len() {
                 return e("Each location takes one mark.");
             }
             let from = t.from.as_deref().unwrap_or(&[]);
@@ -1197,7 +1206,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
                 };
             }
             if marks.len() as i32 > sway_for(s, pid, ci) {
-                return e("Mark no more locations than the card's sway: 1 sway on each.");
+                return e(if stake { "Spend no more than the card's sway on marks." } else { "Mark no more locations than the card's sway: 1 sway on each." });
             }
             let owed = tally(&marks.iter().map(|m| m.1).collect::<Vec<_>>());
             if req && owed.iter().any(|&(f, n)| standing(s, pid, f.fac().unwrap()) < n) { e("You need the standing for every mark: 1 sway on each (all or nothing).") } else { None }
@@ -1596,7 +1605,7 @@ fn act_card(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
                 place_one(s, pid, f.fac().unwrap(), l);
             }
             log_line(s, |_| {
-                let names = marks.iter().map(|m| lname(m.0.loc().unwrap())).collect::<Vec<_>>().join(", ");
+                let names = distinct(&marks.iter().map(|m| m.0).collect::<Vec<_>>()).iter().map(|m| lname(m.loc().unwrap())).collect::<Vec<_>>().join(", ");
                 match c.action {
                     Action::Altar => format!("{who}: {}: blood on {names}.", c.name),
                     Action::Terror => format!("{who}: {}: terror waits for nightfall at {names}.", c.name),
