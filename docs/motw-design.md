@@ -43,6 +43,8 @@ The current focus, below, lists what is being worked on right now; the backlog h
 
 *Claude's analysis, not decisions:* the cards that measure well draw groups together into a contest others must answer (the Ritual, Invite Them In, Bait the Herd), break a fight with the player's choice of split (Plough Through), or have a use for each goal (Raise the Stakes, Cover Every Exit). The struggling ones stack preconditions on their targets, or spread groups apart and thin contests (three of the five shifts).
 
+*Claude's analysis of the shifts (2026-11-08, from the baseline; patterns, not decisions):* Plough Through is the shift that works, and the others miss what it does. (1) They act where nothing is at stake (lone groups), not where players have invested (fights). (2) The player doesn't choose where tokens land (fixed round robin, an even split, 1 a neighbour); Plough Through's free split is its puzzle. (3) Payment shuts players out: only the faction moved pays, where Plough Through lets the player choose. (4) They serve trophy hunters only (81–95% play them for their action, invader backers 40–64%). (5) They are late cleanup cards, not openers. (6) Their readings repeat the strikes' pattern, which overlaps; Plough Through's ask different questions (where the fight is, who is in it). So a working brief for a new shift: disperse from a contested place, the player chooses the split, live for more of the table, wanted by invader backers too.
+
 Everything else is in the backlog below; decisions and their history are in Appendix A.
 
 ---
