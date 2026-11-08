@@ -435,8 +435,9 @@ fn cross_check(s: &GameState, pid: Pid, c: &Card, t: &Target) -> Option<String> 
         return e("Choose a group to plant the cross on.");
     }
     let sf = suit_faction(c);
-    if t.mode == Some(Mode::Location) && !(is_suit_loc(c, loc) && Some(f) != sf) {
-        return e("Choose a group of another faction at a Demon location.");
+    // Principle 14 (designer, 2026-11-08): any group at a Demon location, or a Demon group anywhere.
+    if t.mode == Some(Mode::Location) && !is_suit_loc(c, loc) {
+        return e("Choose a group at a Demon location.");
     }
     if t.mode == Some(Mode::Faction) && Some(f) != sf {
         return e("Choose a Demon group.");

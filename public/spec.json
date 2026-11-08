@@ -1416,7 +1416,7 @@
     {
       "id": "cross",
       "label": "Light of the Cross",
-      "description": "The designer's new draft of the Demons shift (design document H.0, 2026-11-08; a draft, not a decision), off by default while it is measured. Plant the cross on a group (location reading: another faction's group at a Demon location; faction reading: a Demon group anywhere); its reach is that location and its neighbours. Every group of that faction in reach is driven out to a location of its own just outside the reach, the planted one first (from a fight, half); 1 sway a group, from standing with the faction, where it left or where it lands; every group you can pay for and land must go. The rest hide: no card moves them until nightfall. Until nightfall no card moves that faction into the reach.",
+      "description": "The designer's new draft of the Demons shift (design document H.0, 2026-11-08; a draft, not a decision), off by default while it is measured. Plant the cross on a group (principle 14: location reading, any group at a Demon location; faction reading, a Demon group anywhere); its reach is that location and its neighbours. Every group of that faction in reach is driven out to a location of its own just outside the reach, the planted one first (from a fight, half); 1 sway a group, from standing with the faction, where it left or where it lands; every group you can pay for and land must go. The rest hide: no card moves them until nightfall. Until nightfall no card moves that faction into the reach.",
       "default": "split",
       "choices": [
         {

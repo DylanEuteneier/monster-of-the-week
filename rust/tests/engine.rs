@@ -511,8 +511,8 @@ fn the_planted_cross_drives_every_group_it_can_pay_for_out_of_its_reach_each_to_
     assert!(check(&s, "ann", "light-cross", t(json!([mv(&loc, &ring[0])]), json!([loc]))).is_some());
     assert!(check(&s, "ann", "light-cross", t(json!([mv(&loc, &ring[0]), mv(&n1, &ring[0])]), json!([loc, n1]))).is_some());
     assert!(check(&s, "ann", "light-cross", t(json!([mv(&n1, &ring[1]), mv(&loc, &ring[0])]), json!([n1, loc]))).is_some());
-    // Only another faction's group at a Demon location on the location reading.
-    assert!(check(&s, "ann", "light-cross", json!({ "mode": "location", "location": loc, "faction": f, "moves": [mv(&loc, &ring[0]), mv(&n1, &ring[1])], "from": [loc, ring[1]] })).is_some());
+    // Principle 14: on the location reading, any group at a Demon location (the Demons too).
+    assert_eq!(check(&s, "ann", "light-cross", json!({ "mode": "location", "location": loc, "faction": f, "moves": [mv(&loc, &ring[0]), mv(&n1, &ring[1])], "from": [loc, ring[1]] })), None);
     let both_t = both.clone();
     let after = preview(&s, "ann", "light-cross", both);
     let b = &after["board"];

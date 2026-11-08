@@ -365,7 +365,7 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             // Plant the cross on a group; then each group driven out, the planted one first and the rest in board order
             // (so no order of the same groups is offered twice): where it lands, then which end its sway goes to.
             let Some(l) = loc else {
-                return Choice::groups(GroupKey::Group, groups().into_iter().filter(|&(gl, gf)| group_ok(gl, gf) && (mode == Mode::Faction || Some(gf) != sf) && cross_need(s, pid, gl, gf) > 0).collect(), None);
+                return Choice::groups(GroupKey::Group, groups().into_iter().filter(|&(gl, gf)| group_ok(gl, gf) && cross_need(s, pid, gl, gf) > 0).collect(), None);
             };
             let f = fac.unwrap();
             let moves: Vec<GroupMove> = t.moves.as_deref().unwrap_or(&[]).to_vec();
