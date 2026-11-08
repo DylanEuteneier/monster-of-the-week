@@ -4,7 +4,7 @@
 use motw::bots::{bot_move, fast, BotMemory, Seats};
 use motw::cards::check_target;
 use motw::choice::next_choice;
-use motw::game::{apply_move, fight_at, fights_due, growth_due, validate, waiting_on};
+use motw::game::{apply_move, fight_at, fights_due, validate, waiting_on};
 use motw::json::{choice_to_value, move_from_value, state_from_value, state_to_value, target_from_value};
 use motw::setup::{create_game, deck, printed_of, shuffle, sway_for};
 use motw::spec::spec;
@@ -37,8 +37,8 @@ fn edit(s: &GameState, f: impl FnOnce(&mut Value)) -> GameState {
 /// An empty board to stage a fight on, and standing 10 with every faction.
 fn clear(s: &GameState) -> GameState {
     edit(s, |x| {
-        // The cards alone: no tokens brought by sway (GR5 has its own test).
-        x["options"]["swayTokens"] = json!("off");
+        // The cards alone: no nightfall tokens (nightfall has its own test).
+        x["options"]["nightfall"] = json!("off");
         for (_, place) in x["board"].as_object_mut().unwrap() {
             place["tokens"] = json!({});
             place["sway"] = json!({});
@@ -401,31 +401,7 @@ fn tied_first_claims_collect_nothing_and_both_piles_go_back_a_lone_player_takes_
     assert_eq!(lone["players"]["cat"]["trophies"][&a], 2);
 }
 
-// Growth and the end -------------------------------------------------------
-
-#[test]
-fn a_lone_faction_with_2_or_more_grows_by_1_aligned_one_extra() {
-    let Fx { a, neutral, .. } = fx();
-    let home = first_loc(&arch_of_faction(&a));
-    let s = edit(&clear(&game(1)), |x| {
-        // Growth by groups (GR1, AL3), a variant since D38.
-        x["options"]["growth"] = json!("2");
-        x["options"]["alignedGrowth"] = json!("on");
-        x["board"][&home]["tokens"] = obj(&[(&a, 2)]);
-        x["board"][&neutral]["tokens"] = obj(&[(&a, 3)]);
-    });
-    let fa = factions(&s).iter().position(|f| *f == a).unwrap() as Fac;
-    let due = |s: &GameState| -> Vec<(String, i32)> { growth_due(s, fa).iter().map(|(l, n)| (spec().locations[l as usize].id.clone(), n)).collect() };
-    let mut want = vec![(home.clone(), 2), (neutral.clone(), 1)];
-    want.sort();
-    let mut got = due(&s);
-    got.sort();
-    assert_eq!(got, want);
-    let off = edit(&s, |x| x["options"]["alignedGrowth"] = json!("off"));
-    let mut got = due(&off);
-    got.sort();
-    assert_eq!(got.iter().map(|x| x.1).collect::<Vec<_>>(), vec![1, 1]);
-}
+// The end -------------------------------------------------------------------
 
 #[test]
 fn bots_play_whole_games_of_legal_moves_at_every_player_count_and_a_winner_is_named() {
@@ -802,37 +778,6 @@ fn the_big_chase_leaves_1_token_and_1_sway_at_each_location_passed() {
     assert!(check(&s9, "ann", "big-chase", t.clone()).is_some());
     let s9 = edit(&s9, |x| { x["board"][&start]["tokens"] = obj(&[(&f, 5)]); x["board"][&a]["tokens"] = obj(&[(&g, 1), (&h, 1)]); });
     assert!(check(&s9, "ann", "big-chase", t).is_some());
-}
-
-#[test]
-fn gr5_sway_brings_1_of_its_factions_tokens_if_it_can() {
-    // Variant swayTokens (GR5): The Big Chase's 4 sway each bring 1 of the paying faction, while the supply lasts.
-    let s0 = clear(&game(1));
-    let sci = of_arch(&s0, "scifi");
-    let others: Vec<String> = factions(&s0).into_iter().filter(|x| *x != sci).collect();
-    let (f, g) = (others[0].clone(), others[1].clone());
-    let start = "military-facility".to_string();
-    let a = adjacent(&start)[0].clone();
-    let b = adjacent(&a).into_iter().find(|l| *l != start && !adjacent(&start).contains(l)).unwrap();
-    let c = adjacent(&b).into_iter().find(|l| *l != start && *l != a).unwrap();
-    let s = edit(&s0, |x| {
-        x["options"]["swayTokens"] = json!("on");
-        x["board"][&start]["tokens"] = obj(&[(&f, 5)]);
-        x["board"][&b]["tokens"] = obj(&[(&g, 2)]);
-        x["players"]["ann"]["standing"][&f] = json!(4);
-    });
-    let t = json!({ "mode": "location", "location": start, "faction": f, "path": [a, b, c] });
-    let after = preview(&s, "ann", "big-chase", t.clone());
-    assert_eq!((after["board"][&start]["tokens"][&f].clone(), after["board"][&a]["tokens"][&f].clone(), after["board"][&b]["tokens"][&f].clone(), after["board"][&c]["tokens"][&f].clone()), (json!(1), json!(2), json!(2), json!(4)));
-    // A supply of 2 brings only 2: 5 chased, 7 on the board.
-    let low = preview(&edit(&s, |x| x["supply"][&f] = json!(2)), "ann", "big-chase", t.clone());
-    let on_board: i64 = [&start, &a, &b, &c].iter().map(|l| low["board"][*l]["tokens"][&f].as_i64().unwrap_or(0)).sum();
-    assert_eq!(on_board, 7);
-    // By slot: The Big Chase is a shift, so "shifts" brings, "strikes" doesn't.
-    let shifts = preview(&edit(&s, |x| x["options"]["swayTokens"] = json!("shifts")), "ann", "big-chase", t.clone());
-    assert_eq!(shifts["board"][&c]["tokens"][&f], 4);
-    let strikes = preview(&edit(&s, |x| x["options"]["swayTokens"] = json!("strikes")), "ann", "big-chase", t);
-    assert_eq!(strikes["board"][&c]["tokens"][&f], 3);
 }
 
 #[test]
@@ -1424,8 +1369,7 @@ fn d38_at_nightfall_each_location_without_a_fight_gains_its_own_faction_per_sway
     let fs: Vec<String> = factions(&s0).into_iter().filter(|x| *x != own).collect();
     let (ann, bob) = (s0.seating[0].clone(), s0.seating[1].clone());
     let s = edit(&s0, |x| {
-        x["options"]["swayTokens"] = json!("nightfall");
-        x["options"]["growth"] = json!("off");
+        x["options"]["nightfall"] = json!("on");
         x["options"]["passing"] = json!("on"); // the round ends by passing here
         x["opened"] = json!(true);
         x["board"][&quiet]["sway"] = obj(&[(&ann, 1), (&bob, 1)]);

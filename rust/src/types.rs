@@ -140,7 +140,6 @@ pub enum Phase {
     Draft,
     Play,
     Night,
-    Growth,
     Ended,
 }
 
@@ -150,7 +149,6 @@ impl Phase {
             Phase::Draft => "draft",
             Phase::Play => "play",
             Phase::Night => "night",
-            Phase::Growth => "growth",
             Phase::Ended => "ended",
         }
     }
@@ -166,18 +164,6 @@ pub enum Seeding {
 }
 
 /// The variants chosen for a game (spec.json `variants`), resolved, with their raw choices in the spec's order.
-/// Which cards' sway brings tokens (GR5, variant swayTokens).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub enum SwayTokens {
-    #[default]
-    Off,
-    All,
-    Shifts,
-    Strikes,
-    Signatures,
-    /// Not from cards: at the round's close, each location without a fight gains 1 of its own faction per sway there.
-    Nightfall,
-}
 
 /// A faction's pool when unlimited (D46): more than any game can take.
 pub const UNLIMITED: i32 = 999;
@@ -197,7 +183,6 @@ pub struct Options {
     pub last_vote: i32,
     /// The first round's vote counts this many (designer's seed, 2026-11-05; variant firstVote, 1 or 0).
     pub first_vote: i32,
-    pub growth: i32,
     pub faction_tokens: i32,
     pub player_cubes: i32,
     pub start_sway: i32,
@@ -211,10 +196,9 @@ pub struct Options {
     pub unsuited_sway: i32,
     /// IC1 (D15): a move's sway must be paid. Always so in a game; off only in checkTarget's comparison copy (unpaid).
     pub sway_required: bool,
-    pub aligned_growth: bool,
-    /// GR5 (designer's seed, a switch): each sway placed on the board brings 1 of the paying faction's tokens there;
-    /// "on" for every card, or one slot's cards only (shifts, strikes, signatures).
-    pub sway_tokens: SwayTokens,
+    /// Nightfall tokens (D38: GR6, the only way tokens arrive). Off only in the engine tests, which stage boards
+    /// without them (key `nightfall`, not a variant).
+    pub nightfall: bool,
     pub way_back: bool,
     /// Passing while holding cards (TU1; variant passing, designer 2026-10-28: a switch).
     pub passing: bool,
@@ -256,7 +240,11 @@ impl Options {
     /// Options from a saved game's choices (anything unknown is ignored; anything missing takes the default).
     pub fn from_raw(given: Vec<(String, String)>) -> Options {
         let sp = spec();
-        let raw: Vec<(String, String)> = sp.variants.iter().map(|v| (v.id.clone(), given.iter().find(|(k, _)| k == &v.id).map(|(_, c)| c.clone()).unwrap_or_else(|| v.default.clone()))).collect();
+        let mut raw: Vec<(String, String)> = sp.variants.iter().map(|v| (v.id.clone(), given.iter().find(|(k, _)| k == &v.id).map(|(_, c)| c.clone()).unwrap_or_else(|| v.default.clone()))).collect();
+        let nightfall = !given.iter().any(|(k, v)| k == "nightfall" && v == "off");
+        if !nightfall {
+            raw.push(("nightfall".into(), "off".into()));
+        }
         let get = |id: &str| raw.iter().find(|(k, _)| k == id).map(|(_, c)| c.as_str()).unwrap_or("");
         let num = |id: &str| get(id).parse::<i32>().unwrap_or(0);
         Options {
@@ -267,7 +255,6 @@ impl Options {
             votes_early: get("roundVotes") == "early",
             last_vote: num("lastVote").max(1),
             first_vote: num("firstVote").clamp(0, 1),
-            growth: if get("growth") == "off" { i32::MAX } else { num("growth") },
             // Unlimited (D46): a pool too big to run dry.
             faction_tokens: if get("factionTokens") == "unlimited" { UNLIMITED } else { num("factionTokens") },
             player_cubes: num("playerCubes"),
@@ -279,8 +266,7 @@ impl Options {
             move_range: num("moveRange").max(1),
             unsuited_sway: match get("unsuitedSway") { "off" | "" => 0, "hand" => -1, x => x.parse().unwrap_or(0) },
             sway_required: true,
-            aligned_growth: get("alignedGrowth") == "on",
-            sway_tokens: match get("swayTokens") { "on" => SwayTokens::All, "shifts" => SwayTokens::Shifts, "strikes" => SwayTokens::Strikes, "signatures" => SwayTokens::Signatures, "nightfall" => SwayTokens::Nightfall, _ => SwayTokens::Off },
+            nightfall,
             way_back: get("wayBack") != "off",
             passing: get("passing") != "off",
             card_sway: num("cardSway"),
@@ -332,16 +318,6 @@ pub struct Player {
     pub kept: Hand,
     pub batch: Hand,
     pub picked: bool,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Growing {
-    pub faction: Fac,
-    pub left: i32,
-    pub favourites: Vec<Pid>,
-    pub next: i32,
-    /// location → tokens due
-    pub due: OMap<NLOC>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -420,7 +396,6 @@ pub struct GameState {
     /// presence before its fights, after them (the vote's), and the nightfall tokens it brought.
     pub last_close: Option<[i32; 4]>,
     pub round_plays: Vec<RoundPlay>,
-    pub growing: Option<Growing>,
     pub night: Option<Night>,
     pub log: Vec<Rc<RoundLog>>,
     pub result: Option<GameResult>,
@@ -634,6 +609,5 @@ pub enum Move {
     /// `target`: None is an absent target (`target` undefined), Some(None) a null one.
     Play { card: CardIx, use_: PlayUse, target: Option<Option<Target>>, places: Option<Vec<Loc>> },
     Pass,
-    Grow { location: Loc },
     Flee { location: Loc, faction: Option<Fac>, to: Option<Loc>, follow: Option<bool> },
 }

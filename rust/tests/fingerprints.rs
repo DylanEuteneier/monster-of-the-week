@@ -31,10 +31,6 @@ fn four_seats_with_variants() {
     check("c");
 }
 #[test]
-fn variants() {
-    check("d");
-}
-#[test]
 fn starting_sway_and_seat_groups() {
     check("e");
 }

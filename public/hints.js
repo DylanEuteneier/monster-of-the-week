@@ -34,7 +34,7 @@ const count = (/** @type {number} */ n, /** @type {string} */ f) => (n === 1 ? `
 /** Which hint a view is for: a hint for another moment is stale. @param {{ round: number, phase: string, turn: number, log?: unknown }} s @param {string} pid */
 export function hintKey(s, pid) {
   const me = /** @type {any} */ (s).players?.[pid];
-  return `${s.round}:${s.phase}:${s.turn}:${me?.hand?.length ?? 0}:${me?.kept?.length ?? 0}:${/** @type {any} */ (s).passesInRow ?? 0}:${/** @type {any} */ (s).growing?.next ?? ''}`;
+  return `${s.round}:${s.phase}:${s.turn}:${me?.hand?.length ?? 0}:${me?.kept?.length ?? 0}:${/** @type {any} */ (s).passesInRow ?? 0}`;
 }
 
 /**
@@ -65,7 +65,7 @@ function foresee(state) {
   return out;
 }
 
-/** The projected monster count: after this round's fights and growth, as the bot counts it. @param {GameState} s */
+/** The projected monster count: after this round's fights, as the bot counts it. @param {GameState} s */
 function projectedCount(s) {
   const f = clone(s);
   let cur = f;
@@ -148,7 +148,6 @@ function reasons(a, b, pid, goal) {
 /** The rule a move uses, as a refresher. @param {GameState} s @param {Move} move */
 function ruleFor(s, move) {
   if (move.type === 'pass') return 'Passing isn\'t final: you can play when the turn comes back. When everyone passes in a row, the round ends and every location with two factions fights.';
-  if (move.type === 'grow') return 'Growth: when a faction is short of monsters in supply, its favourites choose where it grows.';
   if (move.type !== 'play') return '';
   const c = cardById(move.card);
   const f = s.factions.find((x) => factionById(x).archetype === c.suit);
@@ -161,7 +160,6 @@ function ruleFor(s, move) {
 /** A move as a short title. @param {GameState} s @param {string} pid @param {Move} move */
 function titleOf(s, pid, move) {
   if (move.type === 'pass') return 'Pass';
-  if (move.type === 'grow') return `Grow at ${L(move.location)}`;
   if (move.type !== 'play') return '';
   const c = cardById(move.card);
   if (move.use === 'sway') {
@@ -175,7 +173,6 @@ function titleOf(s, pid, move) {
 /** A move in a few words, for the concise hint. @param {Move} move */
 function shortOf(move) {
   if (move.type === 'pass') return 'Pass';
-  if (move.type === 'grow') return `Grow at ${L(move.location)}`;
   if (move.type !== 'play') return '';
   const c = cardById(move.card);
   if (move.use === 'sway') return `Spend ${c.name} for sway`;
@@ -184,7 +181,6 @@ function shortOf(move) {
 
 /** Every location a move names, to light on the board. @param {Move} move */
 function tilesOf(move) {
-  if (move.type === 'grow') return [move.location];
   if (move.type !== 'play' || !move.target) return [];
   const t = move.target;
   return [...new Set([t.location, t.to, ...(t.from ?? []), ...(t.path ?? []), ...Object.keys(t.split ?? {}), ...(t.moves ?? []).flatMap((m) => [m.location, m.to])].filter((x) => typeof x === 'string'))];

@@ -6,7 +6,7 @@
  * Object. The engine is imported only for previews and derived values.
  *
  * The first draft (Appendix G): the island with its pieces, each player's
- * standing, and one panel per phase (draft, play, growth, the end). Targets
+ * standing, and one panel per phase (draft, play, nightfall, the end). Targets
  * are chosen on the board one step at a time: each step's candidates are
  * spotlit (hexes) or lit gold (tokens), and the server checks the result.
  */
@@ -434,7 +434,7 @@ function sendChat(text) {
 // ---------------------------------------------------------------------------
 
 /** @type {Record<PlayerView['phase'], string>} */
-const PHASE_LABELS = { draft: 'Draft', play: 'Play', night: 'Nightfall', growth: 'Growth', ended: 'Game over' };
+const PHASE_LABELS = { draft: 'Draft', play: 'Play', night: 'Nightfall', ended: 'Game over' };
 
 /** @param {string} f */
 const fname = (f) => factionById(f).name;
@@ -528,10 +528,6 @@ function picks() {
   /** @type {{ spots: string[], groups: { location: string, faction: string }[], factions: string[] }} */
   const out = { spots: [], groups: [], factions: [] };
   if (!view) return out;
-  if (view.phase === 'growth' && view.growing && view.growing.favourites[view.growing.next % view.growing.favourites.length] === view.you) {
-    out.spots = Object.keys(view.growing.due);
-    return out;
-  }
   if (ui.returning && view.phase === 'play') {
     out.spots = returnRoom(/** @type {any} */ (view), view.you, ui.returning.card).spots;
     return out;
@@ -718,13 +714,12 @@ const DOTS = '<span class="dots" aria-hidden="true"><span>.</span><span>.</span>
 const status = (who, what, live = true) => `<span class="bar-who">${who}</span> <span class="bar-chip${live ? ' is-live' : ''}">${what}${live ? DOTS : ''}</span>`;
 
 /** What a phase's decision is about, for the chip. @param {PlayerView} view */
-const thinkingAbout = (view) => (view.phase === 'draft' ? 'picking a card' : view.phase === 'growth' ? 'choosing where it grows' : view.phase === 'night' ? 'deciding at nightfall' : 'choosing a play');
+const thinkingAbout = (view) => (view.phase === 'draft' ? 'picking a card' : view.phase === 'night' ? 'deciding at nightfall' : 'choosing a play');
 
 /** A move in a few words, for the chip ("playing The Gate: …"). @param {import('./rules.js').Move} m */
 function moveWords(m) {
   if (m.type === 'pick') return 'picking a card';
   if (m.type === 'pass') return 'passing';
-  if (m.type === 'grow') return `growing at ${esc(lname(m.location))}`;
   if (m.type === 'flee') return m.faction && m.to ? `sending 1 ${esc(fname(m.faction))} to ${esc(lname(m.to))}` : `letting the ${esc(lname(m.location))} mark be`;
   const c = cardById(m.card);
   if (m.use === 'sway') return `playing ${esc(c.name)} for sway`;
@@ -786,7 +781,7 @@ function renderPhase() {
     setHtml('phase', ui.token ? `<span class="bar-text">${esc(ui.connectionNote)}</span>` : '<span class="bar-text">Open the player link you were given (/p/…).</span>');
     return;
   }
-  const renderers = { draft: renderDraft, play: renderPlay, night: renderNight, growth: renderGrowth, ended: renderEnded };
+  const renderers = { draft: renderDraft, play: renderPlay, night: renderNight, ended: renderEnded };
   renderers[view.phase]();
   if (ui.note) handNext = { ...handNext, actions: [], state: 'wait', text: esc(ui.note) };
   // A move on its way to the server: said at once, so a click never looks dead (designer, 2026-10-11).
@@ -1127,14 +1122,6 @@ function renderTargeting(cardId) {
   toHand(view.me.hand.map((c) => cardHtml(c, c === cardId ? { selected: true, sway: true, next: !t.mode && !!card.suit, raise: choice.kind === 'mode' || choice.kind === 'use', reading: t.mode, use: t.use ? String(t.use) : undefined, uses: choice.kind === 'use' && choice.key === 'use' ? choice.options.map(String) : undefined, empty, why } : { dim: true })), false);
 }
 
-function renderGrowth() {
-  const view = /** @type {PlayerView} */ (ui.view);
-  const g = view.growing;
-  if (!g) return step('wait', 'Growth');
-  const mine = g.favourites[g.next % g.favourites.length] === view.you;
-  return mine ? step('turn', `Grow ${esc(fname(g.faction))}: pick a location on the island`) : step('wait', `${esc(fname(g.faction))} grows · ${waitingText()}`);
-}
-
 function renderNight() {
   const view = /** @type {PlayerView} */ (ui.view);
   const n = view.night;
@@ -1409,8 +1396,7 @@ async function guideTurn(before, after, last, s) {
     const c = cardById(m.card);
     const how = m.use === 'sway' ? `+${before.printed?.[m.card] ?? c.sway} sway` : m.target?.mode === 'faction' ? 'FAC' : m.target?.mode === 'location' ? 'LOC' : '';
     head = `<p class="guide-head">${who} ${m.use === 'sway' ? 'spends' : 'plays'} <b class="guide-card card-suit-${c.suit ?? 'none'}">${c.suit ? suitIcon(c.suit) : ''} ${esc(c.name)}</b>${how ? ` <span class="tag">${esc(how)}</span>` : ''}</p>${m.use === 'action' ? `<p class="guide-text small">${esc(c.text)}</p>` : ''}`;
-  } else if (m.type === 'grow') head = `<p class="guide-head">${who} chooses where a faction grows</p>`;
-  else head = `<p class="guide-head">${who}</p>`;
+  } else head = `<p class="guide-head">${who}</p>`;
   panel.hidden = false; light(seat); draw();
   await wait(s.guide);
   // Each step of the target, lit in turn.
@@ -1421,7 +1407,6 @@ async function guideTurn(before, after, last, s) {
     const f = before.factions.find((x) => factionById(x).archetype === cardById(m.card).suit);
     if (f) steps = [{ kind: 'faction', faction: f, label: `with the ${fname(f)}` }];
   }
-  if (m.type === 'grow') steps = [{ kind: 'location', location: m.location, label: `at ${lname(m.location)}` }];
   for (const step of steps) {
     const el = step.kind === 'location' ? tileOf(step.location)
       : step.kind === 'group' ? document.querySelector(`#board .token-stack[data-location="${CSS.escape(step.location)}"][data-faction="${CSS.escape(step.faction)}"]`) ?? tileOf(step.location)
@@ -1448,7 +1433,7 @@ async function guideTurn(before, after, last, s) {
  * The round's end, told (designer, 2026-10-11): a frame listing every fight
  * with its numbers; each fight then plays on the board one at a time (the
  * tussle, the dead flying to trophies and supplies) and its row in the frame
- * fills in with the result; then growth. Piles taken are public (IN2: the
+ * fills in with the result; then nightfall's arrivals. Piles taken are public (IN2: the
  * running totals stay secret).
  * @param {PlayerView} before @param {PlayerView} final @param {import('./guide.js').Fight[]} fights @param {(typeof SPEEDS)[number]} s
  */
@@ -1503,10 +1488,10 @@ async function tellRoundEnd(before, final, fights, s) {
     unlight();
     cur = next;
   }
-  // Growth (and the next round's deal), then the frame steps aside.
+  // Nightfall's arrivals (and the next round's deal), then the frame steps aside.
   const grew = Object.keys(final.board).filter((l) => final.factions.some((f) => (final.board[l].tokens[f] ?? 0) > (cur.board[l].tokens[f] ?? 0)));
   const g = frame.querySelector('.round-growth');
-  if (g instanceof HTMLElement && grew.length) { g.hidden = false; g.textContent = `Growth: ${grew.map(lname).join(', ')}`; for (const l of grew) light(hexOf(l)); }
+  if (g instanceof HTMLElement && grew.length) { g.hidden = false; g.textContent = `Nightfall: ${grew.map(lname).join(', ')}`; for (const l of grew) light(hexOf(l)); }
   const flights = planFlights(cur, final, colourOf);
   if (flights.length) await fly(flights, final.you, { speed: s.speed });
   showState(final, ui.online);
@@ -1702,7 +1687,6 @@ function markHint() {
   for (const l of h.tiles) tile(l)?.querySelector('.hex')?.classList.add('is-suggested');
   const m = h.move;
   if (m?.type === 'pass') q('[data-action="pass"]')?.classList.add('is-hint-next');
-  if (m?.type === 'grow') tile(m.location)?.classList.add('is-hint-next');
   if (m?.type !== 'play') return;
   const card = q(`#hand .card[data-card="${CSS.escape(m.card)}"]`);
   const mode = m.use === 'sway' ? 'sway' : m.target?.mode;
@@ -1910,7 +1894,6 @@ function onClick(event) {
     return sendMove({ type: 'play', card: id, use: 'action', target: null });
   }
   const loc = target.dataset.location ?? '';
-  if (action === 'pick-location' && view?.phase === 'growth') return sendMove({ type: 'grow', location: loc });
   if (view?.phase === 'night' && view.night) {
     const mark = view.night.left[0];
     if (action === 'pick-group') { ui.flee = { faction: target.dataset.faction }; return render(); }

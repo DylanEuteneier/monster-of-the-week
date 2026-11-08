@@ -161,11 +161,6 @@ pub fn call(name: &str, a: &[Value]) -> Out {
             }
             Ok(Value::Object(nightfall_due(&s, &fought).iter().map(|&(l, n)| (loc_id(l).to_string(), Value::from(n))).collect()))
         }
-        "growthDue" => {
-            let s = state(arg(0))?;
-            let f = fac_of(&s, arg(1))?;
-            Ok(Value::Object(growth_due(&s, f).iter().map(|(l, n)| (loc_id(l).to_string(), Value::from(n))).collect()))
-        }
         "controllerOf" => {
             let s = state(arg(0))?;
             Ok(controller_of(&s, loc_of(arg(1))?).map(|f| Value::from(fac_id(&s, f))).unwrap_or(Value::Null))

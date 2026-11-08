@@ -54,13 +54,6 @@ pub fn validate(s: &GameState, pid: Pid, m: &Move) -> Verdict {
             }
             if follow.unwrap_or(false) && s.board[*location as usize].sway.get(pid) < 1 { no("You have no sway there to follow.") } else { None }
         }
-        Phase::Growth => {
-            let (Move::Grow { location }, Some(g)) = (m, s.growing.as_ref()) else { return no("Choose where the faction grows.") };
-            if g.favourites[g.next as usize % g.favourites.len()] != pid {
-                return no("Another of its favourites places this token.");
-            }
-            if g.due.get(*location) > 0 { None } else { no("That location doesn't grow.") }
-        }
         Phase::Play => {
             if s.turn != pid as usize {
                 return no("It is not your turn.");
@@ -141,7 +134,6 @@ pub fn apply_legal(s: &GameState, pid: Pid, m: &Move) -> GameState {
                 pass_batches(&mut next);
             }
         }
-        Move::Grow { location } => grow_one(&mut next, *location),
         Move::Flee { location, faction, to, follow } => {
             let loc = *location;
             if let (Some(f), Some(to)) = (*faction, *to) {
@@ -439,7 +431,7 @@ fn close_round(s: &mut GameState) {
     }
     // The last round's monsters don't grow (designer, 2026-10-31): the game ends after its fights.
     let last = s.round >= s.options.rounds && s.options.last_growth == false;
-    if s.options.sway_tokens == SwayTokens::Nightfall && !last {
+    if s.options.nightfall && !last {
         nightfall_tokens(s, &fought);
         let brought = total_presence(s) - after_fights;
         s.last_close = Some([s.round, before, after_fights, brought]);
@@ -451,16 +443,11 @@ fn close_round(s: &mut GameState) {
         p.study = None;
         p.terror = None;
     }
-    if last {
-        end_round(s);
-        return;
-    }
-    begin_growth(s, 0);
+    end_round(s);
 }
 
-/// Nightfall tokens (variant swayTokens nightfall; designer, 2026-10-30): each location where there was no fight
-/// gains 1 of its own faction's tokens per sway there, if it can. *Prototype:* before growth; a short supply fills
-/// locations in board order.
+/// Nightfall tokens (D38, GR6; designer, 2026-10-30): each location where there was no fight gains 1 of its own
+/// faction's tokens per sway there, if it can. *Prototype:* a short supply fills locations in board order.
 fn nightfall_tokens(s: &mut GameState, fought: &[bool]) {
     let mut brought = 0;
     for (l, n) in nightfall_due(s, fought) {
@@ -764,7 +751,6 @@ pub fn rank_at(s: &GameState, loc: Loc) -> (List<Option<Pid>, 2>, usize, Small<5
     (places, involved, tied_first)
 }
 
-/// What each growth location is due: 1, plus 1 if the faction is aligned with it (AL3; variant alignedGrowth).
 /// Where nightfall brings tokens and how many (each of the location's own faction), on a board whose fights are
 /// done: every location not in `fought`, 1 per sway there, if its faction can enter and has them in supply.
 pub fn nightfall_due(s: &GameState, fought: &[bool]) -> Vec<(Loc, i32)> {
@@ -785,93 +771,6 @@ pub fn nightfall_due(s: &GameState, fought: &[bool]) -> Vec<(Loc, i32)> {
     due
 }
 
-pub fn growth_due(s: &GameState, f: Fac) -> OMap<NLOC> {
-    let mut out = OMap::<NLOC>::new();
-    for l in 0..s.board.len() as Loc {
-        if s.board[l as usize].scorched {
-            continue;
-        }
-        if count_at(s, l) == 1 && tokens_of(s, l, f) >= s.options.growth {
-            out.set(l, 1 + if s.options.aligned_growth && alignment_of(l) == f as usize { 1 } else { 0 });
-        }
-    }
-    out
-}
-
-/// Each faction's total growth due this round, capped by its supply (for the bots).
-pub fn growth_total(s: &GameState) -> i32 {
-    let mut due = [0i32; 5];
-    for l in 0..s.board.len() as Loc {
-        if s.board[l as usize].scorched {
-            continue;
-        }
-        let here = factions_at(s, l);
-        if here.len() != 1 {
-            continue;
-        }
-        let f = here[0];
-        if tokens_of(s, l, f) < s.options.growth {
-            continue;
-        }
-        due[f as usize] += 1 + if s.options.aligned_growth && alignment_of(l) == f as usize { 1 } else { 0 };
-    }
-    (0..5).map(|f| s.supply[f].min(due[f])).sum()
-}
-
-/// Growth for each faction in turn, from `from`.
-fn begin_growth(s: &mut GameState, from: usize) {
-    for f in from as Fac..5 {
-        let due = growth_due(s, f);
-        let wants: i32 = due.iter().map(|e| e.1).sum();
-        if wants == 0 {
-            continue;
-        }
-        if wants <= s.supply[f as usize] {
-            for (l, n) in due.iter() {
-                s.board[l as usize].tokens.add(f, n);
-            }
-            s.supply[f as usize] -= wants;
-            if !s.quiet {
-                note_flow(0, wants);
-            }
-            let k = due.len();
-            let fnm = fname(s, f);
-            log_line(s, |_| format!("{fnm} grows at {k} location{}.", if k == 1 { "" } else { "s" }));
-        } else if s.supply[f as usize] > 0 {
-            s.growing = Some(Growing { faction: f, left: s.supply[f as usize], favourites: favourites_of(s, f), next: 0, due });
-            s.phase = Phase::Growth;
-            return;
-        }
-    }
-    end_round(s);
-}
-
-/// One token placed by a favourite during a short-supply growth.
-fn grow_one(s: &mut GameState, loc: Loc) {
-    let f = s.growing.as_ref().unwrap().faction;
-    s.board[loc as usize].tokens.add(f, 1);
-    s.supply[f as usize] -= 1;
-    if !s.quiet {
-        note_flow(0, 1);
-    }
-    let g = s.growing.as_mut().unwrap();
-    let v = g.due.get(loc) - 1;
-    g.due.set(loc, v);
-    if v <= 0 {
-        g.due.remove(loc);
-    }
-    g.left -= 1;
-    g.next += 1;
-    if g.left > 0 && s.supply[f as usize] > 0 && !g.due.is_empty() {
-        return;
-    }
-    let fnm = fname(s, f);
-    log_line(s, |_| format!("{fnm} grows as far as its supply allows."));
-    s.growing = None;
-    s.phase = Phase::Play;
-    begin_growth(s, f as usize + 1);
-}
-
 fn end_round(s: &mut GameState) {
     s.phase = Phase::Play;
     if s.round >= s.options.rounds {
@@ -879,27 +778,7 @@ fn end_round(s: &mut GameState) {
         return;
     }
     s.round += 1;
-    round_bar(s);
     deal(s);
-}
-
-/// A bar that rises each round (variant `roundBar`, designer's seed 2026-11-04; testing): the round's bar is set at
-/// its start, so the vote, the end count, the bots and the table all read it as the threshold. `rise`: 12, 14, 17, 20,
-/// 23 (where each round's vote was about even in the bot games, 2026-11-04); `rise-n`: the same × players / 4. Rounds
-/// past the fifth keep the last bar.
-pub fn round_bar(s: &mut GameState) {
-    const RISE: [f64; 5] = [12.0, 14.0, 17.0, 20.0, 23.0];
-    let Some(kind) = s.options.raw.iter().find(|(k, _)| k == "roundBar").map(|x| x.1.clone()) else { return };
-    let scale = match kind.as_str() {
-        "rise" => 1.0,
-        "rise-n" => s.n() as f64 / 4.0,
-        _ => return,
-    };
-    let i = ((s.round.max(1) - 1) as usize).min(RISE.len() - 1);
-    let bar = (RISE[i] * scale).round() as i32;
-    if s.options.threshold != bar {
-        std::rc::Rc::make_mut(&mut s.options).threshold = bar;
-    }
 }
 
 /// The end of the game (G.5): the invaders or the island, the scores and the winners.
@@ -992,7 +871,6 @@ pub fn waiting_on(s: &GameState) -> Vec<Pid> {
     match s.phase {
         Phase::Ended => vec![],
         Phase::Draft => (0..s.n() as Pid).filter(|&p| !s.players[p as usize].picked).collect(),
-        Phase::Growth => s.growing.as_ref().map(|g| vec![g.favourites[g.next as usize % g.favourites.len()]]).unwrap_or_else(|| vec![s.turn as Pid]),
         Phase::Night => s.night.as_ref().map(|n| vec![n.player]).unwrap_or_else(|| vec![s.turn as Pid]),
         Phase::Play => vec![s.turn as Pid],
     }

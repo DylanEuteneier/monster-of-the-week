@@ -157,14 +157,12 @@ pub fn create_game(seed: i64, players: &[String], raw_options: &[(String, String
         votes: [0, 0],
         last_close: None,
         round_plays: vec![],
-        growing: None,
         night: None,
         log: vec![],
         result: None,
         quiet: false,
     };
     deal(&mut s);
-    crate::game::round_bar(&mut s);
     Ok(s)
 }
 

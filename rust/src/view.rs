@@ -148,7 +148,6 @@ pub fn player_view(s: &GameState, pid: Pid) -> Value {
     o.insert("deck".into(), Value::Array(deck().into_iter().map(|c| Value::from(spec().cards[c as usize].id.as_str())).collect()));
     o.insert("roundPlays".into(), v["roundPlays"].clone());
     o.insert("printed".into(), printed);
-    o.insert("growing".into(), v["growing"].clone());
     o.insert("night".into(), v["night"].clone());
     o.insert("first".into(), v["first"].clone());
     o.insert("opened".into(), v["opened"].clone());

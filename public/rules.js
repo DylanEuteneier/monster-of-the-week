@@ -36,7 +36,7 @@ export { spec };
  */
 
 /** @typedef {Record<string, string>} Options  variant id → choice id */
-/** @typedef {'draft' | 'play' | 'night' | 'growth' | 'ended'} Phase */
+/** @typedef {'draft' | 'play' | 'night' | 'ended'} Phase */
 
 /**
  * @typedef {object} Place
@@ -89,7 +89,6 @@ export { spec };
  * @property {boolean} opened      the first player has opened with their marked card
  * @property {string | null} [copying]  Steal Their Playbook, theirs: the card taken, to be played now (D30)
  * @property {{ pid: string, card: string, use: string }[]} roundPlays  this round's plays, in order (Steal Their Playbook, unsuited, 2026-10-24)
- * @property {{ faction: string, left: number, favourites: string[], next: number, due: Record<string, number> } | null} growing  growth phase when a supply runs short
  * @property {{ player: string, left: string[] } | null} [night]  Night Terrors (◐ signature): nightfall, before the fights; the player's marks still to decide
  * @property {{ invaders: number, island: number }} [votes]  rounds as votes (RV1, variant): the votes cast so far
  * @property {RoundLog[]} log
@@ -121,7 +120,6 @@ export { spec };
  * @typedef {{ type: 'pick', keep: string[] }
  *   | { type: 'play', card: string, use: 'action' | 'sway' | 'return', target?: Target | null, places?: string[] }
  *   | { type: 'pass' }
- *   | { type: 'grow', location: string }
  *   | { type: 'flee', location: string, faction?: string, to?: string, follow?: boolean }} Move
  */
 /** @typedef {{ playerId: string, move: Move }} Submission */
@@ -137,7 +135,6 @@ export { spec };
  * @property {number} rounds
  * @property {string[]} seating
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, handSize: number, picked: boolean, trophies?: Record<string, number> }>} players  (trophies: every seat's, once the game has ended)
- * @property {{ faction: string, left: number, favourites: string[], next: number, due: Record<string, number> } | null} growing
  * @property {{ player: string, left: string[] } | null} [night]
  * @property {string[]} factions
  * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, scorched: boolean, gate?: string, gateLoss?: string, altar?: boolean, study?: string, terror?: string }>} board
@@ -364,8 +361,6 @@ export const resolveFight = (state, loc) => call('resolveFight', state, loc);
 export const resolveFights = (state, locs) => call('resolveFights', state, locs);
 /** The locations that will fight at round end as things stand. @param {GameState} state @returns {string[]} */
 export const fightsDue = (state) => call('fightsDue', lean(state));
-/** Where a faction grows this round, and by how much. @param {GameState} state @param {string} faction @returns {Record<string, number>} */
-export const growthDue = (state, faction) => call('growthDue', lean(state), faction);
 /** Where nightfall would bring tokens on this board (fights done), a location → count; `fought` the locations that fought. @param {GameState} state @param {string[]} fought @returns {Record<string, number>} */
 export const nightfallDue = (state, fought) => call('nightfallDue', lean(state), fought);
 /** The faction that controls a location, or null. @param {GameState | PlayerView} state @param {string} loc @returns {string | null} */

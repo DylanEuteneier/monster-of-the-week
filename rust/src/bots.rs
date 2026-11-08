@@ -521,14 +521,13 @@ fn chances_after(s: &GameState, pid: Pid) -> Chances {
     let rounds = s.options.rounds as f64;
     let rounds_left = (rounds - s.round as f64).max(0.0);
     let threshold = s.options.threshold as f64;
-    let grow = growth_total(s) as f64;
     let n_f = 5usize;
     let presence: Vec<f64> = (0..5).map(|f| presence_of(s, f) as f64).collect();
     let mut total = 0.0;
     for p in &presence {
         total += p;
     }
-    let projected = total + if s.phase == Phase::Play { grow } else { 0.0 };
+    let projected = total;
     let spread_p = 2.0 + 3.0 * rounds_left;
     let mut top = f64::NEG_INFINITY;
     for &p in &presence {
@@ -766,11 +765,7 @@ fn round_change(s: &GameState, p: &GameState, after: f64) -> f64 {
         let due = fights_due(s);
         (0..s.board.len() as Loc).map(|l| due.contains(&l)).collect()
     };
-    let grows = if s.options.sway_tokens == crate::types::SwayTokens::Nightfall {
-        crate::game::nightfall_due(p, &fought).iter().map(|x| x.1).sum::<i32>() as f64
-    } else {
-        growth_total(p) as f64
-    };
+    let grows = if s.options.nightfall { crate::game::nightfall_due(p, &fought).iter().map(|x| x.1).sum::<i32>() as f64 } else { 0.0 };
     grows - losses
 }
 
@@ -1099,14 +1094,6 @@ fn random_move(s: &GameState, pid: Pid, rng: Rng) -> Option<Move> {
             let m = Move::Pick { keep };
             if legal(s, pid, &m) { Some(m) } else { None }
         }
-        Phase::Growth => {
-            let g = s.growing.as_ref()?;
-            if g.favourites[g.next as usize % g.favourites.len()] != pid {
-                return None;
-            }
-            let ls: Vec<Loc> = g.due.keys().collect();
-            Some(Move::Grow { location: ls[pick(ls.len(), &mut *rng)] })
-        }
         Phase::Night => {
             let n = s.night.as_ref()?;
             if n.player != pid {
@@ -1275,19 +1262,6 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
             let n = p.kept.len() + 1;
             let m = Move::Pick { keep: worth[..n.min(worth.len())].iter().map(|w| w.0).collect() };
             if legal(s, pid, &m) { Some(m) } else { None }
-        }
-        Phase::Growth => {
-            let g = s.growing.as_ref()?;
-            if g.favourites[g.next as usize % g.favourites.len()] != pid {
-                return None;
-            }
-            let mut options: Vec<(Loc, f64)> = Vec::new();
-            for l in g.due.keys() {
-                let v = noise(ev(&after(s, pid, &Move::Grow { location: l })), rng);
-                options.push((l, v));
-            }
-            options.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-            Some(Move::Grow { location: options[0].0 })
         }
         Phase::Night => {
             let n = s.night.as_ref()?;
@@ -1509,7 +1483,7 @@ fn play_out_round(state: &GameState, seed: i64, pid: Pid, memory: Option<&BotMem
     let mut moves = 0;
     // On through nightfall and growth to the round's end (2026-11-04: play-outs had stopped at nightfall, before the
     // fights and the vote, whenever a location was marked).
-    while moves < SIM_MAX_MOVES && s.round == round && matches!(s.phase, Phase::Play | Phase::Night | Phase::Growth) {
+    while moves < SIM_MAX_MOVES && s.round == round && matches!(s.phase, Phase::Play | Phase::Night) {
         moves += 1;
         let mut moved = false;
         for id in 0..n as Pid {
@@ -1673,7 +1647,7 @@ pub fn all_cards() -> usize {
 
 /// A hint's ranking (rankForHint): the seat's goal, then its options ranked by their worth one move ahead, with no
 /// noise and no play-outs (play-outs would play rivals' hidden hands). Draft: each card in the pool by its best play's
-/// worth now. Growth and nightfall: each choice the seat may make. `memory` keeps the goal between hints.
+/// worth now. Nightfall: each choice the seat may make. `memory` keeps the goal between hints.
 pub struct HintRanking {
     pub goal: Goal,
     pub moves: Vec<(Move, GameState, f64)>,
@@ -1708,13 +1682,6 @@ pub fn rank_for_hint(s: &GameState, pid: Pid, memory: &mut BotMemory, profile: &
             let pool: Vec<CardIx> = p.kept.iter().chain(p.batch.iter()).copied().collect();
             worth = pool.into_iter().map(|c| (c, card_worth(s, pid, c, rng, &ev, base_v, 4))).collect();
             worth.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-        }
-        Phase::Growth => {
-            if let Some(g) = &s.growing {
-                if g.favourites[g.next as usize % g.favourites.len()] == pid {
-                    moves = g.due.iter().map(|(l, _)| played(Move::Grow { location: l })).collect();
-                }
-            }
         }
         Phase::Night => {
             if let Some(n) = &s.night {

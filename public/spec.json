@@ -1020,17 +1020,6 @@
       ]
     },
     {
-      "id": "roundBar",
-      "label": "Bar by round",
-      "description": "Designer's seed (2026-11-04), testing: the bar rises each round, set at the round's start. Rise: 12, 14, 17, 20, 23; rise by players: the same times players / 4. Off by default (the threshold holds all game).",
-      "default": "off",
-      "choices": [
-        { "id": "off", "label": "off", "description": "" },
-        { "id": "rise", "label": "12, 14, 17, 20, 23", "description": "" },
-        { "id": "rise-n", "label": "rising, times players / 4", "description": "" }
-      ]
-    },
-    {
       "id": "thresholdGrowth",
       "label": "The horde must grow by",
       "description": "Claude's suggestion D, the designer trying it (2026-10-31): the invaders win if total presence at the end is more than its start (30) by this much; set at the deal, in place of the other thresholds. Off by default.",
@@ -1166,29 +1155,6 @@
           "id": "35",
           "label": "35",
           "description": ""
-        }
-      ]
-    },
-    {
-      "id": "growth",
-      "label": "Growth threshold",
-      "description": "A lone faction with at least this many tokens at a location grows (GR1). Off by default since D38 (designer, 2026-10-30): nightfall tokens replace growth.",
-      "default": "off",
-      "choices": [
-        {
-          "id": "2",
-          "label": "2",
-          "description": ""
-        },
-        {
-          "id": "3",
-          "label": "3",
-          "description": ""
-        },
-        {
-          "id": "off",
-          "label": "Off",
-          "description": "No growth (GR1 and AL3 off); a test of nightfall tokens replacing it (designer, 2026-10-30)."
         }
       ]
     },
@@ -1395,62 +1361,6 @@
           "id": "2",
           "label": "2",
           "description": "Test lever."
-        }
-      ]
-    },
-    {
-      "id": "alignedGrowth",
-      "label": "Growth on own ground",
-      "description": "AL3: a faction controlling one of its aligned locations grows 1 more there (designer: off 2026-10-21, back on by default 2026-10-24).",
-      "default": "off",
-      "choices": [
-        {
-          "id": "off",
-          "label": "Off",
-          "description": "Every growing group grows 1 (designer, 2026-10-21)."
-        },
-        {
-          "id": "on",
-          "label": "On",
-          "description": "AL3 as first drafted: 1 more on its own aligned ground."
-        }
-      ]
-    },
-    {
-      "id": "swayTokens",
-      "label": "Sway brings tokens",
-      "description": "GR5 (designer's seed, 2026-10-29; a switch, not a core rule): each sway placed on the board, from standing with a faction, brings 1 of that faction's tokens from its supply to the same location, if it can (the supply has one, and the faction may enter there). Or one slot's cards only (designer, 2026-10-29): the shifts (scatters), the strikes (gathers) or the signatures. Shifts only from D33 (2026-10-29); nightfall by default since D38 (designer, 2026-10-30), with growth off.",
-      "default": "nightfall",
-      "choices": [
-        {
-          "id": "off",
-          "label": "Off",
-          "description": "Sway brings no tokens."
-        },
-        {
-          "id": "on",
-          "label": "On",
-          "description": "Each sway placed brings 1 of its faction's tokens, if it can."
-        },
-        {
-          "id": "shifts",
-          "label": "Shifts only",
-          "description": "Only the shifts' sway (the scatters) brings tokens (designer, 2026-10-29)."
-        },
-        {
-          "id": "strikes",
-          "label": "Strikes only",
-          "description": "Only the strikes' sway (the gathers) brings tokens (designer, 2026-10-29)."
-        },
-        {
-          "id": "signatures",
-          "label": "Signatures only",
-          "description": "Only the signatures' sway brings tokens (designer, 2026-10-29)."
-        },
-        {
-          "id": "nightfall",
-          "label": "At nightfall",
-          "description": "An alternative (designer, 2026-10-30): no card brings tokens; instead, at the round's close, after the fights, every location where there was no fight gains 1 of its own faction's tokens per sway there (all players'), if it can (the supply has one, and the faction may enter there). Prototype: these arrive before growth, and a short supply fills locations in board order."
         }
       ]
     },

@@ -59,7 +59,7 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, growthDue, sampleTarget, listTargets, clone, validate, fightsDue } from '../public/rules.js';
+import { createGame, applyMove, cardById, spec, totalPresence, presenceOf, resolveFight, sampleTarget, listTargets, clone, validate, fightsDue } from '../public/rules.js';
 import { PROFILES, botMove, fast, features } from '../public/rules.js';
 import { seededRng, chance, measureState, play, MAX_MOVES } from './lib.js';
 
@@ -84,7 +84,7 @@ import { seededRng, chance, measureState, play, MAX_MOVES } from './lib.js';
 /** @param {GameState['board'][string]} place */
 const contestedPlace = (place) => !place.scorched && Object.values(place.tokens).filter((n) => n > 0).length >= 2;
 
-/** This round's fights and growth on a copy: presence after, trophies per player, each fight's winner and losses. @param {GameState} state */
+/** This round's fights on a copy: presence after, trophies per player, each fight's winner and losses. @param {GameState} state */
 function reckon(state) {
   let s = state;
   /** @type {Record<string, { winner: string, lost: number }>} */
@@ -98,9 +98,7 @@ function reckon(state) {
     const after = s.board[loc];
     fights[loc] = { winner: here.find((f) => (after.tokens[f] ?? 0) > 0) ?? '', lost: before - here.reduce((n, f) => n + (after.tokens[f] ?? 0), 0) };
   }
-  let grown = 0;
-  for (const f of s.factions) grown += Math.min(s.supply[f], Object.values(growthDue(s, f)).reduce((a, b) => a + b, 0));
-  return { presence: totalPresence(s) + grown, trophies: Object.fromEntries(s.seating.map((p) => [p, Object.values(s.players[p].trophies).reduce((a, b) => a + b, 0)])), fights };
+  return { presence: totalPresence(s), trophies: Object.fromEntries(s.seating.map((p) => [p, Object.values(s.players[p].trophies).reduce((a, b) => a + b, 0)])), fights };
 }
 
 /** The sole top-sway player at a location, or null. @param {GameState['board'][string]} place */

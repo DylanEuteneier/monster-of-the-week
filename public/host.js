@@ -17,7 +17,7 @@ const SEAT_KINDS = [['', 'Human'], ['bot', 'Bot']];
 const LEAN = { min: -0.3, max: 0.3, step: 0.05 };
 /** The advanced settings, in small groups (presentation only; every variant in spec.json lands in one). @type {[string, string[]][]} */
 const GROUPS = [
-  ['The island and its monsters', ['seeding', 'factionTokens', 'growth', 'alignedGrowth', 'swayTokens', 'wayBack']],
+  ['The island and its monsters', ['seeding', 'factionTokens', 'wayBack']],
   ['Sway and standing', ['startSway', 'startOthers', 'startBoard', 'playerCubes', 'swayPerMove', 'cardSway']],
   ['Rounds and winning', ['rounds', 'threshold', 'passing', 'groups']],
 ];

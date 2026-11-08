@@ -95,12 +95,11 @@ async function main() {
 
   // Every seat is human here; a simple policy drives them from their views:
   // keep the first cards in the draft, 
-  // confirm your own action, grow at the first spot, and otherwise spend a card for sway.
+  // confirm your own action, and otherwise spend a card for sway.
   /** @param {PlayerView} v @returns {any} */
   const policy = (v) => {
     if (v.phase === 'draft') return v.me.picked ? null : { type: 'pick', keep: [...v.me.kept, ...v.me.batch].slice(0, v.me.kept.length + 1) };
     if (v.phase === 'night') return v.night && v.night.player === v.you ? { type: 'flee', location: v.night.left[0] } : null;
-    if (v.phase === 'growth') return v.growing && v.growing.favourites[v.growing.next % v.growing.favourites.length] === v.you ? { type: 'grow', location: Object.keys(v.growing.due)[0] } : null;
     if (v.phase !== 'play') return null;
     if (v.toAct !== v.you) return null;
     // Passing is off by default: spend a suit card for its sway, else play an unsuited card with no target.
@@ -113,7 +112,7 @@ async function main() {
     if (view.phase === 'ended') break;
     const actor = seats.find((seat) => seat.view && policy(seat.view));
     if (!actor?.view) fail(`nobody can act in ${view.phase}, round ${view.round}: ${JSON.stringify({ toAct: view.toAct, first: view.first, opened: view.opened, seats: seats.map((s) => [s.name, s.view?.you, s.view?.toAct, JSON.stringify(s.view ? policy(s.view) : null)]) })}`);
-    const key = (/** @type {PlayerView} */ v) => JSON.stringify([v.round, v.phase, v.toAct, v.log.at(-1)?.events.length, v.seating.map((id) => v.players[id].picked), v.growing ? [v.growing.left, v.growing.next] : null]);
+    const key = (/** @type {PlayerView} */ v) => JSON.stringify([v.round, v.phase, v.toAct, v.log.at(-1)?.events.length, v.seating.map((id) => v.players[id].picked)]);
     const before = key(actor.view);
     const sent = policy(actor.view);
     await new Promise((resolve) => setTimeout(resolve, 260)); // stay under the per-seat rate limit (4 a second)

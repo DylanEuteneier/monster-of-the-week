@@ -119,7 +119,6 @@ pub fn move_to_value(factions: &F5, m: &Move) -> Value {
     match m {
         Move::Pick { keep } => json!({ "type": "pick", "keep": keep.iter().map(|&c| cid(c)).collect::<Vec<_>>() }),
         Move::Pass => json!({ "type": "pass" }),
-        Move::Grow { location } => json!({ "type": "grow", "location": lid(*location) }),
         Move::Flee { location, faction, to, follow } => {
             let mut o = Map::new();
             o.insert("type".into(), Value::from("flee"));
@@ -163,7 +162,6 @@ pub fn move_from_value(factions: &F5, v: &Value) -> Result<Move, String> {
             keep: o.get("keep").and_then(|k| k.as_array()).map(|k| k.iter().map(|c| card(c).unwrap_or(u8::MAX)).collect()).unwrap_or_default(),
         },
         "pass" => Move::Pass,
-        "grow" => Move::Grow { location: o.get("location").and_then(loc).unwrap_or(u8::MAX) },
         "flee" => Move::Flee {
             location: o.get("location").and_then(loc).unwrap_or(u8::MAX),
             faction: o.get("faction").and_then(|f| id_of(factions, f)).and_then(|i| i.fac()),
@@ -199,9 +197,6 @@ fn omap_fac(factions: &F5, m: &OMap) -> Value {
 fn omap_pid(seating: &[String], m: &OMap) -> Value {
     Value::Object(m.iter().map(|(p, n)| (seating[p as usize].clone(), Value::from(n))).collect())
 }
-fn omap_loc(m: &OMap<NLOC>) -> Value {
-    Value::Object(m.iter().map(|(l, n)| (spec().locations[l as usize].id.clone(), Value::from(n))).collect())
-}
 fn by_fac(factions: &F5, v: &[i32; 5]) -> Value {
     Value::Object((0..5).map(|f| (spec().factions[factions[f] as usize].id.clone(), Value::from(v[f]))).collect())
 }
@@ -234,12 +229,6 @@ fn board_value(s: &GameState) -> Value {
     Value::Object(s.board.iter().enumerate().map(|(l, p)| (spec().locations[l].id.clone(), place_value(s, p))).collect())
 }
 
-fn growing_value(s: &GameState) -> Value {
-    match &s.growing {
-        None => Value::Null,
-        Some(g) => json!({ "faction": fid(&s.factions, g.faction), "left": g.left, "favourites": g.favourites.iter().map(|&p| s.seating[p as usize].clone()).collect::<Vec<_>>(), "next": g.next, "due": omap_loc(&g.due) }),
-    }
-}
 fn night_value(s: &GameState) -> Value {
     match &s.night {
         None => Value::Null,
@@ -302,7 +291,6 @@ pub fn state_to_value(s: &GameState) -> Value {
     if let Some(c) = s.last_close {
         o.insert("lastClose".into(), serde_json::json!(c));
     }
-    o.insert("growing".into(), growing_value(s));
     o.insert("night".into(), night_value(s));
     o.insert("log".into(), log_value(s));
     o.insert("result".into(), result_value(s));
@@ -361,16 +349,6 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
             terror: p["terror"].as_str().and_then(pid),
         });
     }
-    let growing = match &v["growing"] {
-        Value::Object(g) => Some(Growing {
-            faction: slot(g["faction"].as_str().unwrap_or("")).ok_or("unknown faction")?,
-            left: g["left"].as_i64().unwrap_or(0) as i32,
-            favourites: g.get("favourites").or_else(|| g.get("leaders")).and_then(|v| v.as_array()).map(|a| a.iter().filter_map(|x| x.as_str().and_then(pid)).collect()).unwrap_or_default(),
-            next: g["next"].as_i64().unwrap_or(0) as i32,
-            due: omap_from(&g["due"], |k| sp.loc_ix(k))?,
-        }),
-        _ => None,
-    };
     let night = match &v["night"] {
         Value::Object(n) => Some(Night { player: n["player"].as_str().and_then(pid).ok_or("unknown player")?, left: n["left"].as_array().map(|a| a.iter().filter_map(|x| x.as_str().and_then(|l| sp.loc_ix(l))).collect()).unwrap_or_default() }),
         _ => None,
@@ -394,7 +372,6 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
     let phase = match v["phase"].as_str().unwrap_or("draft") {
         "play" => Phase::Play,
         "night" => Phase::Night,
-        "growth" => Phase::Growth,
         "ended" => Phase::Ended,
         _ => Phase::Draft,
     };
@@ -420,7 +397,6 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
         votes: [v["votes"]["invaders"].as_i64().unwrap_or(0) as i32, v["votes"]["island"].as_i64().unwrap_or(0) as i32],
         last_close: v["lastClose"].as_array().filter(|a| a.len() == 4).map(|a| std::array::from_fn(|i| a[i].as_i64().unwrap_or(0) as i32)),
         round_plays,
-        growing,
         night,
         log,
         result,
@@ -503,7 +479,8 @@ pub fn game_of(s: &GameState) -> Value {
     let mut lean = json!({
         "phase": v["phase"], "round": v["round"], "rngState": v["rngState"], "seating": v["seating"], "factions": v["factions"], "supply": v["supply"],
         "pass": v["pass"], "first": v["first"], "turn": v["turn"], "passesInRow": v["passesInRow"], "opened": v["opened"], "nextFirst": v["nextFirst"], "copying": v["copying"],
-        "board": board, "players": players, "growing": v["growing"], "night": v["night"], "roundPlays": v["roundPlays"], "result": v["result"], "log": v["log"],
+        // "growing": growth was removed (2026-11-07); null keeps the recorded hashes.
+        "board": board, "players": players, "growing": Value::Null, "night": v["night"], "roundPlays": v["roundPlays"], "result": v["result"], "log": v["log"],
     });
     // Only with rounds as votes, so the hash of every other game is unchanged.
     if !v["votes"].is_null() {
