@@ -18,7 +18,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 
 **Stage (2026-11-08):** 6, the measuring gate (the baseline, `node scripts/measure.js baseline=1`), then 7, tuning the cards. **Open question:** does a hand give real choices, and which cards to tune or replace. **Next step:** read the first baseline's card report.
 
-**Card measurement (designer, 2026-11-07):** the design feels sound; the cards feel unproven. The first question is whether a hand gives real choices, then which cards to tune or replace. The measuring tool, `scripts/measure.js` (designer, 2026-11-08: one configurable tool; it plays bot games natively at the chosen player counts, or reads logged ones, and prints the reports asked for: `report=game,cards,agreement`), gives each card one row of measures from the card study (every turn's hand, every move the bot weighed, every draft pick), in the order a designer fixes a card: **can it act** (turns held with a legal target; plays with no target, which do nothing) → its targeting; **wants to act** (plays for its action while it had a legal target, not spent for sway) → its power against its printed sway; **readings** (turns its readings or uses give different best plays) → rewrite one; **strength** (worth against the rest of the hand) → its numbers; with **timing** (played early, mid or late in a seat's round) and **swing** (whether its place in the hand changes) as context. Every measure is shown twice, for invader backers and for trophy hunters (the island's ending), each from that goal's turns alone, with each use's measures under the card. The flags are Claude's working lines, not targets; bots are the players, so these measure how bots play the cards. The strength probe (`probe=0.05`, off by default) is the controlled test rebuilt natively: on a share of turns, each sampled card's worth is the seat's value holding it minus not, the same moment and the same luck on both sides (the measure that orders printed sway, D-2026-10-08). The old JavaScript tournament's probes (`npm run cards:plays`, the card review page's figures) remain until the page reads the new tool.
+**Card measurement (designer, 2026-11-07):** the design feels sound; the cards feel unproven. The first question is whether a hand gives real choices, then which cards to tune or replace. The measuring tool, `scripts/measure.js` (designer, 2026-11-08: one configurable tool; it plays bot games natively at the chosen player counts, or reads logged ones, and prints the reports asked for: `report=game,cards,agreement`), gives each card one row of measures from the card study (every turn's hand, every move the bot weighed, every draft pick), in the order a designer fixes a card: **can it act** (turns held with a legal target; plays with no target, which do nothing) → its targeting; **wants to act** (plays for its action while it had a legal target, not spent for sway) → its power against its printed sway; **readings** (turns its readings or uses give different best plays) → rewrite one; **strength** (worth against the rest of the hand) → its numbers; with **timing** (played early, mid or late in a seat's round) and **swing** (whether its place in the hand changes) as context. Every measure is shown twice, for invader backers and for trophy hunters (the island's ending), each from that goal's turns alone, with each use's measures under the card. The flags are Claude's working lines, not targets; bots are the players, so these measure how bots play the cards. The strength probe (`probe=0.05`, off by default) is the controlled test rebuilt natively: on a share of turns, each sampled card's worth is the seat's value holding it minus not, the same moment and the same luck on both sides (the measure that orders printed sway, D-2026-10-08).
 
 **Working on:** the 21 cards of the core deck (Appendix H.0), measured by the card report; then the cards to tune or replace.
 
@@ -881,7 +881,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 
 #### 3.15 Victory · *Ideas*
 
-*Decisions: D42.*
+*Decisions: D42, D51.*
 
 **Ideas**
 
@@ -891,7 +891,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
   - The threshold is a simple fixed number. Provisional: more than 15. The number, and whether the line is "more than" or "at or above", are left to balancing.
   - `FX1` **Faction ties go to most locations (first draft):** when factions are tied in presence, the one that controls more locations (LC2, 3.2) ranks higher.
     - `FX2` *Still tied, they win together (first draft):* if the tied factions also control the same number of locations, they all win. Each player's score is their sway minus trophies (EG3) with each of those factions, added together, and the highest total wins.
-- `RV1` **Rounds as votes (Claude's suggestion after The King Is Dead's build-up, designer trying it, 2026-10-31):** each round is a vote: at its close the island's total presence is checked against the threshold, a vote for the invaders if more, else for the island; the side with more of the five votes wins. Rounds can be decided early (the designer is fine with that, as long as every round stays competitive); `RV2` ending the game once a side holds a majority is a variant. Variant `roundVotes` (on, early).
+- `RV1` **Rounds as votes (Claude's suggestion after The King Is Dead's build-up, designer trying it, 2026-10-31; adopted at Trial, D51, 2026-11-08):** each round is a vote: at its close the island's total presence is checked against the threshold, a vote for the invaders if more, else for the island; the side with more of the five votes wins. Rounds can be decided early (the designer is fine with that, as long as every round stays competitive); `RV2` ending the game once a side holds a majority is a variant. Variant `roundVotes` (on, early).
   - *Purpose (designer, 2026-10-31):* to build tension and make every round matter in deciding the end-game condition (which side wins). Why it beats a single end count (designer, 2026-10-31): a last round that decides everything could feel very unsatisfying: a player with a really good set of trophies, holding the wrong cards, can't stop a backer tipping the island over the bar. The test (designer, 2026-10-31): the game mustn't be rote, the same rounds deciding the same ending every time however hard a side fights. Some games settled by round 3 (10 of 20 under D43–D44) and the island always taking round 1 are acceptable (designer).
   - *Measured against the purpose (2026-10-31; bar 20, 20 games each, bots judging each vote as it comes, the `pace` bot switch):* rounds are contested across games (invaders took 7, 6, 6, 7, 11 of round 1–5 votes at 3 players; 14, 12, 12, 13, 13 at 4; 3, 6, 7, 8, 10 at 5), but within a game one side mostly takes the first three: the side was settled after round 3 in 19, 17 and 14 of 20 games (3, 4, 5 players), so rounds 4 and 5 usually can't change it. With 3 tokens on each location (45 to start) at bar 20, the invaders took every round 1 and 2 vote (60 of 60).
   - *Opening screen (2026-10-31; before D43 and D44: standing 1, marked cards; 4 players, bar 20, bots judging each vote, 20 games each, seed 2701):* games where one side took all of rounds 1–3 (of 20), with the invaders' wins: baseline 17 (14); starting sway 7: 10 (15); growth 3: 10 (20, the board swings to the invaders); sway on home locations 2: 12 (17), 0: 13 (3); standing 2: 15 (8); 3 on each at bar 30: 15 (13), at 35: 18 (6); standing 0: 16 (19); starting sway 3: 15 (14); aligned growth: 17 (14); growth 2: 18 (20); 5/1/1 start: 19 (19). No setup breaks the tilt; most move the balance between the sides rather than how open a game stays, so the tilt looks structural (the board carries over, and a side ahead stays ahead).
@@ -990,6 +990,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 #### D3. Player count
 
 - **Decided:** 3 to 5 players.
+- **Enforced by:** `create_game_enforces_3_to_5_seats_and_unique_names`.
 - **Status:** trial
 - **Affects:** 3.16, G.1.
 - **Date:** 2026-09-30
@@ -1003,6 +1004,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 #### D5. Slayer groups
 
 - **Decided:** each player plays a slayer group, a group of characters modelled on a monster-of-the-week trope. There are five, each linked to one archetype: Slayerettes (Nocturnals), Kids on Bikes (80's Sci-Fi), AV Club (Sentients), Neighbourhood Watch (Undead), and Father and the Flock (Demons).
+- **Enforced by:** `starting_setup_affinity_standing_others_and_board_sway`.
 - **Status:** trial
 - **Affects:** 2.3, 2.5, 3.10, G.1.
 - **Date:** 2026-10-03
@@ -1010,6 +1012,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 #### D6. Hidden hands
 
 - **Decided:** players' hands are hidden from each other.
+- **Enforced by:** `views_hide_other_hands_and_trophy_totals`.
 - **Status:** trial
 - **Affects:** 3.11, G.2.
 - **Date:** 2026-10-03
@@ -1052,6 +1055,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (2026-10-07):** sway is always weighted to the strength of the card's action: the weaker the action, the more sway it prints. In the prototype a suit's three cards print 2, 3 and 4, ordered by measured strength : the strongest prints 2, the weakest 4. Power may differ between cards (a spread is desirable); a weaker action is balanced in other ways, such as more sway when spent for sway, or doing something special, unique and slightly rule-breaking.
 - **Decided (designer, 2026-10-08):** the strength that orders printed sway is the strength probe's result (the measuring tool's `probe=`: the card held against not held at the same moment, both played out on the same luck).
 - **Affects:** 3.7 (suit structure), G.1 (cards).
+- **Enforced by:** `d12_every_suit_prints_the_same_total_sway`.
 - **Status:** trial
 - **Date:** 2026-10-07
 
@@ -1059,6 +1063,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 
 - **Decided:** no card or rule ever moves another player's sway. A card may move the player's own sway.
 - **Affects:** 3.7, 3.14, G.2.
+- **Enforced by:** `in_whole_games_every_turn_plays_a_card_and_never_moves_another_players_sway`.
 - **Status:** trial
 - **Date:** 2026-10-07
 
@@ -1073,6 +1078,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided:** in the first draft, the card dictates how sway is placed, and that is treated as a requirement: paid from standing with the faction moved, and a card's action is paid in full or not at all (D21).
 - **Which faction pays (designer):** cards that give the flexibility to select a faction at a location use the selected faction's sway to do the action.
 - **Affects:** 3.7 (IC1), 3.14, G.2.
+- **Enforced by:** `ic1_a_card_is_played_only_if_its_sway_can_be_paid`, `light_of_the_cross_splits_a_group_evenly_between_two_adjacent_locations_both_paid`.
 - **Status:** trial
 - **Date:** 2026-10-07
 
@@ -1112,6 +1118,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer):** there are no generic movement rules. Factions move only by a card (or a card's effect), and each card says where: adjacent locations, a region, neighbouring regions, or anywhere. Regions are geography that cards refer to. The rule that a region whose locations are all scorched is impassable is dropped. Still standing: no move enters a scorched location, and no move brings a third faction into a location (LL1).
 - **Why (designer):** every movement rule is already specified by the cards; factions never move without a card or gambit, so generic movement rules were unnecessary and inconsistent.
 - **Affects:** 3.1 (CN3, TM1), Appendix B (Region, Scorched earth), G.2.
+- **Enforced by:** `in_whole_games_every_turn_plays_a_card_and_never_moves_another_players_sway`.
 - **Status:** trial
 - **Date:** 2026-10-11
 
@@ -1127,6 +1134,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer):** for now, every card is all or nothing on the sway its action places. A card whose action can't be paid for in full can't be played for its action. It replaces D15's "a move goes only as far as the player can pay".
 - **Why (designer):** a player can always play the card for sway instead.
 - **Affects:** 3.7 (IC1), G.2.
+- **Enforced by:** `ic1_a_card_is_played_only_if_its_sway_can_be_paid`.
 - **Status:** trial
 - **Date:** 2026-10-15
 
@@ -1137,6 +1145,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Exception (designer, 2026-10-17):** Plough Through (◐ shift) moves half rounded up from every side of a fight, so a side of 1 leaves and the fight can break.
 - **Global, no lone-group targets (designer, 2026-10-18):** half from a fight, rounded down, is the global rule for any group leaving a fight, unless a card says otherwise. Cards no longer restrict the group that moves to a lone one: a group in a fight can be the target, and half of it moves. Destinations keep their own conditions (a crash into a lone rival, the largest lone group Spoof the Signal marches on, Invite Them In's empty location or lone host). Changed: The Big Chase, Bait the Herd, Draw Them Away, Spoof the Signal and Invite Them In. *Why:* the new strikes and shifts were often unplayable for their actions (The Big Chase 34–40% of the time), and round 1 had few fights.
 - **Affects:** 3.7 (principle 10), G.2, every card that moves tokens.
+- **Enforced by:** `half_from_a_fight_a_card_moves_at_most_half_a_group`, `bait_the_herd_swells_along_a_trail_and_crashes_into_a_lone_rival`, `the_big_chase_sets_off_from_a_fight_too_with_half`.
 - **Status:** trial
 - **Date:** 2026-10-17
 
@@ -1156,6 +1165,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Why (designer):** the new cards were averaging 72 words, mostly repeating shared rules.
 - **Consequence:** rule 4 is one rule for strikes and shifts alike (designer), so the shifts now also place 1 sway where the group leaves (before, only where tokens reached).
 - **Affects:** G.2, 3.7, every card's text.
+- **Enforced by:** `ic1_a_card_is_played_only_if_its_sway_can_be_paid`, `half_from_a_fight_a_card_moves_at_most_half_a_group`, `light_of_the_cross_splits_a_group_evenly_between_two_adjacent_locations_both_paid`.
 - **Status:** trial
 - **Date:** 2026-10-17
 
@@ -1164,6 +1174,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer):** a signature's printed sway is 1 for each card in your hand, itself included, with no cap. It sets the action's limit (the bid) and what the card gives when played for sway alike.
 - **Why (designer):** signatures were best played last, when nobody can answer them, so they risked becoming the last play every round. Now the last card in hand is the weakest moment to play one.
 - **Affects:** 3.7 (the signature slot), G.1, every signature.
+- **Enforced by:** `the_core_deck_prints_each_cards_own_sway_and_a_signatures_is_the_hand`, `the_unsuited_cards_x_is_the_hand_and_each_use_does_what_it_says`.
 - **Status:** trial
 - **Date:** 2026-10-18
 
@@ -1173,6 +1184,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Why (designer):** the winner was losing too few. The pile balance stays: first claim takes the loser's whole group, second claim the winner's losses, about half that. The designer may rethink losses later.
 - **Examples:** 6 beats 2: the winner loses 1. 5 beats 4: 2. 6 beats 5: 3 (before, 2). 3 v 3 won on aligned ground: 2 (before, 1).
 - **Affects:** 3.13 (FR5), G.4 (fights).
+- **Enforced by:** `the_winner_loses_half_the_losers_tokens_rounded_up`.
 - **Status:** trial
 - **Date:** 2026-10-18
 
@@ -1181,6 +1193,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer):** every signature can create or affect a fight, on both its readings (location and faction). A new fight counts, so does a new side at a fight already there (as Wake the Dead's three-way fight), and so does changing a fight already there (designer, amended the same day from "create"; Take Control's exception dropped).
 - **Why (designer):** round 1 is short of fights in the new core, and signatures should open play up.
 - **Affects:** 3.7 (the signature slot), every signature.
+- **Enforced by:** `take_control_spends_your_sway_at_a_fight_to_cut_down_a_faction_there`, `spill_blood_on_the_altar_marks_and_the_winner_loses_as_many_as_the_loser`, `night_terrors_marks_then_at_nightfall_1_token_may_flee_each_mark`, `study_the_bodies_first_claim_also_takes_1_from_the_second_claims_pile`, `wake_the_dead_the_dead_rise_as_a_third_side`.
 - **Status:** trial
 - **Date:** 2026-10-18
 
@@ -1214,6 +1227,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Measured (2026-10-29; `motw tournament`, 160 games each, seed 1601, standard table):** with passing on, 8.6 passes a round while holding cards: 62% deferrals (the seat played later that round; by its own play-outs, waiting beat its best play by a median 0.46 value points, about 5% of a game) and 38% held to the round's end (median margin 0.04, about indifferent: cards not worth playing then). A seat that never passes while it can play, at a table that passes: trophy 14.4% a seat against 23.1%, backer 12.5% against 18.1%. Passing on against off: invaders' ending 51% / 36% (target 40%), backer 22.8% / 15.9% a seat, trophy 19.0% / 23.1%, bot games 62 s / 36 s. Read: passing on is a strong tactic, but its worth is in free waiting for the last word before the fights (a stall), not a trade-off.
 - **Scope:** a switch; TU1 and RE3 stay in Appendix G as the on reading.
 - **Affects:** 3.8, 3.12, G.4, `passing`.
+- **Enforced by:** `with_passing_off_every_card_is_played_and_the_last_ends_the_round`, `in_whole_games_every_turn_plays_a_card_and_never_moves_another_players_sway`, `passing=off`.
 - **Status:** trial
 - **Date:** 2026-10-28
 
@@ -1240,6 +1254,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 
 - **Decided (designer, 2026-10-29):** each faction starts with 2 tokens on each of its archetype's three locations (`seeding` two), replacing D32's 3 on each: a fuller start front-loads the board.
 - **Affects:** 3.5 (SD1), G.3, `seeding`.
+- **Enforced by:** `sd1_each_faction_starts_with_2_on_each_aligned_location_even_3`, `seeding=two`.
 - **Status:** trial
 - **Date:** 2026-10-29
 
@@ -1266,6 +1281,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Why (designer):** the two readings targeted the same ends and differed only in who paid (D23 rule 8, printed nowhere): too much cognitive load. Now each reading is one clear rule, as on the other suit cards.
 - **Consequence:** an ↂ location can no longer be joined to a distant Sci-Fi group on one reading; the card text states its payer as an exception to rule 8.
 - **Affects:** 3.7, `gate`.
+- **Enforced by:** `the_gate_joins_two_locations_one_location_for_movement_one_fight`, `the_gate_a_group_at_both_ends_moves_as_one_and_next_door_reaches_through_it`.
 - **Status:** trial
 - **Date:** 2026-10-30
 
@@ -1282,6 +1298,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer, 2026-10-30):** GR6 is the way to proceed for now, instead of growth: at nightfall, during the round's close, after the fights, every location where there was no fight gains 1 of its own faction's tokens per sway there (all players' sway), if it can. Growth by groups (GR1), growth on own ground (AL3) and sway bringing tokens from cards (GR5) are gone (removed from the prototype 2026-11-07).
 - **Why:** in the measurements (3.5, GR6), nightfall's inflow held level to round 5 (14–18 tokens a round) and kept the most fights late (about 3.9 in rounds 4 and 5), where growth by groups dried up as fights broke groups apart.
 - **Affects:** 3.5 (GR6), G.4 (the round's close).
+- **Enforced by:** `d38_at_nightfall_each_location_without_a_fight_gains_its_own_faction_per_sway_there`.
 - **Status:** trial
 - **Date:** 2026-10-30
 
@@ -1289,6 +1306,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 
 - **Decided (designer, 2026-10-30):** Steal Their Playbook has one use: take any card played earlier this round, by anyone (yours or another player's), however it was played, from the played cards into your hand, to play later. The card is never played at once. It still can't be your last card played: as the last card in your hand it is discarded, for no effect.
 - **Affects:** 3.7, `playbook`.
+- **Enforced by:** `steal_their_playbook_takes_any_card_played_this_round_and_cant_be_the_last_card`.
 - **Status:** trial
 - **Date:** 2026-10-30
 
@@ -1302,14 +1320,16 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer, 2026-10-31):** the last round's monsters don't grow: the game ends straight after the last round's fights, before nightfall, with no nightfall tokens (D38) or growth; then the end is counted. Variant `lastGrowth` (default off; on restores the last nightfall).
 - **Why:** the last nightfall added about 14–18 tokens at 5 players after the last card was played, which no one could answer, and about a third of the presence counted at the end.
 - **Affects:** 3.12, G.5, `lastGrowth`.
+- **Enforced by:** `d41_d42_the_last_round_ends_after_its_fights_and_more_than_20_is_the_invaders`, `lastGrowth=off`.
 - **Status:** trial
 - **Date:** 2026-10-31
 
 #### D42. The presence threshold is 20
 
-- **Decided (designer, 2026-10-31):** the invaders win if total presence at the end (after the last round's fights, D41) is more than 20, at every player count.
+- **Decided (designer, 2026-10-31):** the threshold is 20, at every player count: the invaders take a round's vote when total presence after its fights is more than 20 (D51).
 - **Why:** with the last round ending after its fights, final presence averaged 17, 20 and 17 at 3, 4 and 5 players (D41's measurement); re-scored at 20 the invaders took 8, 13 and 6 of 30. A small number, nearer the size the designer wants for a town's monsters.
 - **Affects:** 3.15 (TH1), G.5, `threshold`.
+- **Enforced by:** `d41_d42_the_last_round_ends_after_its_fights_and_more_than_20_is_the_invaders`, `threshold=20`, `thresholdPerPlayer=off`.
 - **Status:** trial
 - **Date:** 2026-10-31
 
@@ -1318,6 +1338,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer, 2026-10-31):** each player starts with 5 standing with their own faction (unchanged) and 2 with every other faction (variant `startOthers`, from 1), so more cards can be played in the opening round.
 - **Why:** measured over round 1 only (4 players, bots judging each vote, 40 games each, seed 2701): with 1 standing, 68% of the cards held had a legal action, and two thirds of the blocked readings lacked standing to pay. Most strikes and shifts pay 2–3 from standing with the faction moved, so in round 1 The Big Chase was playable on 37% of turns, Invite Them In and Cut the Powerlines 44%, Bait the Herd 49%. With 2: 82% overall; The Big Chase 96%, Invite Them In 91%, Bait the Herd 92%, Spoof the Signal 100%. Starting sway with your own faction (3 or 7), sway on home locations (0 or 2) and the token start barely moved it (63–70%).
 - **Affects:** G.3, `startOthers`.
+- **Enforced by:** `starting_setup_affinity_standing_others_and_board_sway`, `startOthers=2`.
 - **Status:** trial
 - **Date:** 2026-10-31
 
@@ -1327,6 +1348,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Why (designer):** Steal Their Playbook gives you the round's last move (you take a card back, so you hold one more than the others and answer everyone), and its price is going first next round. Card A (Call in Favours) was odd as a forced opener in round 1, and as A is always played first when dealt, its X was always the full hand.
 - **Supersedes:** FP1, FP2 and the rule that the first player opens with their marked card (3.8).
 - **Affects:** 3.8 (FP1, FP2), G.4, `playbook`.
+- **Enforced by:** `the_deck_is_the_core_21_five_suits_and_six_unsuited_none_marked`, `round_one_s_first_player_is_random_and_opens_with_any_card`, `steal_their_playbook_s_player_goes_first_next_round_else_the_first_player_stays`.
 - **Status:** trial
 - **Date:** 2026-10-31
 
@@ -1335,6 +1357,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer, 2026-11-01):** an unsuited card may be spent for 2 sway with any one faction, chosen as it's played (wild sway; variant `unsuitedSway`, default 2; off, 1, 3 or hand size to test). Suited cards' sway stays as printed (variant `cardSway` back to 0).
 - **Why:** the sway economy was measured (votes, bar 20, 60 games each): more sway on suited cards (+2, signatures included, the sway use only) concentrated the game: round 5 decided the ending in 7% of games (18% today), comebacks 5% (13%), the strongest faction after round 3 went on to win 69% (38%), and winners held 88% of their standing in the winning faction (78%), the one-faction sway race the designer doesn't want. Unsuited wild sway alone kept round 5 (15%) and comebacks (13%) near today's, and the invader ending's faction race closer (top two within 2 in 91% of invader games, a small sample). Neither opened many more big plays (5–7% of plays swing 4+): the cards' own numbers and the bots' choices limit those.
 - **Affects:** 3.14, 3.7, G.2, `unsuitedSway`.
+- **Enforced by:** `d45_an_unsuited_card_gives_2_sway_with_any_faction_and_a_suited_card_its_printed_sway`, `unsuitedSway=2`, `cardSway=0`.
 - **Status:** trial
 - **Date:** 2026-11-01
 
@@ -1343,6 +1366,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer, 2026-11-01):** a faction's supply never runs out (variant `factionTokens`, default unlimited; 20, 30 and the other numbers kept to test). Casualties still leave the board as trophies; they no longer drain what the faction can bring back.
 - **Why:** casualties left the pool for good, so fights slowly starved nightfall and growth. No faction ever had more than 24 of its 30 on the board, so the limit only bit through that drain.
 - **Affects:** 3.5, G.1, `factionTokens`.
+- **Enforced by:** `seeding_home_puts_5_1_1_of_each_faction_on_its_own_locations`, `factionTokens=unlimited`.
 - **Status:** trial
 - **Date:** 2026-11-01
 
@@ -1351,6 +1375,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer, 2026-11-04):** each slayer group starts with 2 sway on the board at each of its affinity locations (its archetype's three), from its supply, instead of 1. Variant `startBoard` (default 2; 0 and 1 kept to test).
 - **Why:** under rounds as votes the ending was settled by round 3 in 70–93% of bot games and the invaders ended 7–27%: rounds 1–2 weren't contests (presence at the vote about 12, nine games in ten under the bar), because fights remove a steady 12–17 a round and nightfall's refill only builds up with the sway left on quiet ground. More sway on the board from the start feeds nightfall from round 1. Measured (votes, bar 20, 60 games each at 3/4/5 players, seed 8101): invaders' endings 7%, 27%, 7% → 18%, 50%, 28%; settled by round 3 92%, 70%, 93% → 83%, 42%, 68%; last place after round 4 winning 2%, 5%, 10% → 8%, 8%, 13%; won by 1 or less 73%, 67%, 92% → 70%, 55%, 78%.
 - **Affects:** G.3, `startBoard`.
+- **Enforced by:** `starting_setup_affinity_standing_others_and_board_sway`, `startBoard=2`.
 - **Status:** trial
 - **Date:** 2026-11-04
 
@@ -1359,6 +1384,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer):** the first draft's picks are the working rules: one ruleset, the designer's favourite candidate in each decision area, a close second kept as a variant; written up as the rulebook (Appendix G). A later decision changes a pick where it says so.
 - **The pool (PS1, 3.16):** a fixed pool of 21 unique cards, at every player count: hands of 6, 5 and 4 at 3, 4 and 5 players, the cards not dealt left out unseen (3, 1 and 1). It replaces D7's pool scaled to player count.
 - **Affects:** Appendix G, 3.6, 3.16.
+- **Enforced by:** `hands_are_6_5_or_4_and_the_rest_is_left_out`, `the_draft_keeps_one_more_card_each_pass_and_ends_with_full_hands`, `the_map_is_symmetric_with_five_regions_of_three`, `the_deck_is_the_core_21_five_suits_and_six_unsuited_none_marked`, `trophies_first_claim_takes_bigger_pile_second_claim_smaller_half_its_sway_to_winner`, `tied_first_claims_collect_nothing_and_both_piles_go_back_a_lone_player_takes_both`, `a_true_tie_wipes_both_sides_scorches_and_rewards_no_one`, `on_aligned_ground_the_aligned_faction_wins_a_tie`.
 - **Status:** trial
 - **Date:** 2026-10-06 (the first draft); recorded as a decision 2026-11-08
 
@@ -1366,6 +1392,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 
 - **Decided (designer):** the numbers the game plays with until balancing sets them: 5 rounds (GL1; the first draft's guess, G.7 as was), 30 cubes for each player (designer, 2026-10-07: a bump from 20 so the supply rarely limits play), 5 standing with your own faction at the start (designer, 2026-10-07: start with more; 5 was Claude's suggested number), slayer groups given out at random.
 - **Affects:** G.3, G.4, `rounds`, `playerCubes`, `startSway`, `groups`.
+- **Enforced by:** `starting_setup_affinity_standing_others_and_board_sway`, `rounds=5`, `playerCubes=30`, `startSway=5`, `groups=random`.
 - **Status:** trial
 - **Date:** 2026-10-06 to 2026-10-07; recorded as a decision 2026-11-08
 
@@ -1374,8 +1401,18 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Decided (designer, 2026-10-26), first draft:** a third way to play a suit card: instead of playing it for its sway, you may bring its faction back, only while that faction has no location with 2 or more of its tokens. Place up to X of its tokens (X: the card's sway, D24 for signatures) from its supply, at its suit locations or where it already is (the two readings), paying 1 standing with that faction per token, back to your supply. Common rules hold (tokens only where they can enter).
 - **Why (designer):** a faction wiped off the island had no way back, so trophy hunters lost its colour for good; paying your standing with the faction keeps reviving it competitive, even for a backer.
 - **Affects:** 3.7, G.4, `wayBack`.
+- **Enforced by:** `a_way_back_brings_a_faction_back_while_it_has_no_location_with_2_or_more`, `wayBack=on`.
 - **Status:** trial
 - **Date:** 2026-10-26
+
+#### D51. Rounds as votes
+
+- **Decided (designer, 2026-11-08):** rounds as votes (RV1) is the target ruleset, the one the bots were tuned to from 2026-10-31: each round's close, after its fights and before nightfall, is a vote, for the invaders if total presence is more than the threshold (D42), else for the island. Every round's vote counts the same (designer, 2026-11-05); the invaders need strictly more votes (designer, 2026-11-01); all five rounds are played. It replaces the single count after the last round (TH1), kept as the variant `roundVotes` off.
+- **Why (designer, 2026-11-01):** a last round that decides everything could feel very unsatisfying: a player with a really good set of trophies, holding the wrong cards, can't stop a backer triggering the invaders' ending. Votes build tension and make every round matter.
+- **Affects:** 3.15 (RV1), G.5, `roundVotes`, `firstVote`, `lastVote`.
+- **Enforced by:** `rounds_as_votes_each_close_is_a_vote_and_early_ends_on_a_majority`, `d41_d42_the_last_round_ends_after_its_fights_and_more_than_20_is_the_invaders`, `single_count_variant`, `roundVotes=on`, `firstVote=1`, `lastVote=1`.
+- **Status:** trial
+- **Date:** 2026-11-08 (tested from 2026-10-31; never made the default until now)
 
 ### A.2 Changelog
 
@@ -1505,6 +1542,7 @@ Actual changes to mechanisms and game structure.
 | 2026-10-29 | Shifts bring tokens (D33, designer): GR5 shifts only, 30 tokens a faction, threshold 30, the start back to 2 on each and 1 standing | The GR5 measurements in 1.7 |
 | 2026-10-29 | Action icons: a verb mark plus a noun mark, not pixel art (D34, designer) | IK1's noun and verb lists |
 | 2026-10-28 | Bot tests run natively (`npm run bots`, `motw tournament`: the tournament's games in Rust on every core, about twice as fast as WebAssembly). Budget map: more search for the trophy bot (16 kept moves, 12 play-outs, both) gained nothing; the trophy bot now plans its hand (designer), +6 points a seat pooled over two seeds; then drops the random jitter on its one-step values, ahead on all three seeds. Measured and not adopted: blending the one-step value into play-outs (worse), play-out bots listing targets (worse, slower), 12 draft samples, the backer keeping 16 moves. Planning confirmed for the backer (+5.6 pooled) | Bot tuning, not rules. The standard table's endings split 50/50 over 2,080 games, against the 40% invaders' ending aimed for: balance to revisit (designer) |
+| 2026-11-08 | Rounds as votes is the default (D51, designer: the target ruleset, the one the bots were tuned to): each round's close is a vote at the threshold of 20; the side with more votes wins | Tested from 2026-10-31 but never made the default, so the rulebook, the tutorial and the first baseline followed the single count after the last round. Fingerprints re-recorded; the baseline rebuilt |
 
 ---
 
@@ -2306,7 +2344,7 @@ The **Pick** column says how candidates in a slot relate:
 |  |  | `IB5` | Costly displacement |  |
 | Win conditions (WC) | One | `WC1` | The island wins, or one faction wins | 3.15 |
 | Presence threshold (TH) | One | `TH1` | End-game presence threshold | 3.15 |
-| Rounds as votes (RV) | Any | `RV1` | Each round's close is a vote; the side with more votes wins (variant `roundVotes`, off) | 3.15 |
+| Rounds as votes (RV) | Any | `RV1` | Each round's close is a vote; the side with more votes wins (D51) | 3.15 |
 |  |  | `RV2` | The game ends once a side holds a majority |  |
 | Faction tie (FX) | One | `FX1` | Factions tied in presence: the one controlling more locations ranks higher (needs LC2) | 3.15 |
 |  |  | `FX2` | Still tied on locations: the factions win together, and players add up their scores with each (first draft) |  |
@@ -2840,7 +2878,7 @@ Where a game is started. The host page holds no game rules. Everything it does i
 - **Strategy breakpoints (designer, 2026-10-07; the first build, deep-bold/balanced/cautious, lost every tournament and was removed; the goal bots carry the idea).** Points at which a bot shifts focus, with different numbers per bot to give each its own play profile. Two axes:
   1. *The ending:* a trophy mix (the island wins) or faction sway (the invaders win). A bot commits when the projected presence is far enough from the threshold, or in the last round; otherwise it hedges. Which faction to back is two-sided (designer): if the invaders look like winning, the faction it has the best shot at leading; mid-game, if they look like losing, the faction that sets up the actions it wants to take with its cards.
   2. *Mid-game:* sway on a faction (spending cards for standing) or actions that produce trophies, switching by round and by how much standing it already holds.
-- **Tournament** (`motw tournament`, driven by `scripts/measure.js`; the JavaScript `scripts/tournament.js` until 2026-11-08): whole games with one profile per seat, rotated through the seats, counting wins and how each profile's games end.
+- **Tournament** (`motw tournament`, driven by `scripts/measure.js`): whole games with one profile per seat, rotated through the seats, counting wins and how each profile's games end.
 - **Goal-driven bots (designer approved the approach, 2026-10-07; built as `goal` and `goal-deep`).** Bots with goals that can shift and adapt while prioritising the best chance at victory. Next session's build order: (1) the win-chance evaluator, (2) goals with switch margins, (3) tournaments against the current bots.
   - *Win chance:* P(invaders win) × P(I win as invaders) + P(island wins) × P(I win as island). Each "I win" is a probability from my margin against the best rival (standing less trophies with the likely top faction; weakest trophy colour, then the next), sharpening as rounds run out. P(invaders win) comes from projected end-of-game presence (the board now plus the recent trend) against the threshold. Every move is scored by how much it raises the win chance; the deep bot's lookahead stays as the tactical layer.
   - *Goals:* back faction F (build standing, avoid its trophies, protect its tokens: the invaders' loop, D16); win the island (collect the weakest colour, make big fights where you have first claim, remove tokens); swing (losing under the likely ending but strong under the other: push toward the other); hedge (early, unclear). A bot changes goal only when the new goal's win chance beats the current one by a margin: the breakpoints, per bot (switch margin, risk appetite, horizon). Bots keep their goal between turns.
@@ -2869,7 +2907,7 @@ Where a game is started. The host page holds no game rules. Everything it does i
     - *Bot profile rework (2026-10-08, after a review of the whole system):* competence, style and table are kept apart. Competence (one evaluator for every goal bot): island trophies counted directly, margins never scaled by an ending's chance, the threat of a rival's faction lead, and a win-chance measure normalised across the table (calibrated: round 1 predicts 20% and 20% happen; round 4's 15%, 25%, 43% came true 18%, 28%, 35%; very high late predictions are still over-confident). Style is two numbers: a lean toward factions or trophies that fades by round (varied a little each game) and stubbornness. Stances are now fluid: backers open on a faction (72% in round 1) and many give up late (30% still backing in round 5); trophy players sometimes join late (11% in round 5). Probes play out the real table with each bot's plan.
     - *Rules test with committed backers (never abandon their faction; 200 games each):* the invaders' ending with 1 backer 25%, 2 backers 43%, 3 backers 58.5%, 4 backers 67%. Two backers and a majority meet the targets; a lone backer at 25% is easier than "very, very difficult". That is a rules question (how well a lone faction holds presence against four players removing it). *Designer (2026-10-08): 25% is fine for now.*
 - **Bots read the full state.** A bot that plays to win would have to be limited to its own player view for a fair game against people; for measuring cards, full state is used. *Open:* whether to limit them.
-- **Smarter bots (designer, 2026-10-08: make the bots even smarter; a little cheating, the reply lookahead seeing the next hand, is fine for now).** Five search switches on the goal bots (then `public/bots.js`, now `rust/src/bots.rs`; tuning, not rules), each tested as a challenger in seat 5 against backer, backer, goal, goal (200 games each; an even share is 20%):
+- **Smarter bots (designer, 2026-10-08: make the bots even smarter; a little cheating, the reply lookahead seeing the next hand, is fine for now).** Five search switches on the goal bots (`rust/src/bots.rs`; tuning, not rules), each tested as a challenger in seat 5 against backer, backer, goal, goal (200 games each; an even share is 20%):
   - *sim, play-out search:* its six best moves one move ahead (passing always among them), each played to the end of the round four times by fast goal bots, with shared randomness; passing and holding a card are judged like any other move. **49.9%** (the goal bots 15.0%).
   - *sets, access to the weakest colours:* for the island, standing and board sway with the factions of its weakest colours count (the access to their fights under IC1), fading out by the last round. sets=1 26.0%, **sets=2 29.3%**, sets=4 21.0%. Prompted by a game where a bot took 31 trophies, 18 of them Machines, and lost on a colour at 0 (designer: lots of trophies only matter with many complete sets).
   - *enum, every target listed* (up to 40 per card, sampling past it): 24.8%. *combo, hand-aware draft* (a card's worth after each kept card's best play): 24.3%. *hidden, face-down tokens counted* (its own as they are, a rival's as even odds of a bluff): 21.5%.
@@ -2886,21 +2924,21 @@ Where a game is started. The host page holds no game rules. Everything it does i
     - **Designer (2026-10-09):** if trophy players take up the faction, backers should respond by backing it harder once presence is no longer at risk. *Built as `race`:* a backer values its lead in its faction's net standing, weighted by how safe presence is. race=1 17.5%/21.7%, **race=2 20%/20%** (the invaders' ending 4 in 10, backers winning 3), race=4 15%/23.3%. `race=2` standard: the two profiles even and the designer's targets met, on 10 games. *Confirmed over 40 games (seed 80):* backers 18.1% a seat, trophy 21.3%; the invaders' ending 15 in 40, backers winning 10 of those; backers back the faction 78–85% of rounds 1–3, falling to 44% by round 5, trophy players 15–27% in rounds 4–5.
   - *Tuning method (2026-10-10; designer: research how to tune board-game bots, then keep implementing and testing, on short runs for more iteration). From the research (`reports/Board game bot tuning methods.md`):*
     - *Speed:* bot games about 5× faster with identical play (a full game 245s → 46s on one core): a fast deep copy, one copy for a round's projected fights, a copy-on-write log, and memos per position while a bot searches.
-    - *Duplicate deals (`duplicate=1`), compared deal by deal (`scripts/pair.mjs`):* each deal is played once per seat with the profiles rotated, and a change is measured by the changed seats' wins less the same seats' wins on the same deals, so the luck of the deal cancels. On 40 games the error fell from about ±5.5 points a seat (pooled shares) to ±2.7–4.2.
-    - *The bots' judgement against outcomes (`scripts/calibrate.mjs`, `scripts/fit.mjs`):* the bots' win chances in rounds 2–3 predict slightly *against* the winner (Platt slopes below 0), so rescaling them cannot help; the evaluation itself needs refitting. Each seat's position features are now logged each round for that fit.
+    - *Duplicate deals (`duplicate=1`), compared deal by deal:* each deal is played once per seat with the profiles rotated, and a change is measured by the changed seats' wins less the same seats' wins on the same deals, so the luck of the deal cancels. On 40 games the error fell from about ±5.5 points a seat (pooled shares) to ±2.7–4.2.
+    - *The bots' judgement against outcomes :* the bots' win chances in rounds 2–3 predict slightly *against* the winner (Platt slopes below 0), so rescaling them cannot help; the evaluation itself needs refitting. Each seat's position features are now logged each round for that fit.
     - *Successive halving (`halve`):* the same play-outs, spent in rounds that drop the worse half of the moves.
     - *Search size (40 games each, duplicate, against the standard table; points a seat, ± error):* backers with 8 play-outs −3.8 ±4.2; backers keeping 10 moves −6.9 ±3.5 (worse); trophy with 8 play-outs +3.3 ±2.7. None adopted: within noise, and the larger searches cost 30–60% more time.
     - *Halving and spread (20 games each unless noted):* backers halving 12 moves at 2 play-outs +5.0 ±2.9 on 20 games, −1.3 ±3.9 on 40 (the early lead was noise); trophy halving 12 moves −1.7 ±1.7, halving the standard 6 moves +1.7 ±3.2, 6 play-outs +1.7 ±4.2. Wider win-chance spreads (`soft`): trophy at 1.5 −6.7 ±4.7, at 2 +3.3 ±4.3, backers at 1.5 0.0 ±4.1. None adopted. Reading: the play-out search is not what limits the bots now; the evaluation is.
-    - *Fitted evaluation (`fit`, weights in `public/eval-fit.json`):* fitted by Newton's method on 88 games' features, five folds by deal. Cross-validated log-loss (an even split 1.609): rounds 2–5 fitted 1.555, 1.485, 1.541, 1.434 against the bots' own 1.624, 1.625, 1.675, 1.725. The bots' forecasts are worse than an even split; the fit is better. It weighs total trophies and the third-weakest colour more than the bots do.
+    - *Fitted evaluation (since retired):* fitted by Newton's method on 88 games' features, five folds by deal. Cross-validated log-loss (an even split 1.609): rounds 2–5 fitted 1.555, 1.485, 1.541, 1.434 against the bots' own 1.624, 1.625, 1.675, 1.725. The bots' forecasts are worse than an even split; the fit is better. It weighs total trophies and the third-weakest colour more than the bots do.
     - *What the fit shows:* in rounds 2–3, a lead in faction standing predicts *losing* (also with the seat's profile held fixed), sway on the board predicts losing in every round, and unspent supply predicts winning in rounds 2–3. Trophies, and above all balanced ones, predict winning throughout.
     - *Tried on that evidence, none adopted (20 games each, 40 where noted; points a seat):* the fitted evaluation in place of the goal value, trophy −3.3 ±4.3 (×2 scale), 0.0 ±2.7 (×5); added to it (`blend=2`), trophy −0.8 ±2.8, backers +5.0 then −3.1 ±5.4 on 40; supply worth 0.1 a cube (`save`), trophy +1.7 ±3.2, backers −5.0 ±5.0.
     - *Play-outs into the next round (`deep=1`, the coming deal drawn per play-out):* clearly worse: as a single challenger trophy 0% against 25% (seed 11) and 7.5% against 5% (seed 12); a backer 7.5% against 25%. Longer play-outs by fast bots are too noisy to choose by.
     - *How sensitive the tests are:* taking the play-out search away from all three trophy seats cost them only −5.0 ±6.3, against +25 points as a single challenger (200 games). Changing every seat of a profile dilutes an effect (the changed seats mostly take wins from each other); a single challenger shows it in full but is noisy (±10–20 on 20 games). So 20-game runs only find large effects; small refinements need hundreds of games.
     - *Correction:* the smaller errors from comparing deal by deal came from estimating with only 4–8 deals; paired game by game, the error is about that of pooled shares (±5–8 points on 20 games). The bots' own randomness makes games on the same deal diverge quickly, so duplicate deals help little here.
-    - *Placings (`result.placings`, a measure, not a rule):* every seat's place by the winners' score and tiebreaks, logged, and compared by `scripts/pair.mjs` (rebuilt for older logs: island games exact, invaders' 91% agreeing on the winner). Placings did not separate any variant either.
+    - *Placings (`result.placings`, a measure, not a rule):* every seat's place by the winners' score and tiebreaks, logged, and compared deal by deal (rebuilt for older logs: island games exact, invaders' 91% agreeing on the winner). Placings did not separate any variant either.
     - *More, none adopted so far (20 games; win points a seat; placing, negative better):* cheaper search (4 moves × 3 play-outs, a third faster) trophy 0.0 / +0.13, backers −5.0 / +0.10; the standing margin's weight at 1 (`margin`) trophy +3.3 / −0.12, backers +6.3 / −0.07; trophy `threat=4` +1.7 / 0.00; the island margin weighing the second and third weakest colours at 0.6 and 0.3 (`w2`, `w3`; standard 0.35 and 0.12) trophy +8.3 / −0.12, backers −5.0 / +0.28; a play-out search over the draft's keeps (`draft=3`, three times the time) as a single challenger −5.0 / +0.05.
     - *The island weights, followed up (trophy; win points a seat / placing):* 0.6 and 0.3 over 80 games on seed 11 +1.9 / −0.08 (from +8.3 on its first 20) and over 40 on seed 12 +1.3 / −0.12; 0.8 and 0.5 on seed 12 (40 games) +0.8 / −0.01 and seed 13 (20) −1.7 / +0.17; 1 and 0.6 0.0 / +0.07. The fit on 980 tables agrees that the second and third weakest colours count about equally, and far more than 0.35 and 0.12, but playing by it gains little or nothing: not adopted. Weighing every trophy at 0.1 in the counted margin (`all`) was worse (−5.0 / +0.42, the invaders' ending 18 in 20). 0.8 and 0.5 over 80 games on seed 11: −1.5 / +0.13, with the invaders' ending 41 in 80 against 22 (trophy bots fight presence less).
-    - *The experiment runner (2026-10-10, `scripts/experiment.js`; designer: a script any machine can run unattended that jitters the tuned values, runs, does a rough analysis and catalogues the result in the repo):* each experiment moves one to three of a profile's values (a normal draw around the current setting, sizes in `experiments/space.json`; competence values only), plays the changed table and the standard table on the same deals (20 games, seeds from a pool of 40 so baselines are reused, cached in `experiments/bases/` by code, Node version, table and seed), and compares the changed seats game by game (wins and placings). Verdicts: promising at z ≥ 2, then rerun on a fresh seed with twice the games (success only if it agrees); worse at z ≤ −2; else inconclusive. Each attempt is a log entry (`experiments/results/`, with its games); `experiments/CATALOGUE.md` lists them all and fits each value's gain against how far it moved (a curve, so it can find a peak at the current value). Speed: one pool of worker threads per machine (one per core) fed game by game by several experiments at once, so fast and slow cores and long and short games balance out; macOS kept awake while it runs. With `--push` it pulls others' entries and pushes its own between experiments, waits to pull new bot code until no experiment is in flight, and rebuilds the log when two machines' logs meet. Tested with two clones pushing at once and a bot-code change mid-run.
+    - *The experiment runner (2026-10-10, retired 2026-11-08 for the measuring tool; designer: a script any machine can run unattended that jitters the tuned values, runs, does a rough analysis and catalogues the result in the repo):* each experiment moves one to three of a profile's values (a normal draw around the current setting, sizes in its value space; competence values only), plays the changed table and the standard table on the same deals (20 games, seeds from a pool of 40 so baselines are reused, cached by code, Node version, table and seed), and compares the changed seats game by game (wins and placings). Verdicts: promising at z ≥ 2, then rerun on a fresh seed with twice the games (success only if it agrees); worse at z ≤ −2; else inconclusive. Each attempt is a log entry (with its games); a catalogue listed them all and fits each value's gain against how far it moved (a curve, so it can find a peak at the current value). Speed: one pool of worker threads per machine (one per core) fed game by game by several experiments at once, so fast and slow cores and long and short games balance out; macOS kept awake while it runs. With `--push` it pulls others' entries and pushes its own between experiments, waits to pull new bot code until no experiment is in flight, and rebuilds the log when two machines' logs meet. Tested with two clones pushing at once and a bot-code change mid-run.
     - *Last checks:* trophy `linear=2` 0.0 / +0.03; a bundle of every mildly positive trophy change (island weights 0.8 and 0.5, `margin=1`, 6 play-outs, `blend=2`) +0.8 / +0.07 (seed 12, 40 games) and −1.7 / +0.07 (seed 13, 20). Real and bluff tokens are placed about evenly (22 and 17 in four games), so counting a rival's face-down token at even odds is calibrated.
     - *Reading after the night's runs:* every early lead (halving, blend, island weights) faded toward zero with more games. Against each other the bots sit on a plateau: no change to search size, evaluation weights or play-out depth measurably beats the standard profiles, and only large effects (+15 points or more as a single challenger) show in runs short enough to iterate on.
 
@@ -3224,13 +3262,12 @@ For each fight:
 
 ### G.5 The end of the game
 
-*Decisions: D41, D42.*
+*Decisions: D41, D42, D51.*
 
-After the last round's fights:
-
-1. **Which side wins (TH1, D42 · trial).** Count every invader token on the board. If the total is more than 20, at every player count, the invaders win; otherwise the island wins.
-2. **The winning faction (FX1, FX2, D48 · trial).** If the invaders win, the faction with the most tokens on the board wins. Tied factions: the one controlling more locations. Still tied: they all win together.
-3. **The winning player (EG3, D48 · trial).**
+1. **Each round is a vote (RV1, D51 · trial).** At each round's close, after its fights and before nightfall, count every invader token on the board. If the total is more than 20, at every player count (TH1, D42 · trial), the round's vote goes to the invaders; otherwise to the island. Every round's vote counts the same.
+2. **Which side wins (D51 · trial).** The game ends after the last round's fights and its vote (D41 · trial). The side with more votes wins; the invaders need strictly more.
+3. **The winning faction (FX1, FX2, D48 · trial).** If the invaders win, the faction with the most tokens on the board wins. Tied factions: the one controlling more locations. Still tied: they all win together.
+4. **The winning player (EG3, D48 · trial).**
    - *A faction wins:* each player scores their standing with it (sway still on locations doesn't count) minus their trophies of its colour. With factions winning together, players add up their scores with each. Highest score wins.
      - Ties (ET4, ET1): fewest trophies of the winning faction, then affinity for it, then compare scores with the faction next highest in presence, and so on down.
    - *The island wins (TS2):* each player scores the number of trophies they hold of the colour they have fewest of. Highest score wins.
@@ -3503,7 +3540,7 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 
 - Hidden effects must apply to whatever fight happens at their location, never only if a particular faction is in it (3.11). Round 7 entries that need rewording: Hack the Mainframe ("the target faction counts its tokens in the region") and the faction readings of Salt and Burn the Bones and Set the House on Fire ("any fight the Undead/Demons are in"). Under the placement rule their faction reading becomes "a location holding the suit's faction", and the effect must work on whichever two factions end up fighting there.
 
-- Round 8 (2026-10-07; suggestions, driven by Claude at the designer's request): aimed at the top two criteria of the strength ranking (Current focus 4), where the data showed gaps: taking sway control of a contested location (Stake Out the Den, Take Over the Wake: sway moved or placed without moving tokens) and shaping big fights, including for the invaders (Raise the Force Field: protection; Hijack the Feed and Sign the Contract: trophy redirection). Measured as never-dealt test cards (`spec.testCards`, `scripts/balance.js`, 200 states, 5 players): all five score low on every measure (battle 1.1–1.7, control 0.2–0.5). They are capped by the sway economy, not their wording: in rounds 1–2 most fights have no player sway at them (see Current focus 4). Unique and slightly rule-breaking: Stake Out the Den (moves the player's own sway, which nothing else does; D13 forbids moving anyone else's. Designer's seed for its theme: a "pivot" or "plan B"), Sign the Contract (reverses TD1's pile order), Hijack the Feed (bends the ranking).
+- Round 8 (2026-10-07; suggestions, driven by Claude at the designer's request): aimed at the top two criteria of the strength ranking (Current focus 4), where the data showed gaps: taking sway control of a contested location (Stake Out the Den, Take Over the Wake: sway moved or placed without moving tokens) and shaping big fights, including for the invaders (Raise the Force Field: protection; Hijack the Feed and Sign the Contract: trophy redirection). Measured as never-dealt test cards (`spec.testCards`, the battle score of the time, 200 states, 5 players): all five score low on every measure (battle 1.1–1.7, control 0.2–0.5). They are capped by the sway economy, not their wording: in rounds 1–2 most fights have no player sway at them (see Current focus 4). Unique and slightly rule-breaking: Stake Out the Den (moves the player's own sway, which nothing else does; D13 forbids moving anyone else's. Designer's seed for its theme: a "pivot" or "plan B"), Sign the Contract (reverses TD1's pile order), Hijack the Feed (bends the ranking).
 
 - Round 9 (2026-10-07; suggestions, driven by Claude at the designer's request): one change each to the three weakest movers on battles (Leak, Lamps, the Virus), to see whether their wording or their situation holds them back. Measured as test cards against the dealt versions (200 states, 5 players; battle score, then with `swayToBoard=on`):
   - Leak It to the Press (half the group goes anywhere): 7.3 against Leak's 5.3; 7.9 against 5.6. The only clear gain, and it lands mid-pack (near Reroute and Board Up). Leak's limit was its reach.
@@ -3558,7 +3595,7 @@ To come later: spice, balance and swing for the suited cards, inspired by Inis's
 
 - *Designer (2026-10-07), on the marked cards A to D:* keep the idea that these cards set turn order (FP2); they just have to be more interesting. Their actions should make sense as a first move, thematically and mechanically: something with the potential to set a big gambit for the round, or shake up the meta. B, C and D won't always be played as opening moves; A, when it is dealt, always is.
 
-- Round 15 (2026-10-07; suggestions, driven by Claude): unsuited ideas aimed at the marked slots, each something no faction card does. Measured on every turn (200 states) and, with the new `opening=1` option of `scripts/balance.js`, on each round's first play only (100 states); battle score, all turns / opening:
+- Round 15 (2026-10-07; suggestions, driven by Claude): unsuited ideas aimed at the marked slots, each something no faction card does. Measured on every turn (200 states) and, on each round's first play only (100 states); battle score, all turns / opening:
   - Steal Their Playbook: play the action of the last card played, as if it were yours. 11.1 / 5.3 (playable 83% / 60%; as an opener it copies the last card of the previous round).
   - Claim the Spoils: at this round's fight at the target, you take every pile, whoever has first claim. 4.6 / 0.2. *Designer (2026-10-08): it can't be played as your last card in hand. It is open information (the claim is visible). Later the same day: renamed Set a Trap and made marked card A, without the last-card rule.*
   - Call a Truce: no fight at the target this round; both groups stay. 3.1 / 0.1.

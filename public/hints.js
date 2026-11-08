@@ -86,10 +86,12 @@ function planLine(s, pid, goal) {
   const t = Number(s.options.threshold);
   if (goal === 'invaders') {
     const f = backed(s, pid);
-    return `Back the ${F(f)}. Over ${t} monsters at the end, the biggest faction wins and its favourite with it: build your sway with them and keep the count up.`;
+    const over = s.options.roundVotes === 'off' ? `Over ${t} monsters at the end` : `Win the votes (over ${t} monsters after a round's fights)`;
+    return `Back the ${F(f)}. ${over}, the biggest faction wins and its favourite with it: build your sway with them and keep the count up.`;
   }
   const w = weakest(s, pid);
-  return `Trophy sets. At ${t} monsters or fewer, complete sets decide: your weakest colour is the ${F(w)} (${s.players[pid].trophies[w]}).`;
+  const under = s.options.roundVotes === 'off' ? `At ${t} monsters or fewer` : `If the island wins the votes (${t} monsters or fewer after a round's fights)`;
+  return `Trophy sets. ${under}, complete sets decide: your weakest colour is the ${F(w)} (${s.players[pid].trophies[w]}).`;
 }
 
 /**
@@ -148,11 +150,13 @@ function reasons(a, b, pid, goal) {
 /** The rule a move uses, as a refresher. @param {GameState} s @param {Move} move */
 function ruleFor(s, move) {
   if (move.type === 'pass') return 'Passing isn\'t final: you can play when the turn comes back. When everyone passes in a row, the round ends and every location with two factions fights.';
+  if (move.type === 'flee') return 'Night Terrors: at nightfall, 1 monster may flee from each marked location to a neighbour.';
   if (move.type !== 'play') return '';
   const c = cardById(move.card);
   const f = s.factions.find((x) => factionById(x).archetype === c.suit);
+  if (move.use === 'sway' && !c.suit) return `An offering: spend an unsuited card for ${s.options.unsuitedSway ?? 2} sway with any one faction, chosen as you play it. Its action is lost.`;
   if (move.use === 'sway') return `An offering: spend a suited card for its printed sway with the faction of its suit${f ? ` (the ${F(f)})` : ''}. Its action is lost.`;
-  if (!c.suit) return 'Unsuited cards have no LOC or FAC: they bend the rules as the card says, and can\'t be spent for sway.';
+  if (!c.suit) return 'Unsuited cards have no LOC or FAC: they bend the rules as the card says.';
   if (move.target?.mode === 'faction') return `FAC: the card acts on the faction of its suit${f ? `, the ${F(f)},` : ''} wherever they are.`;
   return 'LOC: the card acts at a location of its suit, on whichever faction is there.';
 }
@@ -160,6 +164,7 @@ function ruleFor(s, move) {
 /** A move as a short title. @param {GameState} s @param {string} pid @param {Move} move */
 function titleOf(s, pid, move) {
   if (move.type === 'pass') return 'Pass';
+  if (move.type === 'flee') return move.to ? `Night Terrors: 1 ${F(move.faction ?? '')} flees ${locationById(move.location).name} to ${locationById(move.to).name}` : `Night Terrors: nobody flees ${locationById(move.location).name}`;
   if (move.type !== 'play') return '';
   const c = cardById(move.card);
   if (move.use === 'sway') {
@@ -173,6 +178,7 @@ function titleOf(s, pid, move) {
 /** A move in a few words, for the concise hint. @param {Move} move */
 function shortOf(move) {
   if (move.type === 'pass') return 'Pass';
+  if (move.type === 'flee') return move.to ? 'Flee' : 'Stay';
   if (move.type !== 'play') return '';
   const c = cardById(move.card);
   if (move.use === 'sway') return `Spend ${c.name} for sway`;

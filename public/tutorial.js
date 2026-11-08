@@ -477,16 +477,16 @@ function endingSteps() {
   const theirScore = F_.players[rival].standing[backs] - F_.players[rival].trophies[backs];
 
   return [
-    spot(SEL.presence, 'Count the monsters', `${eq(...v.factions.map((f) => tokenHtml(f, 1)), op('on the island now'), op('='), `<b>${total(s0)}</b>`)}<p>After the last round's fights (round ${rounds()}: no nightfall follows it), count the monster tokens left on the board:</p>${eq(miniGauge(t + 8, t), `more than <b>${t}</b>`, op('→'), '<b>invader sway</b> decides the winner')}${eq(miniGauge(t - 6, t), `<b>${t}</b> or fewer`, op('→'), '<b>complete trophy sets</b> decide the winner')}`),
+    spot(SEL.presence, 'Count the monsters', `${eq(...v.factions.map((f) => tokenHtml(f, 1)), op('on the island now'), op('='), `<b>${total(s0)}</b>`)}<p>Every round ends in a vote. After its fights, count the monster tokens left on the board:</p>${eq(miniGauge(t + 8, t), `more than <b>${t}</b>`, op('→'), 'a vote for the <b>invaders</b>')}${eq(miniGauge(t - 6, t), `<b>${t}</b> or fewer`, op('→'), 'a vote for the <b>island</b>')}<p>After round ${rounds()} (no nightfall follows it), the side with more votes wins. Invaders: <b>invader sway</b> decides the winner. Island: <b>complete trophy sets</b> do.</p>`),
     demo(() => s0, () => A, () => ({ type: 'spot', target: [SEL.hex(g1.loc), SEL.hex(g2.loc), SEL.presence, SEL.trophyTab], title: 'Fights kill monsters',
       html: `${eq(chip('fight'), op('→'), tokens(g1.f, 3), op('→'), 'trophies', op('·'), `<b>${total(A)}</b> monsters left`)}${recall('The fight: the dead leave the board, and the top bids take them as trophies.')}` })),
     demo(() => A, () => B, () => ({ type: 'spot', target: [...grew.map(SEL.hex), SEL.presence], title: 'Nightfall brings more',
       html: `${eq(chip('nightfall'), op('→'), 'quiet locations', op('→'), '+1 per sway', op('·'), `<b>${total(B)}</b> monsters`)}${recall('Nightfall: where there was no fight, each sway on a location brings 1 of its own faction.')}` })),
-    demo(() => B, () => C, () => ({ type: 'spot', target: [SEL.presence, SEL.trophyTab], title: `${t} or fewer: complete sets decide`,
+    demo(() => B, () => C, () => ({ type: 'spot', target: [SEL.presence, SEL.trophyTab], title: 'The island wins the votes: complete sets decide',
       html: `${eq(miniGauge(total(C), t), `<b>${total(C)}</b>`, op(`${t} or fewer`))}<p>The slayers did their job. Whoever holds the most <b>complete sets</b> of trophies wins: count your fewest colour.</p>${trophyRow(v.factions, lopsided)}${eq('no', tokenHtml(missing, 1), op('='), 'no complete set', op('='), '<b>0</b>')}<p class="small muted">Sway counts for nothing.</p>` })),
     demo(() => C, () => D, () => ({ type: 'spot', target: [SEL.trophyTab], title: 'Hunt every kind',
       html: `${trophyRow(v.factions, even)}${eq('2 of every colour', op('='), '2 complete sets', op('='), '<b>2</b>')}${more('Ties', 'Compare the next-fewest colour, then the next.')}` })),
-    demo(() => D, () => E, () => ({ type: 'spot', target: [...homes.map(SEL.hex), SEL.presence, SEL.faction(backs)], title: `More than ${t}: the biggest faction decides`,
+    demo(() => D, () => E, () => ({ type: 'spot', target: [...homes.map(SEL.hex), SEL.presence, SEL.faction(backs)], title: 'The invaders win the votes: the biggest faction decides',
       html: `${eq(miniGauge(total(E), t), `<b>${total(E)}</b>`, op(`more than ${t}`))}${presenceList(E)}<p>The faction with the most monsters on the board takes the island: the <b>${F(backs)}</b>. The winner is whoever they're most swayed by.</p>${more('Ties', 'Factions tied on tokens: the one controlling more locations wins; still tied, they win together and scores add up.')}` })),
     demo(() => E, () => F_, () => ({ type: 'spot', target: [SEL.faction(backs), SEL.trophyTab], title: 'Its backers score',
       html: `${eq(cubes(YOU, want), op('−'), '0', op('='), `<b>${yourScore}</b>`, '<span class="small">you</span>')}${eq(cubes(rival, F_.players[rival].standing[backs]), op('−'), '0', op('='), `<b>${theirScore}</b>`, `<span class="small">${who(rival)}</span>`)}<p>You backed them and never hunted them, so you win. Trophy sets count for nothing.</p>${frame('Your sway with the winning faction, minus your trophies of it, is your score.', 'Back a faction you think will survive, and keep it alive: don\'t hunt it.')}${more('Ties', 'Fewest trophies of the winner, then affinity, then the next faction down.')}` })),
@@ -1068,12 +1068,18 @@ function after(a, b, loc) {
   return `${fightLines(a, b, loc)}${scorch}`;
 }
 
+/** The votes so far, as a short clause (rounds as votes, D51). */
+function votesNow() {
+  const votes = view().votes;
+  return votes ? `; votes so far: invaders ${votes.invaders}, island ${votes.island}` : '';
+}
+
 /** After round 1: skip to the end, or play on. @type {Step} */
 function choiceStep() {
   const t = opt('threshold');
   return { type: 'modal', title: 'That was a round', html: `
     ${eq(chip('draft'), op('→'), chip('play'), op('→'), chip('fights'), op('→'), chip('nightfall'))}
-    <p>${totalPresence(view())} monsters on the island against the mark of ${t}, with ${plural(rounds() - 1, 'round')} to go. Skip to the ending, or play on yourself.</p>`,
+    <p>${totalPresence(view())} monsters on the island against the mark of ${t}${votesNow()}, with ${plural(rounds() - 1, 'round')} to go. Skip to the ending, or play on yourself.</p>`,
   buttons: [
     { label: 'Play the rest', run: () => { next(playHelp); void go(); } },
     { label: 'Skip to the end', primary: true, run: () => { next(skipStep, drive); void go(); } },
@@ -1127,7 +1133,11 @@ function endSteps() {
     const v = view();
     const r = /** @type {NonNullable<PlayerView['result']>} */ (v.result);
     const t = opt('threshold');
-    return { type: 'spot', target: SEL.presence, title: 'The count', html: `<p><b>${totalPresence(v)}</b> monsters left: ${r.side === 'island' ? `${t} or fewer, so <b>complete sets decide</b>` : `more than ${t}, so <b>the ${r.factions.map(F).join(' and ')} decide</b>, by sway`}.</p>` };
+    const decide = r.side === 'island' ? '<b>complete sets decide</b>' : `<b>the ${r.factions.map(F).join(' and ')} decide</b>, by sway`;
+    const html = v.votes
+      ? `<p>The votes: invaders <b>${v.votes.invaders}</b>, island <b>${v.votes.island}</b>. The ${r.side === 'island' ? 'island' : 'invaders'} won, so ${decide}.</p><p class="small muted">${totalPresence(v)} monsters after the last fights, against the mark of ${t}.</p>`
+      : `<p><b>${totalPresence(v)}</b> monsters left: ${r.side === 'island' ? `${t} or fewer` : `more than ${t}`}, so ${decide}.</p>`;
+    return { type: 'spot', target: SEL.presence, title: v.votes ? 'The votes' : 'The count', html };
   }), () => {
     const v = view();
     const r = /** @type {NonNullable<PlayerView['result']>} */ (v.result);

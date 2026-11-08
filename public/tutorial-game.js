@@ -23,7 +23,7 @@ export const BOTS = /** @type {const} */ ([['Ash', 'bot:lean=0.3'], ['Bea', 'bot
  */
 export const SEED = 11;
 /** Seats in order, so the learner is Slayerettes; otherwise the game's defaults (passing off, D29). */
-// The current rules: nightfall tokens (D38), no nightfall after the last round (D41), the threshold of 20 (D42).
+// The current rules: nightfall tokens (D38), no nightfall after the last round (D41), the threshold of 20 (D42), rounds as votes (D51).
 export const OPTIONS = { groups: 'seat' };
 
 /**

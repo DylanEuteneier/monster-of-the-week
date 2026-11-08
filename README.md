@@ -50,9 +50,10 @@ public/                  the browser table and the WebAssembly build (static fil
   assets.html, assets.js   art and card review
   layout-suggestions.js    the board layout under test (prototype)
   assets/                  built art (from assets/sprites.py; don't edit by hand)
-src/worker.ts            routing and the Game Durable Object (tokens, websockets, persistence)
+src/worker.ts            routing and the Game Durable Object (tokens, websockets, persistence); wasm.d.ts types the .wasm import
 scripts/
   measure.js, measure/     the measuring tool: bot games, the baseline, game, card and bot reports
+  doc-check.js             the design document's guards: links, the rulebook, enforcement, stale references
   judge.js                 fits the learned judge's weights from bot games
   smoke.js                 a whole game through a running server over websockets
   watch-play.mjs           plays a table in headless Chrome and reports stalls
@@ -87,7 +88,7 @@ The dev server uses port **8788** and inspector port **9230**, so it runs alongs
 | Command | Does |
 |---|---|
 | `npm run dev` | Worker, Durable Object and static files on :8788 with live reload |
-| `npm run check` | Everything before a commit: wasm, typecheck, JavaScript and Rust tests, a dry-run bundle |
+| `npm run check` | Everything before a commit: the design document's guards, wasm, typecheck, JavaScript and Rust tests, a dry-run bundle |
 | `npm run wasm` | Build the Rust engine to `public/motw.wasm` (commit it with the Rust change) |
 | `npm test` / `npm run test:watch` | JavaScript tests (`node --test`) |
 | `npm run test:rust` | Engine, bot and runner tests, and the play fingerprints (`cargo test`) |

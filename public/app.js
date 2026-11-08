@@ -611,18 +611,26 @@ function factionTable(lit) {
 /**
  * Total presence as a gauge at the top of the island: the bar is the
  * invaders' tokens on the board, the mark the threshold (TH1). Red past the
- * mark: as things stand, the invaders would win.
+ * mark: as things stand, the round's vote would go to the invaders (D51).
+ * Under rounds as votes, the note under it keeps the tally.
  * @param {number} total @param {number} threshold @param {number} rounds
+ * @param {{ invaders: number, island: number } | undefined} votes
  */
-function presenceGauge(total, threshold, rounds) {
+function presenceGauge(total, threshold, rounds, votes) {
   const top = Math.max(total, threshold * 2, 1);
   const over = total > threshold;
-  return `<div class="gauge${over ? ' is-over' : ''}" style="--now:${(100 * total) / top}%;--mark:${(100 * threshold) / top}%" title="${total} monster tokens on the island: the invaders win if more than ${threshold} are left at the end of round ${rounds}.">
+  const title = votes
+    ? `${total} monster tokens on the island: after each round's fights, more than ${threshold} is a vote for the invaders, ${threshold} or fewer a vote for the island.`
+    : `${total} monster tokens on the island: the invaders win if more than ${threshold} are left at the end of round ${rounds}.`;
+  const note = votes
+    ? `<p class="small muted gauge-note">Each round's fights end in a vote: more than ${threshold} left, a vote for the invaders (invader sway decides); ${threshold} or fewer, a vote for the island (complete trophy sets decide). <b class="gauge-votes">Votes: invaders ${votes.invaders} · island ${votes.island}</b> of ${rounds}.</p>`
+    : `<p class="small muted gauge-note">After round ${rounds}: more than ${threshold} left, invader sway decides the winner; ${threshold} or fewer, complete trophy sets decide it.</p>`;
+  return `<div class="gauge${over ? ' is-over' : ''}" style="--now:${(100 * total) / top}%;--mark:${(100 * threshold) / top}%" title="${title}">
       <span class="gauge-label">Monsters on the island</span>
       <span class="gauge-track"><span class="gauge-fill"></span><span class="gauge-mark"><b>${threshold}</b></span></span>
       <span class="gauge-value"><b>${total}</b></span>
     </div>
-    <p class="small muted gauge-note">After round ${rounds}: more than ${threshold} left, invader sway decides the winner; ${threshold} or fewer, complete trophy sets decide it.</p>`;
+    ${note}`;
 }
 
 function renderBoard() {
@@ -653,7 +661,7 @@ function renderBoard() {
     ${factionTable(lit)}`);
   setHtml('board', `
     <h2>The island</h2>
-    ${presenceGauge(total, Number(view.options.threshold), view.rounds)}
+    ${presenceGauge(total, Number(view.options.threshold), view.rounds, view.votes)}
     ${board ? `<div class="map-window"><div class="board" style="width:${board.width * S}px;height:${board.height * S}px"><img class="sprite" src="${esc(board.src)}" width="${board.width * S}" height="${board.height * S}" alt="The island" style="position:absolute;left:0;top:0">${tiles.join('')}</div></div>` : ''}`);
 }
 

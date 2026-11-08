@@ -22,10 +22,18 @@
  *   - suspect: the decision's text or a linked node's text changed since the link was confirmed (docs/links.json);
  *   - rulebook: a rule in Appendix G tagged "(D42 · trial)" whose level isn't one of the levels from Trial up (1.1),
  *     or doesn't match its decision's Status; a superseded decision can't be in the rulebook.
+ *   - enforcement: a decision at Trial or above names, on its **Enforced by:** line, the Rust tests that fail if the
+ *     engine stops playing it (`test_fn_name`), and the spec defaults it sets (`threshold=20`). Each test named must
+ *     exist and name the decision in its body; a test naming a decision must be listed on that decision's line; no
+ *     test names a superseded decision; each default must match spec.json.
+ *   - stale: a document (README.md, CLAUDE.md, docs/, scripts/measure/README.md, assets/README.md) or spec.json names a
+ *     file, npm script, section or superseded decision that no longer exists; the changelog (A.2) is history and
+ *     exempt. The README's layout names every source file.
  * A node's back-link line sits under its heading and lists every decision linking to it; `fix` writes it, and it is
  * left out of the node's fingerprint, so adding a decision's back-link doesn't make the node's other links suspect.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,7 +71,7 @@ const field = (text, name) => text.split('\n').find((l) => l.startsWith(`- **${n
 const nodeText = (n) => n.text.split('\n').filter((l) => !BACKLINK.test(l)).join('\n');
 
 /** A decision record's own text (what its links depend on): everything but its Affects, Status and Date lines. */
-export const decisionText = (n) => n.text.split('\n').filter((l) => !/^- \*\*(Affects|Status|Date):/.test(l)).join('\n');
+export const decisionText = (n) => n.text.split('\n').filter((l) => !/^- \*\*(Affects|Status|Date|Enforced by):/.test(l)).join('\n');
 
 /** A decision's links: the node ids its Affects line names (sections, appendices, card:id, variant:id). */
 export function linksOf(n, ids) {
@@ -81,7 +89,7 @@ export function linksOf(n, ids) {
 }
 
 /** Every problem in the document, given spec.json and the confirmed fingerprints. */
-export function checkDoc({ doc, spec, store = {} }) {
+export function checkDoc({ doc, spec, store = {}, tests = null }) {
   const { lines, nodes, dupes } = parseNodes(doc);
   const ids = { cards: new Set((spec.cards ?? []).map((c) => c.id)), variants: new Set((spec.variants ?? []).map((v) => v.id)) };
   const decisions = [...nodes.values()].filter((n) => /^D\d+$/.test(n.id));
@@ -147,7 +155,85 @@ export function checkDoc({ doc, spec, store = {} }) {
       }
     }
   });
+  // Enforcement: Trial and above name their tests and defaults.
+  if (tests) {
+    const variants = new Map((spec.variants ?? []).map((v) => [v.id, String(v.default)]));
+    const listed = new Map();
+    for (const d of decisions) {
+      if (supersededBy.has(d.id)) continue;
+      const st = (field(d.text, 'Status') ?? '').replace('- **Status:**', '').trim();
+      const line = field(d.text, 'Enforced by');
+      if (!LEVELS.includes(st)) { if (line) add('enforcement', d.id, `has an Enforced by line but no level from Trial up`); continue; }
+      if (!line) { add('enforcement', d.id, `at ${st} with no Enforced by line: name the tests that fail if the engine stops playing it`); continue; }
+      const names = [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+      const fns = names.filter((n) => !n.includes('='));
+      if (!fns.length) add('enforcement', d.id, 'its Enforced by line names no test');
+      for (const n of names) {
+        if (n.includes('=')) {
+          const [id, val] = n.split('=');
+          if (!variants.has(id)) add('enforcement', d.id, `\`${id}\` is not a spec.json variant`);
+          else if (variants.get(id) !== val) add('enforcement', d.id, `${id} defaults to ${variants.get(id)} in spec.json, but ${d.id} sets ${val}`);
+          continue;
+        }
+        if (!tests.has(n)) { add('enforcement', d.id, `no Rust test \`${n}\``); continue; }
+        if (!new RegExp(`\\b${d.id}\\b`).test(tests.get(n))) add('enforcement', d.id, `test \`${n}\` doesn't name ${d.id} in its body`);
+        listed.set(`${d.id} ${n}`, true);
+      }
+    }
+    for (const [n, body] of tests) for (const m of new Set(body.match(/\bD\d+\b/g) ?? [])) {
+      if (supersededBy.has(m)) add('enforcement', `test ${n}`, `names ${m}, superseded by ${supersededBy.get(m)}`);
+      else if (!nodes.has(m)) add('enforcement', `test ${n}`, `names ${m}, which is not a decision record`);
+      else if (!listed.has(`${m} ${n}`)) add('enforcement', `test ${n}`, `names ${m}, but ${m}'s Enforced by line doesn't list it`);
+    }
+  }
   return { problems, decisions, nodes, codes, ids };
+}
+
+/** Rust tests by name, each with its body: every #[test] function in the given sources. */
+export function rustTests(sources) {
+  const tests = new Map();
+  for (const src of sources) {
+    const parts = src.split(/#\[test\]/).slice(1);
+    for (const p of parts) { const m = p.match(/fn ([a-z0-9_]+)/); if (m) tests.set(m[1], p); }
+  }
+  return tests;
+}
+
+const GENERATED = new Set(['run.json', 'report.txt', 'links.json']);
+/**
+ * Stale references: files, npm scripts, sections and superseded decisions named in the documents and spec.json that
+ * no longer exist. `docs` maps a path to its text; `files` is every tracked path; the design document's changelog
+ * (A.2) is history and skipped.
+ */
+export function staleRefs({ docs, files, scripts, nodes, superseded, spec }) {
+  const problems = [];
+  const add = (where, what) => problems.push({ kind: 'stale', where, what });
+  const exists = (p) => files.has(p) || [...files].some((f) => f.endsWith('/' + p)) || GENERATED.has(p.split('/').pop()) || p.startsWith('.tuning/');
+  for (const [path, text] of Object.entries(docs)) {
+    let skip = false;
+    text.split('\n').forEach((l, i) => {
+      if (path.endsWith('motw-design.md')) {
+        if (/^#{2,4} /.test(l)) skip = /^### A\.2 /.test(l);
+        if (skip) return;
+      }
+      const where = `${path}:${i + 1}`;
+      for (const m of l.matchAll(/`([\w./-]+\.(?:js|mjs|rs|json|py|md|ts|html|css|toml))`/g)) if (!exists(m[1])) add(where, `${m[1]} doesn't exist`);
+      for (const m of l.matchAll(/npm run ([\w:-]+)/g)) if (!scripts.has(m[1])) add(where, `npm run ${m[1]} isn't a script`);
+      if (!path.endsWith('motw-design.md')) for (const m of l.matchAll(/\b(D\d+)\b/g)) if (superseded.has(m[1])) add(where, `names ${m[1]}, superseded by ${superseded.get(m[1])}`);
+    });
+  }
+  const texts = [...(spec.variants ?? []).map((v) => [`variant ${v.id}`, `${v.label ?? ''} ${v.description ?? ''} ${(v.choices ?? []).map((c) => c.description ?? '').join(' ')}`]), ...(spec.cards ?? []).map((c) => [`card ${c.id}`, JSON.stringify(c)])];
+  for (const [where, s] of texts) {
+    for (const m of s.matchAll(/\b(D\d+)\b/g)) if (superseded.has(m[1])) add(`spec.json ${where}`, `names ${m[1]}, superseded by ${superseded.get(m[1])}`); else if (!nodes.has(m[1])) add(`spec.json ${where}`, `names ${m[1]}, which is not a decision record`);
+    for (const m of s.matchAll(/(?<![\w.])([A-J]\.\d+)(?![\w.]*\d)/g)) if (!nodes.has(m[1])) add(`spec.json ${where}`, `names ${m[1]}, which is not a section`);
+  }
+  return problems;
+}
+
+/** Source files the README's layout must name (by file name). */
+export function layoutGaps(readme, files) {
+  const want = [...files].filter((f) => /^(rust\/src\/[^/]+\.rs|rust\/src\/bin\/[^/]+\.rs|public\/[^/]+\.(js|html|css)|scripts\/[^/]+\.(js|mjs)|src\/[^/]+\.ts)$/.test(f));
+  return want.filter((f) => !new RegExp(`(^|[\\s/(,])${f.split('/').pop().replace('.', '\\.')}\\b`).test(readme)).map((f) => ({ kind: 'stale', where: 'README.md', what: `the layout doesn't name ${f}` }));
 }
 
 /** The document with each linked node's back-link line written: every live decision linking to it, in order. */
@@ -186,7 +272,15 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const spec = JSON.parse(readFileSync(join(ROOT, 'public/spec.json'), 'utf8'));
   const store = existsSync(LINKS) ? JSON.parse(readFileSync(LINKS, 'utf8')) : {};
   const [mode, which] = process.argv.slice(2);
-  const { problems, decisions, nodes, codes, ids } = checkDoc({ doc, spec, store });
+  const files = new Set(execSync('git ls-files', { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean));
+  const rs = [...files].filter((f) => /^rust\/(src|tests)\/.*\.rs$/.test(f) && existsSync(join(ROOT, f)));
+  const tests = rustTests(rs.map((f) => readFileSync(join(ROOT, f), 'utf8')));
+  const { problems, decisions, nodes, codes, ids } = checkDoc({ doc, spec, store, tests });
+  const superseded = new Map(decisions.map((d) => [d.id, (field(d.text, 'Status')?.match(/superseded by (D\d+)/) ?? [])[1]]).filter(([, s]) => s));
+  const docPaths = ['README.md', 'CLAUDE.md', 'scripts/measure/README.md', 'assets/README.md', ...[...files].filter((f) => /^docs\/.*\.md$/.test(f))];
+  const docs = Object.fromEntries(docPaths.filter((p) => existsSync(join(ROOT, p))).map((p) => [p, readFileSync(join(ROOT, p), 'utf8')]));
+  const scripts = new Set(Object.keys(JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).scripts));
+  problems.push(...staleRefs({ docs, files, scripts, nodes, superseded, spec }), ...layoutGaps(docs['README.md'], files));
   if (mode === 'fix') {
     writeFileSync(join(ROOT, 'docs/motw-design.md'), fixBacklinks({ doc, spec }));
     console.log('back-link lines written');
@@ -201,7 +295,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     console.log(`confirmed ${targets.map((d) => d.id).join(', ')}`);
     process.exit(0);
   }
-  console.log(`Design document links: ${decisions.length} decisions, ${nodes.size} nodes, ${codes.size} slot codes · ${problems.length ? `${problems.length} problems` : 'all good'}`);
+  console.log(`Design document links and enforcement: ${decisions.length} decisions, ${nodes.size} nodes, ${codes.size} slot codes · ${problems.length ? `${problems.length} problems` : 'all good'}`);
   for (const k of [...new Set(problems.map((p) => p.kind))]) {
     const ps = problems.filter((p) => p.kind === k);
     console.log(`\n${k} (${ps.length})`);

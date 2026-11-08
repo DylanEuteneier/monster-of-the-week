@@ -2,7 +2,7 @@
 /** The design document's link check (scripts/doc-check.js), on small made-up documents. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkDoc, confirmed, parseNodes, fixBacklinks } from '../scripts/doc-check.js';
+import { checkDoc, confirmed, parseNodes, fixBacklinks, rustTests, staleRefs, layoutGaps } from '../scripts/doc-check.js';
 
 const spec = { cards: [{ id: 'bait-trail' }], variants: [{ id: 'fightHalf' }] };
 const doc = (area, decision, extra = '') => `# Doc
@@ -101,4 +101,29 @@ test('the rulebook: a level tag must match its decision\'s Status', () => {
   assert.deepEqual(checkDoc({ doc: wrong, spec, store: store(wrong) }).problems.map((p) => p.what), ["tagged D22 · measured, but D22's Status is trial"]);
   const draft = doc(AREA, dec) + G('D22 · draft');
   assert.deepEqual(kinds(checkDoc({ doc: draft, spec, store: store(draft) })), ['rulebook', 'rulebook']);
+});
+
+test('enforcement: a Trial decision names tests that exist and name it, and spec defaults that match', () => {
+  const sp = { ...spec, variants: [{ id: 'fightHalf', default: 'on' }] };
+  const dec = (line) => `${DEC}\n${line}\n- **Status:** trial`;
+  const tests = rustTests(['#[test]\nfn half_moves() {\n    // D22\n}\n#[test]\nfn other() {\n    // D21\n}\n']);
+  const run = (line) => { const text = doc(AREA, dec(line)); return checkDoc({ doc: text, spec: sp, store: store(text), tests }).problems.map((p) => p.what); };
+  assert.deepEqual(run('- **Enforced by:** `half_moves`, `fightHalf=on`.'), ['names D21, which is not a decision record']);
+  assert.ok(run('- **Enforced by:** `half_moves`, `fightHalf=off`.').includes('fightHalf defaults to on in spec.json, but D22 sets off'));
+  assert.ok(run('- **Enforced by:** `missing_test`.').includes('no Rust test `missing_test`'));
+  assert.ok(run('- **Enforced by:** `other`.').some((w) => /doesn't name D22/.test(w)));
+  const none = doc(AREA, `${DEC}\n- **Status:** trial`);
+  assert.ok(checkDoc({ doc: none, spec: sp, store: store(none), tests }).problems.some((p) => /no Enforced by line/.test(p.what)));
+});
+
+test('stale references: files, npm scripts and superseded decisions named in documents and spec.json', () => {
+  const files = new Set(['scripts/measure.js', 'README.md']);
+  const nodes = new Map([['D22', {}], ['G.5', {}]]);
+  const ps = staleRefs({
+    docs: { 'README.md': 'Run `scripts/measure.js` and `scripts/gone.js`; npm run check; npm run old. D7 is old.', 'docs/motw-design.md': '### A.1 x\n`scripts/gone.js`\n### A.2 Changelog\n| `scripts/gone.js` |\n' },
+    files, scripts: new Set(['check']), nodes, superseded: new Map([['D7', 'D48']]),
+    spec: { variants: [{ id: 'a', description: 'From G.7 and D22.' }], cards: [] },
+  }).map((p) => `${p.where} ${p.what}`);
+  assert.deepEqual(ps, ['README.md:1 scripts/gone.js doesn\'t exist', 'README.md:1 npm run old isn\'t a script', 'README.md:1 names D7, superseded by D48', 'docs/motw-design.md:2 scripts/gone.js doesn\'t exist', 'spec.json variant a names G.7, which is not a section']);
+  assert.deepEqual(layoutGaps('scripts/\n  measure.js  the tool', new Set(['scripts/measure.js', 'scripts/new.js'])).map((p) => p.what), ['the layout doesn\'t name scripts/new.js']);
 });

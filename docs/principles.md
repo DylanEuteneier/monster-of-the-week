@@ -34,9 +34,10 @@ Everything here is the designer's own, said during the work. Each line cites whe
 The game report (`scripts/measure.js`) measures each of these. Its targets are provisional, never decisions.
 
 - **The island wins more than half the time** (1.4, 2026-10-07).
-- **Every round matters.** Rounds build tension, and each helps decide the ending; one last round deciding everything would feel unsatisfying (RV1, 2026-10-31). A last-round flip is welcome, but if it happens never or almost always, that's a worry. The ending must not be decided only in round 5, and no round-5 decider at all is bad too.
+- **Every round matters.** Rounds build tension, and each helps decide the ending; one last round deciding everything would feel unsatisfying (RV1, 2026-10-31). Rounds as votes is the target ruleset for this (D51); rounds may be decided early, as long as every round stays competitive (2026-10-31). A last-round flip is welcome, but if it happens never or almost always, that's a worry. The ending must not be decided only in round 5, and no round-5 decider at all is bad too.
 - **No runaway frontrunner.** A comeback is possible, even in round 5, and fortunes change.
 - **The invaders' ending is not a plain sway race:** not one sway bid for a single faction; players back different factions (3.15). It depends on someone taking the risk and pushing above the bar, so early backing paying less is intended (2026-11-05).
+- **The table decides the ending.** A majority of the table should more or less always be able to ensure the ending it wants (2026-11-06).
 - **Fights stay costly**; backing must not get easy, and doing your own thing away from the fights must not become too valuable (3.5, 2026-10-29).
 - **A hand gives real choices** (2026-11-07). The design feels sound; the cards are what need proving.
 
@@ -52,7 +53,9 @@ The game report (`scripts/measure.js`) measures each of these. Its targets are p
 
 ## Tuning
 
-- **One lever at a time, read against the baseline** (1.1, the process).
+- **One lever at a time, read against the baseline** (1.1, the process). Tests run the target ruleset: what we measure under is what the rulebook says (2026-11-08).
+- **Each preference is checked by more than one measure,** as long as each actually predicts the preference (2026-11-01).
+- **Cards are judged as part of a hand's strategy,** and for what they're worth in later rounds, never one play at a time (2026-11-03).
 - **The threshold is the last lever.** Keep the bar at 20 while testing. It only shifts the ending split, so moving it early hides what other changes do (2026-11-01).
 - **Presence and the ending split are balanced together.** Raising presence pushes the split toward the invaders (1.7, 2026-10-29).
 - **Bots are the instrument, not the target.** Bots play to win, as strongly and as naturally (human-like) as we can make them. Choose bot settings only by play quality, never toward the endings we hope to see; a strong, natural bot that shows bad dynamics is a finding about the game (2026-11-05). Marginally suboptimal, human choices are fine (2026-11-06). Bots may see hidden information in play-outs (2026-10-26).

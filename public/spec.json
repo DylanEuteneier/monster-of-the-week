@@ -907,7 +907,7 @@
     {
       "id": "rounds",
       "label": "Rounds",
-      "description": "Fixed game length (GL1). First-draft guess 5 (G.7).",
+      "description": "Fixed game length (GL1): 5 rounds (D49).",
       "default": "5",
       "choices": [
         {
@@ -940,8 +940,8 @@
     {
       "id": "roundVotes",
       "label": "Rounds as votes",
-      "description": "Claude's suggestion, the designer trying it (2026-10-31; after The King Is Dead's build-up): each round's close, after the fights, is a vote, for the invaders if total presence is more than the threshold, else for the island; the side with more rounds wins. Early: the game ends once a side holds a majority. Off by default.",
-      "default": "off",
+      "description": "Rounds as votes (D51): each round's close, after the fights, is a vote, for the invaders if total presence is more than the threshold, else for the island; the side with more votes wins. On by default; early ends the game once a side holds a majority; off is the single count after the last round, kept to test.",
+      "default": "on",
       "choices": [
         {
           "id": "off",
@@ -1022,7 +1022,7 @@
     {
       "id": "thresholdPerPlayer",
       "label": "Presence threshold per player",
-      "description": "D40 (designer, 2026-10-30): the threshold is this many per player (10 a player: 30 at 3, 40 at 4, 50 at 5), in place of the fixed threshold. Off uses the fixed threshold.",
+      "description": "Testing (off by default): the threshold is this many per player (10 a player: 30 at 3, 40 at 4, 50 at 5), in place of the fixed threshold (D42). Off uses the fixed threshold.",
       "default": "off",
       "choices": [
         {
@@ -1060,7 +1060,7 @@
     {
       "id": "threshold",
       "label": "Presence threshold",
-      "description": "The invaders win if total presence is more than this (TH1). First-draft guess 20 (G.7). 30 by default from D33 (2026-10-29); 20 since D42 (designer, 2026-10-31).",
+      "description": "The invaders win if total presence at the end is more than this (TH1): 20 at every player count (D42).",
       "default": "20",
       "choices": [
         {
@@ -1123,7 +1123,7 @@
     {
       "id": "factionTokens",
       "label": "Tokens per faction",
-      "description": "Each faction's tokens, board and supply together (G.7). Unlimited by default since D46 (designer, 2026-11-01: a faction's supply never runs out); 30 from D33, 20 under D42, the numbers kept to test.",
+      "description": "Each faction's tokens, board and supply together: unlimited by default, a supply never runs out (D46); the numbers kept to test.",
       "default": "unlimited",
       "choices": [
         {
@@ -1166,7 +1166,7 @@
     {
       "id": "playerCubes",
       "label": "Cubes per player",
-      "description": "Each player's sway cubes (G.7). 30 while the cards are designed: a bump from 20 so the supply rarely limits play (designer, 2026-10-07); the balancing number comes later.",
+      "description": "Each player's sway cubes: 30, a bump from 20 so the supply rarely limits play (D49); the balancing number comes later.",
       "default": "30",
       "choices": [
         {
@@ -1194,7 +1194,7 @@
     {
       "id": "startSway",
       "label": "Starting sway",
-      "description": "Sway each slayer group starts with, with its linked faction (G.7). Designer (2026-10-07): start with more sway on the affinity faction; 5 is Claude’s suggested starting number (was 3), to measure.",
+      "description": "Standing each slayer group starts with, with its own faction: 5 (D49).",
       "default": "5",
       "choices": [
         {
@@ -1242,7 +1242,7 @@
     {
       "id": "startOthers",
       "label": "Starting standing with other factions",
-      "description": "Designer (2026-10-07): each player starts with 1 sway with every faction other than their affinity faction. 0 was the first draft before. Designer (2026-10-29, D32): 2 by default, a bit more standing with the factions that aren't your suit's. Back to 1 by default (designer, 2026-10-29, D33). 2 by default again (designer, 2026-10-31, D43): with 1, most strikes and shifts couldn't be paid for in round 1.",
+      "description": "Standing each player starts with, with every faction other than their own: 2 (D43), so more strikes and shifts can be paid for in round 1.",
       "default": "2",
       "choices": [
         {
@@ -1293,7 +1293,7 @@
     {
       "id": "groups",
       "label": "Slayer groups",
-      "description": "How slayer groups are given out (G.7).",
+      "description": "How slayer groups are given out: at random (D49).",
       "default": "random",
       "choices": [
         {
@@ -1347,7 +1347,7 @@
     {
       "id": "seeding",
       "label": "Starting tokens",
-      "description": "SD1 (designer): how each faction's tokens start on its three aligned locations; 2 on each from 2026-10-21; 3 on each (even) by default since 2026-10-29 (designer, D32: more tokens on the board). Back to 2 on each (two) by default (designer, 2026-10-29, D33).",
+      "description": "How each faction's tokens start on its three aligned locations (SD1): 2 on each (D33); 3 on each (even) and 5, 1 and 1 (home) kept to test.",
       "default": "two",
       "choices": [
         {

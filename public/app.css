@@ -901,6 +901,7 @@ button.card-opt:hover { background: #f6cca1; }
 .gauge-value { font-family: var(--font-display); font-size: 16px; min-width: 2ch; }
 .gauge-value b { font-weight: 400; }
 .gauge-note { margin-bottom: var(--space-2); }
+.gauge-votes { color: var(--ink); white-space: nowrap; }
 
 /* ---------------------------------------------------------------------------
    Moving pieces (motion.js, catalogue 2 and 4): every token and cube that

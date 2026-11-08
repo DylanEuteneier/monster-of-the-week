@@ -38,3 +38,8 @@ fn starting_sway_and_seat_groups() {
 fn planning_backers() {
     check("p0");
 }
+#[test]
+fn single_count_variant() {
+    // The single count after the last round (roundVotes off), the variant kept beside rounds as votes (D51).
+    check("single");
+}

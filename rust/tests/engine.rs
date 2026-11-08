@@ -174,6 +174,7 @@ fn content_ids_are_unique_across_every_list_cards_included() {
 
 #[test]
 fn the_deck_is_the_core_21_five_suits_and_six_unsuited_none_marked() {
+    // Enforces D48 (design document, Appendix A).
     let sp = spec();
     assert_eq!(deck().len(), 21);
     assert_eq!(deck().iter().filter(|&&c| sp.cards[c as usize].suit.is_none()).count(), 6);
@@ -188,6 +189,7 @@ fn the_deck_is_the_core_21_five_suits_and_six_unsuited_none_marked() {
 
 #[test]
 fn the_map_is_symmetric_with_five_regions_of_three() {
+    // Enforces D48 (design document, Appendix A).
     let raw = &spec().raw["map"]["locations"];
     let map = raw.as_object().unwrap();
     for (loc, x) in map {
@@ -205,6 +207,7 @@ fn the_map_is_symmetric_with_five_regions_of_three() {
 
 #[test]
 fn create_game_enforces_3_to_5_seats_and_unique_names() {
+    // Enforces D3 (design document, Appendix A).
     assert!(game_n(1, &["a", "b"]).is_err());
     assert!(game_n(1, &["a", "b", "c", "d", "e", "f"]).is_err());
     assert!(game_n(1, &["a", "a", "b"]).is_err());
@@ -228,6 +231,7 @@ fn seeding_home_puts_5_1_1_of_each_faction_on_its_own_locations() {
 
 #[test]
 fn starting_setup_affinity_standing_others_and_board_sway() {
+    // Enforces D5, D43, D47, D49 (design document, Appendix A).
     let s = game(2);
     let x = v(&s);
     let def = |id: &str| -> i64 { spec().variants.iter().find(|v| v.id == id).unwrap().default.parse().unwrap() };
@@ -247,6 +251,7 @@ fn starting_setup_affinity_standing_others_and_board_sway() {
 
 #[test]
 fn hands_are_6_5_or_4_and_the_rest_is_left_out() {
+    // Enforces D48 (design document, Appendix A).
     for (n, hand, out) in [(3, 6, 3), (4, 5, 1), (5, 4, 1)] {
         let s = game_n(1, &PLAYERS[..n]).unwrap();
         for p in &s.players {
@@ -277,6 +282,7 @@ fn shuffle_is_a_seeded_permutation() {
 
 #[test]
 fn the_draft_keeps_one_more_card_each_pass_and_ends_with_full_hands() {
+    // Enforces D48 (design document, Appendix A).
     let s = game(5);
     assert!(!valid(&s, "ann", json!({ "type": "pick", "keep": [] })));
     let after = draft_all(&s);
@@ -334,6 +340,7 @@ fn fx() -> Fx {
 
 #[test]
 fn the_winner_loses_half_the_losers_tokens_rounded_up() {
+    // Enforces D25 (design document, Appendix A).
     let Fx { a, b, neutral, .. } = fx();
     let s = edit(&clear(&game(1)), |x| x["board"][&neutral]["tokens"] = obj(&[(&a, 6), (&b, 4)]));
     assert_eq!(fight(&s, &neutral)["board"][&neutral]["tokens"], obj(&[(&a, 4)]));
@@ -343,6 +350,7 @@ fn the_winner_loses_half_the_losers_tokens_rounded_up() {
 
 #[test]
 fn a_true_tie_wipes_both_sides_scorches_and_rewards_no_one() {
+    // Enforces D48 (design document, Appendix A).
     let Fx { a, b, c, neutral } = fx();
     let s = edit(&clear(&game(1)), |x| {
         x["board"][&neutral]["tokens"] = obj(&[(&a, 3), (&b, 3)]);
@@ -359,6 +367,7 @@ fn a_true_tie_wipes_both_sides_scorches_and_rewards_no_one() {
 
 #[test]
 fn on_aligned_ground_the_aligned_faction_wins_a_tie() {
+    // Enforces D48 (design document, Appendix A).
     let Fx { a, b, .. } = fx();
     let home = first_loc(&arch_of_faction(&a));
     let s = edit(&clear(&game(1)), |x| x["board"][&home]["tokens"] = obj(&[(&a, 3), (&b, 3)]));
@@ -369,6 +378,7 @@ fn on_aligned_ground_the_aligned_faction_wins_a_tie() {
 
 #[test]
 fn trophies_first_claim_takes_bigger_pile_second_claim_smaller_half_its_sway_to_winner() {
+    // Enforces D48 (design document, Appendix A).
     let Fx { a, b, neutral, .. } = fx();
     let s = edit(&clear(&game(1)), |x| {
         x["board"][&neutral]["tokens"] = obj(&[(&a, 6), (&b, 4)]);
@@ -384,6 +394,7 @@ fn trophies_first_claim_takes_bigger_pile_second_claim_smaller_half_its_sway_to_
 
 #[test]
 fn tied_first_claims_collect_nothing_and_both_piles_go_back_a_lone_player_takes_both() {
+    // Enforces D48 (design document, Appendix A).
     let Fx { a, b, neutral, .. } = fx();
     let s = edit(&clear(&game(1)), |x| {
         for p in PLAYERS {
@@ -417,6 +428,7 @@ fn bots_play_whole_games_of_legal_moves_at_every_player_count_and_a_winner_is_na
 
 #[test]
 fn views_hide_other_hands_and_trophy_totals() {
+    // Enforces D6 (design document, Appendix A).
     let s = draft_all(&game(8));
     let view = player_view(&s, pid(&s, "ann"));
     let x = v(&s);
@@ -440,6 +452,7 @@ fn illegal_moves_are_refused_and_leave_the_state_untouched() {
 
 #[test]
 fn light_of_the_cross_splits_a_group_evenly_between_two_adjacent_locations_both_paid() {
+    // Enforces D15, D23 (design document, Appendix A).
     let s0 = clear(&game(1));
     let f = of_arch(&s0, "demonic");
     let loc = first_loc("demonic");
@@ -576,6 +589,7 @@ fn the_gate_joins_two_locations_one_location_for_movement_one_fight() {
 
 #[test]
 fn the_gate_a_group_at_both_ends_moves_as_one_and_next_door_reaches_through_it() {
+    // Enforces D36 (design document, Appendix A).
     let s0 = clear(&game(1));
     let sci = of_arch(&s0, "scifi");
     let sen = of_arch(&s0, "sentients");
@@ -720,6 +734,7 @@ fn perform_the_ritual_draws_one_faction_from_next_door() {
 
 #[test]
 fn half_from_a_fight_a_card_moves_at_most_half_a_group() {
+    // Enforces D22, D23 (design document, Appendix A).
     let s0 = clear(&game(1));
     let fs = factions(&s0);
     let (f, g) = (fs[0].clone(), fs[1].clone());
@@ -782,6 +797,7 @@ fn the_big_chase_leaves_1_token_and_1_sway_at_each_location_passed() {
 
 #[test]
 fn the_big_chase_sets_off_from_a_fight_too_with_half() {
+    // Enforces D22 (design document, Appendix A).
     let s0 = clear(&game(1));
     let sci = of_arch(&s0, "scifi");
     let others: Vec<String> = factions(&s0).into_iter().filter(|x| *x != sci).collect();
@@ -836,6 +852,7 @@ fn draw_them_away_a_group_bursts_1_token_to_each_chosen_neighbour() {
 
 #[test]
 fn the_core_deck_prints_each_cards_own_sway_and_a_signatures_is_the_hand() {
+    // Enforces D24 (design document, Appendix A).
     assert_eq!((printed_of(card("invite-in")), printed_of(card("plough"))), (2, 3));
     let s = draft_all(&game(1));
     let p = (0..s.n()).find(|&p| !s.players[p].hand.is_empty()).unwrap();
@@ -849,6 +866,7 @@ fn set_hand(x: &mut Value, who: &str, cards: &[&str]) {
 
 #[test]
 fn take_control_spends_your_sway_at_a_fight_to_cut_down_a_faction_there() {
+    // Enforces D26 (design document, Appendix A).
     let s0 = clear(&game(1));
     let sent = of_arch(&s0, "sentients");
     let others: Vec<String> = factions(&s0).into_iter().filter(|x| *x != sent).collect();
@@ -889,6 +907,7 @@ fn take_control_spends_your_sway_at_a_fight_to_cut_down_a_faction_there() {
 
 #[test]
 fn spill_blood_on_the_altar_marks_and_the_winner_loses_as_many_as_the_loser() {
+    // Enforces D26 (design document, Appendix A).
     let s0 = clear(&game(1));
     let demon = of_arch(&s0, "demonic");
     let others: Vec<String> = factions(&s0).into_iter().filter(|x| *x != demon).collect();
@@ -934,6 +953,7 @@ fn spill_blood_on_the_altar_marks_and_the_winner_loses_as_many_as_the_loser() {
 
 #[test]
 fn the_unsuited_cards_x_is_the_hand_and_each_use_does_what_it_says() {
+    // Enforces D24 (design document, Appendix A).
     let s0 = clear(&game(1));
     let fs = factions(&s0);
     let (f, g, h) = (fs[0].clone(), fs[1].clone(), fs[2].clone());
@@ -1006,6 +1026,7 @@ fn steal_their_playbook_takes_a_play_back_into_your_hand() {
 
 #[test]
 fn a_way_back_brings_a_faction_back_while_it_has_no_location_with_2_or_more() {
+    // Enforces D50 (design document, Appendix A).
     let d = draft_all(&game(1));
     let who = d.seating[d.turn].clone();
     let s0 = clear(&d);
@@ -1030,6 +1051,7 @@ fn a_way_back_brings_a_faction_back_while_it_has_no_location_with_2_or_more() {
 
 #[test]
 fn night_terrors_marks_then_at_nightfall_1_token_may_flee_each_mark() {
+    // Enforces D26 (design document, Appendix A).
     let d = draft_all(&game(1));
     let who = d.seating[d.turn].clone();
     let s0 = clear(&d);
@@ -1068,6 +1090,7 @@ fn night_terrors_marks_then_at_nightfall_1_token_may_flee_each_mark() {
 
 #[test]
 fn study_the_bodies_first_claim_also_takes_1_from_the_second_claims_pile() {
+    // Enforces D26 (design document, Appendix A).
     let s0 = clear(&game(1));
     let sci = of_arch(&s0, "scifi");
     let f = factions(&s0).into_iter().find(|x| *x != sci).unwrap();
@@ -1102,6 +1125,7 @@ fn study_the_bodies_first_claim_also_takes_1_from_the_second_claims_pile() {
 
 #[test]
 fn wake_the_dead_the_dead_rise_as_a_third_side() {
+    // Enforces D26 (design document, Appendix A).
     let s0 = clear(&game(1));
     let dead = of_arch(&s0, "undead");
     let others: Vec<String> = factions(&s0).into_iter().filter(|x| *x != dead).collect();
@@ -1283,6 +1307,7 @@ fn a_game_saved_before_an_option_existed_plays_on_with_its_default() {
 
 #[test]
 fn ic1_a_card_is_played_only_if_its_sway_can_be_paid() {
+    // Enforces D15, D21, D23 (design document, Appendix A).
     let s0 = clear(&game(1));
     let from = locs().into_iter().find(|l| adjacent(&l.0).len() >= 3).unwrap().0;
     let dem = of_arch(&s0, "demonic");
@@ -1302,6 +1327,7 @@ fn ic1_a_card_is_played_only_if_its_sway_can_be_paid() {
 
 #[test]
 fn with_passing_off_every_card_is_played_and_the_last_ends_the_round() {
+    // Enforces D29 (design document, Appendix A).
     let mut g = game(1);
     while g.phase == Phase::Draft {
         let p = waiting_on(&g)[0];
@@ -1360,6 +1386,7 @@ fn steal_their_playbook_takes_any_card_played_this_round_and_cant_be_the_last_ca
 
 #[test]
 fn d38_at_nightfall_each_location_without_a_fight_gains_its_own_faction_per_sway_there() {
+    // Enforces D38 (design document, Appendix A).
     let d = draft_all(&game(1));
     let s0 = clear(&d);
     // A quiet location with 2 sway (two players) and a fight with sway: only the quiet one gains, 1 per sway.
@@ -1392,6 +1419,7 @@ fn d38_at_nightfall_each_location_without_a_fight_gains_its_own_faction_per_sway
 
 #[test]
 fn rounds_as_votes_each_close_is_a_vote_and_early_ends_on_a_majority() {
+    // Enforces D51 (design document, Appendix A).
     for (mode, early) in [("on", false), ("early", true)] {
         let s0 = game_opts(3, &[("roundVotes", mode), ("thresholdPerPlayer", "off"), ("threshold", "30")]);
         let g = play_out(&s0, 7);
@@ -1406,4 +1434,110 @@ fn rounds_as_votes_each_close_is_a_vote_and_early_ends_on_a_majority() {
         let r = gv["result"].clone();
         assert_eq!(r["side"] == "island", isl > inv);
     }
+}
+
+// Decisions, pinned ------------------------------------------------------------
+
+#[test]
+fn d12_every_suit_prints_the_same_total_sway() {
+    // D12: printed sway is split card by card, but every suit's cards print the same total.
+    let sp = spec();
+    let totals: Vec<i32> = (0..sp.archetypes.len()).map(|a| sp.cards.iter().filter(|c| c.suit == Some(a)).map(|c| c.sway).sum()).collect();
+    assert!(totals.iter().all(|t| *t == totals[0] && *t > 0), "suit totals {totals:?}");
+}
+
+#[test]
+fn in_whole_games_every_turn_plays_a_card_and_never_moves_another_players_sway() {
+    // D19: factions move only by cards, so a turn in the play phase is a card played (D29: no passing).
+    // D13: no card or rule moves another player's sway: a turn leaves every other seat's standing, supply and board
+    // sway as they were (fights, at the round's close, are not a turn).
+    for n in [3usize, 4, 5] {
+        let mut s = draft_all(&game_n(n as i64 * 11, &PLAYERS[..n]).unwrap());
+        let mut x = n as u64;
+        let mut rng = move || {
+            x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            (x >> 11) as f64 / (1u64 << 53) as f64
+        };
+        let mut memory = vec![BotMemory::default(); s.n()];
+        let mut turns = 0;
+        for _ in 0..5000 {
+            if s.phase == Phase::Ended {
+                break;
+            }
+            let p = waiting_on(&s)[0];
+            let m = bot_move(&s, p, &mut rng, &fast("bot:lean=-0.3"), Some(&mut memory[p as usize]), &Seats::default()).unwrap();
+            let next = apply_move(&s, p, &m).unwrap();
+            if s.phase == Phase::Play {
+                assert!(matches!(m, Move::Play { .. }), "a play-phase turn that isn't a card: {m:?}");
+                if next.phase == Phase::Play && next.round == s.round {
+                    turns += 1;
+                    let (a, b) = (v(&s), v(&next));
+                    let me = s.seating[p as usize].clone();
+                    for who in s.seating.iter().filter(|w| **w != me) {
+                        assert_eq!(a["players"][who]["standing"], b["players"][who]["standing"], "{me}'s turn moved {who}'s standing");
+                        assert_eq!(a["players"][who]["supply"], b["players"][who]["supply"], "{me}'s turn moved {who}'s supply");
+                        for (loc, place) in a["board"].as_object().unwrap() {
+                            assert_eq!(place["sway"].get(who), b["board"][loc]["sway"].get(who), "{me}'s turn moved {who}'s sway at {loc}");
+                        }
+                    }
+                }
+            }
+            s = next;
+        }
+        assert_eq!(s.phase, Phase::Ended);
+        assert!(turns > 20);
+    }
+}
+
+#[test]
+fn d41_d42_the_last_round_ends_after_its_fights_and_more_than_20_is_the_invaders() {
+    // Enforces D51 (design document, Appendix A).
+    // D41: the last round has no nightfall: the game ends after its fights. D42: the invaders win on more than 20
+    // tokens, at every player count.
+    for (n, count, invaders) in [(3usize, 20, false), (3, 21, true), (5, 20, false), (5, 21, true)] {
+        let s0 = clear(&draft_all(&game_n(5, &PLAYERS[..n]).unwrap()));
+        let (quiet, arch) = locs().into_iter().next().unwrap();
+        let own = of_arch(&s0, &arch);
+        let ann = s0.seating[0].clone();
+        let last = v(&s0)["options"]["rounds"].as_str().unwrap().parse::<i64>().unwrap();
+        let s = edit(&s0, |x| {
+            x["options"]["nightfall"] = json!("on");
+            x["options"]["passing"] = json!("on"); // the round ends by passing here
+            x["opened"] = json!(true);
+            x["round"] = json!(last);
+            x["board"][&quiet]["tokens"] = obj(&[(&own, count)]);
+            x["board"][&quiet]["sway"] = obj(&[(&ann, 2)]);
+        });
+        let mut g = s.clone();
+        for _ in 0..20 {
+            if g.phase != Phase::Play {
+                break;
+            }
+            let p = g.seating[g.turn].clone();
+            g = apply(&g, &p, json!({ "type": "pass" }));
+        }
+        assert_eq!(g.phase, Phase::Ended);
+        let gv = v(&g);
+        assert_eq!(gv["board"][&quiet]["tokens"][&own], count, "no nightfall in the last round");
+        assert_eq!(gv["result"]["side"] == "invaders", invaders, "{count} tokens at {n} players");
+    }
+}
+
+#[test]
+fn d45_an_unsuited_card_gives_2_sway_with_any_faction_and_a_suited_card_its_printed_sway() {
+    // D45: an unsuited card may be spent for 2 standing with any one faction, chosen as it's played; a suited card's
+    // sway stays as printed, with its own faction.
+    let s0 = clear(&draft_all(&game(1)));
+    let who = s0.seating[s0.turn].clone();
+    let fs = factions(&s0);
+    let far = fs.iter().find(|f| **f != of_arch(&s0, "nocturnals")).unwrap().clone();
+    let s = edit(&s0, |x| { set_hand(x, &who, &["favours", "invite-in"]); x["players"][&who]["supply"] = json!(10); });
+    let before = v(&s)["players"][&who]["standing"][&far].as_i64().unwrap();
+    let a = apply(&s, &who, json!({ "type": "play", "card": "favours", "use": "sway", "target": { "faction": far } }));
+    assert_eq!(v(&a)["players"][&who]["standing"][&far].as_i64().unwrap(), before + 2);
+    assert_eq!(v(&a)["players"][&who]["supply"], 8);
+    let noc = of_arch(&s0, "nocturnals");
+    let before = v(&s)["players"][&who]["standing"][&noc].as_i64().unwrap();
+    let b = apply(&s, &who, json!({ "type": "play", "card": "invite-in", "use": "sway" }));
+    assert_eq!(v(&b)["players"][&who]["standing"][&noc].as_i64().unwrap(), before + printed_of(card("invite-in")) as i64);
 }

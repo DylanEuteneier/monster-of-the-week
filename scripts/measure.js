@@ -186,7 +186,11 @@ for (const run of runs) lines.push(...describe(run), '');
 const baseline = runs.length === 1 && !runs[0].config.baseline && kv.compare !== '0' && existsSync(BASE_DIR) ? loadRun(`baseline=${BASE_DIR}`) : null;
 if (baseline) {
   lines.push(...describe(baseline));
-  const since = baseline.config.commit ? spawnSync('git', ['diff', '--quiet', baseline.config.commit, '--', 'rust/src', 'rust/data', 'public/spec.json'], { cwd: ROOT }).status : null;
+  // Stale when the engine, the bots' data or the spec's content and numbers changed; descriptions and labels are text.
+  const playOf = (json) => JSON.stringify(JSON.parse(json), (k, v) => (k === 'description' || k === 'label' || k === 'flavour' ? undefined : v));
+  const specThen = baseline.config.commit ? spawnSync('git', ['show', `${baseline.config.commit}:public/spec.json`], { cwd: ROOT, encoding: 'utf8' }) : null;
+  const since = !baseline.config.commit ? null
+    : spawnSync('git', ['diff', '--quiet', baseline.config.commit, '--', 'rust/src', 'rust/data'], { cwd: ROOT }).status === 1 || (specThen?.status === 0 && playOf(specThen.stdout) !== playOf(readFileSync(join(ROOT, 'public/spec.json'), 'utf8'))) ? 1 : 0;
   if (since === 1) lines.push('  ⚠ the rules, cards or bots have changed since this baseline was played (committed changes): rebuild it with baseline=1 if those changes are accepted');
   const differs = ['seed', 'think'].filter((k) => String(runs[0].config[k] ?? '') !== String(baseline.config[k] ?? ''));
   if (differs.length) lines.push(`  this run differs from the baseline in: ${differs.join(', ')}`);
