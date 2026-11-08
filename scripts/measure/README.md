@@ -307,7 +307,7 @@ of your own side by side: `logs=a=DIR logs=b=DIR`.
 | `games=` | 40 | games at each player count |
 | `players=` | 3,4,5 | player counts, each with the live game's spread of leans |
 | `seed=` | 7101 | the run's seed (the same seed plays the same deals) |
-| `workers=` | every core | cores in all, shared between the counts by their seats |
+| `workers=` | every core | cores in all: one shared queue of games, biggest tables first; each core takes the next game when it finishes, so every count finishes together (a game plays the same whichever core plays it) |
 | `o.<variant>=` | spec default | a rule variant, e.g. `o.threshold=22` (the header says so) |
 | `probe=` | off | the controlled card test on that share of turns (see the probe); `probeSample=4`, `probePlayouts=4` |
 | `out=` | `.tuning/measure-<time>/` | the run's folder: one log per player count and `run.json` (its configuration) |

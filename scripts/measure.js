@@ -111,9 +111,7 @@ async function play() {
   const cores = Number(kv.workers ?? availableParallelism());
   const dir = kv.out ?? join(ROOT, '.tuning', `measure-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}`);
   mkdirSync(dir, { recursive: true });
-  // Cores by cost: a table's games cost about the same per seat, so each count gets a share by its seats.
   const seats = tables.map((t) => t.split(';').length);
-  const share = seats.map((s) => Math.max(1, Math.round((cores * s) / seats.reduce((a, b) => a + b, 0))));
   // Every log the reports read is on by default (the game report's big-play diagnosis and tie checks, the card study),
   // so no measure comes out blank; each can be turned off (swing=0, ties=0, cards=0) for a faster run.
   const flags = [`cards=${kv.cards ?? '1'}`, `swing=${kv.swing ?? '1'}`, `ties=${kv.ties ?? '1'}`, ...(kv.probe ? [`probe=${kv.probe}`] : []), ...(kv.probeSample ? [`probeSample=${kv.probeSample}`] : []), ...(kv.probePlayouts ? [`probePlayouts=${kv.probePlayouts}`] : []), ...(focus.length ? [`probeCards=${focus.join(',')}`] : [])];
@@ -122,22 +120,48 @@ async function play() {
   const config = { made: new Date().toISOString(), commit: git, games, players: seats, seed: Number(kv.seed ?? 7101), workers: cores, think: kv.think ?? null, probe: kv.probe ? { rate: Number(kv.probe), sample: Number(kv.probeSample ?? 4), playouts: Number(kv.probePlayouts ?? 4) } : null, focus: focus.length ? focus : null, variants: Object.fromEntries(variants.map((v) => v.slice(2).split('='))), cards: (kv.cards ?? '1') !== '0', swing: (kv.swing ?? '1') !== '0', ties: (kv.ties ?? '1') !== '0', profiles: Object.fromEntries(tables.map((t, i) => [`${seats[i]}p`, t])) };
   writeFileSync(join(dir, 'run.json'), JSON.stringify(config, null, 2) + '\n');
   const t0 = Date.now();
-  const sets = await Promise.all(tables.map((profiles, i) => new Promise((done) => {
+  // One pool of workers, one per core, shared by every player count: each worker plays one game at a time (the
+  // runner's only=g; a game is seeded by its own number, so it comes out the same whoever plays it), and takes the
+  // next game in the queue when it finishes. The queue holds the biggest tables' games first, so every count finishes
+  // together instead of the slowest waiting on its fixed share of cores.
+  for (const i of tables.keys()) {
     const log = join(dir, `${seats[i]}p.jsonl`);
     if (existsSync(log) || existsSync(`${log}.gz`)) { console.error(`${log} exists: choose another out=`); process.exit(1); }
-    const run = spawn(bin, ['tournament', `games=${games}`, `seed=${kv.seed ?? 7101}`, `workers=${share[i]}`, `profiles=${profiles}`, `log=${log}`, ...flags, ...variants], { stdio: ['ignore', 'ignore', 'pipe'] });
-    let last = '';
-    run.stderr.on('data', (d) => { last = String(d).split('\r').filter(Boolean).at(-1) ?? last; });
-    const tick = setInterval(() => process.stderr.write(`\r${seats[i]}p: ${last.trim()}   `), 30_000);
-    run.on('close', (code) => {
-      clearInterval(tick);
-      if (code !== 0) { console.error(`\nthe ${seats[i]}-player run failed (${code})`); process.exit(1); }
-      const games = readLog(log);
-      writeFileSync(`${log}.gz`, gzipSync(readFileSync(log)));
-      unlinkSync(log);
-      done({ label: `${seats[i]}p`, games });
-    });
-  })));
+  }
+  const queue = tables.flatMap((_, i) => Array.from({ length: games }, (_, g) => ({ i, g }))).sort((a, b) => seats[b.i] - seats[a.i] || a.g - b.g);
+  const doneBy = tables.map(() => 0);
+  const parts = join(dir, 'parts');
+  mkdirSync(parts, { recursive: true });
+  const progress = () => process.stderr.write(`\r${tables.map((_, i) => `${seats[i]}p: ${doneBy[i]}/${games}`).join('  ')} games, ${Math.round((Date.now() - t0) / 1000)}s   `);
+  const tick = setInterval(progress, 30_000);
+  const worker = async () => {
+    for (let job = queue.shift(); job; job = queue.shift()) {
+      const { i, g } = job;
+      const log = join(parts, `${seats[i]}p-${String(g).padStart(4, '0')}.jsonl`);
+      const code = await new Promise((done) => {
+        const run = spawn(bin, ['tournament', `games=${games}`, `only=${g}`, `seed=${kv.seed ?? 7101}`, 'workers=1', `profiles=${tables[i]}`, `log=${log}`, ...flags, ...variants], { stdio: ['ignore', 'ignore', 'pipe'] });
+        let err = '';
+        run.stderr.on('data', (d) => { err = (err + d).slice(-2000); });
+        run.on('close', (c) => { if (c !== 0) console.error(`\nthe ${seats[i]}-player game ${g} failed (${c}): ${err.trim().split('\n').at(-1)}`); done(c); });
+      });
+      if (code !== 0) process.exit(1);
+      doneBy[i] += 1;
+    }
+  };
+  await Promise.all(Array.from({ length: cores }, worker));
+  clearInterval(tick);
+  progress();
+  // Each count's games, joined in game order into one log, compressed.
+  const sets = tables.map((_, i) => {
+    const log = join(dir, `${seats[i]}p.jsonl`);
+    const files = readdirSync(parts).filter((f) => f.startsWith(`${seats[i]}p-`)).sort();
+    writeFileSync(log, files.map((f) => readFileSync(join(parts, f), 'utf8')).join(''));
+    const played = readLog(log);
+    writeFileSync(`${log}.gz`, gzipSync(readFileSync(log)));
+    unlinkSync(log);
+    return { label: `${seats[i]}p`, games: played };
+  });
+  rmSync(parts, { recursive: true, force: true });
   config.minutes = Math.round((Date.now() - t0) / 60000);
   writeFileSync(join(dir, 'run.json'), JSON.stringify(config, null, 2) + '\n');
   console.error(`\nplayed ${sets.reduce((a, s) => a + s.games.length, 0)} games in ${config.minutes} min; logs in ${dir}`);
