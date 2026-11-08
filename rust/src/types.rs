@@ -206,6 +206,8 @@ pub struct Options {
     pub card_sway: i32,
     /// Light of the Cross as the designer's new draft (variant cross=plant, 2026-11-08), not the split.
     pub cross_plant: bool,
+    /// Draw Them Away as the designer's new draft, Go Loud (variant drawAway=loud, 2026-11-08).
+    pub go_loud: bool,
     pub seeding: Seeding,
     /// The same options with sway not required (checkTarget's comparison), made once.
     pub unpaid: std::cell::OnceCell<Rc<Options>>,
@@ -273,6 +275,7 @@ impl Options {
             passing: get("passing") != "off",
             card_sway: num("cardSway"),
             cross_plant: get("cross") == "plant",
+            go_loud: get("drawAway") == "loud",
             seeding: match get("seeding") {
                 "even" => Seeding::Even,
                 "home" => Seeding::Home,

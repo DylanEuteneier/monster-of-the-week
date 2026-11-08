@@ -145,6 +145,22 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
     let loc = as_loc(t.location);
     let fac = as_fac(t.faction);
     match c.action {
+        Action::Burst if s.options.go_loud => {
+            // The group, then its landings one at a time (stop after any: at one, half goes).
+            let Some(l) = loc else {
+                return Choice::groups(GroupKey::Group, groups().into_iter().filter(|&(gl, gf)| group_ok(gl, gf) && loud_count(s, gl, gf, 1) >= 1 && can(s, pid, gf, 1) && !loud_spots(s, pid, gl, gf).is_empty()).collect(), None);
+            };
+            let f = fac.unwrap();
+            if has_stop(&t.from) {
+                return Choice::done();
+            }
+            let n = len_of(&t.from);
+            let more: Vec<Loc> = if (n as i32) < loud_count(s, l, f, n + 1) && can(s, pid, f, n as i64 + 1) { loud_spots(s, pid, l, f).into_iter().filter(|&x| !contains_loc(&t.from, x)).collect() } else { vec![] };
+            if more.is_empty() {
+                return Choice::done();
+            }
+            Choice::locs(LocKey::From, more, Some(n >= 1), None)
+        }
         Action::Burst => {
             let Some(l) = loc else {
                 return Choice::groups(GroupKey::Group, groups().into_iter().filter(|&(gl, gf)| group_ok(gl, gf) && free_of(s, gl, gf) >= 2 && can(s, pid, gf, 3) && burst_spots(s, gl, gf).len() >= 2).collect(), None);

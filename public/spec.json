@@ -1432,6 +1432,24 @@
       ]
     },
     {
+      "id": "drawAway",
+      "label": "Draw Them Away",
+      "description": "Go Loud, the designer's new draft of the Undead shift (design document H.0, 2026-11-08; a draft, not a decision), off by default while it is measured. By principle 14 the target is any group at an Undead location, or an Undead group anywhere. Choose locations within 2 steps of it where you have sway, as many as you choose, and place 1 more sway at each (from standing with the faction moved). At two or more the whole group goes, even from a fight, split evenly among them (you place the odd ones); at one, half goes. Each landing gets at least 1 token.",
+      "default": "burst",
+      "choices": [
+        {
+          "id": "burst",
+          "label": "Draw Them Away",
+          "description": "The card as dealt: 1 token to each of at least two neighbours, the rest stay."
+        },
+        {
+          "id": "loud",
+          "label": "Go Loud",
+          "description": "The new draft (H.0)."
+        }
+      ]
+    },
+    {
       "id": "unsuitedSway",
       "label": "Unsuited cards' sway",
       "description": "D45 (designer, 2026-11-01): an unsuited card may be played for sway with any one faction, chosen as it's played (wild sway): 2 by default; or 1, 3, the cards in hand (as the signatures), or off (no sway use, as before).",

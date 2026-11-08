@@ -381,6 +381,70 @@ pub fn return_room(s: &GameState, pid: Pid, ci: CardIx) -> (Vec<Loc>, i32, Optio
 }
 
 // ---------------------------------------------------------------------------
+// Go Loud (variant drawAway=loud; the designer's draft, 2026-11-08, design document H.0)
+// ---------------------------------------------------------------------------
+
+/// Where Go Loud's group can land: locations within 2 steps of it (neighbour to neighbour, a Gate's ends as one)
+/// where the player has sway and the faction can enter.
+pub fn loud_spots(s: &GameState, pid: Pid, loc: Loc, f: Fac) -> Vec<Loc> {
+    let mut near: Vec<Loc> = Vec::new();
+    for a in adj(s, loc) {
+        if !near.contains(&a) {
+            near.push(a);
+        }
+        for b in adj(s, a) {
+            if b != loc && !near.contains(&b) {
+                near.push(b);
+            }
+        }
+    }
+    near.sort();
+    near.into_iter().filter(|&l| my_sway(s, pid, l) > 0 && !s.board[l as usize].scorched && can_enter(s, l, f)).collect()
+}
+
+/// How many of the group go with `k` landings: all of it at two or more (even from a fight), half (rounded down) at one.
+pub fn loud_count(s: &GameState, loc: Loc, f: Fac, k: usize) -> i32 {
+    if s.board[loc as usize].hidden & (1 << f) != 0 {
+        return 0;
+    }
+    let n = tokens_of(s, loc, f);
+    if k >= 2 { n } else { n.div_euclid(2) }
+}
+
+fn loud_check(s: &GameState, pid: Pid, c: &Card, t: &Target) -> Option<String> {
+    if let Some(m) = group_target(s, c, t) {
+        return Some(m.to_string());
+    }
+    let (loc, f) = (as_loc(t.location).unwrap(), as_fac(t.faction).unwrap());
+    let to = picked(&t.from);
+    let spots = loud_spots(s, pid, loc, f);
+    if to.is_empty() || !all_distinct(&to) || to.iter().any(|&l| !matches!(l, Id::Loc(x) if spots.contains(&x))) {
+        return Some("Choose locations within 2 steps where you have sway, each once.".into());
+    }
+    let n = loud_count(s, loc, f, to.len());
+    if n < to.len() as i32 || n <= 0 {
+        return Some("Each location gets at least 1 token: not more locations than tokens going (at one, half the group).".into());
+    }
+    None
+}
+
+fn loud_act(s: &mut GameState, pid: Pid, c: &Card, t: &Target, who: &str) {
+    let (loc, f) = (as_loc(t.location).unwrap(), as_fac(t.faction).unwrap());
+    let to = picked(&t.from);
+    let k = to.len();
+    let n = loud_count(s, loc, f, k);
+    let mut placed: Placed = Vec::new();
+    let (each, extra) = (n.div_euclid(k.max(1) as i32), n.rem_euclid(k.max(1) as i32));
+    let mut went = 0;
+    for (i, l) in to.iter().enumerate() {
+        let count = each + if (i as i32) < extra { 1 } else { 0 };
+        went += mv(s, pid, f, loc, l.loc().unwrap(), count, &mut placed, true);
+    }
+    let fnm = fname(s, f);
+    log_line(s, |_| format!("{who}: {}: the {fnm} at {} come apart toward the noise ({went} to {}).", c.name, lname(loc), to.iter().map(|l| lname(l.loc().unwrap())).collect::<Vec<_>>().join(", ")));
+}
+
+// ---------------------------------------------------------------------------
 // Light of the Cross, planted (variant cross=plant; the designer's draft, 2026-11-08, design document H.0)
 // ---------------------------------------------------------------------------
 
@@ -600,6 +664,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
     let loc_mode = t.mode == Some(Mode::Location);
     let sf = suit_faction(c);
     match c.action {
+        Action::Burst if s.options.go_loud => loud_check(s, pid, c, t),
         Action::Burst => {
             if !reading(t) {
                 return e("Choose a location target or a faction target.");
@@ -1074,6 +1139,7 @@ fn act_card(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
     let seating = s.seating.clone();
     let who: &str = &seating[me];
     match c.action {
+        Action::Burst if s.options.go_loud => loud_act(s, pid, c, t, who),
         Action::Burst => {
             let (f, loc) = (as_fac(t.faction).unwrap(), as_loc(t.location).unwrap());
             let to = picked(&t.from);

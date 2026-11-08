@@ -559,6 +559,46 @@ fn groups_the_cross_cannot_pay_for_hide_until_nightfall() {
     assert_eq!((c["kind"].clone(), c["options"].clone()), (json!("group"), json!([{ "location": loc, "faction": f }])));
 }
 
+/// Go Loud (variant drawAway=loud; the designer's draft, design document H.0, 2026-11-08).
+#[test]
+fn go_loud_splits_a_group_evenly_toward_your_sway_within_two_steps_and_half_at_one() {
+    let s0 = clear(&game_opts(1, &[("drawAway", "loud")]));
+    let f = of_arch(&s0, "undead");
+    let loc = first_loc("undead");
+    let a = adjacent(&loc)[0].clone();
+    let b = adjacent(&a).into_iter().find(|x| x != &loc && !adjacent(&loc).contains(x)).unwrap(); // two steps out
+    let far = locs().into_iter().map(|l| l.0).find(|l| l != &loc && !adjacent(&loc).contains(l) && !adjacent(&loc).iter().any(|n| adjacent(n).contains(l))).unwrap();
+    let rival = of_arch(&s0, "scifi");
+    let s = edit(&s0, |x| {
+        x["board"][&loc]["tokens"][&f] = json!(5);
+        x["board"][&loc]["tokens"][&rival] = json!(2); // a fight: the whole group still goes at two or more
+        for l in [&a, &b, &far] {
+            x["board"][l]["sway"]["ann"] = json!(1);
+        }
+    });
+    let t = |from: Value| json!({ "mode": "location", "location": loc, "faction": f, "from": from });
+    assert_eq!(check(&s, "ann", "draw-away", t(json!([a, b]))), None);
+    assert!(check(&s, "ann", "draw-away", t(json!([a, far]))).is_some(), "only within 2 steps");
+    let bare = adjacent(&loc).into_iter().find(|x| x != &a).unwrap();
+    assert!(check(&s, "ann", "draw-away", t(json!([a, bare]))).is_some(), "only where you have sway");
+    let two = preview(&s, "ann", "draw-away", t(json!([a, b])));
+    assert_eq!((two["board"][&loc]["tokens"].get(&f).cloned(), two["board"][&a]["tokens"][&f].clone(), two["board"][&b]["tokens"][&f].clone()), (None, json!(3), json!(2)));
+    assert_eq!((two["board"][&a]["sway"]["ann"].clone(), two["board"][&b]["sway"]["ann"].clone()), (json!(2), json!(2)));
+    let one = preview(&s, "ann", "draw-away", t(json!([a])));
+    assert_eq!((one["board"][&loc]["tokens"][&f].clone(), one["board"][&a]["tokens"][&f].clone()), (json!(3), json!(2)));
+    // All or nothing: 1 sway a landing.
+    let poor = edit(&s, |x| x["players"]["ann"]["standing"][&f] = json!(1));
+    assert!(check(&poor, "ann", "draw-away", t(json!([a, b]))).is_some());
+    assert_eq!(check(&poor, "ann", "draw-away", t(json!([a]))), None);
+}
+
+#[test]
+fn whole_games_with_go_loud_play_to_the_end() {
+    for seed in 1..3 {
+        assert_eq!(play_out(&game_opts(seed, &[("drawAway", "loud")]), seed as u64).phase, Phase::Ended);
+    }
+}
+
 #[test]
 fn whole_games_with_the_planted_cross_end_with_no_cross_left_on_the_board() {
     for seed in 1..4 {
