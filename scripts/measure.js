@@ -69,7 +69,8 @@ for (const a of args) {
  * what is accepted, then rebuild (baseline=1).
  */
 // 100 games a player count (designer, 2026-11-08): about ±4.5 points on an ending share at each count; comparisons at 40.
-const BASELINE = { games: '100', players: '3,4,5', seed: '7101', probe: '0.05', probeSample: '4', probePlayouts: '4' };
+// No strength probe: card strength is measured in its own runs when the work is on the cards (designer, 2026-11-08).
+const BASELINE = { games: '100', players: '3,4,5', seed: '7101' };
 const BASE_DIR = join(ROOT, '.tuning', 'baseline');
 const building = kv.baseline === '1';
 if (building) {

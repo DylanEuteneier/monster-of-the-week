@@ -67,12 +67,13 @@ Questions about the cards:
 the complete set of measures under the accepted best configuration.
 
 ```sh
-node scripts/measure.js baseline=1     # rebuild it: about 80 minutes on 8 cores
+node scripts/measure.js baseline=1     # rebuild it: about an hour on 8 cores
 ```
 
 - **What it plays:** the live game's bots (one bot with dials, its lean spread over the table as the live game does)
-  and the live game's rules (`spec.json` defaults), 100 games at each of 3, 4 and 5 players (designer, 2026-11-08: about ±4.5 points on an ending share at each count), seed 7101, every log on
-  and the strength probe at 5% of turns, so every report and every column has its figures. The configuration is
+  and the live game's rules (`spec.json` defaults), 100 games at each of 3, 4 and 5 players (designer, 2026-11-08: about ±4.5 points on an ending share at each count), seed 7101, every log on,
+  so every report has its figures. No strength probe (designer, 2026-11-08): card strength is measured in its own runs
+  when the work is on the cards (`probe=0.05`, below), read side by side with each other rather than against the baseline. The configuration is
   `BASELINE` at the top of `measure.js`. It changes only when a decision changes what is accepted; `baseline=1`
   refuses other settings.
 - **Where it lives:** `.tuning/baseline/` (logs, `run.json`, `report.txt`). Rebuilding moves the old one to
@@ -80,8 +81,7 @@ node scripts/measure.js baseline=1     # rebuild it: about 80 minutes on 8 cores
 - **How much it can tell:** an ending share at one player count is good to about ±4.5 points (one standard error),
   ±3 pooled. A 40-game comparison run is good to about ±7 points a count, so against the baseline only moves of
   roughly 20 points or more are flagged; anything close gets a 100-game run before it's believed. Card rates are
-  counted over thousands of held turns and are much tighter; the strength probe samples 5% of turns and is the
-  noisiest card measure.
+  counted over thousands of held turns and are much tighter.
 - **When to rebuild:** after any accepted rule, card or bot change. A comparison warns when committed rule, card or
   bot code has changed since the baseline was played.
 - **How it's used:** every other run, played or read back, is compared with it automatically (`compare=0` skips
