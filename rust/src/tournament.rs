@@ -69,8 +69,6 @@ pub struct Game {
     pub draft_picks: Vec<DraftPick>,
     /// The strength probe (`probe=RATE`): controlled card tests on a share of turns.
     pub probes: Vec<ProbeLog>,
-    /// Imitation data (`fidelity=1`): at each real decision, the chosen move and up to 15 other candidates, as features.
-    pub imit: Vec<crate::imit::Decision>,
 }
 
 /// One turn of play in the card study (`cards=1`): the hand, how many legal action targets each card had (up to 40),
@@ -554,7 +552,6 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let fidelity_on = FIDELITY.load(std::sync::atomic::Ordering::Relaxed);
     let mut quick_turns: Vec<QuickTurn> = Vec::new();
     let mut quick_rounds: Vec<QuickRound> = Vec::new();
-    let mut imit: Vec<crate::imit::Decision> = Vec::new();
     let cards_on = CARDS.load(std::sync::atomic::Ordering::Relaxed);
     let mut card_turns: Vec<CardTurn> = Vec::new();
     let mut draft_picks: Vec<DraftPick> = Vec::new();
@@ -809,24 +806,6 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
                     if let Some(real) = chosen.as_ref() {
                         let card_of = |m: &crate::types::Move| if let crate::types::Move::Play { card, .. } = m { Some(*card) } else { None };
                         let score = |m: &crate::types::Move| considered.iter().find(|c| &c.0 == m).map(|c| (c.1, c.2));
-                        if let Some(ci) = considered.iter().position(|c| &c.0 == real) {
-                            // The chosen move, every played-out one, and others evenly spread over the bot's ranking (to 24).
-                            let n = considered.len();
-                            let mut pick: Vec<usize> = vec![ci];
-                            for i in 0..n {
-                                if considered[i].2.is_some() && !pick.contains(&i) { pick.push(i); }
-                            }
-                            let others = (n - 1).min(24usize.saturating_sub(pick.len()));
-                            for j in 0..others {
-                                let i = j * n / others.max(1);
-                                if !pick.contains(&i) { pick.push(i); }
-                            }
-                            if pick.len() > 1 {
-                                let x = pick.iter().map(|&i| crate::imit::move_features(&crate::bots::after_move(st0, tie_seat, &considered[i].0), tie_seat, considered[i].1)).collect();
-                                let v = pick.iter().map(|&i| considered[i].2).collect();
-                                imit.push(crate::imit::Decision { x, chosen: 0, v });
-                            }
-                        }
                         let mut noise_rows = Vec::new();
                         if moves % 4 == 0 {
                             let short: Vec<&(crate::types::Move, f64, Option<f64>)> = considered.iter().filter(|c| c.2.is_some()).collect();
@@ -922,7 +901,6 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         tie_turns,
         quick_turns,
         quick_rounds,
-        imit,
         card_turns,
         draft_picks,
         probes,

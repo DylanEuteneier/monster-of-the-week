@@ -480,8 +480,6 @@ select, input[type="text"], input[type="number"], input[type="password"], .chat-
 .review-col { display: flex; flex-direction: column; gap: var(--space-3); flex: 0 0 var(--col); min-width: 0; }
 .review-tags { display: flex; flex-wrap: wrap; gap: 3px; border-top: 1px dashed #a0948f; padding-top: 4px; }
 .review-tag { font-size: 11px; padding: 0 4px; border: 1px solid var(--ink); background: #e0f2f4; color: var(--ink); }
-.review-tag.is-high { background: var(--color-ok); }
-.review-tag.is-mid { background: var(--color-accent); }
 .review-tag.is-status { background: transparent; border-style: dashed; }
 .palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); gap: var(--space-2); }
 .swatch-row { display: flex; align-items: center; gap: var(--space-2); }

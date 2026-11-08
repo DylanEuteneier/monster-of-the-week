@@ -26,20 +26,22 @@
  *   out=DIR           where the logs go (default .tuning/measure-<time>/), one file per player count
  *
  * Reporting:
- *   report=…          default game,cards,agreement; the reports, in order: game (the designer's preferences), cards (the card scorecard and its
+ *   report=…          default game,cards,agreement,bots (all from the same games); the reports, in order: game (the designer's preferences), cards (the card scorecard and its
  *                     detail), agreement (whether each card stat agrees with itself across halves of the games)
  *   card=id           one card in detail (cards report)
  *   bar=20            the presence bar the game report reads, if not the spec's default
  *
  * Bots are the players, so every figure measures how bots play the rules and the cards, not how people will feel.
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSync, unlinkSync } from 'node:fs';
+import { gzipSync, gunzipSync } from 'node:zlib';
 import { spawn, spawnSync } from 'node:child_process';
 import { availableParallelism } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gameReport } from './measure/game.js';
 import { cardReport, cardAgreement } from './measure/cards.js';
+import { botReport } from './measure/bots.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -54,8 +56,10 @@ for (const a of args) {
   else if (k === 'logs') logSets.push(v);
   else kv[k] = v;
 }
-const reports = (kv.report ?? 'game,cards,agreement').split(',');
-const readLog = (f) => readFileSync(f, 'utf8').split('\n').filter(Boolean).flatMap((l) => { try { return [JSON.parse(l)]; } catch { return []; } });
+// Every report reads the same games, so one run feeds them all; report= picks which print, in order.
+const reports = (kv.report ?? 'game,cards,agreement,bots').split(',');
+// Logs are kept gzipped (about 15× smaller: a standard run's 110 MB is about 8 MB); plain .jsonl reads too.
+const readLog = (f) => (f.endsWith('.gz') ? gunzipSync(readFileSync(f)).toString('utf8') : readFileSync(f, 'utf8')).split('\n').filter(Boolean).flatMap((l) => { try { return [JSON.parse(l)]; } catch { return []; } });
 
 /** The table's leans for n seats, as the live game spreads them (bots.rs table_leans): island-minded and backers. */
 function leans(n) {
@@ -88,7 +92,7 @@ async function play() {
   const t0 = Date.now();
   const sets = await Promise.all(tables.map((profiles, i) => new Promise((done) => {
     const log = join(dir, `${seats[i]}p.jsonl`);
-    if (existsSync(log)) { console.error(`${log} exists: choose another out=`); process.exit(1); }
+    if (existsSync(log) || existsSync(`${log}.gz`)) { console.error(`${log} exists: choose another out=`); process.exit(1); }
     const run = spawn(bin, ['tournament', `games=${games}`, `seed=${kv.seed ?? 7101}`, `workers=${share[i]}`, `profiles=${profiles}`, `log=${log}`, ...flags, ...variants], { stdio: ['ignore', 'ignore', 'pipe'] });
     let last = '';
     run.stderr.on('data', (d) => { last = String(d).split('\r').filter(Boolean).at(-1) ?? last; });
@@ -96,7 +100,10 @@ async function play() {
     run.on('close', (code) => {
       clearInterval(tick);
       if (code !== 0) { console.error(`\nthe ${seats[i]}-player run failed (${code})`); process.exit(1); }
-      done({ label: `${seats[i]}p`, games: readLog(log) });
+      const games = readLog(log);
+      writeFileSync(`${log}.gz`, gzipSync(readFileSync(log)));
+      unlinkSync(log);
+      done({ label: `${seats[i]}p`, games });
     });
   })));
   config.minutes = Math.round((Date.now() - t0) / 60000);
@@ -113,7 +120,7 @@ function loadRun(spec, i) {
   const files = paths.flatMap((p) => {
     if (!statSync(p).isDirectory()) return [p];
     if (existsSync(join(p, 'run.json'))) config = JSON.parse(readFileSync(join(p, 'run.json'), 'utf8'));
-    return readdirSync(p).filter((f) => f.endsWith('.jsonl')).sort().map((f) => join(p, f));
+    return readdirSync(p).filter((f) => /\.jsonl(\.gz)?$/.test(f)).sort().map((f) => join(p, f));
   });
   const games = files.flatMap(readLog);
   // One set per player count.
@@ -158,6 +165,15 @@ for (const r of reports) {
       if (runs.length > 1) lines.push(`${run.label.toUpperCase()}:`);
       lines.push(...(r === 'cards' ? cardReport(games, { card: kv.card }) : cardAgreement(games)), '');
     }
-  } else { console.error(`no report ${r} (game, cards, agreement)`); process.exit(1); }
+  } else if (r === 'bots') {
+    // Seats grouped by profile (or by=setting) across every run read, so runs of different bots compare.
+    lines.push('Bot report · what each kind of seat attends to, round by round, and why it wins or loses', ...botReport(runs.flatMap((run) => run.sets.flatMap((s) => s.games)), { by: kv.by, rounds: kv.rounds }), '');
+  } else { console.error(`no report ${r} (game, cards, agreement, bots)`); process.exit(1); }
 }
 console.log(lines.join('\n'));
+// A run keeps its report beside its logs (report.txt; a later read with other reports writes report-<reports>.txt).
+if (runs.length === 1 && existsSync(runs[0].dir) && statSync(runs[0].dir).isDirectory()) {
+  const name = logSets.length ? `report-${reports.join('-')}${kv.card ? `-${kv.card}` : ''}.txt` : 'report.txt';
+  writeFileSync(join(runs[0].dir, name), lines.join('\n') + '\n');
+  console.error(`report saved: ${join(runs[0].dir, name)}`);
+}

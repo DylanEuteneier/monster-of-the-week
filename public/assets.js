@@ -113,62 +113,18 @@ render();
  * Cards: every card the engine can play, for review, drawn as the table
  * draws them. The deck, the test cards from the revision rounds (never
  * dealt in a fixed deck), and cards held out, in one grid sorted by suit,
- * then type, then action. Tags come from the tuning tournament
- * (scripts/tournament.js out=public/card-play-stats.json, npm run
- * cards:plays), rewritten after every game, so a reload shows results as
- * they come in. Old scores were reset and are no longer shown (designer,
- * 2026-10-07). The figures are a reading aid, not rules.
+ * then type, then action. How the cards play is measured by the card report
+ * (scripts/measure.js report=cards), not shown here.
  */
 async function cards() {
-  const load = async (/** @type {string} */ url) => { try { const r = await fetch(url, { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; } };
-  /**
-   * @typedef {{ held: number, playedPct: number | null, actionPct: number | null, playablePct: number | null, dWinAction: number | null, dWinSway: number | null,
-   *   winAfterAction: number | null, opener: number, perAction: Record<string, number | null>, probe: { n: number, benefit: number | null, up: number | null, opening: number | null, openingN: number, noTarget: number } }} CardFigures
-   * @type {{ games: number, updated: string, profiles: string[], cards: Record<string, CardFigures> } | null}
-   */
-  const plays = await load('/card-play-stats.json');
-  const sign = (/** @type {number | null | undefined} */ x) => (x === null || x === undefined ? '–' : `${x > 0 ? '+' : ''}${x}`);
-  const pctOf = (/** @type {number | null} */ x) => (x === null ? '–' : `${x}%`);
-  const tag = (/** @type {string} */ label, /** @type {string} */ v, /** @type {string} */ title, cls = '') => `<span class="review-tag${cls}" title="${esc(title)}">${esc(label)} <b>${esc(v)}</b></span>`;
-  // Every figure is banded by rank across the cards that have it: top third green, middle third gold, the rest plain.
-  /** @param {(c: CardFigures) => number | null | undefined} get */
-  const banding = (get) => {
-    const ids = plays ? Object.entries(plays.cards).filter(([, c]) => get(c) !== null && get(c) !== undefined).sort((a, b) => /** @type {number} */ (get(b[1])) - /** @type {number} */ (get(a[1]))).map(([id]) => id) : [];
-    return (/** @type {string} */ id) => { const i = ids.indexOf(id); return i < 0 ? '' : i < ids.length / 3 ? ' is-high' : i < (2 * ids.length) / 3 ? ' is-mid' : ''; };
-  };
-  const band = banding((c) => c.probe.benefit), bandOpen = banding((c) => (c.probe.openingN ? c.probe.opening : null)), bandHeld = banding((c) => c.held),
-    bandPlayed = banding((c) => c.playedPct), bandAction = banding((c) => c.actionPct), bandPlayable = banding((c) => c.playablePct), bandDWin = banding((c) => c.dWinAction),
-    bandDInfl = banding((c) => c.dWinSway), bandWon = banding((c) => c.winAfterAction), bandBattle = banding((c) => (c.perAction.trophies === null ? null : (c.perAction.trophies ?? 0) + (c.perAction.flips ?? 0))),
-    bandMoved = banding((c) => c.perAction.moved);
-  const playTags = (/** @type {string} */ id, /** @type {boolean} */ acts) => {
-    const c = plays?.cards[id];
-    if (!plays) return '';
-    if (!c) return '<span class="review-tag">Not seen yet</span>';
-    const fx = c.perAction;
-    return (c.probe.n ? tag('Probe', sign(c.probe.benefit), `Controlled test: mean change in its player's chance of winning when played, against letting the turn go, the rest of the round played out (${c.probe.n} probes; above 0 in ${c.probe.up}%)`, band(id)) : '')
-      + (c.probe.openingN ? tag('Opener probe', sign(c.probe.opening), `The same, at each round's first play (${c.probe.openingN} probes)`, bandOpen(id)) : '')
-      + tag('Held', String(c.held), 'Times in a hand at the start of play', bandHeld(id))
-      + tag('Played', pctOf(c.playedPct), 'Share of the times it was held that it was played', bandPlayed(id))
-      + (acts ? tag('Action', pctOf(c.actionPct), 'Share of its plays that were for its action (the rest spent for sway)', bandAction(id)) : '')
-      + (acts ? tag('Playable', pctOf(c.playablePct), 'Share of its holder\'s turns on which it had a legal target', bandPlayable(id)) : '')
-      + (acts ? tag('Δ win', sign(c.dWinAction), 'Mean swing in its player\'s chance of winning when played for its action, in percentage points', bandDWin(id)) : '')
-      + (c.dWinSway === null ? '' : tag('Δ win (infl.)', sign(c.dWinSway), 'Mean swing in win chance when spent for sway, in percentage points', bandDInfl(id)))
-      + (acts ? tag('Won after', pctOf(c.winAfterAction), 'How often its player went on to win after playing it for its action (an even share is 100% ÷ players)', bandWon(id)) : '')
-      + (acts && fx.trophies !== null ? tag('Battle', String(Math.round(((fx.trophies ?? 0) + (fx.flips ?? 0)) * 10) / 10), 'Per action play: trophies changing hands at this round\'s fights, plus fights flipped weighted by the tokens lost', bandBattle(id)) : '')
-      + (acts && fx.moved !== null ? tag('Moved', String(fx.moved), 'Per action play: pieces moved or placed', bandMoved(id)) : '')
-      + (c.opener ? tag('Opened', String(c.opener), 'Times it was played as the round\'s first play') : '');
-  };
   /** @typedef {{ id: string, suit: string | null, action: string | null, name: string, round?: number }} AnyCard */
   const deck = /** @type {AnyCard[]} */ (/** @type {unknown} */ (spec.cards));
   const all = deck.map((c) => ({ c, status: c.suit ? 'Suited' : 'Unsuited' }));
   const suits = [...spec.archetypes.map((a) => a.id), null];
   all.sort((x, y) => suits.indexOf(x.c.suit) - suits.indexOf(y.c.suit) || (x.c.action ?? '').localeCompare(y.c.action ?? '') || x.c.name.localeCompare(y.c.name));
-  const tags = (/** @type {AnyCard} */ c, /** @type {string} */ status) => `<div class="review-tags">${playTags(c.id, !!c.action)}<span class="review-tag is-status">${esc(status)}</span><span class="review-tag is-status"><span class="mono">${esc(c.action ?? 'none')}</span></span></div>`;
-  const how = plays
-    ? `Figures from ${plays.games} bot games of the tuning tournament (${esc(plays.profiles.join(', '))}; updated ${esc(plays.updated.slice(0, 16).replace('T', ' '))}). Every figure is coloured by rank across the cards: green the top third, gold the middle third. <b>Probe</b>: a controlled test, the card played against letting the turn go (cause). The rest come from what the bots chose in whole games (correlation, not cause). Hover a tag for its meaning.`
-    : 'No tournament figures yet: run <span class="mono">npm run cards:plays</span>.';
+  const tags = (/** @type {AnyCard} */ c, /** @type {string} */ status) => `<div class="review-tags"><span class="review-tag is-status">${esc(status)}</span><span class="review-tag is-status"><span class="mono">${esc(c.action ?? 'none')}</span></span></div>`;
   $('cards').innerHTML = `<div class="row-between"><h2>Cards</h2><span class="small muted">${all.length} cards in the deck</span></div>
-    <p class="small muted">Every card in the deck, for review, sorted by suit, then action. ${how}</p>
+    <p class="small muted">Every card in the deck, for review, sorted by suit, then action. How they play: <span class="mono">npm run measure</span> (the card report).</p>
     <div class="review-grid" id="review-grid"></div>`;
   const items = all.map(({ c, status }) => cardHtml(c.id, { extra: tags(c, status) }));
   // Masonry that reads left to right: each card, in order, goes to the shortest column.

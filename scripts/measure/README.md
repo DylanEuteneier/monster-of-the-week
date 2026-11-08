@@ -8,11 +8,30 @@ saying how the run was made, and the sections follow from it: the probe's figure
 npm run measure -- games=40 players=3,4,5       # the standard run: 120 games, about 25 minutes on 8 cores
 node scripts/measure.js logs=.tuning/measure-…   # the same reports again from a run's folder, no games
 node scripts/measure.js logs=before=DIR logs=after=DIR   # a change: two runs side by side
+node scripts/measure.js logs=DIR report=cards card=bait-herd   # any mix of reports, any time, from the same run
 ```
 
-The tool answers two families of questions: **about the game** (balance, agency, tension, whether every round
+**What's kept.** Each run is a folder, `.tuning/measure-<time>/` (or `out=`): one log per player count (gzipped, about 2–3 MB for 40 games), `run.json`
+(how it was made) and `report.txt` (the reports as printed). It stays until deleted, but `.tuning/` is local and not
+in git, so a run worth keeping should be named (`out=.tuning/baseline-2026-11-08`) and copied somewhere safe if it
+must outlive the machine. Reading a folder back with other reports saves them beside it (`report-cards.txt`).
+
+**One run, every report.** The reports don't need different runs: they all read the same games. A run logs everything
+every report reads (the card study, the big-play diagnosis, the tie checks: all on by default), and `report=` only
+picks which reports print and in what order (default `game,cards,agreement,bots`). So play once, then read the folder
+back as often as you like with any mix. Only two things change a run itself, and the header names both: the probe
+(`probe=`, it adds tests) and stronger bots (`think=`).
+
+| Report | File | What it answers |
+|---|---|---|
+| `game` | `game.js` | the designer's preferences: balance, agency, tension, every round mattering ([below](#questions-about-the-game)) |
+| `cards` | `cards.js` | each card: can it act, is it wanted, do its readings differ, its strength, which ending, when, its uses |
+| `agreement` | `cards.js` | how far each card stat can be trusted (split halves) |
+| `bots` | `bots.js` | what each kind of seat attends to, round by round, and why it wins or loses ([below](#questions-about-the-bots)) |
+
+The tool answers three families of questions: **about the game** (balance, agency, tension, whether every round
 matters: the game report, which has measured the designer's preferences since 2026-10-31 and is kept whole here)
-and **about the cards** (the card report, added 2026-11-08). This README is organised by those questions. For each: where the answer is, how to read it,
+**about the cards** (the card report, added 2026-11-08) and **about the bots** (the bot report, since 2026-11-05). This README is organised by those questions. For each: where the answer is, how to read it,
 what run it needs, and what it can't tell you. Bots are the players throughout, so every answer is about how strong,
 consistent players use the cards. Whether a card is fun, readable or thematic is for playtesting. The ✗ and ✓ marks
 and every target are Claude's working lines: they say where to look, never what to change.
@@ -21,24 +40,25 @@ and every target are Claude's working lines: they say where to look, never what 
 
 1. [The standard run](#the-standard-run)
 2. [Questions about the game](#questions-about-the-game)
+3. [Questions about the bots](#questions-about-the-bots)
 
 Questions about the cards:
 
-3. [Does a hand give real choices?](#does-a-hand-give-real-choices)
-4. [Can this card act?](#can-this-card-act)
-5. [Does the player want its action?](#does-the-player-want-its-action)
-6. [Do its readings offer different plays?](#do-its-readings-offer-different-plays)
-7. [How strong is it against the rest of the hand?](#how-strong-is-it-against-the-rest-of-the-hand)
-8. [What is it worth, all else equal? (the probe)](#what-is-it-worth-all-else-equal-the-probe)
-9. [Which ending does it serve?](#which-ending-does-it-serve)
-10. [When in the round is it played?](#when-in-the-round-is-it-played)
-11. [Is it automatic?](#is-it-automatic)
-12. [What does it do to the board?](#what-does-it-do-to-the-board)
-13. [Which cards go together?](#which-cards-go-together)
-14. [Can I trust this number?](#can-i-trust-this-number)
-15. [Did a change help?](#did-a-change-help)
-16. [Options](#options)
-17. [Adding a measure](#adding-a-measure)
+4. [Does a hand give real choices?](#does-a-hand-give-real-choices)
+5. [Can this card act?](#can-this-card-act)
+6. [Does the player want its action?](#does-the-player-want-its-action)
+7. [Do its readings offer different plays?](#do-its-readings-offer-different-plays)
+8. [How strong is it against the rest of the hand?](#how-strong-is-it-against-the-rest-of-the-hand)
+9. [What is it worth, all else equal? (the probe)](#what-is-it-worth-all-else-equal-the-probe)
+10. [Which ending does it serve?](#which-ending-does-it-serve)
+11. [When in the round is it played?](#when-in-the-round-is-it-played)
+12. [Is it automatic?](#is-it-automatic)
+13. [What does it do to the board?](#what-does-it-do-to-the-board)
+14. [Which cards go together?](#which-cards-go-together)
+15. [Can I trust this number?](#can-i-trust-this-number)
+16. [Did a change help?](#did-a-change-help)
+17. [Options](#options)
+18. [Adding a measure](#adding-a-measure)
 
 ## The standard run
 
@@ -87,6 +107,23 @@ votes on).
 
 Before and after any rule or card change, read the whole game report side by side: a change aimed at one card can
 move any of these, and the report exists so no side effect goes unseen.
+
+## Questions about the bots
+
+**Where:** the bot report (`report=bots`): one column per kind of seat. In a standard run that is each lean on the
+table; `by=hfrom` (any setting) groups seats by one setting instead, for runs that mix bot settings; `rounds=0`
+hides the round-by-round sections.
+
+| Question | Section |
+|---|---|
+| Why does a kind of seat win or lose? | *Diagnosis*: win share by ending, its score against the winner's, its rank after each round on both endings' scoring, whether its last goal matched the ending, when it committed |
+| What does it attend to each round? | *Focus, round N*: its goal, what it played (action, sway, way back; card verbs), sway and tokens placed, standing and trophies from its plays against the rest of the round, fights it was in |
+| Where does its effort go? | *Effort*: its plays by what they led to that round (trophies, standing, both, nightfall, nothing) |
+| Does it hunt trophies evenly? | *Trophy hunting by archetype* |
+| When it backs the invaders, does it back the right faction? | *Backing a losing faction* |
+
+The bots measure the game and the cards, so read this report whenever a game or card finding looks odd: it says
+whether the bots played that seat sensibly.
 
 ## Does a hand give real choices?
 
@@ -255,8 +292,8 @@ players (2026-11-08): `playouts=12` about 1.1×, `planBudget=900` about 1.65×.
 
 ## Adding a measure
 
-Add it to the tool, never as a new script: `game.js` (a row in `MEASURES`) or `cards.js` (`analyse` gathers it,
-`cardReport` prints it), and to the README under the question it answers. If it needs data the logs don't have, add
+Add it to the tool, never as a new script: `game.js` (a row in `MEASURES`), `cards.js` (`analyse` gathers it,
+`cardReport` prints it) or `bots.js`, and to the README under the question it answers. If it needs data the logs don't have, add
 it to the runner's log (`rust/src/tournament.rs`, and the `tournament` command in `rust/src/bin/motw.rs`) behind an
 option, then check the runner still plays the same games with it on: the fingerprints pass, and a short run with
 and without it gives identical plays. Run `report=agreement` on a standard run before leaning on a new card stat.

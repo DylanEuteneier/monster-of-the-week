@@ -23,7 +23,6 @@ fn main() {
         Some("time") => time(&args[1..]),
         Some("tournament") => tournament(&args[1..]),
         Some("fit") => fit(&args[1..]),
-        Some("fitimit") => fit_imit(&args[1..]),
         _ => eprintln!("usage: motw fingerprint games=20 seed=1 profiles=a;b;... | motw time profile=bot:lean=0.3"),
     }
 }
@@ -124,72 +123,6 @@ fn time(args: &[String]) {
 /// Fits the learned judge (judge.rs) from games logged with positions=1: `fit in=a.jsonl,b.jsonl out=data/judge.json`.
 /// Every fifth game is held out first, to compare the learned judge with the hand formula on games it never saw;
 /// then it is fitted on all of them and written, with the comparison.
-/// The imitation fit (rust/src/imit.rs): in=logs from `fidelity=1` runs, out=weights JSON. Reports, held out by
-/// game in five folds, how often the fitted score's top candidate is the full bot's choice, against the one-step score.
-fn fit_imit(args: &[String]) {
-    use motw::imit::*;
-    let (kv, _) = opts(args);
-    let files: Vec<String> = kv.get("in").map(|x| x.split(',').map(|s| s.to_string()).collect()).unwrap_or_default();
-    let ridge: f64 = kv.get("ridge").and_then(|x| x.parse().ok()).unwrap_or(1.0);
-    let mut ds: Vec<(usize, Decision)> = Vec::new();
-    for (fi, f) in files.iter().enumerate() {
-        let text = std::fs::read_to_string(f).unwrap_or_default();
-        for line in text.lines() {
-            let Ok(v) = serde_json::from_str::<serde_json::Value>(line) else { continue };
-            let g = v["g"].as_u64().unwrap_or(0) as usize + 1000 * fi;
-            for d in v["imit"].as_array().into_iter().flatten() {
-                let x: Vec<Vec<f64>> = d["x"].as_array().into_iter().flatten().map(|r| r.as_array().into_iter().flatten().filter_map(|y| y.as_f64()).collect()).collect();
-                let chosen = d["c"].as_u64().unwrap_or(0) as usize;
-                let vals: Vec<Option<f64>> = d["v"].as_array().map(|a| a.iter().map(|y| y.as_f64()).collect()).unwrap_or_else(|| vec![None; x.len()]);
-                if x.len() > 1 && chosen < x.len() && vals.len() == x.len() {
-                    ds.push((g, Decision { x, chosen, v: vals }));
-                }
-            }
-        }
-    }
-    let k = ds.first().map_or(0, |d| d.1.x[0].len());
-    let (mut fitted, mut plain) = ((0.0, 0.0), (0.0, 0.0));
-    for fold in 0..5 {
-        let train: Vec<&Decision> = ds.iter().filter(|d| d.0 % 5 != fold).map(|d| &d.1).collect();
-        let test: Vec<&Decision> = ds.iter().filter(|d| d.0 % 5 == fold).map(|d| &d.1).collect();
-        let w = fit(&train, ridge);
-        let a = accuracy(&test, &|x| x.iter().zip(&w).map(|(p, q)| p * q).sum());
-        let b = accuracy(&test, &|x| x[k - 1] * 10.0);
-        let n = test.len() as f64 / ds.len().max(1) as f64;
-        fitted = (fitted.0 + a.0 * n, fitted.1 + a.1 * n);
-        plain = (plain.0 + b.0 * n, plain.1 + b.1 * n);
-    }
-    let cands = ds.iter().map(|d| d.1.x.len()).sum::<usize>() as f64 / ds.len().max(1) as f64;
-    let value = kv.get("mode").is_some_and(|m| m == "value");
-    if value {
-        // Rank correlation with the play-out values, held out: the value fit against the one-step score.
-        let (mut a, mut b) = (0.0, 0.0);
-        for fold in 0..5 {
-            let train: Vec<&Decision> = ds.iter().filter(|d| d.0 % 5 != fold).map(|d| &d.1).collect();
-            let test: Vec<&Decision> = ds.iter().filter(|d| d.0 % 5 == fold).map(|d| &d.1).collect();
-            let w = fit_value(&train, ridge);
-            a += rank_corr(&test, &|x| x.iter().zip(&w).map(|(p, q)| p * q).sum()) / 5.0;
-            b += rank_corr(&test, &|x| x[k - 1]) / 5.0;
-        }
-        println!("held out, five folds ({} decisions): rank correlation with the play-out values {a:.3} value fit vs {b:.3} one-step score", ds.len());
-        if let Some(out) = kv.get("out") {
-            let all: Vec<&Decision> = ds.iter().map(|d| &d.1).collect();
-            let w = fit_value(&all, ridge);
-            std::fs::write(out, serde_json::json!({ "w": w, "decisions": ds.len(), "about": "imitation weights (motw fitimit mode=value): ridge regression of the play-out values" }).to_string()).unwrap();
-            println!("wrote {out}");
-        }
-        return;
-    }
-    println!("held out, five folds ({} decisions, {cands:.1} candidates each): the full bot's choice ranked first {:.0}% fitted vs {:.0}% one-step score (chance {:.0}%); log-likelihood {:.3} vs {:.3}",
-        ds.len(), fitted.0 * 100.0, plain.0 * 100.0, 100.0 / cands, fitted.1, plain.1);
-    if let Some(out) = kv.get("out") {
-        let all: Vec<&Decision> = ds.iter().map(|d| &d.1).collect();
-        let w = fit(&all, ridge);
-        std::fs::write(out, serde_json::json!({ "w": w, "decisions": ds.len(), "about": "imitation weights (motw fitimit): conditional logit over the full bots' choices" }).to_string()).unwrap();
-        println!("wrote {out}");
-    }
-}
-
 fn fit(args: &[String]) {
     use motw::judge::*;
     let (kv, _) = opts(args);
@@ -311,7 +244,6 @@ fn tournament(args: &[String]) {
                 "tieTurns": x.tie_turns.iter().map(|t| serde_json::json!({ "mv": t.mv, "r": t.round, "seat": t.seat, "loc": t.loc, "size": t.size, "could": t.could, "did": t.did, "listed": t.listed, "rank": t.rank, "playedOut": t.played_out, "breakValue": t.break_value, "chosenValue": t.chosen_value, "breakQuick": t.break_quick, "chosenQuick": t.chosen_quick, "goal": t.goal })).collect::<Vec<_>>(),
                 "quickTurns": x.quick_turns.iter().map(|q| serde_json::json!({ "mv": q.mv, "r": q.round, "seat": q.seat, "same": q.same, "sameCard": q.same_card, "realPass": q.real_pass, "quickPass": q.quick_pass,
                     "quickScore": q.quick_score, "realScore": q.real_score, "realTie": q.real_tie, "quickTie": q.quick_tie, "realBreak": q.real_break, "quickBreak": q.quick_break, "second": q.second, "variants": q.variants, "noise": q.noise.iter().map(|r| serde_json::json!([r.0, r.1, r.2, r.3, r.4, r.5])).collect::<Vec<_>>() })).collect::<Vec<_>>(),
-                "imit": x.imit.iter().map(|d| serde_json::json!({ "c": d.chosen, "v": d.v.iter().map(|v| v.map(|y| (y * 1e3).round() / 1e3)).collect::<Vec<_>>(), "x": d.x.iter().map(|r| r.iter().map(|v| (v * 1e4).round() / 1e4).collect::<Vec<_>>()).collect::<Vec<_>>() })).collect::<Vec<_>>(),
                 "quickRounds": x.quick_rounds.iter().map(|q| serde_json::json!({ "r": q.round, "seat": q.seat, "pInvaders": q.p_invaders, "trophies": q.trophies, "standing": q.standing, "startTrophies": q.start_trophies, "startStanding": q.start_standing, "stops": q.stops })).collect::<Vec<_>>(),
                 "swayLog": x.sway_log.iter().map(|c| serde_json::json!({
                     "mv": c.mv, "r": c.round, "loc": c.loc, "seat": c.mover, "before": &c.before[..x.seats.len()], "after": &c.after[..x.seats.len()],
