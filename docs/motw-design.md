@@ -32,6 +32,15 @@ The current focus, below, lists what is being worked on right now; the backlog h
 8. Study the Bodies, Spill Blood on the Altar (underdrafted; read the probe first)
 9. Steal Their Playbook (seldom wanted)
 
+**Card goals for this work** (designer, 2026-11-08: "fine for now"; from Claude's suggestions; each read from a card report column, with working lines, not targets):
+
+1. *Live most turns:* a legal target on most turns held, for both goals (Can act).
+2. *Few conditions:* beyond the reading's target, at most one more condition before it can be played.
+3. *Every use earns its place:* each reading or use is the best play often enough when open (Readings, Uses).
+4. *Leave something the table must answer:* it creates or grows a contest others react to (Swing 4+, monsters per change).
+5. *Big enough to matter:* when it changes the board, it moves enough to turn a contest (monsters per change).
+6. *Something for each goal:* worth playing for its action to invader backers and trophy hunters alike (Wants to, ◆).
+
 *Claude's analysis, not decisions:* the cards that measure well draw groups together into a contest others must answer (the Ritual, Invite Them In, Bait the Herd), break a fight with the player's choice of split (Plough Through), or have a use for each goal (Raise the Stakes, Cover Every Exit). The struggling ones stack preconditions on their targets, or spread groups apart and thin contests (three of the five shifts).
 
 Everything else is in the backlog below; decisions and their history are in Appendix A.
