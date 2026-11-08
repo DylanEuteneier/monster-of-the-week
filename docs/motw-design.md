@@ -301,69 +301,18 @@ Detailed notes on how each game's mechanisms work are in Appendix C.
 
 ### 1.7 Game feel tuning (working notes)
 
-Working notes, not decisions: measurements and leads for how the game feels in play. **The game report** (`node scripts/measure.js report=game ...`, the measuring tool's game report; 2026-10-31) measures a set of bot games (native runner logs) against each of the designer's preferences (1.2–1.4, this section, RV1, 3.15), flags misses against provisional targets, and sets runs side by side so a change shows which flags it moves. **Direction (designer, 2026-10-29):** the board has gone stale; lean toward effective ways to make the game feel more dynamic and active again. Bot tuning is paused until this is worked through.
+Working notes, not decisions: how the game feels in play, and where to look. Measurements live in the measuring tool's runs, read against the baseline (`scripts/measure/README.md`); its game report measures bot games against each of the designer's preferences (1.2–1.4, this section, RV1, 3.15).
 
-**Passing (2026-10-29; D29).** With passing on, the bots passed 8.6 times a round while holding cards: 62% deferrals (played later that round; waiting beat their best play by a median 0.46 value points, about 5% of a game) and 38% held to the round's end (about indifferent: cards not worth playing then). A seat that never passes lost about 6–9 win points a seat. Read: a strong tactic, but a stall (free waiting for the last word before the fights), not a crunchy choice. Off is now the default.
+- **Direction (designer, 2026-10-29):** the board had gone stale; lean toward effective ways to make the game feel more dynamic and active. Since then: nightfall (D38), the start (D33, D43, D47), unlimited pools (D46), unsuited wild sway (D45).
+- **The designer (2026-10-29):** presence felt a bit too low throughout the game, and too little was happening on the board, with too few options to play cards in a round. Raising presence pushes the ending split toward the invaders; the two need balancing together.
 
-**Presence (160 games each, seed 1601, standard table, threshold 20).** Average presence at the start and after each round:
-
-| | Start | R1 | R2 | R3 | R4 | R5 | Invaders' ending |
-|---|---|---|---|---|---|---|---|
-| Passing on | 30.0 | 34.1 | 32.2 | 28.6 | 25.6 | 21.8 | 51% |
-| Passing off | 30.0 | 32.4 | 29.0 | 24.8 | 21.4 | 17.8 | 36% (target 40%) |
-
-The designer: presence feels a bit too low throughout the game now. Raising presence pushes the ending split back toward the invaders; the two need balancing together.
-
-**Board and options (40 games, seed 1901, passing off; `motw tournament ... board=1`).** On every turn of play:
-
-| Round | Locations occupied (of 15) | Contested | Presence | Cards in hand | With a legal action |
-|---|---|---|---|---|---|
-| 1 | 13.9 | 2.3 | 29.9 | 2.5 | 1.6 |
-| 3 | 8.7 | 2.7 | 34.3 | 2.5 | 1.8 |
-| 5 | 6.9 | 2.1 | 25.9 | 2.5 | 1.6 |
-
-The board empties (by round 5 fewer than half the locations hold tokens; about 2 fights at a time), and about one card in three held on a turn can only be played for sway. The designer: too little happening on the board, too few options to play cards in a round.
-
-**How often a card held on a turn has a legal action:** Take Control 28%, Light of the Cross 39%, Plough Through 40%, Draw Them Away 47%, Cut the Powerlines 48%, Bait the Herd 51%, The Big Chase 54%, Invite Them In 59%, Spoof the Signal 63%, Wake the Dead 70%; the signatures 81–93%; the unsuited cards 88–100%.
-
-**What blocks them (same games):** mostly **cost**, no standing to pay the sway a move or mark places (IC1, D21): Spoof the Signal, Bait the Herd, The Big Chase, Cut the Powerlines, Draw Them Away, Light of the Cross, the Gate, Night Terrors, Spill Blood on the Altar, Study the Bodies, Perform the Ritual, Wake the Dead. Mostly **the board**, nothing that fits: Take Control and Plough Through (they need fights), Showdown (a lone group where you have sway), Invite Them In's location reading.
-
-**Token flow (2026-10-29; 16 games, balanced leans, passing off, before D32).** Per round, a game's tokens added by cards / removed by cards / lost in fights / grown: R1 0.4 / 1.1 / 10.1 / 14.2; R2 1.7 / 1.1 / 14.1 / 9.4; R3 2.6 / 1.1 / 10.2 / 6.4; R4 2.9 / 1.2 / 10.2 / 4.9; R5 3.2 / 1.4 / 6.9 / 3.5. Fights take about 10 a round throughout while growth dries up (it needs a lone group of 2 or more, and fights and scatters break groups up): the inflow is the limit (designer: "that is the real limit here").
-
-**The fuller start (D32) and the inflow dials (2026-10-29; 60 games each, seed 2101, balanced leans, passing off).** Presence R1→R5 / occupied locations R5 / fights R5 / cards with an action R5 / invaders' endings:
-- D32 (3 on each, 2 standing with others): 45→25 / 7.1 / 2.0 / 1.6 of 2.5 / 47%. Flow per round, fights out: 19.7, 16.0, 14.4, 10.8, 9.1; growth: 16.8, 11.0, 6.5, 4.5, 3.6.
-- The old start (2 on each, 1 standing): 30→22 / 6.2 / 1.7 / 1.5 / 35%.
-- D32 with 25 or 30 faction tokens: presence ends 27 or 29; occupied and fights in round 5 unchanged (6.8–6.9, 1.9–2.1); invaders 58–60%. Short supply barely binds.
-- D32 with aligned growth off: growth halves (8.5 → 1.9), presence ends 16; invaders 7%.
-Reading: the fuller start lifts the early rounds (4.6 fights in round 1 against 2.6) but the board still drains to the same shape by round 5 (about 7 locations, 2 fights); the start and the supply move only the presence total, and with it the ending split. The decline is the fights' outflow outrunning a growth that shrinks as groups break up (designer, 2026-10-29: more seed tokens and sway can't fix it; the tension has to stay high into the late game without making backing too easy or sitting out of fights too valuable).
-
-**GR5, sway brings tokens (2026-10-29; 60 games each, seed 2101, balanced leans, D32 start).** Presence R1→R5 / occupied R5 / fights R1 and R5 / cards in by round / invaders' endings:
-- Off: 45→25 / 7.1 / 4.6, 2.0 / 1, 1, 2, 2, 3 / 47%.
-- On: 58→20 / 7.1 / 5.3, 1.9 / 24, 12, 4, 2, 2 / 13%. Fights take 35 and 27 in rounds 1–2 (20 and 16 off).
-- On, old start: 37→26 / 8.1 / 3.2, 2.5 / 17, 18, 9, 4, 4 / 32%.
-- On, 15 faction tokens: 57→11 / 5.3 / 5.7, 1.3 / 22, 2, 1, 2, 2 / 2%.
-- On, 30 faction tokens: 58→42 / 10.1 / 5.4, 2.7 / 25, 22, 16, 8, 5 / 87%.
-- On, old start, 30 faction tokens: 37→47 / 11.2 / 3.1, 3.1 / 16, 21, 18, 14, 8 / 90%. The liveliest late game measured: fights still take 18 in round 5 (9 today).
-- By slot (old start, 30 faction tokens; designer's seeds: scatters only, strikes only, signatures only). Presence R1→R5 / occupied R5 / fights R5 / cards in by round / invaders: off 30→23 / 6.1 / 1.8 / 1, 1, 3, 4, 4 / 32%; shifts 32→35 / 8.4 / 2.5 / 5, 7, 8, 9, 8 / 70%; strikes 31→32 / 8.7 / 2.4 / 5, 7, 8, 8, 8 / 68%; signatures 32→36 / 7.8 / 2.3 / 5, 6, 6, 7, 7 / 72%. One slot gives a steady inflow (5–9 a round, not fading), presence holds level instead of draining, and the late board stays busier (8–9 locations, about 2.4 fights). The three slots measure alike; the threshold of 20 then favours the invaders.
-- The same at threshold 30, invaders' endings and occupied / fights / presence in round 5: shifts 37% (8.2 / 2.5 / 32); strikes 25% (8.1 / 2.8 / 30); signatures 23% (7.3 / 2.4 / 30). The board keeps its life; shifts at threshold 30 sit nearest the 40% target.
-Reading: GR5 front-loads. It pours the supplies onto the board in the first two rounds, the extra presence feeds bigger fights, the casualties leave as trophies, and the supplies are empty by round 3, so the late game is as thin as before (or thinner) and the invaders rarely win. The limit is the faction's whole pool of tokens: casualties never come back, so any inflow from the supply only spends the pool faster. With a pool big enough (30), the late game stays busy, but presence ends far over the threshold of 20: the threshold would have to move with it.
-
-**More sway (designer, 2026-10-29: bump up sway values; variant `cardSway`; 60 games each, seed 2001, balanced bot leans, passing off).** Cards with a legal action per turn, rounds 1–5; locations occupied and presence after round 5; invaders' ending:
-
-| | Action per turn | Occupied R5 | Presence R5 | Invaders |
-|---|---|---|---|---|
-| As now | 1.6 / 1.8 / 1.7 / 1.7 / 1.5 | 6.4 | 21.9 | 23% |
-| +1 card sway | 1.6 / 1.8 / 1.7 / 1.6 / 1.5 | 6.4 | 21.8 | 27% |
-| Starting standing 7 | 1.6 / 1.8 / 1.7 / 1.6 / 1.5 | 6.1 | 20.3 | 22% |
-| +1 card sway, start 7 | 1.6 / 1.9 / 1.7 / 1.6 / 1.5 | 6.4 | 20.4 | 27% |
-| +2 card sway, start 7 | 1.6 / 1.8 / 1.8 / 1.7 / 1.6 | 6.5 | 20.5 | 27% |
-| +1 card sway, 2 standing with others | 2.0 / 1.9 / 1.8 / 1.7 / 1.5 | 5.9 | 15.6 | 7% |
-
-Read: sway on the cards and own-faction starting standing change little (a card's sway goes to its own faction; the blocked cards mostly need standing with another). Standing with every faction unblocks cards, but most actions take tokens off the board, so presence collapses and the invaders almost never win: more actions alone empty the board faster. The lever looks like tokens coming onto the board. The balanced bot table (leans −0.3 … +0.3) itself brings the invaders' ending to about 23%, against 36% with two full backers.
+---
 
 ## 2. Game foundation
 
 ### 2.1 Core tension and experience goals
+
+*Decisions: D16.*
 
 - The push and pull plays out between the players and the **two major win conditions**: all the invaders losing, or a single faction winning.
 - Players score by taking actions that **cause invaders to eliminate one another**.
@@ -371,16 +320,22 @@ Read: sway on the cards and own-faction starting standing change little (a card'
 
 ### 2.2 Theme and setting
 
+*Decisions: D1.*
+
 - A mashup of common monster-of-the-week themes and tropes.
 - Setting: a small island town, in a pixel-art RPG / animated-series style.
 - The factions are **invaders** of the island.
 
 ### 2.3 Players
 
+*Decisions: D5.*
+
 - Each player plays a **slayer group**: a small group of characters modelled on a monster-of-the-week trope (2.5).
 - Players sway the board using **monster-of-the-week trope actions**: baiting, trapping, and similar.
 
 ### 2.4 Genre and core system
+
+*Decisions: D2.*
 
 - A shared-board area control / area majority game.
 - Driven by a "play a card, take an action" system.
@@ -393,6 +348,8 @@ Read: sway on the cards and own-faction starting standing change little (a card'
 - **Stock speculation:** trophy collection works like a stock market, with each faction's trophies worth more or less depending on the end-game outcome.
 
 ### 2.5 Game content
+
+*Decisions: D1, D5.*
 
 #### Archetypes and factions
 
@@ -470,6 +427,8 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 ### The Contest
 
 #### 3.1 Board topology · *Ideas*
+
+*Decisions: D19.*
 
 **Ideas**
 
@@ -549,6 +508,8 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 
 #### 3.5 Invader population · *Ideas*
 
+*Decisions: D33, D38, D46.*
+
 **Ideas**
 
 - `SD1` **Seeding (first draft):** each faction starts on its home territory: its archetype's three locations.
@@ -573,10 +534,10 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
     - In the first draft, `GR1` is this system: growth at resolution is how the game grows presence.
   - `GR4` *As spillover:* the spillover from a resolved fight is how invaders grow, so population growth and combat form one cascade rather than two systems (linked to cascading resolution in 3.13).
     - *Open:* whether spillover is the only source of growth.
-  - *Direction (designer, 2026-10-29):* fights stay costly; something else brings tokens back steadily as the game goes on, so a fight-heavy early game doesn't leave a thin, unexciting late game. Limits: fights must stay contested, backing must not get easy, and doing your own thing away from the fights must not become too valuable. Why: the fuller start (D32) lifts only the early rounds; the board drains to about 7 locations and 2 fights by round 5 whatever the start (1.7). *Open:* what the source is.
+  - *Direction (designer, 2026-10-29):* fights stay costly; something else brings tokens back steadily as the game goes on, so a fight-heavy early game doesn't leave a thin, unexciting late game. Limits: fights must stay contested, backing must not get easy, and doing your own thing away from the fights must not become too valuable. Why: the fuller start (3 on each, since replaced by D33) lifts only the early rounds; the board drains to about 7 locations and 2 fights by round 5 whatever the start (1.7). *Open:* what the source is.
   - `GR5` *Sway brings tokens (designer, 2026-10-29; a switch, shifts only by default, D33):* GR2's idea as a global rule rather than card text, since the cards' cognitive load is already high: each sway placed on the board brings 1 of that faction's tokens from its supply to the same location (that faction: the one whose standing paid it, D23 rules 3, 7 and 8). So the location a group leaves keeps a token where its sway went. *Designer (2026-10-29):* start with the most elegant version, as few edge cases and hard-to-remember rules as possible; a switch, not a core rule yet.
     - *Agreed (designer, 2026-10-29; Claude's suggested wording), the version built:* "each sway placed on the board brings 1 of its faction's tokens, if it can." "If it can" is the existing rule 5 (where tokens can go) and the supply: the payer is almost always a faction already there or arriving (rules 3, 7, 8), so the third-faction limit rarely bites, and scorched locations take no sway anyway. Sway from the supply (the unsuited stand-ins) and sway moved on the board bring nothing: only sway paid from standing, which names its faction.
-    - *Built (2026-10-29):* variant `swayTokens` (shifts only by default since D33): `on` (every card's sway) or one slot's only, to test (designer, 2026-10-29): `shifts` (the scatters; a scattered single token brought up to 2 can grow again), `strikes` (the gathers, which mostly feed fights) or `signatures`. Supplies up to 50 a faction to test with (`factionTokens` 40 and 50; it counts board and supply together, so the D32 start leaves 11 of 20 in supply).
+    - *Built (2026-10-29):* variant `swayTokens` (shifts only by default since D33): `on` (every card's sway) or one slot's only, to test (designer, 2026-10-29): `shifts` (the scatters; a scattered single token brought up to 2 can grow again), `strikes` (the gathers, which mostly feed fights) or `signatures`. Supplies up to 50 a faction to test with (`factionTokens` 40 and 50; it counts board and supply together, so the 3-on-each start leaves 11 of 20 in supply).
     - *Open:* the amount (about 25–30 tokens a round at 1 a sway, against growth's 4–17); its effect on backing, which it helps directly.
   - `GR6` *Nightfall tokens (designer, 2026-10-30; an alternative to GR5, not a decision):* at nightfall, during growth, every location where there was no fight gains 1 of its own faction's tokens (the location's archetype) per sway there. No card brings tokens. It might replace growth (GR1 and AL3) entirely as well; the designer accepts that this cuts against GR3 (growth run by the game: here tokens arrive only where players have left sway), the strike/shift pairing (scattering no longer stops growth) and AL3.
     - Implications noted (2026-10-30): sway where no fight happens stays into the next round, so the same sway brings tokens every nightfall; the amount is all the sway on quiet ground, capped only by the supply; arrivals where another faction holds the location set up a fight for the next round; arrivals help backers of the location's faction.
@@ -589,6 +550,8 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 ### The Levers
 
 #### 3.6 Action acquisition · *Ideas*
+
+*Decisions: D48.*
 
 **Ideas**
 
@@ -610,6 +573,8 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
   - With exactly four cards, at most one earlier pick can go back at each pass.
 
 #### 3.7 Player actions · *Ideas*
+
+*Decisions: D12, D13, D15, D16, D21, D22, D23, D24, D26, D34, D35, D36, D37, D39, D45, D50.*
 
 **Ideas**
 
@@ -722,6 +687,8 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 
 #### 3.8 Timing and passing · *Ideas*
 
+*Decisions: D29, D44.*
+
 **Ideas**
 
 - `TU1` *(First draft.)* On their turn in the play phase, a player plays a card or passes. A player who has passed can still play a card if the turn comes back to them.
@@ -740,11 +707,15 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 
 #### 3.9 Persistent progression · *Decisions*
 
+*Decisions: D4.*
+
 **Decisions**
 
 - The game has no persistent upgrade mechanism.
 
 #### 3.10 Player characters · *Decisions*
+
+*Decisions: D5.*
 
 **Decisions**
 
@@ -766,6 +737,8 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
     - *Open:* whether extra sway goes to the linked faction or onto a linked location.
 
 #### 3.11 Information · *Decisions*
+
+*Decisions: D6, D20.*
 
 **Decisions**
 
@@ -804,6 +777,8 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 
 #### 3.12 Round structure and game length · *Ideas*
 
+*Decisions: D29, D41.*
+
 **Ideas**
 
 - `GL1` *(First draft.)* The game lasts a set number of rounds.
@@ -818,6 +793,8 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - *Open:* if round end is dynamic: whether time values are on every card or only some; whether the moon track resets each round.
 
 #### 3.13 Conflict resolution · *Ideas*
+
+*Decisions: D16, D25.*
 
 **Ideas**
 
@@ -893,6 +870,8 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 
 #### 3.14 Sway · *Ideas*
 
+*Decisions: D13, D15, D16, D45.*
+
 **Ideas**
 
 - `IF1` *(First draft.)* Players can gain sway with a faction, and sway is public.
@@ -929,6 +908,8 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
   - *Open:* what the compensation is.
 
 #### 3.15 Victory · *Ideas*
+
+*Decisions: D42.*
 
 **Ideas**
 
@@ -1002,6 +983,8 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 
 #### 3.16 Player-count scaling · *Decisions*
 
+*Decisions: D3, D48.*
+
 **Decisions**
 
 - 3 to 5 players.
@@ -1012,7 +995,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - `PS1` **Fixed pool (first draft, in place of the tiered pool above):** every card is always in the pool, at every player count. Player count changes only the hand size and how many cards are left out of the deal, unseen.
   - First draft: a pool of 21 unique cards (15 suit cards, SU1, and 6 others). Hands of 6 at 3 players, 5 at 4 and 4 at 5, so 18, 20 and 20 cards are dealt and 3, 1 and 1 are left out.
   - The board sees about the same number of plays each round at every player count.
-  - This departs from the decision above (D7, cards marked 3+, 4+, 5+). D7 stays recorded; the first draft tests PS1 instead.
+  - This departs from the tiered pool first decided (cards marked 3+, 4+, 5+); D48 adopts PS1 in its place.
 
 ---
 
@@ -1554,6 +1537,8 @@ Actual changes to mechanisms and game structure.
 ---
 
 ## Appendix B: Glossary
+
+*Decisions: D14, D18, D19, D20.*
 
 | Term | Meaning |
 |---|---|
@@ -2230,6 +2215,7 @@ The **Pick** column says how candidates in a slot relate:
 |  |  | `AL3` | One extra token of growth on a controlled, aligned location (needs LC2) |  |
 | Faction differences (FD) | Any | `FD1` | Layered differences | 3.4 |
 |  |  | `FD2` | Differences through combat losses |  |
+|  |  | `FD3` | A signature card for each faction |  |
 | Archetype powers (AP) | Any | `AP1` | Nocturnals convert | 3.4 |
 |  |  | `AP2` | 80's Sci-Fi abduct or mind-control |  |
 |  |  | `AP3` | Sentients networked |  |
@@ -2241,6 +2227,8 @@ The **Pick** column says how candidates in a slot relate:
 |  |  | `GR2` | Through cards |  |
 |  |  | `GR3` | Run by the game |  |
 |  |  | `GR4` | As spillover |  |
+|  |  | `GR5` | Sway brings tokens (removed 2026-11-07) |  |
+|  |  | `GR6` | Nightfall: quiet locations gain a token per sway there (D38) |  |
 
 ### The Levers
 
@@ -2272,6 +2260,7 @@ The **Pick** column says how candidates in a slot relate:
 | Favourite (IL) | One | `IL1` | Only a faction's favourite can affect its presence (first variant) | 3.14 |
 | Weakest-colour ties (WT) | One | `WT1` | Ties go to the next weakest colour | 3.15 |
 | Card balance (CB) | One | `CB1` | Cards close in power, with A the exception | 3.7 |
+| Icon set (IK) | Any | `IK1` | Icons for action kinds and meaningful things (D34, D35) | 3.7 |
 | Turn options (TU) | One | `TU1` | Play a card or pass; a pass isn't final | 3.8 |
 | First player (FP) | One | `FP1` | Marked cards A and B | 3.8 |
 |  |  | `FP2` | Four marked cards, A to D, with the fixed pool (first draft) |  |
@@ -2345,6 +2334,8 @@ The **Pick** column says how candidates in a slot relate:
 |  |  | `IB5` | Costly displacement |  |
 | Win conditions (WC) | One | `WC1` | The island wins, or one faction wins | 3.15 |
 | Presence threshold (TH) | One | `TH1` | End-game presence threshold | 3.15 |
+| Rounds as votes (RV) | Any | `RV1` | Each round's close is a vote; the side with more votes wins (variant `roundVotes`, off) | 3.15 |
+|  |  | `RV2` | The game ends once a side holds a majority |  |
 | Faction tie (FX) | One | `FX1` | Factions tied in presence: the one controlling more locations ranks higher (needs LC2) | 3.15 |
 |  |  | `FX2` | Still tied on locations: the factions win together, and players add up their scores with each (first draft) |  |
 | End-game scoring (EG) | One | `EG1` | Elimination points and sway | 3.15 |
@@ -2576,6 +2567,8 @@ Three of these are forced. TD1 is the only trophy distribution that meets RQ4. T
 
 ## Appendix F: Prototype architecture
 
+*Decisions: D8, D9, D10, D11, D17, D27, D28.*
+
 The patterns and architecture the web prototype is built on. This appendix covers how the prototype is built and run. It does not add, change, or settle any rule of the game.
 
 ### F.1 The eight choices
@@ -2592,6 +2585,8 @@ The patterns and architecture the web prototype is built on. This appendix cover
 | Single game | One game exists at a time. Dealing a new game replaces the one in progress. |
 
 ### F.2 How the pieces fit
+
+*Decisions: D8.*
 
 ```
 Browser, one per seat  ──websocket──▶  Worker  ──▶  Durable Object "the-game"
@@ -2654,6 +2649,8 @@ The Worker itself only routes. It passes the websocket and admin routes to the D
 - **Reproducible deals.** A game can be created from a seed, so the same deal can be replayed.
 
 ### F.4 The engine
+
+*Decisions: D8, D27.*
 
 - **Pure functions.** The engine never touches the network, the page, or storage. It takes a state and returns a new one, so it runs unchanged in the server, the browser, the tests, and the simulation.
 - **Rust, the same build on both sides (D27).** The engine and the bots are one Rust crate (`rust/`), built to WebAssembly (`public/motw.wasm`, by `npm run wasm`) for the Worker and the browser, and natively for the Rust tests and tools. JavaScript reaches it through `public/rules.js`, which keeps the engine's function names and holds the types for the state, the moves, and the player view (checked under strict TypeScript). Calls pass the state as JSON, so a saved game is the same document either way.
@@ -2718,6 +2715,8 @@ The Worker itself only routes. It passes the websocket and admin routes to the D
 - **For this game**, the player view hides whatever section 3.11 says is hidden. Hands are hidden by decision. Secret trophy totals, token faces, and the card left out of the deal are hidden under the current candidates.
 
 ### F.6 The table
+
+*Decisions: D10, D17, D37.*
 
 The page a player sees. It is one script with no framework and no build step.
 
@@ -2826,6 +2825,8 @@ Where a game is started. The host page holds no game rules. Everything it does i
 - **`/hotseat`** lets one person play every human seat from a single tab, switching between seats. It fetches the seat links through the admin routes, so it needs the key when the server is locked. It is for testing alone.
 
 ### F.9 Bots and simulation
+
+*Decisions: D16, D31.*
 
 #### Bots in a live game
 
@@ -2939,6 +2940,8 @@ Where a game is started. The host page holds no game rules. Everything it does i
 
 ### F.11 Data file
 
+*Decisions: D28.*
+
 - **All content and constants are data**, in one file, `spec.json`, read by the engine and the browser. The engine holds the rules; the data file holds everything the rules are applied to.
 - **Tuning without code changes.** A number is changed in the data file and tested with the simulation. Nothing in the engine is rewritten.
 
@@ -3032,6 +3035,8 @@ tool (`motw`) and the tests and play fingerprints; `public/` the browser table, 
 
 ### F.14 Testing and scripts
 
+*Decisions: D27, D28.*
+
 These are strategies, described by what each is for.
 
 | Strategy | What it checks |
@@ -3068,6 +3073,8 @@ Each stage can be tested before the next is started.
 
 ### F.17 Art and rendering
 
+*Decisions: D9, D11, D34, D35.*
+
 How the prototype looks. The working detail, the asset list, and the art tools are in the repository's art guide, `assets/README.md`. This section does not add, change, or settle any rule of the game. Everything in it is a choice for the prototype, open to change, and none of it is to be applied to the rules.
 
 #### The rule
@@ -3102,6 +3109,8 @@ How the prototype looks. The working detail, the asset list, and the art tools a
 
 ### F.18 Tutorial
 
+*Decisions: D17.*
+
 A guided walkthrough at `/tutorial`, for learning the first draft (Appendix G). Prototype tooling: it teaches the rules as the engine plays them and adds none.
 
 - **A real game in the tab.** The engine and three bots (one backer, two trophy players, fast search) run in the browser from a fixed deal and the fixed deck; nothing goes to the server. The deal (`SEED` in `public/tutorial-game.js`) is chosen by `scripts/tutorial-seed.js` so round 1 shows both uses of a card, fights with piles for the learner, and growth. A new engine or deck may want a new seed; the narration is written from the game itself either way, and names no card in advance.
@@ -3124,9 +3133,13 @@ A guided walkthrough at `/tutorial`, for learning the first draft (Appendix G). 
 
 ## Appendix G: The rulebook
 
+*Decisions: D48.*
+
 The rules in force: everything adopted at Trial or above (1.1, confidence levels), as one ruleset. Each rule names its decision and level, "(D42 · trial)"; D48 is the first draft's picks, with their slot codes. It is what the engine plays by default. Seeds and drafts stay in section 3 until adopted; a superseded rule leaves this appendix. The cards are in `spec.json` and catalogued in Appendix H.
 
 ### G.1 Components
+
+*Decisions: D3, D5, D12, D14, D24, D46.*
 
 - **The board (D48 · trial):** one island (BD1) of 15 locations in five regions of three, ring-shaped round a central lake (layout D, the prototype map).
   - Mountains: Weather Station, Ski Resort, Mine. Badlands: Military Facility, Junkyard, Caves. Coast: Fallout Bunker, Shipping Docks, Lighthouse. Old Town: Graveyard, Beach City, Occult Camp. Woods: State Park, Sawmill, The Lake House.
@@ -3157,6 +3170,8 @@ The rules in force: everything adopted at Trial or above (1.1, confidence levels
 
 ### G.2 General rules
 
+*Decisions: D6, D13, D15, D19, D21, D22, D23, D45.*
+
 - **Supply (D48 · trial):** every colour has one supply. A player's cubes that leave the board return to that player, to be used again; a faction's tokens return to that faction, to be placed again. No piece ever leaves the game.
 - **Cards only shift tokens (D48 · trial):** a card never removes a faction's tokens from the board outright; it moves them, or brings them back (the way back, D50). Tokens leave the board only as fight casualties, or when a location is scorched.
 - **A player's cubes** are always in one of three places: their supply, their standing with a faction (public sway), or on a location (sway there) (D18).
@@ -3180,6 +3195,8 @@ The rules in force: everything adopted at Trial or above (1.1, confidence levels
 
 ### G.3 Setup
 
+*Decisions: D33, D43, D47, D49.*
+
 1. Draw one faction from each archetype (D48 · trial).
 2. **Seed the board (SD1, D33 · trial):** each faction places 2 tokens on each of its archetype's three locations. Every location starts with exactly one faction: its aligned one.
 3. Each player takes a slayer group, given out at random, and 30 cubes (D49 · trial).
@@ -3188,6 +3205,8 @@ The rules in force: everything adopted at Trial or above (1.1, confidence levels
 6. Round 1's first player is drawn at random (D44 · trial).
 
 ### G.4 The round
+
+*Decisions: D25, D29, D38, D44, D49, D50.*
 
 The game lasts 5 rounds (GL1, D49 · trial). Each round has three phases (RS1, D48 · trial).
 
@@ -3233,6 +3252,8 @@ For each fight:
 
 ### G.5 The end of the game
 
+*Decisions: D41, D42.*
+
 After the last round's fights:
 
 1. **Which side wins (TH1, D42 · trial).** Count every invader token on the board. If the total is more than 20, at every player count, the invaders win; otherwise the island wins.
@@ -3256,6 +3277,8 @@ Where a rule leaves a detail open, the engine (`rust/src`) reads it as below: im
 ---
 
 ## Appendix H: Card catalogue
+
+*Decisions: D37.*
 
 Every card idea, in one format. Entries are ideas for the first draft, not decisions, until the designer picks them. Cards follow the suit principles in 3.7.
 
@@ -3336,7 +3359,7 @@ The 21 cards the game deals (D48 · trial), designed slot by slot from 2026-10-1
   - *Showdown (designer, 2026-10-23; from Claude's suggestion, first called Pay Them Off: designer, trophies are won in a dramatic fight, not paid for).* At a lone group (never a fight; designer, 2026-10-24, to keep it apart from Take Control, which works in fights), burn your sway there, 1 per token, to take as many of the group's tokens as your trophies at once: more sway, more trophies (designer), up to your sway there and the group's size. Burned sway goes back to your supply (designer). Not X: the haul scales with the sway you have bid there, not your hand. Location only. Each group starts with 1 sway at each affinity location, so it can open a round. History: first 2 sway a token, up to 2; then 1 a token, up to 2.
   - *Call in Favours (designer, 2026-10-23: liked as suggested).* *Location:* 1 sway from your supply at each of up to X fights. *Faction:* up to X standing from your supply, with one faction. X is the cards in hand (a bid, so it scales). Uses the supply, which no other unsuited card reaches. Also suggested: Board Up the Windows (no growth at up to X locations, or for one faction at up to X of its groups) and Pick a Fight (a lone group marches on a neighbouring lone rival), not chosen for now.
     - *To be redesigned (designer, 2026-10-31; ideas, nothing decided):* "at fights" is a strange limit (and it can't open round 1: no fights stand at the start); a lot of standing with a single faction is boring when the suited cards already give standing; and card A needn't scale with the cards in hand: if it is dealt it is always played first, so X is always the full starting hand (a fixed number in practice). B to D can be played later, so X still varies for them.
-  - *Steal Their Playbook (designer, 2026-10-23; two of Claude's suggestions merged into one card with two uses, the designer's multi-use idea: theirs and yours; theirs and the last card changed 2026-10-29, D30).* Choose one use. *Theirs:* play the last card played for its action this round as if it were yours, with either reading (a signature copied uses your hand size, D24). *Yours:* take back into your hand a card you played earlier this round, to play again. *(Superseded 2026-10-30, D39: one use, any card played earlier this round, by anyone, into your hand to play later.)* (Designer, 2026-10-24: it may copy your own last play; a card taken back may be played for sway; it may take back an unsuited card; with nothing to copy or take back, that use can't be played.) Also suggested: Dig Through the Archives (swap a card in hand with a left-out card), not chosen.
+  - *Steal Their Playbook (designer, 2026-10-23; two of Claude's suggestions merged into one card with two uses, the designer's multi-use idea: theirs and yours; theirs and the last card changed 2026-10-29).* Choose one use. *Theirs:* play the last card played for its action this round as if it were yours, with either reading (a signature copied uses your hand size, D24). *Yours:* take back into your hand a card you played earlier this round, to play again. *(Superseded 2026-10-30, D39: one use, any card played earlier this round, by anyone, into your hand to play later.)* (Designer, 2026-10-24: it may copy your own last play; a card taken back may be played for sway; it may take back an unsuited card; with nothing to copy or take back, that use can't be played.) Also suggested: Dig Through the Archives (swap a card in hand with a left-out card), not chosen.
   - *Idea (designer, 2026-10-24; not a decision):* a card that lets you treat your own sway, connected, as a network to travel through.
   - *Designer (2026-10-23):* sway on the board moves through locations, neighbour to neighbour along a path of any length, unless a card's theme allows a jump. Nothing blocks a sway path (designer, 2026-10-24).
   - *Implication noted (2026-10-23):* the token uses reach any faction, anywhere, so early in a round they are more flexible than the suited strikes and shifts of the same shape (the Ritual, Draw Them Away). Rejected names: Rally the Crowd, Spread the Word, Regroup / Split Up Gang, Circle the Wagons / Scatter, Call a Town Meeting / Cause a Panic, the survival-horror pairs (Hole Up, Barricade the Doors, Run for the Woods); the designer chose X for them all the same.

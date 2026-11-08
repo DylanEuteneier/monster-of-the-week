@@ -9,6 +9,7 @@
  *   node scripts/doc-check.js report         every problem, grouped, without failing
  *   node scripts/doc-check.js confirm D22    after checking D22 against every node it links to: fingerprint both ends
  *   node scripts/doc-check.js confirm all    the same for every decision (first adoption only)
+ *   node scripts/doc-check.js fix            write each linked node's back-link line ("*Decisions: D8, D27.*")
  *
  * Nodes are the document's headings with an id: sections and decision areas (3.13, 1.4, F.9, H.0), decision records
  * (D22), appendices (H). A decision record's **Affects:** line links it to nodes: every section number and appendix
@@ -18,13 +19,19 @@
  *   - no links: a decision record with no Affects line, or one naming no node;
  *   - superseded: a record with `- **Status:** superseded by Dn` takes no links, and only decision records and the
  *     changelog (A.2) may name it;
- *   - suspect: the decision's text or a linked node's text changed since the link was confirmed (docs/links.json).
+ *   - suspect: the decision's text or a linked node's text changed since the link was confirmed (docs/links.json);
+ *   - rulebook: a rule in Appendix G tagged "(D42 · trial)" whose level isn't one of the levels from Trial up (1.1),
+ *     or doesn't match its decision's Status; a superseded decision can't be in the rulebook.
+ * A node's back-link line sits under its heading and lists every decision linking to it; `fix` writes it, and it is
+ * left out of the node's fingerprint, so adding a decision's back-link doesn't make the node's other links suspect.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+export const LEVELS = ['trial', 'measured', 'playtested', 'locked'];
+const BACKLINK = /^\*Decisions: [^*]*\*$/;
 export const fingerprint = (s) => createHash('sha256').update(s.replace(/\s+/g, ' ').trim()).digest('hex').slice(0, 12);
 
 /** The document's nodes: each heading with an id, its text running to the next heading at its level or above. */
@@ -51,6 +58,9 @@ export function parseNodes(doc) {
 }
 
 const field = (text, name) => text.split('\n').find((l) => l.startsWith(`- **${name}:**`)) ?? null;
+
+/** A node's text for its fingerprint: without its back-link line. */
+const nodeText = (n) => n.text.split('\n').filter((l) => !BACKLINK.test(l)).join('\n');
 
 /** A decision record's own text (what its links depend on): everything but its Affects, Status and Date lines. */
 export const decisionText = (n) => n.text.split('\n').filter((l) => !/^- \*\*(Affects|Status|Date):/.test(l)).join('\n');
@@ -115,17 +125,57 @@ export function checkDoc({ doc, spec, store = {} }) {
     for (const id of links) {
       if (id.includes(':')) continue;
       const n = nodes.get(id);
-      if (n && s.links?.[id] && s.links[id] !== fingerprint(n.text)) add('suspect', d.id, `${id} changed: check it still agrees with ${d.id}, then confirm ${d.id}`);
+      if (n && s.links?.[id] && s.links[id] !== fingerprint(nodeText(n))) add('suspect', d.id, `${id} changed: check it still agrees with ${d.id}, then confirm ${d.id}`);
       else if (n && !s.links?.[id]) add('suspect', d.id, `new link to ${id}: check it, then confirm ${d.id}`);
     }
   }
+  // The rulebook: every level tag names live decisions whose Status matches.
+  const G = nodes.get('G');
+  if (G) G.text.split('\n').forEach((l, k) => {
+    for (const m of l.matchAll(/\(([^()]*?) · (\w+)\)/g)) {
+      const level = m[2];
+      const ds = m[1].match(/\bD\d+\b/g) ?? [];
+      const where = `line ${G.line + k}`;
+      if (!LEVELS.includes(level)) add('rulebook', where, `"${level}" is not a rulebook level (${LEVELS.join(', ')})`);
+      if (!ds.length) add('rulebook', where, `"(${m[1]} · ${level})" names no decision`);
+      for (const id of ds) {
+        const d = nodes.get(id);
+        if (!d) continue;
+        if (supersededBy.has(id)) { add('rulebook', where, `${id} is superseded by ${supersededBy.get(id)}`); continue; }
+        const st = (field(d.text, 'Status') ?? '').replace('- **Status:**', '').trim();
+        if (st !== level) add('rulebook', where, `tagged ${id} · ${level}, but ${id}'s Status is ${st || 'missing'}`);
+      }
+    }
+  });
   return { problems, decisions, nodes, codes, ids };
+}
+
+/** The document with each linked node's back-link line written: every live decision linking to it, in order. */
+export function fixBacklinks({ doc, spec }) {
+  const { lines, nodes, decisions, ids } = (() => { const r = checkDoc({ doc, spec }); return { ...r, lines: doc.split('\n') }; })();
+  const back = new Map();
+  for (const d of decisions) {
+    if (/superseded by/.test(field(d.text, 'Status') ?? '')) continue;
+    for (const id of linksOf(d, ids).links) if (!id.includes(':') && nodes.has(id)) back.set(id, [...(back.get(id) ?? []), d.id]);
+  }
+  // Bottom up, so earlier line numbers stay right.
+  const targets = [...nodes.values()].filter((n) => !/^D\d+$/.test(n.id)).sort((a, b) => b.start - a.start);
+  for (const n of targets) {
+    const ds = back.get(n.id);
+    const at = n.start + 1;
+    const has = lines[at] === '' && BACKLINK.test(lines[at + 1] ?? '');
+    if (has) {
+      if (ds) lines[at + 1] = `*Decisions: ${ds.join(', ')}.*`;
+      else lines.splice(at, 2);
+    } else if (ds) lines.splice(at, 0, '', `*Decisions: ${ds.join(', ')}.*`);
+  }
+  return lines.join('\n');
 }
 
 /** The fingerprints to store for a decision: its own text and each linked section's text. */
 export function confirmed(d, nodes, ids) {
   const links = {};
-  for (const id of linksOf(d, ids).links) if (!id.includes(':') && nodes.has(id)) links[id] = fingerprint(nodes.get(id).text);
+  for (const id of linksOf(d, ids).links) if (!id.includes(':') && nodes.has(id)) links[id] = fingerprint(nodeText(nodes.get(id)));
   return { text: fingerprint(decisionText(d)), links };
 }
 
@@ -137,6 +187,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const store = existsSync(LINKS) ? JSON.parse(readFileSync(LINKS, 'utf8')) : {};
   const [mode, which] = process.argv.slice(2);
   const { problems, decisions, nodes, codes, ids } = checkDoc({ doc, spec, store });
+  if (mode === 'fix') {
+    writeFileSync(join(ROOT, 'docs/motw-design.md'), fixBacklinks({ doc, spec }));
+    console.log('back-link lines written');
+    process.exit(0);
+  }
   if (mode === 'confirm') {
     const targets = decisions.filter((d) => which === 'all' || d.id === which);
     if (!targets.length) { console.error(`no decision ${which}`); process.exit(1); }

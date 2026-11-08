@@ -2,7 +2,7 @@
 /** The design document's link check (scripts/doc-check.js), on small made-up documents. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkDoc, confirmed, parseNodes } from '../scripts/doc-check.js';
+import { checkDoc, confirmed, parseNodes, fixBacklinks } from '../scripts/doc-check.js';
 
 const spec = { cards: [{ id: 'bait-trail' }], variants: [{ id: 'fightHalf' }] };
 const doc = (area, decision, extra = '') => `# Doc
@@ -81,4 +81,24 @@ test('a superseded decision takes no links, and only records and the changelog m
   const text = doc(AREA, `${DEC}\n- **Status:** superseded by D22`, '').replace('#### D22. Half from a fight', '#### D21. Old\n\n- **Status:** superseded by D22\n\n#### D22. Half from a fight') + 'Elsewhere D21.\n';
   const r = checkDoc({ doc: text.replace(`${DEC}\n- **Status:** superseded by D22`, DEC), spec, store: store(text.replace(`${DEC}\n- **Status:** superseded by D22`, DEC)) });
   assert.deepEqual(r.problems.map((p) => p.what), ['D21 is superseded by D22: name that instead']);
+});
+
+test('fix writes the back-link line, which mends a one-way link without making the node suspect', () => {
+  const before = doc('At most half leaves a fight.', DEC);
+  const s = store(before);
+  const after = fixBacklinks({ doc: before, spec });
+  assert.match(after, /#### 3\.13 Conflict resolution · \*Ideas\*\n\n\*Decisions: D22\.\*\n/);
+  assert.deepEqual(checkDoc({ doc: after, spec, store: s }).problems, []);
+  assert.equal(fixBacklinks({ doc: after, spec }), after);
+});
+
+test('the rulebook: a level tag must match its decision\'s Status', () => {
+  const G = (tag) => `\n## Appendix G: The rulebook\n\n- Half leaves a fight (${tag}).\n`;
+  const dec = `${DEC}\n- **Status:** trial`;
+  const ok = doc(AREA, dec) + G('D22 · trial');
+  assert.deepEqual(checkDoc({ doc: ok, spec, store: store(ok) }).problems, []);
+  const wrong = doc(AREA, dec) + G('FR5, D22 · measured');
+  assert.deepEqual(checkDoc({ doc: wrong, spec, store: store(wrong) }).problems.map((p) => p.what), ["tagged D22 · measured, but D22's Status is trial"]);
+  const draft = doc(AREA, dec) + G('D22 · draft');
+  assert.deepEqual(kinds(checkDoc({ doc: draft, spec, store: store(draft) })), ['rulebook', 'rulebook']);
 });
