@@ -200,10 +200,10 @@ fn goal_name(m: &BotMemory) -> Option<&'static str> {
     m.goal.map(|g| match g { crate::bots::Goal::Invaders => "invaders", crate::bots::Goal::Island => "island" })
 }
 
-fn seat_log(s: &crate::types::GameState, pid: Pid, m: &BotMemory, profile: &str) -> SeatLog {
+fn seat_log(s: &crate::types::GameState, pid: Pid, m: &BotMemory) -> SeatLog {
     let p = &s.players[pid as usize];
     SeatLog { standing: p.standing, trophies: p.trophies, supply: p.supply, on_board: on_board(s, pid), goal: goal_name(m), p_invaders: crate::bots::win_chances(s, pid).p_invaders,
-        broke: m.broke.map(|g| match g { crate::bots::Goal::Invaders => "invaders", crate::bots::Goal::Island => "island" }), early: m.early, traits: m.traits.clone(), p_forecast: crate::bots::forecast(s, pid, profile) }
+        broke: m.broke.map(|g| match g { crate::bots::Goal::Invaders => "invaders", crate::bots::Goal::Island => "island" }), early: m.early, traits: m.traits.clone(), p_forecast: crate::bots::forecast(s, pid) }
 }
 
 /// Where a round's tokens came from and went.
@@ -759,7 +759,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             if s.options.round_votes && s.options.vote_weight(round) == 0 && votes.len() < round as usize {
                 votes.push(af.iter().sum::<i32>() > s.options.threshold);
             }
-            rounds.push(RoundLog { round, before_fights: bf, after_fights: af, end: by_faction(&s), seats: (0..n).map(|p| seat_log(&s, p as Pid, &memory[p], &profiles[&(p as Pid)])).collect(), first: round_first, fights: nf, occupied: (0..s.board.len() as u8).filter(|&l| crate::board::count_at(&s, l) >= 1).count(), opening: round_open.0, read: round_open.1, end_read: round_open.2, end_trend: round_open.3 });
+            rounds.push(RoundLog { round, before_fights: bf, after_fights: af, end: by_faction(&s), seats: (0..n).map(|p| seat_log(&s, p as Pid, &memory[p])).collect(), first: round_first, fights: nf, occupied: (0..s.board.len() as u8).filter(|&l| crate::board::count_at(&s, l) >= 1).count(), opening: round_open.0, read: round_open.1, end_read: round_open.2, end_trend: round_open.3 });
             round_first = None;
             presence.push(crate::board::total_presence(&s));
             round = s.round;

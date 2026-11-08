@@ -191,8 +191,6 @@ pub struct Persona {
     pub loyalty: f64,
     pub sharp: f64,
     pub vary: f64,
-    /// Momentum bias: the forecast leans this share toward the side ahead on votes (people read a streak into a lead).
-    pub momentum: f64,
 }
 
 /// The one bot (designer, 2026-10-29): its lean slides it from the island-minded settings (lean -0.3, the old trophy
@@ -205,7 +203,7 @@ pub fn at_lean(lean: f64) -> Persona {
         lean, jitter: 0.15, hold: 0.05, push: 2.0, margin: 3.0, linear: 1.0, threat: mix(3.0, 1.0), enumerate: 1.0, sim: 1.0, combo: 1.0, sets: 2.0,
         table: 1.0, commit: mix(0.0, 2.0), protect: mix(0.0, 4.0), top: mix(0.0, 2.0),
         race: mix(0.0, 2.0), even: 1.0, plan: 1.0, steer: 1.0, keep: Some(mix(12.0, SIM_KEEP as f64).round() as usize), playouts: None, plan_budget: None, plan_depth: None,
-        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, roll_list: 0.0, fade: 1.0, tiekeep: 1.0, judge: 0.0, rjudge: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, hfrom: 0.0, endread: 4.0, gut: 0.0, momentum: 0.0, dials: 1.0, nerve: (0.5 - lean).clamp(0.0, 1.0), loyalty: (0.5 + lean).clamp(0.0, 1.0), sharp: 0.8, vary: 0.25,
+        noise: Some(mix(0.0, SEARCH_NOISE)), draft: None, roll_list: 0.0, fade: 1.0, tiekeep: 1.0, judge: 0.0, rjudge: 0.0, rplan: 1.0, hedge: 0.0, hguard: 0.5, glass: 0.0, glass_from: 5.0, hfrom: 0.0, endread: 4.0, gut: 0.0, dials: 1.0, nerve: (0.5 - lean).clamp(0.0, 1.0), loyalty: (0.5 + lean).clamp(0.0, 1.0), sharp: 0.8, vary: 0.25,
     }
 }
 
@@ -285,7 +283,6 @@ fn parse_persona(profile: &str) -> Option<Persona> {
                 "loyalty" => p.loyalty = x,
                 "sharp" => p.sharp = x,
                 "vary" => p.vary = x,
-                "momentum" => p.momentum = x,
                 "judge" => p.judge = x,
                 "rjudge" => p.rjudge = x,
                 _ => {}
@@ -688,9 +685,6 @@ fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
     let proj = project_fights_cached(s);
     let mut c = chances_after(&proj, pid);
     end_read_into(s, &mut c, &proj);
-    if let Some((side, w)) = momentum(s, p) {
-        c.p_invaders = (1.0 - w) * c.p_invaders + w * side;
-    }
     if on(p.judge) {
         if let Some(w) = crate::judge::weights() {
             // The chance of winning, whichever ending comes: what a bot playing to win values.
@@ -719,14 +713,10 @@ fn goal_value(s: &GameState, pid: Pid, goal: Goal, p: &Persona) -> f64 {
 
 /// The chance of the invaders' ending as this seat reads it (end_read), for measuring the
 /// forecast's calibration (the round logs' pForecast).
-pub fn forecast(s: &GameState, pid: Pid, profile: &str) -> f64 {
-    let p = persona_of(profile).unwrap_or_else(|| at_lean(-0.3));
+pub fn forecast(s: &GameState, pid: Pid) -> f64 {
     let proj = project_fights_cached(s);
     let mut c = chances_after(&proj, pid);
     end_read_into(s, &mut c, &proj);
-    if let Some((side, w)) = momentum(s, &p) {
-        c.p_invaders = (1.0 - w) * c.p_invaders + w * side;
-    }
     c.p_invaders
 }
 
@@ -737,14 +727,6 @@ fn end_read_into(s: &GameState, c: &mut Chances, proj: &GameState) {
         c.projected = after;
         c.p_invaders = invaders_reach_by(s, after, c.threshold, c.spread_p, 0.0, t);
     }
-}
-
-/// Momentum bias (persona momentum): the side ahead on votes, if any (1: invaders, 0: island), and the weight.
-fn momentum(s: &GameState, p: &Persona) -> Option<(f64, f64)> {
-    if !s.options.round_votes || !on(p.momentum) || s.votes[0] == s.votes[1] {
-        return None;
-    }
-    Some((if s.votes[0] > s.votes[1] { 1.0 } else { 0.0 }, p.momentum))
 }
 
 /// The hedging bot's ramp (persona hedge): how much of the invaders' half of the value counts, 0 to 1.
@@ -916,10 +898,6 @@ fn choose_goal_seen(s: &GameState, pid: Pid, p: &Persona, memory: Option<&mut Bo
     let push = p.push * (c.rounds_left + 1.0);
     let reach_inv = (1.0 - c.known) * (c.prior + 0.15).min(1.0) + c.known * invaders_reach_by(s, c.projected, c.threshold, c.spread_p, push, trend);
     let reach_isl = (1.0 - c.known) * (1.0 - c.prior + 0.15).min(1.0) + c.known * (1.0 - invaders_reach_by(s, c.projected, c.threshold, c.spread_p, -push, trend));
-    let (reach_inv, reach_isl) = match momentum(s, p) {
-        Some((side, w)) => ((1.0 - w) * reach_inv + w * side, (1.0 - w) * reach_isl + w * (1.0 - side)),
-        None => (reach_inv, reach_isl),
-    };
     let settled = c.settled;
     let mut evidence = reach_inv * c.as_invaders - reach_isl * c.as_island;
     if on(p.judge) {
