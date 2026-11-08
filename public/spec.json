@@ -1020,44 +1020,6 @@
       ]
     },
     {
-      "id": "thresholdGrowth",
-      "label": "The horde must grow by",
-      "description": "Claude's suggestion D, the designer trying it (2026-10-31): the invaders win if total presence at the end is more than its start (30) by this much; set at the deal, in place of the other thresholds. Off by default.",
-      "default": "off",
-      "choices": [
-        {
-          "id": "off",
-          "label": "off",
-          "description": ""
-        },
-        {
-          "id": "3",
-          "label": "+3",
-          "description": ""
-        },
-        {
-          "id": "5",
-          "label": "+5",
-          "description": ""
-        },
-        {
-          "id": "8",
-          "label": "+8",
-          "description": ""
-        },
-        {
-          "id": "10",
-          "label": "+10",
-          "description": ""
-        },
-        {
-          "id": "12",
-          "label": "+12",
-          "description": ""
-        }
-      ]
-    },
-    {
       "id": "thresholdPerPlayer",
       "label": "Presence threshold per player",
       "description": "D40 (designer, 2026-10-30): the threshold is this many per player (10 a player: 30 at 3, 40 at 4, 50 at 5), in place of the fixed threshold. Off uses the fixed threshold.",

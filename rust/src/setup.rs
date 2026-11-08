@@ -122,15 +122,6 @@ pub fn create_game(seed: i64, players: &[String], raw_options: &[(String, String
         }
         ps.push(p);
     }
-    // D (Claude's suggestion, designer trying it, 2026-10-31): the horde must grow by more than this over the
-    // presence it starts with; sets the threshold, kept in the game's saved choices.
-    if let Some(grow) = options.raw.iter().find(|(k, _)| k == "thresholdGrowth").and_then(|(_, v)| v.parse::<i32>().ok()) {
-        let start: i32 = board.iter().map(|b| (0..5u8).map(|f| b.tokens.get(f)).sum::<i32>()).sum();
-        options.threshold = start + grow;
-        if let Some(x) = options.raw.iter_mut().find(|(k, _)| k == "threshold") {
-            x.1 = options.threshold.to_string();
-        }
-    }
     // D44: a random first player in round 1.
     let (r, next) = next_random(rng);
     rng = next;
