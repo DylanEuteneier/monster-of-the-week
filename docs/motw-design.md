@@ -256,6 +256,14 @@ Not the current focus. Items come back into focus when the draft needs them.
 - **Card design beyond the first draft:** the movement types; what the marked cards do; which cards belong to the 3+, 4+ and 5+ tiers.
 - **Balancing:** each player's starting cubes, each slayer group's starting sway with its linked faction, starting presence, total tokens per faction, the presence threshold, the volatility threshold, the growth threshold, the number of rounds, hand size, and how many real and bluff tokens a hidden action places.
 
+**Open questions from decisions** (moved out of the decision records, 2026-11-08)
+
+- **Round 5's first-player price (D44):** Steal Their Playbook's price is going first next round, which vanishes in the last round. Also open: the cards' power ladder without the marked cards.
+- **Call in Favours (D44):** to be redesigned, now free of opening rounds and of being the standout.
+- **The physical game's token count (D46):** faction pools are unlimited in play; a box needs a number.
+- **Icons (D34, D35):** the look of each mark, and which cards and prompts use them first; a lone group (one circle in a hex) and a single token at a location draw alike.
+- **Thematic text and toplines (D37):** the toplines' gists and the thematic text marked `flavourDraft` in `spec.json` (Invite Them In, The Gate, the six unsuited cards) are Claude's drafts, for the designer's review.
+
 **Prototype art (open, low priority)**
 
 - UI colours, token cardboard colours, and whether anything needs a daytime look (`assets/README.md`).
