@@ -218,7 +218,20 @@ it on or off.
 **Reads:** worth (mean; the bots' value scale, so compare cards with each other), the share of tests where holding
 it helped, and how often the bot played it when it had it.
 
-**Run:** `probe=0.05` (5% of turns, 4 cards a test, 4 play-outs a side). Each card gets about one test a game, split
+**Card strength runs** are their own process, used when the work is on the cards (designer, 2026-11-08); they may
+take as long as the answer needs. Two kinds:
+
+```sh
+node scripts/measure.js games=70 players=3,4,5 probe=0.2                    # the full deck: every card ranked
+node scripts/measure.js games=70 players=3,4,5 probe=0.2 focus=gate,plough  # one card or a few: every test on them
+```
+
+A focused run spends all its tests on the named cards (4 a test, so up to four cards are tested on every probed
+turn), so the same run gives each of them several times the tests a full-deck run would. Read `report=agreement`
+and each card's Probe row: when the probe's order doesn't hold between even and odd games, raise the games, the rate
+or the play-outs. Figures from the 0.05 runs below:
+
+**Run (the rate):** `probe=0.05` (5% of turns, 4 cards a test, 4 play-outs a side). Each card gets about one test a game, split
 over the two goals, so plan **200+ games** (`games=70 players=3,4,5`) and check the Probe column under
 `report=agreement` before ranking cards by it. It makes games slower (each card tested costs up to two full bot
 decisions and their play-outs): about 1.4× at `probe=0.05` (2026-11-08, 4 players, 96 s a game against 67 s), so
@@ -301,6 +314,7 @@ of your own side by side: `logs=a=DIR logs=b=DIR`.
 | `logs=` | – | report on a run's folder (or log files); `logs=label=DIR` names it; repeat to compare |
 | `report=` | game,cards,agreement | which reports, in order |
 | `card=` | – | one card in detail |
+| `focus=` | the whole deck | the cards a run is about, e.g. `focus=gate,plough`: the probe tests only them and the card reports list only them (the rest of the deck still sets the ranks); the header names them |
 | `bar=` | spec default | the presence bar the game report reads |
 | `cards=0` `swing=0` `ties=0` | all on | turn a log off for a faster run: the card study, the big-play diagnosis, the tie checks (their rows come out blank) |
 | `think=` | – | extra bot settings for every seat, e.g. `think=playouts=12` (see below) |

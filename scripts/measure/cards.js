@@ -195,6 +195,8 @@ export function analyse(games, keep = () => true) {
 /** The card report as lines. opt: card (one card in detail). */
 export function cardReport(games, opt = {}) {
   const out = [];
+  // focus=: the cards a run is about; the rest of the deck still counts for ranks and turns, but isn't listed.
+  const shown = opt.focus?.length ? cards.filter((id) => opt.focus.includes(id)) : cards;
   const log = (s = '') => out.push(s);
   if (!games.some((g) => g.cardTurns?.length)) return ['Cards: no card study in these games (run with cards=1).'];
   const all = analyse(games);
@@ -237,7 +239,7 @@ export function cardReport(games, opt = {}) {
   const width = (l) => (l === 'Timing' ? 24 : l === 'Can act' ? 22 : 18);
   log('');
   log(['Card'.padEnd(24), ...COLS.map(([l]) => l.padEnd(width(l)))].join(''));
-  for (const id of cards) {
+  for (const id of shown) {
     const cells = COLS.map(([label, , get, flag, fmt, gap], k) => {
       const a = get(inv[id]), b = get(isl[id]);
       if (!ok(a) && !ok(b)) return '–'.padEnd(width(label));
@@ -253,7 +255,7 @@ export function cardReport(games, opt = {}) {
   // Each card's uses, both sides.
   log('\nUses (readings and unsuited uses; sway and the way back left out) · open: held turns it had a legal target · taken: plays of the card that used it, when open · strength: one-step, against the rest of the hand · invader backers · trophy hunters');
   const f = (x, k, fm) => (x?.[k] == null || Number.isNaN(x[k]) ? '–' : fm(x[k]));
-  for (const id of cards) {
+  for (const id of shown) {
     const us = uniq([...Object.keys(inv[id].uses), ...Object.keys(isl[id].uses)]).sort();
     if (!us.length) continue;
     log(`  ${nameOf[id].padEnd(24)} ${us.map((u) => `${u}: open ${f(inv[id].uses[u], 'open', pct)}·${f(isl[id].uses[u], 'open', pct)}, taken ${f(inv[id].uses[u], 'taken', pct)}·${f(isl[id].uses[u], 'taken', pct)}, strength ${f(inv[id].uses[u], 'edge', (v) => v.toFixed(2))}·${f(isl[id].uses[u], 'edge', (v) => v.toFixed(2))}`).join('  |  ')}`);
@@ -261,7 +263,7 @@ export function cardReport(games, opt = {}) {
 
   // Detail on every turn: how each card is played, its footprint, when, by whom, and drafting.
   log('\nDetail (all turns) · ways played (share of its plays) · places: how many locations it targets (effective count) · footprint: its action changed the board, monsters per change, did nothing · when: first/middle/last of the seat\'s round, plays by round · drafted against chance · win share: its players\' wins against their table share (a check: noisy, tied to goals) · played by goal');
-  for (const id of cards) {
+  for (const id of shown) {
     const r = all.rows[id], c = r.c;
     const w = [...tally(c.ways).entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${pct(v / c.ways.length)}`).join(', ');
     const fx = c.fx.n ? `board ${pct(c.fx.changed / c.fx.n)}, ${(c.fx.monsters / Math.max(1, c.fx.changed)).toFixed(1)}/change, nothing ${pct(c.fx.nothing / c.fx.n)}` : '–';
@@ -273,7 +275,7 @@ export function cardReport(games, opt = {}) {
   }
   if (probed) {
     log('\nProbe (controlled tests, both goals) · worth holding it (mean) · share of tests where holding it helped · the bot played it when it had it · tests');
-    for (const id of cards) {
+    for (const id of shown) {
       const r = all.rows[id];
       if (!r.probeN) continue;
       log(`  ${nameOf[id].padEnd(24)} ${r.probe.toFixed(2).padStart(6)} · helped ${pct(r.c.probes.filter((v) => v > 0).length / r.probeN)} · played ${pct(r.probeUsed)} · ${r.probeN}`);
@@ -320,8 +322,9 @@ export function cardAgreement(games) {
  * (invader backers, trophy hunters) alone. ▲▼ marks a change over three standard errors (turns are not independent
  * within a game, so the errors are optimistic; three keeps chance marks rare among the ~200 cells).
  */
-export function cardCompare(baseGames, games) {
+export function cardCompare(baseGames, games, opt = {}) {
   const out = [];
+  const shown = opt.focus?.length ? cards.filter((id) => opt.focus.includes(id)) : cards;
   const log = (s = '') => out.push(s);
   if (!baseGames.some((g) => g.cardTurns?.length) || !games.some((g) => g.cardTurns?.length)) return ['Cards against the baseline: no card study on one side.'];
   const prop = (v, n) => Math.sqrt(Math.max(v * (1 - v), 0.01) / Math.max(1, n));
@@ -352,7 +355,7 @@ export function cardCompare(baseGames, games) {
     const [a, b] = [baseGames, games].map((gs) => analyse(gs, (t) => goalOf(t) === goal).rows);
     log(`\n  ${goal === 'invaders' ? 'Invader backers' : 'Trophy hunters'}`);
     log(`  ${'Card'.padEnd(24)}${stats.map(([l]) => l.padEnd(20)).join('')}`);
-    for (const id of cards) {
+    for (const id of shown) {
       const cells = stats.map((s) => cell(a[id], b[id], s));
       moved += cells.reduce((k, c) => k + c.moved, 0);
       log(`  ${nameOf[id].padEnd(24)}${cells.map((c) => c.text.padEnd(20)).join('')}`);

@@ -271,6 +271,11 @@ fn tournament(args: &[String]) {
     if let Some(r) = kv.get("probe").and_then(|x| x.parse::<f64>().ok()) { motw::tournament::PROBE_RATE.store((r * 1000.0).round() as usize, std::sync::atomic::Ordering::Relaxed); }
     if let Some(k) = kv.get("probeSample").and_then(|x| x.parse::<usize>().ok()) { motw::tournament::PROBE_SAMPLE.store(k, std::sync::atomic::Ordering::Relaxed); }
     if let Some(k) = kv.get("probePlayouts").and_then(|x| x.parse::<usize>().ok()) { motw::tournament::PROBE_PLAYOUTS.store(k, std::sync::atomic::Ordering::Relaxed); }
+    // probeCards=a,b: the probe tests only these cards (spec ids).
+    if let Some(list) = kv.get("probeCards") {
+        let ids: Vec<motw::types::CardIx> = list.split(',').filter(|x| !x.is_empty()).map(|id| motw::spec::spec().card_ix(id).unwrap_or_else(|| panic!("probeCards: no card {id}"))).collect();
+        *motw::tournament::PROBE_CARDS.write().unwrap() = ids;
+    }
     // cards=1: the card study (every turn's hand and weighed moves, every draft pick; scripts/card-report.js).
     if kv.get("cards").is_some_and(|x| x == "1") { motw::tournament::CARDS.store(true, std::sync::atomic::Ordering::Relaxed); motw::bots::KEEP_CONSIDERED.store(true, std::sync::atomic::Ordering::Relaxed); }
     if kv.get("ties").is_some_and(|x| x == "1") { motw::tournament::TIES.store(true, std::sync::atomic::Ordering::Relaxed); motw::bots::KEEP_CONSIDERED.store(true, std::sync::atomic::Ordering::Relaxed); }

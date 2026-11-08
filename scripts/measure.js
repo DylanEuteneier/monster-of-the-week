@@ -36,6 +36,8 @@
  *   report=…          default game,cards,agreement,bots (all from the same games); the reports, in order: game (the designer's preferences), cards (the card scorecard and its
  *                     detail), agreement (whether each card stat agrees with itself across halves of the games)
  *   card=id           one card in detail (cards report)
+ *   focus=a,b         the cards a run is about: the probe tests only them, the card reports list only them
+ *                     (no focus: the whole deck)
  *   bar=20            the presence bar the game report reads, if not the spec's default
  *
  * Bots are the players, so every figure measures how bots play the rules and the cards, not how people will feel.
@@ -63,9 +65,16 @@ for (const a of args) {
   else if (k === 'logs') logSets.push(v);
   else kv[k] = v;
 }
+// focus=a,b: the cards a run is about (spec ids). The probe tests only them; the card reports list only them.
+const focus = kv.focus ? kv.focus.split(',').map((s) => s.trim()).filter(Boolean) : [];
+{
+  const ids = new Set(JSON.parse(readFileSync(join(ROOT, 'public/spec.json'), 'utf8')).cards.map((c) => c.id));
+  const bad = focus.filter((id) => !ids.has(id));
+  if (bad.length) { console.error(`focus: no card ${bad.join(', ')} (spec.json ids: ${[...ids].join(', ')})`); process.exit(1); }
+}
 /**
  * The accepted configuration the baseline is played under: the live game's bots and rules (spec defaults), every
- * player count, every log and the strength probe, so it holds every measure. Change it only when a decision changes
+ * player count and every log, so it holds every game and card measure; card strength (the probe) runs on its own. Change it only when a decision changes
  * what is accepted, then rebuild (baseline=1).
  */
 // 100 games a player count (designer, 2026-11-08): about ±4.5 points on an ending share at each count; comparisons at 40.
@@ -74,7 +83,7 @@ const BASELINE = { games: '100', players: '3,4,5', seed: '7101' };
 const BASE_DIR = join(ROOT, '.tuning', 'baseline');
 const building = kv.baseline === '1';
 if (building) {
-  const bad = ['think', 'profiles', 'out', ...Object.keys(BASELINE)].filter((k) => kv[k] !== undefined);
+  const bad = ['think', 'profiles', 'out', 'probe', 'focus', ...Object.keys(BASELINE)].filter((k) => kv[k] !== undefined);
   if (bad.length || variants.length || logSets.length) { console.error(`baseline=1 plays the accepted configuration only (BASELINE in this script); drop ${[...bad, ...variants, ...(logSets.length ? ['logs='] : [])].join(', ')}`); process.exit(1); }
   Object.assign(kv, BASELINE, { out: `${BASE_DIR}-new` });
   if (existsSync(kv.out)) rmSync(kv.out, { recursive: true });
@@ -107,10 +116,10 @@ async function play() {
   const share = seats.map((s) => Math.max(1, Math.round((cores * s) / seats.reduce((a, b) => a + b, 0))));
   // Every log the reports read is on by default (the game report's big-play diagnosis and tie checks, the card study),
   // so no measure comes out blank; each can be turned off (swing=0, ties=0, cards=0) for a faster run.
-  const flags = [`cards=${kv.cards ?? '1'}`, `swing=${kv.swing ?? '1'}`, `ties=${kv.ties ?? '1'}`, ...(kv.probe ? [`probe=${kv.probe}`] : []), ...(kv.probeSample ? [`probeSample=${kv.probeSample}`] : []), ...(kv.probePlayouts ? [`probePlayouts=${kv.probePlayouts}`] : [])];
+  const flags = [`cards=${kv.cards ?? '1'}`, `swing=${kv.swing ?? '1'}`, `ties=${kv.ties ?? '1'}`, ...(kv.probe ? [`probe=${kv.probe}`] : []), ...(kv.probeSample ? [`probeSample=${kv.probeSample}`] : []), ...(kv.probePlayouts ? [`probePlayouts=${kv.probePlayouts}`] : []), ...(focus.length ? [`probeCards=${focus.join(',')}`] : [])];
   // The run's configuration travels with its logs (run.json), so a report read back later says how it was made.
   const git = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout?.trim();
-  const config = { made: new Date().toISOString(), commit: git, games, players: seats, seed: Number(kv.seed ?? 7101), workers: cores, think: kv.think ?? null, probe: kv.probe ? { rate: Number(kv.probe), sample: Number(kv.probeSample ?? 4), playouts: Number(kv.probePlayouts ?? 4) } : null, variants: Object.fromEntries(variants.map((v) => v.slice(2).split('='))), cards: (kv.cards ?? '1') !== '0', swing: (kv.swing ?? '1') !== '0', ties: (kv.ties ?? '1') !== '0', profiles: Object.fromEntries(tables.map((t, i) => [`${seats[i]}p`, t])) };
+  const config = { made: new Date().toISOString(), commit: git, games, players: seats, seed: Number(kv.seed ?? 7101), workers: cores, think: kv.think ?? null, probe: kv.probe ? { rate: Number(kv.probe), sample: Number(kv.probeSample ?? 4), playouts: Number(kv.probePlayouts ?? 4) } : null, focus: focus.length ? focus : null, variants: Object.fromEntries(variants.map((v) => v.slice(2).split('='))), cards: (kv.cards ?? '1') !== '0', swing: (kv.swing ?? '1') !== '0', ties: (kv.ties ?? '1') !== '0', profiles: Object.fromEntries(tables.map((t, i) => [`${seats[i]}p`, t])) };
   writeFileSync(join(dir, 'run.json'), JSON.stringify(config, null, 2) + '\n');
   const t0 = Date.now();
   const sets = await Promise.all(tables.map((profiles, i) => new Promise((done) => {
@@ -176,12 +185,15 @@ function describe(run) {
   const out = [`${run.label.toUpperCase()} · ${c.baseline ? 'the accepted configuration, every measure' : deep ? 'DEEP RUN' : changed ? 'TYPICAL BOTS, VARIANT RULES' : 'TYPICAL RUN (the live game\'s bots and rules)'} · ${run.sets.reduce((a, s) => a + s.games.length, 0)} games (${n}) · seed ${c.seed}${c.commit ? ` · commit ${c.commit}` : ''}${c.minutes != null ? ` · ${c.minutes} min` : ''}`];
   out.push(`  bots: ${c.think ? `the live game's, thinking deeper: ${c.think}` : 'the live game\'s (one bot with dials, leans spread over the table)'}`);
   out.push(`  probe: ${c.probe ? `on, ${c.probe.rate} of turns, ${c.probe.sample ?? '?'} cards a test, ${c.probe.playouts ?? '?'} play-outs a side` : 'off'} · card study: ${c.cards ? 'on' : 'off'} · rules: ${changed ? Object.entries(c.variants).map(([k, v]) => `${k}=${v}`).join(', ') : 'spec defaults'}`);
+  if (c.focus?.length) out.push(`  focus: ${c.focus.join(', ')} (the probe tested only these; the card reports list only these)`);
   if (c.inferred) out.push('  (no run.json: read from the games themselves)');
   out.push(`  logs: ${run.dir}`);
   return out;
 }
 
 const runs = logSets.length ? logSets.map(loadRun) : [await play()];
+// What the card reports list: focus= now, or the focus the run was played with.
+const reportFocus = focus.length ? focus : (runs.length === 1 ? runs[0].config.focus ?? [] : []);
 const lines = [];
 for (const run of runs) lines.push(...describe(run), '');
 // Every single run is read against the baseline, unless it is the baseline.
@@ -211,9 +223,9 @@ for (const r of reports) {
     for (const run of runs) {
       const games = run.sets.flatMap((s) => s.games);
       if (runs.length > 1) lines.push(`${run.label.toUpperCase()}:`);
-      lines.push(...(r === 'cards' ? cardReport(games, { card: kv.card }) : cardAgreement(games)), '');
+      lines.push(...(r === 'cards' ? cardReport(games, { card: kv.card, focus: reportFocus }) : cardAgreement(games)), '');
     }
-    if (r === 'cards' && baseline) lines.push(...cardCompare(baseline.sets.flatMap((s) => s.games), runs[0].sets.flatMap((s) => s.games)), '');
+    if (r === 'cards' && baseline) lines.push(...cardCompare(baseline.sets.flatMap((s) => s.games), runs[0].sets.flatMap((s) => s.games), { focus: reportFocus }), '');
   } else if (r === 'bots') {
     // Seats grouped by profile (or by=setting) across every run read, so runs of different bots compare.
     lines.push('Bot report · what each kind of seat attends to, round by round, and why it wins or loses', ...botReport(runs.flatMap((run) => run.sets.flatMap((s) => s.games)), { by: kv.by, rounds: kv.rounds }), '');

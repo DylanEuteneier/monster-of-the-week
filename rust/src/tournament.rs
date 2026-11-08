@@ -431,6 +431,8 @@ pub static CARDS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool:
 pub static PROBE_RATE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 pub static PROBE_SAMPLE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(4);
 pub static PROBE_PLAYOUTS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(4);
+/// The cards the probe tests (`probeCards=a,b`, the measuring tool's focus=); empty: the whole deck.
+pub static PROBE_CARDS: std::sync::RwLock<Vec<crate::types::CardIx>> = std::sync::RwLock::new(Vec::new());
 
 /// One controlled card test's value: the seat's own bot decides from `s` (its memory and the table as they are), and
 /// that decision is played out to the round's end on `seeds`. The decision's random draws come from `seed` alone, so
@@ -669,8 +671,9 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             let np = PROBE_PLAYOUTS.load(std::sync::atomic::Ordering::Relaxed).max(1);
             let base_seed = (probe_rng() * 2_147_483_648.0) as i64;
             let seeds: Vec<i64> = (0..np as i64).map(|i| base_seed + 7919 * i).collect();
-            // A sample of the whole deck, each card at most once.
-            let mut pool: Vec<crate::types::CardIx> = (0..crate::bots::all_cards() as crate::types::CardIx).collect();
+            // A sample of the deck (or of the focus cards), each card at most once.
+            let focus = PROBE_CARDS.read().map(|f| f.clone()).unwrap_or_default();
+            let mut pool: Vec<crate::types::CardIx> = if focus.is_empty() { (0..crate::bots::all_cards() as crate::types::CardIx).collect() } else { focus };
             let mut picked: Vec<crate::types::CardIx> = Vec::new();
             while picked.len() < k.min(pool.len()) {
                 let i = ((probe_rng() * pool.len() as f64) as usize).min(pool.len() - 1);
