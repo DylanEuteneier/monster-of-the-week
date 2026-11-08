@@ -1602,6 +1602,21 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Status:** trial
 - **Date:** 2026-10-06 (the first draft); recorded as a decision 2026-11-08
 
+#### D49. The working numbers
+
+- **Decided (designer):** the numbers the game plays with until balancing sets them: 5 rounds (GL1; the first draft's guess, G.7 as was), 30 cubes for each player (designer, 2026-10-07: a bump from 20 so the supply rarely limits play), 5 standing with your own faction at the start (designer, 2026-10-07: start with more; 5 was Claude's suggested number), slayer groups given out at random.
+- **Affects:** G.3, G.4, `rounds`, `playerCubes`, `startSway`, `groups`.
+- **Status:** trial
+- **Date:** 2026-10-06 to 2026-10-07; recorded as a decision 2026-11-08
+
+#### D50. A way back for factions
+
+- **Decided (designer, 2026-10-26), first draft:** a third way to play a suit card: instead of playing it for its sway, you may bring its faction back, only while that faction has no location with 2 or more of its tokens. Place up to X of its tokens (X: the card's sway, D24 for signatures) from its supply, at its suit locations or where it already is (the two readings), paying 1 standing with that faction per token, back to your supply. Common rules hold (tokens only where they can enter).
+- **Why (designer):** a faction wiped off the island had no way back, so trophy hunters lost its colour for good; paying your standing with the faction keeps reviving it competitive, even for a backer.
+- **Affects:** 3.7, G.4, `wayBack`.
+- **Status:** trial
+- **Date:** 2026-10-26
+
 ### A.2 Changelog
 
 Actual changes to mechanisms and game structure.
@@ -3302,16 +3317,16 @@ A guided walkthrough at `/tutorial`, for learning the first draft (Appendix G). 
 
 ---
 
-## Appendix G: First draft ruleset
+## Appendix G: The rulebook
 
-The first draft's picks (Current focus) restated as one ruleset, for prototyping only. It adds nothing that is not in the picks. Gaps are marked **To come with the cards** (step 2) or **Gap** (a question the picks leave open). Numbers in brackets are provisional and left to balancing.
+The rules in force: everything adopted at Trial or above (1.1, confidence levels), as one ruleset. Each rule names its decision and level, "(D42 · trial)"; D48 is the first draft's picks, with their slot codes. It is what the engine plays by default. Seeds and drafts stay in section 3 until adopted; a superseded rule leaves this appendix. The cards are in `spec.json` and catalogued in Appendix H.
 
 ### G.1 Components
 
-- **The board:** one island (BD1) of 15 locations in five regions of three, ring-shaped round a central lake (layout D, the prototype map).
+- **The board (D48 · trial):** one island (BD1) of 15 locations in five regions of three, ring-shaped round a central lake (layout D, the prototype map).
   - Mountains: Weather Station, Ski Resort, Mine. Badlands: Military Facility, Junkyard, Caves. Coast: Fallout Bunker, Shipping Docks, Lighthouse. Old Town: Graveyard, Beach City, Occult Camp. Woods: State Park, Sawmill, The Lake House.
   - Borders: Mountains–Badlands, Badlands–Coast, Coast–Old Town, Old Town–Woods, Woods–Mountains.
-  - Each location is aligned with one archetype (2.5).
+  - Each location is aligned with one archetype (D1).
   - **Adjacent locations:** hexes that share a border. On layout D:
 
     | Location | Adjacent to |
@@ -3331,95 +3346,94 @@ The first draft's picks (Current focus) restated as one ruleset, for prototyping
     | State Park | Mine, Sawmill, The Lake House, Weather Station |
     | Sawmill | State Park, The Lake House |
     | The Lake House | Graveyard, Mine, Sawmill, State Park |
-- **Factions:** five in play, one drawn at random from each archetype (3.4). Each has tokens in its own colour and its own supply. Factions play identically; there are no powers.
-- **Players:** 3 to 5, each a slayer group linked to one archetype (3.10). Each player has cubes in their own colour (sway) and their own supply.
-- **The card pool:** 21 unique, single-purpose cards (CU3), all used at every player count (PS1): five archetype suits of three cards each (SU1) and 6 others. Four of the 6 others are marked A, B, C and D (FP2); two are unmarked. **To come with the cards:** the cards themselves.
-- **Hidden tokens and bluff tokens:** **to come with the cards** (IN1).
+- **Factions (D48 · trial):** five in play, one drawn at random from each archetype (3.4). Each has tokens in its own colour and its own supply, which never runs out (D46 · trial). Factions play identically; there are no powers.
+- **Players (D3, D5 · trial):** 3 to 5, each a slayer group linked to one archetype. Each player has cubes in their own colour (sway) and their own supply.
+- **The cards (D48 · trial):** 21 unique cards, all used at every player count (PS1): five archetype suits of three (a strike, a shift and a signature) and six unsuited cards. A suit card prints its sway; a signature's sway is the cards in your hand, itself included (D24 · trial). Each card's text is in `spec.json`, catalogued in Appendix H.
 
 ### G.2 General rules
 
-- **Supply:** every colour has one supply. A player's cubes that leave the board return to that player, to be used again; a faction's tokens return to that faction, to be placed again.
-- **No piece ever leaves the game.**
-- **Cards only shift tokens:** a card never removes a faction's tokens from the board outright; it only moves them to other locations. Tokens leave the board only as fight casualties, or when a location is scorched.
-- **A player's cubes** are always in one of three places: their supply, their standing with a faction (public sway), or on a location (sway there).
-- **Two-faction limit (LL1):** a location holds at most two factions. No action may bring a third faction into a location.
-- **Control (LC1, LC2):** factions control locations; players never do. A faction controls a location when it has the most tokens there. If two factions are tied there, the one aligned with the location controls it; otherwise no one does.
-- **Moving factions:** any player can take an action that affects any faction's presence. Sway placed by such an action is spent from the player's standing with the faction being affected. **IC1 (D15, D21):** that placement is a requirement, all or nothing: a card's action that can't be paid for in full can't be played (the card can still be played for sway), so a player with no standing with a faction can't move it with a card that places sway. (Variant: only a faction's favourite can affect it, IL1.)
-- **Common card rules (D23):** unless a card says otherwise:
-  1. **All or nothing (D21):** if you can't pay every sway the action places, the card can't be played for its action (you can still play it for sway).
-  2. **Half from a fight (D22):** from a location where a fight already exists, a card moves at most half of a faction's group, rounded down.
+- **Supply (D48 · trial):** every colour has one supply. A player's cubes that leave the board return to that player, to be used again; a faction's tokens return to that faction, to be placed again. No piece ever leaves the game.
+- **Cards only shift tokens (D48 · trial):** a card never removes a faction's tokens from the board outright; it moves them, or brings them back (the way back, D50). Tokens leave the board only as fight casualties, or when a location is scorched.
+- **A player's cubes** are always in one of three places: their supply, their standing with a faction (public sway), or on a location (sway there) (D18).
+- **Two-faction limit (LL1, D48 · trial):** a location holds at most two factions. No action may bring a third faction into a location.
+- **No generic movement (D19 · trial):** factions move only by a card, which says where (adjacent locations, a region, neighbouring regions, anywhere). No move may enter a scorched location or bring in a third faction.
+- **Control (LC1, LC2, D48 · trial):** factions control locations; players never do. A faction controls a location when it has the most tokens there. If two factions are tied there, the one aligned with the location controls it; otherwise no one does.
+- **Moving factions (D15 · trial):** any player can take an action that affects any faction's presence, paying the sway it places from their standing with the faction affected. No one moves another player's sway (D13 · trial).
+- **Common card rules (D23 · trial):** unless a card says otherwise:
+  1. **All or nothing (D21 · trial):** if you can't pay every sway the action places, the card can't be played for its action (you can still play it for sway).
+  2. **Half from a fight (D22 · trial):** from a location where a fight already exists, a card moves at most half of a faction's group, rounded down.
   3. **Sway source:** the sway a card places is spent from your standing with the faction moved.
   4. **Where the sway goes:** 1 sway at each location tokens leave or reach, never more than 1 at a location.
-  5. **Where tokens can go:** a group only goes where it can enter: not scorched, never a third faction (LL1), and Lock Down the Town's borders hold.
+  5. **Where tokens can go:** a group only goes where it can enter: not scorched, never a third faction (LL1).
   6. **Odd tokens:** when tokens can't be split evenly, you place the extra.
-  7. **Several factions at one location (designer, 2026-10-20):** when more than one faction leaves or reaches the same location, you choose which of them pays the 1 sway there.
-  8. **Sway placed without movement (designer, 2026-10-20):** sway a card places where nothing moves (a mark, a bid, The Gate) is spent from standing with a faction at that location (your pick), or with the suit's faction if none is there; on a faction reading, from the suit's faction.
-  9. **The signature bid (designer, 2026-10-17; a common rule 2026-10-20):** every signature bids up to its sway (D24), openly, by rule 8.
-- **Favourite:** the player with the most sway with a faction. Affinity breaks a tie for the most (AB1); otherwise all tied players are favourites. It decides where a short-supplied faction grows.
-- **Affinity (AB1):** a slayer group has affinity for its archetype's faction and for that archetype's three locations. Affinity only breaks ties between players: affinity for a location in fights there, affinity for a faction in sway with it.
-- **Hidden information:** hands are hidden. Sway with factions is public. Collected trophies are secret: everyone sees which pile a player takes, but not their running total (IN2).
+  7. **Several factions at one location:** when more than one faction leaves or reaches the same location, you choose which of them pays the 1 sway there.
+  8. **Sway placed without movement:** sway a card places where nothing moves (a mark, a bid, The Gate) is spent from standing with a faction at that location (your pick), or with the suit's faction if none is there; on a faction reading, from the suit's faction.
+  9. **The signature bid:** every signature bids up to its sway (D24), openly, by rule 8. Every signature can create or affect a fight (D26 · trial).
+- **Favourite (AB1, D48 · trial):** the player with the most sway with a faction. Affinity breaks a tie for the most; otherwise all tied players are favourites.
+- **Affinity (AB1, D48 · trial):** a slayer group has affinity for its archetype's faction and for that archetype's three locations. Affinity only breaks ties between players: affinity for a location in fights there, affinity for a faction in sway with it.
+- **Hidden information (D6, D48 · trial):** hands are hidden. Sway with factions is public. Collected trophies are secret: everyone sees which pile a player takes, but not their running total (IN2).
 
 ### G.3 Setup
 
-1. Draw one faction from each archetype.
-2. **Seed the board (SD1):** each faction places [3] tokens on each of its archetype's three locations. Every location starts with exactly one faction: its aligned one.
-3. Each player takes a slayer group and their cubes [number to balance].
-4. Each player starts with [some] sway with their linked archetype's faction. Factions with no linked player in the game start with every player at 0, so every player is their favourite.
-5. Shuffle the card pool (all 21 cards).
+1. Draw one faction from each archetype (D48 · trial).
+2. **Seed the board (SD1, D33 · trial):** each faction places 2 tokens on each of its archetype's three locations. Every location starts with exactly one faction: its aligned one.
+3. Each player takes a slayer group, given out at random, and 30 cubes (D49 · trial).
+4. **Starting standing:** 5 with your own faction (D49 · trial) and 2 with every other faction (D43 · trial).
+5. **Starting sway on the board (D47 · trial):** 2 of your sway on each of your affinity locations (your archetype's three), from your supply.
+6. Round 1's first player is drawn at random (D44 · trial).
 
 ### G.4 The round
 
-The game lasts a fixed number of rounds [to balance] (GL1). Each round has three phases (RS1).
+The game lasts 5 rounds (GL1, D49 · trial). Each round has three phases (RS1, D48 · trial).
 
-#### 1. Draft (DR1–DR6)
+#### 1. Draft (DR1–DR6, D48 · trial)
 
 - The whole card pool is drafted again every round (DR4). It is the whole set of actions; there are none outside it (DR6).
 - Deal hands of 6 cards at 3 players, 5 at 4 and 4 at 5 (PS1). The cards not dealt (3, 1 or 1) are left out, unseen and never revealed (DR5).
 - **Pick and pass (DR3):** each player keeps one card and passes the rest on. When a new batch arrives, the cards kept so far rejoin the hand, so a player ends each pass keeping one more card than before. A player may put any number of earlier picks back into the hand they pass on, taking that many extra from the batch they received.
 
-#### 2. Play (TU1, FP1)
+#### 2. Play
 
-- **First player:** whoever holds the earliest marked card dealt (A, then B, C, D; FP2). They must open the round with that card. Play goes clockwise.
-- On their turn a player plays a card or passes. Passing is not final: a player who passed can play when the turn comes back to them.
-- The round ends when every player passes in a row (RE3). Cards still in hand are lost back to the pool (DR2).
-- **To come with the cards:** what the cards do (3.7). The seeds:
-  - *Gain sway (CA1):* move cubes from your supply into standing with a faction.
-  - *Affect a faction's presence (CA2):* any faction, placing sway spent from your standing with it. Example: move a faction's tokens from one location to adjacent locations, and at each location moved to, place 1 sway spent from that faction, along with at least 1 of its tokens.
-  - *Place without moving presence (CA3):* for example a trap; place tokens and 1 sway from your supply on a location.
-  - Factions move only by a card, which says where (adjacent locations, a region, neighbouring regions, anywhere). There is no generic movement (D19). No move may enter a scorched location or bring in a third faction.
-  - What the marked cards A to D do.
+- **First player (D44 · trial):** whoever played Steal Their Playbook for its action last round goes first; otherwise the first player stays the same. They open with any card. Play goes clockwise.
+- **No passing (D29 · trial):** on their turn a player plays a card; a player with an empty hand is skipped. The round's play ends when every card has been played.
+- **Ways to play a card:**
+  - *For its action:* as the card says, by the common rules.
+  - *For sway:* a suit card gives its printed sway as standing with its suit's faction; an unsuited card gives 2 standing with any one faction, chosen as it's played (D45 · trial).
+  - *The way back (D50 · trial):* a suit card whose faction has no location with 2 or more of its tokens may bring it back instead.
+  - *For no effect:* a card whose action has no legal target may still be played.
+- **Steal Their Playbook (D39 · trial)** can't be your last card played: as the last card in your hand it is discarded, for no effect.
 
 #### 3. Resolve
 
-**Fights (FT1):** every contested location (one holding two factions) fights. Fights are independent, so their order doesn't matter (no spillover). Hidden tokens at a fighting location flip and take part (RQ5); **to come with the cards:** what they do.
+**Fights (FT1, D48 · trial):** every contested location (one holding two factions) fights. Fights are independent, so their order doesn't matter.
 
 For each fight:
 
-*A three-way fight (designer, 2026-10-18; it happens only through Wake the Dead, the ☾ signature, at a ☾ location):* the largest faction wins and both losers lose all their tokens; the winner loses half the larger loser's number (rounded up, D25); alignment still decides a tie for the most, and if the tied sides aren't aligned it's a true tie (all three wiped out, the location scorched); first claim takes the two larger piles and second claim the smallest.
-
-1. **Outcome (FR5, D25).** The larger group wins. The loser loses all its tokens there. The winner loses half the loser's number, rounded up (D25; first drafted as rounded down, minimum 1).
-2. **Tied fight (TF1, AL2).** If the groups are equal:
+1. **Outcome (FR5, D25 · trial).** The larger group wins. The loser loses all its tokens there. The winner loses half the loser's number, rounded up.
+2. **Tied fight (TF1, AL2, D48 · trial).** If the groups are equal:
    - At a location aligned with one of the two factions, that faction wins, and the outcome is as above.
-   - Otherwise it is a true tie: both groups are wiped out and the location is **scorched (TM1)**. It is no longer a location for the rest of the game, and the fight ends here: no trophies and no sway to any faction. Everything on it returns to its supply: both factions' tokens to their factions, all sway to each player (AT1), hidden tokens and any other pieces to their owners.
-3. **Trophies (TD1).** The casualties form two piles, one per faction: the loser's tokens and the winner's losses.
+   - Otherwise it is a true tie: both groups are wiped out and the location is **scorched (TM1)**. It is no longer a location for the rest of the game, and the fight ends here: no trophies and no sway to any faction. Everything on it returns to its supply: both factions' tokens to their factions, all sway to each player (AT1).
+3. **Trophies (TD1, D48 · trial).** The casualties form two piles, one per faction: the loser's tokens and the winner's losses.
    - The player with the most sway at the location (first claim) takes the bigger pile; second claim takes the smaller. If the piles are equal, first claim picks first.
    - Ties between players: a tied player with affinity for the location wins the tie. Otherwise the tie stands (PT2), and tied players collect nothing (ST1): a tie uses up every place the tied players were in line for. Players tied for first claim use up both places, so both piles return to their factions' supplies. Players tied for second claim use up second place, so the smaller pile returns.
    - If only one player has sway at the location, they collect both piles (UP1). If no player has sway there, both piles return to their factions' supplies.
    - Players cannot decline a pile. Collected trophies are kept secret.
-4. **Sway after the fight (AF3, adjusted).** Only first claim's sway leaves the location: half of it, rounded down, becomes their sway with the faction that won; the rest returns to their supply. Everyone else's sway stays. The sway of players tied for first claim returns to their supplies, with nothing gained (AS1); players tied for second claim keep theirs at the location.
+4. **Sway after the fight (AF3, D48 · trial).** Only first claim's sway leaves the location: half of it, rounded down, becomes their sway with the faction that won; the rest returns to their supply. Everyone else's sway stays. The sway of players tied for first claim returns to their supplies, with nothing gained (AS1); players tied for second claim keep theirs at the location.
 
-**Locations that don't fight:** sway there stays into the next round. Hidden tokens there stay face down (UT1).
+**A three-way fight (D48 · trial; only through Wake the Dead):** the largest faction wins and both losers lose all their tokens; the winner loses half the larger loser's number (rounded up, D25); alignment still decides a tie for the most, and if the tied sides aren't aligned it's a true tie (all three wiped out, the location scorched); first claim takes the two larger piles and second claim the smallest.
 
-**Growth (GR1, AL3):** after all fights, every location where a faction has at least [2] tokens gains 1 token of that faction from its supply. Each such location holds only one faction, since every contested location has just fought. A faction that controls a location aligned with its archetype gains 1 extra token there, but only where the location already grows. If a faction's supply runs short, it grows as far as its supply allows, and its favourite chooses which locations grow (including any extra token from AL3). When a faction has several favourites, they take turns placing one token each, in turn order from the first player.
+**Locations that don't fight:** sway there stays into the next round.
+
+**Nightfall (GR6, D38 · trial):** after the fights, every location where there was no fight gains 1 of its own faction's tokens per sway there (all players' sway), if it can. The last round has no nightfall: the game ends after its fights (D41 · trial).
 
 ### G.5 The end of the game
 
-After the last round's resolve phase:
+After the last round's fights:
 
-1. **Which side wins (TH1).** Count every invader token on the board. If the total is [more than 15], the invaders win; otherwise the island wins.
-2. **The winning faction (FX1, FX2).** If the invaders win, the faction with the most tokens on the board wins. Tied factions: the one controlling more locations. Still tied: they all win together.
-3. **The winning player (EG3).**
-   - *A faction wins:* each player scores their sway with it minus their trophies of its colour. With factions winning together, players add up their scores with each. Highest score wins.
+1. **Which side wins (TH1, D42 · trial).** Count every invader token on the board. If the total is more than 20, at every player count, the invaders win; otherwise the island wins.
+2. **The winning faction (FX1, FX2, D48 · trial).** If the invaders win, the faction with the most tokens on the board wins. Tied factions: the one controlling more locations. Still tied: they all win together.
+3. **The winning player (EG3, D48 · trial).**
+   - *A faction wins:* each player scores their standing with it (sway still on locations doesn't count) minus their trophies of its colour. With factions winning together, players add up their scores with each. Highest score wins.
      - Ties (ET4, ET1): fewest trophies of the winning faction, then affinity for it, then compare scores with the faction next highest in presence, and so on down.
    - *The island wins (TS2):* each player scores the number of trophies they hold of the colour they have fewest of. Highest score wins.
      - Ties (WT1): compare the second-fewest colour, then the third, and so on.
@@ -3427,50 +3441,12 @@ After the last round's resolve phase:
 
 Avoiding fights is a bet that a faction wins (few trophies keep sway whole); fighting widely is a bet that the island wins (TS1).
 
-### G.7 First-draft numbers for the prototype (2026-10-06)
+### G.6 How the engine reads the rules
 
-Educated first guesses, made at the designer's request so bots can run simulations and refine them. Not decisions; each becomes a host-selectable variant in `spec.json`.
+Where a rule leaves a detail open, the engine (`rust/src`) reads it as below: implementation choices for the prototype, listed for review.
 
-| Number | First guess | Reasoning |
-|---|---|---|
-| Rounds (GL1) | 5 | Enough for presence to swing from the start to the threshold band. |
-| Presence threshold (TH1) | more than 20 | With about 10 presence moves a round, an earlier simulation put total presence at about 15–25 by round 3 and 10–17 by round 5; 20 sits in that band so the last round decides it. |
-| Seeding (SD1) | 3 + 3 + 3 | Designer, 2026-10-17; 45 tokens in all (5 + 1 + 1, 35 in all, is the variant `seeding=home`). |
-| Growth threshold (GR1) | 2 | As recorded. |
-| Tokens per faction | 20 | 7 on the board at setup, 13 in supply; trophies draining a supply still matters. |
-| Each player's starting cubes | 20 | Moves place about 1–3 sway a turn and half comes back after a fight. *While the cards are designed (designer, 2026-10-07): 30 in the prototype, a bump so the supply rarely limits play; supply is a balancing concern for later.* |
-| Starting sway with the linked faction | 3 | Two or three moves in round 1 before more must be gained. |
-| Bluff tokens per player | 3 | One per hidden play; three hidden cards in the pool. |
-| Marker cubes | MC3 | The designer's stated preference (from the player's supply, and back). |
-| Slayer group per player | random (host may choose) | A default for bots. |
-
-### G.8 Readings used in the prototype engine (2026-10-06)
-
-Where a rule or card left a detail open, the engine (`rust/src`; `public/engine.js` until 2026-10-28) uses the reading below. These are implementation choices for the prototype, listed so the designer can review them; none is a decision.
-
-- **Placing sway with a move:** at each destination, 1 sway is placed per faction moved there, spent from the mover's standing with that faction, whenever they have any (it is not optional).
-- **Draft:** each pass, a player keeps one more card than before from their kept cards plus the batch in front of them, and passes the rest to the next seat (DR3 with the put-back rule, as one choice). The last card of each batch is kept automatically, since there is no choice to make.
-- **First player with no marked card dealt:** cannot happen at 4–5 players; at 3 players, if none is dealt, the first player rotates by round.
-- **Partial actions:** a card with no legal target can still be played as an action for no effect.
-- **Responses in the web prototype** *(out of the first draft from 2026-10-07; this describes the `responses` variant when on)*: a played action is *pending* until its player confirms; "before" responses (the cancel, Never Invite Them In) can be played while it is pending; "after" responses answer what the last action did, until the next card is played or a player passes. Each event is answered once. The cancel can't cancel a response, since responses resolve at once.
-- **Taking a card back (web prototype):** until anyone answers it, the acting player can take a pending card back into their hand.
-- **Leave Out Fresh Meat:** the largest group adjacent to the bait location that can enter moves in; ties go to the player's choice.
-- **Track Them in the Snow:** the whole group sets off; each location entered gets 1 token and 1 sway; leftover tokens stay together where the chase stops, or at the start if it never moved; the chase never enters a location twice, nor returns to its start (provisional, picked for the prototype 2026-10-07).
-- **Board Up the Windows:** the player divides the group across two or more adjacent locations as they like.
-- **Spread a Virus:** tokens go to adjacent locations in map order, one each, as far as the group lasts.
-- **Ring the Church Bell, Draw a Summoning Circle, Reroute the Power Grid:** groups move in, largest first, until the two-faction limit stops a group.
-- **Reprogram the Traffic Lights:** groups move one at a time in map order; a group that can't enter stays.
-- **Light Every Lamp:** when both factions at the location are the same size, either may be driven out, since neither is larger (provisional, picked for the prototype 2026-10-07).
-- **Silver Bullets:** the loser already loses everything, so the winner loses 2 more.
-- **Salt and Burn the Bones:** the winner loses everything too; both piles are handed out as trophies.
-- **Hidden tokens:** the marker cube comes from the player's supply and counts as their sway at the location; it returns with the rest of that location's sway after the fight (MC3).
-- **Short-supply growth:** the faction's favourites take turns placing one token each at a location still due growth, starting with the first favourite in seat order.
-- **End of the game, faction win:** a player's score is standing (sway held with the faction), minus trophies of that faction; sway still on locations doesn't count.
-
-### G.6 Gaps to close
-
-- **To come with the cards** (ideas so far in Appendix H): every card and what it does; how card uses combine; movement types; cards A to D; hidden tokens, bluffs and marker cubes (IN1, BT1, MC1–MC3).
-- **Balancing:** rounds, the presence threshold, the growth threshold, seeding numbers, each player's starting cubes, and starting sway with the linked faction.
+- **Draft:** each pass, a player keeps one more card than before from their kept cards plus the batch in front of them, and passes the rest to the next seat (DR3 with the put-back rule, as one choice). The last card of each batch is kept automatically.
+- **Nightfall:** arrivals are placed in board order when a location can't take them all.
 
 ---
 
