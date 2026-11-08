@@ -20,7 +20,19 @@ The current focus, below, lists what is being worked on right now; the backlog h
 
 **Card measurement (designer, 2026-11-07):** the design feels sound; the cards feel unproven. The first question is whether a hand gives real choices, then which cards to tune or replace. The measuring tool, `scripts/measure.js` (designer, 2026-11-08: one configurable tool; it plays bot games natively at the chosen player counts, or reads logged ones, and prints the reports asked for: `report=game,cards,agreement`), gives each card one row of measures from the card study (every turn's hand, every move the bot weighed, every draft pick), in the order a designer fixes a card: **can it act** (turns held with a legal target; plays with no target, which do nothing) → its targeting; **wants to act** (plays for its action while it had a legal target, not spent for sway) → its power against its printed sway; **readings** (turns its readings or uses give different best plays) → rewrite one; **strength** (worth against the rest of the hand) → its numbers; with **timing** (played early, mid or late in a seat's round) and **swing** (whether its place in the hand changes) as context. Every measure is shown twice, for invader backers and for trophy hunters (the island's ending), each from that goal's turns alone, with each use's measures under the card. The flags are Claude's working lines, not targets; bots are the players, so these measure how bots play the cards. The strength probe (`probe=0.05`, off by default) is the controlled test rebuilt natively: on a share of turns, each sampled card's worth is the seat's value holding it minus not, the same moment and the same luck on both sides (the measure that orders printed sway, D-2026-10-08).
 
-**Working on:** the 21 cards of the core deck (Appendix H.0), measured by the card report; then the cards to tune or replace.
+**Working on:** the 21 cards of the core deck (Appendix H.0), measured by the card report. The queue (designer, 2026-11-08, from the baseline's card report; Claude's read, bots as players):
+
+1. Light of the Cross (often no target, plays that do nothing, readings never differ)
+2. Draw Them Away (no target for trophy hunters, spent for sway by invader backers)
+3. Take Control (strong when open, seldom open)
+4. Call in Favours (the redesign already open, 2026-10-31)
+5. Cut the Powerlines (seldom wanted, small moves)
+6. The faction readings almost never chosen: Spoof the Signal, Bait the Herd, The Big Chase
+7. The Gate (its effect lands later; read the probe first)
+8. Study the Bodies, Spill Blood on the Altar (underdrafted; read the probe first)
+9. Steal Their Playbook (seldom wanted)
+
+*Claude's analysis, not decisions:* the cards that measure well draw groups together into a contest others must answer (the Ritual, Invite Them In, Bait the Herd), break a fight with the player's choice of split (Plough Through), or have a use for each goal (Raise the Stakes, Cover Every Exit). The struggling ones stack preconditions on their targets, or spread groups apart and thin contests (three of the five shifts).
 
 Everything else is in the backlog below; decisions and their history are in Appendix A.
 
