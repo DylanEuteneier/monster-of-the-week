@@ -119,7 +119,7 @@ const tiesOf = (gs) => gs.flatMap((g) => (g.fightLog ?? []).filter((f) => { cons
 }));
 
 const MEASURES = [
-  ['Push and pull', 'Invaders\' endings', '1.4 knife\'s edge; D33 about 40%', (gs) => share(gs, (g) => g.side === 'invaders'), pct, 'invaderShare'],
+  ['Push and pull', 'Invaders\' endings', 'principles: knife\'s edge; the island wins more than half', (gs) => share(gs, (g) => g.side === 'invaders'), pct, 'invaderShare'],
   ['Push and pull', 'Final count within 3 of the bar', '1.4 knife\'s edge', (gs) => share(gs, (g) => Math.abs(total(g.rounds.at(-1).afterFights) - defaultBar) <= 3), pct],
   ['Push and pull', 'Side changed at least once (round by round)', '1.1 push and pull', (gs) => share(gs, (g) => { const s = roundSides(g); return s.some((x, i) => i && x !== s[i - 1]); }), pct],
 
