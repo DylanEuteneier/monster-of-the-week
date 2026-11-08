@@ -1,14 +1,10 @@
 // @ts-nocheck
 /**
- * The game report: how a set of bot games measures up against the designer's preferences (design document 1.2–1.4,
+ * The game report (part of scripts/measure.js): how a set of bot games measures up against the designer's preferences (design document 1.2–1.4,
  * 1.7, RV1 and 3.15), one row per measure, with a flag where it misses a provisional target.
  *
- * Reads the native runner's logs (`motw tournament ... log=X.jsonl`), so it sees each round's presence by faction
- * before and after its fights, every seat's state, every play's effect, the votes and the scores.
- *
- *   node scripts/game-report.js X.jsonl                       one set of games
- *   node scripts/game-report.js base=A.jsonl,B.jsonl test=C.jsonl   labelled sets side by side (a change's flags)
- *   bar=20                                                     the presence bar, if not the spec's default
+ * Reads the native runner's logs, so it sees each round's presence by faction before and after its fights, every
+ * seat's state, every play's effect, the votes and the scores. Labelled sets print side by side (a change's flags).
  *
  * Targets are provisional working numbers, not design decisions: edit TARGETS below as the designer settles them.
  * A target is [low, high]; a value outside it is flagged ✗ (✓ inside; · no target). Bots are the players, so
@@ -16,16 +12,9 @@
  */
 import { readFileSync } from 'node:fs';
 
-const spec = JSON.parse(readFileSync(new URL('../public/spec.json', import.meta.url), 'utf8'));
-const args = process.argv.slice(2);
-const opts = Object.fromEntries(args.filter((a) => /^(bar)=/.test(a)).map((a) => a.split('=')));
-const defaultBar = Number(opts.bar ?? spec.variants.find((v) => v.id === 'threshold')?.default ?? 20);
-const groups = args.filter((a) => !/^(bar)=/.test(a)).map((a, i) => {
-  const [label, list] = a.includes('=') ? a.split('=') : [`set ${i + 1}`, a];
-  const games = list.split(',').flatMap((f) => readFileSync(f, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)));
-  return { label, games };
-});
-if (!groups.length) { console.error('usage: node scripts/game-report.js [label=]a.jsonl[,b.jsonl] ...'); process.exit(1); }
+const spec = JSON.parse(readFileSync(new URL('../../public/spec.json', import.meta.url), 'utf8'));
+/** The presence bar the measures read (set per report). */
+let defaultBar = Number(spec.variants.find((v) => v.id === 'threshold')?.default ?? 20);
 
 // Provisional targets (designer's stated aims where there are any; Claude's working guesses otherwise, marked *).
 const TARGETS = {
@@ -257,18 +246,25 @@ const flag = (key, v) => {
   return v >= t[0] && v <= t[1] ? '✓' : '✗';
 };
 
-const w = 54;
-console.log(`Game report · bar ${defaultBar} · ${groups.map((g) => `${g.label}: ${g.games.length} games`).join(' · ')}`);
-console.log('Targets are provisional (edit TARGETS in the script); ✗ marks a miss. Bots are the players.\n');
-let section = '';
-for (const [sec, name, pref, f, fmt, key] of MEASURES) {
-  if (sec !== section) { console.log(`\n${sec.toUpperCase()}`); section = sec; }
-  const cells = groups.map((g) => { let v; try { v = f(g.games); } catch { v = NaN; } return `${flag(key, typeof v === 'number' ? v : NaN)} ${typeof v === 'number' ? fmt(v) : v}`; });
-  const t = key ? ` [${TARGETS[key].map((x) => (x >= 99 ? '' : fmt(x))).join('–')}]` : '';
-  console.log(`  ${(name + t).padEnd(w)} ${cells.map((c) => c.padEnd(24)).join(' ')}  (${pref})`);
+/** The game report as lines: groups [{ label, games }], bar (the presence bar, if not the spec's default). */
+export function gameReport(groups, { bar } = {}) {
+  if (bar !== undefined) defaultBar = Number(bar);
+  const out = [];
+  const log = (s = '') => out.push(s);
+  const w = 54;
+  log(`Game report · bar ${defaultBar} · ${groups.map((g) => `${g.label}: ${g.games.length} games`).join(' · ')}`);
+  log('Targets are provisional (edit TARGETS in the script); ✗ marks a miss. Bots are the players.\n');
+  let section = '';
+  for (const [sec, name, pref, f, fmt, key] of MEASURES) {
+    if (sec !== section) { log(`\n${sec.toUpperCase()}`); section = sec; }
+    const cells = groups.map((g) => { let v; try { v = f(g.games); } catch { v = NaN; } return `${flag(key, typeof v === 'number' ? v : NaN)} ${typeof v === 'number' ? fmt(v) : v}`; });
+    const t = key ? ` [${TARGETS[key].map((x) => (x >= 99 ? '' : fmt(x))).join('–')}]` : '';
+    log(`  ${(name + t).padEnd(w)} ${cells.map((c) => c.padEnd(24)).join(' ')}  (${pref})`);
+  }
+  for (const g of groups) {
+    log(`\nCARDS (${g.label}): action plays (non-closing) · changed the board · monsters per change · did nothing · held: could swing 4+ (as is / sway free) · biggest swing seen`);
+    for (const [id, c] of cardTable(g.games)) log(`  ${id.padEnd(16)} ${String(c.n).padStart(4)}  ${pct(c.changed / (c.n || 1)).padStart(4)}  ${(c.monsters / Math.max(1, c.changed)).toFixed(1).padStart(4)}  ${pct(c.nothing / (c.n || 1)).padStart(4)}${c.held ? `   ${pct(c.big / c.held).padStart(4)} / ${pct(c.bigFree / c.held).padStart(4)}  ${String(c.max).padStart(3)}` : ''}`);
+  }
+  log('\nNot measured yet: ties as a tool (scorched locations, true ties). How hard the turns are: report=cards.');
+  return out;
 }
-for (const g of groups) {
-  console.log(`\nCARDS (${g.label}): action plays (non-closing) · changed the board · monsters per change · did nothing · held: could swing 4+ (as is / sway free) · biggest swing seen`);
-  for (const [id, c] of cardTable(g.games)) console.log(`  ${id.padEnd(16)} ${String(c.n).padStart(4)}  ${pct(c.changed / (c.n || 1)).padStart(4)}  ${(c.monsters / Math.max(1, c.changed)).toFixed(1).padStart(4)}  ${pct(c.nothing / (c.n || 1)).padStart(4)}${c.held ? `   ${pct(c.big / c.held).padStart(4)} / ${pct(c.bigFree / c.held).padStart(4)}  ${String(c.max).padStart(3)}` : ''}`);
-}
-console.log('\nNot measured yet: ties as a tool (scorched locations, true ties); tough decisions (the bots\' value spread).');

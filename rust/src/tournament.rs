@@ -67,6 +67,8 @@ pub struct Game {
     /// The card study (`cards=1`): every turn of play with cards in hand, and every draft pick.
     pub card_turns: Vec<CardTurn>,
     pub draft_picks: Vec<DraftPick>,
+    /// The strength probe (`probe=RATE`): controlled card tests on a share of turns.
+    pub probes: Vec<ProbeLog>,
     /// Imitation data (`fidelity=1`): at each real decision, the chosen move and up to 15 other candidates, as features.
     pub imit: Vec<crate::imit::Decision>,
 }
@@ -85,6 +87,22 @@ pub struct CardTurn {
     pub options: Vec<(serde_json::Value, f64, Option<f64>)>,
     pub chosen: serde_json::Value,
     pub instinct: bool,
+}
+
+/// One controlled card test (`probe=RATE`): at a turn of play, a card is given to the seat to act (taken out of the
+/// hand first if held, so both sides differ by that card alone), and the seat's own bot decides with and without it,
+/// each decision then played out to the round's end on the same seeds. `benefit`: the seat's value with the card
+/// minus without; `used`: the bot played that card when it had it.
+#[derive(Clone, Debug)]
+pub struct ProbeLog {
+    pub mv: usize,
+    pub round: i32,
+    pub seat: Pid,
+    pub goal: Option<&'static str>,
+    pub card: String,
+    pub held: bool,
+    pub benefit: f64,
+    pub used: bool,
 }
 
 /// One draft pick in the card study: the cards already kept, the batch offered, each pool card's worth to the bot
@@ -410,6 +428,25 @@ fn tie_actions(s: &crate::types::GameState, pid: Pid, m: &crate::types::Move) ->
 /// Tie checks (`ties=1`): at each turn, could the player break a tie for the most sway at a fight already set?
 /// The card study (`cards=1`): log every turn's hand and weighed moves, and every draft pick.
 pub static CARDS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// The strength probe: the share of turns of play probed (in thousandths), the cards tested per probe, and the
+/// play-outs per side.
+pub static PROBE_RATE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+pub static PROBE_SAMPLE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(4);
+pub static PROBE_PLAYOUTS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(4);
+
+/// One controlled card test's value: the seat's own bot decides from `s` (its memory and the table as they are), and
+/// that decision is played out to the round's end on `seeds`. The decision's random draws come from `seed` alone, so
+/// the two sides of a test meet the same luck.
+fn probe_value(s: &crate::types::GameState, pid: Pid, profile: &str, memory: &BotMemory, table: &Seats, seed: i64, seeds: &[i64]) -> (f64, Option<crate::types::Move>) {
+    let mut mem = memory.clone();
+    let mut rng = seeded(seed);
+    let m = bot_move(s, pid, &mut rng, profile, Some(&mut mem), table);
+    let v = match &m {
+        Some(m) => crate::bots::playout_values(s, pid, profile, Some(&mem), table, std::slice::from_ref(m), seeds)[0],
+        None => f64::NAN,
+    };
+    (v, m)
+}
 pub static TIES: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// A turn where the player was tied for the most sway at a fight already set (2026-11-03): could any legal play in hand
@@ -521,6 +558,10 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let cards_on = CARDS.load(std::sync::atomic::Ordering::Relaxed);
     let mut card_turns: Vec<CardTurn> = Vec::new();
     let mut draft_picks: Vec<DraftPick> = Vec::new();
+    let probe_rate = PROBE_RATE.load(std::sync::atomic::Ordering::Relaxed);
+    let mut probes: Vec<ProbeLog> = Vec::new();
+    // Its own stream, so probing never changes the game's draws (the same games, probed or not).
+    let mut probe_rng = seeded(seed * 31_337 + g as i64 * 101 + 7);
     let mut imagined_round = -1;
     let grid = |s: &crate::types::GameState| -> Vec<[i32; 5]> { s.board.iter().map(|p| std::array::from_fn(|i| p.sway.get(i as u8))).collect() };
     let mut fights_seen: Vec<([i32; 5], [i32; 5], usize)> = Vec::new();
@@ -623,6 +664,49 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             for pid in 0..n as Pid {
                 positions.push(crate::judge::position_row(&s, pid));
             }
+        }
+        if probe_rate > 0 && s.phase == Phase::Play && !s.players[s.turn].hand.is_empty() && probe_rng() * 1000.0 < probe_rate as f64 {
+            let pid = s.turn as Pid;
+            let table = Seats { profiles: Some(profiles.clone()), memories: Some(memory.iter().enumerate().map(|(i, m)| (i as Pid, m.clone())).collect()), ..Default::default() };
+            let k = PROBE_SAMPLE.load(std::sync::atomic::Ordering::Relaxed);
+            let np = PROBE_PLAYOUTS.load(std::sync::atomic::Ordering::Relaxed).max(1);
+            let base_seed = (probe_rng() * 2_147_483_648.0) as i64;
+            let seeds: Vec<i64> = (0..np as i64).map(|i| base_seed + 7919 * i).collect();
+            // A sample of the whole deck, each card at most once.
+            let mut pool: Vec<crate::types::CardIx> = (0..crate::bots::all_cards() as crate::types::CardIx).collect();
+            let mut picked: Vec<crate::types::CardIx> = Vec::new();
+            while picked.len() < k.min(pool.len()) {
+                let i = ((probe_rng() * pool.len() as f64) as usize).min(pool.len() - 1);
+                picked.push(pool.swap_remove(i));
+            }
+            let mut without: HashMap<Vec<crate::types::CardIx>, f64> = HashMap::new();
+            let goal = goal_name(&memory[pid as usize]);
+            for card in picked {
+                let hand: Vec<crate::types::CardIx> = s.players[pid as usize].hand.to_vec();
+                let held = hand.contains(&card);
+                let rest: Vec<crate::types::CardIx> = hand.iter().copied().filter(|&c| c != card).collect();
+                // Without the card: the hand less it (an empty hand can't decide, so that side is not measured).
+                let w = if rest.is_empty() { f64::NAN } else {
+                    *without.entry(rest.clone()).or_insert_with(|| {
+                        let mut x = s.clone();
+                        x.players[pid as usize].hand = crate::types::Hand::from_slice(&rest);
+                        probe_value(&x, pid, &seats[pid as usize], &memory[pid as usize], &table, base_seed, &seeds).0
+                    })
+                };
+                let mut x = s.clone();
+                let mut with = rest.clone();
+                with.push(card);
+                if with.len() > 8 { continue; }
+                x.players[pid as usize].hand = crate::types::Hand::from_slice(&with);
+                let (v, m) = probe_value(&x, pid, &seats[pid as usize], &memory[pid as usize], &table, base_seed, &seeds);
+                let used = matches!(m, Some(crate::types::Move::Play { card: c, .. }) if c == card);
+                if !v.is_nan() && !w.is_nan() {
+                    probes.push(ProbeLog { mv: moves, round: s.round, seat: pid, goal, card: spec().cards[card as usize].id.clone(), held, benefit: v - w, used });
+                }
+            }
+            // The probe's decisions leave their notes behind; the real decision's must start clean.
+            crate::bots::take_considered();
+            crate::bots::take_decision();
         }
         // Every seat is offered the move in seat order, as the JavaScript tournament does; the first with one makes it.
         for pid in 0..n as Pid {
@@ -841,6 +925,7 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         imit,
         card_turns,
         draft_picks,
+        probes,
         g,
         seats,
         island,
