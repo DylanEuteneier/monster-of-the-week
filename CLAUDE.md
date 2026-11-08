@@ -13,13 +13,12 @@ The document has three sections: 1. Context (working style and approach, plus tr
 - No wholesale generation. Don't produce large swaths of rules, content, or design in one go.
 - If I explicitly ask for options, offer a small number and label them clearly as suggestions.
 - Record only what I've agreed to as decisions. Never record your own suggestions as decisions, and keep ideas clearly separate from decisions.
-- Follow the working style and approach in section 1.1 of the document.
+- Follow the working style and approach in section 1.1 of the document, including its process: the stages, what each produces, where it lives and the gate that finishes it. Current focus names the stage we are on.
 
 ## Working in the code
 
 - The code follows the design document. Never add, infer, or settle a mechanism in code that the document has not settled; an open question stays open (make it a variant in `spec.json` or ask).
 - The engine and the bots are Rust (`rust/src`), pure, and the only place rules live. Content and numbers live in `public/spec.json`. The Worker and the table reach them through `public/rules.js` and the WebAssembly build `public/motw.wasm`: `npm run wasm` builds it (`npm run check` does too); commit it with the Rust change. `rust/tests/fixtures/fingerprints.json` records how the bots play: a change that changes play fails `npm run test:rust`, and is regenerated (`motw fingerprint ... digests=1`) only when a decision means play to change.
-- Anything marked *scaffold* is placeholder plumbing, not a rule; replace it when the real phases land.
 - Art follows `assets/README.md` and Appendix F.17: printed art is pixel art (palette only, whole-number scaling), physical things are UI, and tokens and cubes are CSS pieces (`public/pieces.js`). After editing `assets/sprites.py`, run `npm run assets` and commit the generated files in `public/assets/`.
 - Run `npm run check` before committing. `npm run smoke` needs `npm run dev` running (port 8788).
 - Prototype choices (art, board layout, region grouping, palette, table talk) are for testing only. Never apply them to the rules or treat them as settled design; the rules come only from decisions in the design document's section 3.

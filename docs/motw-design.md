@@ -16,7 +16,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 
 ## Current focus
 
-**Goal:** a first draft of the rules, complete enough to build a playable web app prototype on.
+**Stage (2026-11-08):** 6, the measuring gate (the baseline, `node scripts/measure.js baseline=1`), then 7, tuning the cards. **Open question:** does a hand give real choices, and which cards to tune or replace. **Next step:** read the first baseline's card report.
 
 **Card measurement (designer, 2026-11-07):** the design feels sound; the cards feel unproven. The first question is whether a hand gives real choices, then which cards to tune or replace. The measuring tool, `scripts/measure.js` (designer, 2026-11-08: one configurable tool; it plays bot games natively at the chosen player counts, or reads logged ones, and prints the reports asked for: `report=game,cards,agreement`), gives each card one row of measures from the card study (every turn's hand, every move the bot weighed, every draft pick), in the order a designer fixes a card: **can it act** (turns held with a legal target; plays with no target, which do nothing) → its targeting; **wants to act** (plays for its action while it had a legal target, not spent for sway) → its power against its printed sway; **readings** (turns its readings or uses give different best plays) → rewrite one; **strength** (worth against the rest of the hand) → its numbers; with **timing** (played early, mid or late in a seat's round) and **swing** (whether its place in the hand changes) as context. Every measure is shown twice, for invader backers and for trophy hunters (the island's ending), each from that goal's turns alone, with each use's measures under the card. The flags are Claude's working lines, not targets; bots are the players, so these measure how bots play the cards. The strength probe (`probe=0.05`, off by default) is the controlled test rebuilt natively: on a share of turns, each sampled card's worth is the seat's value holding it minus not, the same moment and the same luck on both sides (the measure that orders printed sway, D-2026-10-08). The old JavaScript tournament's probes (`npm run cards:plays`, the card review page's figures) remain until the page reads the new tool.
 
@@ -269,15 +269,36 @@ Not the current focus. Items come back into focus when the draft needs them.
 **Collaboration**
 
 - Project goal: design a new board game.
-- The current phase is **prototyping**: working toward a playable prototype.
+- The current stage is named in Current focus, by the process below.
 - Every rule, idea, and mechanism starts with a seed from the designer. Claude does not add or infer mechanisms or ideas on its own.
 - Seeds are worked through together, in small steps: questions, implications, conflicts, and gaps, then refinement.
 - No wholesale generation. Claude doesn't produce large swaths of rules, content, or design in one go.
 - If the designer explicitly asks for options, Claude offers a small number, clearly labeled as suggestions.
 - Only what the designer agrees to is recorded as a decision.
 - Work happens across repeated sessions in Claude Code, in the prototype repository, using this single document (`docs/motw-design.md`), continually updated and committed.
-- Map design and card design are later stages. Details that belong to them are deferred until then.
-- Balancing numbers are also left until later, once cards are in place. They will be set by running the maths and by simulated playthroughs, in the web prototype with bots (Appendix F).
+
+**The process** (designer, 2026-11-08: how this game is being made, documented as a repeatable process; in use now, to be reviewed before the next game design starts)
+
+Each stage produces something, keeps it in one place, and is finished by a gate written down before the work starts.
+
+| Stage | Produces | Lives in | Done when |
+|---|---|---|---|
+| 0. Set up | The repository, CLAUDE.md, the design document, the engine, table and measuring skeleton | the repository | It deploys and `npm run check` passes |
+| 1. Foundation | Theme, genre, players, pillars, anti-goals, feel, reference games | 1, 2, Appendix C | The designer agrees the pillars and anti-goals |
+| 2. Candidates | The designer's seeds in each decision area, coded by slot; Claude's analysis | 3 (Ideas), Appendices D, E | Every required slot has a candidate |
+| 3. Draft rules | One ruleset: the designer's favourite in each area, a close second as a variant | 3, Appendices A, G | No open question blocks building |
+| 4. Build | The engine and table for the draft, its rules pinned by tests and fingerprints | `rust/`, `public/` | A whole game plays end to end, bots included |
+| 5. Draft cards | Slot by slot: a brief, a design, built as a test card | 3.7, the card catalogue, `spec.json` | Every slot has a card the designer accepts for testing |
+| 6. Measuring gate | Bots strong enough to trust; the baseline | `scripts/measure`, `.tuning/baseline` | The bot quality rows pass, and the stats used agree with themselves (0.7 or more) |
+| 7. Tune | One change at a time, read against the baseline, accepted or reverted | Appendix A, `spec.json` | The designer's preferences (1.2–1.4) read healthy at every player count |
+| 8. Playtest | Sessions with people; findings become seeds | 1.4, the backlog | The designer calls it ready for the next level of fidelity |
+
+At every stage:
+
+- Every mechanism starts as the designer's seed, and only what the designer agrees to becomes a decision. A call the designer makes during the work becomes a decision record, or a detail under its area, in the session it's made.
+- One place for each thing: the rules in 3 and Appendix A; content and numbers in `spec.json`; measures in the baseline; the file layout in the README; the working style here; history in the changelog only.
+- Current focus holds only the stage, the open question and the next step.
+- Each stage ends with a curation pass: what's superseded is deleted, the documents are checked against the code, and the line between the generic machinery and this game's specifics is kept clear.
 
 **Document principles**
 
@@ -288,7 +309,7 @@ Not the current focus. Items come back into focus when the draft needs them.
 - The document shows only the current state. It never refers to earlier, ruled-out, or changed decisions, and contains no "superseded by" notes. The changelog is the only exception.
 - Each design decision area is a single entry in section 3. Content matures in place, through four levels: **Ideas → Decisions → Details → Rules**. An entry's stage is the most mature level it has reached.
 - Ideas are candidates, not decisions. An idea is removed once it's ruled out, and moves to Decisions once it's decided.
-- The current focus is gathering candidate ideas, mechanisms, and pillars. Candidates that conflict with each other coexist; one idea never rules out another. Only the designer rules an idea out.
+- While candidates are gathered (stage 2), candidates that conflict with each other coexist; one idea never rules out another. Only the designer rules an idea out.
 - A decision is only settled once it has no open questions. Anything with open questions stays an idea.
 - Details are the granular parts of settled decisions, marked open or settled. A question whose parent decision isn't settled sits under Ideas instead, with the idea it's most closely linked to, or in a shared entry.
 - Settled content (Decisions, Details, Rules) never refers to ideas.
