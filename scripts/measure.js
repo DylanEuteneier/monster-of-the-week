@@ -68,7 +68,8 @@ for (const a of args) {
  * player count, every log and the strength probe, so it holds every measure. Change it only when a decision changes
  * what is accepted, then rebuild (baseline=1).
  */
-const BASELINE = { games: '40', players: '3,4,5', seed: '7101', probe: '0.05', probeSample: '4', probePlayouts: '4' };
+// 100 games a player count (designer, 2026-11-08): about ±4.5 points on an ending share at each count; comparisons at 40.
+const BASELINE = { games: '100', players: '3,4,5', seed: '7101', probe: '0.05', probeSample: '4', probePlayouts: '4' };
 const BASE_DIR = join(ROOT, '.tuning', 'baseline');
 const building = kv.baseline === '1';
 if (building) {
