@@ -110,6 +110,12 @@ pub fn describe_target(factions: &[u8; 5], ci: CardIx, t: Option<&Target>) -> St
                 _ => format!("blood on {}{how}", names(&at)),
             }
         }
+        Action::Split if t.moves.is_some() => format!(
+            "the cross at {}: the {} driven out to {}{how}",
+            l(t.location),
+            f(t.faction),
+            t.moves.as_deref().unwrap_or(&[]).iter().map(|m| l(Some(m.to))).collect::<Vec<_>>().join(", ")
+        ),
         Action::Split => format!(
             "{} at {} split {}{how}",
             f(t.faction),

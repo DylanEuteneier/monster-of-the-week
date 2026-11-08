@@ -285,6 +285,12 @@ fn end_of_play(s: &mut GameState) {
     for p in s.players.iter_mut() {
         p.hand = Hand::new();
     }
+    // Nightfall: a planted cross comes off, and those hiding from it come out (designer, 2026-11-08).
+    for p in s.board.iter_mut() {
+        p.cross = 0;
+        p.cross_at = false;
+        p.hidden = 0;
+    }
     let marks: Vec<Loc> = (0..s.board.len() as Loc).filter(|&l| s.board[l as usize].terror.is_some()).collect();
     if !marks.is_empty() {
         s.phase = Phase::Night;

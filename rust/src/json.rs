@@ -222,6 +222,16 @@ fn place_value(s: &GameState, p: &Place) -> Value {
     if let Some(x) = p.terror {
         o.insert("terror".into(), Value::from(s.seating[x as usize].as_str()));
     }
+    let facs = |bits: u8| Value::Array((0..5).filter(|f| bits & (1 << f) != 0).map(|f| Value::from(spec().factions[s.factions[f] as usize].id.clone())).collect());
+    if p.cross != 0 {
+        o.insert("cross".into(), facs(p.cross));
+    }
+    if p.cross_at {
+        o.insert("crossAt".into(), Value::from(true));
+    }
+    if p.hidden != 0 {
+        o.insert("hidden".into(), facs(p.hidden));
+    }
     Value::Object(o)
 }
 
@@ -317,6 +327,7 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
     let slot = |id: &str| sp.fac_ix(id).and_then(|f| factions.iter().position(|&x| x == f)).map(|x| x as u8);
     let pid = |id: &str| seating.iter().position(|x| x == id).map(|x| x as u8);
     let card = |x: &Value| x.as_str().and_then(|c| sp.card_ix(c));
+    let bits = |x: &Value| -> u8 { x.as_array().map(|a| a.iter().filter_map(|v| v.as_str().and_then(slot)).fold(0u8, |b, f| b | (1 << f))).unwrap_or(0) };
     let cardv = |x: &Value| -> Vec<CardIx> { x.as_array().map(|a| a.iter().filter_map(card).collect()).unwrap_or_default() };
     let by_fac = |x: &Value| -> [i32; 5] { let mut out = [0; 5]; if let Some(o) = x.as_object() { for (k, n) in o { if let Some(f) = slot(k) { out[f as usize] = n.as_i64().unwrap_or(0) as i32; } } } out };
     let options = Options::from_raw(v["options"].as_object().map(|o| o.iter().map(|(k, x)| (k.clone(), x.as_str().map(|s| s.to_string()).unwrap_or_else(|| x.to_string()))).collect()).unwrap_or_default());
@@ -347,6 +358,9 @@ pub fn state_from_value(v: &Value) -> Result<GameState, String> {
             altar: p["altar"].as_bool().unwrap_or(false),
             study: p["study"].as_str().and_then(pid),
             terror: p["terror"].as_str().and_then(pid),
+            cross: bits(&p["cross"]),
+            cross_at: p["crossAt"].as_bool().unwrap_or(false),
+            hidden: bits(&p["hidden"]),
         });
     }
     let night = match &v["night"] {
@@ -414,7 +428,7 @@ pub fn choice_to_value(factions: &F5, c: &Choice) -> Value {
         Kind::Mode => ("mode", None),
         Kind::Done => ("done", None),
         Kind::Split => ("split", None),
-        Kind::Location(k) => ("location", Some(match k { LocKey::Location => "location", LocKey::To => "to", LocKey::Path => "path", LocKey::From => "from", LocKey::Losses => "losses" })),
+        Kind::Location(k) => ("location", Some(match k { LocKey::Location => "location", LocKey::To => "to", LocKey::Path => "path", LocKey::From => "from", LocKey::Losses => "losses", LocKey::Land => "land" })),
         Kind::Group(k) => ("group", Some(match k { GroupKey::Group => "group", GroupKey::Move => "move" })),
         Kind::Faction(k) => ("faction", k.map(|k| match k { FacKey::Faction => "faction", FacKey::To => "to", FacKey::Payer => "payer", FacKey::Payers => "payers" })),
         Kind::Use(k) => ("use", Some(match k { UseKey::Use => "use", UseKey::Back => "back" })),
@@ -465,7 +479,7 @@ pub fn game_of(s: &GameState) -> Value {
     let board = Value::Object(s.board.iter().enumerate().map(|(l, p)| {
         let pv = place_value(s, p);
         let mut o = Map::new();
-        for k in ["tokens", "sway", "scorched", "gate", "gateLoss", "altar", "study", "terror"] {
+        for k in ["tokens", "sway", "scorched", "gate", "gateLoss", "altar", "study", "terror", "cross", "crossAt", "hidden"] {
             if let Some(x) = pv.get(k) {
                 o.insert(k.into(), x.clone());
             }

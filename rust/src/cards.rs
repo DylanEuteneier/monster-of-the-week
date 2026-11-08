@@ -374,10 +374,142 @@ pub fn return_room(s: &GameState, pid: Pid, ci: CardIx) -> (Vec<Loc>, i32, Optio
     if (0..s.board.len() as Loc).any(|l| raw_tokens(s, l, f) >= 2) {
         return (vec![], 0, Some(f));
     }
-    let spots: Vec<Loc> = (0..s.board.len() as Loc).filter(|&l| !s.board[l as usize].scorched && (is_suit_loc(c, l) || raw_tokens(s, l, f) > 0) && can_enter(s, l, f)).collect();
+    let spots: Vec<Loc> = (0..s.board.len() as Loc).filter(|&l| !s.board[l as usize].scorched && (is_suit_loc(c, l) || raw_tokens(s, l, f) > 0) && can_enter_raw(s, l, f)).collect();
     let max = (sway_for(s, pid, ci) as i64).min(s.supply[f as usize] as i64).min(my_standing(s, pid, f)) as i32;
     let max = if spots.is_empty() { 0 } else { max };
     (spots, max, Some(f))
+}
+
+// ---------------------------------------------------------------------------
+// Light of the Cross, planted (variant cross=plant; the designer's draft, 2026-11-08, design document H.0)
+// ---------------------------------------------------------------------------
+
+/// The cross planted at `loc`: its reach (the location and its neighbours) and the ring just outside it.
+pub fn cross_zone(s: &GameState, loc: Loc) -> (Vec<Loc>, Vec<Loc>) {
+    let mut zone = vec![loc];
+    for l in reach(s, loc) {
+        if !zone.contains(&l) {
+            zone.push(l);
+        }
+    }
+    let mut ring = Vec::new();
+    for &z in &zone {
+        for l in adj(s, z) {
+            if !zone.contains(&l) && !ring.contains(&l) {
+                ring.push(l);
+            }
+        }
+    }
+    ring.sort();
+    (zone, ring)
+}
+
+/// The cross's groups of `f` in reach that can be driven out (present, free to leave: not hiding), the planted one first.
+pub fn cross_groups(s: &GameState, loc: Loc, f: Fac, zone: &[Loc]) -> Vec<Loc> {
+    let mut out: Vec<Loc> = zone.iter().copied().filter(|&l| tokens_of(s, l, f) > 0 && free_of(s, l, f) > 0).collect();
+    out.sort_by_key(|&l| (l != loc, l));
+    out
+}
+
+/// How many groups the cross must drive out: every group you can pay for (1 a group, from standing with the faction)
+/// and land, each on a location of its own outside the reach; 0 if the planted group itself can't go.
+pub fn cross_need(s: &GameState, pid: Pid, loc: Loc, f: Fac) -> usize {
+    let (zone, ring) = cross_zone(s, loc);
+    let groups = cross_groups(s, loc, f, &zone);
+    if groups.first() != Some(&loc) {
+        return 0;
+    }
+    let open = ring.iter().filter(|&&l| can_enter(s, l, f)).count();
+    let cost = s.options.sway_per_move.max(1);
+    let budget = if s.options.sway_required { (standing(s, pid, f) / cost).max(0) as usize } else { usize::MAX };
+    groups.len().min(open).min(budget)
+}
+
+fn cross_check(s: &GameState, pid: Pid, c: &Card, t: &Target) -> Option<String> {
+    let e = |m: &str| Some(m.to_string());
+    if !reading(t) {
+        return e("Choose a location target or a faction target.");
+    }
+    let (Some(loc), Some(f)) = (as_loc(t.location), as_fac(t.faction)) else { return e("Choose a group to plant the cross on.") };
+    if tokens_of(s, loc, f) <= 0 {
+        return e("Choose a group to plant the cross on.");
+    }
+    let sf = suit_faction(c);
+    if t.mode == Some(Mode::Location) && !(is_suit_loc(c, loc) && Some(f) != sf) {
+        return e("Choose a group of another faction at a Demon location.");
+    }
+    if t.mode == Some(Mode::Faction) && Some(f) != sf {
+        return e("Choose a Demon group.");
+    }
+    let need = cross_need(s, pid, loc, f);
+    if need == 0 {
+        return e("The group the cross is planted on must be driven out: it needs somewhere outside the reach to go, and you the sway.");
+    }
+    let (zone, ring) = cross_zone(s, loc);
+    let groups = cross_groups(s, loc, f, &zone);
+    let moves = t.moves.as_deref().unwrap_or(&[]);
+    let pays = t.from.as_deref().unwrap_or(&[]);
+    if moves.first().map(|m| m.location) != Some(Id::Loc(loc)) {
+        return e("The group at the cross goes first.");
+    }
+    let mut froms = Vec::new();
+    let mut tos = Vec::new();
+    for m in moves {
+        let (Some(a), Some(b)) = (m.location.loc(), m.to.loc()) else { return e("Each group driven out needs a location outside the reach.") };
+        if m.faction != Id::Fac(f) || !groups.contains(&a) || froms.contains(&a) {
+            return e("Drive out the cross's faction's groups in its reach, each once.");
+        }
+        if !ring.contains(&b) || tos.contains(&b) || !can_enter(s, b, f) {
+            return e("Each group goes to a location of its own just outside the reach.");
+        }
+        froms.push(a);
+        tos.push(b);
+    }
+    if moves.len() != need {
+        return Some(format!("Every group you can pay for and land must go: {need}."));
+    }
+    if pays.len() != moves.len() || moves.iter().zip(pays).any(|(m, &p)| p != m.location && p != m.to) {
+        return e("Pay 1 for each group, where it left or where it lands.");
+    }
+    None
+}
+
+fn cross_act(s: &mut GameState, pid: Pid, c: &Card, t: &Target, who: &str) {
+    let (loc, f) = (as_loc(t.location).unwrap(), as_fac(t.faction).unwrap());
+    let (zone, _) = cross_zone(s, loc);
+    let pays = t.from.as_deref().unwrap_or(&[]).to_vec();
+    let mut moved = Vec::new();
+    for (i, m) in t.moves.as_deref().unwrap_or(&[]).iter().enumerate() {
+        let (Some(a), Some(b)) = (m.location.loc(), m.to.loc()) else { continue };
+        let n = free_of(s, a, f);
+        if n <= 0 || !can_enter(s, b, f) {
+            continue;
+        }
+        let cost = s.options.sway_per_move;
+        if s.options.sway_required && cost > 0 && s.players[pid as usize].standing[f as usize] < cost {
+            UNPAID.with(|u| u.set(u.get() + 1));
+            continue;
+        }
+        take_tokens(s, a, f, n);
+        add_tokens(s, b, f, n);
+        moved.push(a);
+        let at = pays.get(i).and_then(|x| x.loc()).unwrap_or(b);
+        let k = cost.min(s.players[pid as usize].standing[f as usize]);
+        if k > 0 {
+            s.players[pid as usize].standing[f as usize] -= k;
+            s.board[at as usize].sway.add(pid, k);
+        }
+    }
+    for &z in &zone {
+        s.board[z as usize].cross |= 1 << f;
+        if !moved.contains(&z) && tokens_of(s, z, f) > 0 {
+            s.board[z as usize].hidden |= 1 << f;
+        }
+    }
+    s.board[loc as usize].cross_at = true;
+    let fnm = fname(s, f);
+    let n = moved.len();
+    log_line(s, |_| format!("{who}: {}: the cross is planted at {}; {n} group{} of the {fnm} flee its light.", c.name, lname(loc), if n == 1 { "" } else { "s" }));
 }
 
 // ---------------------------------------------------------------------------
@@ -730,6 +862,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             }
             None
         }
+        Action::Split if s.options.cross_plant => cross_check(s, pid, c, t),
         Action::Split => {
             if let Some(m) = group_target(s, c, t) {
                 return e(m);
@@ -1124,6 +1257,7 @@ fn act_card(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
             }
             log_line(s, |s| { let names = guests.iter().map(|g| fname(s, g.faction.fac().unwrap())).collect::<Vec<_>>().join(" and "); format!("{who}: {}: {names} come into {}.", c.name, lname(to)) });
         }
+        Action::Split if s.options.cross_plant => cross_act(s, pid, c, t, who),
         Action::Split => {
             let (f, from) = (as_fac(t.faction).unwrap(), as_loc(t.location).unwrap());
             for &(to, n) in t.split.as_deref().unwrap_or(&[]) {

@@ -204,6 +204,8 @@ pub struct Options {
     pub passing: bool,
     /// Added to each strike's and shift's printed sway (variant cardSway; designer 2026-10-29, amount being measured).
     pub card_sway: i32,
+    /// Light of the Cross as the designer's new draft (variant cross=plant, 2026-11-08), not the split.
+    pub cross_plant: bool,
     pub seeding: Seeding,
     /// The same options with sway not required (checkTarget's comparison), made once.
     pub unpaid: std::cell::OnceCell<Rc<Options>>,
@@ -270,6 +272,7 @@ impl Options {
             way_back: get("wayBack") != "off",
             passing: get("passing") != "off",
             card_sway: num("cardSway"),
+            cross_plant: get("cross") == "plant",
             seeding: match get("seeding") {
                 "even" => Seeding::Even,
                 "home" => Seeding::Home,
@@ -305,6 +308,13 @@ pub struct Place {
     pub altar: bool,
     pub study: Option<Pid>,
     pub terror: Option<Pid>,
+    /// Light of the Cross, planted (variant cross=plant; the designer's draft, 2026-11-08): the factions (bits by slot)
+    /// no card may move in here until nightfall, this being in a cross's reach.
+    pub cross: u8,
+    /// The cross itself stands here (until nightfall).
+    pub cross_at: bool,
+    /// The factions (bits by slot) hiding here from a cross: no card moves them until nightfall.
+    pub hidden: u8,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

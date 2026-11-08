@@ -1414,6 +1414,24 @@
       ]
     },
     {
+      "id": "cross",
+      "label": "Light of the Cross",
+      "description": "The designer's new draft of the Demons shift (design document H.0, 2026-11-08; a draft, not a decision), off by default while it is measured. Plant the cross on a group (location reading: another faction's group at a Demon location; faction reading: a Demon group anywhere); its reach is that location and its neighbours. Every group of that faction in reach is driven out to a location of its own just outside the reach, the planted one first (from a fight, half); 1 sway a group, from standing with the faction, where it left or where it lands; every group you can pay for and land must go. The rest hide: no card moves them until nightfall. Until nightfall no card moves that faction into the reach.",
+      "default": "split",
+      "choices": [
+        {
+          "id": "split",
+          "label": "Split",
+          "description": "The card as dealt: the target group split evenly between two neighbours."
+        },
+        {
+          "id": "plant",
+          "label": "Plant the cross",
+          "description": "The new draft (H.0)."
+        }
+      ]
+    },
+    {
       "id": "unsuitedSway",
       "label": "Unsuited cards' sway",
       "description": "D45 (designer, 2026-11-01): an unsuited card may be played for sway with any one faction, chosen as it's played (wild sway): 2 by default; or 1, 3, the cards in hand (as the signatures), or off (no sway use, as before).",

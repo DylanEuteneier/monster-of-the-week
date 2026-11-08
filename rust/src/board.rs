@@ -172,6 +172,16 @@ pub fn faction_of_archetype(id: &str) -> Fac {
 /// May a faction's tokens be moved into this location? Not scorched, and never a third faction (LL1).
 pub fn can_enter(s: &GameState, loc: Loc, f: Fac) -> bool {
     let place = &s.board[loc as usize];
+    if place.scorched || place.cross & (1 << f) != 0 {
+        return false;
+    }
+    let here = factions_at(s, loc);
+    here.contains(&f) || here.len() < 2
+}
+
+/// can_enter without a cross's block (the way back isn't blocked by a cross: designer, 2026-11-08).
+pub fn can_enter_raw(s: &GameState, loc: Loc, f: Fac) -> bool {
+    let place = &s.board[loc as usize];
     if place.scorched {
         return false;
     }
@@ -201,6 +211,10 @@ pub fn affinity_of(s: &GameState, pid: Pid) -> usize {
 /// Tokens of a faction free to leave a location: half from a fight, rounded down (D22).
 // PERF: tokens_of and factions_at each walk the location again; callers usually just did both.
 pub fn free_of(s: &GameState, loc: Loc, f: Fac) -> i32 {
+    // Hiding from a cross: none may leave until nightfall.
+    if s.board[loc as usize].hidden & (1 << f) != 0 {
+        return 0;
+    }
     let n = tokens_of(s, loc, f);
     let here = factions_at(s, loc);
     if !here.iter().any(|&x| x != f) {
@@ -232,6 +246,9 @@ pub type Placed = Vec<(Loc, Fac)>;
 /// a move it can't pay for doesn't happen. Returns the number moved.
 #[allow(clippy::too_many_arguments)]
 pub fn mv(s: &mut GameState, pid: Pid, f: Fac, from: Loc, to: Loc, count: i32, placed: &mut Placed, freed: bool) -> i32 {
+    if s.board[from as usize].hidden & (1 << f) != 0 {
+        return 0;
+    }
     let n = count.min(if freed { tokens_of(s, from, f) } else { free_of(s, from, f) });
     if n <= 0 || from == to {
         return 0;

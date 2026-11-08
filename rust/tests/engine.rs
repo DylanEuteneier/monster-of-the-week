@@ -480,6 +480,94 @@ fn light_of_the_cross_splits_a_group_evenly_between_two_adjacent_locations_both_
     assert!(check(&one, "ann", "light-cross", base(obj(&[(&p, 1)]))).is_some());
 }
 
+/// Light of the Cross, planted (variant cross=plant; the designer's draft, design document H.0, 2026-11-08).
+fn cross_board() -> (GameState, String, String, Vec<String>, Vec<String>) {
+    let s0 = clear(&game_opts(1, &[("cross", "plant")]));
+    let f = of_arch(&s0, "demonic");
+    let loc = first_loc("demonic");
+    let mut zone = vec![loc.clone()];
+    zone.extend(adjacent(&loc));
+    let mut ring: Vec<String> = zone.iter().flat_map(|z| adjacent(z)).filter(|l| !zone.contains(l)).collect();
+    ring.sort_by_key(|l| spec().loc_ix(l).unwrap());
+    ring.dedup();
+    (s0, f, loc, zone, ring)
+}
+
+#[test]
+fn the_planted_cross_drives_every_group_it_can_pay_for_out_of_its_reach_each_to_a_place_of_its_own() {
+    let (s0, f, loc, zone, ring) = cross_board();
+    let n1 = zone[1].clone();
+    let rival = of_arch(&s0, "scifi");
+    let s = edit(&s0, |x| {
+        x["board"][&loc]["tokens"][&f] = json!(3);
+        x["board"][&n1]["tokens"][&f] = json!(2);
+        x["board"][&ring[0]]["tokens"][&rival] = json!(2);
+    });
+    let mv = |a: &str, b: &str| json!({ "location": a, "faction": f, "to": b });
+    let t = |moves: Value, from: Value| json!({ "mode": "faction", "location": loc, "faction": f, "moves": moves, "from": from });
+    let both = t(json!([mv(&loc, &ring[0]), mv(&n1, &ring[1])]), json!([loc, ring[1]]));
+    assert_eq!(check(&s, "ann", "light-cross", both.clone()), None);
+    // Every group you can pay for and land must go; each lands on a place of its own; the planted group goes first.
+    assert!(check(&s, "ann", "light-cross", t(json!([mv(&loc, &ring[0])]), json!([loc]))).is_some());
+    assert!(check(&s, "ann", "light-cross", t(json!([mv(&loc, &ring[0]), mv(&n1, &ring[0])]), json!([loc, n1]))).is_some());
+    assert!(check(&s, "ann", "light-cross", t(json!([mv(&n1, &ring[1]), mv(&loc, &ring[0])]), json!([n1, loc]))).is_some());
+    // Only another faction's group at a Demon location on the location reading.
+    assert!(check(&s, "ann", "light-cross", json!({ "mode": "location", "location": loc, "faction": f, "moves": [mv(&loc, &ring[0]), mv(&n1, &ring[1])], "from": [loc, ring[1]] })).is_some());
+    let both_t = both.clone();
+    let after = preview(&s, "ann", "light-cross", both);
+    let b = &after["board"];
+    assert_eq!(b[&loc]["tokens"].get(&f), None);
+    assert_eq!((b[&ring[0]]["tokens"][&f].clone(), b[&ring[1]]["tokens"][&f].clone()), (json!(3), json!(2)));
+    // 1 sway a group, at the end the player chose: where the first left, where the second landed.
+    assert_eq!((b[&loc]["sway"]["ann"].clone(), b[&ring[1]]["sway"]["ann"].clone(), b[&ring[0]]["sway"].get("ann").cloned()), (json!(1), json!(1), None));
+    assert_eq!(b[&loc]["crossAt"], json!(true));
+    for z in &zone {
+        assert_eq!(b[z]["cross"], json!([f]), "{z} is in the cross's reach");
+    }
+    // Until nightfall no card moves the faction into the reach.
+    let mut x = s.clone();
+    motw::cards::act(&mut x, pid(&s, "ann"), card("light-cross"), &target(&s, both_t));
+    let slot = factions(&x).iter().position(|g| g == &f).unwrap() as Fac;
+    assert!(!motw::board::can_enter(&x, spec().loc_ix(&loc).unwrap(), slot));
+    assert!(motw::board::can_enter_raw(&x, spec().loc_ix(&loc).unwrap(), slot));
+}
+
+#[test]
+fn groups_the_cross_cannot_pay_for_hide_until_nightfall() {
+    let (s0, f, loc, zone, ring) = cross_board();
+    let n1 = zone[1].clone();
+    let s = edit(&s0, |x| {
+        x["board"][&loc]["tokens"][&f] = json!(3);
+        x["board"][&n1]["tokens"][&f] = json!(2);
+        x["players"]["ann"]["standing"][&f] = json!(1);
+    });
+    let mv = |a: &str, b: &str| json!({ "location": a, "faction": f, "to": b });
+    let one = json!({ "mode": "faction", "location": loc, "faction": f, "moves": [mv(&loc, &ring[0])], "from": [ring[0]] });
+    assert_eq!(check(&s, "ann", "light-cross", one.clone()), None);
+    let one_t = one.clone();
+    let after = preview(&s, "ann", "light-cross", one);
+    assert_eq!(after["board"][&n1]["hidden"], json!([f]));
+    let mut x = s.clone();
+    motw::cards::act(&mut x, pid(&s, "ann"), card("light-cross"), &target(&s, one_t));
+    let slot = factions(&x).iter().position(|g| g == &f).unwrap() as Fac;
+    assert_eq!(motw::board::free_of(&x, spec().loc_ix(&n1).unwrap(), slot), 0);
+    // With no standing the planted group can't go, so the card can't be played for its action.
+    let none = edit(&s, |x| x["players"]["ann"]["standing"][&f] = json!(0));
+    assert!(check(&none, "ann", "light-cross", json!({ "mode": "faction", "location": loc, "faction": f, "moves": [mv(&loc, &ring[0])], "from": [ring[0]] })).is_some());
+    // The choices: land the planted group first.
+    let c = choice(&s, "ann", "light-cross", json!({ "mode": "faction", "location": loc, "faction": f }));
+    assert_eq!((c["kind"].clone(), c["options"].clone()), (json!("group"), json!([{ "location": loc, "faction": f }])));
+}
+
+#[test]
+fn whole_games_with_the_planted_cross_end_with_no_cross_left_on_the_board() {
+    for seed in 1..4 {
+        let end = play_out(&game_opts(seed, &[("cross", "plant")]), seed as u64);
+        assert_eq!(end.phase, Phase::Ended);
+        assert!(end.board.iter().all(|p| p.cross == 0 && !p.cross_at && p.hidden == 0));
+    }
+}
+
 #[test]
 fn invite_them_in_two_groups_next_door_into_an_empty_location() {
     let s0 = clear(&game(1));

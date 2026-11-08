@@ -24,6 +24,8 @@ pub enum LocKey {
     Path,
     From,
     Losses,
+    /// Where the last group driven out lands (Light of the Cross, planted).
+    Land,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum GroupKey {
@@ -359,6 +361,33 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             }
             Choice::done()
         }
+        Action::Split if s.options.cross_plant => {
+            // Plant the cross on a group; then each group driven out, the planted one first and the rest in board order
+            // (so no order of the same groups is offered twice): where it lands, then which end its sway goes to.
+            let Some(l) = loc else {
+                return Choice::groups(GroupKey::Group, groups().into_iter().filter(|&(gl, gf)| group_ok(gl, gf) && (mode == Mode::Faction || Some(gf) != sf) && cross_need(s, pid, gl, gf) > 0).collect(), None);
+            };
+            let f = fac.unwrap();
+            let moves: Vec<GroupMove> = t.moves.as_deref().unwrap_or(&[]).to_vec();
+            let pays = t.from.as_deref().map(|x| x.len()).unwrap_or(0);
+            let (zone, ring) = cross_zone(s, l);
+            if let Some(m) = moves.last() {
+                if m.to == Id::Empty {
+                    let used: Vec<Id> = moves.iter().map(|m| m.to).collect();
+                    return Choice::locs(LocKey::Land, ring.into_iter().filter(|&x| can_enter(s, x, f) && !used.contains(&Id::Loc(x))).collect(), None, None);
+                }
+                if pays < moves.len() {
+                    return Choice::locs(LocKey::From, vec![m.location.loc().unwrap(), m.to.loc().unwrap()], None, None);
+                }
+            }
+            if moves.len() >= cross_need(s, pid, l, f) {
+                return Choice::done();
+            }
+            let groups = cross_groups(s, l, f, &zone);
+            let last = moves.last().and_then(|m| m.location.loc());
+            let next: Vec<(Loc, Fac)> = if moves.is_empty() { vec![(l, f)] } else { groups.into_iter().filter(|&g| g != l && last.is_some_and(|x| x == l || g > x)).map(|g| (g, f)).collect() };
+            Choice::groups(GroupKey::Move, next, None)
+        }
         Action::Split => {
             let size = |gl: Loc, gf: Fac| free_of(s, gl, gf);
             let pays = |f: Fac| can(s, pid, f, 2 * s.options.sway_per_move as i64 + 1);
@@ -619,6 +648,13 @@ pub fn choose_step(t: &Target, c: &Choice, o: Opt) -> Target {
             LocKey::Location => x.set_location(Id::Loc(l)),
             LocKey::To => x.set_to(Id::Loc(l)),
             LocKey::Losses => x.set_losses(Id::Loc(l)),
+            LocKey::Land => {
+                let mut v = x.moves.clone().unwrap_or_default();
+                if let Some(m) = v.last_mut() {
+                    m.to = Id::Loc(l);
+                }
+                x.set_moves(v);
+            }
         },
         _ => {}
     }
@@ -757,7 +793,7 @@ pub fn sample_target(s: &GameState, pid: Pid, ci: CardIx, rng: &mut dyn FnMut() 
 /// sample_target, with answers about this state remembered across calls.
 pub fn sample_target_memo(s: &GameState, pid: Pid, ci: CardIx, rng: &mut dyn FnMut() -> f64, memo: &mut Memo) -> Option<Target> {
     let c = card(ci);
-    let sampled = c.action == Action::Split;
+    let sampled = c.action == Action::Split && !s.options.cross_plant;
     let groups: Vec<(Loc, Fac)> = if sampled { groups_of(s) } else { vec![] };
     let modes: &[Mode] = if c.suit.is_some() { &[Mode::Location, Mode::Faction] } else { &[Mode::Location] };
     for _ in 0..40 {

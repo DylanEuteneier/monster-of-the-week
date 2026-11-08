@@ -47,6 +47,9 @@ export { spec };
  * @property {string} [gateLoss]   The Gate: the end the winner's losses come from first (the Gate's player's choice)
  * @property {boolean} [altar]     Spill Blood on the Altar (⎈ signature, designer 2026-10-18): at this round's fight here, the winner loses as many as the loser
  * @property {string} [terror]     Night Terrors (◐ signature, designer 2026-10-20): this player's mark; at nightfall 1 token here may flee
+ * @property {string[]} [cross]    Light of the Cross planted (variant cross=plant, a draft): factions no card moves in here until nightfall
+ * @property {boolean} [crossAt]   the planted cross stands here
+ * @property {string[]} [hidden]   factions hiding here from the cross: no card moves them until nightfall
  * @property {string} [study]      Study the Bodies (ↂ signature, designer 2026-10-19): at this round's fight here, this player, if they have first claim, takes 1 from the second claim's pile too
  */
 
@@ -137,7 +140,7 @@ export { spec };
  * @property {Record<string, { group: string, standing: Record<string, number>, supply: number, handSize: number, picked: boolean, trophies?: Record<string, number> }>} players  (trophies: every seat's, once the game has ended)
  * @property {{ player: string, left: string[] } | null} [night]
  * @property {string[]} factions
- * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, scorched: boolean, gate?: string, gateLoss?: string, altar?: boolean, study?: string, terror?: string }>} board
+ * @property {Record<string, { tokens: Record<string, number>, sway: Record<string, number>, scorched: boolean, gate?: string, gateLoss?: string, altar?: boolean, study?: string, terror?: string, cross?: string[], crossAt?: boolean, hidden?: string[] }>} board
  * @property {Record<string, number>} supply
  * @property {string[]} deck  the game's cards
  * @property {Record<string, number>} printed  each card's sway for this seat now (swayFor)
