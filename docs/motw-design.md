@@ -24,7 +24,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 
 1. Light of the Cross (1.97): the new version drafted and built as the variant `cross=plant` (designer, 2026-11-08; H.0); measured with the batch
 2. Draw Them Away (1.83): replaced by Go Loud, drafted and built as the variant `drawAway=loud` (designer, 2026-11-08; H.0); measured with the batch
-3. The Gate (1.65, the lowest)
+3. The Gate (1.65, the lowest): reworked with magnetism, drafted and built as the variant `gate=pull` (designer, 2026-11-08; H.0); measured with the batch
 4. Spill Blood on the Altar (1.83)
 5. Cut the Powerlines (2.62): seldom wanted, small moves
 6. Call in Favours (3.73): the redesign already open (2026-10-31), for its own reasons, not weakness
