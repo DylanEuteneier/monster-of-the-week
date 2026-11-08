@@ -128,6 +128,20 @@ pub fn altar_marks(s: &GameState, c: &Card, mode: Mode) -> (Vec<(Loc, Fac)>, Vec
     (held, empty)
 }
 
+/// Spill Blood staked mixes the readings mark by mark (designer, 2026-11-08): any mark either reading allows.
+pub fn altar_marks_for(s: &GameState, c: &Card, mode: Mode) -> (Vec<(Loc, Fac)>, Vec<Loc>) {
+    if !(c.action == Action::Altar && s.options.altar_stake) {
+        return altar_marks(s, c, mode);
+    }
+    let (mut held, empty) = altar_marks(s, c, Mode::Location);
+    for m in altar_marks(s, c, Mode::Faction).0 {
+        if !held.contains(&m) {
+            held.push(m);
+        }
+    }
+    (held, empty)
+}
+
 /// The marks a target names: the held locations with their payers, then the empty ones (the suit's faction pays).
 pub fn altar_chosen(c: &Card, t: &Target) -> Vec<(Id, Id)> {
     let sf = Id::Fac(suit_faction(c).expect("suited"));
@@ -1179,7 +1193,7 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             if !reading(t) {
                 return e("Choose a location target or a faction target.");
             }
-            let (held, empty) = altar_marks(s, c, t.mode.unwrap());
+            let (held, empty) = altar_marks_for(s, c, t.mode.unwrap());
             let marks = altar_chosen(c, t);
             if marks.is_empty() {
                 return e("Mark at least one location.");

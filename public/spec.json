@@ -1470,7 +1470,7 @@
     {
       "id": "altar",
       "label": "Spill Blood on the Altar",
-      "description": "Spill Blood with a bigger stake, the designer's draft (design document H.0, 2026-11-08; a draft, not a decision), off by default while it is measured: spend up to the card's sway on marks, 2 or 3 on each (from one faction there). Everything else as dealt.",
+      "description": "Spill Blood with a bigger stake, the designer's draft (design document H.0, 2026-11-08; a draft, not a decision), off by default while it is measured: spend up to the card's sway on marks, 2 or 3 on each (from one faction there; marks may differ), each mark either reading's, in any mix. Everything else as dealt.",
       "default": "one",
       "choices": [
         {

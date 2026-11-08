@@ -1152,6 +1152,16 @@ fn spill_blood_with_a_stake_spends_up_to_the_cards_sway_2_or_3_on_each_mark() {
         vec![&p["board"][&x]["sway"]["ann"], &p["board"][&y]["sway"]["ann"], &p["board"][&x]["altar"], &p["players"]["ann"]["standing"][&demon]],
         vec![&json!(3), &json!(2), &json!(true), &json!(4)]
     );
+    // Mixed readings: a Demon location paid by another faction there, with a location holding the Demons.
+    let home = locs().into_iter().find(|l| l.1 == "demonic").unwrap().0;
+    let f = factions(&s0).into_iter().find(|x| *x != demon).unwrap();
+    let q = edit(&s, |v| {
+        v["board"][&home]["tokens"] = obj(&[(&f, 2)]);
+        v["players"]["ann"]["standing"][&f] = json!(2);
+    });
+    let mixed = json!({ "mode": "faction", "moves": [
+        { "location": home, "faction": f, "to": "" }, { "location": home, "faction": f, "to": "" }, m(&x), m(&x)] });
+    assert_eq!(check(&q, "ann", "spill-blood", mixed), None);
 }
 
 #[test]

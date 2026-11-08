@@ -477,7 +477,7 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             Choice::locs(LocKey::From, vec![l], Some(n > 0), Some(cap - n))
         }
         Action::Altar | Action::Study | Action::Terror => {
-            let (held, empty) = altar_marks(s, c, mode);
+            let (held, empty) = altar_marks_for(s, c, mode);
             let marks = altar_chosen(c, t);
             let cap = sway_for(s, pid, ci);
             let left = |f: Fac| if !s.options.sway_required { i64::MAX / 4 } else { standing(s, pid, f) - marks.iter().filter(|m| m.1 == Id::Fac(f)).count() as i64 };
