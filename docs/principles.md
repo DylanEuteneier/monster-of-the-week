@@ -49,6 +49,7 @@ The game report (`scripts/measure.js`) measures each of these. Its targets are p
 - **A spread of power is good.** A weaker action is balanced in other ways: something special and slightly rule-breaking, more sway, or more flexibility (2026-10-07). Gut ranking, strongest first: alters a large, high-trophy fight; takes sway control of a contested region; moves tokens and places lots of sway; moves in ways that break the normal rules.
 - **Fights are rarely made to disappear.** Being outbid at a location is the core struggle, not an undo. No mechanics that track what was done just to make undoing costlier: the answer is in the cards, by cutting or tightening the lazy, underdeveloped actions (2026-10-13).
 - **Strong tropes with a puzzle for the player** (Invite Them In, Bait the Herd, The Big Chase, Plough Through were liked). No geometric movement: push chains, slides, leaps, shoves, swaps, straight lines, blasts (2026-10-17).
+- **No "next door" targeting.** A card's reach isn't widened with "at or next to" style rules (2026-11-08, on Light of the Cross).
 - **Card text is already a heavy load.** Prefer a global rule to more card text (GR5, 2026-10-29).
 
 ## Tuning
