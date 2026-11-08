@@ -665,7 +665,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
         - **Why:** it gives cards flexibility while keeping strong ties to their theme, and it lets strategies evolve and change during the round, as a puzzle that still feels like the suit.
   - First draft, suit structure (from a suggestion, 2026-10-05). Each suit has three cards:
     - *Strike:* a gather (designer, 2026-10-17): a move that draws groups together into a contest at or from a suit location. Printed sway 2 to start.
-    - *Shift:* a dispersal (designer, 2026-10-17): a relocation that spreads tokens out. Printed sway 3 to start.
+    - *Shift:* a dispersal (designer, 2026-10-17): a relocation that spreads tokens out. Printed sway 3 to start. *Designer (2026-11-08):* every shift has a scatter-style presence effect; the brief stays a dispersal.
     - *Signature:* the suit's primary card. The archetype's rule-bend, plus the suit's response (one per suit, so five in the pool; the Cancel was removed, 2026-10-08), and the suit's highest printed sway, provisionally 4 (2026-10-06).
       - *Designer (2026-10-15):* signature cards should feel the most thematic and have the most interesting abilities of their suit. Strike / Shift / Signature stays the framework for now.
     - *Printed sway (D12, 2026-10-07):* not fixed by slot. Every suit prints the same total sway (9 at present), split across its three cards however balances them; the 2/3/4 above is the starting split. Always weighted to the action's strength: the weakest of the three prints the most.
