@@ -128,7 +128,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
        - *Designer (2026-10-07):* off for now; held in reserve, to bring in if more sway is needed.
    - **Scores reset (designer, 2026-10-07):** our own documents shouldn't trust the scores yet. The measures and their weights make sense, but every score so far is likely naive: none comes from whole-round runs of a card with bots that play strategically. Every score is reset to 0 (`public/card-scores.json`, `public/card-round-scores.json`), and the figures recorded below and in H.7 (rounds 8 to 16) stand as history, not as findings. With every score at 0, D12's weighting has nothing to order by, so each suit's 2, 3 and 4 are dealt at random until cards are measured again.
    - **How tuning proceeds (designer, 2026-10-07):** 1. tune the bots with tournaments (`scripts/tournament.js`); 2. tune the cards with card tuning passes; repeat.
-   - **One tuning tool (designer, 2026-10-08):** the tournament (`scripts/tournament.js`, `npm run cards:plays`) does the card balancing too, with the simulate, economy, balance and roundplay scripts merged into it. Per game: the ending and winners (by profile, seat and slayer group), presence by round, scorched locations, trophies; the economy before each round's fights (bidding contests, sway on the board, standing). Per card: held, played, for its action or its sway, playable, the swing in its player's chance of winning, how often its player won, what each action did to the round's fights (trophies, flips, control, pieces moved, sway placed), and openers. **Probes:** on a share of turns, the controlled card test (a random handful of cards played in that moment against letting the turn go, the rest of the round played out): cause, where whole games give correlation, and cards nobody held. Probes run on copies with their own randomness, so they never change the games; they are optional (`probe=0`) and slow (each costs about as much as a few whole games). Progress is saved after every game and a run resumes where it stopped; the card review page shows the figures as they come in.
+   - **One tuning tool (designer, 2026-10-08; the tool is now `scripts/measure.js`, 2026-11-08):** the tournament (`scripts/tournament.js`, `npm run cards:plays`) does the card balancing too, with the simulate, economy, balance and roundplay scripts merged into it. Per game: the ending and winners (by profile, seat and slayer group), presence by round, scorched locations, trophies; the economy before each round's fights (bidding contests, sway on the board, standing). Per card: held, played, for its action or its sway, playable, the swing in its player's chance of winning, how often its player won, what each action did to the round's fights (trophies, flips, control, pieces moved, sway placed), and openers. **Probes:** on a share of turns, the controlled card test (a random handful of cards played in that moment against letting the turn go, the rest of the round played out): cause, where whole games give correlation, and cards nobody held. Probes run on copies with their own randomness, so they never change the games; they are optional (`probe=0`) and slow (each costs about as much as a few whole games). Progress is saved after every game and a run resumes where it stopped; the card review page shows the figures as they come in.
    - **Bot tuning status (2026-10-10):** cards stay as they are while the bots are tuned (designer). An overnight session (about 900 games, 48 attempts, F.9 "Tuning method") found no change that measurably beats the standard trophy and backer profiles: against each other the bots sit on a plateau, and 20-game runs only resolve large effects. What it did leave: bot games about 5× faster with identical play; the bots' own win forecasts measured as worse than an even split from round 2 on, while a fit on trophy counts predicts better (a lead, not yet turned into stronger play); and an unattended experiment runner, `node scripts/experiment.js --loop --push` (`npm run experiment`), that any machine can run. It jitters the profiles' values (`experiments/space.json`), plays them against the standard table on the same deals, judges each attempt, and commits and pushes one log entry per attempt (`experiments/results/`, with the testing log `experiments/CATALOGUE.md`, which also pools every attempt per value to find small effects). Last night's attempts are backfilled there. **Next:** run the runner on more machines; Claude reviews the catalogue and proposes changes; adopting any change stays the designer's call.
    - **Fights made to disappear (designer, 2026-10-13):** the worry: a player spends several turns setting up a fight, and one or a few of an opponent's actions undo it completely. Late swings are fine, but they shouldn't be able to undo a player's progress completely.
      - *What counts (designer):* a fight disappearing. Being outbid at a location is the core struggle of the game and is not an undo.
@@ -1393,7 +1393,7 @@ Stages: **Not started** · **Ideas** · **Decisions** · **Details** · **Rules*
   - *The rule variants that decisions had settled:* `swayRequired` (IC1 is a requirement, D15), `payInFull` (all or nothing, D21), `fightHalf` (half from a fight, D22) and `winnerLoss` (the winner loses half, rounded up, D25). Their alternatives can no longer be dealt; the rules they decided are simply the rules.
   - *Upgrades for old saves and logs:* loading games and tournament logs saved before influence was renamed sway (D18), and the old *goal* name for the trophy bot. The data file's version moved to 0.2.0, so a game saved before this is set aside and the host deals a new one.
   - *Bot settings neither profile uses:* the *allies* switch (measured, won less) and the overrides of the island weights, the supply's value, the chances' softness and the search sizes (their values stay, fixed); the experiment runner no longer varies them.
-  - *Card figures from the old decks* (the card review page's tournament figures, 2026-10-10, none of them for a core card); the page shows new figures once `npm run cards:plays` runs on the core deck.
+  - *Card figures from the old decks* (the card review page's tournament figures, 2026-10-10, none of them for a core card): removed 2026-11-08 with the old tournament; the cards are measured by the card report (`scripts/measure.js`).
 - **Stays open:** every numeric first-draft guess (G.7) and the rule variants without a decision: `alignedGrowth` (removed 2026-11-07 with growth, D38), `wayBack`, `seeding`, `groups`, `swayPerMove`.
 - **Scope:** prototype only; the rules themselves are unchanged.
 - **Affects:** D15, D21, D22, D25 (their variants), Appendix F (the data file, the bots), the play fingerprints (re-recorded for the sets that used the removed variants).
@@ -2995,7 +2995,7 @@ Where a game is started. The host page holds no game rules. Everything it does i
 - **Strategy breakpoints (designer, 2026-10-07; the first build, deep-bold/balanced/cautious, lost every tournament and was removed; the goal bots carry the idea).** Points at which a bot shifts focus, with different numbers per bot to give each its own play profile. Two axes:
   1. *The ending:* a trophy mix (the island wins) or faction sway (the invaders win). A bot commits when the projected presence is far enough from the threshold, or in the last round; otherwise it hedges. Which faction to back is two-sided (designer): if the invaders look like winning, the faction it has the best shot at leading; mid-game, if they look like losing, the faction that sets up the actions it wants to take with its cards.
   2. *Mid-game:* sway on a faction (spending cards for standing) or actions that produce trophies, switching by round and by how much standing it already holds.
-- **Tournament** (`scripts/tournament.js`): whole games with one profile per seat, rotated through the seats, counting wins and how each profile's games end.
+- **Tournament** (`motw tournament`, driven by `scripts/measure.js`; the JavaScript `scripts/tournament.js` until 2026-11-08): whole games with one profile per seat, rotated through the seats, counting wins and how each profile's games end.
 - **Goal-driven bots (designer approved the approach, 2026-10-07; built as `goal` and `goal-deep`).** Bots with goals that can shift and adapt while prioritising the best chance at victory. Next session's build order: (1) the win-chance evaluator, (2) goals with switch margins, (3) tournaments against the current bots.
   - *Win chance:* P(invaders win) × P(I win as invaders) + P(island wins) × P(I win as island). Each "I win" is a probability from my margin against the best rival (standing less trophies with the likely top faction; weakest trophy colour, then the next), sharpening as rounds run out. P(invaders win) comes from projected end-of-game presence (the board now plus the recent trend) against the threshold. Every move is scored by how much it raises the win chance; the deep bot's lookahead stays as the tactical layer.
   - *Goals:* back faction F (build standing, avoid its trophies, protect its tokens: the invaders' loop, D16); win the island (collect the weakest colour, make big fights where you have first claim, remove tokens); swing (losing under the likely ending but strong under the other: push toward the other); hedge (early, unclear). A bot changes goal only when the new goal's win chance beats the current one by a margin: the breakpoints, per bot (switch margin, risk appetite, horizon). Bots keep their goal between turns.
@@ -3145,38 +3145,11 @@ Prototype bot design, not rules. *Designer:* get to a place where there is reall
 
 ### F.12 File layout
 
-```
-public/
-  index.html      the table
-  app.css         styles
-  app.js          client: draws one player view, sends moves, previews with the engine
-  host.html, host.js   host page: deal games, choose options and bots, copy links
-  motion.js       moving pieces: every token and cube that changes place flies there (F.6)
-  tutorial.js     the tutorial's walkthrough: steps, spotlight, tooltip, modals (F.18)
-  tutorial-game.js the tutorial's game, held in the browser with bots (pure)
-  assets.html, assets.js   assets page: every token, token, and sprite, and the palette
-  pieces.js       presence tokens and sway cubes, drawn in CSS
-  assets/         built art: sprites, token outlines, and their data file
-  rules.js        the rules for JavaScript: the Rust engine and bots under the engine's names, the types, lookups
-  motw.wasm       the Rust engine and bots, built to WebAssembly (npm run wasm)
-  spec.json       all constants and content as data
-rust/
-  src/            the rules engine and the bots, the only place the rules live (wasm.rs: the bridge)
-  src/bin/motw.rs play fingerprints and bot timing, natively
-  tests/          engine and bot tests, and the recorded games (fixtures/fingerprints.json)
-src/
-  worker.ts       routing, and the game's Durable Object: tokens, websockets, saving
-test/             bots and the rules bridge, the tutorial, and a headless render of every phase
-scripts/
-  tournament.js   the tuning tournament: bot games, endings, economy, card plays and probes
-  lib.js          shared by the tournament and the tests
-  smoke.js        plays a whole game against a running server
-  tutorial-seed.js finds the tutorial's deal (a first round that shows every part of a round)
-  admin.js        create a game, list the magic links
-assets/           art source: the palette and sprites as data, the build script, the art guide
-docs/             this document, then the rules and implementation spec
-wrangler.toml     Worker configuration
-```
+The file layout is kept in one place, the repository's `README.md` (*Layout*), so it can't drift from the files. Its
+shape: `docs/` the design document; `rust/` the rules engine and the bots, the only place rules live, with the native
+tool (`motw`) and the tests and play fingerprints; `public/` the browser table, the WebAssembly build and `spec.json`
+(all content and numbers); `src/worker.ts` the Worker and its Durable Object; `scripts/` the measuring tool
+(`scripts/measure/README.md`) and a few utilities; `test/` the JavaScript tests; `assets/` the art sources.
 
 ### F.13 Running and deploying
 
@@ -3212,6 +3185,8 @@ Each stage can be tested before the next is started.
 4. **Play it.**
 
 ### F.16 Needed before building
+
+*Status (2026-11-08): met, kept as history.* The first draft ruleset (Appendix G) is implemented in the engine, the rules are pinned by the engine tests rather than a separate implementation spec, and the bots' figures are used through the measuring tool and its baseline (F.14).
 
 - **A complete ruleset.** The engine can only implement rules with no open questions. The sample rulesets in Appendix E are the starting point, and they don't yet include the candidates added since.
 - **An implementation spec.** A document that restates the rules as state, inputs, validation, and procedure, with a visibility table saying what each seat may see.

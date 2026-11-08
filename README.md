@@ -1,94 +1,72 @@
 # Monster of the Week — prototype
 
-A shared-board area-control game: slayer groups on a small island town push
-invading factions into each other, playing for trophies and for standing with
-whichever faction wins. This repo is the web prototype: a pure game engine (Rust, run as WebAssembly), a
-Cloudflare Worker with one Durable Object as the authority, and a
-no-build-step browser table, playable remotely by 3–5 people on their own
-devices.
+A shared-board area-control game: slayer groups on a small island town push invading factions into each other,
+playing for trophies and for standing with whichever faction wins. This repo is the design and its web prototype:
+a pure rules engine and bots (Rust, run as WebAssembly), a Cloudflare Worker with one Durable Object as the
+authority, a no-build-step browser table playable by 3–5 people on their own devices, and the tools that measure
+the game with bots.
 
-Live: https://monster-of-the-week.dylaneuteneier.workers.dev (art review at
-[`/assets`](https://monster-of-the-week.dylaneuteneier.workers.dev/assets)).
+Live: https://monster-of-the-week.dylaneuteneier.workers.dev (tutorial at `/tutorial`, art and card review at
+`/assets`).
 
-The design document is the source of truth for what the game is. The code
-follows it; where they disagree, the design document wins.
+## Where things are decided
 
 | Document | What it covers |
 |---|---|
-| [`docs/motw-design.md`](docs/motw-design.md) | **The master design document**: pillars, content, every decision area, reference research, candidate analysis, and the prototype architecture and art (Appendix F) |
-| [`assets/README.md`](assets/README.md) | Art style and rendering for the prototype: the art rule, decisions so far, how sprites, tokens, and cubes render, and the open palette and asset-list decisions |
-| [`public/spec.json`](public/spec.json) | The data: seat limits, archetypes, factions, locations, slayer groups, cards, variants |
+| [`docs/motw-design.md`](docs/motw-design.md) | **The master design document**, the source of truth: context and working style (1), game foundation (2), every design decision area (3), decision records and changelog (A), glossary (B), reference research (C–E), prototype architecture and art (F), the first draft ruleset (G) |
+| [`CLAUDE.md`](CLAUDE.md) | How the designer and Claude work: seeds come from the designer, decisions are recorded only when agreed, the code follows the document |
+| [`public/spec.json`](public/spec.json) | All content and numbers as data: seats, archetypes, factions, locations, slayer groups, cards, rule variants |
+| [`assets/README.md`](assets/README.md) | Art: the art rule, palette, how sprites, tokens and cubes render |
+| [`scripts/measure/README.md`](scripts/measure/README.md) | Measuring the game, the cards and the bots with bot games: the baseline, the reports, how to read and trust them |
 
-`docs/motw-design.md` is the master design document. It is edited here and
-committed like code; the Claude artifact it started from is retired and no
-longer updated.
-
-## Status: scaffold
-
-The infrastructure from Appendix F is in place and tested end to end. The
-rules are not: the design has no complete ruleset yet (Appendix F.16). Until
-it does, the engine runs one placeholder phase, a **ready check** in which
-every seat commits and the round advances, for two rounds. It exists only to
-exercise simultaneous commits, rounds, the log, bots, hotseat, and per-seat
-views. Everything marked *scaffold* is replaced when the real phases land.
-
-What the engine already does from settled decisions:
-
-- 3–5 seats (D3, 3.16).
-- One faction picked at random from each archetype at setup (3.4), from a
-  seeded, repeatable generator.
-- Each seat receives only its own `playerView` (hidden hands, D6, slot in
-  under `me`).
+The code follows the design document; where they disagree, the document wins. Prototype choices (art, board
+layout, palette, table talk) are for testing only, never rules.
 
 ## Layout
 
 ```
-public/
-  index.html      the table (markup)
-  app.css         styles (design tokens at the top)
-  app.js          client: renders one playerView, sends moves, previews with the engine
-  host.html/js    host page: deal games, choose options and bots, copy links
-  assets.html/js  assets page: example location card, tokens, cubes, every sprite, the palette
-  pieces.js       presence tokens and sway cubes as HTML (CSS pieces)
-  assets/         built art: sprites.json, sprite PNGs, token outlines (SVG); static files
-  rules.js        the rules for JavaScript: the Rust engine and bots (motw.wasm) under the names the table,
-                  the worker and the scripts use; types, spec lookups
-  motw.wasm       the Rust engine and bots, built by `npm run wasm` (committed)
-  spec.json       all constants and content as data
-src/
-  worker.ts       routing + the Game Durable Object (tokens, websockets, persistence)
-rust/
-  src/            the rules engine and the bots (the only place rules live); src/wasm.rs is the JavaScript bridge
-  src/bin/motw.rs motw fingerprint (play fingerprints), motw time (seconds per bot decision)
-  tests/          engine and bot tests; fingerprints.rs replays the recorded games (tests/fixtures)
-test/
-  bots.test.js        bots only propose legal moves and finish games; the rules bridge
-  app.render.test.js  headless render of every phase
+docs/motw-design.md      the design document
+rust/                    the rules engine and the bots: the only place rules live
+  src/lib.rs               module map; types.rs (state, moves), setup.rs (deal), game.rs (moves, fights, ending),
+                           cards.rs (targets, actions), board.rs, choice.rs (targets step by step), view.rs and
+                           why.rs (for the table), bots.rs (profiles, search, play-outs), judge.rs (learned
+                           position judge, off by default), spec.rs, json.rs, small.rs
+  src/wasm.rs              the JavaScript bridge (public/rules.js calls it)
+  src/tournament.rs        whole bot games natively, with the logs the measuring tool reads
+  src/fingerprint.rs       play fingerprints: bot games hashed state by state
+  src/bin/motw.rs          the native tool: motw tournament, fingerprint, time, fit
+  tests/                   engine, bot and runner tests; fingerprints.rs replays tests/fixtures
+  data/judge.json          the learned judge's weights (npm run judge)
+public/                  the browser table and the WebAssembly build (static files the Worker serves)
+  rules.js, motw.wasm      the engine and bots for JavaScript (motw.wasm is built by npm run wasm and committed)
+  spec.json                content and numbers
+  index.html, app.js       the table: renders one player's view, sends moves, previews with the engine
+  app.css                  styles (tokens at the top; one block per component)
+  cards.js, icons.js       a card as the table draws it; action icons (verb + noun blocks)
+  pieces.js, motion.js, fx.js   tokens and cubes as CSS pieces; moving pieces; small effects
+  guide.js, hints.js       telling other seats' turns; move hints
+  tutorial.js, tutorial-game.js the guided tutorial and its in-browser game
+  host.html, host.js       the host page: deal games, choose variants and bots, copy links
+  assets.html, assets.js   art and card review
+  layout-suggestions.js    the board layout under test (prototype)
+  assets/                  built art (from assets/sprites.py; don't edit by hand)
+src/worker.ts            routing and the Game Durable Object (tokens, websockets, persistence)
 scripts/
-  tournament.js   the tuning tournament: bot games, endings, economy, card plays and probes
-  lib.js          shared by the tournament and the tests
-  smoke.js        end-to-end run against a live server
-  admin.js        create a game / list magic links
-docs/
-  motw-design.md  the design document
-assets/
-  README.md       asset creation guide and plan
-  sprites.py      palette, sprite data, token outlines; `npm run assets` builds public/assets/
-  test/           preview pages for the sprite test and the font specimen
+  measure.js, measure/     the measuring tool: bot games, the baseline, game, card and bot reports
+  judge.js                 fits the learned judge's weights from bot games
+  smoke.js                 a whole game through a running server over websockets
+  watch-play.mjs           plays a table in headless Chrome and reports stalls
+  tutorial-seed.js         finds a deal for the tutorial
+  admin.js                 create a game, list magic links
+test/                    JavaScript tests: bots and the bridge, rendering, assets, the tutorial
+assets/                  art sources: sprites.py (palette, sprites; npm run assets), board.py, hexart.py, slayers.py
+reports/, research_notes/  research reports and their notes (reference reading, not decisions)
 ```
-
-The engine and the bots are Rust (`rust/`), built to WebAssembly
-(`public/motw.wasm`) and reached through `public/rules.js`, which keeps the
-JavaScript names and types (JSDoc, checked under TypeScript strict mode). Both
-the Durable Object and the browser load the same module; the client only uses
-it for previews (on its own view) and never decides anything. The scripts run
-the same module in Node; `rust/target/release/motw` is the native tool for play
-fingerprints and timing.
 
 ## Local development
 
-Needs Node 22+ (`.nvmrc` pins 24, matching CI), and Rust with the WebAssembly
-target for `npm run wasm` and the Rust tests (`rustup target add wasm32-unknown-unknown`).
+Needs Node 22+ (`.nvmrc` pins 24, matching CI) and Rust with the WebAssembly target
+(`rustup target add wasm32-unknown-unknown`).
 
 ```sh
 npm install
@@ -96,96 +74,58 @@ npm run dev:setup        # creates .dev.vars from the example (never commit .dev
 npm run dev              # wrangler dev on http://localhost:8788
 ```
 
-The dev server uses port **8788** and inspector port **9230**, so it runs
-alongside the Insider Trading prototype (8787 / 9229).
+The dev server uses port **8788** and inspector port **9230**, so it runs alongside other prototypes on 8787/9229.
 
-In a second terminal:
-
-```sh
-npm run new-game -- Ann Bob Cat Dan Eve     # deals a game, prints the magic links
-npm run links                               # prints them again later
-```
-
-Or open **http://localhost:8788/host**, name the seats, tick bots, and deal.
-**http://localhost:8788/assets** is where art is reviewed: an example location card, every token and cube, every sprite, and the palette.
-Seats keep their links across games, so redealing flips every open tab to
-round 1 without new links.
-
-### Testing alone
-
-- **Hotseat** — **http://localhost:8788/hotseat** plays every human seat from
-  one tab; "follow the action" jumps to whoever needs to act.
-- **Bots** — tick **bot** on the host page, or
-  `npm run new-game -- --bots Bob,Cat,Dan,Eve Ann Bob Cat Dan Eve`.
+- **http://localhost:8788/host**: name the seats, tick bots, choose variants, deal. Seats keep their links across
+  games. `npm run new-game -- Ann Bob Cat` and `npm run links` do the same from the command line.
+- **http://localhost:8788/hotseat**: every human seat from one tab.
+- **http://localhost:8788/tutorial**: the guided first game.
+- **http://localhost:8788/assets**: every sprite, token, cube and card, and the palette.
 
 ## Commands
 
 | Command | Does |
 |---|---|
-| `npm run dev` | Worker, Durable Object, and static assets on :8788 with live reload |
-| `npm run new-game -- [names…]` | Create a game (3–5 names; default five seats) and print links. Flags: `--seed N`, `--option id=choice`, `--bots A,B` |
-| `npm run links` | Re-list the magic links for the current game |
-| `npm test` | Bot, bridge, tutorial and render tests (`node --test`) |
-| `npm run test:rust` | The engine and bot tests in Rust, and the recorded games (`cargo test`) |
-| `npm run wasm` | Build the Rust engine to `public/motw.wasm` (commit it) |
-| `npm run test:watch` | Same, re-running on change |
-| `npm run typecheck` | Strict TypeScript over the rules module, client, scripts, and worker |
+| `npm run dev` | Worker, Durable Object and static files on :8788 with live reload |
+| `npm run check` | Everything before a commit: wasm, typecheck, JavaScript and Rust tests, a dry-run bundle |
+| `npm run wasm` | Build the Rust engine to `public/motw.wasm` (commit it with the Rust change) |
+| `npm test` / `npm run test:watch` | JavaScript tests (`node --test`) |
+| `npm run test:rust` | Engine, bot and runner tests, and the play fingerprints (`cargo test`) |
+| `npm run typecheck` | Strict TypeScript over the client, scripts, rules module and worker |
+| `npm run measure -- …` | The measuring tool (`scripts/measure/README.md`); `baseline=1` rebuilds the baseline |
+| `npm run judge` | Refit the learned judge's weights |
+| `npm run assets` | Check every sprite and rebuild `public/assets/` (Python 3) |
+| `npm run smoke` | A whole game through a running server (needs `npm run dev`) |
+| `npm run new-game -- [names…]` / `npm run links` | Deal a game and print the magic links / print them again (`--seed N`, `--option id=choice`, `--bots A,B`) |
 | `npm run build` | Dry-run bundle of the worker into `dist/` |
-| `npm run check` | wasm + typecheck + test + test:rust + build |
-| `npm run bots -- [games=20] [seed=1] [profiles=a;b;…] [workers=…] [duplicate=1] [log=…]` | Bot games natively on every core, for iterating on the bots: wins by profile (with standard errors) and seat, endings; the same games the tournament plays on the same seed |
-| `npm run tournament -- [games] [seed] [profiles=…] [log=…] [out=…] [probe=…]` | The tuning tournament: whole bot games; endings, economy, and per-card play figures and probes (see the script's header) |
-| `npm run cards:plays` | The card tuning run: 400 games with probes, resumable (`.tuning/games-core.jsonl`), summary to `public/card-play-stats.json` for the card review page |
-| `npm run smoke` | Plays a whole game through a running server over websockets |
-| `npm run deploy` | `wrangler deploy` |
-| `npm run secret` | Optionally lock the host page by setting `ADMIN_SECRET` on the deployed worker |
-| `npm run logs` | Tail production logs |
-| `npm run assets` | Check every sprite and rebuild `public/assets/` (needs Python 3) |
+| `npm run deploy` / `npm run logs` / `npm run secret` | Deploy by hand / tail production logs / lock the host page with `ADMIN_SECRET` |
 
-`BASE=https://your-worker.example npm run links` points the admin scripts at a
-deployed instance; if the server is locked, `ADMIN_SECRET` is read from the
-environment, falling back to `.dev.vars` locally.
+`BASE=https://your-worker.example npm run links` points the admin script at a deployed instance.
+
+**Play fingerprints.** `rust/tests/fixtures/fingerprints.json` records how the bots play on fixed seeds. A change
+that changes play fails `npm run test:rust`; regenerate them (`motw fingerprint … digests=1`) only when a decision
+means play to change.
 
 ## How it works
 
-- **One game, one Durable Object** named `the-game`. It is single-threaded, so
-  simultaneous commits cannot race. State is saved to `ctx.storage` after every
-  accepted move and before any broadcast.
-- **Hidden information stays server-side.** Each websocket receives only its
-  own `playerView`.
-- **Magic links** `/p/<token>` map to seats. The link is the identity.
-- **Host routes** (`/host`, `/hotseat`, `/admin/*`) are open by default. Set
-  `ADMIN_SECRET` and they require `Authorization: Bearer <secret>`.
-- **Art.** Whatever would be printed art in a physical production is pixel
-  art; whatever would be physical is UI; a few pieces (presence tokens,
-  sway cubes) imitate real 3D objects in CSS. Fonts are Tiny5 for
-  headings and Rubik for text. Details in `assets/README.md`.
-- **Variants.** Candidate rules the host can switch between go in
-  `spec.variants`; the host page builds its option pickers from that list and
-  the engine validates the choices.
-
-### Client messages
-
-```jsonc
-{ "type": "move", "move": { "type": "ready" } }
-{ "type": "chat", "text": "The Lighthouse is about to boil over." }
-```
-
-Server replies with `state` (your `playerView`, who is online, which seats are
-bots), `error` (reason for a rejected move), `chat`, and `presence`.
+- **One engine everywhere.** The Rust engine is built to WebAssembly and loaded by the Durable Object (the authority)
+  and by the browser (previews of its own view only; it never decides anything). The measuring tool runs it natively.
+- **One game, one Durable Object** named `the-game`. It is single-threaded, so simultaneous commits cannot race.
+  State is saved after every accepted move and before any broadcast.
+- **Hidden information stays server-side.** Each websocket receives only its own `playerView`.
+- **Magic links** `/p/<token>` map to seats; the link is the identity. Host routes (`/host`, `/hotseat`, `/admin/*`)
+  are open unless `ADMIN_SECRET` is set.
+- **Variants.** Candidate rules the host can switch between live in `spec.variants`; the host page builds its
+  pickers from that list and the engine validates the choices.
+- **Bots** play from the same engine: one bot with dials, its lean spread over the table. They are the players in
+  every measurement.
+- **Art.** What would be printed is pixel art; what would be physical is UI; tokens and cubes are CSS pieces. Fonts:
+  Tiny5 for headings, Rubik for text.
 
 ## Deploy
 
-The Worker is live at https://monster-of-the-week.dylaneuteneier.workers.dev and
-redeploys on every push to `main`.
-
-The Worker is named `monster-of-the-week` (`wrangler.toml`). To deploy on
-every push, connect the GitHub repo in the Cloudflare dashboard
-(**Workers & Pages → Create → Import a repository**, pick
-`monster-of-the-week`, branch `main`). Workers Builds then builds and deploys
-every push to `main` and gives pull requests preview URLs. Leave the build
-command empty and the deploy command as `npx wrangler deploy`.
-
-`npm run deploy` from a machine logged in with `wrangler login` also works.
-The `[[migrations]]` block in `wrangler.toml` registers the Durable Object
-class on first deploy. CI (`.github/workflows/ci.yml`) runs typecheck, tests,
-and a dry-run bundle on every push and pull request.
+Every push to `main` builds and deploys through Cloudflare Workers Builds (the GitHub repo connected in the
+Cloudflare dashboard; deploy command `npx wrangler deploy`). CI (`.github/workflows/ci.yml`) builds the WebAssembly
+and runs the typecheck, the JavaScript and Rust tests and a dry-run bundle on every push and pull request.
+`npm run deploy` from a machine logged in with `wrangler login` also works. The `[[migrations]]` block in
+`wrangler.toml` registers the Durable Object class on first deploy.
