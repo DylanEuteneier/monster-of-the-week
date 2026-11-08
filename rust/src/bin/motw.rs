@@ -320,6 +320,10 @@ fn tournament(args: &[String]) {
                     "r": w.round, "seat": id(&w.seat), "presence": w.presence, "groups": w.groups, "maxGroup": w.max_group, "groups4": w.groups4,
                     "best": w.best, "bestFree": w.best_free, "cards": w.cards.iter().map(|c| serde_json::json!([c.0, c.1, c.2])).collect::<Vec<_>>(),
                 })).collect::<Vec<_>>(),
+                "cardTurns": x.card_turns.iter().map(|c| serde_json::json!({ "mv": c.mv, "r": c.round, "seat": id(&c.seat), "goal": c.goal, "hand": c.hand, "acts": c.acts, "instinct": c.instinct, "chosen": c.chosen,
+                    "options": c.options.iter().map(|(m, q, v)| serde_json::json!([m, (q * 1e3).round() / 1e3, v.map(|y| (y * 1e3).round() / 1e3)])).collect::<Vec<_>>() })).collect::<Vec<_>>(),
+                "draft": x.draft_picks.iter().map(|d| serde_json::json!({ "r": d.round, "seat": id(&d.seat), "kept": d.kept, "offered": d.offered, "picked": d.picked,
+                    "worth": d.worth.iter().map(|(c, w)| serde_json::json!([c, (w * 1e3).round() / 1e3])).collect::<Vec<_>>() })).collect::<Vec<_>>(),
                 "moves": x.moves, "seconds": (x.seconds * 10.0).round() / 10.0,
             });
             writeln!(f.lock().unwrap(), "{line}").unwrap();
@@ -330,6 +334,8 @@ fn tournament(args: &[String]) {
     if kv.get("swing").is_some_and(|x| x == "1") { motw::tournament::SWING.store(true, std::sync::atomic::Ordering::Relaxed); }
     if let Some(v) = kv.get("quickvars") { *motw::tournament::QUICK_VARIANTS.lock().unwrap() = v.split('|').map(String::from).collect(); }
     if kv.get("fidelity").is_some_and(|x| x == "1") { motw::tournament::FIDELITY.store(true, std::sync::atomic::Ordering::Relaxed); motw::bots::KEEP_CONSIDERED.store(true, std::sync::atomic::Ordering::Relaxed); }
+    // cards=1: the card study (every turn's hand and weighed moves, every draft pick; scripts/card-report.js).
+    if kv.get("cards").is_some_and(|x| x == "1") { motw::tournament::CARDS.store(true, std::sync::atomic::Ordering::Relaxed); motw::bots::KEEP_CONSIDERED.store(true, std::sync::atomic::Ordering::Relaxed); }
     if kv.get("ties").is_some_and(|x| x == "1") { motw::tournament::TIES.store(true, std::sync::atomic::Ordering::Relaxed); motw::bots::KEEP_CONSIDERED.store(true, std::sync::atomic::Ordering::Relaxed); }
     if kv.get("positions").is_some_and(|x| x == "1") { motw::tournament::POSITIONS.store(true, std::sync::atomic::Ordering::Relaxed); }
     if let Some(n) = kv.get("stopAfter").and_then(|x| x.parse::<i32>().ok()) { motw::tournament::STOP_AFTER.store(n, std::sync::atomic::Ordering::Relaxed); }

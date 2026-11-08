@@ -106,6 +106,15 @@ pub fn take_considered() -> Vec<(Move, f64, Option<f64>)> {
     CONSIDERED.with(|c| std::mem::take(&mut *c.borrow_mut()))
 }
 
+thread_local! {
+    static DRAFT_WORTH: std::cell::RefCell<Vec<(CardIx, f64)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// The last draft pick's worth for each card in the pool, best first (kept with KEEP_CONSIDERED; a measuring aid).
+pub fn take_draft_worth() -> Vec<(CardIx, f64)> {
+    DRAFT_WORTH.with(|c| std::mem::take(&mut *c.borrow_mut()))
+}
+
 fn note_decision(ranked: &[(Move, GameState, f64)], values: &[(usize, f64)], now: f64) {
     if KEEP_CONSIDERED.load(std::sync::atomic::Ordering::Relaxed) {
         let list = ranked.iter().enumerate().map(|(i, r)| (r.0.clone(), r.2, values.iter().find(|v| v.0 == i).map(|v| v.1))).collect();
@@ -1208,7 +1217,9 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
                 ]
             };
             let own = |k: &str| profile.split([':', ',']).any(|kv| kv.split_once('=').is_some_and(|(a, _)| a == k));
-            dialled = set.iter().filter(|(k, _)| !own(k)).fold(profile.to_string(), |acc, (k, v)| format!("{acc},{k}={v:.4}")) + ",dials=0";
+            // A bare name ("bot") takes its settings after a colon, as any profile with settings does.
+            let start = if profile.contains(':') { profile.to_string() } else { format!("{profile}:dials=1") };
+            dialled = set.iter().filter(|(k, _)| !own(k)).fold(start, |acc, (k, v)| format!("{acc},{k}={v:.4}")) + ",dials=0";
             // Instinct: some turns, more for a careless seat, the move that looks best at a glance (no play-outs).
             if on(q.sim) && s.phase == Phase::Play && rng() < 0.25 * (1.0 - sharp) {
                 return play_move(s, pid, rng, &fast(&dialled), memory, seats, focus);
@@ -1259,6 +1270,9 @@ fn play_move(s: &GameState, pid: Pid, rng: Rng, profile: &str, memory: Option<&m
                 worth.push((c, noise(w, rng)));
             }
             worth.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            if KEEP_CONSIDERED.load(std::sync::atomic::Ordering::Relaxed) {
+                DRAFT_WORTH.with(|c| *c.borrow_mut() = worth.clone());
+            }
             let n = p.kept.len() + 1;
             let m = Move::Pick { keep: worth[..n.min(worth.len())].iter().map(|w| w.0).collect() };
             if legal(s, pid, &m) { Some(m) } else { None }

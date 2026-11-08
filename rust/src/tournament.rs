@@ -64,8 +64,39 @@ pub struct Game {
     /// Quick-bot checks (`fidelity=1`).
     pub quick_turns: Vec<QuickTurn>,
     pub quick_rounds: Vec<QuickRound>,
+    /// The card study (`cards=1`): every turn of play with cards in hand, and every draft pick.
+    pub card_turns: Vec<CardTurn>,
+    pub draft_picks: Vec<DraftPick>,
     /// Imitation data (`fidelity=1`): at each real decision, the chosen move and up to 15 other candidates, as features.
     pub imit: Vec<crate::imit::Decision>,
+}
+
+/// One turn of play in the card study (`cards=1`): the hand, how many legal action targets each card had (up to 40),
+/// every move the bot weighed (the move, its one-step score, its play-out value if shortlisted; best one-step first),
+/// and the move made. `instinct`: no play-outs this turn (an instinct turn, or a lone option), so `options` is empty.
+#[derive(Clone, Debug)]
+pub struct CardTurn {
+    pub mv: usize,
+    pub round: i32,
+    pub seat: Pid,
+    pub goal: Option<&'static str>,
+    pub hand: Vec<String>,
+    pub acts: Vec<usize>,
+    pub options: Vec<(serde_json::Value, f64, Option<f64>)>,
+    pub chosen: serde_json::Value,
+    pub instinct: bool,
+}
+
+/// One draft pick in the card study: the cards already kept, the batch offered, each pool card's worth to the bot
+/// (best first), and the card it took.
+#[derive(Clone, Debug)]
+pub struct DraftPick {
+    pub round: i32,
+    pub seat: Pid,
+    pub kept: Vec<String>,
+    pub offered: Vec<String>,
+    pub worth: Vec<(String, f64)>,
+    pub picked: String,
 }
 
 /// A change of sway at one location in one move (for who made a tie, 2026-11-03).
@@ -377,6 +408,8 @@ fn tie_actions(s: &crate::types::GameState, pid: Pid, m: &crate::types::Move) ->
 }
 
 /// Tie checks (`ties=1`): at each turn, could the player break a tie for the most sway at a fight already set?
+/// The card study (`cards=1`): log every turn's hand and weighed moves, and every draft pick.
+pub static CARDS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 pub static TIES: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// A turn where the player was tied for the most sway at a fight already set (2026-11-03): could any legal play in hand
@@ -485,6 +518,9 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
     let mut quick_turns: Vec<QuickTurn> = Vec::new();
     let mut quick_rounds: Vec<QuickRound> = Vec::new();
     let mut imit: Vec<crate::imit::Decision> = Vec::new();
+    let cards_on = CARDS.load(std::sync::atomic::Ordering::Relaxed);
+    let mut card_turns: Vec<CardTurn> = Vec::new();
+    let mut draft_picks: Vec<DraftPick> = Vec::new();
     let mut imagined_round = -1;
     let grid = |s: &crate::types::GameState| -> Vec<[i32; 5]> { s.board.iter().map(|p| std::array::from_fn(|i| p.sway.get(i as u8))).collect() };
     let mut fights_seen: Vec<([i32; 5], [i32; 5], usize)> = Vec::new();
@@ -550,8 +586,9 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         let quick: Option<crate::types::Move> = quick_all.first().cloned().flatten();
         let fid_state = if fid { Some(s.clone()) } else { None };
         let state_before = if tie_check.is_empty() && !fid { None } else { Some(s.clone()) };
-        if !tie_check.is_empty() || fid {
+        if !tie_check.is_empty() || fid || cards_on {
             crate::bots::take_considered();
+            crate::bots::take_draft_worth();
         }
         let mut chosen: Option<crate::types::Move> = None;
         let mut considered: Vec<(crate::types::Move, f64, Option<f64>)> = Vec::new();
@@ -596,9 +633,32 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
             };
             if let Some(m) = m {
                 let decision = crate::bots::take_decision();
+                let weighed = if cards_on { Some(crate::bots::take_considered()) } else { None };
                 if pid == tie_seat && state_before.is_some() {
-                    considered = crate::bots::take_considered();
+                    considered = weighed.clone().unwrap_or_else(crate::bots::take_considered);
                     chosen = Some(m.clone());
+                }
+                if let Some(weighed) = weighed {
+                    let names = |h: &[crate::types::CardIx]| h.iter().map(|&c| spec().cards[c as usize].id.clone()).collect::<Vec<_>>();
+                    let me = &s.players[pid as usize];
+                    if s.phase == Phase::Play && !me.hand.is_empty() {
+                        let mv_json = |x: &crate::types::Move| crate::json::move_to_value(&s.factions, x);
+                        card_turns.push(CardTurn {
+                            mv: moves, round: s.round, seat: pid, goal: goal_name(&memory[pid as usize]), hand: names(&me.hand),
+                            acts: me.hand.iter().map(|&c| crate::choice::list_targets(&s, pid, c, 40, false).0.len()).collect(),
+                            instinct: weighed.is_empty(),
+                            options: weighed.iter().map(|(x, q, v)| (mv_json(x), *q, *v)).collect(),
+                            chosen: mv_json(&m),
+                        });
+                    }
+                    if s.phase == Phase::Draft {
+                        if let crate::types::Move::Pick { keep } = &m {
+                            let worth = crate::bots::take_draft_worth();
+                            let picked = keep.iter().find(|c| !me.kept.contains(c)).map(|&c| spec().cards[c as usize].id.clone()).unwrap_or_default();
+                            draft_picks.push(DraftPick { round: s.round, seat: pid, kept: names(&me.kept), offered: names(&me.batch),
+                                worth: worth.iter().map(|&(c, w)| (spec().cards[c as usize].id.clone(), w)).collect(), picked });
+                        }
+                    }
                 }
                 if s.phase == Phase::Play {
                     let hand = s.players[pid as usize].hand.len();
@@ -779,6 +839,8 @@ pub fn play_with(seed: i64, g: usize, list: &[String], options: &[(String, Strin
         quick_turns,
         quick_rounds,
         imit,
+        card_turns,
+        draft_picks,
         g,
         seats,
         island,
