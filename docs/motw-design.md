@@ -23,7 +23,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 **Working on:** the 21 cards of the core deck (Appendix H.0). The queue (designer, 2026-11-08; revised the same day with the full-deck probe, `.tuning/strength-full-2026-11-08/`: 300 games, `probe=0.2`, 8 play-outs a side, about 1,100 tests a card; probe agreement 0.88 trophy hunters, 0.66 invader backers). Claude's read, bots as players; probe worth in brackets:
 
 1. Light of the Cross (1.97): the new version drafted and built as the variant `cross=plant` (designer, 2026-11-08; H.0); measured with the batch
-2. Draw Them Away (1.83): no target for trophy hunters, spent for sway by invader backers; overlaps Cover Every Exit's token use
+2. Draw Them Away (1.83): replaced by Go Loud, drafted and built as the variant `drawAway=loud` (designer, 2026-11-08; H.0); measured with the batch
 3. The Gate (1.65, the lowest)
 4. Spill Blood on the Altar (1.83)
 5. Cut the Powerlines (2.62): seldom wanted, small moves
