@@ -141,31 +141,15 @@ The strategy for weighing candidates against each other. It is still being refin
 
 ### 1.2 Design pillars
 
-Short statements of what the game must be, used to judge every future decision.
-
-1. **Push and pull.** A push and pull between the players and the two major win conditions.
-2. **Tough decisions.** Really tough decisions that spawn from a limited set of actions.
-3. **Read the table.** Players constantly analyze other players' positions to understand how to advance their own.
-4. **Simple mechanisms.**
-5. **Few choices, huge consequences.** A thinky decision space built from very few possible decisions, where the consequences of each choice are huge depending on what other players are aiming for and invested in.
+In `docs/principles.md` (Goals), with every preference the designer has stated: one place, loaded with CLAUDE.md for every decision.
 
 ### 1.3 Anti-goals
 
-What the game deliberately is not.
-
-- **Not heavy or involved.** The game should be light.
-- **Not economy-focused.** An economic system is not the focus of play.
+In `docs/principles.md` (Goals).
 
 ### 1.4 Opinions and feel
 
-- The game should feel like a **push and pull** between the players and the invaders' fate.
-- A **readable board state** is the main mechanism.
-- **Never in control.** Players should never feel in direct control of the island. As in monster-of-the-week shows, they launch gambits, hatch plans, set traps, and conduct séances that cause the invaders to react.
-- **Knife's edge.** The game should constantly balance on a knife's edge between its two outcomes: the island winning, where players compete on the trophies they have collected, and a faction winning, where players compete on their standing with that faction.
-- **Ties are a tool.** A tie is useful for clearing factions off the board, and the sway around them, and for stopping a player who has allied with a faction from carrying it past the presence check at game end.
-- **Mostly open, with room for gambits.** Most information is open, with just enough hidden to keep tension and to give players room for gambits that deny each other.
-- **On the board, not in memory.** Persistent rules that aren't represented by a piece are hard to keep track of. Wherever possible, a rule is driven by something present in the play space.
-- **Target (designer, 2026-10-07):** the island should win more than 50% of the time. *Designer:* what makes the invaders win less is players prioritising trophies; bots incentivised towards trophies cause more tokens to be removed, and bots prioritising a faction's growth to ally with for the end game make that faction grow. Measured (100 games each, new starting setup, IC1, each faction pays): smart bots 14% island; trophy-priority bots 33–36%; a mixed table 25%. *Next:* bots with goals that can shift and adapt while prioritising the best chance at victory (F.9).
+In `docs/principles.md` (Goals, and What a good game looks like).
 
 ### 1.5 Thematic inspiration
 
@@ -671,19 +655,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
   - `CA2` *Affect a faction's presence:* an action changes a faction's presence on the board, and places sway spent from that faction (IM1, 3.14). Example: move a faction's tokens from one location to adjacent locations; at each location moved to, the player takes 1 sway from that faction and places it there, along with at least 1 of the faction's tokens.
   - `CA3` *Place without moving presence:* some actions, such as a trap, place tokens and 1 sway from the player's own supply on a location, without affecting any faction's presence (IN1, 3.11).
 
-**Card power and uniqueness (the designer's directions for the deck)**
-
-- *Direction (designer, 2026-10-07):* a spread of power between cards is desirable. A weaker action is balanced in other ways, for example: it does something special, unique and slightly rule-breaking; or it gives more sway when spent for sway.
-- *Strength ranking (designer, 2026-10-07; provisional, from gut, subject to change):* an action is stronger the higher it reaches on this list:
-  1. It can alter the outcome of a large, high-trophy battle, whether for the player's own goals or to undo another player's.
-  2. It can take sway control of a contested region.
-  3. It can move tokens and place lots of sway.
-  4. It can move in ways that break the normal rules.
-- **Fights made to disappear (designer, 2026-10-13):** the worry: a player spends several turns setting up a fight, and one or a few of an opponent's actions undo it completely. Late swings are fine, but they shouldn't be able to undo a player's progress completely.
-  - *What counts (designer):* a fight disappearing. Being outbid at a location is the core struggle of the game and is not an undo.
-  - *Direction (designer):* no mechanics that track what was done just to make undoing costlier. Remove and tune card actions so that cards rarely make a fight disappear. Levers the designer is open to: token limits (a change to principle 10, 3.7), or a higher sway cost for the cards most able to undo a fight (for example 1 sway per token moved), perhaps with that sway placed where the tokens left, or other ways to tighten the actions into a smaller set.
-  - *No lazy fix (designer, 2026-10-13):* the answer is in the cards. Find the card actions that are lazy or underdeveloped, and simply too useful not to save for the last play of a round. Gambits need more nuance than always being able to set up or undo a big fight in a single move. Making a big fight in a single move is as lazy as undoing one.
-  - *Every card unique (designer, 2026-10-13):* make each card feel much more unique, so that cards can't overlap; an effect like a gather from all adjacent locations should exist on only one card. A gather should cost 1 sway on each location taken from (test lever `gatherSway`, below).
+**Card power and uniqueness:** the designer's directions for the deck are in `docs/principles.md` (Cards).
 
 #### 3.8 Timing and passing · *Ideas*
 
