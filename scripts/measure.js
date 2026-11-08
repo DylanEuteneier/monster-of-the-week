@@ -7,6 +7,13 @@
  *   node scripts/measure.js games=40 players=3,4,5             play 40 games at each count, then report
  *   node scripts/measure.js logs=.tuning/measure-…              report again on a run (its folder: logs and run.json)
  *   node scripts/measure.js logs=base=DIR logs=test=DIR         runs side by side (a change's before and after)
+ *   node scripts/measure.js baseline=1                         rebuild the baseline (BASELINE below), replacing it
+ *
+ * The baseline (designer, 2026-11-08): the current measure against which everything is compared, the complete set
+ * of measures under the accepted best configuration. It lives in .tuning/baseline/ (the one it replaces moves to
+ * .tuning/baseline-previous/). Every other single run, played or read back, is compared with it automatically
+ * (compare=0 to skip): the game report puts baseline and run side by side per player count, and the cards come
+ * with a baseline → run table. Rebuild it after any accepted rule, card or bot change.
  *
  * One set of reports: a header per run says what it was (typical or deep, the bots, the probe, the rules, seed and
  * commit; from run.json, written beside the logs), and the reports follow from it (a probe column only when probed).
@@ -33,14 +40,14 @@
  *
  * Bots are the players, so every figure measures how bots play the rules and the cards, not how people will feel.
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSync, unlinkSync, renameSync, rmSync } from 'node:fs';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { spawn, spawnSync } from 'node:child_process';
 import { availableParallelism } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gameReport } from './measure/game.js';
-import { cardReport, cardAgreement } from './measure/cards.js';
+import { cardReport, cardAgreement, cardCompare } from './measure/cards.js';
 import { botReport } from './measure/bots.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -55,6 +62,20 @@ for (const a of args) {
   if (k.startsWith('o.')) variants.push(a);
   else if (k === 'logs') logSets.push(v);
   else kv[k] = v;
+}
+/**
+ * The accepted configuration the baseline is played under: the live game's bots and rules (spec defaults), every
+ * player count, every log and the strength probe, so it holds every measure. Change it only when a decision changes
+ * what is accepted, then rebuild (baseline=1).
+ */
+const BASELINE = { games: '40', players: '3,4,5', seed: '7101', probe: '0.05', probeSample: '4', probePlayouts: '4' };
+const BASE_DIR = join(ROOT, '.tuning', 'baseline');
+const building = kv.baseline === '1';
+if (building) {
+  const bad = ['think', 'profiles', 'out', ...Object.keys(BASELINE)].filter((k) => kv[k] !== undefined);
+  if (bad.length || variants.length || logSets.length) { console.error(`baseline=1 plays the accepted configuration only (BASELINE in this script); drop ${[...bad, ...variants, ...(logSets.length ? ['logs='] : [])].join(', ')}`); process.exit(1); }
+  Object.assign(kv, BASELINE, { out: `${BASE_DIR}-new` });
+  if (existsSync(kv.out)) rmSync(kv.out, { recursive: true });
 }
 // Every report reads the same games, so one run feeds them all; report= picks which print, in order.
 const reports = (kv.report ?? 'game,cards,agreement,bots').split(',');
@@ -109,6 +130,14 @@ async function play() {
   config.minutes = Math.round((Date.now() - t0) / 60000);
   writeFileSync(join(dir, 'run.json'), JSON.stringify(config, null, 2) + '\n');
   console.error(`\nplayed ${sets.reduce((a, s) => a + s.games.length, 0)} games in ${config.minutes} min; logs in ${dir}`);
+  if (building) {
+    // The new baseline replaces the old; the old one is kept once, as baseline-previous.
+    config.baseline = true;
+    writeFileSync(join(dir, 'run.json'), JSON.stringify(config, null, 2) + '\n');
+    if (existsSync(BASE_DIR)) { rmSync(`${BASE_DIR}-previous`, { recursive: true, force: true }); renameSync(BASE_DIR, `${BASE_DIR}-previous`); }
+    renameSync(dir, BASE_DIR);
+    return { label: 'baseline', dir: BASE_DIR, config, sets };
+  }
   return { label: 'run', dir, config, sets };
 }
 
@@ -142,7 +171,7 @@ function describe(run) {
   const n = run.sets.map((s) => `${s.label} ${s.games.length}`).join(' · ');
   const deep = c.think || c.probe;
   const changed = c.variants && Object.keys(c.variants).length;
-  const out = [`${run.label.toUpperCase()} · ${deep ? 'DEEP RUN' : changed ? 'TYPICAL BOTS, VARIANT RULES' : 'TYPICAL RUN (the live game\'s bots and rules)'} · ${run.sets.reduce((a, s) => a + s.games.length, 0)} games (${n}) · seed ${c.seed}${c.commit ? ` · commit ${c.commit}` : ''}${c.minutes != null ? ` · ${c.minutes} min` : ''}`];
+  const out = [`${run.label.toUpperCase()} · ${c.baseline ? 'the accepted configuration, every measure' : deep ? 'DEEP RUN' : changed ? 'TYPICAL BOTS, VARIANT RULES' : 'TYPICAL RUN (the live game\'s bots and rules)'} · ${run.sets.reduce((a, s) => a + s.games.length, 0)} games (${n}) · seed ${c.seed}${c.commit ? ` · commit ${c.commit}` : ''}${c.minutes != null ? ` · ${c.minutes} min` : ''}`];
   out.push(`  bots: ${c.think ? `the live game's, thinking deeper: ${c.think}` : 'the live game\'s (one bot with dials, leans spread over the table)'}`);
   out.push(`  probe: ${c.probe ? `on, ${c.probe.rate} of turns, ${c.probe.sample ?? '?'} cards a test, ${c.probe.playouts ?? '?'} play-outs a side` : 'off'} · card study: ${c.cards ? 'on' : 'off'} · rules: ${changed ? Object.entries(c.variants).map(([k, v]) => `${k}=${v}`).join(', ') : 'spec defaults'}`);
   if (c.inferred) out.push('  (no run.json: read from the games themselves)');
@@ -153,11 +182,24 @@ function describe(run) {
 const runs = logSets.length ? logSets.map(loadRun) : [await play()];
 const lines = [];
 for (const run of runs) lines.push(...describe(run), '');
+// Every single run is read against the baseline, unless it is the baseline.
+const baseline = runs.length === 1 && !runs[0].config.baseline && kv.compare !== '0' && existsSync(BASE_DIR) ? loadRun(`baseline=${BASE_DIR}`) : null;
+if (baseline) {
+  lines.push(...describe(baseline));
+  const since = baseline.config.commit ? spawnSync('git', ['diff', '--quiet', baseline.config.commit, '--', 'rust/src', 'rust/data', 'public/spec.json'], { cwd: ROOT }).status : null;
+  if (since === 1) lines.push('  ⚠ the rules, cards or bots have changed since this baseline was played (committed changes): rebuild it with baseline=1 if those changes are accepted');
+  const differs = ['seed', 'think'].filter((k) => String(runs[0].config[k] ?? '') !== String(baseline.config[k] ?? ''));
+  if (differs.length) lines.push(`  this run differs from the baseline in: ${differs.join(', ')}`);
+  lines.push('');
+} else if (runs.length === 1 && !runs[0].config.baseline && !existsSync(BASE_DIR)) lines.push('No baseline yet: node scripts/measure.js baseline=1', '');
 if (runs.length > 1) lines.push('Runs side by side: the game report has a column per run; the card report comes once per run.', '');
 for (const r of reports) {
   if (r === 'game') {
     // One run: a column per player count. Several: a column per run (its counts together).
-    const cols = runs.length > 1 ? runs.map((run) => ({ label: run.label, games: run.sets.flatMap((s) => s.games) })) : runs[0].sets;
+    // Against the baseline: baseline and run side by side for each player count the run has.
+    const cols = runs.length > 1 ? runs.map((run) => ({ label: run.label, games: run.sets.flatMap((s) => s.games) }))
+      : baseline ? runs[0].sets.flatMap((s) => { const b = baseline.sets.find((x) => x.label === s.label); return b ? [{ label: `${s.label} base`, games: b.games }, { label: `${s.label} run`, games: s.games }] : [s]; })
+      : runs[0].sets;
     lines.push(...gameReport(cols, { bar: kv.bar }), '');
   } else if (r === 'cards' || r === 'agreement') {
     for (const run of runs) {
@@ -165,6 +207,7 @@ for (const r of reports) {
       if (runs.length > 1) lines.push(`${run.label.toUpperCase()}:`);
       lines.push(...(r === 'cards' ? cardReport(games, { card: kv.card }) : cardAgreement(games)), '');
     }
+    if (r === 'cards' && baseline) lines.push(...cardCompare(baseline.sets.flatMap((s) => s.games), runs[0].sets.flatMap((s) => s.games)), '');
   } else if (r === 'bots') {
     // Seats grouped by profile (or by=setting) across every run read, so runs of different bots compare.
     lines.push('Bot report · what each kind of seat attends to, round by round, and why it wins or loses', ...botReport(runs.flatMap((run) => run.sets.flatMap((s) => s.games)), { by: kv.by, rounds: kv.rounds }), '');

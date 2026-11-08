@@ -314,3 +314,50 @@ export function cardAgreement(games) {
   }
   return out;
 }
+
+/**
+ * A run against the baseline: the turns summary and the scorecard's measured stats, baseline → this run, each side
+ * (invader backers, trophy hunters) alone. ▲▼ marks a change over three standard errors (turns are not independent
+ * within a game, so the errors are optimistic; three keeps chance marks rare among the ~200 cells).
+ */
+export function cardCompare(baseGames, games) {
+  const out = [];
+  const log = (s = '') => out.push(s);
+  if (!baseGames.some((g) => g.cardTurns?.length) || !games.some((g) => g.cardTurns?.length)) return ['Cards against the baseline: no card study on one side.'];
+  const prop = (v, n) => Math.sqrt(Math.max(v * (1 - v), 0.01) / Math.max(1, n));
+  const meanSe = (xs) => (xs.length > 1 ? sd(xs) / Math.sqrt(xs.length) : NaN);
+  const STATS = [
+    ['Can act', (r) => 1 - r.dead, (r, v) => prop(v, r.c.held), pct],
+    ['Wants to', (r) => r.wants, (r, v) => prop(v, r.c.ablePlays), pct],
+    ['Readings', (r) => r.distinct, (r, v) => prop(v, r.c.multi), pct],
+    ['Strength', (r) => r.edge, (r) => meanSe(r.c.edges), (v) => v.toFixed(2)],
+    ['Probe', (r) => r.probe, (r) => meanSe(r.c.probes), (v) => v.toFixed(2)],
+  ];
+  const cell = (a, b, [, get, se, fmt]) => {
+    const x = get(a), y = get(b);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return { text: Number.isFinite(y) ? `– → ${fmt(y)}` : '–', moved: 0 };
+    const e = Math.hypot(se(a, x), se(b, y));
+    const z = Number.isFinite(e) && e > 0 ? (y - x) / e : 0;
+    const mark = z >= 3 ? '▲' : z <= -3 ? '▼' : '';
+    return { text: `${fmt(x)} → ${fmt(y)}${mark}`, moved: mark ? 1 : 0 };
+  };
+  const [A, B] = [baseGames, games].map((gs) => analyse(gs));
+  const D = (ds, f) => (ds.length ? ds.filter(f).length / ds.length : NaN);
+  log(`CARDS AGAINST THE BASELINE · baseline (${baseGames.length} games) → this run (${games.length}) · ▲▼ a change over three standard errors`);
+  log(`  turns: clear best ${pct(D(A.decisions, (d) => d.gap >= CLEAR))} → ${pct(D(B.decisions, (d) => d.gap >= CLEAR))} · close ${pct(D(A.decisions, (d) => d.gap <= CLOSE))} → ${pct(D(B.decisions, (d) => d.gap <= CLOSE))} · nothing stands out ${pct(D(A.decisions, (d) => d.flat <= CLOSE))} → ${pct(D(B.decisions, (d) => d.flat <= CLOSE))} · live cards ${mean(A.decisions.map((d) => d.live)).toFixed(1)} → ${mean(B.decisions.map((d) => d.live)).toFixed(1)}`);
+  const probed = cards.some((id) => B.rows[id].probeN > 0 && A.rows[id].probeN > 0);
+  const stats = STATS.filter(([l]) => l !== 'Probe' || probed);
+  let moved = 0;
+  for (const goal of GOALS) {
+    const [a, b] = [baseGames, games].map((gs) => analyse(gs, (t) => goalOf(t) === goal).rows);
+    log(`\n  ${goal === 'invaders' ? 'Invader backers' : 'Trophy hunters'}`);
+    log(`  ${'Card'.padEnd(24)}${stats.map(([l]) => l.padEnd(20)).join('')}`);
+    for (const id of cards) {
+      const cells = stats.map((s) => cell(a[id], b[id], s));
+      moved += cells.reduce((k, c) => k + c.moved, 0);
+      log(`  ${nameOf[id].padEnd(24)}${cells.map((c) => c.text.padEnd(20)).join('')}`);
+    }
+  }
+  log(`\n  ${moved} cell${moved === 1 ? '' : 's'} moved beyond chance.`);
+  return out;
+}

@@ -5,7 +5,8 @@ configuration, or reads a run already played, and prints **one set of reports**.
 saying how the run was made, and the sections follow from it: the probe's figures appear only when the run probed.
 
 ```sh
-npm run measure -- games=40 players=3,4,5       # the standard run: 120 games, about 25 minutes on 8 cores
+node scripts/measure.js baseline=1              # the baseline: the accepted configuration, every measure (~35 min)
+npm run measure -- games=40 players=3,4,5 o.threshold=22   # a change: read against the baseline automatically
 node scripts/measure.js logs=.tuning/measure-…   # the same reports again from a run's folder, no games
 node scripts/measure.js logs=before=DIR logs=after=DIR   # a change: two runs side by side
 node scripts/measure.js logs=DIR report=cards card=bait-herd   # any mix of reports, any time, from the same run
@@ -38,7 +39,7 @@ and every target are Claude's working lines: they say where to look, never what 
 
 ## Contents
 
-1. [The standard run](#the-standard-run)
+1. [The baseline](#the-baseline)
 2. [Questions about the game](#questions-about-the-game)
 3. [Questions about the bots](#questions-about-the-bots)
 
@@ -60,23 +61,36 @@ Questions about the cards:
 17. [Options](#options)
 18. [Adding a measure](#adding-a-measure)
 
-## The standard run
+## The baseline
 
-Every measurement starts from the same run, so results compare: **the live game's bots** (one bot with dials, its
-lean spread over the table as the live game does), **the live game's rules** (`spec.json` defaults), 40 games at
-each of 3, 4 and 5 players, seed 7101. Change only what the question needs: a rule variant to test it, `probe=` to
-add the controlled test, more games for a finer answer.
+**The baseline is the current measure against which everything is compared** (designer, 2026-11-08): one run of
+the complete set of measures under the accepted best configuration.
 
-The header names the run: **TYPICAL RUN** (the live game's bots and rules), **TYPICAL BOTS, VARIANT RULES**, or
-**DEEP RUN** (the probe on, or the bots' settings changed). Compare runs only of the same kind.
+```sh
+node scripts/measure.js baseline=1     # rebuild it: about 35 minutes on 8 cores
+```
 
-The card report gives every card one row, the measures in the order a designer fixes a card: whether it can act
-(its targeting), whether the player wants its action (its power against its printed sway), whether its readings
-differ (rewrite one), its strength (its numbers). Every cell reads **invader backers · trophy hunters**: the first
-from turns where the seat played for the invaders' ending, the second from turns where it played for the island's
-(trophies), each from that goal's turns alone. ◆ marks the two sides 20 or more points apart. The rank in brackets
-(1 healthiest) is on the weaker side, since a card that fails one ending needs work. Under the scorecard, every
-use (each reading, each unsuited use) has its own figures.
+- **What it plays:** the live game's bots (one bot with dials, its lean spread over the table as the live game does)
+  and the live game's rules (`spec.json` defaults), 40 games at each of 3, 4 and 5 players, seed 7101, every log on
+  and the strength probe at 5% of turns, so every report and every column has its figures. The configuration is
+  `BASELINE` at the top of `measure.js`. It changes only when a decision changes what is accepted; `baseline=1`
+  refuses other settings.
+- **Where it lives:** `.tuning/baseline/` (logs, `run.json`, `report.txt`). Rebuilding moves the old one to
+  `.tuning/baseline-previous/`, so one step back is always there.
+- **When to rebuild:** after any accepted rule, card or bot change. A comparison warns when committed rule, card or
+  bot code has changed since the baseline was played.
+- **How it's used:** every other run, played or read back, is compared with it automatically (`compare=0` skips
+  it). The header shows both runs. The game report puts baseline and run side by side for each player count
+  (`4p base`, `4p run`). The card report is followed by *Cards against the baseline*: the turns summary and each
+  card's Can act, Wants to, Readings, Strength (and Probe when both probed), baseline → run for each side, ▲▼ where
+  a change is over three standard errors. The bot report covers the run alone.
+
+To test a change, run it the same way as the baseline and change only the thing being tested: the same seed plays
+the same deals, so the difference is the change. Every scorecard cell reads **invader backers · trophy hunters**.
+The first is from turns where the seat played for the invaders' ending, the second from turns where it played for
+the island's (trophies), each from that goal's turns alone. ◆ marks the two sides 20 or more points apart. The rank
+in brackets (1 healthiest) is on the weaker side, since a card that fails one ending needs work. Under the
+scorecard, every use (each reading, each unsuited use) has its own figures.
 
 ## Questions about the game
 
@@ -110,7 +124,7 @@ move any of these, and the report exists so no side effect goes unseen.
 
 ## Questions about the bots
 
-**Where:** the bot report (`report=bots`): one column per kind of seat. In a standard run that is each lean on the
+**Where:** the bot report (`report=bots`): one column per kind of seat. In the baseline that is each lean on the
 table; `by=hfrom` (any setting) groups seats by one setting instead, for runs that mix bot settings; `rounds=0`
 hides the round-by-round sections.
 
@@ -135,7 +149,7 @@ are live (within a tenth of the best); by round and by player count. Gaps are a 
 because the bots' values have no fixed scale.
 
 **Healthy looks like:** close decisions common, a clear best not most of the time, more than one live card.
-Baseline (2026-11-08, 120 games): clear 40%, close 27%, nothing stands out 10%, 1.3 live cards of 3.5.
+First card run (2026-11-07, 120 games): clear 40%, close 27%, nothing stands out 10%, 1.3 live cards of 3.5.
 
 **Can't tell you:** whether a choice *feels* hard to a person, or whether the alternatives are interesting rather
 than merely close in value.
@@ -245,7 +259,7 @@ more chances), and the draft rate in *Detail* (picked when offered, against chan
 ## Can I trust this number?
 
 **Where:** `report=agreement` (on by default): each stat ranks the cards on even games and on odd games; 1 means
-the same order. Under about 0.7, read with care. Baseline at 120 games: Can act 0.96–0.98, Readings 0.93–0.96,
+the same order. Under about 0.7, read with care. First card run (120 games): Can act 0.96–0.98, Readings 0.93–0.96,
 Timing 0.89–0.93, Strength 0.82–0.89, Wants to 0.73–0.90, Swing 0.86 (backers) and 0.43 (trophy hunters).
 
 Rules of thumb: the engine-counted stats (Can act, the uses' open rates) are facts; the bot-judged ones (Wants to,
@@ -254,16 +268,19 @@ outliers are the findings.
 
 ## Did a change help?
 
-Run the standard run before and after, then read them side by side:
+Run the change the way the baseline was run, changing only the thing tested (a variant with `o.<name>=`, or the
+edited card or rule in the working tree), and read it against the baseline, which happens automatically:
 
 ```sh
-node scripts/measure.js logs=before=.tuning/measure-A logs=after=.tuning/measure-B
+node scripts/measure.js games=40 players=3,4,5 o.threshold=22
 ```
 
-The game report puts the runs in columns (every designer preference with ✓/✗); the card report comes once per run.
-Change one or two cards at a time: Strength and Wants to compare a card with the rest of the hand, so one change
-moves other cards' numbers too. For a quick look at one changed card, one player count with every core
-(`games=40 players=4`, about 6 minutes) is enough for Can act and Wants to; confirm with a full standard run.
+The game report shows baseline and run side by side for each player count (every designer preference with ✓/✗),
+and *Cards against the baseline* marks each card stat that moved beyond chance. Change one or two cards at a time:
+Strength and Wants to compare a card with the rest of the hand, so one change moves other cards' numbers too. For a
+quick look at one changed card, one player count with every core (`games=40 players=4`, about 6 minutes) is enough
+for Can act and Wants to; confirm with all three counts. Once a change is accepted, rebuild the baseline. Two runs
+of your own side by side: `logs=a=DIR logs=b=DIR`.
 
 ## Options
 
@@ -296,4 +313,4 @@ Add it to the tool, never as a new script: `game.js` (a row in `MEASURES`), `car
 `cardReport` prints it) or `bots.js`, and to the README under the question it answers. If it needs data the logs don't have, add
 it to the runner's log (`rust/src/tournament.rs`, and the `tournament` command in `rust/src/bin/motw.rs`) behind an
 option, then check the runner still plays the same games with it on: the fingerprints pass, and a short run with
-and without it gives identical plays. Run `report=agreement` on a standard run before leaning on a new card stat.
+and without it gives identical plays. Run `report=agreement` on the baseline before leaning on a new card stat.
