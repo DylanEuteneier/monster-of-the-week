@@ -146,7 +146,12 @@ pub fn flee_options(s: &GameState, loc: Loc) -> Vec<(Fac, Vec<Loc>)> {
 pub fn gate_end(s: &GameState, c: &Card, mode: Option<Mode>, loc: Option<Loc>) -> bool {
     let Some(loc) = loc else { return false };
     let p = &s.board[loc as usize];
-    !p.scorched && p.gate.is_none() && if mode == Some(Mode::Faction) { factions_at(s, loc).contains(&suit_faction(c).expect("suited")) } else { is_suit_loc(c, loc) }
+    let holds = || factions_at(s, loc).contains(&suit_faction(c).expect("suited"));
+    // The reworked Gate mixes the readings (designer, 2026-11-08): each end either reading's.
+    if s.options.gate_pull {
+        return !p.scorched && p.gate.is_none() && (is_suit_loc(c, loc) || holds());
+    }
+    !p.scorched && p.gate.is_none() && if mode == Some(Mode::Faction) { holds() } else { is_suit_loc(c, loc) }
 }
 /// Who may pay The Gate's 1 sway (designer, 2026-10-30; D36): the Sci-Fi faction when it is at either end (always,
 /// on the faction reading); otherwise your choice of a faction at the ends; Sci-Fi if both ends are empty.
@@ -378,6 +383,79 @@ pub fn return_room(s: &GameState, pid: Pid, ci: CardIx) -> (Vec<Loc>, i32, Optio
     let max = (sway_for(s, pid, ci) as i64).min(s.supply[f as usize] as i64).min(my_standing(s, pid, f)) as i32;
     let max = if spots.is_empty() { 0 } else { max };
     (spots, max, Some(f))
+}
+
+// ---------------------------------------------------------------------------
+// The Gate's pull (variant gate=pull; the designer's draft, 2026-11-08, design document H.0)
+// ---------------------------------------------------------------------------
+
+/// A board copy with the Gate open and its 1 sway at each end (before any pull).
+pub fn gate_opened(s: &GameState, pid: Pid, t: &Target) -> GameState {
+    let mut x = scratch(s);
+    let (a, b) = (as_loc(t.location).unwrap(), as_loc(t.to).unwrap());
+    x.board[a as usize].gate = Some(b);
+    x.board[b as usize].gate = Some(a);
+    if let Some(p) = as_fac(t.payer) {
+        place_one(&mut x, pid, p, a);
+        place_one(&mut x, pid, p, b);
+    }
+    x
+}
+
+/// The single-token pulls still open: (from, faction, into which end). Each end pulls from its own neighbours, 1 token
+/// per sway on it (everyone's); from a fight at most half of a group comes (D22, against the board before the pull);
+/// never a third faction across the ends. `x` is the opened board with the pulls so far (`taken`) made.
+pub fn gate_pulls(s: &GameState, x: &GameState, a: Loc, b: Loc, taken: &[(Loc, Fac, Loc)]) -> Vec<(Loc, Fac, Loc)> {
+    let mut out = Vec::new();
+    if taken.len() >= 16 {
+        return out; // a target holds 16 moves: a prototype cap no pull has come near
+    }
+    let across = factions_across(x, a, b);
+    for end in [a, b] {
+        let sway: i32 = x.board[end as usize].sway.iter().map(|e| e.1).sum();
+        let quota = sway - taken.iter().filter(|p| p.2 == end).count() as i32;
+        if quota <= 0 {
+            continue;
+        }
+        for &l in &spec().locations[end as usize].adjacent {
+            if l == a || l == b || x.board[l as usize].scorched {
+                continue;
+            }
+            for f in factions_at(s, l) {
+                let left = free_of(s, l, f) - taken.iter().filter(|p| p.0 == l && p.1 == f).count() as i32;
+                if left > 0 && (across.contains(&f) || across.len() < 2) && can_enter(x, end, f) {
+                    out.push((l, f, end));
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Make one pull on the opened board.
+pub fn gate_pull_one(x: &mut GameState, (l, f, end): (Loc, Fac, Loc)) {
+    take_tokens(x, l, f, 1);
+    add_tokens(x, end, f, 1);
+}
+
+/// A target's pulls, as (from, faction, end); None if one is unfinished.
+pub fn gate_taken(t: &Target) -> Option<Vec<(Loc, Fac, Loc)>> {
+    t.moves.as_deref().unwrap_or(&[]).iter().map(|m| Some((m.location.loc()?, m.faction.fac()?, m.to.loc()?))).collect()
+}
+
+fn gate_pull_check(s: &GameState, pid: Pid, t: &Target) -> Option<String> {
+    let (a, b) = (as_loc(t.location).unwrap(), as_loc(t.to).unwrap());
+    let Some(pulls) = gate_taken(t) else { return Some("Each token pulled goes to the end it is next to.".into()) };
+    let mut x = gate_opened(s, pid, t);
+    let mut taken = Vec::new();
+    for p in pulls {
+        if !gate_pulls(s, &x, a, b, &taken).contains(&p) {
+            return Some("Each end pulls 1 token from its own neighbours for each sway on it (never a third faction; from a fight, half).".into());
+        }
+        gate_pull_one(&mut x, p);
+        taken.push(p);
+    }
+    if gate_pulls(s, &x, a, b, &taken).is_empty() { None } else { Some("The Gate pulls as many as can come.".into()) }
 }
 
 // ---------------------------------------------------------------------------
@@ -892,10 +970,14 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             if !matches!(payer, Some(p) if gate_payers(s, c, a, b).contains(&p)) {
                 return e("The Sci-Fi faction pays if it is at either end; otherwise a faction at the ends, your choice.");
             }
-            if req && standing(s, pid, payer.unwrap()) < 1 {
+            let need = if s.options.gate_pull { 2 } else { 1 };
+            if req && standing(s, pid, payer.unwrap()) < need {
                 return e("You need the sway to pay (all or nothing).");
             }
-            if t.losses == Some(Id::Loc(a)) || t.losses == Some(Id::Loc(b)) { None } else { e("Choose which end the winner's losses come off first (they leave the board).") }
+            if !(t.losses == Some(Id::Loc(a)) || t.losses == Some(Id::Loc(b))) {
+                return e("Choose which end the winner's losses come off first (they leave the board).");
+            }
+            if s.options.gate_pull { gate_pull_check(s, pid, t) } else { None }
         }
         Action::Invite => {
             let Some(to) = as_loc(t.location) else { return e("Choose a location on the board.") };
@@ -1302,8 +1384,18 @@ fn act_card(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
             s.board[b as usize].gate_loss = as_loc(t.losses);
             if let Some(p) = as_fac(t.payer) {
                 place_one(s, pid, p, a);
+                if s.options.gate_pull {
+                    place_one(s, pid, p, b);
+                }
             }
-            log_line(s, |_| format!("{who}: {} joins {} and {} for the rest of the round.", c.name, lname(a), lname(b)));
+            let mut pulled = 0;
+            if s.options.gate_pull {
+                for p in gate_taken(t).unwrap_or_default() {
+                    gate_pull_one(s, p);
+                    pulled += 1;
+                }
+            }
+            log_line(s, |_| format!("{who}: {} joins {} and {} for the rest of the round{}.", c.name, lname(a), lname(b), if pulled > 0 { format!(", pulling in {pulled}") } else { String::new() }));
         }
         Action::Invite => {
             let to = as_loc(t.location).unwrap();

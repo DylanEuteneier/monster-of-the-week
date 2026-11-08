@@ -599,6 +599,54 @@ fn whole_games_with_go_loud_play_to_the_end() {
     }
 }
 
+/// The Gate with its pull (variant gate=pull; the designer's draft, design document H.0, 2026-11-08).
+#[test]
+fn the_gate_pulls_into_each_end_one_token_per_sway_on_it_from_its_own_neighbours() {
+    let s0 = clear(&game_opts(1, &[("gate", "pull")]));
+    let fs = of_arch(&s0, "scifi");
+    let r = of_arch(&s0, "nocturnals");
+    let ends: Vec<String> = locs().into_iter().filter(|l| l.1 == "scifi").map(|l| l.0).collect();
+    let (a, b) = (ends[0].clone(), ends[1].clone());
+    let na = adjacent(&a).into_iter().find(|x| x != &b && !adjacent(&b).contains(x) && !ends.contains(x)).unwrap();
+    let nb = adjacent(&b).into_iter().find(|x| x != &a && !adjacent(&a).contains(x) && x != &na && !ends.contains(x)).unwrap();
+    let s = edit(&s0, |x| {
+        x["board"][&a]["tokens"][&fs] = json!(2);
+        x["board"][&a]["sway"]["bob"] = json!(2); // everyone's sway counts: a pulls 3
+        x["board"][&na]["tokens"][&fs] = json!(4);
+        x["board"][&nb]["tokens"][&r] = json!(2);
+    });
+    let pull = |l: &str, f: &str, e: &str| json!({ "location": l, "faction": f, "to": e });
+    let t = |moves: Value| json!({ "mode": "location", "location": a, "to": b, "payer": fs, "losses": a, "moves": moves });
+    let full = t(json!([pull(&na, &fs, &a), pull(&na, &fs, &a), pull(&na, &fs, &a), pull(&nb, &r, &b)]));
+    assert_eq!(check(&s, "ann", "gate", full.clone()), None);
+    assert!(check(&s, "ann", "gate", t(json!([pull(&na, &fs, &a), pull(&nb, &r, &b)]))).is_some(), "as many as can come");
+    assert!(check(&s, "ann", "gate", t(json!([pull(&na, &fs, &b), pull(&na, &fs, &a), pull(&na, &fs, &a), pull(&nb, &r, &b)]))).is_some(), "each end from its own neighbours");
+    let after = preview(&s, "ann", "gate", full.clone());
+    let bd = &after["board"];
+    assert_eq!((bd[&a]["tokens"][&fs].clone(), bd[&na]["tokens"][&fs].clone(), bd[&b]["tokens"][&r].clone(), bd[&nb]["tokens"][&r].clone()), (json!(5), json!(1), json!(1), json!(1)));
+    assert_eq!((bd[&a]["sway"]["ann"].clone(), bd[&b]["sway"]["ann"].clone()), (json!(1), json!(1)));
+    // A pull may make a fight: the rival comes into a Gate that held only the Sci-Fi faction.
+    assert_eq!(bd[&b]["tokens"][&r], json!(1));
+    // 1 at each end, both needed.
+    let poor = edit(&s, |x| x["players"]["ann"]["standing"][&fs] = json!(1));
+    assert!(check(&poor, "ann", "gate", full).is_some());
+    // Mixed readings: a Sci-Fi location joined with a location holding the Sci-Fi faction.
+    let other = locs().into_iter().map(|l| l.0).find(|l| !ends.contains(l) && l != &na && l != &nb && !adjacent(&a).contains(l)).unwrap();
+    let mixed = edit(&s0, |x| {
+        x["board"][&a]["tokens"][&fs] = json!(2);
+        x["board"][&other]["tokens"][&fs] = json!(1);
+    });
+    let pulls_ok = |s: &GameState| { let tt = json!({ "mode": "location", "location": a, "to": other, "payer": fs, "losses": a, "moves": [] }); check(s, "ann", "gate", tt) };
+    assert_ne!(pulls_ok(&mixed), Some("Join two Sci-Fi locations.".to_string()));
+}
+
+#[test]
+fn whole_games_with_the_gate_pulling_play_to_the_end() {
+    for seed in 1..3 {
+        assert_eq!(play_out(&game_opts(seed, &[("gate", "pull")]), seed as u64).phase, Phase::Ended);
+    }
+}
+
 #[test]
 fn whole_games_with_the_planted_cross_end_with_no_cross_left_on_the_board() {
     for seed in 1..4 {

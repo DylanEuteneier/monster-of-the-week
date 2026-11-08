@@ -343,7 +343,8 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
         }
         Action::Gate => {
             let ends: Vec<Loc> = all_locs(s).filter(|&l| gate_end(s, c, t.mode, Some(l))).collect();
-            let payers = |x: Loc, y: Loc| -> Vec<Fac> { gate_payers(s, c, x, y).into_iter().filter(|&f| can(s, pid, f, 1)).collect() };
+            let need = if s.options.gate_pull { 2 } else { 1 };
+            let payers = |x: Loc, y: Loc| -> Vec<Fac> { gate_payers(s, c, x, y).into_iter().filter(|&f| can(s, pid, f, need)).collect() };
             let pairs = |x: Loc| -> Vec<Loc> { ends.iter().copied().filter(|&y| y != x && factions_across(s, x, y).len() <= 2 && !payers(x, y).is_empty()).collect() };
             let Some(a) = loc else { return Choice::locs(LocKey::Location, ends.iter().copied().filter(|&x| !pairs(x).is_empty()).collect(), None, None) };
             let Some(b) = as_loc(t.to) else { return Choice::locs(LocKey::To, pairs(a), None, None) };
@@ -352,6 +353,36 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             }
             if !truthy(t.losses) {
                 return Choice::locs(LocKey::Losses, vec![a, b], None, None);
+            }
+            if s.options.gate_pull {
+                // The pull, one token at a time, in a fixed order (from, faction, end) so no order is offered twice;
+                // it is mandatory, so the target is done only when nothing more can come.
+                let moves: Vec<GroupMove> = t.moves.as_deref().unwrap_or(&[]).to_vec();
+                let mut x = gate_opened(s, pid, t);
+                let mut taken: Vec<(Loc, Fac, Loc)> = Vec::new();
+                for m in &moves {
+                    if let (Some(l), Some(f), Some(e)) = (m.location.loc(), m.faction.fac(), m.to.loc()) {
+                        gate_pull_one(&mut x, (l, f, e));
+                        taken.push((l, f, e));
+                    }
+                }
+                let open = gate_pulls(s, &x, a, b, &taken);
+                let last = taken.last().copied();
+                if let Some(m) = moves.last().filter(|m| m.to == Id::Empty) {
+                    let (l, f) = (m.location.loc().unwrap(), m.faction.fac().unwrap());
+                    let ends: Vec<Loc> = open.iter().filter(|p| p.0 == l && p.1 == f && last.is_none_or(|q| (q.0, q.1) != (l, f) || p.2 >= q.2)).map(|p| p.2).collect();
+                    return Choice::locs(LocKey::Land, ends, None, None);
+                }
+                let mut next: Vec<(Loc, Fac)> = Vec::new();
+                for p in &open {
+                    let ok = last.is_none_or(|q| (p.0, p.1) > (q.0, q.1) || ((p.0, p.1) == (q.0, q.1) && p.2 >= q.2));
+                    if ok && !next.contains(&(p.0, p.1)) {
+                        next.push((p.0, p.1));
+                    }
+                }
+                if !next.is_empty() {
+                    return Choice::groups(GroupKey::Move, next, None);
+                }
             }
             Choice::done()
         }

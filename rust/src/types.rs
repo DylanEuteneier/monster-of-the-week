@@ -208,6 +208,8 @@ pub struct Options {
     pub cross_plant: bool,
     /// Draw Them Away as the designer's new draft, Go Loud (variant drawAway=loud, 2026-11-08).
     pub go_loud: bool,
+    /// The Gate reworked with its pull (variant gate=pull; the designer's draft, 2026-11-08).
+    pub gate_pull: bool,
     pub seeding: Seeding,
     /// The same options with sway not required (checkTarget's comparison), made once.
     pub unpaid: std::cell::OnceCell<Rc<Options>>,
@@ -276,6 +278,7 @@ impl Options {
             card_sway: num("cardSway"),
             cross_plant: get("cross") == "plant",
             go_loud: get("drawAway") == "loud",
+            gate_pull: get("gate") == "pull",
             seeding: match get("seeding") {
                 "even" => Seeding::Even,
                 "home" => Seeding::Home,
