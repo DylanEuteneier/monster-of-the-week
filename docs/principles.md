@@ -55,6 +55,7 @@ The game report (`scripts/measure.js`) measures each of these. Its targets are p
 ## Tuning
 
 - **One lever at a time, read against the baseline** (1.1, the process). Tests run the target ruleset: what we measure under is what the rulebook says (2026-11-08).
+- **Cards are drafted in a row, then measured together:** several new cards are designed and built one after another, then the full suite runs once over them, not a measurement per card (2026-11-08).
 - **Each preference is checked by more than one measure,** as long as each actually predicts the preference (2026-11-01).
 - **Cards are judged as part of a hand's strategy,** and for what they're worth in later rounds, never one play at a time (2026-11-03).
 - **The threshold is the last lever.** Keep the bar at 20 while testing. It only shifts the ending split, so moving it early hides what other changes do (2026-11-01).
