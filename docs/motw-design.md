@@ -3081,6 +3081,7 @@ Prototype bot tuning, not rules: a bot that plays the endings' asymmetry (RV1 no
   - `glassJitter`: the chance a game's hedger may break early, from round 4 (two thirds of those) or round 3 (a third).
   - `glassSpread`: each game, each hedger draws its own threshold, `glass` ± half this, so seats commit on different amounts of evidence.
   - The bot's memory carries the break and its draws (across the WebAssembly bridge too); the round logs record each seat's break and draws.
+  - *Removed 2026-11-07* (always on, their off paths unused): `table`, `plan` (with the plain play-out search), `steer`, `even`, `fade`, `tiekeep`, `rplan`, `endread` (4 play-outs, fixed); and `rollList` (never adopted). Play unchanged.
   - *Removed 2026-11-06* (measured, not adopted; superseded by the dials): `glassJitter`, `glassSpread`, `hopen`, `quirks`, with `mix`, `noPass`, `pace` and `tally`, `dplan`, `stubborn`, `imit` and `rimit` (the imitation fit stays for study). Play unchanged.
 - **Measuring:** as a challenger (win rate, 100 games at 5 players, against a fresh control) and in tables of hedgers (whether breaks and endings vary).
 - **Results (2026-11-05):**

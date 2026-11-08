@@ -472,14 +472,10 @@ fn persona_value(p: &bots::Persona) -> Value {
     put("sim", Some(p.sim));
     put("combo", Some(p.combo));
     put("sets", Some(p.sets));
-    put("table", Some(p.table));
     put("commit", Some(p.commit));
     put("protect", Some(p.protect));
     put("top", Some(p.top));
     put("race", Some(p.race));
-    put("even", Some(p.even));
-    put("plan", Some(p.plan));
-    put("steer", Some(p.steer));
     Value::Object(o)
 }
 

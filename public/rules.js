@@ -161,7 +161,7 @@ export { spec };
 /** @typedef {'island' | 'invaders'} Goal */
 /**
  * A bot's persona (profile numbers; rust/src/bots.rs).
- * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, enum: number, sim: number, combo: number, sets: number, table: number, commit: number, protect: number, top: number, race: number, even: number, plan: number, steer: number }} Persona
+ * @typedef {{ lean: number, jitter: number, hold: number, push: number, margin: number, linear: number, threat: number, enum: number, sim: number, combo: number, sets: number, commit: number, protect: number, top: number, race: number }} Persona
  */
 /**
  * The next choice in building a card's target (nextChoice).

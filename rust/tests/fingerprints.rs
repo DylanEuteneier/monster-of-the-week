@@ -39,10 +39,6 @@ fn starting_sway_and_seat_groups() {
     check("e");
 }
 #[test]
-fn play_out_search() {
-    check("s0");
-}
-#[test]
 fn planning_backers() {
     check("p0");
 }
