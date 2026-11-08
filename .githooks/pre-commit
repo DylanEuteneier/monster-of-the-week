@@ -1,0 +1,17 @@
+#!/bin/sh
+# The fast guards before every commit (CI runs everything, Rust included, on every push).
+# Turned on by `npm install` (the prepare script sets core.hooksPath to .githooks).
+# Skip once with `git commit --no-verify` only when the designer asks.
+set -e
+cd "$(git rev-parse --show-toplevel)"
+echo "pre-commit: design document guards, typecheck, JavaScript tests"
+node scripts/doc-check.js
+npm run --silent typecheck
+npm test --silent > /tmp/motw-precommit-test.log 2>&1 || { tail -40 /tmp/motw-precommit-test.log; echo "pre-commit: JavaScript tests failed"; exit 1; }
+# Rust changed: its tests and fingerprints too (the engine is where rules live).
+if git diff --cached --name-only | grep -qE '^(rust/|public/spec\.json)'; then
+  echo "pre-commit: Rust or spec changed: Rust tests and fingerprints"
+  npm run --silent wasm > /dev/null
+  git diff --quiet -- public/motw.wasm || { echo "pre-commit: public/motw.wasm is out of date: stage the rebuilt file"; exit 1; }
+  npm run --silent test:rust > /tmp/motw-precommit-rust.log 2>&1 || { grep -E "panicked|FAILED|error" /tmp/motw-precommit-rust.log | head -20; echo "pre-commit: Rust tests failed"; exit 1; }
+fi

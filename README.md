@@ -103,6 +103,11 @@ The dev server uses port **8788** and inspector port **9230**, so it runs alongs
 
 `BASE=https://your-worker.example npm run links` points the admin script at a deployed instance.
 
+**Guards.** A pre-commit hook (`.githooks/pre-commit`, turned on by `npm install`) runs the design document's guards,
+the typecheck and the JavaScript tests on every commit, and the Rust tests and fingerprints when Rust or `spec.json`
+changed. CI runs everything on every push. The design document's guards (`scripts/doc-check.js`) hold every decision
+at Trial or above to the tests that enforce it and the defaults it sets, and fail on stale references in the documents.
+
 **Play fingerprints.** `rust/tests/fixtures/fingerprints.json` records how the bots play on fixed seeds. A change
 that changes play fails `npm run test:rust`; regenerate them (`motw fingerprint … digests=1`) only when a decision
 means play to change.

@@ -5,6 +5,7 @@
   "description": "Monster of the Week — an area-control board game. Prototype server and table.",
   "type": "module",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "dev": "wrangler dev --port 8788 --inspector-port 9230 --live-reload",
     "dev:setup": "test -f .dev.vars || cp .dev.vars.example .dev.vars",
     "new-game": "node scripts/admin.js new-game --force",
