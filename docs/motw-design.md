@@ -29,8 +29,9 @@ The current focus, below, lists what is being worked on right now; the backlog h
 5. Cut the Powerlines (2.62): aimed (you pick the groups, 1 sway at each joined), drafted and built as the variant `powerlines=pick` (designer, 2026-11-08; H.0); measured with the batch
 6. Call in Favours (3.73): kept as it is (designer, 2026-11-08: "i like it as it is"); D44's redesign question closed
 7. The faction readings almost never chosen: Spoof the Signal (2.53), Bait the Herd (3.20), The Big Chase (3.34): kept as fallbacks (designer, 2026-11-08): they keep each card playable on a few more turns; the suggested fixes (the victim reversal on Spoof the Signal, excluding the suit's own locations, faction-only edges, a global sway rule) read poorly thematically or were not liked
-8. Take Control (3.30): seldom open, but worth holding
-9. Study the Bodies (2.65), Steal Their Playbook (2.65)
+8. Bait the Herd (3.20): "this card doesnt work" (designer, 2026-11-08): each step must land on its own kind or crash, so the swelling herd needs a string of one faction's groups; in the full-deck probe 76% of playable turns offered only a 1-step trail and 89% of plays were 1 step
+9. Take Control (3.30): seldom open, but worth holding
+10. Study the Bodies (2.65), Steal Their Playbook (2.65)
 
 **Card goals for this work** (designer, 2026-11-08: "fine for now"; from Claude's suggestions; each read from a card report column, with working lines, not targets):
 
