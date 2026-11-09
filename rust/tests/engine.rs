@@ -1171,6 +1171,41 @@ fn whole_games_with_spill_blood_staked_play_to_the_end() {
     }
 }
 
+/// Cut the Powerlines aimed (variant powerlines=pick; the designer's draft, design document H.0, 2026-11-08).
+#[test]
+fn cut_the_powerlines_aimed_scatters_to_the_groups_you_pick_with_1_sway_at_each_one() {
+    let s0 = clear(&game_opts(1, &[("powerlines", "pick")]));
+    let fs = of_arch(&s0, "sentients");
+    let home = locs().into_iter().find(|l| l.1 == "sentients").unwrap().0;
+    let others: Vec<String> = locs().into_iter().map(|l| l.0).filter(|l| l != &home).collect();
+    let (a, b, c) = (others[0].clone(), others[1].clone(), others[2].clone());
+    let s = edit(&s0, |v| {
+        v["board"][&home]["tokens"] = obj(&[(&fs, 5)]);
+        for l in [&a, &b, &c] {
+            v["board"][l]["tokens"] = obj(&[(&fs, 1)]);
+        }
+        v["players"]["ann"]["standing"][&fs] = json!(2);
+    });
+    let t = |picks: &[&str], odd: &[&str]| json!({ "mode": "location", "location": home, "faction": fs, "from": picks, "path": odd });
+    assert_eq!(check(&s, "ann", "cut-powerlines", t(&[&a, &b], &[&a])), None);
+    assert!(check(&s, "ann", "cut-powerlines", t(&[&a, &b], &[])).is_some(), "the odd token is placed");
+    assert!(check(&s, "ann", "cut-powerlines", t(&[&a, &b, &c], &[&a, &b])).is_some(), "1 sway at each group joined");
+    let p = preview(&s, "ann", "cut-powerlines", t(&[&a, &b], &[&a]));
+    let bd = &p["board"];
+    assert_eq!(
+        vec![&bd[&a]["tokens"][&fs], &bd[&b]["tokens"][&fs], &bd[&c]["tokens"][&fs], &bd[&a]["sway"]["ann"], &bd[&b]["sway"]["ann"], &p["players"]["ann"]["standing"][&fs]],
+        vec![&json!(4), &json!(3), &json!(1), &json!(1), &json!(1), &json!(0)]
+    );
+    assert!(bd[&home]["sway"]["ann"].is_null(), "no sway where it left");
+}
+
+#[test]
+fn whole_games_with_cut_the_powerlines_aimed_play_to_the_end() {
+    for seed in 1..3 {
+        assert_eq!(play_out(&game_opts(seed, &[("powerlines", "pick")]), seed as u64).phase, Phase::Ended);
+    }
+}
+
 #[test]
 fn the_unsuited_cards_x_is_the_hand_and_each_use_does_what_it_says() {
     // Enforces D24 (design document, Appendix A).

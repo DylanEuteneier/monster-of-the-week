@@ -253,9 +253,32 @@ fn next_shape(s: &GameState, pid: Pid, ci: CardIx, t: &Target) -> Choice {
             Choice::locs(LocKey::From, opts, None, Some(total - from.len() as i32))
         }
         Action::Rejoin => {
+            let pick = s.options.power_pick;
             let Some(l) = loc else {
-                return Choice::groups(GroupKey::Group, groups().into_iter().filter(|&(gl, gf)| group_ok(gl, gf) && { let (kin, n, _, _, reached) = power_share(s, gl, gf); !kin.is_empty() && n > 0 && can(s, pid, gf, reached as i64 + 1) }).collect(), None);
+                return Choice::groups(GroupKey::Group, groups().into_iter().filter(|&(gl, gf)| group_ok(gl, gf) && { let (kin, n, _, _, reached) = power_share(s, gl, gf); !kin.is_empty() && n > 0 && can(s, pid, gf, if pick { 1 } else { reached as i64 + 1 }) }).collect(), None);
             };
+            if pick {
+                // The groups joined, in increasing location (no order offered twice), then the odd tokens' groups.
+                let f = fac.unwrap();
+                let (kin, n, _, _, _) = power_share(s, l, f);
+                let picks: Vec<Loc> = picked(&t.from).iter().filter_map(|x| x.loc()).collect();
+                let cap = (n.min(kin.len() as i32) as i64).min(if s.options.sway_required { standing(s, pid, f) } else { i64::MAX }) as usize;
+                if !has_stop(&t.from) && picks.len() < cap {
+                    let last = picks.iter().copied().max();
+                    let opts: Vec<Loc> = kin.into_iter().filter(|&x| last.is_none_or(|m| x > m)).collect();
+                    if !opts.is_empty() {
+                        return Choice::locs(LocKey::From, opts, Some(!picks.is_empty()), None);
+                    }
+                }
+                let odd = n % picks.len().max(1) as i32;
+                let chosen: Vec<Loc> = picked(&t.path).iter().filter_map(|x| x.loc()).collect();
+                if (chosen.len() as i32) < odd {
+                    let last = chosen.iter().copied().max();
+                    let opts: Vec<Loc> = picks.into_iter().filter(|&x| last.is_none_or(|m| x > m)).collect();
+                    return Choice::locs(LocKey::Path, opts, None, Some(odd - chosen.len() as i32));
+                }
+                return Choice::done();
+            }
             let (kin, _, _, extra, _) = power_share(s, l, fac.unwrap());
             let n = len_of(&t.from) as i32;
             if n >= extra {

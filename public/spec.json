@@ -1486,6 +1486,24 @@
       ]
     },
     {
+      "id": "powerlines",
+      "label": "Cut the Powerlines",
+      "description": "Cut the Powerlines aimed, the designer's draft (design document H.0, 2026-11-08; a draft, not a decision), off by default while it is measured: you pick which of the faction's other groups the tokens join (at most as many as leave), spread 1 at a time among them; 1 sway at each group joined, none where the group left.",
+      "default": "spread",
+      "choices": [
+        {
+          "id": "spread",
+          "label": "All its groups",
+          "description": "The card as dealt."
+        },
+        {
+          "id": "pick",
+          "label": "You pick the groups",
+          "description": "The aimed draft (H.0)."
+        }
+      ]
+    },
+    {
       "id": "unsuitedSway",
       "label": "Unsuited cards' sway",
       "description": "D45 (designer, 2026-11-01): an unsuited card may be played for sway with any one faction, chosen as it's played (wild sway): 2 by default; or 1, 3, the cards in hand (as the signatures), or off (no sway use, as before).",

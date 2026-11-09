@@ -857,6 +857,20 @@ pub fn check_shape(s: &GameState, pid: Pid, ci: CardIx, t: Option<&Target>) -> O
             if kin.is_empty() || n <= 0 {
                 return e("It needs another group of its faction to rejoin, and tokens free to leave.");
             }
+            if s.options.power_pick {
+                // You pick the groups joined (at most as many as tokens leave); the spread is even among them, and you
+                // pick which get the odd tokens; 1 sway at each group joined, none where it left (designer, 2026-11-08).
+                let picks = picked(&t.from);
+                let k = picks.len() as i32;
+                if k < 1 || k > n || !all_distinct(&picks) || picks.iter().any(|&l| !matches!(l, Id::Loc(x) if kin.contains(&x))) {
+                    return Some(format!("Pick 1 to {} of its other groups to join.", n.min(kin.len() as i32)));
+                }
+                let odd = picked(&t.path);
+                if odd.len() as i32 != n % k || !all_distinct(&odd) || odd.iter().any(|l| !picks.contains(l)) {
+                    return Some(format!("Choose {} of the groups you picked to get one more token each.", n % k));
+                }
+                return if req && standing(s, pid, f) < k { e("You need the sway for every group joined: 1 on each (all or nothing).") } else { None };
+            }
             let to = picked(&t.from);
             if to.len() as i32 != extra || !all_distinct(&to) || to.iter().any(|&l| !matches!(l, Id::Loc(x) if kin.contains(&x))) {
                 return Some(format!("Choose {extra} of its other groups to get one more token each (1 at a time round them all)."));
@@ -1314,6 +1328,19 @@ fn act_card(s: &mut GameState, pid: Pid, ci: CardIx, t: &Target) {
         }
         Action::Rejoin => {
             let (f, loc) = (as_fac(t.faction).unwrap(), as_loc(t.location).unwrap());
+            if s.options.power_pick {
+                let n = free_of(s, loc, f);
+                let picks: Vec<Loc> = picked(&t.from).iter().filter_map(|l| l.loc()).collect();
+                let odd = picked(&t.path);
+                let each = n / picks.len() as i32;
+                for &l in &picks {
+                    let k = each + if odd.contains(&Id::Loc(l)) { 1 } else { 0 };
+                    mv(s, pid, f, loc, l, k, &mut placed, true);
+                }
+                let fnm = fname(s, f);
+                log_line(s, |_| { let names = picks.iter().map(|&x| lname(x)).collect::<Vec<_>>().join(", "); format!("{who}: {}: the {fnm} at {} scatter to their own at {names}.", c.name, lname(loc)) });
+                return;
+            }
             let (kin, _n, each, _extra, _r) = power_share(s, loc, f);
             let extra = picked(&t.from);
             let went: Vec<(Loc, i32)> = kin.iter().map(|&l| (l, each + if extra.contains(&Id::Loc(l)) { 1 } else { 0 })).filter(|x| x.1 > 0).collect();

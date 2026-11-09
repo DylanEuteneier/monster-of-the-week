@@ -212,6 +212,8 @@ pub struct Options {
     pub gate_pull: bool,
     /// Spill Blood with a bigger stake, at least 2 sway per mark (variant altar=stake; the designer's draft, 2026-11-08).
     pub altar_stake: bool,
+    /// Cut the Powerlines aimed: you pick the groups joined, 1 sway at each (variant powerlines=pick; the designer's draft, 2026-11-08).
+    pub power_pick: bool,
     pub seeding: Seeding,
     /// The same options with sway not required (checkTarget's comparison), made once.
     pub unpaid: std::cell::OnceCell<Rc<Options>>,
@@ -282,6 +284,7 @@ impl Options {
             go_loud: get("drawAway") == "loud",
             gate_pull: get("gate") == "pull",
             altar_stake: get("altar") == "stake",
+            power_pick: get("powerlines") == "pick",
             seeding: match get("seeding") {
                 "even" => Seeding::Even,
                 "home" => Seeding::Home,
