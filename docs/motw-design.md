@@ -28,7 +28,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 4. Spill Blood on the Altar (1.83): buffed to 2 or 3 sway per mark, drafted and built as the variant `altar=stake` (designer, 2026-11-08; H.0); measured with the batch
 5. Cut the Powerlines (2.62): aimed (you pick the groups, 1 sway at each joined), drafted and built as the variant `powerlines=pick` (designer, 2026-11-08; H.0); measured with the batch
 6. Call in Favours (3.73): kept as it is (designer, 2026-11-08: "i like it as it is"); D44's redesign question closed
-7. The faction readings almost never chosen: Spoof the Signal (2.53), Bait the Herd (3.20), The Big Chase (3.34)
+7. The faction readings almost never chosen: Spoof the Signal (2.53), Bait the Herd (3.20), The Big Chase (3.34): kept as fallbacks (designer, 2026-11-08): they keep each card playable on a few more turns; the suggested fixes (the victim reversal on Spoof the Signal, excluding the suit's own locations, faction-only edges, a global sway rule) read poorly thematically or were not liked
 8. Take Control (3.30): seldom open, but worth holding
 9. Study the Bodies (2.65), Steal Their Playbook (2.65)
 
