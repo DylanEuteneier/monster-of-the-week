@@ -27,7 +27,7 @@ The current focus, below, lists what is being worked on right now; the backlog h
 3. The Gate (1.65, the lowest): reworked with magnetism, drafted and built as the variant `gate=pull` (designer, 2026-11-08; H.0); measured with the batch
 4. Spill Blood on the Altar (1.83): buffed to 2 or 3 sway per mark, drafted and built as the variant `altar=stake` (designer, 2026-11-08; H.0); measured with the batch
 5. Cut the Powerlines (2.62): aimed (you pick the groups, 1 sway at each joined), drafted and built as the variant `powerlines=pick` (designer, 2026-11-08; H.0); measured with the batch
-6. Call in Favours (3.73): the redesign already open (2026-10-31), for its own reasons, not weakness
+6. Call in Favours (3.73): kept as it is (designer, 2026-11-08: "i like it as it is"); D44's redesign question closed
 7. The faction readings almost never chosen: Spoof the Signal (2.53), Bait the Herd (3.20), The Big Chase (3.34)
 8. Take Control (3.30): seldom open, but worth holding
 9. Study the Bodies (2.65), Steal Their Playbook (2.65)
@@ -72,7 +72,6 @@ Focus areas to pick up: not the current focus. Each comes back into focus when t
 **Open questions from decisions** (moved out of the decision records, 2026-11-08)
 
 - **Round 5's first-player price (D44):** Steal Their Playbook's price is going first next round, which vanishes in the last round. Also open: the cards' power ladder without the marked cards.
-- **Call in Favours (D44):** to be redesigned, now free of opening rounds and of being the standout.
 - **The physical game's token count (D46):** faction pools are unlimited in play; a box needs a number.
 - **Icons (D34, D35):** the look of each mark, and which cards and prompts use them first; a lone group (one circle in a hex) and a single token at a location draw alike.
 - **Thematic text and toplines (D37):** the toplines' gists and the thematic text marked `flavourDraft` in `spec.json` (Invite Them In, The Gate, the six unsuited cards) are Claude's drafts, for the designer's review.
@@ -1372,6 +1371,7 @@ Stages: **Not started** · **Seed** · **Draft** · **Trial** · **Measured** ·
 - **Supersedes:** FP1, FP2 and the rule that the first player opens with their marked card (3.8).
 - **Affects:** 3.8 (FP1, FP2), G.4, `playbook`.
 - **Enforced by:** `the_deck_is_the_core_21_five_suits_and_six_unsuited_none_marked`, `round_one_s_first_player_is_random_and_opens_with_any_card`, `steal_their_playbook_s_player_goes_first_next_round_else_the_first_player_stays`.
+- **Call in Favours (designer, 2026-11-08):** kept as it is; the redesign this record left open (2026-10-31) is closed.
 - **Status:** trial
 - **Date:** 2026-10-31
 
